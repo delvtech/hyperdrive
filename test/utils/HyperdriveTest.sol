@@ -651,6 +651,7 @@ contract HyperdriveTest is BaseTest {
                     extraData: overrides.extraData
                 })
             );
+            baseToken.burn(overrides.depositAmount - baseAmount);
         }
 
         return (maturityTime, baseAmount);

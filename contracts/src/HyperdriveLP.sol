@@ -158,13 +158,12 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
 
         // Calculate the number of LP shares to mint.
         uint256 endingPresentValue;
+        uint256 startingPresentValue;
         {
             // Calculate the present value before updating the reserves.
             HyperdriveMath.PresentValueParams
                 memory params = _getPresentValueParams(sharePrice);
-            uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(
-                params
-            );
+            startingPresentValue = HyperdriveMath.calculatePresentValue(params);
 
             // Add the liquidity to the pool's reserves and calculate the new
             // present value.
@@ -195,7 +194,7 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
         // Emit an AddLiquidity event.
         uint256 lpSharePrice = lpTotalSupply == 0
             ? 0
-            : endingPresentValue.divDown(lpTotalSupply);
+            : startingPresentValue.divDown(lpTotalSupply);
         emit AddLiquidity(
             _options.destination,
             lpShares,
@@ -252,7 +251,12 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
 
         // Remove the liquidity from the pool.
         uint256 shareProceeds;
-        (shareProceeds, withdrawalShares) = _applyRemoveLiquidity(
+        uint256 startingPresentValue;
+        (
+            shareProceeds,
+            withdrawalShares,
+            startingPresentValue
+        ) = _applyRemoveLiquidity(
             _lpShares,
             sharePrice,
             totalLpSupply,
@@ -277,15 +281,9 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
         if (_minOutput > proceeds) revert IHyperdrive.OutputLimit();
 
         // Emit a RemoveLiquidity event.
-        HyperdriveMath.PresentValueParams
-            memory params = _getPresentValueParams(sharePrice);
-        params.shareReserves = _marketState.shareReserves;
-        params.shareAdjustment = _marketState.shareAdjustment;
-        params.bondReserves = _marketState.bondReserves;
-        uint256 presentValue = HyperdriveMath.calculatePresentValue(params);
         uint256 lpSharePrice = totalLpSupply == 0
             ? 0
-            : presentValue.divDown(totalLpSupply);
+            : startingPresentValue.divDown(totalLpSupply);
         emit RemoveLiquidity(
             _options.destination,
             _lpShares,
@@ -462,13 +460,14 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
     ///        shares outstanding.
     /// @return shareProceeds The share proceeds that will be paid to the LP.
     /// @return The amount of withdrawal shares that should be minted.
+    /// @return The present value of the pool before the liquidity was removed.
     function _applyRemoveLiquidity(
         uint256 _shares,
         uint256 _sharePrice,
         uint256 _totalLpSupply,
         uint256 _totalActiveLpSupply,
         uint256 _withdrawalSharesOutstanding
-    ) internal returns (uint256 shareProceeds, uint256) {
+    ) internal returns (uint256 shareProceeds, uint256, uint256) {
         // The LP is given their share of the idle capital in the pool. Since we
         // distributed the excess idle to the withdrawal pool, we assume that
         // the active LPs are the only LPs entitled to the pool's
@@ -516,7 +515,7 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
             delete withdrawalShares;
         }
 
-        return (shareProceeds, uint256(withdrawalShares));
+        return (shareProceeds, uint256(withdrawalShares), startingPresentValue);
     }
 
     /// @dev If the idle capital in the pool is worth more than the active LP
