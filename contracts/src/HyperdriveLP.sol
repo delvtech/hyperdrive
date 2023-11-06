@@ -93,10 +93,13 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
         // Emit an Initialize event.
+        uint256 baseContribution = _options.asBase
+            ? _contribution
+            : _contribution.mulDown(sharePrice);
         emit Initialize(
             _options.destination,
             lpShares,
-            vaultShares.mulDown(sharePrice),
+            baseContribution,
             sharePrice,
             _apr
         );

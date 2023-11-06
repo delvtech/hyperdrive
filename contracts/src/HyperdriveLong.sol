@@ -46,8 +46,6 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         _checkMessageValue();
 
         // Deposit the user's input amount.
-        // TODO: why don't we checkpoint first and get the sharePrice from _pricePerShare()?
-        // in test_CloseLongWithUnderlying() sharesDeposited is slightly less than amount input
         (uint256 sharesDeposited, uint256 sharePrice) = _deposit(
             _amount,
             _options
