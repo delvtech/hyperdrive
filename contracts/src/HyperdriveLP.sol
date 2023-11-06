@@ -21,16 +21,16 @@ abstract contract HyperdriveLP is IHyperdriveCore, HyperdriveTWAP {
     using SafeCast for int256;
     using SafeCast for uint256;
 
-    /// @notice Allows the first LP to initialize the market with a target APR.
+    /// @dev Allows the first LP to initialize the market with a target APR.
     /// @param _contribution The amount of base to supply.
     /// @param _apr The target APR.
     /// @param _options The options that configure how the operation is settled.
     /// @return lpShares The initial number of LP shares created.
-    function initialize(
+    function _initialize(
         uint256 _contribution,
         uint256 _apr,
         IHyperdrive.Options calldata _options
-    ) external payable nonReentrant returns (uint256 lpShares) {
+    ) internal nonReentrant returns (uint256 lpShares) {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
 
@@ -98,18 +98,18 @@ abstract contract HyperdriveLP is IHyperdriveCore, HyperdriveTWAP {
         return lpShares;
     }
 
-    /// @notice Allows LPs to supply liquidity for LP shares.
+    /// @dev Allows LPs to supply liquidity for LP shares.
     /// @param _contribution The amount of base to supply.
     /// @param _minApr The minimum APR at which the LP is willing to supply.
     /// @param _maxApr The maximum APR at which the LP is willing to supply.
     /// @param _options The options that configure how the operation is settled.
     /// @return lpShares The number of LP tokens created
-    function addLiquidity(
+    function _addLiquidity(
         uint256 _contribution,
         uint256 _minApr,
         uint256 _maxApr,
         IHyperdrive.Options calldata _options
-    ) external payable nonReentrant isNotPaused returns (uint256 lpShares) {
+    ) internal nonReentrant isNotPaused returns (uint256 lpShares) {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
         if (_contribution < _minimumTransactionAmount) {
@@ -189,12 +189,12 @@ abstract contract HyperdriveLP is IHyperdriveCore, HyperdriveTWAP {
         emit AddLiquidity(_options.destination, lpShares, _contribution);
     }
 
-    /// @notice Allows an LP to burn shares and withdraw from the pool.
+    /// @dev Allows an LP to burn shares and withdraw from the pool.
     /// @param _shares The LP shares to burn.
-    /// @param _minOutput The minium amount of the base token to receive.Note - this
-    ///        value is likely to be less than the amount LP shares are worth.
-    ///        The remainder is in short and long withdraw shares which are hard
-    ///        to game the value of.
+    /// @param _minOutput The minium amount of the base token to receive.
+    ///        NOTE: this value is likely to be less than the amount LP shares
+    ///        are worth. The remainder is in short and long withdraw shares
+    ///        which are hard to game the value of.
     /// @param _options The options that configure how the operation is settled.
     /// @return baseProceeds The base the LP removing liquidity receives. The
     ///         LP receives a proportional amount of the pool's idle capital
@@ -203,12 +203,12 @@ abstract contract HyperdriveLP is IHyperdriveCore, HyperdriveTWAP {
     ///         LP out. In this case, the LP receives withdrawal shares equal
     ///         in value to the present value they are owed. As idle capital
     ///         becomes available, the pool will buy back these shares.
-    function removeLiquidity(
+    function _removeLiquidity(
         uint256 _shares,
         uint256 _minOutput,
         IHyperdrive.Options calldata _options
     )
-        external
+        internal
         nonReentrant
         returns (uint256 baseProceeds, uint256 withdrawalShares)
     {
@@ -269,22 +269,22 @@ abstract contract HyperdriveLP is IHyperdriveCore, HyperdriveTWAP {
         return (baseProceeds, withdrawalShares);
     }
 
-    /// @notice Redeems withdrawal shares by giving the LP a pro-rata amount of
-    ///         the withdrawal pool's proceeds. This function redeems the
-    ///         maximum amount of the specified withdrawal shares given the
-    ///         amount of withdrawal shares ready to withdraw.
+    /// @dev Redeems withdrawal shares by giving the LP a pro-rata amount of the
+    ///      withdrawal pool's proceeds. This function redeems the maximum
+    ///      amount of the specified withdrawal shares given the amount of
+    ///      withdrawal shares ready to withdraw.
     /// @param _shares The withdrawal shares to redeem.
     /// @param _minOutputPerShare The minimum amount of base the LP expects to
     ///        receive for each withdrawal share that is burned.
     /// @param _options The options that configure how the operation is settled.
     /// @return baseProceeds The amount of base the LP received.
     /// @return sharesRedeemed The amount of withdrawal shares that were redeemed.
-    function redeemWithdrawalShares(
+    function _redeemWithdrawalShares(
         uint256 _shares,
         uint256 _minOutputPerShare,
         IHyperdrive.Options calldata _options
     )
-        external
+        internal
         nonReentrant
         returns (uint256 baseProceeds, uint256 sharesRedeemed)
     {

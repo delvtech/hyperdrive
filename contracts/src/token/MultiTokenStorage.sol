@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME: Merge this with HyperdriveStorage
+//
 /// @author DELV
 /// @title MultiTokenStorage
 /// @notice The MultiToken storage contract.
@@ -8,6 +10,8 @@ pragma solidity 0.8.19;
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract MultiTokenStorage {
+    // FIXME: This isn't true.
+    //
     // The contract which deployed this one
     address internal immutable _factory;
 
@@ -27,13 +31,12 @@ contract MultiTokenStorage {
         internal _isApprovedForAll;
 
     // Additional optional per token approvals
+    //
+    // FIXME: Update this comment.
+    //
     // Note - non standard for erc1150 but we want to replicate erc20 interface
     mapping(uint256 tokenId => mapping(address from => mapping(address caller => uint256 approved)))
         internal _perTokenApprovals;
-
-    // Sub Token Name and Symbol, created by inheriting contracts
-    mapping(uint256 tokenId => string name) internal _name;
-    mapping(uint256 tokenId => string symbol) internal _symbol;
 
     // A mapping to track the permitForAll signature nonces
     mapping(address user => uint256 nonce) internal _nonces;

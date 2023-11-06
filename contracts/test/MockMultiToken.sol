@@ -6,12 +6,6 @@ import { ForwarderFactory } from "../src/token/ForwarderFactory.sol";
 import { MultiToken } from "../src/token/MultiToken.sol";
 
 interface IMockMultiToken is IMultiToken {
-    function __setNameAndSymbol(
-        uint256 tokenId,
-        string memory __name,
-        string memory __symbol
-    ) external;
-
     function __setBalanceOf(
         uint256 _tokenId,
         address _who,
@@ -37,15 +31,6 @@ contract MockMultiToken is MultiToken {
         bytes32 _linkerCodeHash,
         address _factory
     ) MultiToken(address(0), _dataProvider, _linkerCodeHash, _factory) {}
-
-    function __setNameAndSymbol(
-        uint256 tokenId,
-        string memory __name,
-        string memory __symbol
-    ) external {
-        _name[tokenId] = __name;
-        _symbol[tokenId] = __symbol;
-    }
 
     function __setBalanceOf(
         uint256 _tokenId,

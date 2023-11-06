@@ -4,8 +4,8 @@ pragma solidity 0.8.19;
 import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
 import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { MultiTokenDataProvider } from "../token/MultiTokenDataProvider.sol";
+import { ERC4626Base } from "./ERC4626Base.sol";
 
 /// @author DELV
 /// @title ERC4626DataProvider
@@ -13,16 +13,11 @@ import { MultiTokenDataProvider } from "../token/MultiTokenDataProvider.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract ERC4626DataProvider is MultiTokenDataProvider, HyperdriveDataProvider {
-    using FixedPointMath for uint256;
-
-    // The deployed pool
-    IERC4626 internal immutable _pool;
-
-    /// @dev A mapping from addresses to their status as a sweep target. This
-    ///      mapping does not change after construction.
-    mapping(address target => bool canSweep) internal _isSweepable;
-
+contract ERC4626DataProvider is
+    MultiTokenDataProvider,
+    HyperdriveDataProvider,
+    ERC4626Base
+{
     /// @notice Initializes the data provider.
     /// @param _linkerCodeHash_ The hash of the erc20 linker contract deploy code
     /// @param _factory_ The factory which is used to deploy the linking contracts
@@ -35,23 +30,8 @@ contract ERC4626DataProvider is MultiTokenDataProvider, HyperdriveDataProvider {
     )
         HyperdriveDataProvider(_config)
         MultiTokenDataProvider(_linkerCodeHash_, _factory_)
-    {
-        _pool = _pool_;
-    }
-
-    /// Yield Source ///
-
-    /// @notice Loads the share price from the yield source.
-    /// @return sharePrice The current share price.
-    /// @dev must remain consistent with the impl inside of the HyperdriveInstance
-    function _pricePerShare()
-        internal
-        view
-        override
-        returns (uint256 sharePrice)
-    {
-        sharePrice = _pool.convertToAssets(FixedPointMath.ONE_18);
-    }
+        ERC4626Base(_pool_)
+    {}
 
     /// Getters ///
 

@@ -9,6 +9,7 @@ import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IERC4626Hyperdrive } from "../interfaces/IERC4626Hyperdrive.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
+import { ERC4626Base } from "./ERC4626Base.sol";
 
 // TODO: Polish the comments as part of #621.
 //
@@ -18,7 +19,7 @@ import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract ERC4626Hyperdrive is Hyperdrive {
+contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
     using FixedPointMath for uint256;
     using SafeTransferLib for IERC20;
 
@@ -58,10 +59,11 @@ contract ERC4626Hyperdrive is Hyperdrive {
             _linkerCodeHash,
             _linkerFactory
         )
+        ERC4626Base(_pool)
     {
-        // Initialize the pool immutable.
-        pool = _pool;
-
+        // FIXME: We should verify that the immutables are the same between
+        // extras, the data provider, and this contract.
+        //
         // Ensure that the Hyperdrive pool was configured properly.
         // WARN: 4626 implementations should be checked that if they use an
         // asset with decimals less than 18 that the preview deposit is scale
@@ -93,108 +95,5 @@ contract ERC4626Hyperdrive is Hyperdrive {
             }
             isSweepable[target] = true;
         }
-    }
-
-    /// Proxy ///
-
-    /// @dev Checks whether the selector is one of the extras function in the
-    ///      base version of Hyperdrive or the `sweep` function.
-    /// @param _selector The selector to check.
-    /// @return A flag indicating if the selector is one of the extras function.
-    function _isExtrasSelector(
-        bytes4 _selector
-    ) internal pure override returns (bool) {
-        return
-            _selector == IERC4626Hyperdrive.sweep.selector ||
-            super._isExtrasSelector(_selector);
-    }
-
-    /// Yield Source ///
-
-    /// @notice Accepts a trader's deposit in either base or vault shares. If
-    ///         the deposit is settled in base, the base is deposited into the
-    ///         yield source immediately.
-    /// @param _amount The amount of token to transfer
-    /// @param _options The options that configure the deposit. The only option
-    ///        used in this implementation is "asBase" which determines if
-    ///        the deposit is settled in base or vault shares.
-    /// @return sharesMinted The shares this deposit creates
-    /// @return sharePrice The share price at time of deposit
-    function _deposit(
-        uint256 _amount,
-        IHyperdrive.Options calldata _options
-    ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
-        if (_options.asBase) {
-            // Take custody of the deposit in base.
-            SafeTransferLib.safeTransferFrom(
-                ERC20(address(_baseToken)),
-                msg.sender,
-                address(this),
-                _amount
-            );
-
-            // Deposit the base into the yield source.
-            sharesMinted = pool.deposit(_amount, address(this));
-            sharePrice = _pricePerShare();
-        } else {
-            // WARN: This logic doesn't account for slippage in the conversion
-            // from base to shares. If deposits to the yield source incur
-            // slippage, this logic will be incorrect.
-            //
-            // Calculate the amount of vault shares that need to be deposited
-            // to equal the base amount as well as the current share price.
-            sharesMinted = pool.convertToShares(_amount);
-
-            // Take custody of the deposit in vault shares.
-            SafeTransferLib.safeTransferFrom(
-                ERC20(address(pool)),
-                msg.sender,
-                address(this),
-                sharesMinted
-            );
-            sharePrice = _pricePerShare();
-        }
-    }
-
-    /// @notice Processes a trader's withdrawal in either base or vault shares.
-    ///         If the withdrawal is settled in base, the base will need to be
-    ///         withdrawn from the yield source.
-    /// @param _shares The amount of shares to withdraw from Hyperdrive.
-    /// @param _options The options that configure the withdrawal. The options
-    ///        used in this implementation are "destination" which specifies the
-    ///        recipient of the withdrawal and "asBase" which determines
-    ///        if the withdrawal is settled in base or vault shares.
-    /// @return amountWithdrawn The amount withdrawn from the yield source.
-    function _withdraw(
-        uint256 _shares,
-        IHyperdrive.Options calldata _options
-    ) internal override returns (uint256 amountWithdrawn) {
-        if (_options.asBase) {
-            // Redeem the shares from the yield source and transfer the
-            // resulting base to the destination address.
-            amountWithdrawn = pool.redeem(
-                _shares,
-                _options.destination,
-                address(this)
-            );
-        } else {
-            // Transfer vault shares to the destination.
-            SafeTransferLib.safeTransfer(
-                ERC20(address(pool)),
-                _options.destination,
-                _shares
-            );
-            // Estimate the amount of base that was withdrawn from the yield
-            // source.
-            uint256 estimated = pool.convertToAssets(_shares);
-            amountWithdrawn = estimated;
-        }
-    }
-
-    /// @notice Loads the share price from the yield source.
-    /// @return The current share price.
-    /// @dev must remain consistent with the impl inside of the DataProvider
-    function _pricePerShare() internal view override returns (uint256) {
-        return pool.convertToAssets(FixedPointMath.ONE_18);
     }
 }

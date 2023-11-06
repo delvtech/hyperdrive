@@ -31,6 +31,9 @@ abstract contract HyperdriveDataProvider is
 
     /// Yield Source ///
 
+    // FIXME: I think that including functions inline like this is causing
+    // problems for us.
+    //
     ///@notice Loads the share price from the yield source
     ///@return sharePrice The current share price.
     function _pricePerShare()

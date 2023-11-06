@@ -21,7 +21,7 @@ abstract contract HyperdriveShort is IHyperdriveCore, HyperdriveLP {
     using SafeCast for uint256;
     using SafeCast for int256;
 
-    /// @notice Opens a short position.
+    /// @dev Opens a short position.
     /// @param _bondAmount The amount of bonds to short.
     /// @param _maxDeposit The most the user expects to deposit for this trade
     /// @param _minSharePrice The minium share price at which to open the long.
@@ -30,14 +30,13 @@ abstract contract HyperdriveShort is IHyperdriveCore, HyperdriveLP {
     /// @param _options The options that configure how the trade is settled.
     /// @return maturityTime The maturity time of the short.
     /// @return traderDeposit The amount the user deposited for this trade.
-    function openShort(
+    function _openShort(
         uint256 _bondAmount,
         uint256 _maxDeposit,
         uint256 _minSharePrice,
         IHyperdrive.Options calldata _options
     )
-        external
-        payable
+        internal
         nonReentrant
         isNotPaused
         returns (uint256 maturityTime, uint256 traderDeposit)
@@ -117,12 +116,12 @@ abstract contract HyperdriveShort is IHyperdriveCore, HyperdriveLP {
     /// @param _minOutput The minimum output of this trade.
     /// @param _options The options that configure how the trade is settled.
     /// @return The amount of base tokens produced by closing this short
-    function closeShort(
+    function _closeShort(
         uint256 _maturityTime,
         uint256 _bondAmount,
         uint256 _minOutput,
         IHyperdrive.Options calldata _options
-    ) external nonReentrant returns (uint256) {
+    ) internal nonReentrant returns (uint256) {
         if (_bondAmount < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }

@@ -17,11 +17,7 @@ import { MultiToken } from "./token/MultiToken.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveBase is
-    IHyperdriveCore,
-    MultiToken,
-    HyperdriveStorage
-{
+abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;
@@ -95,7 +91,6 @@ abstract contract HyperdriveBase is
 
     /// @notice Instantiates Hyperdrive.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _extras The address of the extras contract.
     /// @param _dataProvider The address of the data provider.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
@@ -103,12 +98,11 @@ abstract contract HyperdriveBase is
     ///        the ERC20 linker contracts.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        address _extras,
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory
     )
-        MultiToken(_extras, _dataProvider, _linkerCodeHash, _linkerFactory)
+        MultiToken(_dataProvider, _linkerCodeHash, _linkerFactory)
         HyperdriveStorage(_config)
     {
         // Initialize the oracle.

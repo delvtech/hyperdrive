@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 import { HyperdriveExtras } from "../HyperdriveExtras.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
+import { ERC4626Base } from "./ERC4626Base.sol";
 
 // TODO: Polish the comments as part of #621.
 //
@@ -16,8 +16,8 @@ import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract ERC4626Extras is HyperdriveExtras {
-    using SafeERC20 for IERC20;
+contract ERC4626Extras is HyperdriveExtras, ERC4626Base {
+    using SafeTransferLib for IERC20;
 
     /// @dev The yield source contract for this hyperdrive
     IERC4626 internal immutable pool;
@@ -38,42 +38,12 @@ contract ERC4626Extras is HyperdriveExtras {
         bytes32 _linkerCodeHash,
         address _linkerFactory,
         IERC4626 _pool
-    ) HyperdriveExtras(_config, _linkerCodeHash, _linkerFactory) {
+    )
+        HyperdriveExtras(_config, address(0), _linkerCodeHash, _linkerFactory)
+        ERC4626Base(_pool)
+    {
         // Initialize the pool immutable.
         pool = _pool;
-    }
-
-    /// Yield Source ///
-
-    /// @notice Processes a trader's withdrawal in either base or vault shares.
-    ///         If the withdrawal is settled in base, the base will need to be
-    ///         withdrawn from the yield source.
-    /// @param _shares The amount of shares to withdraw from Hyperdrive.
-    /// @param _options The options that configure the withdrawal. The options
-    ///        used in this implementation are "destination" which specifies the
-    ///        recipient of the withdrawal and "asBase" which determines
-    ///        if the withdrawal is settled in base or vault shares.
-    /// @return amountWithdrawn The amount withdrawn from the yield source.
-    function _withdraw(
-        uint256 _shares,
-        IHyperdrive.Options calldata _options
-    ) internal override returns (uint256 amountWithdrawn) {
-        if (_options.asBase) {
-            // Redeem the shares from the yield source and transfer the
-            // resulting base to the destination address.
-            amountWithdrawn = pool.redeem(
-                _shares,
-                _options.destination,
-                address(this)
-            );
-        } else {
-            // Transfer vault shares to the destination.
-            IERC20(address(pool)).safeTransfer(_options.destination, _shares);
-            // Estimate the amount of base that was withdrawn from the yield
-            // source.
-            uint256 estimated = pool.convertToAssets(_shares);
-            amountWithdrawn = estimated;
-        }
     }
 
     /// Extras ///

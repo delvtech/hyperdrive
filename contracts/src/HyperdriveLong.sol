@@ -21,7 +21,7 @@ abstract contract HyperdriveLong is IHyperdriveCore, HyperdriveLP {
     using SafeCast for uint256;
     using SafeCast for int256;
 
-    /// @notice Opens a long position.
+    /// @dev Opens a long position.
     /// @param _baseAmount The amount of base to use when trading.
     /// @param _minOutput The minium number of bonds to receive.
     /// @param _minSharePrice The minium share price at which to open the long.
@@ -30,14 +30,13 @@ abstract contract HyperdriveLong is IHyperdriveCore, HyperdriveLP {
     /// @param _options The options that configure how the trade is settled.
     /// @return maturityTime The maturity time of the bonds.
     /// @return bondProceeds The amount of bonds the user received
-    function openLong(
+    function _openLong(
         uint256 _baseAmount,
         uint256 _minOutput,
         uint256 _minSharePrice,
         IHyperdrive.Options calldata _options
     )
-        external
-        payable
+        internal
         nonReentrant
         isNotPaused
         returns (uint256 maturityTime, uint256 bondProceeds)
@@ -107,18 +106,18 @@ abstract contract HyperdriveLong is IHyperdriveCore, HyperdriveLP {
         return (maturityTime, bondProceeds);
     }
 
-    /// @notice Closes a long position with a specified maturity time.
+    /// @dev Closes a long position with a specified maturity time.
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of longs to close.
     /// @param _minOutput The minimum amount of base the trader will accept.
     /// @param _options The options that configure how the trade is settled.
     /// @return The amount of underlying the user receives.
-    function closeLong(
+    function _closeLong(
         uint256 _maturityTime,
         uint256 _bondAmount,
         uint256 _minOutput,
         IHyperdrive.Options calldata _options
-    ) external nonReentrant returns (uint256) {
+    ) internal nonReentrant returns (uint256) {
         if (_bondAmount < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }

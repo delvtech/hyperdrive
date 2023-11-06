@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { Proxy } from "../Proxy.sol";
+import { DataProvider } from "../DataProvider.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IMultiTokenCore } from "../interfaces/IMultiTokenCore.sol";
 import { MultiTokenStorage } from "./MultiTokenStorage.sol";
 
+// FIXME: It probably makes sense to move MultiTokenStorage into
+//        HyperdriveStorage and dissolve this contract into `HyperdriveToken`
+//        or something like that.
+//
 /// @author DELV
 /// @title MultiToken
 /// @notice A lite version of a semi fungible, which removes some methods and so
@@ -16,7 +20,14 @@ import { MultiTokenStorage } from "./MultiTokenStorage.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract MultiToken is Proxy, MultiTokenStorage, IMultiTokenCore {
+abstract contract MultiToken is
+    DataProvider,
+    MultiTokenStorage,
+    IMultiTokenCore
+{
+    // FIXME: We need to calculate the DOMAIN_SEPARATOR in the transaction to
+    // ensure that we're using the right contract address.
+    //
     // EIP712
     // DOMAIN_SEPARATOR changes based on token name
     bytes32 public immutable DOMAIN_SEPARATOR; // solhint-disable-line var-name-mixedcase
@@ -27,19 +38,14 @@ contract MultiToken is Proxy, MultiTokenStorage, IMultiTokenCore {
         );
 
     /// @notice Deploys the MultiToken.
-    /// @param _extras The address of the extras contract.
     /// @param _dataProvider The address of the data provider.
     /// @param _linkerCodeHash The hash of the erc20 linker contract deploy code.
     /// @param _factory The factory which is used to deploy the linking contracts.
     constructor(
-        address _extras,
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _factory
-    )
-        Proxy(_extras, _dataProvider)
-        MultiTokenStorage(_linkerCodeHash, _factory)
-    {
+    ) DataProvider(_dataProvider) MultiTokenStorage(_linkerCodeHash, _factory) {
         // Computes the EIP 712 domain separator which prevents user signed messages for
         // this contract to be replayed in other contracts.
         // https://eips.ethereum.org/EIPS/eip-712
@@ -54,19 +60,6 @@ contract MultiToken is Proxy, MultiTokenStorage, IMultiTokenCore {
             )
         );
     }
-
-    /// Proxy ///
-
-    /// @dev Always returns false since the MultiToken doesn't have any
-    ///      functionality in extras.
-    /// @return False so that the call isn't delegated to extras.
-    function _isExtrasSelector(
-        bytes4
-    ) internal pure virtual override returns (bool) {
-        return false;
-    }
-
-    /// MultiToken ///
 
     //  Our architecture maintains ERC20 compatibility by allowing the option
     //  of the factory deploying ERC20 compatibility bridges which forward ERC20 calls
@@ -86,55 +79,95 @@ contract MultiToken is Proxy, MultiTokenStorage, IMultiTokenCore {
         _;
     }
 
-    /// @notice Derive the ERC20 forwarder address for a provided `tokenId`.
-    /// @param tokenId Token Id of the token whose forwarder contract address need to derived.
-    /// @return Address of the ERC20 forwarder contract.
-    function _deriveForwarderAddress(
-        uint256 tokenId
-    ) internal view returns (address) {
-        // Get the salt which is used by the deploying contract
-        bytes32 salt = keccak256(abi.encode(address(this), tokenId));
-        // Preform the hash which determines the address of a create2 deployment
-        bytes32 addressBytes = keccak256(
-            abi.encodePacked(bytes1(0xff), _factory, salt, _linkerCodeHash)
+    /// @dev Transfers several assets from one account to another
+    /// @param from the source account
+    /// @param to the destination account
+    /// @param ids The array of token ids of the asset to transfer
+    /// @param values The amount of each token to transfer
+    function _batchTransferFrom(
+        address from,
+        address to,
+        uint256[] calldata ids,
+        uint256[] calldata values
+    ) internal {
+        // Checks for inconsistent addresses
+        if (from == address(0) || to == address(0))
+            revert IHyperdrive.RestrictedZeroAddress();
+
+        // Check for inconsistent length
+        if (ids.length != values.length)
+            revert IHyperdrive.BatchInputLengthMismatch();
+
+        // Call internal transfer for each asset
+        for (uint256 i = 0; i < ids.length; ) {
+            _transferFrom(ids[i], from, to, values[i], msg.sender);
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /// @dev Allows a caller who is not the owner of an account to execute the
+    ///      functionality of 'approve' for all assets with the owners signature.
+    /// @param owner The owner of the account which is having the new approval set.
+    /// @param spender The address which will be allowed to spend owner's tokens
+    /// @param _approved A boolean of the approval status to set to
+    /// @param deadline The timestamp which the signature must be submitted by
+    ///        to be valid.
+    /// @param v Extra ECDSA data which allows public key recovery from
+    ///        signature assumed to be 27 or 28.
+    /// @param r The r component of the ECDSA signature
+    /// @param s The s component of the ECDSA signature
+    /// @dev The signature for this function follows EIP 712 standard and should
+    ///      be generated with the eth_signTypedData JSON RPC call instead of
+    ///      the eth_sign JSON RPC call. If using out of date parity signing
+    ///      libraries the v component may need to be adjusted. Also it is very
+    ///      rare but possible for v to be other values, those values are not
+    ///      supported.
+    function _permitForAll(
+        address owner,
+        address spender,
+        bool _approved,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal {
+        // Require that the signature is not expired
+        if (block.timestamp > deadline) revert IHyperdrive.ExpiredDeadline();
+        // Require that the owner is not zero
+        if (owner == address(0)) revert IHyperdrive.RestrictedZeroAddress();
+
+        bytes32 structHash = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                keccak256(
+                    abi.encode(
+                        PERMIT_TYPEHASH,
+                        owner,
+                        spender,
+                        _approved,
+                        _nonces[owner],
+                        deadline
+                    )
+                )
+            )
         );
-        return address(uint160(uint256(addressBytes)));
+
+        // Check that the signature is valid
+        address signer = ecrecover(structHash, v, r, s);
+        if (signer != owner) revert IHyperdrive.InvalidSignature();
+
+        // Increment the signature nonce
+        ++_nonces[owner];
+        // set the state
+        _isApprovedForAll[owner][spender] = _approved;
+        // Emit an event to track approval
+        emit ApprovalForAll(owner, spender, _approved);
     }
 
-    /// @notice Transfers an amount of assets from the source to the destination
-    /// @param tokenID The token identifier
-    /// @param from The address who's balance will be reduced
-    /// @param to The address who's balance will be increased
-    /// @param amount The amount of token to move
-    function transferFrom(
-        uint256 tokenID,
-        address from,
-        address to,
-        uint256 amount
-    ) external override {
-        // Forward to our internal version
-        _transferFrom(tokenID, from, to, amount, msg.sender);
-    }
-
-    /// @notice Permission-ed transfer for the bridge to access, only callable by
-    ///         the ERC20 linking bridge
-    /// @param tokenID The token identifier
-    /// @param from The address who's balance will be reduced
-    /// @param to The address who's balance will be increased
-    /// @param amount The amount of token to move
-    /// @param caller The msg.sender from the bridge
-    function transferFromBridge(
-        uint256 tokenID,
-        address from,
-        address to,
-        uint256 amount,
-        address caller
-    ) external override onlyLinker(tokenID) {
-        // Route to our internal transfer
-        _transferFrom(tokenID, from, to, amount, caller);
-    }
-
-    /// @notice Preforms the actual transfer logic
+    /// @dev Performs the actual transfer logic.
     /// @param tokenID The token identifier
     /// @param from The address who's balance will be reduced
     /// @param to The address who's balance will be increased
@@ -174,47 +207,6 @@ contract MultiToken is Proxy, MultiTokenStorage, IMultiTokenCore {
         _balanceOf[tokenID][from] -= amount;
         _balanceOf[tokenID][to] += amount;
         emit TransferSingle(caller, from, to, tokenID, amount);
-    }
-
-    /// @notice Allows a user to approve an operator to use all of their assets
-    /// @param operator The eth address which can access the caller's assets
-    /// @param approved True to approve, false to remove approval
-    function setApprovalForAll(
-        address operator,
-        bool approved
-    ) external override {
-        // set the appropriate state
-        _isApprovedForAll[msg.sender][operator] = approved;
-        // Emit an event to track approval
-        emit ApprovalForAll(msg.sender, operator, approved);
-    }
-
-    /// @notice Allows a user to set an approval for an individual asset with specific amount.
-    /// @param tokenID The asset to approve the use of
-    /// @param operator The address who will be able to use the tokens
-    /// @param amount The max tokens the approved person can use, setting to uint256.max
-    ///               will cause the value to never decrement [saving gas on transfer]
-    function setApproval(
-        uint256 tokenID,
-        address operator,
-        uint256 amount
-    ) external override {
-        _setApproval(tokenID, operator, amount, msg.sender);
-    }
-
-    /// @notice Allows the compatibility linking contract to forward calls to set asset approvals
-    /// @param tokenID The asset to approve the use of
-    /// @param operator The address who will be able to use the tokens
-    /// @param amount The max tokens the approved person can use, setting to uint256.max
-    ///               will cause the value to never decrement [saving gas on transfer]
-    /// @param caller The eth address which called the linking contract
-    function setApprovalBridge(
-        uint256 tokenID,
-        address operator,
-        uint256 amount,
-        address caller
-    ) external override onlyLinker(tokenID) {
-        _setApproval(tokenID, operator, amount, caller);
     }
 
     /// @notice internal function to change approvals
@@ -263,87 +255,18 @@ contract MultiToken is Proxy, MultiTokenStorage, IMultiTokenCore {
         emit TransferSingle(msg.sender, from, address(0), tokenID, amount);
     }
 
-    /// @notice Transfers several assets from one account to another
-    /// @param from the source account
-    /// @param to the destination account
-    /// @param ids The array of token ids of the asset to transfer
-    /// @param values The amount of each token to transfer
-    function batchTransferFrom(
-        address from,
-        address to,
-        uint256[] calldata ids,
-        uint256[] calldata values
-    ) external {
-        // Checks for inconsistent addresses
-        if (from == address(0) || to == address(0))
-            revert IHyperdrive.RestrictedZeroAddress();
-
-        // Check for inconsistent length
-        if (ids.length != values.length)
-            revert IHyperdrive.BatchInputLengthMismatch();
-
-        // Call internal transfer for each asset
-        for (uint256 i = 0; i < ids.length; ) {
-            _transferFrom(ids[i], from, to, values[i], msg.sender);
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
-    /// @notice Allows a caller who is not the owner of an account to execute
-    ///         the functionality of 'approve' for all assets with the owners signature.
-    /// @param owner the owner of the account which is having the new approval set
-    /// @param spender the address which will be allowed to spend owner's tokens
-    /// @param _approved a boolean of the approval status to set to
-    /// @param deadline the timestamp which the signature must be submitted by to be valid
-    /// @param v Extra ECDSA data which allows public key recovery from signature assumed to be 27 or 28
-    /// @param r The r component of the ECDSA signature
-    /// @param s The s component of the ECDSA signature
-    /// @dev The signature for this function follows EIP 712 standard and should be generated with the
-    ///      eth_signTypedData JSON RPC call instead of the eth_sign JSON RPC call. If using out of date
-    ///      parity signing libraries the v component may need to be adjusted. Also it is very rare but possible
-    ///      for v to be other values, those values are not supported.
-    function permitForAll(
-        address owner,
-        address spender,
-        bool _approved,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external {
-        // Require that the signature is not expired
-        if (block.timestamp > deadline) revert IHyperdrive.ExpiredDeadline();
-        // Require that the owner is not zero
-        if (owner == address(0)) revert IHyperdrive.RestrictedZeroAddress();
-
-        bytes32 structHash = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                DOMAIN_SEPARATOR,
-                keccak256(
-                    abi.encode(
-                        PERMIT_TYPEHASH,
-                        owner,
-                        spender,
-                        _approved,
-                        _nonces[owner],
-                        deadline
-                    )
-                )
-            )
+    /// @notice Derive the ERC20 forwarder address for a provided `tokenId`.
+    /// @param tokenId Token Id of the token whose forwarder contract address need to derived.
+    /// @return Address of the ERC20 forwarder contract.
+    function _deriveForwarderAddress(
+        uint256 tokenId
+    ) internal view returns (address) {
+        // Get the salt which is used by the deploying contract
+        bytes32 salt = keccak256(abi.encode(address(this), tokenId));
+        // Preform the hash which determines the address of a create2 deployment
+        bytes32 addressBytes = keccak256(
+            abi.encodePacked(bytes1(0xff), _factory, salt, _linkerCodeHash)
         );
-
-        // Check that the signature is valid
-        address signer = ecrecover(structHash, v, r, s);
-        if (signer != owner) revert IHyperdrive.InvalidSignature();
-
-        // Increment the signature nonce
-        ++_nonces[owner];
-        // set the state
-        _isApprovedForAll[owner][spender] = _approved;
-        // Emit an event to track approval
-        emit ApprovalForAll(owner, spender, _approved);
+        return address(uint160(uint256(addressBytes)));
     }
 }
