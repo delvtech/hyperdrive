@@ -512,14 +512,12 @@ contract FeeTest is HyperdriveTest {
             governanceCurveFee,
             governanceFlatFee,
             totalGovernanceFee
-        ) = MockHyperdrive(
-            address(hyperdrive)
-        ).calculateFeesGivenBonds(
-                1 ether, // amount
-                0, // timeRemaining
-                0.9 ether, // spotPrice
-                1 ether // sharePrice
-            );
+        ) = MockHyperdrive(address(hyperdrive)).calculateFeesGivenBonds(
+            1 ether, // amount
+            0, // timeRemaining
+            0.9 ether, // spotPrice
+            1 ether // sharePrice
+        );
         assertEq(curveFee + flatFee, 0.1 ether);
         assertEq(totalGovernanceFee, 0.05 ether);
     }

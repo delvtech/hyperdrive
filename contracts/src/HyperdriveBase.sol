@@ -31,26 +31,32 @@ abstract contract HyperdriveBase is
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 apr
     );
 
     event AddLiquidity(
         address indexed provider,
         uint256 lpAmount,
-        uint256 baseAmount
+        uint256 baseAmount,
+        uint256 sharePrice,
+        uint256 lpSharePrice
     );
 
     event RemoveLiquidity(
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
-        uint256 withdrawalShareAmount
+        uint256 sharePrice,
+        uint256 withdrawalShareAmount,
+        uint256 lpSharePrice
     );
 
     event RedeemWithdrawalShares(
         address indexed provider,
         uint256 withdrawalShareAmount,
-        uint256 baseAmount
+        uint256 baseAmount,
+        uint256 sharePrice
     );
 
     event OpenLong(
@@ -58,6 +64,7 @@ abstract contract HyperdriveBase is
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 bondAmount
     );
 
@@ -66,6 +73,7 @@ abstract contract HyperdriveBase is
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 bondAmount
     );
 
@@ -74,6 +82,7 @@ abstract contract HyperdriveBase is
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 bondAmount
     );
 
@@ -82,6 +91,7 @@ abstract contract HyperdriveBase is
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 bondAmount
     );
 
@@ -93,7 +103,11 @@ abstract contract HyperdriveBase is
         uint256 lpSharePrice
     );
 
-    event CollectGovernanceFee(address indexed collector, uint256 fees);
+    event CollectGovernanceFee(
+        address indexed collector,
+        uint256 baseFees,
+        uint256 sharePrice
+    );
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
@@ -236,7 +250,7 @@ abstract contract HyperdriveBase is
         uint256 governanceFeesAccrued = _governanceFeesAccrued;
         delete _governanceFeesAccrued;
         proceeds = _withdraw(governanceFeesAccrued, _options);
-        emit CollectGovernanceFee(_feeCollector, proceeds);
+        emit CollectGovernanceFee(_feeCollector, proceeds, _pricePerShare());
     }
 
     /// Helpers ///
@@ -499,5 +513,39 @@ abstract contract HyperdriveBase is
 
         // The totalGovernanceFee is the sum of the curve and flat governance fees
         totalGovernanceFee = governanceCurveFee + governanceFlatFee;
+    }
+
+    /// @dev Converts input to base if necessary according to what is specified in options.
+    /// @param _amount The amount to convert.
+    /// @param _sharePrice The current share price.
+    /// @param _options The options that configure the conversion.
+    /// @return The converted amount.
+    function _convertToBaseFromOption(
+        uint256 _amount,
+        uint256 _sharePrice,
+        IHyperdrive.Options calldata _options
+    ) internal pure returns (uint256) {
+        if (_options.asBase) {
+            return _amount;
+        } else {
+            return _amount.mulDown(_sharePrice);
+        }
+    }
+
+    /// @dev Converts input to what is specified in the options from shares.
+    /// @param _amount The amount to convert.
+    /// @param _sharePrice The current share price.
+    /// @param _options The options that configure the conversion.
+    /// @return The converted amount.
+    function _convertToOptionFromShares(
+        uint256 _amount,
+        uint256 _sharePrice,
+        IHyperdrive.Options calldata _options
+    ) internal pure returns (uint256) {
+        if (_options.asBase) {
+            return _amount.mulDown(_sharePrice);
+        } else {
+            return _amount;
+        }
     }
 }

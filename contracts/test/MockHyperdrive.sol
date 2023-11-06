@@ -259,20 +259,24 @@ contract MockHyperdrive is Hyperdrive {
 
     function _deposit(
         uint256 amount,
-        IHyperdrive.Options calldata
+        IHyperdrive.Options calldata options
     ) internal override returns (uint256, uint256) {
+        // deposit input is specified by options and outputs in shares
+        uint256 baseAmount = options.asBase
+            ? amount
+            : amount.mulDown(_pricePerShare());
         // Transfer the specified amount of funds from the trader. If the trader
         // overpaid, we return the excess amount.
         uint256 assets;
         bool success = true;
         if (address(_baseToken) == ETH) {
             assets = address(this).balance;
-            if (msg.value < amount) {
+            if (msg.value < baseAmount) {
                 revert IHyperdrive.TransferFailed();
             }
-            if (msg.value > amount) {
+            if (msg.value > baseAmount) {
                 (success, ) = payable(msg.sender).call{
-                    value: msg.value - amount
+                    value: msg.value - baseAmount
                 }("");
             }
         } else {
@@ -280,7 +284,7 @@ contract MockHyperdrive is Hyperdrive {
             success = _baseToken.transferFrom(
                 msg.sender,
                 address(this),
-                amount
+                baseAmount
             );
         }
         if (!success) {
@@ -290,10 +294,10 @@ contract MockHyperdrive is Hyperdrive {
         // Increase the total shares and return with the amount of shares minted
         // and the current share price.
         if (totalShares == 0) {
-            totalShares = amount.divDown(_initialSharePrice);
+            totalShares = baseAmount.divDown(_initialSharePrice);
             return (totalShares, _initialSharePrice);
         } else {
-            uint256 newShares = totalShares.mulDivDown(amount, assets);
+            uint256 newShares = totalShares.mulDivDown(baseAmount, assets);
             totalShares += newShares;
             return (newShares, _pricePerShare());
         }
@@ -303,6 +307,9 @@ contract MockHyperdrive is Hyperdrive {
         uint256 shares,
         IHyperdrive.Options calldata options
     ) internal override returns (uint256 withdrawValue) {
+        // withdraw input is always in shares, but it outputs in base if
+        // options.asBase is true
+
         // If the shares to withdraw is greater than the total shares, we clamp
         // to the total shares.
         shares = shares > totalShares ? totalShares : shares;
@@ -333,6 +340,9 @@ contract MockHyperdrive is Hyperdrive {
         if (!success) {
             revert IHyperdrive.TransferFailed();
         }
+        withdrawValue = options.asBase
+            ? withdrawValue
+            : withdrawValue.divDown(_pricePerShare());
 
         return withdrawValue;
     }

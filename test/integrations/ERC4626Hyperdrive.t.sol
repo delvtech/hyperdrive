@@ -133,7 +133,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             })
         );
         assertEq(sharePrice, 1.5e18);
-        // 0.6 repeating
+        // 1/1.5 = 0.666666666666666666
         assertEq(sharesMinted, 666666666666666666);
         assertEq(pool.balanceOf(address(mockHyperdrive)), 666666666666666666);
 
@@ -148,10 +148,11 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             })
         );
         assertEq(sharePrice, 1.5e18);
-        assertApproxEqAbs(sharesMinted, 2e18, 1);
+        assertEq(sharesMinted, 3e18);
+        // 666666666666666666 shares + 3e18 shares = 3666666666666666666
         assertApproxEqAbs(
             pool.balanceOf(address(mockHyperdrive)),
-            2666666666666666666,
+            3666666666666666666,
             2
         );
     }
@@ -185,7 +186,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             })
         );
         assertEq(pool.balanceOf(alice), 2e18);
-        assertEq(amountWithdrawn, 3e18);
+        assertEq(amountWithdrawn, 2e18);
     }
 
     function test_erc4626_testDeploy() external {

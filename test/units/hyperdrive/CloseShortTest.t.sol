@@ -667,10 +667,12 @@ contract CloseShortTest is HyperdriveTest {
             (
                 uint256 eventMaturityTime,
                 uint256 eventBaseAmount,
+                uint256 eventSharePrice,
                 uint256 eventBondAmount
-            ) = abi.decode(log.data, (uint256, uint256, uint256));
+            ) = abi.decode(log.data, (uint256, uint256, uint256, uint256));
             assertEq(eventMaturityTime, testCase.maturityTime);
             assertEq(eventBaseAmount, testCase.baseProceeds);
+            assertEq(eventSharePrice, hyperdrive.getPoolInfo().sharePrice);
             assertEq(eventBondAmount, testCase.bondAmount);
         }
 
