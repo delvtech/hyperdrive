@@ -1,21 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
-import { DataProvider } from "./DataProvider.sol";
-import { HyperdriveAdmin } from "./HyperdriveAdmin.sol";
-import { HyperdriveBase } from "./HyperdriveBase.sol";
-import { HyperdriveCheckpoint } from "./HyperdriveCheckpoint.sol";
-import { HyperdriveLong } from "./HyperdriveLong.sol";
-import { HyperdriveLP } from "./HyperdriveLP.sol";
-import { HyperdriveShort } from "./HyperdriveShort.sol";
-import { HyperdriveStorage } from "./HyperdriveStorage.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { HyperdriveAdmin } from "../internal/HyperdriveAdmin.sol";
+import { HyperdriveBase } from "../internal/HyperdriveBase.sol";
+import { HyperdriveCheckpoint } from "../internal/HyperdriveCheckpoint.sol";
+import { HyperdriveLong } from "../internal/HyperdriveLong.sol";
+import { HyperdriveLP } from "../internal/HyperdriveLP.sol";
+import { HyperdriveShort } from "../internal/HyperdriveShort.sol";
+import { HyperdriveStorage } from "../internal/HyperdriveStorage.sol";
 
 // FIXME: This should implement an interface
 //
 // FIXME: Natspec
 abstract contract Hyperdrive is
-    DataProvider,
     HyperdriveAdmin,
     HyperdriveLP,
     HyperdriveLong,
@@ -23,26 +21,57 @@ abstract contract Hyperdrive is
     HyperdriveCheckpoint
 {
     /// @notice The address of the extras contract.
-    address public immutable extras;
+    address public immutable target0;
+    address public immutable target1;
 
     // FIXME: Natspec
     /// @notice Instantiates a Hyperdrive pool.
     /// @param _config The configuration of the pool.
-    /// @param _extras The address of the extras contract.
-    /// @param _dataProvider The address of the data provider.
+    /// @param _target0 FIXME
+    /// @param _target1 FIXME
     /// @param _linkerCodeHash The code hash of the linker contract.
     /// @param _linkerFactory The address of the linker factory.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        address _extras,
-        address _dataProvider,
+        address _target0,
+        address _target1,
         bytes32 _linkerCodeHash,
         address _linkerFactory
-    )
-        HyperdriveStorage(_config, _linkerCodeHash, _linkerFactory)
-        DataProvider(_dataProvider)
-    {
-        extras = _extras;
+    ) HyperdriveStorage(_config, _linkerCodeHash, _linkerFactory) {
+        target0 = _target0;
+        target1 = _target1;
+    }
+
+    // solhint-disable no-complex-fallback
+    /// @notice If we get to the fallback function, we make a read-only
+    ///         delegatecall to the target0 contract. This target contains all
+    ///         of the getters for the Hyperdrive pool.
+    /// @param _data The data to be passed to the data provider.
+    /// @return The return data from the data provider.
+    fallback(bytes calldata _data) external returns (bytes memory) {
+        // We use a force-revert delegatecall pattern to ensure that no state
+        // changes were made during the read call.
+        // solhint-disable avoid-low-level-calls
+        (bool success, bytes memory returndata) = target0.delegatecall(_data);
+        if (success) {
+            revert IHyperdrive.UnexpectedSuccess();
+        }
+        bytes4 selector = bytes4(returndata);
+        if (selector != IHyperdrive.ReturnData.selector) {
+            assembly {
+                revert(add(returndata, 32), mload(returndata))
+            }
+        }
+
+        // Read calls return their data inside of a `ReturnData(bytes)` error.
+        // We unwrap the error and return the contents.
+        assembly {
+            mstore(add(returndata, 0x4), sub(mload(returndata), 4))
+            returndata := add(returndata, 0x4)
+        }
+        returndata = abi.decode(returndata, (bytes));
+
+        return returndata;
     }
 
     /// Longs ///
@@ -124,7 +153,7 @@ abstract contract Hyperdrive is
         uint256,
         IHyperdrive.Options calldata
     ) external payable returns (uint256) {
-        _delegateToExtras();
+        _delegate(target1);
     }
 
     /// @notice Allows LPs to supply liquidity for LP shares.
@@ -134,7 +163,7 @@ abstract contract Hyperdrive is
         uint256,
         IHyperdrive.Options calldata
     ) external payable returns (uint256) {
-        _delegateToExtras();
+        _delegate(target1);
     }
 
     function removeLiquidity(
@@ -157,7 +186,7 @@ abstract contract Hyperdrive is
 
     // FIXME: Comment this.
     function checkpoint(uint256) external {
-        _delegateToExtras();
+        _delegate(target1);
     }
 
     /// Admin ///
@@ -167,29 +196,29 @@ abstract contract Hyperdrive is
     function collectGovernanceFee(
         IHyperdrive.Options calldata
     ) external returns (uint256) {
-        _delegateToExtras();
+        _delegate(target0);
     }
 
     /// @notice Allows an authorized address to pause this contract.
     function pause(bool) external {
-        _delegateToExtras();
+        _delegate(target0);
     }
 
     /// @notice Allows governance to change governance.
     function setGovernance(address) external {
-        _delegateToExtras();
+        _delegate(target0);
     }
 
     /// @notice Allows governance to change the pauser status of an address.
     function setPauser(address, bool) external {
-        _delegateToExtras();
+        _delegate(target0);
     }
 
     /// Token ///
 
     /// @notice Transfers an amount of assets from the source to the destination.
     function transferFrom(uint256, address, address, uint256) external {
-        _delegateToExtras();
+        _delegate(target0);
     }
 
     /// @notice Permissioned transfer for the bridge to access, only callable by
@@ -201,24 +230,24 @@ abstract contract Hyperdrive is
         uint256,
         address
     ) external {
-        _delegateToExtras();
+        _delegate(target0);
     }
 
     /// @notice Allows the compatibility linking contract to forward calls to
     ///         set asset approvals.
     function setApprovalBridge(uint256, address, uint256, address) external {
-        _delegateToExtras();
+        _delegate(target0);
     }
 
     /// @notice Allows a user to approve an operator to use all of their assets.
     function setApprovalForAll(address, bool) external {
-        _delegateToExtras();
+        _delegate(target0);
     }
 
     /// @notice Allows a user to set an approval for an individual asset with
     ///         specific amount.
     function setApproval(uint256, address, uint256) external {
-        _delegateToExtras();
+        _delegate(target0);
     }
 
     /// @notice Transfers several assets from one account to another
@@ -228,7 +257,7 @@ abstract contract Hyperdrive is
         uint256[] calldata,
         uint256[] calldata
     ) external {
-        _delegateToExtras();
+        _delegate(target0);
     }
 
     /// @notice Allows a caller who is not the owner of an account to execute
@@ -243,16 +272,17 @@ abstract contract Hyperdrive is
         bytes32,
         bytes32
     ) external {
-        _delegateToExtras();
+        _delegate(target0);
     }
 
     /// Helpers ///
 
     /// @dev Makes a delegatecall to the extras contract with the provided
     ///      calldata. This will revert if the call is unsuccessful.
-    /// @return result The result of the delegatecall.
-    function _delegateToExtras() internal returns (bytes memory) {
-        (bool success, bytes memory result) = extras.delegatecall(msg.data);
+    /// @param _target The target of the delegatecall.
+    /// @return The returndata of the delegatecall.
+    function _delegate(address _target) internal returns (bytes memory) {
+        (bool success, bytes memory result) = _target.delegatecall(msg.data);
         if (!success) {
             assembly {
                 revert(add(result, 32), mload(result))

@@ -2,10 +2,10 @@
 pragma solidity 0.8.19;
 
 import { ReentrancyGuard } from "solmate/utils/ReentrancyGuard.sol";
-import { IERC20 } from "./interfaces/IERC20.sol";
-import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
-import { FixedPointMath, ONE } from "./libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
+import { IERC20 } from "../interfaces/IERC20.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 
 /// @author DELV
 /// @title HyperdriveStorage

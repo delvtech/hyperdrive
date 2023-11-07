@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
-import { HyperdriveExtras } from "../HyperdriveExtras.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
+import { HyperdriveTarget1 } from "../external/HyperdriveTarget1.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
@@ -13,11 +13,12 @@ import { ERC4626Base } from "./ERC4626Base.sol";
 //
 /// @author DELV
 /// @title ERC4626Extras
-/// @notice The extras contract for ERC4626Hyperdrive instances.
+/// @notice ERC4626Hyperdrive's target 0 logic contract. This contract several
+///         stateful functions that couldn't fit into the Hyperdrive contract.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract ERC4626Extras is HyperdriveExtras, ERC4626Base {
+contract ERC4626Target1 is HyperdriveTarget1, ERC4626Base {
     using SafeTransferLib for IERC20;
 
     /// @notice Initializes a Hyperdrive pool.
@@ -33,7 +34,7 @@ contract ERC4626Extras is HyperdriveExtras, ERC4626Base {
         address _linkerFactory,
         IERC4626 _pool
     )
-        HyperdriveExtras(_config, _linkerCodeHash, _linkerFactory)
+        HyperdriveTarget1(_config, _linkerCodeHash, _linkerFactory)
         ERC4626Base(_pool)
     {}
 

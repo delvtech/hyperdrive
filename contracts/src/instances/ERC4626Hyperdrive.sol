@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
-import { Hyperdrive } from "../Hyperdrive.sol";
+import { Hyperdrive } from "../external/Hyperdrive.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
@@ -100,6 +100,6 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
     ///      with 'transferFrom'. Any integrating contracts should be checked
     ///      for that, as it may result in an unexpected call from this address.
     function sweep(IERC20) external {
-        _delegateToExtras();
+        _delegate(target1);
     }
 }

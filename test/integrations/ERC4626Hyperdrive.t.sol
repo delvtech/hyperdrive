@@ -4,8 +4,8 @@ pragma solidity 0.8.19;
 import { ERC4626HyperdriveDeployer } from "contracts/src/factory/ERC4626HyperdriveDeployer.sol";
 import { ERC4626HyperdriveFactory } from "contracts/src/factory/ERC4626HyperdriveFactory.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { ERC4626DataProvider } from "contracts/src/instances/ERC4626DataProvider.sol";
-import { ERC4626Extras } from "contracts/src/instances/ERC4626Extras.sol";
+import { ERC4626Target0 } from "contracts/src/instances/ERC4626Target0.sol";
+import { ERC4626Target1 } from "contracts/src/instances/ERC4626Target1.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IERC4626Hyperdrive } from "contracts/src/interfaces/IERC4626Hyperdrive.sol";
@@ -20,6 +20,7 @@ import { MockERC4626Hyperdrive } from "contracts/test/MockERC4626Hyperdrive.sol"
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
+// FIXME: Remove the casts to ERC4626Target0 in this contract.
 contract ERC4626HyperdriveTest is HyperdriveTest {
     using FixedPointMath for *;
 
@@ -87,16 +88,16 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             feeCollector: bob,
             fees: IHyperdrive.Fees(0, 0, 0)
         });
-        address dataProvider = address(
-            new ERC4626DataProvider(config, bytes32(0), address(0), pool)
+        address target0 = address(
+            new ERC4626Target0(config, bytes32(0), address(0), pool)
         );
-        address extras = address(
-            new ERC4626Extras(config, bytes32(0), address(0), pool)
+        address target1 = address(
+            new ERC4626Target1(config, bytes32(0), address(0), pool)
         );
         mockHyperdrive = new MockERC4626Hyperdrive(
             config,
-            extras,
-            dataProvider,
+            target0,
+            target1,
             bytes32(0),
             address(0),
             pool,
@@ -238,6 +239,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
     }
 
     function test_erc4626_sharePrice() public {
+        // FIXME: Update this comment.
+        //
         // This test makes sure that the ERC4626DataProvider function returns
         // the correct share price.
         vm.startPrank(alice);
@@ -315,9 +318,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             new bytes(0)
         );
         assert(
-            !ERC4626DataProvider(address(mockHyperdrive)).isSweepable(
-                address(dai)
-            )
+            !ERC4626Target0(address(mockHyperdrive)).isSweepable(address(dai))
         );
         sweepTargets[0] = address(pool);
         factory.updateSweepTargets(sweepTargets);
@@ -330,9 +331,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             new bytes(0)
         );
         assert(
-            !ERC4626DataProvider(address(mockHyperdrive)).isSweepable(
-                address(pool)
-            )
+            !ERC4626Target0(address(mockHyperdrive)).isSweepable(address(pool))
         );
         vm.stopPrank();
 
@@ -370,7 +369,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             )
         );
         assert(
-            ERC4626DataProvider(address(mockHyperdrive)).isSweepable(
+            ERC4626Target0(address(mockHyperdrive)).isSweepable(
                 address(otherToken)
             )
         );

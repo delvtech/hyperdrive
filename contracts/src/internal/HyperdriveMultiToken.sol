@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
-import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 
 // FIXME: Update this Natspec. It's time now that we've made it a full facet.
 //
@@ -126,6 +126,9 @@ abstract contract HyperdriveMultiToken is HyperdriveBase {
                 "\x19\x01",
                 // FIXME: Two things. We need to make sure this is publicly
                 // available and we shouldn't inline it.
+                //
+                // FIXME: We can get around this by using create2 to deploy
+                // Hyperdrive and then pass the Hyperdrive address into this.
                 keccak256(
                     abi.encode(
                         keccak256(

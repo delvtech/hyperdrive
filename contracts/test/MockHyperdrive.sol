@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { ERC20PresetMinterPauser } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
-import { Hyperdrive } from "contracts/src/Hyperdrive.sol";
-import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
-import { HyperdriveDataProvider } from "contracts/src/HyperdriveDataProvider.sol";
-import { HyperdriveExtras } from "contracts/src/HyperdriveExtras.sol";
+import { Hyperdrive } from "contracts/src/external/Hyperdrive.sol";
+import { HyperdriveTarget0 } from "contracts/src/external/HyperdriveTarget0.sol";
+import { HyperdriveTarget1 } from "contracts/src/external/HyperdriveTarget1.sol";
+import { HyperdriveBase } from "contracts/src/internal/HyperdriveBase.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
@@ -196,9 +195,9 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
 
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        address _extras,
-        address _dataProvider
-    ) Hyperdrive(_config, _extras, _dataProvider, bytes32(0), address(0)) {}
+        address _target0,
+        address _target1
+    ) Hyperdrive(_config, _target0, _target1, bytes32(0), address(0)) {}
 
     /// Mocks ///
 
@@ -345,23 +344,20 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
     }
 }
 
-contract MockHyperdriveExtras is HyperdriveExtras, MockHyperdriveBase {
+contract MockHyperdriveTarget0 is HyperdriveTarget0, MockHyperdriveBase {
     constructor(
         IHyperdrive.PoolConfig memory _config
-    ) HyperdriveExtras(_config, bytes32(0), address(0)) {}
-}
-
-contract MockHyperdriveDataProvider is
-    HyperdriveDataProvider,
-    MockHyperdriveBase
-{
-    constructor(
-        IHyperdrive.PoolConfig memory _config
-    ) HyperdriveDataProvider(_config, bytes32(0), address(0)) {}
+    ) HyperdriveTarget0(_config, bytes32(0), address(0)) {}
 
     /// Mocks ///
 
     function getGovernanceFeesAccrued() external view returns (uint256) {
         _revert(abi.encode(_governanceFeesAccrued));
     }
+}
+
+contract MockHyperdriveTarget1 is HyperdriveTarget1, MockHyperdriveBase {
+    constructor(
+        IHyperdrive.PoolConfig memory _config
+    ) HyperdriveTarget1(_config, bytes32(0), address(0)) {}
 }

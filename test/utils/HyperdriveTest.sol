@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import { VmSafe } from "forge-std/Vm.sol";
-import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -12,7 +11,7 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { MockHyperdrive, MockHyperdriveDataProvider, MockHyperdriveExtras } from "contracts/test/MockHyperdrive.sol";
+import { MockHyperdrive, MockHyperdriveTarget0, MockHyperdriveTarget1 } from "contracts/test/MockHyperdrive.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
 import { ETH } from "test/utils/Constants.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
@@ -57,10 +56,10 @@ contract HyperdriveTest is BaseTest {
             feeCollector: feeCollector,
             fees: fees
         });
-        address dataProvider = address(new MockHyperdriveDataProvider(config));
-        address extras = address(new MockHyperdriveExtras(config));
+        address target0 = address(new MockHyperdriveTarget0(config));
+        address target1 = address(new MockHyperdriveTarget1(config));
         hyperdrive = IHyperdrive(
-            address(new MockHyperdrive(config, extras, dataProvider))
+            address(new MockHyperdrive(config, target0, target1))
         );
         vm.stopPrank();
         vm.startPrank(governance);
@@ -81,10 +80,10 @@ contract HyperdriveTest is BaseTest {
     ) internal {
         vm.stopPrank();
         vm.startPrank(deployer);
-        address dataProvider = address(new MockHyperdriveDataProvider(_config));
-        address extras = address(new MockHyperdriveExtras(_config));
+        address target0 = address(new MockHyperdriveTarget0(_config));
+        address target1 = address(new MockHyperdriveTarget1(_config));
         hyperdrive = IHyperdrive(
-            address(new MockHyperdrive(_config, extras, dataProvider))
+            address(new MockHyperdrive(_config, target0, target1))
         );
     }
 

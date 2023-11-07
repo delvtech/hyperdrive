@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
-import { HyperdriveExtras } from "../HyperdriveExtras.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
@@ -266,13 +264,13 @@ abstract contract HyperdriveFactory {
         IHyperdrive hyperdrive = IHyperdrive(
             hyperdriveDeployer.deploy(
                 _config,
-                deployExtras(
+                deployTarget0(
                     _config,
                     _extraData,
                     _linkerCodeHash,
                     _linkerFactory
                 ),
-                deployDataProvider(
+                deployTarget1(
                     _config,
                     _extraData,
                     _linkerCodeHash,
@@ -328,6 +326,8 @@ abstract contract HyperdriveFactory {
         return hyperdrive;
     }
 
+    // FIXME: Natspec
+    //
     // FIXME: Change this if it doesn't conflict with the Factory milestones.
     //
     /// @notice Deploys a Hyperdrive data provider instance with the factory's
@@ -339,13 +339,15 @@ abstract contract HyperdriveFactory {
     /// @param _linkerCodeHash The code hash from the multitoken deployer
     /// @param _linkerFactory The factory of the multitoken deployer
     /// @return The address of the new data provider contract.
-    function deployDataProvider(
+    function deployTarget0(
         IHyperdrive.PoolConfig memory _config,
         bytes32[] memory _extraData,
         bytes32 _linkerCodeHash,
         address _linkerFactory
     ) internal virtual returns (address);
 
+    // FIXME: Natspec
+    //
     // FIXME: Change this if it doesn't conflict with the Factory milestones.
     //
     /// @notice Deploys a Hyperdrive extras instance with the factory's
@@ -357,7 +359,7 @@ abstract contract HyperdriveFactory {
     /// @param _linkerCodeHash The code hash from the multitoken deployer
     /// @param _linkerFactory The factory of the multitoken deployer
     /// @return The address of the new extras contract.
-    function deployExtras(
+    function deployTarget1(
         IHyperdrive.PoolConfig memory _config,
         bytes32[] memory _extraData,
         bytes32 _linkerCodeHash,
