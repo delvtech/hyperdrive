@@ -6,84 +6,132 @@ import { IERC20 } from "./interfaces/IERC20.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { FixedPointMath, ONE } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
-import { MultiTokenStorage } from "./token/MultiTokenStorage.sol";
 
 /// @author DELV
 /// @title HyperdriveStorage
-/// @notice The storage contract of the Hyperdrive inheritance hierarchy.
+/// @notice Hyperdrive's storage contract.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
+abstract contract HyperdriveStorage is ReentrancyGuard {
     using FixedPointMath for uint256;
 
     /// Tokens ///
 
-    /// @notice The base asset.
+    /// @dev The base asset.
     IERC20 internal immutable _baseToken;
 
     /// Time ///
 
-    /// @notice The amount of seconds between share price checkpoints.
+    /// @dev The amount of seconds between share price checkpoints.
     uint256 internal immutable _checkpointDuration;
 
-    /// @notice The amount of seconds that elapse before a bond can be redeemed.
+    /// @dev The amount of seconds that elapse before a bond can be redeemed.
     uint256 internal immutable _positionDuration;
 
-    /// @notice A parameter that decreases slippage around a target rate.
+    /// @dev A parameter that decreases slippage around a target rate.
     uint256 internal immutable _timeStretch;
 
-    /// Market State ///
-
-    /// @notice The share price at the time the pool was created.
-    uint256 internal immutable _initialSharePrice;
-
-    /// @notice The minimum amount of share reserves that must be maintained at
-    ///         all times. This is used to enforce practical limits on the share
-    ///         reserves to avoid numerical issues that can occur if the share
-    ///         reserves become very small or equal to zero.
-    uint256 internal immutable _minimumShareReserves;
-
-    /// @notice The minimum amount of tokens that a position can be opened/closed with.
-    uint256 internal immutable _minimumTransactionAmount;
-
-    /// @notice The state of the market. This includes the reserves, buffers,
-    ///         and other data used to price trades and maintain solvency.
-    IHyperdrive.MarketState internal _marketState;
-
-    /// @notice The state corresponding to the withdraw pool.
-    IHyperdrive.WithdrawPool internal _withdrawPool;
+    /// Fees ///
 
     /// @dev The LP fee applied to the curve portion of a trade.
     uint256 internal immutable _curveFee;
+
     /// @dev The LP fee applied to the flat portion of a trade.
     uint256 internal immutable _flatFee;
+
     /// @dev The portion of the LP fee that goes to governance.
     uint256 internal immutable _governanceFee;
 
-    /// @notice Hyperdrive positions are bucketed into checkpoints, which
-    ///         allows us to avoid poking in any period that has LP or trading
-    ///         activity. The checkpoints contain the starting share price from
-    ///         the checkpoint as well as aggregate volume values.
+    /// Market State ///
+
+    /// @dev The share price at the time the pool was created.
+    uint256 internal immutable _initialSharePrice;
+
+    /// @dev The minimum amount of share reserves that must be maintained at all
+    ///      times. This is used to enforce practical limits on the share
+    ///      reserves to avoid numerical issues that can occur if the share
+    ///      reserves become very small or equal to zero.
+    uint256 internal immutable _minimumShareReserves;
+
+    /// @dev The minimum amount of tokens that a position can be opened or
+    ///      closed with.
+    uint256 internal immutable _minimumTransactionAmount;
+
+    /// @dev The state of the market. This includes the reserves, buffers, and
+    ///      other data used to price trades and maintain solvency.
+    IHyperdrive.MarketState internal _marketState;
+
+    /// @dev The state corresponding to the withdraw pool.
+    IHyperdrive.WithdrawPool internal _withdrawPool;
+
+    /// @dev Hyperdrive positions are bucketed into checkpoints, which allows us
+    ///      to avoid poking in any period that has LP or trading activity. The
+    ///      checkpoints contain the starting share price from the checkpoint as
+    ///      well as aggregate volume values.
     mapping(uint256 checkpointNumber => IHyperdrive.Checkpoint checkpoint)
         internal _checkpoints;
 
-    /// @notice Addresses approved in this mapping can pause all deposits into
-    ///         the contract and other non essential functionality.
-    mapping(address user => bool isPauser) internal _pausers;
+    /// Admin ///
 
-    // Governance fees that haven't been collected yet denominated in shares.
-    uint256 internal _governanceFeesAccrued;
+    /// @dev The address which collects governance fees.
+    address internal immutable _feeCollector;
 
-    // The address that can pause the contract.
+    /// @dev  The address that can pause the contract.
     address internal _governance;
 
-    /// The address which collects governance fees.
-    address internal immutable _feeCollector;
+    /// @dev Governance fees that haven't been collected yet denominated in shares.
+    uint256 internal _governanceFeesAccrued;
+
+    /// @dev Addresses approved in this mapping can pause all deposits into the
+    ///      contract and other non essential functionality.
+    mapping(address user => bool isPauser) internal _pausers;
+
+    /// MultiToken ///
+
+    // FIXME: Rename this to _linkerFactory.
+    //
+    /// @dev The forwarder factory that deploys ERC20 forwarders for this
+    ///      instance.
+    address internal immutable _factory;
+
+    /// @dev The bytecode hash of the contract which forwards purely ERC20 calls
+    ///      to this contract.
+    bytes32 internal immutable _linkerCodeHash;
+
+    /// @dev Allows loading of each balance.
+    mapping(uint256 tokenId => mapping(address user => uint256 balance))
+        internal _balanceOf;
+
+    /// @dev Allows loading of each total supply.
+    mapping(uint256 tokenId => uint256 supply) internal _totalSupply;
+
+    /// @dev Uniform approval for all tokens.
+    mapping(address from => mapping(address caller => bool isApproved))
+        internal _isApprovedForAll;
+
+    /// @dev Additional optional per token approvals.
+    ///      NOTE: This is non-standard for ERC1155, but it's necessary to
+    ///      replicate the ERC20 interface.
+    mapping(uint256 tokenId => mapping(address from => mapping(address caller => uint256 approved)))
+        internal _perTokenApprovals;
+
+    /// @dev A mapping to track the permitForAll signature nonces.
+    mapping(address user => uint256 nonce) internal _nonces;
+
+    /// Constructor ///
 
     /// @notice Instantiates Hyperdrive's storage.
     /// @param _config The configuration of the Hyperdrive pool.
-    constructor(IHyperdrive.PoolConfig memory _config) {
+    /// @param _linkerCodeHash_ The hash of the ERC20 linker contract's
+    ///        constructor code.
+    /// @param _linkerFactory_ The address of the factory which is used to
+    ///        deploy the ERC20 linker contracts.
+    constructor(
+        IHyperdrive.PoolConfig memory _config,
+        bytes32 _linkerCodeHash_,
+        address _linkerFactory_
+    ) {
         // Initialize the base token address.
         _baseToken = _config.baseToken;
 
@@ -119,6 +167,7 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
         _governance = _config.governance;
         _feeCollector = _config.feeCollector;
 
+        // Initialize the fee parameters.
         if (
             _config.fees.curve > 1e18 ||
             _config.fees.flat > 1e18 ||
@@ -129,85 +178,9 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
         _curveFee = _config.fees.curve;
         _flatFee = _config.fees.flat;
         _governanceFee = _config.fees.governance;
-    }
 
-    /// Helpers ///
-
-    /// @dev Calculates the normalized time remaining of a position.
-    /// @param _maturityTime The maturity time of the position.
-    /// @return timeRemaining The normalized time remaining (in [0, 1]).
-    function _calculateTimeRemaining(
-        uint256 _maturityTime
-    ) internal view returns (uint256 timeRemaining) {
-        uint256 latestCheckpoint = _latestCheckpoint();
-        timeRemaining = _maturityTime > latestCheckpoint
-            ? _maturityTime - latestCheckpoint
-            : 0;
-        timeRemaining = (timeRemaining).divDown(_positionDuration);
-    }
-
-    /// @dev Calculates the normalized time remaining of a position when the
-    ///      maturity time is scaled up 18 decimals.
-    /// @param _maturityTime The maturity time of the position.
-    function _calculateTimeRemainingScaled(
-        uint256 _maturityTime
-    ) internal view returns (uint256 timeRemaining) {
-        uint256 latestCheckpoint = _latestCheckpoint() * ONE;
-        timeRemaining = _maturityTime > latestCheckpoint
-            ? _maturityTime - latestCheckpoint
-            : 0;
-        timeRemaining = (timeRemaining).divDown(_positionDuration * ONE);
-    }
-
-    /// @dev Gets the most recent checkpoint time.
-    /// @return latestCheckpoint The latest checkpoint.
-    function _latestCheckpoint()
-        internal
-        view
-        returns (uint256 latestCheckpoint)
-    {
-        latestCheckpoint =
-            block.timestamp -
-            (block.timestamp % _checkpointDuration);
-    }
-
-    /// @dev Gets the effective share reserves.
-    /// @return The effective share reserves. This is the share reserves used
-    ///         by the YieldSpace pricing model.
-    function _effectiveShareReserves() internal view returns (uint256) {
-        return
-            HyperdriveMath.calculateEffectiveShareReserves(
-                _marketState.shareReserves,
-                _marketState.shareAdjustment
-            );
-    }
-
-    /// @dev Gets the present value parameters from the current state.
-    /// @param _sharePrice The current share price.
-    /// @return presentValue The present value parameters.
-    function _getPresentValueParams(
-        uint256 _sharePrice
-    )
-        internal
-        view
-        returns (HyperdriveMath.PresentValueParams memory presentValue)
-    {
-        presentValue = HyperdriveMath.PresentValueParams({
-            shareReserves: _marketState.shareReserves,
-            shareAdjustment: _marketState.shareAdjustment,
-            bondReserves: _marketState.bondReserves,
-            sharePrice: _sharePrice,
-            initialSharePrice: _initialSharePrice,
-            minimumShareReserves: _minimumShareReserves,
-            timeStretch: _timeStretch,
-            longsOutstanding: _marketState.longsOutstanding,
-            longAverageTimeRemaining: _calculateTimeRemainingScaled(
-                _marketState.longAverageMaturityTime
-            ),
-            shortsOutstanding: _marketState.shortsOutstanding,
-            shortAverageTimeRemaining: _calculateTimeRemainingScaled(
-                _marketState.shortAverageMaturityTime
-            )
-        });
+        // Initialize the MultiToken immutables.
+        _factory = _linkerFactory_;
+        _linkerCodeHash = _linkerCodeHash_;
     }
 }

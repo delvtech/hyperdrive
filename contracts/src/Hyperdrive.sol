@@ -9,13 +9,13 @@ import { HyperdriveCheckpoint } from "./HyperdriveCheckpoint.sol";
 import { HyperdriveLong } from "./HyperdriveLong.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { HyperdriveShort } from "./HyperdriveShort.sol";
+import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 
 // FIXME: This should implement an interface
 //
 // FIXME: Natspec
 abstract contract Hyperdrive is
     DataProvider,
-    HyperdriveBase,
     HyperdriveAdmin,
     HyperdriveLP,
     HyperdriveLong,
@@ -39,7 +39,7 @@ abstract contract Hyperdrive is
         bytes32 _linkerCodeHash,
         address _linkerFactory
     )
-        HyperdriveBase(_config, _linkerCodeHash, _linkerFactory)
+        HyperdriveStorage(_config, _linkerCodeHash, _linkerFactory)
         DataProvider(_dataProvider)
     {
         extras = _extras;

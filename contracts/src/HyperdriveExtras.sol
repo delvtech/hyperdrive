@@ -3,15 +3,14 @@ pragma solidity 0.8.19;
 
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { HyperdriveAdmin } from "./HyperdriveAdmin.sol";
-import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveCheckpoint } from "./HyperdriveCheckpoint.sol";
 import { HyperdriveLong } from "./HyperdriveLong.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { HyperdriveShort } from "./HyperdriveShort.sol";
+import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 
 // FIXME: Natspec
 abstract contract HyperdriveExtras is
-    HyperdriveBase,
     HyperdriveAdmin,
     HyperdriveLP,
     HyperdriveLong,
@@ -26,7 +25,7 @@ abstract contract HyperdriveExtras is
         IHyperdrive.PoolConfig memory _config,
         bytes32 _linkerCodeHash,
         address _linkerFactory
-    ) HyperdriveBase(_config, _linkerCodeHash, _linkerFactory) {}
+    ) HyperdriveStorage(_config, _linkerCodeHash, _linkerFactory) {}
 
     /// LPs ///
 

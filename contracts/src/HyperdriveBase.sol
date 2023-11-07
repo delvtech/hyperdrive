@@ -8,15 +8,15 @@ import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
-import { MultiToken } from "./token/MultiToken.sol";
 
 /// @author DELV
 /// @title HyperdriveBase
-/// @notice The base contract of the Hyperdrive inheritance hierarchy.
+/// @notice The Hyperdrive base contract that provides a set of helper methods
+///         and defines the functions that must be overridden by implementations.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
+abstract contract HyperdriveBase is HyperdriveStorage {
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;
@@ -98,20 +98,6 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         uint256 lpSharePrice
     );
 
-    // FIXME: Update this Natspec. Do we even need this constructor anymore?
-    //
-    /// @notice Instantiates Hyperdrive.
-    /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _linkerCodeHash The hash of the ERC20 linker contract's
-    ///        constructor code.
-    /// @param _linkerFactory The address of the factory which is used to deploy
-    ///        the ERC20 linker contracts.
-    constructor(
-        IHyperdrive.PoolConfig memory _config,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory
-    ) MultiToken(_linkerCodeHash, _linkerFactory) HyperdriveStorage(_config) {}
-
     /// Yield Source ///
 
     /// @dev A YieldSource dependent check that prevents ether from being
@@ -171,7 +157,87 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         uint256 _sharePrice
     ) internal virtual returns (uint256 openSharePrice);
 
+    // FIXME: Re-organize these functions.
+    //
     /// Helpers ///
+
+    /// @dev Calculates the normalized time remaining of a position.
+    /// @param _maturityTime The maturity time of the position.
+    /// @return timeRemaining The normalized time remaining (in [0, 1]).
+    function _calculateTimeRemaining(
+        uint256 _maturityTime
+    ) internal view returns (uint256 timeRemaining) {
+        uint256 latestCheckpoint = _latestCheckpoint();
+        timeRemaining = _maturityTime > latestCheckpoint
+            ? _maturityTime - latestCheckpoint
+            : 0;
+        timeRemaining = (timeRemaining).divDown(_positionDuration);
+    }
+
+    /// @dev Calculates the normalized time remaining of a position when the
+    ///      maturity time is scaled up 18 decimals.
+    /// @param _maturityTime The maturity time of the position.
+    function _calculateTimeRemainingScaled(
+        uint256 _maturityTime
+    ) internal view returns (uint256 timeRemaining) {
+        uint256 latestCheckpoint = _latestCheckpoint() * ONE;
+        timeRemaining = _maturityTime > latestCheckpoint
+            ? _maturityTime - latestCheckpoint
+            : 0;
+        timeRemaining = (timeRemaining).divDown(_positionDuration * ONE);
+    }
+
+    /// @dev Gets the most recent checkpoint time.
+    /// @return latestCheckpoint The latest checkpoint.
+    function _latestCheckpoint()
+        internal
+        view
+        returns (uint256 latestCheckpoint)
+    {
+        latestCheckpoint =
+            block.timestamp -
+            (block.timestamp % _checkpointDuration);
+    }
+
+    /// @dev Gets the effective share reserves.
+    /// @return The effective share reserves. This is the share reserves used
+    ///         by the YieldSpace pricing model.
+    function _effectiveShareReserves() internal view returns (uint256) {
+        return
+            HyperdriveMath.calculateEffectiveShareReserves(
+                _marketState.shareReserves,
+                _marketState.shareAdjustment
+            );
+    }
+
+    /// @dev Gets the present value parameters from the current state.
+    /// @param _sharePrice The current share price.
+    /// @return presentValue The present value parameters.
+    function _getPresentValueParams(
+        uint256 _sharePrice
+    )
+        internal
+        view
+        returns (HyperdriveMath.PresentValueParams memory presentValue)
+    {
+        presentValue = HyperdriveMath.PresentValueParams({
+            shareReserves: _marketState.shareReserves,
+            shareAdjustment: _marketState.shareAdjustment,
+            bondReserves: _marketState.bondReserves,
+            sharePrice: _sharePrice,
+            initialSharePrice: _initialSharePrice,
+            minimumShareReserves: _minimumShareReserves,
+            timeStretch: _timeStretch,
+            longsOutstanding: _marketState.longsOutstanding,
+            longAverageTimeRemaining: _calculateTimeRemainingScaled(
+                _marketState.longAverageMaturityTime
+            ),
+            shortsOutstanding: _marketState.shortsOutstanding,
+            shortAverageTimeRemaining: _calculateTimeRemainingScaled(
+                _marketState.shortAverageMaturityTime
+            )
+        });
+    }
 
     /// @dev Checks if any of the bonds the trader purchased on the curve
     ///      were purchased above price of 1 base per bonds.

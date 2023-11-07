@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { HyperdriveBase } from "./HyperdriveBase.sol";
+import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { IHyperdriveRead } from "./interfaces/IHyperdriveRead.sol";
 import { AssetId } from "./libraries/AssetId.sol";
@@ -25,7 +25,6 @@ import { HyperdriveShort } from "./HyperdriveShort.sol";
 // require it with a `IHyperdriveCheckpoint` interface.
 abstract contract HyperdriveDataProvider is
     IHyperdriveRead,
-    HyperdriveBase,
     HyperdriveLong,
     HyperdriveShort,
     HyperdriveCheckpoint
@@ -43,7 +42,7 @@ abstract contract HyperdriveDataProvider is
         IHyperdrive.PoolConfig memory _config,
         bytes32 _linkerCodeHash,
         address _linkerFactory
-    ) HyperdriveBase(_config, _linkerCodeHash, _linkerFactory) {}
+    ) HyperdriveStorage(_config, _linkerCodeHash, _linkerFactory) {}
 
     /// Getters ///
 

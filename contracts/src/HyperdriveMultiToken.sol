@@ -1,32 +1,31 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import { MultiTokenStorage } from "./MultiTokenStorage.sol";
+import { HyperdriveBase } from "./HyperdriveBase.sol";
+import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 
-// FIXME: It probably makes sense to move MultiTokenStorage into
-//        HyperdriveStorage and dissolve this contract into `HyperdriveToken`
-//        or something like that.
+// FIXME: Update this Natspec. It's time now that we've made it a full facet.
 //
 /// @author DELV
-/// @title MultiToken
-/// @notice A lite version of a semi fungible, which removes some methods and so
-///         is not technically a 1155 compliant multi-token semi fungible, but almost
-///         follows the standard.
-/// @dev We remove on transfer callbacks and safe transfer because of the
-///      risk of external calls to untrusted code.
+/// @title HyperdriveMultiToken
+/// @notice Implements the MultiToken accounting that Hyperdrive uses to track
+///         user's positions. MultiToken maintains a set of balances and
+///         approvals for a list of sub-tokens specified by an asset ID. This
+///         token is mostly ERC1155 compliant; however, we remove on transfer
+///         callbacks and safe transfer because of the risk of external calls to
+///         untrusted code.
+/// @dev Our architecture maintains ERC20 compatibility by allowing users to
+///      access their balances and approvals through ERC20 forwarding contracts
+///      deployed by the registered forwarder factory. To ensure that only the
+///      ERC20 forwarders can call the bridge endpoints, we verify that the
+///      create2 pre-image of the caller address is the ERC20 forwarder bytecode
+///      and the token ID.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract MultiToken is MultiTokenStorage {
-    // FIXME: We need to calculate the DOMAIN_SEPARATOR in the transaction to
-    // ensure that we're using the right contract address.
-    //
-    // EIP712
-    // DOMAIN_SEPARATOR changes based on token name
-    bytes32 public immutable DOMAIN_SEPARATOR; // solhint-disable-line var-name-mixedcase
-    // PERMIT_TYPEHASH changes based on function inputs
-    bytes32 public constant PERMIT_TYPEHASH =
+abstract contract HyperdriveMultiToken is HyperdriveBase {
+    // FIXME: Revisit this and the DOMAIN_SEPARATOR.
+    bytes32 internal constant PERMIT_TYPEHASH =
         keccak256(
             "PermitForAll(address owner,address spender,bool _approved,uint256 nonce,uint256 deadline)"
         );
@@ -50,36 +49,6 @@ abstract contract MultiToken is MultiTokenStorage {
         address indexed operator,
         bool approved
     );
-
-    /// @notice Instantiates the MultiToken.
-    /// @param _linkerCodeHash The hash of the erc20 linker contract deploy code.
-    /// @param _factory The factory which is used to deploy the linking contracts.
-    constructor(
-        bytes32 _linkerCodeHash,
-        address _factory
-    ) MultiTokenStorage(_linkerCodeHash, _factory) {
-        // FIXME: Update this.
-        //
-        // Computes the EIP 712 domain separator which prevents user signed
-        // messages for this contract to be replayed in other contracts.
-        // https://eips.ethereum.org/EIPS/eip-712
-        DOMAIN_SEPARATOR = keccak256(
-            abi.encode(
-                keccak256(
-                    "EIP712Domain(string version,uint256 chainId,address verifyingContract)"
-                ),
-                keccak256(bytes("1")),
-                block.chainid,
-                address(this)
-            )
-        );
-    }
-
-    //  Our architecture maintains ERC20 compatibility by allowing the option
-    //  of the factory deploying ERC20 compatibility bridges which forward ERC20 calls
-    //  to this contract. To maintain trustless deployment they are create2 deployed
-    //  with tokenID as salt by the factory, and can be verified by the pre image of
-    //  the address.
 
     /// @notice This modifier checks the caller is the create2 validated ERC20 bridge
     /// @param tokenID The internal token identifier
@@ -155,7 +124,18 @@ abstract contract MultiToken is MultiTokenStorage {
         bytes32 structHash = keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                DOMAIN_SEPARATOR,
+                // FIXME: Two things. We need to make sure this is publicly
+                // available and we shouldn't inline it.
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "EIP712Domain(string version,uint256 chainId,address verifyingContract)"
+                        ),
+                        keccak256(bytes("1")),
+                        block.chainid,
+                        address(this)
+                    )
+                ),
                 keccak256(
                     abi.encode(
                         PERMIT_TYPEHASH,
