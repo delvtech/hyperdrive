@@ -174,9 +174,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 maturityTime
             );
 
-            // FIXME: This code is duplicated in HyperdriveLong. This is a
-            // candidate for reducing the codesize.
-            //
             // Update the checkpoint and global longExposure
             uint256 checkpointTime = maturityTime - _positionDuration;
             int128 checkpointExposureBefore = int128(
@@ -319,25 +316,23 @@ abstract contract HyperdriveShort is HyperdriveLP {
         int256 _shareAdjustmentDelta,
         uint256 _maturityTime
     ) internal {
-        {
-            // Update the short average maturity time.
-            uint128 shortsOutstanding_ = _marketState.shortsOutstanding;
-            _marketState.shortAverageMaturityTime = uint256(
-                _marketState.shortAverageMaturityTime
+        // Update the short average maturity time.
+        uint128 shortsOutstanding_ = _marketState.shortsOutstanding;
+        _marketState.shortAverageMaturityTime = uint256(
+            _marketState.shortAverageMaturityTime
+        )
+            .updateWeightedAverage(
+                shortsOutstanding_,
+                _maturityTime * 1e18, // scale up to fixed point scale
+                _bondAmount,
+                false
             )
-                .updateWeightedAverage(
-                    shortsOutstanding_,
-                    _maturityTime * 1e18, // scale up to fixed point scale
-                    _bondAmount,
-                    false
-                )
-                .toUint128();
+            .toUint128();
 
-            // Decrease the amount of shorts outstanding.
-            _marketState.shortsOutstanding =
-                shortsOutstanding_ -
-                _bondAmount.toUint128();
-        }
+        // Decrease the amount of shorts outstanding.
+        _marketState.shortsOutstanding =
+            shortsOutstanding_ -
+            _bondAmount.toUint128();
 
         // Update the reserves and the share adjustment.
         _marketState.shareReserves += _shareReservesDelta.toUint128();

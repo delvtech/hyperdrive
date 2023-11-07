@@ -169,8 +169,6 @@ abstract contract HyperdriveCheckpoint is
             _distributeExcessIdle(_sharePrice);
         }
 
-        // FIXME: We can DRY this up to reduce codesize.
-        //
         // Emit an event about the checkpoint creation that includes the LP
         // share price.
         uint256 presentValue = _sharePrice > 0

@@ -150,8 +150,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // supply of active LP shares, `l_w` is the total supply of withdrawal
         // shares, and `l_r` is the amount of withdrawal shares ready for
         // withdrawal.
-        //
-        // FIXME: Can we use a `_calculateLPTotalSupply` function?
         uint256 withdrawalSharesOutstanding = _totalSupply[
             AssetId._WITHDRAWAL_SHARE_ASSET_ID
         ] - _withdrawPool.readyToWithdraw;
