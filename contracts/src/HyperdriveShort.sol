@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
-import { FixedPointMath } from "./libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 
@@ -404,7 +404,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
 
         ) = _calculateFeesGivenBonds(
             _bondAmount,
-            FixedPointMath.ONE_18, // shorts are opened at the beginning of the term
+            ONE, // shorts are opened at the beginning of the term
             spotPrice,
             _sharePrice
         );

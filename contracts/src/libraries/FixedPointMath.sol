@@ -14,7 +14,6 @@ uint256 constant ONE = 1e18;
 library FixedPointMath {
     using FixedPointMath for uint256;
 
-    uint256 public constant ONE_18 = 1e18;
     uint256 internal constant MAX_UINT256 = 2 ** 256 - 1;
 
     /// @dev Credit to Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
@@ -109,7 +108,7 @@ library FixedPointMath {
     function pow(uint256 x, uint256 y) internal pure returns (uint256) {
         // If the exponent is 0, return 1.
         if (y == 0) {
-            return ONE_18;
+            return ONE;
         }
 
         // If the base is 0, return 0.
@@ -129,7 +128,7 @@ library FixedPointMath {
         assembly ("memory-safe") {
             ylnx := mul(y_int256, lnx)
         }
-        ylnx /= int256(ONE_18);
+        ylnx /= int256(ONE);
 
         // Calculate exp(y * ln(x)) to get x^y
         return uint256(exp(ylnx));

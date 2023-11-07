@@ -160,7 +160,7 @@ library HyperdriveUtils {
         uint256 timeStretch = uint256(5.24592e18).divDown(
             uint256(0.04665e18).mulDown(apr * 100)
         );
-        return FixedPointMath.ONE_18.divDown(timeStretch);
+        return ONE.divDown(timeStretch);
     }
 
     /// Trade Utils ///

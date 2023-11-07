@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import { Test } from "forge-std/Test.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { MockYieldSpaceMath } from "contracts/test/MockYieldSpaceMath.sol";
@@ -16,15 +16,13 @@ contract YieldSpaceMathTest is Test {
     function test__calculateOutGivenIn() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
-        uint256 timeStretch = FixedPointMath.ONE_18.divDown(
-            22.186877016851916266e18
-        );
+        uint256 timeStretch = ONE.divDown(22.186877016851916266e18);
         // test small amount of shares in
         uint256 result1 = yieldSpaceMath.calculateBondsOutGivenSharesInDown(
             100000e18, // shareReserves
             100000e18 + 200000e18, // bondReserves + s
             100e18, // amountIn
-            1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
+            1e18 - ONE.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
             1e18, // c
             1e18 // mu
         );
@@ -36,7 +34,7 @@ contract YieldSpaceMathTest is Test {
             100000e18, // shareReserves
             100000e18 + 200000e18, // bondReserves + s
             80000e18, // amountIn
-            1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
+            1e18 - ONE.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
             1e18, // c
             1e18 // mu
         );
@@ -48,7 +46,7 @@ contract YieldSpaceMathTest is Test {
             100000e18, // shareReserves
             100000e18 + 200000e18, // bondReserves + s
             100e18, // amountIn
-            1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
+            1e18 - ONE.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
             1e18, // c
             1e18 // mu
         );
@@ -60,7 +58,7 @@ contract YieldSpaceMathTest is Test {
             100000e18, // shareReserves
             100000e18 + 200000e18, // bondReserves + s
             80000e18, // amountIn
-            1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
+            1e18 - ONE.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
             1e18, // c
             1e18 // mu
         );
@@ -71,16 +69,14 @@ contract YieldSpaceMathTest is Test {
     // calculateInGivenOut false
     function test__calculateSharesInGivenBondsOut() external {
         MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
-        uint256 timeStretch = FixedPointMath.ONE_18.divDown(
-            22.186877016851916266e18
-        );
+        uint256 timeStretch = ONE.divDown(22.186877016851916266e18);
 
         // test small amount bond in
         uint256 result3 = yieldSpaceMath.calculateSharesInGivenBondsOutUp(
             100000e18, // shareReserves
             100000e18 + 200000e18, // bondReserves + s
             100e18, // amountIn
-            1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
+            1e18 - ONE.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
             1e18, // c
             1e18 // mu
         );
@@ -92,7 +88,7 @@ contract YieldSpaceMathTest is Test {
             100000e18, // shareReserves
             100000e18 + 200000e18, // bondReserves + s
             80000e18, // amountIn
-            1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
+            1e18 - ONE.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
             1e18, // c
             1e18 // mu
         );
@@ -167,7 +163,7 @@ contract YieldSpaceMathTest is Test {
                         shareReserves,
                         bondReserves,
                         tradeSize,
-                        1e18 - FixedPointMath.ONE_18.mulDown(timeStretch),
+                        1e18 - ONE.mulDown(timeStretch),
                         sharePrice,
                         initialSharePrice
                     );
@@ -210,7 +206,7 @@ contract YieldSpaceMathTest is Test {
         uint256 maxDy = yieldSpaceMath.calculateMaxBuy(
             shareReserves,
             bondReserves,
-            1e18 - FixedPointMath.ONE_18.mulDown(timeStretch),
+            1e18 - ONE.mulDown(timeStretch),
             sharePrice,
             initialSharePrice
         );
@@ -223,14 +219,14 @@ contract YieldSpaceMathTest is Test {
             yieldSpaceMath.kDown(
                 shareReserves,
                 bondReserves,
-                FixedPointMath.ONE_18 - timeStretch,
+                ONE - timeStretch,
                 sharePrice,
                 initialSharePrice
             ),
             yieldSpaceMath.kDown(
                 shareReserves + maxDz,
                 bondReserves - maxDy,
-                FixedPointMath.ONE_18 - timeStretch,
+                ONE - timeStretch,
                 sharePrice,
                 initialSharePrice
             ),

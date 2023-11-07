@@ -8,7 +8,7 @@ import { IERC20 } from "../interfaces/IERC20.sol";
 import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IERC4626Hyperdrive } from "../interfaces/IERC4626Hyperdrive.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title ERC4626Base
@@ -116,7 +116,7 @@ abstract contract ERC4626Base is HyperdriveBase {
     /// @return The current share price.
     /// @dev must remain consistent with the impl inside of the DataProvider
     function _pricePerShare() internal view override returns (uint256) {
-        return _pool.convertToAssets(FixedPointMath.ONE_18);
+        return _pool.convertToAssets(ONE);
     }
 
     /// @dev Ensure that ether wasn't sent because ERC4626 vaults don't support

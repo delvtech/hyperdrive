@@ -5,7 +5,7 @@ import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 import { IERC20 } from "./interfaces/IERC20.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
-import { FixedPointMath } from "./libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 import { MultiToken } from "./token/MultiToken.sol";
@@ -347,8 +347,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         //                 = r * phi_curve * base/shares * shares
         //                 = bonds/base * phi_curve * base
         //                 = bonds * phi_curve
-        totalCurveFee = (FixedPointMath.ONE_18.divDown(_spotPrice) -
-            FixedPointMath.ONE_18)
+        totalCurveFee = (ONE.divDown(_spotPrice) - ONE)
             .mulDown(_curveFee)
             .mulDown(_sharePrice)
             .mulDown(_amount);
@@ -400,7 +399,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         //                 = (base * phi_curve * t) * (shares/base)
         //                 = phi_curve * t * shares
         totalCurveFee = _curveFee
-            .mulDown(FixedPointMath.ONE_18 - _spotPrice)
+            .mulDown(ONE - _spotPrice)
             .mulDown(_amount)
             .mulDivDown(_normalizedTimeRemaining, _sharePrice);
 
@@ -419,7 +418,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         //          = (base * (1 - t) * phi_flat) * (shares/base)
         //          = shares * (1 - t) * phi_flat
         uint256 flat = _amount.mulDivDown(
-            FixedPointMath.ONE_18 - _normalizedTimeRemaining,
+            ONE - _normalizedTimeRemaining,
             _sharePrice
         );
         totalFlatFee = flat.mulDown(_flatFee);

@@ -9,7 +9,7 @@ import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { MockERC4626Hyperdrive } from "contracts/test/MockERC4626Hyperdrive.sol";
@@ -61,7 +61,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         // Config changes required to support ERC4626 with the correct initial Share Price
         IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
         config.baseToken = underlyingToken;
-        config.initialSharePrice = token.convertToAssets(FixedPointMath.ONE_18);
+        config.initialSharePrice = token.convertToAssets(ONE);
         uint256 contribution = 7_500e18;
         vm.stopPrank();
         vm.startPrank(alice);
@@ -100,7 +100,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         // Required to support ERC4626, since the test config initialSharePrice is wrong
         config.baseToken = underlyingToken;
         // Designed to ensure compatibility ../../contracts/src/instances/ERC4626Hyperdrive.sol#L122C1-L122C1
-        config.initialSharePrice = token.convertToAssets(FixedPointMath.ONE_18);
+        config.initialSharePrice = token.convertToAssets(ONE);
         config.minimumTransactionAmount = hyperdrive
             .getPoolConfig()
             .minimumTransactionAmount;

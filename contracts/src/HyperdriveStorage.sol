@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import { ReentrancyGuard } from "solmate/utils/ReentrancyGuard.sol";
 import { IERC20 } from "./interfaces/IERC20.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
-import { FixedPointMath } from "./libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { MultiTokenStorage } from "./token/MultiTokenStorage.sol";
 
@@ -152,13 +152,11 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
     function _calculateTimeRemainingScaled(
         uint256 _maturityTime
     ) internal view returns (uint256 timeRemaining) {
-        uint256 latestCheckpoint = _latestCheckpoint() * FixedPointMath.ONE_18;
+        uint256 latestCheckpoint = _latestCheckpoint() * ONE;
         timeRemaining = _maturityTime > latestCheckpoint
             ? _maturityTime - latestCheckpoint
             : 0;
-        timeRemaining = (timeRemaining).divDown(
-            _positionDuration * FixedPointMath.ONE_18
-        );
+        timeRemaining = (timeRemaining).divDown(_positionDuration * ONE);
     }
 
     /// @dev Gets the most recent checkpoint time.

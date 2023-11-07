@@ -10,7 +10,7 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { MockERC4626Hyperdrive } from "contracts/test/MockERC4626Hyperdrive.sol";
@@ -77,7 +77,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         // Config changes required to support ERC4626 with the correct initial share price.
         IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
         config.baseToken = underlyingToken;
-        config.initialSharePrice = token.convertToAssets(FixedPointMath.ONE_18);
+        config.initialSharePrice = token.convertToAssets(ONE);
         config.minimumTransactionAmount = 1e6;
         config.minimumShareReserves = 1e6;
         uint256 contribution = 7_500e6;

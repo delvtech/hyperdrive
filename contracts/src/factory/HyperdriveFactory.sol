@@ -5,7 +5,7 @@ import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
 import { HyperdriveExtras } from "../HyperdriveExtras.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title HyperdriveFactory
@@ -117,11 +117,7 @@ abstract contract HyperdriveFactory {
         maxCurveFee = _factoryConfig.maxFees.curve;
         maxFlatFee = _factoryConfig.maxFees.flat;
         maxGovernanceFee = _factoryConfig.maxFees.governance;
-        if (
-            maxCurveFee > FixedPointMath.ONE_18 ||
-            maxFlatFee > FixedPointMath.ONE_18 ||
-            maxGovernanceFee > FixedPointMath.ONE_18
-        ) {
+        if (maxCurveFee > ONE || maxFlatFee > ONE || maxGovernanceFee > ONE) {
             revert IHyperdrive.MaxFeeTooHigh();
         }
         if (

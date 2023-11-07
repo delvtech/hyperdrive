@@ -7,7 +7,7 @@ import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
@@ -26,8 +26,8 @@ contract HyperdriveTest is BaseTest {
     ERC20Mintable baseToken;
     IHyperdrive hyperdrive;
 
-    uint256 internal constant INITIAL_SHARE_PRICE = FixedPointMath.ONE_18;
-    uint256 internal constant MINIMUM_SHARE_RESERVES = FixedPointMath.ONE_18;
+    uint256 internal constant INITIAL_SHARE_PRICE = ONE;
+    uint256 internal constant MINIMUM_SHARE_RESERVES = ONE;
     uint256 internal constant MINIMUM_TRANSACTION_AMOUNT = 0.001e18;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
     uint256 internal constant POSITION_DURATION = 365 days;
@@ -144,7 +144,7 @@ contract HyperdriveTest is BaseTest {
         return
             IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(baseToken)),
-                initialSharePrice: FixedPointMath.ONE_18,
+                initialSharePrice: ONE,
                 minimumShareReserves: MINIMUM_SHARE_RESERVES,
                 minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
                 positionDuration: POSITION_DURATION,
