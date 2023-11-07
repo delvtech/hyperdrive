@@ -135,7 +135,9 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
             _positionDuration,
             _timeStretch
         );
-        if (apr < _minApr || apr > _maxApr) revert IHyperdrive.InvalidApr();
+        if (apr < _minApr || apr > _maxApr) {
+            revert IHyperdrive.InvalidApr();
+        }
 
         // Deposit for the user, this call also transfers from them
         (uint256 vaultShares, uint256 sharePrice) = _deposit(
@@ -185,6 +187,11 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
                 lpTotalSupply,
                 startingPresentValue
             );
+
+            // Ensure that enough lp shares are minted so that they can be redeemed.
+            if (lpShares < _minimumTransactionAmount) {
+                revert IHyperdrive.MinimumTransactionAmount();
+            }
         }
 
         // Mint LP shares to the supplier.
