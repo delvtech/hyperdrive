@@ -130,8 +130,9 @@ interface IHyperdrive is
         ///      as well as the share price at closing of matured longs and
         ///      shorts.
         uint128 sharePrice;
-        /// @dev The amount lp exposure on longs.
-        int128 longExposure;
+        /// @dev If exposure is positive, then we have net long exposure, otherwise
+        ///      we have net short exposure in the checkpoint.
+        int128 exposure;
     }
 
     struct WithdrawPool {

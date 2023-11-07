@@ -678,7 +678,7 @@ contract LpWithdrawalTest is HyperdriveTest {
     //
     // This test ensures that two LPs (Alice and Celine) will receive a fair
     // share of the withdrawal pool's profits if Alice has entirely long
-    // longExposure, Celine has entirely short exposure, Alice redeems immediately
+    // exposure, Celine has entirely short exposure, Alice redeems immediately
     // after the long is closed, and Celine redeems after the short is redeemed.
     function _test_lp_withdrawal_long_short_redemption(
         uint256 longBasePaid,
@@ -920,7 +920,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
     // This test is designed to find cases where the longs are insolvent after the LP removes funds
     // and the short is closed. This will only pass if the long exposure is calculated to account for
-    // where the cases where the shorts deposit is larger than the long's fixed rate, but the short is
+    // the cases where the shorts deposit is larger than the long's fixed rate, but the short is
     // shorting less bonds than the long is longing.
     function _test_single_lp_withdrawal_long_short_redemption(
         uint256 longBasePaid,

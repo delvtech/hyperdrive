@@ -319,7 +319,7 @@ impl State {
     /// amount $x$.
     ///
     /// Since longs can net out with shorts in this checkpoint, we decrease
-    /// the global exposure variable by any negative long exposure we have
+    /// the global exposure variable by any negative exposure we have
     /// in the checkpoint. The pool's solvency is calculated as:
     ///
     /// $$
@@ -337,7 +337,7 @@ impl State {
     ///
     /// ```solidity
     /// shareReservesDelta = _shareAmount - governanceCurveFee.divDown(_sharePrice);
-    /// uint128 longExposureDelta = (2 *
+    /// uint128 exposureDelta = (2 *
     ///     _bondProceeds -
     ///     _shareReservesDelta.mulDown(_sharePrice)).toUint128();
     /// ```

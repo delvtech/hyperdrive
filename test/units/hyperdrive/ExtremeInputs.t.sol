@@ -208,7 +208,7 @@ contract ExtremeInputs is HyperdriveTest {
                 curveFee: poolConfig.fees.curve,
                 governanceFee: poolConfig.fees.governance
             }),
-            checkpoint.longExposure,
+            checkpoint.exposure,
             7
         );
         baseToken.mint(shortAmount);

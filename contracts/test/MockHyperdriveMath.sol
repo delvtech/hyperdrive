@@ -165,12 +165,12 @@ contract MockHyperdriveMath {
 
     function calculateMaxLong(
         HyperdriveUtils.MaxTradeParams memory _params,
-        int256 _checkpointLongExposure,
+        int256 _checkpointExposure,
         uint256 _maxIterations
     ) external pure returns (uint256, uint256) {
         (uint256 result1, uint256 result2) = HyperdriveUtils.calculateMaxLong(
             _params,
-            _checkpointLongExposure,
+            _checkpointExposure,
             _maxIterations
         );
         return (result1, result2);
