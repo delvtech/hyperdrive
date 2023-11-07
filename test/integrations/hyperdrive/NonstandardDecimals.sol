@@ -10,8 +10,6 @@ import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-import "forge-std/console2.sol";
-
 contract NonstandardDecimalsTest is HyperdriveTest {
     using FixedPointMath for int256;
     using FixedPointMath for uint256;
