@@ -384,20 +384,16 @@ abstract contract HyperdriveShort is HyperdriveLP {
             revert IHyperdrive.NegativeInterest();
         }
 
-        // Record an oracle update with the pre-trade spot price if enough time
-        // has passed since the last oracle update.
+        // Calculate the fees charged to the user (totalCurveFee) and the portion
+        // of those fees that are paid to governance (totalGovernanceFee).
+        uint256 curveFee;
+        uint256 governanceCurveFee;
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
             _effectiveShareReserves(),
             _marketState.bondReserves,
             _initialSharePrice,
             _timeStretch
         );
-        recordPrice(spotPrice);
-
-        // Calculate the fees charged to the user (totalCurveFee) and the portion
-        // of those fees that are paid to governance (totalGovernanceFee).
-        uint256 curveFee;
-        uint256 governanceCurveFee;
         (
             curveFee, // flatFee
             ,
@@ -521,9 +517,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
             ) {
                 revert IHyperdrive.NegativeInterest();
             }
-
-            // Record an oracle update if enough time has elapsed.
-            recordPrice(spotPrice);
 
             // Calculate the fees charged to the user (totalCurveFee and
             // totalFlatFee) and the portion of those fees that are paid to

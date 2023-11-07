@@ -235,9 +235,7 @@ contract DevnetMigration is Script {
                     curve: config.factoryCurveFee,
                     flat: config.factoryFlatFee,
                     governance: config.factoryGovernanceFee
-                }),
-                oracleSize: config.hyperdriveOracleSize,
-                updateGap: config.hyperdriveUpdateGap
+                })
             });
             hyperdrive = factory.deployAndInitialize(
                 poolConfig,

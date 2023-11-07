@@ -110,15 +110,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         IHyperdrive.PoolConfig memory _config,
         bytes32 _linkerCodeHash,
         address _linkerFactory
-    ) MultiToken(_linkerCodeHash, _linkerFactory) HyperdriveStorage(_config) {
-        // Initialize the oracle.
-        for (uint256 i = 0; i < _config.oracleSize; ) {
-            _buffer.push(OracleData(uint32(block.timestamp), 0));
-            unchecked {
-                ++i;
-            }
-        }
-    }
+    ) MultiToken(_linkerCodeHash, _linkerFactory) HyperdriveStorage(_config) {}
 
     /// Yield Source ///
 

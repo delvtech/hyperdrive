@@ -234,23 +234,6 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
         }
     }
 
-    function getOracleState() external view returns (uint256, uint256) {
-        return (uint256(_oracle.head), uint256(_oracle.lastTimestamp));
-    }
-
-    function loadOracle(
-        uint256 index
-    ) external view returns (uint256, uint256) {
-        return (
-            uint256(_buffer[index].data),
-            uint256(_buffer[index].timestamp)
-        );
-    }
-
-    function recordOracle(uint256 data) external {
-        recordPrice(data);
-    }
-
     function calculateFeesGivenShares(
         uint256 _amountIn,
         uint256 _spotPrice,

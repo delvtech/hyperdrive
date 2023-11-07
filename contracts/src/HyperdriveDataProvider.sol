@@ -83,9 +83,7 @@ abstract contract HyperdriveDataProvider is
                     timeStretch: _timeStretch,
                     governance: _governance,
                     feeCollector: _feeCollector,
-                    fees: IHyperdrive.Fees(_curveFee, _flatFee, _governanceFee),
-                    updateGap: _updateGap,
-                    oracleSize: _buffer.length
+                    fees: IHyperdrive.Fees(_curveFee, _flatFee, _governanceFee)
                 })
             )
         );
@@ -178,48 +176,6 @@ abstract contract HyperdriveDataProvider is
         }
 
         _revert(abi.encode(loaded));
-    }
-
-    // FIXME: This should be removed.
-    //
-    /// @notice Returns the average price between the last recorded timestamp looking a user determined
-    ///         time into the past
-    /// @dev Any integrations should assert the returned value is not equal to the QueryOutOfRange() selector
-    /// @param period The gap in our time sample.
-    /// @return The average price in that time
-    function query(uint256 period) external view returns (uint256) {
-        // Load the storage data
-        uint256 lastTimestamp = uint256(_oracle.lastTimestamp);
-        uint256 head = uint256(_oracle.head);
-
-        OracleData memory currentData = _buffer[head];
-        uint256 targetTime = uint256(lastTimestamp) - period;
-
-        // We search for the greatest timestamp before the last, note this is not
-        // an efficient search as we expect the buffer to be small.
-        uint256 currentIndex = head == 0 ? _buffer.length - 1 : head - 1;
-        OracleData memory oldData = OracleData(0, 0);
-        while (currentIndex != head) {
-            // If the timestamp of the current index has older data than the target
-            // this is the newest data which is older than the target so we break
-            OracleData storage currentDataCache = _buffer[currentIndex];
-            if (uint256(currentDataCache.timestamp) <= targetTime) {
-                oldData = currentDataCache;
-                break;
-            }
-            currentIndex = currentIndex == 0
-                ? _buffer.length - 1
-                : currentIndex - 1;
-        }
-
-        if (oldData.timestamp == 0) revert IHyperdrive.QueryOutOfRange();
-
-        // To get twap in period we take the increase in the sum then divide by
-        // the amount of time passed
-        uint256 deltaSum = uint256(currentData.data) - uint256(oldData.data);
-        uint256 deltaTime = uint256(currentData.timestamp) -
-            uint256(oldData.timestamp);
-        _revert(abi.encode(deltaSum / deltaTime));
     }
 
     /// Token ///

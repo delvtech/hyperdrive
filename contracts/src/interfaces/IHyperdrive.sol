@@ -152,13 +152,6 @@ interface IHyperdrive is
         uint256 governance;
     }
 
-    struct OracleState {
-        /// @notice The pointer to the most recent buffer entry
-        uint128 head;
-        /// @notice The last timestamp we wrote to the buffer
-        uint128 lastTimestamp;
-    }
-
     struct PoolConfig {
         /// @dev The address of the base token.
         IERC20 baseToken;
@@ -180,10 +173,6 @@ interface IHyperdrive is
         address feeCollector;
         /// @dev The fees applied to trades.
         IHyperdrive.Fees fees;
-        /// @dev The amount of TWAP entries to store.
-        uint256 oracleSize;
-        /// @dev The amount of time between TWAP updates.
-        uint256 updateGap;
     }
 
     struct PoolInfo {

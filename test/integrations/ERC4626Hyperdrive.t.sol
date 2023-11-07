@@ -87,9 +87,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             ),
             governance: alice,
             feeCollector: bob,
-            fees: IHyperdrive.Fees(0, 0, 0),
-            oracleSize: 2,
-            updateGap: 0
+            fees: IHyperdrive.Fees(0, 0, 0)
         });
         address dataProvider = address(
             new ERC4626DataProvider(config, bytes32(0), address(0), pool)
@@ -209,9 +207,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
             governance: alice,
             feeCollector: bob,
-            fees: IHyperdrive.Fees(0, 0, 0),
-            oracleSize: 2,
-            updateGap: 0
+            fees: IHyperdrive.Fees(0, 0, 0)
         });
         dai.approve(address(factory), type(uint256).max);
         hyperdrive = factory.deployAndInitialize(
@@ -259,9 +255,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
             governance: alice,
             feeCollector: bob,
-            fees: IHyperdrive.Fees(0, 0, 0),
-            oracleSize: 2,
-            updateGap: 0
+            fees: IHyperdrive.Fees(0, 0, 0)
         });
         dai.approve(address(factory), type(uint256).max);
         hyperdrive = factory.deployAndInitialize(

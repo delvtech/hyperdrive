@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import { HyperdriveBase } from "./HyperdriveBase.sol";
-import { HyperdriveTWAP } from "./HyperdriveTWAP.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
@@ -15,7 +14,7 @@ import { SafeCast } from "./libraries/SafeCast.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveLP is HyperdriveTWAP {
+abstract contract HyperdriveLP is HyperdriveBase {
     using FixedPointMath for uint256;
     using SafeCast for int256;
     using SafeCast for uint256;

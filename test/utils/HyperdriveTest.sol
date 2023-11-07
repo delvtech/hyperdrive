@@ -31,8 +31,6 @@ contract HyperdriveTest is BaseTest {
     uint256 internal constant MINIMUM_TRANSACTION_AMOUNT = 0.001e18;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
     uint256 internal constant POSITION_DURATION = 365 days;
-    uint256 internal constant ORACLE_SIZE = 5;
-    uint256 internal constant UPDATE_GAP = 1000;
 
     function setUp() public virtual override {
         super.setUp();
@@ -57,9 +55,7 @@ contract HyperdriveTest is BaseTest {
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
             governance: governance,
             feeCollector: feeCollector,
-            fees: fees,
-            oracleSize: ORACLE_SIZE,
-            updateGap: UPDATE_GAP
+            fees: fees
         });
         address dataProvider = address(new MockHyperdriveDataProvider(config));
         address extras = address(new MockHyperdriveExtras(config));
@@ -132,9 +128,7 @@ contract HyperdriveTest is BaseTest {
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
             governance: governance,
             feeCollector: feeCollector,
-            fees: fees,
-            oracleSize: ORACLE_SIZE,
-            updateGap: UPDATE_GAP
+            fees: fees
         });
         deploy(deployer, config);
     }
@@ -158,9 +152,7 @@ contract HyperdriveTest is BaseTest {
                 timeStretch: HyperdriveUtils.calculateTimeStretch(fixedRate),
                 governance: governance,
                 feeCollector: feeCollector,
-                fees: fees,
-                oracleSize: ORACLE_SIZE,
-                updateGap: UPDATE_GAP
+                fees: fees
             });
     }
 
