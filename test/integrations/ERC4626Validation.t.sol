@@ -8,6 +8,8 @@ import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { ERC4626HyperdriveDeployer } from "contracts/src/instances/ERC4626HyperdriveDeployer.sol";
+import { ERC4626Target0Deployer } from "contracts/src/instances/ERC4626Target0Deployer.sol";
+import { ERC4626Target1Deployer } from "contracts/src/instances/ERC4626Target1Deployer.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
@@ -34,26 +36,25 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         vm.startPrank(deployer);
 
         // Initialize deployer contracts and forwarder
-        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
-                token
-            );
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
 
         // Hyperdrive factory to produce ERC4626 instances for stethERC4626
         factory = new ERC4626HyperdriveFactory(
-            HyperdriveFactory.FactoryConfig(
-                alice,
-                bob,
-                bob,
-                IHyperdrive.Fees(0, 0, 0),
-                IHyperdrive.Fees(1e18, 1e18, 1e18),
-                defaults
-            ),
-            simpleDeployer,
-            address(forwarderFactory),
-            forwarderFactory.ERC20LINK_HASH(),
+            HyperdriveFactory.FactoryConfig({
+                governance: alice,
+                hyperdriveGovernance: bob,
+                feeCollector: bob,
+                defaultPausers: defaults,
+                fees: IHyperdrive.Fees(0, 0, 0),
+                maxFees: IHyperdrive.Fees(1e18, 1e18, 1e18),
+                hyperdriveDeployer: new ERC4626HyperdriveDeployer(token),
+                target0Deployer: new ERC4626Target0Deployer(token),
+                target1Deployer: new ERC4626Target1Deployer(token),
+                linkerFactory: address(forwarderFactory),
+                linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
+            }),
             token,
             new address[](0)
         );
@@ -72,10 +73,10 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         // Deploy and set hyperdrive instance
         hyperdrive = factory.deployAndInitialize(
             config,
-            new bytes32[](0),
             contribution,
             FIXED_RATE,
-            new bytes(0)
+            new bytes(0),
+            new bytes32[](0)
         );
 
         // Setup maximum approvals so transfers don't require further approval
@@ -113,10 +114,10 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         // Deploy a new hyperdrive instance
         hyperdrive = factory.deployAndInitialize(
             config,
-            new bytes32[](0),
             contribution,
             FIXED_RATE,
-            new bytes(0)
+            new bytes(0),
+            new bytes32[](0)
         );
 
         // Ensure minimumShareReserves were added, and lpTotalSupply increased

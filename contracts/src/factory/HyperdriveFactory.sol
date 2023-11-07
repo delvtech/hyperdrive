@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
+import { IHyperdriveTargetDeployer } from "../interfaces/IHyperdriveTargetDeployer.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
@@ -12,7 +13,7 @@ import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveFactory {
+contract HyperdriveFactory {
     using FixedPointMath for uint256;
 
     /// @notice Emitted when governance is transferred.
@@ -53,8 +54,17 @@ abstract contract HyperdriveFactory {
     ///         of the deployer that deployed them.
     mapping(address instance => uint256 version) public isOfficial;
 
-    /// @notice The contract used to deploy new instances.
+    /// @notice The contract used to deploy new instances of Hyperdrive.
     IHyperdriveDeployer public hyperdriveDeployer;
+
+    // TODO: When the factory is updated, we should probably have a list of
+    //       target deployers for each instance.
+    //
+    /// @notice The contract used to deploy new instances of Hyperdrive.
+    IHyperdriveTargetDeployer public target0Deployer;
+
+    /// @notice The contract used to deploy new instances of Hyperdrive.
+    IHyperdriveTargetDeployer public target1Deployer;
 
     /// @notice The governance address used when new instances are deployed.
     address public hyperdriveGovernance;
@@ -88,27 +98,29 @@ abstract contract HyperdriveFactory {
         address governance;
         /// @dev The address which is set as the governor of hyperdrive.
         address hyperdriveGovernance;
-        /// @dev The address which should be set as the fee collector in new deployments.
+        /// @dev The default addresses which will be set to have the pauser role.
+        address[] defaultPausers;
+        /// @dev The recipient of governance fees from new deployments.
         address feeCollector;
         /// @dev The fees each deployed instance will have.
         IHyperdrive.Fees fees;
-        /// @dev The maximum values that governance can use when updating the default fees.
+        /// @dev The upper bounds on the fee parameters that governance can set.
         IHyperdrive.Fees maxFees;
-        /// @dev The default addresses which will be set to have the pauser role.
-        address[] defaultPausers;
+        /// @dev The Hyperdrive deployer.
+        IHyperdriveDeployer hyperdriveDeployer;
+        /// @dev The Hyperdrive target0 deployer.
+        IHyperdriveTargetDeployer target0Deployer;
+        /// @dev The Hyperdrive target1 deployer.
+        IHyperdriveTargetDeployer target1Deployer;
+        /// @dev The address of the linker factory.
+        address linkerFactory;
+        /// @dev The hash of the linker contract's constructor code.
+        bytes32 linkerCodeHash;
     }
 
     /// @notice Initializes the factory.
     /// @param _factoryConfig Configuration of the Hyperdrive Factory.
-    /// @param _deployer The contract which holds the bytecode and deploys new versions.
-    /// @param _linkerFactory The address of the linker factory.
-    /// @param _linkerCodeHash The hash of the linker contract's constructor code.
-    constructor(
-        FactoryConfig memory _factoryConfig,
-        IHyperdriveDeployer _deployer,
-        address _linkerFactory,
-        bytes32 _linkerCodeHash
-    ) {
+    constructor(FactoryConfig memory _factoryConfig) {
         // Initialize fee parameters to ensure that max fees are less than
         // 100% and that the initial fee configuration satisfies the max fee
         // constraint.
@@ -132,9 +144,11 @@ abstract contract HyperdriveFactory {
         hyperdriveGovernance = _factoryConfig.hyperdriveGovernance;
         feeCollector = _factoryConfig.feeCollector;
         _defaultPausers = _factoryConfig.defaultPausers;
-        hyperdriveDeployer = _deployer;
-        linkerFactory = _linkerFactory;
-        linkerCodeHash = _linkerCodeHash;
+        hyperdriveDeployer = _factoryConfig.hyperdriveDeployer;
+        target0Deployer = _factoryConfig.target0Deployer;
+        target1Deployer = _factoryConfig.target1Deployer;
+        linkerFactory = _factoryConfig.linkerFactory;
+        linkerCodeHash = _factoryConfig.linkerCodeHash;
     }
 
     /// @dev Ensure that the sender is the governance address.
@@ -228,23 +242,25 @@ abstract contract HyperdriveFactory {
         _defaultPausers = _defaultPausers_;
     }
 
+    // FIXME: Natspec
+    //
     /// @notice Deploys a Hyperdrive instance with the factory's configuration.
     /// @dev This function is declared as payable to allow payable overrides
     ///      to accept ether on initialization, but payability is not supported
     ///      by default.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _extraData The extra data is used by some factories
     /// @param _contribution Base token to call init with
     /// @param _apr The apr to call init with
     /// @param _initializeExtraData The extra data for the `initialize` call.
+    /// @param _extraData The extra data is used by some factories
     /// @return The hyperdrive address deployed
     function deployAndInitialize(
         IHyperdrive.PoolConfig memory _config,
-        // TODO: We should use raw bytes instead of bytes32.
-        bytes32[] memory _extraData,
         uint256 _contribution,
         uint256 _apr,
-        bytes memory _initializeExtraData
+        bytes memory _initializeExtraData,
+        // TODO: We should use raw bytes instead of bytes32.
+        bytes32[] memory _extraData
     ) public payable virtual returns (IHyperdrive) {
         if (msg.value > 0) {
             revert IHyperdrive.NonPayableInitialization();
@@ -264,17 +280,17 @@ abstract contract HyperdriveFactory {
         IHyperdrive hyperdrive = IHyperdrive(
             hyperdriveDeployer.deploy(
                 _config,
-                deployTarget0(
+                _deployTarget0(
                     _config,
-                    _extraData,
                     _linkerCodeHash,
-                    _linkerFactory
+                    _linkerFactory,
+                    _extraData
                 ),
-                deployTarget1(
+                _deployTarget1(
                     _config,
-                    _extraData,
                     _linkerCodeHash,
-                    _linkerFactory
+                    _linkerFactory,
+                    _extraData
                 ),
                 _linkerCodeHash,
                 _linkerFactory,
@@ -328,43 +344,57 @@ abstract contract HyperdriveFactory {
 
     // FIXME: Natspec
     //
-    // FIXME: Change this if it doesn't conflict with the Factory milestones.
-    //
     /// @notice Deploys a Hyperdrive data provider instance with the factory's
     ///         configuration.
     /// @dev This should be overrided so that the data provider corresponding
     ///      to an individual instance is used.
     /// @param _config The configuration of the pool we are deploying
-    /// @param _extraData The extra data from the pool deployment
     /// @param _linkerCodeHash The code hash from the multitoken deployer
     /// @param _linkerFactory The factory of the multitoken deployer
+    /// @param _extraData The extra data from the pool deployment
     /// @return The address of the new data provider contract.
-    function deployTarget0(
+    function _deployTarget0(
         IHyperdrive.PoolConfig memory _config,
-        bytes32[] memory _extraData,
         bytes32 _linkerCodeHash,
-        address _linkerFactory
-    ) internal virtual returns (address);
+        address _linkerFactory,
+        // TODO: Use raw bytes instead of bytes32
+        bytes32[] memory _extraData
+    ) internal returns (address) {
+        return
+            target0Deployer.deploy(
+                _config,
+                _linkerCodeHash,
+                _linkerFactory,
+                _extraData
+            );
+    }
 
     // FIXME: Natspec
-    //
-    // FIXME: Change this if it doesn't conflict with the Factory milestones.
     //
     /// @notice Deploys a Hyperdrive extras instance with the factory's
     ///         configuration.
     /// @dev This should be overrided so that the data provider corresponding
     ///      to an individual instance is used.
     /// @param _config The configuration of the pool we are deploying
-    /// @param _extraData The extra data from the pool deployment
     /// @param _linkerCodeHash The code hash from the multitoken deployer
     /// @param _linkerFactory The factory of the multitoken deployer
+    /// @param _extraData The extra data from the pool deployment
     /// @return The address of the new extras contract.
-    function deployTarget1(
+    function _deployTarget1(
         IHyperdrive.PoolConfig memory _config,
-        bytes32[] memory _extraData,
         bytes32 _linkerCodeHash,
-        address _linkerFactory
-    ) internal virtual returns (address);
+        address _linkerFactory,
+        // TODO: Use raw bytes instead of bytes32
+        bytes32[] memory _extraData
+    ) internal returns (address) {
+        return
+            target1Deployer.deploy(
+                _config,
+                _linkerCodeHash,
+                _linkerFactory,
+                _extraData
+            );
+    }
 
     /// @notice Gets the default pausers.
     /// @return The default pausers.

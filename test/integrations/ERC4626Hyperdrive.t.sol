@@ -11,6 +11,8 @@ import { IERC4626Hyperdrive } from "contracts/src/interfaces/IERC4626Hyperdrive.
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { ERC4626HyperdriveDeployer } from "contracts/src/instances/ERC4626HyperdriveDeployer.sol";
+import { ERC4626Target0Deployer } from "contracts/src/instances/ERC4626Target0Deployer.sol";
+import { ERC4626Target1Deployer } from "contracts/src/instances/ERC4626Target1Deployer.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
@@ -49,24 +51,23 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 )
             )
         );
-        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
-                pool
-            );
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
         factory = new ERC4626HyperdriveFactory(
-            HyperdriveFactory.FactoryConfig(
-                alice,
-                bob,
-                bob,
-                IHyperdrive.Fees(0, 0, 0),
-                IHyperdrive.Fees(0, 0, 0),
-                defaults
-            ),
-            simpleDeployer,
-            address(forwarderFactory),
-            forwarderFactory.ERC20LINK_HASH(),
+            HyperdriveFactory.FactoryConfig({
+                governance: alice,
+                hyperdriveGovernance: bob,
+                feeCollector: bob,
+                defaultPausers: defaults,
+                fees: IHyperdrive.Fees(0, 0, 0),
+                maxFees: IHyperdrive.Fees(0, 0, 0),
+                hyperdriveDeployer: new ERC4626HyperdriveDeployer(pool),
+                target0Deployer: new ERC4626Target0Deployer(pool),
+                target1Deployer: new ERC4626Target1Deployer(pool),
+                linkerFactory: address(forwarderFactory),
+                linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
+            }),
             pool,
             new address[](0)
         );
@@ -211,10 +212,10 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         dai.approve(address(factory), type(uint256).max);
         hyperdrive = factory.deployAndInitialize(
             config,
-            new bytes32[](0),
             contribution,
             apr,
-            new bytes(0)
+            new bytes(0),
+            new bytes32[](0)
         );
 
         // The initial price per share is one so the LP shares will initially
@@ -261,10 +262,10 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         dai.approve(address(factory), type(uint256).max);
         hyperdrive = factory.deployAndInitialize(
             config,
-            new bytes32[](0),
             contribution,
             apr,
-            new bytes(0)
+            new bytes(0),
+            new bytes32[](0)
         );
 
         // Ensure the share price is 1 after initialization.
@@ -312,10 +313,10 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         factory.deployAndInitialize(
             config,
-            new bytes32[](0),
             1_000e18,
             0.05e18,
-            new bytes(0)
+            new bytes(0),
+            new bytes32[](0)
         );
         assert(
             !ERC4626Target0(address(mockHyperdrive)).isSweepable(address(dai))
@@ -325,10 +326,10 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         factory.deployAndInitialize(
             config,
-            new bytes32[](0),
             1_000e18,
             0.05e18,
-            new bytes(0)
+            new bytes(0),
+            new bytes32[](0)
         );
         assert(
             !ERC4626Target0(address(mockHyperdrive)).isSweepable(address(pool))
@@ -361,10 +362,10 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             address(
                 factory.deployAndInitialize(
                     config,
-                    new bytes32[](0),
                     1_000e18,
                     0.05e18,
-                    new bytes(0)
+                    new bytes(0),
+                    new bytes32[](0)
                 )
             )
         );

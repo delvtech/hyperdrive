@@ -8,27 +8,28 @@ import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeploye
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
-import { MockHyperdriveFactory } from "contracts/test/MockHyperdriveFactory.sol";
+import { MockHyperdriveDeployer, MockHyperdriveTarget0Deployer, MockHyperdriveTarget1Deployer } from "contracts/test/MockHyperdriveDeployer.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
-contract MockHyperdriveFactoryTest is HyperdriveTest {
+contract HyperdriveFactoryTest is HyperdriveTest {
     function test_hyperdrive_factory_fees() external {
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
-        IHyperdriveDeployer simpleDeployer;
-        MockHyperdriveFactory factory = new MockHyperdriveFactory(
-            HyperdriveFactory.FactoryConfig(
-                alice,
-                bob,
-                bob,
-                IHyperdrive.Fees(0, 0, 0),
-                IHyperdrive.Fees(0, 0, 0),
-                defaults
-            ),
-            simpleDeployer,
-            address(0),
-            bytes32(0)
+        HyperdriveFactory factory = new HyperdriveFactory(
+            HyperdriveFactory.FactoryConfig({
+                governance: alice,
+                hyperdriveGovernance: bob,
+                feeCollector: bob,
+                defaultPausers: defaults,
+                fees: IHyperdrive.Fees(0, 0, 0),
+                maxFees: IHyperdrive.Fees(0, 0, 0),
+                hyperdriveDeployer: new MockHyperdriveDeployer(),
+                target0Deployer: new MockHyperdriveTarget0Deployer(),
+                target1Deployer: new MockHyperdriveTarget1Deployer(),
+                linkerFactory: address(0),
+                linkerCodeHash: bytes32(0)
+            })
         );
 
         assertEq(factory.governance(), alice);
@@ -51,54 +52,37 @@ contract MockHyperdriveFactoryTest is HyperdriveTest {
     function test_hyperdrive_factory_max_fees() external {
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
-        IHyperdriveDeployer simpleDeployer;
+        HyperdriveFactory.FactoryConfig memory config = HyperdriveFactory
+            .FactoryConfig({
+                governance: alice,
+                hyperdriveGovernance: bob,
+                feeCollector: bob,
+                defaultPausers: defaults,
+                fees: IHyperdrive.Fees(0, 0, 0),
+                maxFees: IHyperdrive.Fees(0, 0, 0),
+                hyperdriveDeployer: new MockHyperdriveDeployer(),
+                target0Deployer: new MockHyperdriveTarget0Deployer(),
+                target1Deployer: new MockHyperdriveTarget1Deployer(),
+                linkerFactory: address(0),
+                linkerCodeHash: bytes32(0)
+            });
 
         // Ensure that the maximum curve fee can not exceed 100%.
         vm.expectRevert(IHyperdrive.MaxFeeTooHigh.selector);
-        new MockHyperdriveFactory(
-            HyperdriveFactory.FactoryConfig(
-                alice,
-                bob,
-                bob,
-                IHyperdrive.Fees(0, 0, 0),
-                IHyperdrive.Fees(2e18, 0, 0),
-                defaults
-            ),
-            simpleDeployer,
-            address(0),
-            bytes32(0)
-        );
+        config.maxFees.curve = 2e18;
+        new HyperdriveFactory(config);
+        config.maxFees.curve = 0;
 
         // Ensure that the maximum flat fee can not exceed 100%.
         vm.expectRevert(IHyperdrive.MaxFeeTooHigh.selector);
-        new MockHyperdriveFactory(
-            HyperdriveFactory.FactoryConfig(
-                alice,
-                bob,
-                bob,
-                IHyperdrive.Fees(0, 0, 0),
-                IHyperdrive.Fees(0, 2e18, 0),
-                defaults
-            ),
-            simpleDeployer,
-            address(0),
-            bytes32(0)
-        );
+        config.maxFees.flat = 2e18;
+        new HyperdriveFactory(config);
+        config.maxFees.flat = 0;
 
         // Ensure that the maximum governance fee can not exceed 100%.
         vm.expectRevert(IHyperdrive.MaxFeeTooHigh.selector);
-        new MockHyperdriveFactory(
-            HyperdriveFactory.FactoryConfig(
-                alice,
-                bob,
-                bob,
-                IHyperdrive.Fees(0, 0, 0),
-                IHyperdrive.Fees(0, 0, 2e18),
-                defaults
-            ),
-            simpleDeployer,
-            address(0),
-            bytes32(0)
-        );
+        config.maxFees.governance = 2e18;
+        new HyperdriveFactory(config);
+        config.maxFees.governance = 0;
     }
 }

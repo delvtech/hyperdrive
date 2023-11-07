@@ -10,6 +10,8 @@ import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ERC4626HyperdriveDeployer } from "contracts/src/instances/ERC4626HyperdriveDeployer.sol";
+import { ERC4626Target0Deployer } from "contracts/src/instances/ERC4626Target0Deployer.sol";
+import { ERC4626Target1Deployer } from "contracts/src/instances/ERC4626Target1Deployer.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockERC4626 } from "contracts/test/MockERC4626.sol";
@@ -180,6 +182,7 @@ contract DevnetMigration is Script {
         {
             address[] memory defaultPausers = new address[](1);
             defaultPausers[0] = config.admin;
+            ForwarderFactory forwarderFactory = new ForwarderFactory();
             HyperdriveFactory.FactoryConfig
                 memory factoryConfig = HyperdriveFactory.FactoryConfig({
                     governance: config.admin,
@@ -195,17 +198,21 @@ contract DevnetMigration is Script {
                         flat: config.factoryMaxFlatFee,
                         governance: config.factoryMaxGovernanceFee
                     }),
-                    defaultPausers: defaultPausers
+                    defaultPausers: defaultPausers,
+                    hyperdriveDeployer: new ERC4626HyperdriveDeployer(
+                        IERC4626(address(pool))
+                    ),
+                    target0Deployer: new ERC4626Target0Deployer(
+                        IERC4626(address(pool))
+                    ),
+                    target1Deployer: new ERC4626Target1Deployer(
+                        IERC4626(address(pool))
+                    ),
+                    linkerFactory: address(forwarderFactory),
+                    linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
                 });
-            ForwarderFactory forwarderFactory = new ForwarderFactory();
-            ERC4626HyperdriveDeployer deployer = new ERC4626HyperdriveDeployer(
-                IERC4626(address(pool))
-            );
             factory = new ERC4626HyperdriveFactory(
                 factoryConfig,
-                deployer,
-                address(forwarderFactory),
-                forwarderFactory.ERC20LINK_HASH(),
                 IERC4626(address(pool)),
                 new address[](0)
             );
@@ -239,10 +246,10 @@ contract DevnetMigration is Script {
             });
             hyperdrive = factory.deployAndInitialize(
                 poolConfig,
-                new bytes32[](0),
                 contribution,
                 fixedRate,
-                new bytes(0)
+                new bytes(0),
+                new bytes32[](0)
             );
         }
 

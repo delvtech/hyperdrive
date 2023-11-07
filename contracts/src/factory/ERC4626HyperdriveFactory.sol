@@ -27,26 +27,13 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
 
     /// @notice Initializes the factory.
     /// @param _factoryConfig The variables that configure the factory;
-    /// @param _deployer The contract that deploys new hyperdrive instances.
-    /// @param _linkerFactory The linker factory.
-    /// @param _linkerCodeHash The hash of the linker contract's constructor code.
     /// @param _pool The ERC4626 pool.
     /// @param _sweepTargets_ The addresses that can be swept by the fee collector.
     constructor(
         FactoryConfig memory _factoryConfig,
-        IHyperdriveDeployer _deployer,
-        address _linkerFactory,
-        bytes32 _linkerCodeHash,
         IERC4626 _pool,
         address[] memory _sweepTargets_
-    )
-        HyperdriveFactory(
-            _factoryConfig,
-            _deployer,
-            _linkerFactory,
-            _linkerCodeHash
-        )
-    {
+    ) HyperdriveFactory(_factoryConfig) {
         // Initialize the ERC4626 pool.
         pool = _pool;
 
@@ -70,10 +57,10 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
     /// @param _initializeExtraData The extra data for the `initialize` call.
     function deployAndInitialize(
         IHyperdrive.PoolConfig memory _config,
-        bytes32[] memory, // unused
         uint256 _contribution,
         uint256 _apr,
-        bytes memory _initializeExtraData
+        bytes memory _initializeExtraData,
+        bytes32[] memory // unused
     ) public payable override returns (IHyperdrive) {
         // Deploy and initialize the ERC4626 hyperdrive instance with the
         // default sweep targets provided as extra data.
@@ -84,64 +71,14 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
         }
         IHyperdrive hyperdrive = super.deployAndInitialize(
             _config,
-            extraData,
             _contribution,
             _apr,
-            _initializeExtraData
+            _initializeExtraData,
+            extraData
         );
 
         // Return the hyperdrive instance.
         return hyperdrive;
-    }
-
-    // FIXME: Natspec
-    //
-    /// @notice This deploys a data provider for the ERC4626 hyperdrive instance
-    /// @param _config The configuration of the pool we are deploying
-    /// @param _linkerCodeHash The code hash from the multitoken deployer
-    /// @param _linkerFactory The factory of the multitoken deployer
-    /// @return The address of the new data provider contract.
-    function deployTarget0(
-        IHyperdrive.PoolConfig memory _config,
-        bytes32[] memory,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory
-    ) internal override returns (address) {
-        return (
-            address(
-                new ERC4626Target0(
-                    _config,
-                    _linkerCodeHash,
-                    _linkerFactory,
-                    pool
-                )
-            )
-        );
-    }
-
-    // FIXME: Natspec
-    //
-    /// @notice This deploys a data provider for the ERC4626 hyperdrive instance
-    /// @param _config The configuration of the pool we are deploying
-    /// @param _linkerCodeHash The code hash from the multitoken deployer
-    /// @param _linkerFactory The factory of the multitoken deployer
-    /// @return The address of the new extras contract.
-    function deployTarget1(
-        IHyperdrive.PoolConfig memory _config,
-        bytes32[] memory,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory
-    ) internal override returns (address) {
-        return (
-            address(
-                new ERC4626Target1(
-                    _config,
-                    _linkerCodeHash,
-                    _linkerFactory,
-                    pool
-                )
-            )
-        );
     }
 
     /// @notice Gets the sweep targets.
