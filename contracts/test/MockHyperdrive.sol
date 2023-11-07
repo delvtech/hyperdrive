@@ -294,6 +294,7 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
         uint256 _sharePrice
     )
         external
+        view
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,

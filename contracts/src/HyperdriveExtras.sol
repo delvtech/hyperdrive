@@ -43,6 +43,21 @@ abstract contract HyperdriveExtras is
         return _initialize(_contribution, _apr, _options);
     }
 
+    /// @notice Allows LPs to supply liquidity for LP shares.
+    /// @param _contribution The amount of base to supply.
+    /// @param _minApr The minimum APR at which the LP is willing to supply.
+    /// @param _maxApr The maximum APR at which the LP is willing to supply.
+    /// @param _options The options that configure how the operation is settled.
+    /// @return lpShares The number of LP tokens created
+    function addLiquidity(
+        uint256 _contribution,
+        uint256 _minApr,
+        uint256 _maxApr,
+        IHyperdrive.Options calldata _options
+    ) external payable returns (uint256 lpShares) {
+        return _addLiquidity(_contribution, _minApr, _maxApr, _options);
+    }
+
     /// Checkpoints ///
 
     // FIXME: Comment this.

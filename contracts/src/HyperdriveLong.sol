@@ -351,6 +351,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _sharePrice
     )
         internal
+        view
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
@@ -460,6 +461,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _maturityTime
     )
         internal
+        view
         returns (
             uint256 bondReservesDelta,
             uint256 shareProceeds,

@@ -9,6 +9,7 @@ FUNCTION_NAMES = [
     "initialize",
     "addLiquidity",
     "removeLiquidity",
+    "redeemWithdrawalShares",
     "openLong",
     "closeLong",
     "openShort",

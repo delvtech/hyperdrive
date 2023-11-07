@@ -359,6 +359,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _openSharePrice
     )
         internal
+        view
         returns (
             uint256 traderDeposit,
             uint256 shareReservesDelta,
@@ -462,6 +463,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _maturityTime
     )
         internal
+        view
         returns (
             uint256 bondReservesDelta,
             uint256 shareProceeds,

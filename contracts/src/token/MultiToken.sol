@@ -60,8 +60,8 @@ abstract contract MultiToken is MultiTokenStorage {
     ) MultiTokenStorage(_linkerCodeHash, _factory) {
         // FIXME: Update this.
         //
-        // Computes the EIP 712 domain separator which prevents user signed messages for
-        // this contract to be replayed in other contracts.
+        // Computes the EIP 712 domain separator which prevents user signed
+        // messages for this contract to be replayed in other contracts.
         // https://eips.ethereum.org/EIPS/eip-712
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
