@@ -32,7 +32,7 @@ interface IMockHyperdrive {
         );
 
     function calculateFeesGivenBonds(
-        uint256 _amountIn,
+        uint256 _bondAmount,
         uint256 _normalizedTimeRemaining,
         uint256 _spotPrice,
         uint256 sharePrice
@@ -42,6 +42,7 @@ interface IMockHyperdrive {
         returns (
             uint256 totalCurveFee,
             uint256 totalFlatFee,
+            uint256 governanceCurveFee,
             uint256 totalGovernanceFee
         );
 
@@ -80,6 +81,179 @@ abstract contract MockHyperdriveBase is HyperdriveBase {
     using FixedPointMath for uint256;
 
     uint256 internal totalShares;
+
+    constructor(
+        IHyperdrive.PoolConfig memory _config,
+        address _dataProvider
+    ) Hyperdrive(_config, _dataProvider, bytes32(0), address(0)) {}
+
+    /// Mocks ///
+
+    function setMarketState(
+        IHyperdrive.MarketState memory _marketState_
+    ) external {
+        _marketState = _marketState_;
+    }
+
+    function setTotalShares(uint256 _totalShares) external {
+        totalShares = _totalShares;
+    }
+
+    // Accrues compounded interest for a given number of seconds and readjusts
+    // share price to reflect such compounding
+    function accrue(uint256 time, int256 apr) external {
+        (, int256 interest) = HyperdriveUtils.calculateCompoundInterest(
+            _baseToken.balanceOf(address(this)),
+            apr,
+            time
+        );
+
+        if (interest > 0) {
+            ERC20Mintable(address(_baseToken)).mint(
+                address(this),
+                uint256(interest)
+            );
+        } else if (interest < 0) {
+            ERC20Mintable(address(_baseToken)).burn(
+                address(this),
+                uint256(-interest)
+            );
+        }
+    }
+
+    function getOracleState() external view returns (uint256, uint256) {
+        return (uint256(_oracle.head), uint256(_oracle.lastTimestamp));
+    }
+
+    function loadOracle(
+        uint256 index
+    ) external view returns (uint256, uint256) {
+        return (
+            uint256(_buffer[index].data),
+            uint256(_buffer[index].timestamp)
+        );
+    }
+
+    function recordOracle(uint256 data) external {
+        recordPrice(data);
+    }
+
+    function calculateFeesGivenShares(
+        uint256 _shareAmount,
+        uint256 _spotPrice,
+        uint256 sharePrice
+    )
+        external
+        view
+        returns (uint256 totalCurveFee, uint256 governanceCurveFee)
+    {
+        (totalCurveFee, governanceCurveFee) = _calculateFeesGivenShares(
+            _shareAmount,
+            _spotPrice,
+            sharePrice
+        );
+        return (totalCurveFee, governanceCurveFee);
+    }
+
+    function calculateFeesGivenBonds(
+        uint256 _bondAmount,
+        uint256 _normalizedTimeRemaining,
+        uint256 _spotPrice,
+        uint256 sharePrice
+    )
+        external
+        view
+        returns (
+            uint256 curveFee,
+            uint256 flatFee,
+            uint256 governanceCurveFee,
+            uint256 totalGovernanceFee
+        )
+    {
+        (
+            curveFee,
+            flatFee,
+            governanceCurveFee,
+            totalGovernanceFee
+        ) = _calculateFeesGivenBonds(
+            _bondAmount,
+            _normalizedTimeRemaining,
+            _spotPrice,
+            sharePrice
+        );
+        return (
+            curveFee,
+            flatFee,
+            governanceCurveFee,
+            totalGovernanceFee
+        );
+    }
+
+    // Calls Hyperdrive._calculateOpenLong
+    function calculateOpenLong(
+        uint256 _shareAmount,
+        uint256 _sharePrice
+    )
+        external
+        returns (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 bondProceeds,
+            uint256 totalGovernanceFee
+        )
+    {
+        return _calculateOpenLong(_shareAmount, _sharePrice);
+    }
+
+    function calculateTimeRemaining(
+        uint256 _maturityTime
+    ) external view returns (uint256 timeRemaining) {
+        return _calculateTimeRemaining(_maturityTime);
+    }
+
+    function calculateTimeRemainingScaled(
+        uint256 _maturityTime
+    ) external view returns (uint256 timeRemaining) {
+        return _calculateTimeRemainingScaled(_maturityTime);
+    }
+
+    function latestCheckpoint() external view returns (uint256 checkpointTime) {
+        return _latestCheckpoint();
+    }
+
+    function updateLiquidity(int256 _shareReservesDelta) external {
+        _updateLiquidity(_shareReservesDelta);
+    }
+
+    function calculateIdleShareReserves(
+        uint256 _sharePrice
+    ) external view returns (uint256) {
+        return _calculateIdleShareReserves(_sharePrice);
+    }
+
+    function getTotalShares() external view returns (uint256) {
+        return totalShares;
+    }
+
+    function setReserves(uint128 shareReserves, uint128 bondReserves) external {
+        _marketState.shareReserves = shareReserves;
+        _marketState.bondReserves = bondReserves;
+    }
+
+    function setLongExposure(uint128 longExposure) external {
+        _marketState.longExposure = longExposure;
+    }
+
+    /// Overrides ///
+
+    // This overrides checkMessageValue to serve the dual purpose of making
+    // ETH yield source instances to be payable and non-ETH yield
+    // source instances non-payable.
+    function _checkMessageValue() internal view override {
+        if (address(_baseToken) != ETH && msg.value > 0) {
+            revert IHyperdrive.NotPayable();
+        }
+    }
 
     function _deposit(
         uint256 amount,
