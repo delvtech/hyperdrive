@@ -93,7 +93,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
 
     /// Structs ///
 
-    // TODO: Re-evaluate the order of these fields to optimize gas usage.
+    /// @dev NOTE: This struct takes up 5 storage slots.
     struct MarketState {
         /// @dev The pool's share reserves.
         uint128 shareReserves;
@@ -118,6 +118,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         bool isPaused;
     }
 
+    /// @dev NOTE: This struct takes up 1 storage slot.
     struct Checkpoint {
         /// @dev The share price of the first transaction in the checkpoint.
         ///      This is used to track the amount of interest accrued by shorts
@@ -128,6 +129,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         int128 longExposure;
     }
 
+    /// @dev NOTE: This struct takes up 1 storage slot.
     struct WithdrawPool {
         /// @dev The amount of withdrawal shares that are ready to be redeemed.
         uint128 readyToWithdraw;
