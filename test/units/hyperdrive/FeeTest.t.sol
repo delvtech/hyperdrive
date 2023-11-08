@@ -491,7 +491,6 @@ contract FeeTest is HyperdriveTest {
             uint256 curveFee,
             uint256 flatFee,
             uint256 governanceCurveFee,
-            uint256 governanceFlatFee,
             uint256 totalGovernanceFee
         ) = MockHyperdrive(address(hyperdrive)).calculateFeesGivenBonds(
                 1 ether, // amount
@@ -509,7 +508,6 @@ contract FeeTest is HyperdriveTest {
             curveFee,
             flatFee,
             governanceCurveFee,
-            governanceFlatFee,
             totalGovernanceFee
         ) = MockHyperdrive(address(hyperdrive)).calculateFeesGivenBonds(
             1 ether, // amount
@@ -532,7 +530,6 @@ contract FeeTest is HyperdriveTest {
             uint256 curveFee,
             uint256 flatFee,
             uint256 governanceCurveFee,
-            uint256 governanceFlatFee,
             uint256 totalGovernanceFee
         ) = MockHyperdrive(address(hyperdrive)).calculateFeesGivenBonds(
                 1 ether, // amount
@@ -543,13 +540,12 @@ contract FeeTest is HyperdriveTest {
         assertEq(curveFee, .01 ether);
         assertEq(flatFee, 0 ether);
         assertEq(governanceCurveFee, .005 ether);
-        assertEq(governanceFlatFee, 0 ether);
+        assertEq(totalGovernanceFee-governanceCurveFee, 0 ether);
 
         (
             curveFee,
             flatFee,
             governanceCurveFee,
-            governanceFlatFee,
             totalGovernanceFee
         ) = MockHyperdrive(address(hyperdrive)).calculateFeesGivenBonds(
             1 ether, // amount
@@ -560,6 +556,6 @@ contract FeeTest is HyperdriveTest {
         assertEq(curveFee, 0 ether);
         assertEq(flatFee, 0.1 ether);
         assertEq(governanceCurveFee, 0 ether);
-        assertEq(governanceFlatFee, 0.05 ether);
+        assertEq(totalGovernanceFee-governanceCurveFee, 0.05 ether);
     }
 }

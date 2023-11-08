@@ -404,8 +404,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
             revert IHyperdrive.NegativeInterest();
         }
 
-        // Calculate the fees charged to the user (totalCurveFee) and the portion
-        // of those fees that are paid to governance (totalGovernanceFee).
+        // Calculate the fees charged to the user (curveFee) and the portion
+        // of those fees that are paid to governance (governanceCurveFee).
         uint256 curveFee;
         uint256 governanceCurveFee;
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
@@ -414,10 +414,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _initialSharePrice,
             _timeStretch
         );
+
         (
-            curveFee, 
+            curveFee,
             , // flatFee
-            governanceCurveFee, // governanceFlatFee (flat fee is always 0 on open)
+            governanceCurveFee,
             // totalGovernanceFee (equal to governanceCurveFee)
         ) = _calculateFeesGivenBonds(
             _bondAmount,
@@ -539,9 +540,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 revert IHyperdrive.NegativeInterest();
             }
 
-            // Calculate the fees charged to the user (totalCurveFee and
-            // totalFlatFee) and the portion of those fees that are paid to
-            // governance (governanceCurveFee and governanceFlatFee).
+            // Calculate the fees charged to the user (curveFee and
+            // flatFee) and the portion of those fees that are paid to
+            // governance (totalGovernanceFee).
             uint256 bondAmount = _bondAmount; // Avoid stack too deep.
             uint256 sharePrice = _sharePrice; // Avoid stack too deep.
             uint256 curveFee;

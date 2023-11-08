@@ -601,8 +601,9 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         uint256 totalCurveFee = (ONE - calculatedSpotPrice)
             .mulDown(curveFee)
             .mulDown(bondAmount)
-            .mulDivDown(normalizedTimeRemaining, sharePrice);
-        uint256 totalGovernanceFee = totalCurveFee.mulDown(governanceFee);
+            .mulDivDown(normalizedTimeRemaining, sharePrice)
+            .mulDown(governanceFee);
+        uint256 totalGovernanceFee = totalCurveFee;
         uint256 flat = bondAmount.mulDivDown(
             ONE - normalizedTimeRemaining,
             sharePrice

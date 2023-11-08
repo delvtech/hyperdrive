@@ -16,7 +16,7 @@ interface IMockHyperdrive {
     function accrue(uint256 time, int256 apr) external;
 
     function calculateFeesGivenShares(
-        uint256 _amountIn,
+        uint256 _amountShares,
         uint256 _amountOut,
         uint256 _normalizedTimeRemaining,
         uint256 _spotPrice,
@@ -25,10 +25,10 @@ interface IMockHyperdrive {
         external
         view
         returns (
-            uint256 totalCurveFee,
-            uint256 totalFlatFee,
+            uint256 curveFee,
+            uint256 flatFee,
             uint256 governanceCurveFee,
-            uint256 governanceFlatFee
+            uint256 totalGovernanceFee
         );
 
     function calculateFeesGivenBonds(
@@ -40,8 +40,8 @@ interface IMockHyperdrive {
         external
         view
         returns (
-            uint256 totalCurveFee,
-            uint256 totalFlatFee,
+            uint256 curveFee,
+            uint256 flatFee,
             uint256 governanceCurveFee,
             uint256 totalGovernanceFee
         );
@@ -145,14 +145,14 @@ abstract contract MockHyperdriveBase is HyperdriveBase {
     )
         external
         view
-        returns (uint256 totalCurveFee, uint256 governanceCurveFee)
+        returns (uint256 curveFee, uint256 governanceCurveFee)
     {
-        (totalCurveFee, governanceCurveFee) = _calculateFeesGivenShares(
+        (curveFee, governanceCurveFee) = _calculateFeesGivenShares(
             _shareAmount,
             _spotPrice,
             sharePrice
         );
-        return (totalCurveFee, governanceCurveFee);
+        return (curveFee, governanceCurveFee);
     }
 
     function calculateFeesGivenBonds(
