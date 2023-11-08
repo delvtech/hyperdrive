@@ -235,18 +235,35 @@ contract OpenLongTest is HyperdriveTest {
         console2.log("  / starting_APR = -%s", rateDeltaAsPercent.toString(18));
     }
 
+    function compareExposure(
+        IHyperdrive.Checkpoint memory checkpointBefore,
+        IHyperdrive.Checkpoint memory checkpointAfter
+    ) internal pure {
+        int128 checkpointNetExposureBefore = checkpointBefore.longExposure;
+        int128 checkpointNetExposureAfter = checkpointAfter.longExposure;
+        console2.log("checkpointNetExposureBefore = %s", checkpointNetExposureBefore.toString(18));
+        console2.log("checkpointNetExposureAfter  = %s", checkpointNetExposureAfter.toString(18));
+        int128 checkpointNetExposureDelta = (checkpointNetExposureAfter - checkpointNetExposureBefore);
+        console2.log("checkpointNetExposureDelta  = %s", checkpointNetExposureDelta.toString(18));
+        if (checkpointNetExposureBefore > 0) {
+            int128 checkpointNetExposureDeltaAsPercent = checkpointNetExposureDelta / checkpointNetExposureBefore;
+            console2.log("  / checkpointNetExposureBefore = %s", checkpointNetExposureDeltaAsPercent.toString(18));
+        }
+    }
+
     function testNumberTooBig() external {
-        uint256 apr = 0.1e18;
+        uint256 apr = 1e18;
         console2.log("starting APR = %s", apr.toString(18));
 
         // Deploy a pool with fees
-        // IHyperdrive.PoolConfig memory config = testConfig(apr);
-        // config.fees = IHyperdrive.Fees({
-        //     curve: 1e18,  // 100%
-        //     flat: 1e18,  // 100%
-        //     governance: 1e18  // 100%
-        // });
-        // deploy(address(deployer), config);
+        IHyperdrive.PoolConfig memory config = testConfig(apr);
+        config.fees = IHyperdrive.Fees({
+            // regular fees:
+            curve: 0.1e18,  // 10%
+            flat: 0.05e18,  // 5%
+            governance: 0.1e18  // 10%
+        });
+        deploy(address(deployer), config);
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
@@ -256,21 +273,22 @@ contract OpenLongTest is HyperdriveTest {
 
         // Get the reserves before opening the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(hyperdrive.latestCheckpoint());
 
         // Open a long.
-        uint256 baseAmount = 100e18;
-        console2.log("trying to open long with baseAmount =", baseAmount.toString(18));
+        uint256 baseAmount = 10e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
-        console2.log("got to here");
 
         // Market perspective
         console2.log("=== MARKET PERSPECTIVE ===");
         console2.log("bob bought %s bonds for %s base", bondAmount.toString(18), baseAmount.toString(18));
-        uint256 effectiveMarketPrice = baseAmount.divDown(bondAmount);
+        // back out the price from the trade information
+        uint256 effectiveMarketPrice = baseAmount.divDown(bondAmount);  // emp = baseAmount / bondAmount
         console2.log("effectiveMarketPrice = %s", effectiveMarketPrice.toString(18));
         uint256 effectiveMarketRate = (1e18 - effectiveMarketPrice).divDown(effectiveMarketPrice);
         console2.log("effectiveMarketRate  = %s", effectiveMarketRate.toString(18));
         logRateDelta(effectiveMarketRate, apr);
+        compareExposure(checkpoint, hyperdrive.getCheckpoint(hyperdrive.latestCheckpoint()));
 
         // User's perspective
         console2.log("=== USER PERSPECTIVE ===");

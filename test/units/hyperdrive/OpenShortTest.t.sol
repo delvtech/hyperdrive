@@ -216,15 +216,16 @@ contract OpenShortTest is HyperdriveTest {
     }
 
     function testNumberTooBig() external {
-        uint256 apr = 5e18;
+        uint256 apr = 1e18;
         console2.log("starting APR = %s", apr.toString(18));
 
         // Deploy a pool with fees
         IHyperdrive.PoolConfig memory config = testConfig(apr);
         config.fees = IHyperdrive.Fees({
-            curve: 1e18,
-            flat: 1e18,
-            governance: 1e18
+            // regular fees:
+            curve: 0.1e18,  // 10%
+            flat: 0.05e18,  // 5%
+            governance: 0  // 10%
         });
         deploy(address(deployer), config);
 
@@ -245,8 +246,9 @@ contract OpenShortTest is HyperdriveTest {
         // Market perspective
         console2.log("=== MARKET PERSPECTIVE ===");
         console2.log("bob sold   %s bonds to the LP", shortAmount.toString(18));
-        uint256 effectiveExchangeRate = basePaid.divDown(shortAmount);
-        uint256 effectiveMarketPrice = 1e18 - effectiveExchangeRate;
+        // back out the price from the trade information
+        uint256 effectiveExchangeRate = basePaid.divDown(shortAmount);  // eer = basePaid / shortAmount
+        uint256 effectiveMarketPrice = 1e18 - effectiveExchangeRate;  // emp = 1 - eer
         console2.log("effectiveMarketPrice = %s", effectiveMarketPrice.toString(18));
         logPortions(effectiveMarketPrice, shortAmount);
         uint256 effectiveMarketRate = (1e18 - effectiveMarketPrice).divDown(effectiveMarketPrice);
