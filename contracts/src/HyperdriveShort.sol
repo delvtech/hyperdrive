@@ -152,6 +152,9 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             int256 shareAdjustmentDelta,
             uint256 totalGovernanceFee
         ) = _calculateCloseShort(_bondAmount, sharePrice, _maturityTime);
+        console2.log("shareProceeds = ", shareProceeds);
+        console2.log("shareReservesDelta = ", shareReservesDelta);
+        console2.log("shareAdjustmentDelta = ", shareAdjustmentDelta);
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
@@ -395,9 +398,8 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             spotPrice,
             _sharePrice
         );
-        console2.log("curveFee", curveFee);
-        console2.log("governanceCurveFee", governanceCurveFee);
-        console2.log("totalGovernanceFee", governanceCurveFee);
+        console2.log("curveFee", totalCurveFee);
+        console2.log("totalGovernanceFee", totalGovernanceFee);
         console2.log("shareReservesDelta before fees:", shareReservesDelta);
 
         // Subtract the total curve fee minus the governance curve fee to the
@@ -412,7 +414,7 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         // reserved for the LPs.
         //
         // shares -= shares - shares
-        shareReservesDelta -= curveFee - governanceCurveFee;
+        shareReservesDelta -= totalCurveFee - totalGovernanceFee;
         console2.log("shareReservesDelta after fees:", shareReservesDelta);
 
         // The trader will need to deposit capital to pay for the fixed rate,

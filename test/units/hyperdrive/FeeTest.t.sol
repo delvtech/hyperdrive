@@ -573,7 +573,8 @@ contract FeeTest is HyperdriveTest {
         {
         uint256 differenceInBasePaid = basePaid - basePaidWithoutFees;
         assertApproxEqAbs(differenceInBasePaid,
-            (bondAmount - baseProceedsWithoutSlippageOrFees).mulDown(curveFee),
+            (bondAmount - baseProceedsWithoutSlippageOrFees).mulDown(curveFee)
+                + bondAmount.mulDown(flatFee),
             10
             );
         }
@@ -581,31 +582,32 @@ contract FeeTest is HyperdriveTest {
         // Decide what portion of time you want to mature
         // uint256 maturedPortion = 0.75e18;
 
-        console2.log("got to here");
         // Time passes and the pool accrues interest at the current apr.
         advanceTime(POSITION_DURATION.mulDown(0.75e18), int256(apr));
 
         // Calculating the actual matured portion based off the truncated number
         // of days that have actually passed (365 * 0.75) truncated to the
         // nearest day (using /1e18*1e18) then dividing by 365 to get a portion.
-        uint256 actualMaturedPortion = FixedPointMath.ONE_18.mulDown(365e18).mulDown(0.75e18).divDown(1e36).mulDown(1e36).divDown(365e18);
-        uint256 unmaturedBonds = bondAmount.mulDown(FixedPointMath.ONE_18 - actualMaturedPortion);
-        console2.log("got to here");
+        {
+            uint256 actualMaturedPortion = FixedPointMath.ONE_18.mulDown(365e18).mulDown(0.75e18).divDown(1e36).mulDown(1e36).divDown(365e18);
+            uint256 unmaturedBonds = bondAmount.mulDown(FixedPointMath.ONE_18 - actualMaturedPortion);
+            uint256 maturedBonds = bondAmount.mulDown(actualMaturedPortion);
 
-        spotPrice = HyperdriveUtils.calculateSpotPrice(hyperdrive);
-        console2.log("baseProceedsWithoutSlippageOrFees = ", bondAmount.mulDown(actualMaturedPortion) + unmaturedBonds.mulDown(spotPrice));
-        console2.log("unmatured portion of fees from curveFee = ", (unmaturedBonds - unmaturedBonds.mulDown(spotPrice)).mulDown(curveFee));
-        console2.log("  in terms of shares =", (unmaturedBonds - unmaturedBonds.mulDown(spotPrice)).mulDown(curveFee).divDown(hyperdrive.getPoolInfo().sharePrice));
-        console2.log("matured portion of fees from flatfee    = ", bondAmount.mulDown(actualMaturedPortion).mulDown(flatFee));
-        console2.log("  in terms of shares =", bondAmount.mulDown(actualMaturedPortion).mulDown(flatFee).divDown(hyperdrive.getPoolInfo().sharePrice));
+            spotPrice = HyperdriveUtils.calculateSpotPrice(hyperdrive);
+            console2.log("baseProceedsWithoutSlippageOrFees = ", maturedBonds + unmaturedBonds.mulDown(spotPrice));
+            console2.log("unmatured portion of fees from curveFee = ", (unmaturedBonds - unmaturedBonds.mulDown(spotPrice)).mulDown(curveFee));
+            console2.log("  in terms of shares =", (unmaturedBonds - unmaturedBonds.mulDown(spotPrice)).mulDown(curveFee).divDown(hyperdrive.getPoolInfo().sharePrice));
+            console2.log("matured portion of fees from flatfee    = ", maturedBonds.mulDown(flatFee));
+            console2.log("  in terms of shares =", maturedBonds.mulDown(flatFee).divDown(hyperdrive.getPoolInfo().sharePrice));
 
-        uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
-        // Assert the total fee is what we expect it to be.
-        assertApproxEqAbs(bondAmount.mulDown(actualMaturedPortion) + unmaturedBonds.mulDown(spotPrice) - baseProceeds,
-            (unmaturedBonds - unmaturedBonds.mulDown(spotPrice)).mulDown(curveFee) // curve fee
-            + bondAmount.mulDown(actualMaturedPortion).mulDown(flatFee), // flatFee
-            1e10
-            );
+            uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
+            // Assert the total fee is what we expect it to be.
+            assertApproxEqAbs(maturedBonds + unmaturedBonds.mulDown(spotPrice) - baseProceeds,
+                (unmaturedBonds - unmaturedBonds.mulDown(spotPrice)).mulDown(curveFee) // curve fee
+                + maturedBonds.mulDown(flatFee), // flatFee
+                1e10
+                );
+        }
     }
 
     function test_calcFeesOutGivenBondsIn() public {

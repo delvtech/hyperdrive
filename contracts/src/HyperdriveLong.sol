@@ -511,8 +511,8 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
                 spotPrice,
                 _sharePrice
             );
-            console2.log("curveFee: ", curveFee);
-            console2.log("flatFee: ", flatFee);
+            console2.log("totalCurveFee: ", totalCurveFee);
+            console2.log("totalFlatFee: ", totalFlatFee);
             console2.log("totalGovernanceFee: ", totalGovernanceFee);
 
             // The curve fee (shares) is paid to the LPs, so we subtract it from
