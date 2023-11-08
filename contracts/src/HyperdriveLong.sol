@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import "forge-std/console2.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { IHyperdriveWrite } from "./interfaces/IHyperdriveWrite.sol";
@@ -474,6 +475,7 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             // to ensure that opening/closing a position doesn't result in
             // immediate profit.
             uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
+            console2.log("timeRemaining: ", timeRemaining);
             (shareCurveDelta, bondReservesDelta, shareProceeds) = HyperdriveMath
                 .calculateCloseLong(
                     _effectiveShareReserves(),
@@ -509,6 +511,9 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
                 spotPrice,
                 _sharePrice
             );
+            console2.log("curveFee: ", curveFee);
+            console2.log("flatFee: ", flatFee);
+            console2.log("totalGovernanceFee: ", totalGovernanceFee);
 
             // The curve fee (shares) is paid to the LPs, so we subtract it from
             // the share curve delta (shares) to prevent it from being debited

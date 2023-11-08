@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import "forge-std/console2.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { IHyperdriveWrite } from "./interfaces/IHyperdriveWrite.sol";
@@ -74,6 +75,8 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             // Attribute the governance fees.
             _governanceFeesAccrued += totalGovernanceFee;
         }
+
+        console2.log("traderDeposit = ", traderDeposit);
 
         // Take custody of the trader's deposit and ensure that the trader
         // doesn't pay more than their max deposit. The trader's deposit is
@@ -392,6 +395,10 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             spotPrice,
             _sharePrice
         );
+        console2.log("curveFee", curveFee);
+        console2.log("governanceCurveFee", governanceCurveFee);
+        console2.log("totalGovernanceFee", governanceCurveFee);
+        console2.log("shareReservesDelta before fees:", shareReservesDelta);
 
         // Subtract the total curve fee minus the governance curve fee to the
         // amount that will be subtracted from the share reserves. This ensures
@@ -405,7 +412,8 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         // reserved for the LPs.
         //
         // shares -= shares - shares
-        shareReservesDelta -= totalCurveFee - totalGovernanceFee;
+        shareReservesDelta -= curveFee - governanceCurveFee;
+        console2.log("shareReservesDelta after fees:", shareReservesDelta);
 
         // The trader will need to deposit capital to pay for the fixed rate,
         // the curve fee, the flat fee, and any back-paid interest that will be

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import "forge-std/console2.sol";
 import { stdError } from "forge-std/StdError.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -458,7 +459,7 @@ contract FeeTest is HyperdriveTest {
         assertGt(governanceBalanceAfter, governanceBalanceBefore);
     }
 
-    function test_calculateOpenLongFees() public {
+    function test_calculateFeesGivenShares() public {
         uint256 apr = 0.05e18;
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
@@ -479,6 +480,132 @@ contract FeeTest is HyperdriveTest {
         // governance curve fee = total curve fee * phi_gov
         // .1 * 0.5 = .05
         assertEq(governanceCurveFee, .05 ether);
+    }
+
+    function test_calculateLongFees() public {
+        uint256 apr = 0.05e18;
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        uint256 curveFee = 0.1e18;
+        uint256 flatFee = 0.1e18;
+        // Deploy and initialize a new pool without fees.
+        deploy(alice, apr, 0, 0, 0);
+        initialize(alice, apr, contribution);
+        uint256 baseAmount = 10e18;
+
+        // Open a long without fees, record the bondProceeds.
+        (uint256 maturityTime, uint256 bondProceeds) = openLong(bob, baseAmount);
+        uint256 bondProceedsWithoutFees = bondProceeds;
+
+        // Re-depploy with fees.
+        deploy(alice, apr, curveFee, flatFee, 0.5e18);
+        initialize(alice, apr, contribution);
+
+        uint256 spotPrice = HyperdriveUtils.calculateSpotPrice(hyperdrive);
+        uint256 bondProceedsWithoutSlippageOrFees = baseAmount.divDown(spotPrice);
+        console2.log("bondProceedsWithoutSlippageOrFees = ", bondProceedsWithoutSlippageOrFees);
+
+        // Open a long with fees.
+        (maturityTime, bondProceeds) = openLong(bob, baseAmount);
+
+        uint256 differenceInBondProceeds = bondProceedsWithoutFees - bondProceeds;
+        assertApproxEqAbs(differenceInBondProceeds,
+            (bondProceedsWithoutSlippageOrFees - baseAmount).mulDown(curveFee),
+            10
+            );
+
+        // Decide what portion of time you want to mature
+        // uint256 maturedPortion = 0.75e18;
+
+        // Time passes and the pool accrues interest at the current apr.
+        advanceTime(POSITION_DURATION.mulDown(0.75e18), int256(apr));
+
+        // Calculating the actual matured portion based off the truncated number
+        // of days that have actually passed (365 * 0.75) truncated to the
+        // nearest day (using /1e18*1e18) then dividing by 365 to get a portion.
+        uint256 actualMaturedPortion = FixedPointMath.ONE_18.mulDown(365e18).mulDown(0.75e18).divDown(1e36).mulDown(1e36).divDown(365e18);
+        uint256 unmaturedBonds = bondProceeds.mulDown(FixedPointMath.ONE_18 - actualMaturedPortion);
+
+        spotPrice = HyperdriveUtils.calculateSpotPrice(hyperdrive);
+        console2.log("baseProceedsWithoutSlippageOrFees = ", bondProceeds.mulDown(actualMaturedPortion) + unmaturedBonds.mulDown(spotPrice));
+        console2.log("unmatured portion of fees from curveFee = ", (unmaturedBonds - unmaturedBonds.mulDown(spotPrice)).mulDown(curveFee));
+        console2.log("  in terms of shares =", (unmaturedBonds - unmaturedBonds.mulDown(spotPrice)).mulDown(curveFee).divDown(hyperdrive.getPoolInfo().sharePrice));
+        console2.log("matured portion of fees from flatfee    = ", bondProceeds.mulDown(actualMaturedPortion).mulDown(flatFee));
+        console2.log("  in terms of shares =", bondProceeds.mulDown(actualMaturedPortion).mulDown(flatFee).divDown(hyperdrive.getPoolInfo().sharePrice));
+
+        uint256 baseProceeds = closeLong(bob, maturityTime, bondProceeds);
+        // Assert the total fee is what we expect it to be.
+        assertApproxEqAbs(bondProceeds.mulDown(actualMaturedPortion) + unmaturedBonds.mulDown(spotPrice) - baseProceeds,
+            (unmaturedBonds - unmaturedBonds.mulDown(spotPrice)).mulDown(curveFee) // curve fee
+            + bondProceeds.mulDown(actualMaturedPortion).mulDown(flatFee), // flatFee
+            1e10
+            );
+    }
+
+    function test_calculateShortFees() public {
+        uint256 apr = 0.05e18;
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        uint256 curveFee = 0.1e18;
+        uint256 flatFee = 0.1e18;
+        // Deploy and initialize a new pool without fees.
+        deploy(alice, apr, 0, 0, 0);
+        initialize(alice, apr, contribution);
+        uint256 bondAmount = 10e18;
+
+        // Open a short without fees, record the basePaid.
+        (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
+        uint256 basePaidWithoutFees = basePaid;
+        console2.log("base paid without fees (1-p) = ", basePaid);
+
+        // Re-depploy with fees.
+        deploy(alice, apr, curveFee, flatFee, 0.5e18);
+        initialize(alice, apr, contribution);
+
+        uint256 spotPrice = HyperdriveUtils.calculateSpotPrice(hyperdrive);
+        uint256 baseProceedsWithoutSlippageOrFees = bondAmount.mulDown(spotPrice);
+        console2.log("baseProceedsWithoutSlippageOrFees = ", baseProceedsWithoutSlippageOrFees);
+
+        // Open a short with fees.
+        (maturityTime, basePaid) = openShort(bob, bondAmount);
+        console2.log("base paid with fees = ", basePaid);
+
+        {
+        uint256 differenceInBasePaid = basePaid - basePaidWithoutFees;
+        assertApproxEqAbs(differenceInBasePaid,
+            (bondAmount - baseProceedsWithoutSlippageOrFees).mulDown(curveFee),
+            10
+            );
+        }
+
+        // Decide what portion of time you want to mature
+        // uint256 maturedPortion = 0.75e18;
+
+        console2.log("got to here");
+        // Time passes and the pool accrues interest at the current apr.
+        advanceTime(POSITION_DURATION.mulDown(0.75e18), int256(apr));
+
+        // Calculating the actual matured portion based off the truncated number
+        // of days that have actually passed (365 * 0.75) truncated to the
+        // nearest day (using /1e18*1e18) then dividing by 365 to get a portion.
+        uint256 actualMaturedPortion = FixedPointMath.ONE_18.mulDown(365e18).mulDown(0.75e18).divDown(1e36).mulDown(1e36).divDown(365e18);
+        uint256 unmaturedBonds = bondAmount.mulDown(FixedPointMath.ONE_18 - actualMaturedPortion);
+        console2.log("got to here");
+
+        spotPrice = HyperdriveUtils.calculateSpotPrice(hyperdrive);
+        console2.log("baseProceedsWithoutSlippageOrFees = ", bondAmount.mulDown(actualMaturedPortion) + unmaturedBonds.mulDown(spotPrice));
+        console2.log("unmatured portion of fees from curveFee = ", (unmaturedBonds - unmaturedBonds.mulDown(spotPrice)).mulDown(curveFee));
+        console2.log("  in terms of shares =", (unmaturedBonds - unmaturedBonds.mulDown(spotPrice)).mulDown(curveFee).divDown(hyperdrive.getPoolInfo().sharePrice));
+        console2.log("matured portion of fees from flatfee    = ", bondAmount.mulDown(actualMaturedPortion).mulDown(flatFee));
+        console2.log("  in terms of shares =", bondAmount.mulDown(actualMaturedPortion).mulDown(flatFee).divDown(hyperdrive.getPoolInfo().sharePrice));
+
+        uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
+        // Assert the total fee is what we expect it to be.
+        assertApproxEqAbs(bondAmount.mulDown(actualMaturedPortion) + unmaturedBonds.mulDown(spotPrice) - baseProceeds,
+            (unmaturedBonds - unmaturedBonds.mulDown(spotPrice)).mulDown(curveFee) // curve fee
+            + bondAmount.mulDown(actualMaturedPortion).mulDown(flatFee), // flatFee
+            1e10
+            );
     }
 
     function test_calcFeesOutGivenBondsIn() public {
