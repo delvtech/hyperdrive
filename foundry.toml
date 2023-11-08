@@ -17,12 +17,7 @@ remappings = [
   'forge-std=lib/forge-std/src',
   'openzeppelin-contracts/=lib/openzeppelin-contracts/',
   'solmate=lib/solmate/src',
-  '@aave/=lib/aave-v3-core/contracts',
 ]
-# optimizer settings
-optimizer = true
-optimizer_runs = 5000
-via_ir = false
 # gas limit - max u64
 gas_limit = "18446744073709551615"
 # Allows the scripts to write the addresses to a file.
@@ -35,6 +30,10 @@ fs_permissions = [
 [profile.production]
 # strict warnings
 deny_warnings = true
+# optimizer settings
+optimizer = true
+optimizer_runs = 10000000 # 10 million runs
+via_ir = false
 # Enable gas-reporting for all contracts
 gas_reports = ["*"]
 evm_version = "paris"

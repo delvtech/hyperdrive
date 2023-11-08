@@ -303,6 +303,10 @@ contract ExtremeInputs is HyperdriveTest {
                 _shortAmount
             );
         }
+
+        // FIXME: Investigate this failure.
+        //
+        // [13083 [1.308e4], 115792089237316192247082740042611018616959225516561624832306239692771187490815 [1.157e77], 7865494169775540955914006602 [7.865e27]]]
     }
 
     function test__updateLiquidity__extremeValues__fuzz(

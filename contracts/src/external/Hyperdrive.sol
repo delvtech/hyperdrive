@@ -95,18 +95,13 @@ abstract contract Hyperdrive is
     }
 
     /// @notice Closes a long position with a specified maturity time.
-    /// @param _maturityTime The maturity time of the short.
-    /// @param _bondAmount The amount of longs to close.
-    /// @param _minOutput The minimum amount of base the trader will accept.
-    /// @param _options The options that configure how the trade is settled.
-    /// @return The amount of underlying the user receives.
     function closeLong(
-        uint256 _maturityTime,
-        uint256 _bondAmount,
-        uint256 _minOutput,
-        IHyperdrive.Options calldata _options
+        uint256,
+        uint256,
+        uint256,
+        IHyperdrive.Options calldata
     ) external returns (uint256) {
-        return _closeLong(_maturityTime, _bondAmount, _minOutput, _options);
+        _delegate(target1);
     }
 
     /// Shorts ///
@@ -130,18 +125,13 @@ abstract contract Hyperdrive is
     }
 
     /// @notice Closes a short position with a specified maturity time.
-    /// @param _maturityTime The maturity time of the short.
-    /// @param _bondAmount The amount of shorts to close.
-    /// @param _minOutput The minimum output of this trade.
-    /// @param _options The options that configure how the trade is settled.
-    /// @return The amount of base tokens produced by closing this short
     function closeShort(
-        uint256 _maturityTime,
-        uint256 _bondAmount,
-        uint256 _minOutput,
-        IHyperdrive.Options calldata _options
+        uint256,
+        uint256,
+        uint256,
+        IHyperdrive.Options calldata
     ) external returns (uint256) {
-        return _closeShort(_maturityTime, _bondAmount, _minOutput, _options);
+        _delegate(target1);
     }
 
     /// LPs ///
@@ -166,20 +156,22 @@ abstract contract Hyperdrive is
         _delegate(target1);
     }
 
+    // FIXME: Natspec
     function removeLiquidity(
-        uint256 _shares,
-        uint256 _minOutput,
-        IHyperdrive.Options calldata _options
-    ) external returns (uint256 baseProceeds, uint256 withdrawalShares) {
-        return _removeLiquidity(_shares, _minOutput, _options);
+        uint256,
+        uint256,
+        IHyperdrive.Options calldata
+    ) external returns (uint256, uint256) {
+        _delegate(target1);
     }
 
+    // FIXME: Natspec
     function redeemWithdrawalShares(
-        uint256 _shares,
-        uint256 _minOutput,
-        IHyperdrive.Options calldata _options
-    ) external returns (uint256 proceeds, uint256 sharesRedeemed) {
-        return _redeemWithdrawalShares(_shares, _minOutput, _options);
+        uint256,
+        uint256,
+        IHyperdrive.Options calldata
+    ) external returns (uint256, uint256) {
+        _delegate(target1);
     }
 
     /// Checkpoints ///
