@@ -25,13 +25,7 @@ contract UpdateLiquidityTest is HyperdriveTest {
             address(new ERC20Mintable("Base", "BASE", 18, address(0), false))
         );
         config.minimumShareReserves = 1e15;
-        MockHyperdriveTarget0 target0 = new MockHyperdriveTarget0(config);
-        MockHyperdriveTarget1 target1 = new MockHyperdriveTarget1(config);
-        mockHyperdrive = new MockHyperdrive(
-            config,
-            address(target0),
-            address(target1)
-        );
+        mockHyperdrive = new MockHyperdrive(config);
         hyperdrive = IHyperdrive(address(mockHyperdrive));
     }
 

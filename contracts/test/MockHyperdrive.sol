@@ -194,10 +194,16 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
     using FixedPointMath for uint256;
 
     constructor(
-        IHyperdrive.PoolConfig memory _config,
-        address _target0,
-        address _target1
-    ) Hyperdrive(_config, _target0, _target1, bytes32(0), address(0)) {}
+        IHyperdrive.PoolConfig memory _config
+    )
+        Hyperdrive(
+            _config,
+            address(new MockHyperdriveTarget0(_config)),
+            address(new MockHyperdriveTarget1(_config)),
+            bytes32(0),
+            address(0)
+        )
+    {}
 
     /// Mocks ///
 

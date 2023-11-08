@@ -8,7 +8,7 @@ import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeploye
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
-import { MockHyperdriveDeployer, MockHyperdriveTarget0Deployer, MockHyperdriveTarget1Deployer } from "contracts/test/MockHyperdriveDeployer.sol";
+import { MockHyperdriveDeployer, MockHyperdriveTargetDeployer } from "contracts/test/MockHyperdriveDeployer.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
@@ -25,8 +25,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 fees: IHyperdrive.Fees(0, 0, 0),
                 maxFees: IHyperdrive.Fees(0, 0, 0),
                 hyperdriveDeployer: new MockHyperdriveDeployer(),
-                target0Deployer: new MockHyperdriveTarget0Deployer(),
-                target1Deployer: new MockHyperdriveTarget1Deployer(),
+                target0Deployer: new MockHyperdriveTargetDeployer(),
+                target1Deployer: new MockHyperdriveTargetDeployer(),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
             })
@@ -61,8 +61,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 fees: IHyperdrive.Fees(0, 0, 0),
                 maxFees: IHyperdrive.Fees(0, 0, 0),
                 hyperdriveDeployer: new MockHyperdriveDeployer(),
-                target0Deployer: new MockHyperdriveTarget0Deployer(),
-                target1Deployer: new MockHyperdriveTarget1Deployer(),
+                target0Deployer: new MockHyperdriveTargetDeployer(),
+                target1Deployer: new MockHyperdriveTargetDeployer(),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
             });

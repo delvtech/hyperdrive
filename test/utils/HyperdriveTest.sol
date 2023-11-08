@@ -56,11 +56,7 @@ contract HyperdriveTest is BaseTest {
             feeCollector: feeCollector,
             fees: fees
         });
-        address target0 = address(new MockHyperdriveTarget0(config));
-        address target1 = address(new MockHyperdriveTarget1(config));
-        hyperdrive = IHyperdrive(
-            address(new MockHyperdrive(config, target0, target1))
-        );
+        hyperdrive = IHyperdrive(address(new MockHyperdrive(config)));
         vm.stopPrank();
         vm.startPrank(governance);
         hyperdrive.setPauser(pauser, true);
@@ -80,11 +76,7 @@ contract HyperdriveTest is BaseTest {
     ) internal {
         vm.stopPrank();
         vm.startPrank(deployer);
-        address target0 = address(new MockHyperdriveTarget0(_config));
-        address target1 = address(new MockHyperdriveTarget1(_config));
-        hyperdrive = IHyperdrive(
-            address(new MockHyperdrive(_config, target0, target1))
-        );
+        hyperdrive = IHyperdrive(address(new MockHyperdrive(_config)));
     }
 
     function deploy(
