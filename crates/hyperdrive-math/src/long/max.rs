@@ -12,14 +12,15 @@ impl State {
     /// market to is given by:
     ///
     /// $$
-    /// p_max = \frac{1}{1 + \phi_c * \left( p_0^{-1} - 1 \right)}
+    /// p_max = \frac{1 - \phi_f}{1 + \phi_c * \left( p_0^{-1} - 1 \right) * \left( \phi_f - 1 \right)}
     /// $$
     pub fn get_max_spot_price(&self) -> FixedPoint {
-        fixed!(1e18)
+        (fixed!(1e18) - self.flat_fee()
             / (fixed!(1e18)
                 + self
                     .curve_fee()
                     .mul_up(fixed!(1e18).div_up(self.get_spot_price()) - fixed!(1e18)))
+                    .mul_up(fixed!(1e18) - self.flat_fee()))
     }
 
     /// Gets the pool's solvency.

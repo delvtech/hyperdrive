@@ -399,7 +399,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 bondReservesDelta,
                 HyperdriveMath.calculateOpenLongMaxSpotPrice(
                     spotPrice,
-                    _curveFee
+                    _curveFee,
+                    _flatFee
                 )
             )
         ) {

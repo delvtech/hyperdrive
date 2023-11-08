@@ -109,18 +109,21 @@ library HyperdriveMath {
     ///      Given the curve fee `phi_c` and the starting spot price `p_0`, the
     ///      maximum spot price is given by:
     ///
-    ///      p_max = 1 / (1 + phi_c * (1 / p_0 - 1))
+    ///      p_max = (1 - phi_f) / (1 + phi_c * (1 / p_0 - 1)(1 - phi_f))
     ///
     /// @param _startingSpotPrice The spot price at the start of the trade.
     /// @param _curveFee The curve fee.
+    /// @param _flatFee The flat fee.
     /// @return The maximum spot price.
     function calculateOpenLongMaxSpotPrice(
         uint256 _startingSpotPrice,
-        uint256 _curveFee
+        uint256 _curveFee,
+        uint256 _flatFee
     ) internal pure returns (uint256) {
         return
-            ONE.divDown(
+            (ONE - _flatFee).divDown(
                 ONE + _curveFee.mulUp(ONE.divUp(_startingSpotPrice) - ONE)
+                    .mulUp(ONE - _flatFee)
             );
     }
 
