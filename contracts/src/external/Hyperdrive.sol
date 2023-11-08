@@ -8,6 +8,7 @@ import { HyperdriveBase } from "../internal/HyperdriveBase.sol";
 import { HyperdriveCheckpoint } from "../internal/HyperdriveCheckpoint.sol";
 import { HyperdriveLong } from "../internal/HyperdriveLong.sol";
 import { HyperdriveLP } from "../internal/HyperdriveLP.sol";
+import { HyperdrivePermitForAll } from "../internal/HyperdrivePermitForAll.sol";
 import { HyperdriveShort } from "../internal/HyperdriveShort.sol";
 import { HyperdriveStorage } from "../internal/HyperdriveStorage.sol";
 
@@ -16,12 +17,15 @@ import { HyperdriveStorage } from "../internal/HyperdriveStorage.sol";
 // FIXME: Natspec
 abstract contract Hyperdrive is
     IHyperdriveCore,
+    HyperdrivePermitForAll,
     HyperdriveAdmin,
     HyperdriveLP,
     HyperdriveLong,
     HyperdriveShort,
     HyperdriveCheckpoint
 {
+    // FIXME: Natspec.
+    //
     /// @notice The address of the extras contract.
     address public immutable target0;
     address public immutable target1;
@@ -39,7 +43,11 @@ abstract contract Hyperdrive is
         address _target1,
         bytes32 _linkerCodeHash,
         address _linkerFactory
-    ) HyperdriveStorage(_config, _linkerCodeHash, _linkerFactory) {
+    )
+        HyperdriveStorage(_config, _linkerCodeHash, _linkerFactory)
+        HyperdrivePermitForAll()
+    {
+        // Initialize the target contracts.
         target0 = _target0;
         target1 = _target1;
     }
@@ -254,19 +262,35 @@ abstract contract Hyperdrive is
         _delegate(target0);
     }
 
-    /// @notice Allows a caller who is not the owner of an account to execute
-    ///         the functionality of 'approve' for all assets with the owners
-    ///         signature.
+    /// MultiToken ///
+
+    /// @notice Allows a caller who is not the owner of an account to execute the
+    ///      functionality of 'approve' for all assets with the owners signature.
+    /// @param owner The owner of the account which is having the new approval set.
+    /// @param spender The address which will be allowed to spend owner's tokens
+    /// @param _approved A boolean of the approval status to set to
+    /// @param deadline The timestamp which the signature must be submitted by
+    ///        to be valid.
+    /// @param v Extra ECDSA data which allows public key recovery from
+    ///        signature assumed to be 27 or 28.
+    /// @param r The r component of the ECDSA signature
+    /// @param s The s component of the ECDSA signature
+    /// @dev The signature for this function follows EIP 712 standard and should
+    ///      be generated with the eth_signTypedData JSON RPC call instead of
+    ///      the eth_sign JSON RPC call. If using out of date parity signing
+    ///      libraries the v component may need to be adjusted. Also it is very
+    ///      rare but possible for v to be other values, those values are not
+    ///      supported.
     function permitForAll(
-        address,
-        address,
-        bool,
-        uint256,
-        uint8,
-        bytes32,
-        bytes32
+        address owner,
+        address spender,
+        bool _approved,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
     ) external {
-        _delegate(target0);
+        _permitForAll(owner, spender, _approved, deadline, v, r, s);
     }
 
     /// Helpers ///

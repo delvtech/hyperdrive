@@ -24,12 +24,6 @@ import { HyperdriveBase } from "./HyperdriveBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveMultiToken is HyperdriveBase {
-    // FIXME: Revisit this and the DOMAIN_SEPARATOR.
-    bytes32 internal constant PERMIT_TYPEHASH =
-        keccak256(
-            "PermitForAll(address owner,address spender,bool _approved,uint256 nonce,uint256 deadline)"
-        );
-
     /// @notice This modifier checks the caller is the create2 validated ERC20 bridge
     /// @param tokenID The internal token identifier
     modifier onlyLinker(uint256 tokenID) {
@@ -70,86 +64,12 @@ abstract contract HyperdriveMultiToken is HyperdriveBase {
         }
     }
 
-    /// @dev Allows a caller who is not the owner of an account to execute the
-    ///      functionality of 'approve' for all assets with the owners signature.
-    /// @param owner The owner of the account which is having the new approval set.
-    /// @param spender The address which will be allowed to spend owner's tokens
-    /// @param _approved A boolean of the approval status to set to
-    /// @param deadline The timestamp which the signature must be submitted by
-    ///        to be valid.
-    /// @param v Extra ECDSA data which allows public key recovery from
-    ///        signature assumed to be 27 or 28.
-    /// @param r The r component of the ECDSA signature
-    /// @param s The s component of the ECDSA signature
-    /// @dev The signature for this function follows EIP 712 standard and should
-    ///      be generated with the eth_signTypedData JSON RPC call instead of
-    ///      the eth_sign JSON RPC call. If using out of date parity signing
-    ///      libraries the v component may need to be adjusted. Also it is very
-    ///      rare but possible for v to be other values, those values are not
-    ///      supported.
-    function _permitForAll(
-        address owner,
-        address spender,
-        bool _approved,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) internal {
-        // Require that the signature is not expired
-        if (block.timestamp > deadline) revert IHyperdrive.ExpiredDeadline();
-        // Require that the owner is not zero
-        if (owner == address(0)) revert IHyperdrive.RestrictedZeroAddress();
-
-        bytes32 structHash = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                // FIXME: Two things. We need to make sure this is publicly
-                // available and we shouldn't inline it.
-                //
-                // FIXME: We can get around this by using create2 to deploy
-                // Hyperdrive and then pass the Hyperdrive address into this.
-                keccak256(
-                    abi.encode(
-                        keccak256(
-                            "EIP712Domain(string version,uint256 chainId,address verifyingContract)"
-                        ),
-                        keccak256(bytes("1")),
-                        block.chainid,
-                        address(this)
-                    )
-                ),
-                keccak256(
-                    abi.encode(
-                        PERMIT_TYPEHASH,
-                        owner,
-                        spender,
-                        _approved,
-                        _nonces[owner],
-                        deadline
-                    )
-                )
-            )
-        );
-
-        // Check that the signature is valid
-        address signer = ecrecover(structHash, v, r, s);
-        if (signer != owner) revert IHyperdrive.InvalidSignature();
-
-        // Increment the signature nonce
-        ++_nonces[owner];
-        // set the state
-        _isApprovedForAll[owner][spender] = _approved;
-        // Emit an event to track approval
-        emit ApprovalForAll(owner, spender, _approved);
-    }
-
     /// @dev Performs the actual transfer logic.
-    /// @param tokenID The token identifier
-    /// @param from The address who's balance will be reduced
-    /// @param to The address who's balance will be increased
-    /// @param amount The amount of token to move
-    /// @param caller The msg.sender either here or in the compatibility link contract
+    /// @param tokenID The token identifier.
+    /// @param from The address who's balance will be reduced.
+    /// @param to The address who's balance will be increased.
+    /// @param amount The amount of token to move.
+    /// @param caller The msg.sender or the caller of the ERC20Forwarder.
     function _transferFrom(
         uint256 tokenID,
         address from,
@@ -161,10 +81,10 @@ abstract contract HyperdriveMultiToken is HyperdriveBase {
         if (from == address(0) || to == address(0))
             revert IHyperdrive.RestrictedZeroAddress();
 
-        // If ethereum transaction sender is calling no need for further validation
+        // If the transaction sender is calling no need for further validation
         if (caller != from) {
-            // Or if the transaction sender can access all user assets, no need for
-            // more validation
+            // Or if the transaction sender can access all user assets, no need
+            // for more validation
             if (!_isApprovedForAll[from][caller]) {
                 // Finally we load the per asset approval
                 uint256 approved = _perTokenApprovals[tokenID][from][caller];
@@ -172,8 +92,9 @@ abstract contract HyperdriveMultiToken is HyperdriveBase {
                 if (approved != type(uint256).max) {
                     // Then we subtract the amount the caller wants to use
                     // from how much they can use, reverting on underflow.
-                    // NOTE - This reverts without message for unapproved callers when
-                    //         debugging that's the likely source of any mystery reverts
+                    // NOTE: This reverts without message for unapproved callers
+                    // when debugging that's the likely source of any mystery
+                    // reverts.
                     _perTokenApprovals[tokenID][from][caller] -= amount;
                 }
             }
@@ -186,12 +107,13 @@ abstract contract HyperdriveMultiToken is HyperdriveBase {
         emit TransferSingle(caller, from, to, tokenID, amount);
     }
 
-    /// @notice internal function to change approvals
-    /// @param tokenID The asset to approve the use of
-    /// @param operator The address who will be able to use the tokens
-    /// @param amount The max tokens the approved person can use, setting to uint256.max
-    ///               will cause the value to never decrement [saving gas on transfer]
-    /// @param caller The eth address which initiated the approval call
+    /// @notice Sets the approval for a sub-token.
+    /// @param tokenID The asset to approve the use of.
+    /// @param operator The address who will be able to use the tokens.
+    /// @param amount The max tokens the approved person can use, setting to
+    ///               uint256.max will cause the value to never decrement
+    ///               [saving gas on transfer].
+    /// @param caller The eth address which initiated the approval call.
     function _setApproval(
         uint256 tokenID,
         address operator,
@@ -199,15 +121,16 @@ abstract contract HyperdriveMultiToken is HyperdriveBase {
         address caller
     ) internal {
         _perTokenApprovals[tokenID][caller][operator] = amount;
-        // Emit an event to track approval
+
+        // Emit an event to track approval.
         emit Approval(caller, operator, amount);
     }
 
-    /// @notice Minting function to create tokens
-    /// @param tokenID The asset type to create
-    /// @param to The address who's balance to increase
-    /// @param amount The number of tokens to create
-    /// @dev Must be used from inheriting contracts
+    /// @notice Minting function to create tokens.
+    /// @param tokenID The asset type to create.
+    /// @param to The address who's balance to increase.
+    /// @param amount The number of tokens to create.
+    /// @dev Must be used from inheriting contracts.
     function _mint(
         uint256 tokenID,
         address to,
@@ -215,32 +138,36 @@ abstract contract HyperdriveMultiToken is HyperdriveBase {
     ) internal virtual {
         _balanceOf[tokenID][to] += amount;
         _totalSupply[tokenID] += amount;
-        // Emit an event to track minting
+
+        // Emit an event to track minting.
         emit TransferSingle(msg.sender, address(0), to, tokenID, amount);
     }
 
-    /// @notice Burning function to remove tokens
-    /// @param tokenID The asset type to remove
-    /// @param from The address who's balance to decrease
-    /// @param amount The number of tokens to remove
-    /// @dev Must be used from inheriting contracts
+    /// @notice Burning function to remove tokens.
+    /// @param tokenID The asset type to remove.
+    /// @param from The address who's balance to decrease.
+    /// @param amount The number of tokens to remove.
+    /// @dev Must be used from inheriting contracts.
     function _burn(uint256 tokenID, address from, uint256 amount) internal {
-        // Decrement from the source and supply
+        // Decrement from the source and supply.
         _balanceOf[tokenID][from] -= amount;
         _totalSupply[tokenID] -= amount;
-        // Emit an event to track burning
+
+        // Emit an event to track burning.
         emit TransferSingle(msg.sender, from, address(0), tokenID, amount);
     }
 
     /// @notice Derive the ERC20 forwarder address for a provided `tokenId`.
-    /// @param tokenId Token Id of the token whose forwarder contract address need to derived.
+    /// @param tokenId Token Id of the token whose forwarder contract address
+    ///        need to derived.
     /// @return Address of the ERC20 forwarder contract.
     function _deriveForwarderAddress(
         uint256 tokenId
     ) internal view returns (address) {
-        // Get the salt which is used by the deploying contract
+        // Get the salt which is used by the deploying contract.
         bytes32 salt = keccak256(abi.encode(address(this), tokenId));
-        // Preform the hash which determines the address of a create2 deployment
+
+        // Preform the hash which determines the address of a create2 deployment.
         bytes32 addressBytes = keccak256(
             abi.encodePacked(bytes1(0xff), _factory, salt, _linkerCodeHash)
         );

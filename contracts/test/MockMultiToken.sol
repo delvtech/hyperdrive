@@ -6,6 +6,7 @@ import { IERC20 } from "../src/interfaces/IERC20.sol";
 import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
 import { IMultiToken } from "../src/interfaces/IMultiToken.sol";
 import { HyperdriveMultiToken } from "../src/internal/HyperdriveMultiToken.sol";
+import { HyperdrivePermitForAll } from "../src/internal/HyperdrivePermitForAll.sol";
 import { HyperdriveStorage } from "../src/internal/HyperdriveStorage.sol";
 import { MockHyperdriveBase, MockHyperdriveTarget0 } from "./MockHyperdrive.sol";
 
@@ -30,7 +31,11 @@ interface IMockMultiToken is IMultiToken {
     function burn(uint256 tokenID, address from, uint256 amount) external;
 }
 
-contract MockMultiToken is HyperdriveMultiToken, MockHyperdriveBase {
+contract MockMultiToken is
+    HyperdriveMultiToken,
+    HyperdrivePermitForAll,
+    MockHyperdriveBase
+{
     address internal immutable target0;
 
     constructor(
@@ -53,6 +58,7 @@ contract MockMultiToken is HyperdriveMultiToken, MockHyperdriveBase {
             _linkerCodeHash,
             _linkerFactory
         )
+        HyperdrivePermitForAll()
     {
         target0 = address(
             new MockHyperdriveTarget0(
@@ -67,7 +73,9 @@ contract MockMultiToken is HyperdriveMultiToken, MockHyperdriveBase {
                     governance: address(0),
                     feeCollector: address(0),
                     fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 })
-                })
+                }),
+                _linkerCodeHash,
+                _linkerFactory
             )
         );
     }
@@ -112,6 +120,37 @@ contract MockMultiToken is HyperdriveMultiToken, MockHyperdriveBase {
         uint256
     ) internal pure override returns (uint256) {
         return 0;
+    }
+
+    /// MultiToken ///
+
+    /// @notice Allows a caller who is not the owner of an account to execute the
+    ///      functionality of 'approve' for all assets with the owners signature.
+    /// @param owner The owner of the account which is having the new approval set.
+    /// @param spender The address which will be allowed to spend owner's tokens
+    /// @param _approved A boolean of the approval status to set to
+    /// @param deadline The timestamp which the signature must be submitted by
+    ///        to be valid.
+    /// @param v Extra ECDSA data which allows public key recovery from
+    ///        signature assumed to be 27 or 28.
+    /// @param r The r component of the ECDSA signature
+    /// @param s The s component of the ECDSA signature
+    /// @dev The signature for this function follows EIP 712 standard and should
+    ///      be generated with the eth_signTypedData JSON RPC call instead of
+    ///      the eth_sign JSON RPC call. If using out of date parity signing
+    ///      libraries the v component may need to be adjusted. Also it is very
+    ///      rare but possible for v to be other values, those values are not
+    ///      supported.
+    function permitForAll(
+        address owner,
+        address spender,
+        bool _approved,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external {
+        _permitForAll(owner, spender, _approved, deadline, v, r, s);
     }
 
     /// Mocks ///

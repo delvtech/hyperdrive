@@ -69,7 +69,7 @@ abstract contract HyperdriveTarget0 is
         _setPauser(who, status);
     }
 
-    /// Token ///
+    /// MultiToken ///
 
     /// @notice Transfers an amount of assets from the source to the destination.
     /// @param tokenID The token identifier.
@@ -158,35 +158,6 @@ abstract contract HyperdriveTarget0 is
         uint256[] calldata values
     ) external {
         _batchTransferFrom(from, to, ids, values);
-    }
-
-    /// @notice Allows a caller who is not the owner of an account to execute the
-    ///      functionality of 'approve' for all assets with the owners signature.
-    /// @param owner The owner of the account which is having the new approval set.
-    /// @param spender The address which will be allowed to spend owner's tokens
-    /// @param _approved A boolean of the approval status to set to
-    /// @param deadline The timestamp which the signature must be submitted by
-    ///        to be valid.
-    /// @param v Extra ECDSA data which allows public key recovery from
-    ///        signature assumed to be 27 or 28.
-    /// @param r The r component of the ECDSA signature
-    /// @param s The s component of the ECDSA signature
-    /// @dev The signature for this function follows EIP 712 standard and should
-    ///      be generated with the eth_signTypedData JSON RPC call instead of
-    ///      the eth_sign JSON RPC call. If using out of date parity signing
-    ///      libraries the v component may need to be adjusted. Also it is very
-    ///      rare but possible for v to be other values, those values are not
-    ///      supported.
-    function permitForAll(
-        address owner,
-        address spender,
-        bool _approved,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external {
-        _permitForAll(owner, spender, _approved, deadline, v, r, s);
     }
 
     /// Getters ///

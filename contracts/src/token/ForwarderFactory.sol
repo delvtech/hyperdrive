@@ -29,54 +29,60 @@ contract ForwarderFactory is IForwarderFactory {
 
     constructor() {} // solhint-disable-line no-empty-blocks
 
-    /// @notice Uses create2 to deploy a forwarder at a predictable address as part of
-    ///         our ERC20 multitoken implementation.
-    /// @param token The multitoken which the forwarder should link to
-    /// @param tokenId The id of the sub token from the multitoken which we are creating
-    ///                 an interface for.
-    /// @return returns the address of the deployed forwarder
+    /// @notice Uses create2 to deploy a forwarder at a predictable address as
+    ///         part of our ERC20 multitoken implementation.
+    /// @param token The multitoken which the forwarder should link to.
+    /// @param tokenId The id of the sub token from the multitoken which we are
+    ///        creating an interface for.
+    /// @return Returns the address of the deployed forwarder
     function create(
         IMultiToken token,
         uint256 tokenId
     ) external returns (ERC20Forwarder) {
-        // Set the transient state variables before deploy
+        // Set the transient state variables before deploy.
         _tokenId = tokenId;
         _token = token;
-        // The salt is the _tokenId hashed with the multi token
+
+        // The salt is the _tokenId hashed with the multi token.
         bytes32 salt = keccak256(abi.encode(token, tokenId));
-        // Deploy using create2 with that salt
+
+        // Deploy using create2 with that salt.
         ERC20Forwarder deployed = new ERC20Forwarder{ salt: salt }();
-        // As a consistency check we check that this is in the right address
+
+        // As a consistency check we check that this is in the right address.
         if (!(address(deployed) == getForwarder(token, tokenId))) {
             revert IHyperdrive.InvalidForwarderAddress();
         }
-        // Reset the transient state
+
+        // Reset the transient state.
         _token = IMultiToken(address(1));
         _tokenId = 1;
-        // return the deployed forwarder
+
+        // Return the deployed forwarder.
         return (deployed);
     }
 
-    /// @notice Returns the transient storage of this contract
-    /// @return Returns the stored multitoken address and the sub token id
+    /// @notice Returns the transient storage of this contract.
+    /// @return Returns the stored multitoken address and the sub token id.
     function getDeployDetails() external view returns (IMultiToken, uint256) {
         return (_token, _tokenId);
     }
 
-    /// @notice Helper to calculate expected forwarder contract addresses
-    /// @param token The multitoken which the forwarder should link to
-    /// @param tokenId The id of the sub token from the multitoken
-    /// @return The expected address of the forwarder
+    /// @notice Helper to calculate expected forwarder contract addresses.
+    /// @param token The multitoken which the forwarder should link to.
+    /// @param tokenId The id of the sub token from the multitoken.
+    /// @return The expected address of the forwarder.
     function getForwarder(
         IMultiToken token,
         uint256 tokenId
     ) public view returns (address) {
-        // Get the salt and hash to predict the address
+        // Get the salt and hash to predict the address.
         bytes32 salt = keccak256(abi.encode(token, tokenId));
         bytes32 addressBytes = keccak256(
             abi.encodePacked(bytes1(0xff), address(this), salt, ERC20LINK_HASH)
         );
-        // Beautiful type safety from the solidity language
+
+        // Beautiful type safety from the solidity language.
         return address(uint160(uint256(addressBytes)));
     }
 }
