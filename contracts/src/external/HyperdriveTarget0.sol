@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IHyperdriveRead } from "../interfaces/IHyperdriveRead.sol";
 import { HyperdriveAdmin } from "../internal/HyperdriveAdmin.sol";
 import { HyperdriveCheckpoint } from "../internal/HyperdriveCheckpoint.sol";
 import { HyperdriveLong } from "../internal/HyperdriveLong.sol";
@@ -15,6 +16,7 @@ import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 
 // FIXME: Add some Natspec
 abstract contract HyperdriveTarget0 is
+    IHyperdriveRead,
     HyperdriveAdmin,
     HyperdriveMultiToken,
     HyperdriveLP,

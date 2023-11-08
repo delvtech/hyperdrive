@@ -1,20 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IDataProvider } from "./IDataProvider.sol";
 import { IERC20 } from "./IERC20.sol";
 import { IHyperdriveCore } from "./IHyperdriveCore.sol";
-import { IHyperdriveExtras } from "./IHyperdriveExtras.sol";
 import { IHyperdriveRead } from "./IHyperdriveRead.sol";
 import { IMultiToken } from "./IMultiToken.sol";
 
-interface IHyperdrive is
-    IDataProvider,
-    IHyperdriveRead,
-    IHyperdriveExtras,
-    IHyperdriveCore,
-    IMultiToken
-{
+interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     /// Events ///
 
     event Initialize(
@@ -325,4 +317,10 @@ interface IHyperdrive is
     /// ######################
     error UnsafeCastToUint128();
     error UnsafeCastToInt128();
+
+    /// Getters ///
+
+    function target0() external view returns (address);
+
+    function target1() external view returns (address);
 }

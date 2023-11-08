@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { AssetId } from "../libraries/AssetId.sol";
@@ -14,8 +14,6 @@ import { AssetId } from "../libraries/AssetId.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract BondWrapper is ERC20 {
-    using SafeERC20 for IERC20;
-
     // The multitoken of the bond
     IHyperdrive public immutable hyperdrive;
     // The underlying token from the bond
@@ -154,7 +152,11 @@ contract BondWrapper is ERC20 {
         if (userFunds < minOutput) revert IHyperdrive.OutputLimit();
 
         // Transfer the released funds to the user
-        token.safeTransfer(destination, userFunds);
+        SafeTransferLib.safeTransfer(
+            ERC20(address(token)),
+            destination,
+            userFunds
+        );
     }
 
     /// @notice Sells all assets from the contract if they are matured, has no affect if
@@ -193,7 +195,7 @@ contract BondWrapper is ERC20 {
         _burn(msg.sender, amount);
 
         // Transfer the released funds to the user
-        token.safeTransfer(msg.sender, amount);
+        SafeTransferLib.safeTransfer(ERC20(address(token)), msg.sender, amount);
     }
 
     /// @notice Calls both force close and redeem to enable easy liquidation of a user account

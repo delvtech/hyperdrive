@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IHyperdriveCore } from "../interfaces/IHyperdriveCore.sol";
 import { HyperdriveAdmin } from "../internal/HyperdriveAdmin.sol";
 import { HyperdriveBase } from "../internal/HyperdriveBase.sol";
 import { HyperdriveCheckpoint } from "../internal/HyperdriveCheckpoint.sol";
@@ -14,6 +15,7 @@ import { HyperdriveStorage } from "../internal/HyperdriveStorage.sol";
 //
 // FIXME: Natspec
 abstract contract Hyperdrive is
+    IHyperdriveCore,
     HyperdriveAdmin,
     HyperdriveLP,
     HyperdriveLong,

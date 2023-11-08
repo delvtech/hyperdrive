@@ -48,9 +48,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             )
         );
 
-        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
-                pool
-            );
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();

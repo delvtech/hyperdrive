@@ -30,26 +30,6 @@ abstract contract HyperdriveMultiToken is HyperdriveBase {
             "PermitForAll(address owner,address spender,bool _approved,uint256 nonce,uint256 deadline)"
         );
 
-    event TransferSingle(
-        address indexed operator,
-        address indexed from,
-        address indexed to,
-        uint256 id,
-        uint256 value
-    );
-
-    event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 value
-    );
-
-    event ApprovalForAll(
-        address indexed account,
-        address indexed operator,
-        bool approved
-    );
-
     /// @notice This modifier checks the caller is the create2 validated ERC20 bridge
     /// @param tokenID The internal token identifier
     modifier onlyLinker(uint256 tokenID) {
