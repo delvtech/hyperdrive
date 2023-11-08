@@ -46,7 +46,7 @@ contract HyperdriveTest is BaseTest {
             governance: 0
         });
         // Instantiate Hyperdrive.
-        uint256 apr = 1e18;
+        uint256 apr = 0.05e18;
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: IERC20(address(baseToken)),
             initialSharePrice: INITIAL_SHARE_PRICE,
