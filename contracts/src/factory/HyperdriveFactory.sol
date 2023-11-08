@@ -242,8 +242,6 @@ contract HyperdriveFactory {
         _defaultPausers = _defaultPausers_;
     }
 
-    // FIXME: Natspec
-    //
     /// @notice Deploys a Hyperdrive instance with the factory's configuration.
     /// @dev This function is declared as payable to allow payable overrides
     ///      to accept ether on initialization, but payability is not supported
@@ -342,12 +340,7 @@ contract HyperdriveFactory {
         return hyperdrive;
     }
 
-    // FIXME: Natspec
-    //
-    /// @notice Deploys a Hyperdrive data provider instance with the factory's
-    ///         configuration.
-    /// @dev This should be overrided so that the data provider corresponding
-    ///      to an individual instance is used.
+    /// @notice Deploys a Hyperdrive target0 contract.
     /// @param _config The configuration of the pool we are deploying
     /// @param _linkerCodeHash The code hash from the multitoken deployer
     /// @param _linkerFactory The factory of the multitoken deployer
@@ -369,17 +362,12 @@ contract HyperdriveFactory {
             );
     }
 
-    // FIXME: Natspec
-    //
-    /// @notice Deploys a Hyperdrive extras instance with the factory's
-    ///         configuration.
-    /// @dev This should be overrided so that the data provider corresponding
-    ///      to an individual instance is used.
+    /// @notice Deploys a Hyperdrive target1 contract.
     /// @param _config The configuration of the pool we are deploying
     /// @param _linkerCodeHash The code hash from the multitoken deployer
     /// @param _linkerFactory The factory of the multitoken deployer
     /// @param _extraData The extra data from the pool deployment
-    /// @return The address of the new extras contract.
+    /// @return The address of the new data provider contract.
     function _deployTarget1(
         IHyperdrive.PoolConfig memory _config,
         bytes32 _linkerCodeHash,

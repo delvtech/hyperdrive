@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 
-// FIXME: Update this Natspec. It's time now that we've made it a full facet.
+// TODO: Clean up this contract's comments.
 //
 /// @author DELV
 /// @title HyperdriveMultiToken
@@ -169,7 +169,12 @@ abstract contract HyperdriveMultiToken is HyperdriveBase {
 
         // Preform the hash which determines the address of a create2 deployment.
         bytes32 addressBytes = keccak256(
-            abi.encodePacked(bytes1(0xff), _factory, salt, _linkerCodeHash)
+            abi.encodePacked(
+                bytes1(0xff),
+                _linkerFactory,
+                salt,
+                _linkerCodeHash
+            )
         );
         return address(uint160(uint256(addressBytes)));
     }

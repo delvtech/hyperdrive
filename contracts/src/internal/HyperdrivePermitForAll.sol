@@ -4,18 +4,31 @@ pragma solidity 0.8.19;
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { HyperdriveMultiToken } from "./HyperdriveMultiToken.sol";
 
-// FIXME: Natspec
+/// @author DELV
+/// @title HyperdrivePermitForAll
+/// @notice Implements the logic for `permitForAll` and exposes getters for the
+///         EIP712 domain separator and `permitForAll` typehash.
+/// @dev
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
 abstract contract HyperdrivePermitForAll is HyperdriveMultiToken {
-    // FIXME: Natspec
+    /// @notice The typehash used to calculate the EIP712 hash for `permitForAll`.
     bytes32 public constant PERMIT_TYPEHASH =
         keccak256(
             "PermitForAll(address owner,address spender,bool _approved,uint256 nonce,uint256 deadline)"
         );
 
-    // FIXME: Natspec
+    /// @notice This contract's EIP712 domain separator.
     bytes32 public immutable DOMAIN_SEPARATOR;
 
+    /// @dev Computes the EIP712 domain separator and stores it as an immutable.
     constructor() {
+        // NOTE: It's convenient to keep this in the `Hyperdrive.sol`
+        //       entry-point to avoiding issues with initializing the domain
+        //       separator with the contract address. If this is moved to one of
+        //       the targets, the domain separator will need to be computed
+        //       differently.
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 keccak256(
@@ -64,6 +77,7 @@ abstract contract HyperdrivePermitForAll is HyperdriveMultiToken {
             revert IHyperdrive.RestrictedZeroAddress();
         }
 
+        // Check that the signature is valid and recovers to the owner.
         bytes32 structHash = keccak256(
             abi.encodePacked(
                 "\x19\x01",
@@ -80,8 +94,6 @@ abstract contract HyperdrivePermitForAll is HyperdriveMultiToken {
                 )
             )
         );
-
-        // Check that the signature is valid.
         address signer = ecrecover(structHash, v, r, s);
         if (signer != owner) revert IHyperdrive.InvalidSignature();
 

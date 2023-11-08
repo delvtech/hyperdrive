@@ -28,7 +28,7 @@ contract MultiTokenTest is BaseTest {
     }
 
     function testFactory() public {
-        assertEq(multiToken.factory(), address(forwarderFactory));
+        assertEq(multiToken.linkerFactory(), address(forwarderFactory));
     }
 
     // TODO - really needs a better test

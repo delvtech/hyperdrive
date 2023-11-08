@@ -6,30 +6,26 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveTargetDeployer } from "../interfaces/IHyperdriveTargetDeployer.sol";
 import { ERC4626Target0 } from "../instances/ERC4626Target0.sol";
 
-// FIXME: Natspec
-//
 /// @author DELV
-/// @title ERC4626HyperdriveFactory
+/// @title ERC4626Target0Deployer
 /// @notice This is a minimal factory which contains only the logic to deploy
-///         hyperdrive and is called by a more complex factory which
+///         the target0 contract and is called by a more complex factory which
 ///         initializes the Hyperdrive instances and acts as a registry.
 /// @dev We use two contracts to avoid any code size limit issues with Hyperdrive.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ERC4626Target0Deployer is IHyperdriveTargetDeployer {
-    // FIXME: This shouldn't even be here once we update the factory.
+    // @dev TODO: This should be removed when we update the factory.
     IERC4626 internal immutable pool;
 
-    // FIXME: Natspec
-    //
+    /// @notice Instantiates the target0 deployer.
+    /// @param _pool The address of the ERC4626 pool this deployer utilizes.
     constructor(IERC4626 _pool) {
         pool = _pool;
     }
 
-    // FIXME: Natspec
-    //
-    /// @notice Deploys a copy of hyperdrive with the given params.
+    /// @notice Deploys a target0 instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.

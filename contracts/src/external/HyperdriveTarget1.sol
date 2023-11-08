@@ -10,7 +10,12 @@ import { HyperdriveMultiToken } from "../internal/HyperdriveMultiToken.sol";
 import { HyperdriveShort } from "../internal/HyperdriveShort.sol";
 import { HyperdriveStorage } from "../internal/HyperdriveStorage.sol";
 
-// FIXME: Natspec
+/// @author DELV
+/// @title HyperdriveTarget1
+/// @notice Hyperdrive's target 1 logic contract.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
 abstract contract HyperdriveTarget1 is
     HyperdriveAdmin,
     HyperdriveMultiToken,
@@ -19,12 +24,12 @@ abstract contract HyperdriveTarget1 is
     HyperdriveShort,
     HyperdriveCheckpoint
 {
-    // FIXME: Update this Natspec
-    //
-    /// @notice Instantiates a Hyperdrive extras contract.
-    /// @param _config The configuration of the pool.
-    /// @param _linkerCodeHash The code hash of the linker contract.
-    /// @param _linkerFactory The address of the linker factory.
+    /// @notice Instantiates target1.
+    /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _linkerCodeHash The hash of the ERC20 linker contract's
+    ///        constructor code.
+    /// @param _linkerFactory The address of the factory which is used to deploy
+    ///        the ERC20 linker contracts.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         bytes32 _linkerCodeHash,
@@ -95,27 +100,55 @@ abstract contract HyperdriveTarget1 is
         return _addLiquidity(_contribution, _minApr, _maxApr, _options);
     }
 
-    // FIXME: Natspec
+    /// @notice Allows an LP to burn shares and withdraw from the pool.
+    /// @param _lpShares The LP shares to burn.
+    /// @param _minOutput The minium amount of the base token to receive.
+    ///        NOTE: This value is likely to be less than the amount LP shares
+    ///        are worth. The remainder is in short and long withdraw shares
+    ///        which are hard to game the value of.
+    /// @param _options The options that configure how the operation is settled.
+    /// @return The amount the LP removing liquidity receives. The LP receives a
+    ///         proportional amount of the pool's idle capital.
+    /// @return The base that the LP receives buys out some of their LP shares,
+    ///         but it may not be sufficient to fully buy the LP out. In this
+    ///         case, the LP receives withdrawal shares equal in value to the
+    ///         present value they are owed. As idle capital becomes available,
+    ///         the pool will buy back these shares.
     function removeLiquidity(
-        uint256 _shares,
+        uint256 _lpShares,
         uint256 _minOutput,
         IHyperdrive.Options calldata _options
-    ) external returns (uint256 baseProceeds, uint256 withdrawalShares) {
-        return _removeLiquidity(_shares, _minOutput, _options);
+    ) external returns (uint256, uint256) {
+        return _removeLiquidity(_lpShares, _minOutput, _options);
     }
 
-    // FIXME: Natspec
+    /// @notice Redeems withdrawal shares by giving the LP a pro-rata amount of
+    ///         the withdrawal pool's proceeds. This function redeems the
+    ///         maximum amount of the specified withdrawal shares given the
+    ///         amount of withdrawal shares ready to withdraw.
+    /// @param _withdrawalShares The withdrawal shares to redeem.
+    /// @param _minOutputPerShare The minimum amount of base the LP expects to
+    ///        receive for each withdrawal share that is burned.
+    /// @param _options The options that configure how the operation is settled.
+    /// @return The amount the LP received.
+    /// @return The amount of withdrawal shares that were redeemed.
     function redeemWithdrawalShares(
-        uint256 _shares,
-        uint256 _minOutput,
+        uint256 _withdrawalShares,
+        uint256 _minOutputPerShare,
         IHyperdrive.Options calldata _options
-    ) external returns (uint256 proceeds, uint256 sharesRedeemed) {
-        return _redeemWithdrawalShares(_shares, _minOutput, _options);
+    ) external returns (uint256, uint256) {
+        return
+            _redeemWithdrawalShares(
+                _withdrawalShares,
+                _minOutputPerShare,
+                _options
+            );
     }
 
     /// Checkpoints ///
 
-    // FIXME: Comment this.
+    /// @notice Allows anyone to mint a new checkpoint.
+    /// @param _checkpointTime The time of the checkpoint to create.
     function checkpoint(uint256 _checkpointTime) external {
         _checkpoint(_checkpointTime);
     }

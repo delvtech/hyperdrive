@@ -12,9 +12,12 @@ import { HyperdrivePermitForAll } from "../internal/HyperdrivePermitForAll.sol";
 import { HyperdriveShort } from "../internal/HyperdriveShort.sol";
 import { HyperdriveStorage } from "../internal/HyperdriveStorage.sol";
 
-// FIXME: This should implement an interface
-//
-// FIXME: Natspec
+/// @author DELV
+/// @title Hyperdrive
+/// @notice A fixed-rate AMM that mints bonds on demand for longs and shorts.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
 abstract contract Hyperdrive is
     IHyperdriveCore,
     HyperdrivePermitForAll,
@@ -24,17 +27,19 @@ abstract contract Hyperdrive is
     HyperdriveShort,
     HyperdriveCheckpoint
 {
-    // FIXME: Natspec.
-    //
-    /// @notice The address of the extras contract.
+    /// @notice The target0 address. This is a logic contract that contains all
+    ///         of the getters for the Hyperdrive pool as well as some stateful
+    ///         functions.
     address public immutable target0;
+
+    /// @notice The target1 address. This is a logic contract that contains all
+    ///         some stateful functions.
     address public immutable target1;
 
-    // FIXME: Natspec
     /// @notice Instantiates a Hyperdrive pool.
     /// @param _config The configuration of the pool.
-    /// @param _target0 FIXME
-    /// @param _target1 FIXME
+    /// @param _target0 The target0 address.
+    /// @param _target1 The target1 address.
     /// @param _linkerCodeHash The code hash of the linker contract.
     /// @param _linkerFactory The address of the linker factory.
     constructor(
@@ -147,7 +152,6 @@ abstract contract Hyperdrive is
     /// LPs ///
 
     /// @notice Allows the first LP to initialize the market with a target APR.
-    /// @return The initial number of LP shares created.
     function initialize(
         uint256,
         uint256,
@@ -166,7 +170,7 @@ abstract contract Hyperdrive is
         _delegate(target1);
     }
 
-    // FIXME: Natspec
+    /// @notice Allows an LP to burn shares and withdraw from the pool.
     function removeLiquidity(
         uint256,
         uint256,
@@ -175,7 +179,10 @@ abstract contract Hyperdrive is
         _delegate(target1);
     }
 
-    // FIXME: Natspec
+    /// @notice Redeems withdrawal shares by giving the LP a pro-rata amount of
+    ///         the withdrawal pool's proceeds. This function redeems the
+    ///         maximum amount of the specified withdrawal shares given the
+    ///         amount of withdrawal shares ready to withdraw.
     function redeemWithdrawalShares(
         uint256,
         uint256,
@@ -186,7 +193,7 @@ abstract contract Hyperdrive is
 
     /// Checkpoints ///
 
-    // FIXME: Comment this.
+    /// @notice Allows anyone to mint a new checkpoint.
     function checkpoint(uint256) external {
         _delegate(target1);
     }

@@ -7,26 +7,25 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { ERC4626Base } from "./ERC4626Base.sol";
 
 /// @author DELV
-/// @title ERC4626DataProvider
+/// @title ERC4626Target0
 /// @notice ERC4626Hyperdrive's target 0 logic contract. This contract contains
-///         all of the getters for Hyperdrive as well as some stateful functions.
+///         all of the getters for Hyperdrive as well as some stateful
+///         functions.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ERC4626Target0 is HyperdriveTarget0, ERC4626Base {
-    // FIXME: Fix this Natspec.
-    //
-    /// @notice Initializes the logic contract.
-    /// @param _linkerCodeHash_ The hash of the erc20 linker contract deploy code
-    /// @param _factory_ The factory which is used to deploy the linking contracts
+    /// @notice Initializes the target0 contract.
+    /// @param _linkerCodeHash_ The code hash of the linker contract.
+    /// @param _linkerFactory_ The address of the linker factory.
     /// @param _pool_ The ERC4626 pool.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         bytes32 _linkerCodeHash_,
-        address _factory_,
+        address _linkerFactory_,
         IERC4626 _pool_
     )
-        HyperdriveTarget0(_config, _linkerCodeHash_, _factory_)
+        HyperdriveTarget0(_config, _linkerCodeHash_, _linkerFactory_)
         ERC4626Base(_pool_)
     {}
 

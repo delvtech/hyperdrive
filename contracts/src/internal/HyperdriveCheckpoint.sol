@@ -26,7 +26,7 @@ abstract contract HyperdriveCheckpoint is
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
-    /// @dev Allows anyone to mint a new checkpoint.
+    /// @dev Attempts to mint a checkpoint with the specified checkpoint time.
     /// @param _checkpointTime The time of the checkpoint to create.
     function _checkpoint(uint256 _checkpointTime) internal {
         // If the checkpoint has already been set, return early.

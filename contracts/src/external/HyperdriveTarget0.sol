@@ -14,7 +14,12 @@ import { AssetId } from "../libraries/AssetId.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 
-// FIXME: Add some Natspec
+/// @author DELV
+/// @title HyperdriveTarget0
+/// @notice Hyperdrive's target 0 logic contract.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
 abstract contract HyperdriveTarget0 is
     IHyperdriveRead,
     HyperdriveAdmin,
@@ -26,8 +31,7 @@ abstract contract HyperdriveTarget0 is
 {
     using FixedPointMath for uint256;
 
-    // solhint-disable no-empty-blocks
-    /// @notice Initializes Hyperdrive's data provider.
+    /// @notice Instantiates target0.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
@@ -237,7 +241,8 @@ abstract contract HyperdriveTarget0 is
         _revert(abi.encode(poolInfo));
     }
 
-    // FIXME: Comment this.
+    /// @notice Gets information about the withdrawal pool.
+    /// @return Hyperdrive's withdrawal pool information.
     function getWithdrawPool()
         external
         view
@@ -259,7 +264,8 @@ abstract contract HyperdriveTarget0 is
         _revert(abi.encode(_governanceFeesAccrued));
     }
 
-    // FIXME: Comment this.
+    /// @notice Gets the market state.
+    /// @return The market state.
     function getMarketState()
         external
         view
@@ -299,12 +305,10 @@ abstract contract HyperdriveTarget0 is
         _revert(abi.encode(_linkerCodeHash));
     }
 
-    // FIXME: Change the name of this.
-    //
     /// @notice Gets the factory which is used to deploy the linking contracts.
     /// @return The linking factory.
-    function factory() external view returns (address) {
-        _revert(abi.encode(_factory));
+    function linkerFactory() external view returns (address) {
+        _revert(abi.encode(_linkerFactory));
     }
 
     /// @notice Gets an account's balance of a sub-token.

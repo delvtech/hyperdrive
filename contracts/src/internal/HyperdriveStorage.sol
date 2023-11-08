@@ -95,11 +95,9 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
 
     /// MultiToken ///
 
-    // FIXME: Rename this to _linkerFactory.
-    //
     /// @dev The forwarder factory that deploys ERC20 forwarders for this
     ///      instance.
-    address internal immutable _factory;
+    address internal immutable _linkerFactory;
 
     /// @dev The bytecode hash of the contract which forwards purely ERC20 calls
     ///      to this contract.
@@ -139,6 +137,7 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
     ///        deploy the ERC20 linker contracts.
     constructor(
         IHyperdrive.PoolConfig memory _config,
+        // TODO: Why don't we put these in the config?
         bytes32 _linkerCodeHash_,
         address _linkerFactory_
     ) {
@@ -190,7 +189,7 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
         _governanceFee = _config.fees.governance;
 
         // Initialize the MultiToken immutables.
-        _factory = _linkerFactory_;
+        _linkerFactory = _linkerFactory_;
         _linkerCodeHash = _linkerCodeHash_;
     }
 }
