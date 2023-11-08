@@ -187,6 +187,18 @@ contract OpenShortTest is HyperdriveTest {
         console2.log("  / starting_APR = %s", rateDeltaAsPercent.toString(18));
     }
 
+    function logPortions(
+        uint256 effectiveMarketPrice,
+        uint256 shortAmount
+    ) internal pure {
+        uint256 lp_portion = shortAmount.mulDown(effectiveMarketPrice);
+        console2.log("  he gets %s base from the LP (shortAmount * effectiveMarketPrice)", lp_portion.toString(18));
+        uint256 wallet_portion = shortAmount.mulDown(1e18 - effectiveMarketPrice);
+        console2.log("  he adds  %s base from his wallet (shortAmount * (1-p))", wallet_portion.toString(18));
+        uint256 total_portion = lp_portion + wallet_portion;
+        console2.log("  both stay in the pool, to make the market solvent: %s + %s = %s", lp_portion.toString(18), wallet_portion.toString(18), total_portion.toString(18));
+    }
+
     function compareExposure(
         IHyperdrive.Checkpoint memory checkpointBefore,
         IHyperdrive.Checkpoint memory checkpointAfter
@@ -236,12 +248,7 @@ contract OpenShortTest is HyperdriveTest {
         uint256 effectiveExchangeRate = basePaid.divDown(shortAmount);
         uint256 effectiveMarketPrice = 1e18 - effectiveExchangeRate;
         console2.log("effectiveMarketPrice = %s", effectiveMarketPrice.toString(18));
-        uint256 lp_portion = shortAmount.mulDown(effectiveMarketPrice);
-        console2.log("  he gets %s base from the LP (shortAmount * effectiveMarketPrice)", lp_portion.toString(18));
-        uint256 wallet_portion = shortAmount.mulDown(1e18 - effectiveMarketPrice);
-        console2.log("  he adds  %s base from his wallet (shortAmount * (1-p))", wallet_portion.toString(18));
-        uint256 total_portion = lp_portion + wallet_portion;
-        console2.log("  both stay in the pool, to make the market solvent: %s + %s = %s", lp_portion.toString(18), wallet_portion.toString(18), total_portion.toString(18));
+        logPortions(effectiveMarketPrice, shortAmount);
         uint256 effectiveMarketRate = (1e18 - effectiveMarketPrice).divDown(effectiveMarketPrice);
         console2.log("effectiveMarketRate  = %s", effectiveMarketRate.toString(18));
         logRateDelta(effectiveMarketRate, apr);

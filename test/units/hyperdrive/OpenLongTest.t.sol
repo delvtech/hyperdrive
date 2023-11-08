@@ -236,17 +236,17 @@ contract OpenLongTest is HyperdriveTest {
     }
 
     function testNumberTooBig() external {
-        uint256 apr = 5e18;
+        uint256 apr = 0.1e18;
         console2.log("starting APR = %s", apr.toString(18));
 
         // Deploy a pool with fees
-        IHyperdrive.PoolConfig memory config = testConfig(apr);
-        config.fees = IHyperdrive.Fees({
-            curve: 1e18,
-            flat: 1e18,
-            governance: 1e18
-        });
-        deploy(address(deployer), config);
+        // IHyperdrive.PoolConfig memory config = testConfig(apr);
+        // config.fees = IHyperdrive.Fees({
+        //     curve: 1e18,  // 100%
+        //     flat: 1e18,  // 100%
+        //     governance: 1e18  // 100%
+        // });
+        // deploy(address(deployer), config);
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
@@ -258,8 +258,10 @@ contract OpenLongTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Open a long.
-        uint256 baseAmount = 10e18;
+        uint256 baseAmount = 100e18;
+        console2.log("trying to open long with baseAmount =", baseAmount.toString(18));
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
+        console2.log("got to here");
 
         // Market perspective
         console2.log("=== MARKET PERSPECTIVE ===");

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import "forge-std/console2.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { IHyperdriveWrite } from "./interfaces/IHyperdriveWrite.sol";
@@ -43,6 +44,7 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         returns (uint256 maturityTime, uint256 bondProceeds)
     {
         // Check that the message value is valid.
+        console2.log("openLong: _checkMessageValue()");
         _checkMessageValue();
 
         // Deposit the user's input amount.
@@ -65,11 +67,13 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         }
 
         // Perform a checkpoint.
+        console2.log("openLong: _latestCheckpoint()");
         uint256 latestCheckpoint = _latestCheckpoint();
         _applyCheckpoint(latestCheckpoint, sharePrice);
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds purchased to the beginning of the checkpoint.
+        console2.log("openLong: _calculateOpenLong()");
         uint256 shareReservesDelta;
         uint256 bondReservesDelta;
         uint256 totalGovernanceFee;
@@ -81,13 +85,19 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         ) = _calculateOpenLong(sharesDeposited, sharePrice);
 
         // Enforce min user outputs
+        console2.log("openLong: OutputLimit()");
+        console2.log("openLong: _minOutput = ", _minOutput);
+        console2.log("openLong: bondProceeds = ", bondProceeds);
         if (_minOutput > bondProceeds) revert IHyperdrive.OutputLimit();
 
         // Attribute the governance fee.
+        console2.log("openLong: _governanceFeesAccrued()");
         _governanceFeesAccrued += totalGovernanceFee;
 
         // Apply the open long to the state.
+        console2.log("openLong: maturityTime()");
         maturityTime = latestCheckpoint + _positionDuration;
+        console2.log("openLong: _applyOpenLong()");
         _applyOpenLong(
             shareReservesDelta,
             bondProceeds,
@@ -98,10 +108,12 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         );
 
         // Mint the bonds to the trader with an ID of the maturity time.
+        console2.log("openLong: encodeAssetId()");
         uint256 assetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,
             maturityTime
         );
+        console2.log("openLong: _mint()");
         _mint(assetId, _options.destination, bondProceeds);
 
         // Emit an OpenLong event.
