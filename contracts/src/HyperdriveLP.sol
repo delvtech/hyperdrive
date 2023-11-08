@@ -200,7 +200,7 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
         emit AddLiquidity(
             _options.destination,
             lpShares,
-            vaultShares.mulDown(sharePrice),
+            _convertToBaseFromOption(_contribution, sharePrice, _options),
             sharePrice,
             lpSharePrice
         );
