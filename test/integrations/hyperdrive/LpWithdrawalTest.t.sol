@@ -8,6 +8,7 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
+import "forge-std/console2.sol";
 
 // FIXME:
 //
@@ -687,7 +688,7 @@ contract LpWithdrawalTest is HyperdriveTest {
     ) internal {
         // Set up the test parameters.
         TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
-            fixedRate: 0.05e18,
+            fixedRate: 0.03e18,
             variableRate: 0,
             contribution: 500_000_000e18,
             longAmount: 0,
@@ -900,12 +901,18 @@ contract LpWithdrawalTest is HyperdriveTest {
     function test_single_lp_withdrawal_long_short_redemption_edge_case()
         external
     {
-        uint256 longBasePaid = 4107; //0.001000000000004107
+        uint256 longBasePaid = 11754624137; //4107; //0.001000000000004107
         uint256 shortAmount = 49890332890205; //0.001049890332890205
         _test_single_lp_withdrawal_long_short_redemption(
             longBasePaid,
             shortAmount
         );
+        // uint256 longBasePaid = 113858882478487614287519672908429548624223487709729971912181713848971624433252;
+        // uint256 shortAmount = 422126962975000;
+        // _test_single_lp_withdrawal_long_short_redemption(
+        //     longBasePaid,
+        //     shortAmount
+        // );
     }
 
     function test_single_lp_withdrawal_long_short_redemption(
@@ -970,22 +977,52 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
 
         // Bob opens a long.
-        testParams.longBasePaid = longBasePaid;
+        //longBasePaid = longBasePaid - longBasePaid % 1e14;
+        console2.log("longBasePaid: %s", longBasePaid.toString(18));
+        testParams.longBasePaid = longBasePaid; //0.101049891191940748e18 - 0.004811891537386749e18;
         {
             (uint256 longMaturityTime, uint256 longAmount) = openLong(
                 bob,
                 testParams.longBasePaid
             );
+            console2.log(
+                "openLong:  %s bonds interestOwed: %s base checkpoint.exposure: %s",
+                longAmount.toString(18),
+                (longAmount - testParams.longBasePaid).toString(18),
+                hyperdrive
+                    .getCheckpoint(HyperdriveUtils.latestCheckpoint(hyperdrive))
+                    .exposure
+                    .toString(18)
+            );
             testParams.longMaturityTime = longMaturityTime;
             testParams.longAmount = longAmount;
+            console2.log(
+                "longExposure: %s",
+                hyperdrive.getPoolInfo().longExposure.toString(18)
+            );
         }
 
         // Bob opens a short.
-        testParams.shortAmount = shortAmount;
+        //shortAmount = shortAmount - shortAmount % 1e14;
+        console2.log("shortAmount: %s", shortAmount.toString(18));
+        testParams.shortAmount = shortAmount; //0.101049890332890205e18;
         {
             (uint256 shortMaturityTime, uint256 shortBasePaid) = openShort(
                 bob,
                 testParams.shortAmount
+            );
+            console2.log(
+                "openShort: %s bonds shortDeposit: %s base checkpoint.exposure: %s",
+                testParams.shortAmount.toString(18),
+                shortBasePaid.toString(18),
+                hyperdrive
+                    .getCheckpoint(HyperdriveUtils.latestCheckpoint(hyperdrive))
+                    .exposure
+                    .toString(18)
+            );
+            console2.log(
+                "longExposure: %s",
+                hyperdrive.getPoolInfo().longExposure.toString(18)
             );
             testParams.shortMaturityTime = shortMaturityTime;
             testParams.shortBasePaid = shortBasePaid;
@@ -1010,10 +1047,12 @@ contract LpWithdrawalTest is HyperdriveTest {
         }
 
         // Time passes and no interest accrues.
+        console2.log("1");
         advanceTime(POSITION_DURATION, 0);
-
+        console2.log("2");
         // Bob closes his long.
         closeLong(bob, testParams.longMaturityTime, testParams.longAmount);
+        console2.log("3");
 
         // Close the short.
         {
@@ -1022,6 +1061,7 @@ contract LpWithdrawalTest is HyperdriveTest {
                 testParams.shortMaturityTime,
                 testParams.shortAmount
             );
+            console2.log("4");
             (, int256 expectedShortProceeds) = HyperdriveUtils
                 .calculateCompoundInterest(
                     testParams.shortAmount,
@@ -1034,7 +1074,10 @@ contract LpWithdrawalTest is HyperdriveTest {
                 1e10
             );
         }
-
+        console2.log(
+            "long exposure:",
+            hyperdrive.getPoolInfo().longExposure.toString(18)
+        );
         // Redeem the withdrawal shares. Alice and Celine will split the face
         // value of the short in the proportion of their withdrawal shares.
         uint256 aliceRemainingRedeemProceeds;
@@ -1045,15 +1088,21 @@ contract LpWithdrawalTest is HyperdriveTest {
                 sharesRedeemed
             ) = redeemWithdrawalShares(alice, aliceWithdrawalShares);
             aliceWithdrawalShares -= sharesRedeemed;
+            console2.log("5");
         }
-
+        console2.log(
+            "shareReserves:",
+            hyperdrive.getPoolInfo().shareReserves.toString(18)
+        );
         // Ensure that the ending base balance of Hyperdrive about zero.
-        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e9); // TODO: This bound is too large
+        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e9);
+        console2.log("6");
         assertApproxEqAbs(
             hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
             0,
             1 wei
         );
+        console2.log("7");
     }
 
     // FIXME: This needs to be fixed in the idle PR.

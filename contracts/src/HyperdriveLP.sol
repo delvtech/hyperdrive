@@ -98,6 +98,9 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
             sharePrice,
             _options
         );
+
+        // TODO: all other events emit the result of the deposit (except add liquidity).
+        // Should i change this to be consistent with the other events?
         emit Initialize(
             _options.destination,
             lpShares,
@@ -204,7 +207,15 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
         uint256 lpSharePrice = lpTotalSupply == 0
             ? 0
             : startingPresentValue.divDown(lpTotalSupply);
-        uint256 baseContribution = _convertToBaseFromOption(_contribution, sharePrice, _options);
+
+        // TODO: I changed this to emit the baseContribution that is calculated directly
+        // from the input bc Sheng mentioned it was slightly different, but all other
+        // events emit the result of the deposit.  Should i change this back?
+        uint256 baseContribution = _convertToBaseFromOption(
+            _contribution,
+            sharePrice,
+            _options
+        );
         emit AddLiquidity(
             _options.destination,
             lpShares,

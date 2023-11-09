@@ -82,14 +82,22 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         // doesn't pay more than their max deposit. The trader's deposit is
         // equal to the proceeds that they would receive if they closed
         // immediately (without fees).
+        // Note: We don't check the maxDeposit against the output of deposit
+        // because slippage from a deposit could cause a larger deposit taken
+        // from the user to fail.
         if (_maxDeposit < traderDeposit) {
             revert IHyperdrive.OutputLimit();
         }
         (uint256 sharesDeposited, ) = _deposit(traderDeposit, _options);
 
         // Apply the state updates caused by opening the short.
+        // Note: Updating the state using the result of the deposit
+        //       ensures that whatever slippage (if any) that occurs
+        //       from the deposit is accounted for in the reserves.
+        uint256 baseDeposited = sharesDeposited.mulDown(sharePrice);
         _applyOpenShort(
             _bondAmount,
+            baseDeposited,
             shareReservesDelta,
             sharePrice,
             maturityTime
@@ -109,7 +117,7 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             _options.destination,
             assetId,
             maturityTime,
-            sharesDeposited.mulDown(sharePrice),
+            baseDeposited,
             sharePrice,
             bondAmount
         );
@@ -201,6 +209,10 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         // Withdraw the profit to the trader. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
         // on the face value of the bonds.
+        // TODO: Should we consider moving the withdraw to before the
+        //       applyCloseShort call? This would be consistent with
+        //       openShort in that whatever slippage (if any) that occurs
+        //       from the withdraw is accounted for in the reserves.
         uint256 proceeds = _withdraw(shareProceeds, _options);
 
         // Enforce the user's minimum output.
@@ -230,11 +242,13 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
     /// @dev Applies an open short to the state. This includes updating the
     ///      reserves and maintaining the reserve invariants.
     /// @param _bondAmount The amount of bonds shorted.
+    /// @param _traderDeposit The deposit, in base, required to open the short.
     /// @param _shareReservesDelta The amount of shares paid to the curve.
     /// @param _sharePrice The share price.
     /// @param _maturityTime The maturity time of the long.
     function _applyOpenShort(
         uint256 _bondAmount,
+        uint256 _traderDeposit,
         uint256 _shareReservesDelta,
         uint256 _sharePrice,
         uint256 _maturityTime
@@ -282,8 +296,10 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         int128 checkpointExposureBefore = int128(
             _checkpoints[_latestCheckpoint].exposure
         );
+        _traderDeposit = _traderDeposit - (_traderDeposit % 1e14);
+        uint256 exposureDelta = _traderDeposit + _bondAmount;
         _checkpoints[_latestCheckpoint].exposure -= int128(
-            _bondAmount.toUint128()
+            exposureDelta.toUint128()
         );
         _updateLongExposure(
             checkpointExposureBefore,

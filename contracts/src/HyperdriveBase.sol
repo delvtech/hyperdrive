@@ -294,20 +294,19 @@ abstract contract HyperdriveBase is
 
     /// @dev Calculates the checkpoint exposure when a position is closed
     /// @param _bondAmount The amount of bonds that the user is closing.
-    /// @param _shareReservesDelta The amount of shares that the reserves will
-    ///        change by.
+    /// @param _shareCurveDelta The amount of shares the trader pays the curve.
     /// @param _bondReservesDelta The amount of bonds that the reserves will
     ///        change by.
-    /// @param _shareUserDelta The amount of shares that the user will receive
-    ///        (long) or pay (short).
+    /// @param _shareReservesDelta The amount of shares that the reserves will
+    ///        change by.
     /// @param _maturityTime The maturity time of the position being closed.
     /// @param _sharePrice The current share price.
     /// @param _isLong True if the position being closed is long.
     function _updateCheckpointExposureOnClose(
         uint256 _bondAmount,
-        uint256 _shareReservesDelta,
+        uint256 _shareCurveDelta,
         uint256 _bondReservesDelta,
-        uint256 _shareUserDelta,
+        uint256 _shareReservesDelta,
         uint256 _maturityTime,
         uint256 _sharePrice,
         bool _isLong
@@ -330,10 +329,10 @@ abstract contract HyperdriveBase is
             // (dz_user*c - dz*c) + (dy - dz*c) + dy_user
             // = dz_user*c + dy - 2*dz*c + dy_user
             int128 delta = int128(
-                (_shareUserDelta.mulDown(_sharePrice) +
+                (_shareReservesDelta.mulDown(_sharePrice) +
                     _bondReservesDelta -
                     2 *
-                    _shareReservesDelta.mulDown(_sharePrice) +
+                    _shareCurveDelta.mulDown(_sharePrice) +
                     _bondAmount).toUint128()
             );
 

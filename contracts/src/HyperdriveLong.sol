@@ -52,11 +52,12 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         );
 
         // Enforce min user inputs and min share price
-        uint256 baseDeposited = _convertToBaseFromOption(
-            _amount,
-            sharePrice,
-            _options
-        );
+        // Note: We use the value that is returned from the
+        // deposit to check against the min transaction
+        // amount because in the event of slippage on the
+        // deposit, we want the inputs to the state updates
+        // to respect the min transaction amount requirements.
+        uint256 baseDeposited = sharesDeposited.mulDown(sharePrice);
         if (baseDeposited < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
@@ -81,12 +82,17 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         ) = _calculateOpenLong(sharesDeposited, sharePrice);
 
         // Enforce min user outputs
-        if (_minOutput > bondProceeds) revert IHyperdrive.OutputLimit();
+        if (_minOutput > bondProceeds) {
+            revert IHyperdrive.OutputLimit();
+        }
 
         // Attribute the governance fee.
         _governanceFeesAccrued += totalGovernanceFee;
 
         // Apply the open long to the state.
+        // Note: Updating the state using the result of the deposit
+        //       ensures that whatever slippage (if any) that occurs
+        //       from the deposit is accounted for in the reserves.
         maturityTime = latestCheckpoint + _positionDuration;
         _applyOpenLong(
             shareReservesDelta,
@@ -195,15 +201,25 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         }
 
         // Withdraw the profit to the trader.
+        // TODO: Should we consider moving the withdraw to before the
+        //       applyCloseLong call? This would be consistent with
+        //       openLong in that whatever slippage (if any) that occurs
+        //       from the withdraw is accounted for in the reserves.
         uint256 proceeds = _withdraw(shareProceeds, _options);
 
         // Enforce min user outputs.
+        // Note: We use the value that is returned from the
+        // withdraw to check against the minOutput because
+        // in the event of slippage on the withdraw, we want
+        // it to be caught be the minOutput check.
         uint256 baseProceeds = _convertToBaseFromOption(
             proceeds,
             sharePrice,
             _options
         );
-        if (_minOutput > baseProceeds) revert IHyperdrive.OutputLimit();
+        if (_minOutput > baseProceeds) {
+            revert IHyperdrive.OutputLimit();
+        }
 
         // Emit a CloseLong event.
         uint256 bondAmount = _bondAmount; // Avoid stack too deep error.

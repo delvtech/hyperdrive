@@ -9,6 +9,7 @@ import { MockHyperdrive, IMockHyperdrive } from "contracts/test/MockHyperdrive.s
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
+import "forge-std/console2.sol";
 
 contract IntraCheckpointNettingTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -21,9 +22,12 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // Initialize the market
         uint256 apr = 0.05e18;
         deploy(alice, apr, initialSharePrice, 0, 0, 0);
-        uint256 contribution = 100e18;
+        uint256 contribution = 500_000_000 ether;
         uint256 aliceLpShares = initialize(alice, apr, contribution);
-
+        console2.log(
+            "bonreserves",
+            hyperdrive.getPoolInfo().bondReserves.toString(18)
+        );
         // open a short
         uint256 shortAmount = 10e18;
         (uint256 maturityTimeShort, ) = openShort(bob, shortAmount);
@@ -285,7 +289,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256 tradeSize = 504168.031667365798150347e18;
         uint256 numTrades = 100;
 
-        // If you increase numTrades enought it will eventually fail in openLong()
+        // If you increase numTrades enough it will eventually fail in openLong()
         // due to minOutput > bondProceeds where minOutput = baseAmount from openLong()
         open_close_long_short_different_checkpoints(
             initialSharePrice,
@@ -736,17 +740,51 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256[] memory longMaturityTimes = new uint256[](numTrades);
         uint256[] memory shortMaturityTimes = new uint256[](numTrades);
         uint256[] memory bondAmounts = new uint256[](numTrades);
+
+        uint256 idle = MockHyperdrive(address(hyperdrive))
+            .calculateIdleShareReserves(hyperdrive.getPoolInfo().sharePrice);
+        console2.log(
+            "starting idle: %s checkpoint.exposure: %s",
+            idle.toString(18),
+            hyperdrive
+                .getCheckpoint(HyperdriveUtils.latestCheckpoint(hyperdrive))
+                .exposure
+                .toString(18)
+        );
         for (uint256 i = 0; i < numTrades; i++) {
             uint256 basePaidLong = tradeSize;
             (uint256 maturityTimeLong, uint256 bondAmount) = openLong(
                 bob,
                 basePaidLong
             );
+            console2.log(
+                "i: %s idle: %s checkpoint.exposure: %s",
+                i,
+                idle.toString(18),
+                hyperdrive
+                    .getCheckpoint(HyperdriveUtils.latestCheckpoint(hyperdrive))
+                    .exposure
+                    .toString(18)
+            );
+
             longMaturityTimes[i] = maturityTimeLong;
             bondAmounts[i] = bondAmount;
 
             (uint256 maturityTimeShort, ) = openShort(bob, bondAmount);
             shortMaturityTimes[i] = maturityTimeShort;
+            idle = MockHyperdrive(address(hyperdrive))
+                .calculateIdleShareReserves(
+                    hyperdrive.getPoolInfo().sharePrice
+                );
+            console2.log(
+                "i: %s idle: %s checkpoint.exposure: %s",
+                i,
+                idle.toString(18),
+                hyperdrive
+                    .getCheckpoint(HyperdriveUtils.latestCheckpoint(hyperdrive))
+                    .exposure
+                    .toString(18)
+            );
         }
 
         // fast forward time, create checkpoints and accrue interest
