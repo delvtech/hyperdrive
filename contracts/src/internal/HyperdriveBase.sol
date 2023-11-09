@@ -306,7 +306,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
     /// @param _maturityTime The maturity time of the position being closed.
     /// @param _sharePrice The current share price.
     /// @param _isLong True if the position being closed is long.
-    function _updateCheckpointLongExposureOnClose(
+    function _updateCheckpointExposureOnClose(
         uint256 _bondAmount,
         uint256 _shareReservesDelta,
         uint256 _bondReservesDelta,
@@ -323,11 +323,11 @@ abstract contract HyperdriveBase is HyperdriveStorage {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _maturityTime)
         ];
 
-        // We can zero out long exposure when there are no more open positions
+        // We can zero out exposure when there are no more open positions
         if (checkpointLongs == 0 && checkpointShorts == 0) {
-            _checkpoints[checkpointTime].longExposure = 0;
+            _checkpoints[checkpointTime].exposure = 0;
         } else {
-            // The long exposure delta is flat + curve amount + the bonds the
+            // The exposure delta is flat + curve amount + the bonds the
             // user is closing:
             //
             // (dz_user*c - dz*c) + (dy - dz*c) + dy_user
@@ -340,13 +340,13 @@ abstract contract HyperdriveBase is HyperdriveStorage {
                     _bondAmount).toUint128()
             );
 
-            // If the position being closed is long, then the long exposure
-            // decreases by the delta. If it's short, then the long exposure
+            // If the position being closed is long, then the exposure
+            // decreases by the delta. If it's short, then the exposure
             // increases by the delta.
             if (_isLong) {
-                _checkpoints[checkpointTime].longExposure -= delta;
+                _checkpoints[checkpointTime].exposure -= delta;
             } else {
-                _checkpoints[checkpointTime].longExposure += delta;
+                _checkpoints[checkpointTime].exposure += delta;
             }
         }
     }

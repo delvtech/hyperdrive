@@ -701,7 +701,7 @@ mod tests {
             let state = alice.get_state().await?;
             let Checkpoint {
                 share_price: open_share_price,
-                long_exposure: checkpoint_exposure,
+                exposure: checkpoint_exposure,
                 ..
             } = alice
                 .get_checkpoint(state.to_checkpoint(alice.now().await?))

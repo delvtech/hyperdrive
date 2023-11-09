@@ -954,11 +954,11 @@ impl Agent<ChainClient, ChaCha8Rng> {
     /// Gets the max long that can be opened in the current checkpoint.
     pub async fn get_max_long(&self, maybe_max_iterations: Option<usize>) -> Result<FixedPoint> {
         let state = self.get_state().await?;
-        let Checkpoint { long_exposure, .. } = self
+        let Checkpoint { exposure, .. } = self
             .hyperdrive
             .get_checkpoint(state.to_checkpoint(self.now().await?))
             .await?;
-        Ok(state.get_max_long(self.wallet.base, long_exposure, maybe_max_iterations))
+        Ok(state.get_max_long(self.wallet.base, exposure, maybe_max_iterations))
     }
 
     /// Gets the max short that can be opened in the current checkpoint.
@@ -976,7 +976,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         let state = self.get_state().await?;
         let Checkpoint {
             share_price: open_share_price,
-            long_exposure: checkpoint_exposure,
+            exposure: checkpoint_exposure,
             ..
         } = self
             .hyperdrive

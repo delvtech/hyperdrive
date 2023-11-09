@@ -169,12 +169,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 maturityTime
             );
 
-            // Update the checkpoint and global longExposure
+            // Update the checkpoint exposure and global long exposure.
             uint256 checkpointTime = maturityTime - _positionDuration;
             int128 checkpointExposureBefore = int128(
-                _checkpoints[checkpointTime].longExposure
+                _checkpoints[checkpointTime].exposure
             );
-            _updateCheckpointLongExposureOnClose(
+            _updateCheckpointExposureOnClose(
                 _bondAmount,
                 shareCurveDelta,
                 bondReservesDelta,
@@ -185,7 +185,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             );
             _updateLongExposure(
                 checkpointExposureBefore,
-                _checkpoints[checkpointTime].longExposure
+                _checkpoints[checkpointTime].exposure
             );
 
             // Distribute the excess idle to the withdrawal pool.
@@ -195,7 +195,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Withdraw the profit to the trader.
         uint256 proceeds = _withdraw(shareProceeds, _options);
 
-        // Enforce min user outputs
+        // Enforce min user outputs.
         uint256 baseProceeds = _convertToBaseFromOption(
             proceeds,
             sharePrice,
@@ -260,12 +260,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
         IHyperdrive.Checkpoint storage checkpoint = _checkpoints[
             _checkpointTime
         ];
-        int128 checkpointExposureBefore = int128(checkpoint.longExposure);
-        uint128 longExposureDelta = (2 *
+        int128 checkpointExposureBefore = int128(checkpoint.exposure);
+        uint128 exposureDelta = (2 *
             _bondProceeds -
             _shareReservesDelta.mulDown(_sharePrice)).toUint128();
-        checkpoint.longExposure += int128(longExposureDelta);
-        _updateLongExposure(checkpointExposureBefore, checkpoint.longExposure);
+        checkpoint.exposure += int128(exposureDelta);
+        _updateLongExposure(checkpointExposureBefore, checkpoint.exposure);
 
         // We need to check solvency because longs increase the system's exposure.
         if (!_isSolvent(_sharePrice)) {

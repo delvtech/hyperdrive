@@ -143,14 +143,14 @@ impl From<RawPoolInfo> for PoolInfo {
 #[serde(rename_all = "camelCase")]
 struct RawCheckpoint {
     share_price: u128,
-    long_exposure: i128,
+    exposure: i128,
 }
 
 impl From<RawCheckpoint> for Checkpoint {
     fn from(r: RawCheckpoint) -> Self {
         Self {
             share_price: r.share_price.into(),
-            long_exposure: r.long_exposure.into(),
+            exposure: r.exposure.into(),
         }
     }
 }
@@ -311,7 +311,7 @@ mod tests {
     },
     "raw_checkpoint": {
         "sharePrice": 1000000000000000000,
-        "longExposure": 0
+        "exposure": 0
     },
     "anvil_dump_state": "0x7b22",
     "additional_info": {
@@ -387,7 +387,7 @@ mod tests {
     },
     "checkpoint_info": {
         "sharePrice": "1.0",
-        "longExposure": "0.0",
+        "exposure": "0.0",
         "blockNumber": 16,
         "timestamp": "2023-10-20 14:28:34"
     }
@@ -460,7 +460,7 @@ mod tests {
                 },
                 checkpoint: Checkpoint {
                     share_price: 1000000000000000000,
-                    long_exposure: 0,
+                    exposure: 0,
                 },
                 // State Dump
                 state_dump: "0x7b22".parse()?,
