@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveLong } from "./HyperdriveLong.sol";
 import { HyperdriveShort } from "./HyperdriveShort.sol";
+import { IERC20 } from "./interfaces/IERC20.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { IHyperdriveWrite } from "./interfaces/IHyperdriveWrite.sol";
 import { AssetId } from "./libraries/AssetId.sol";
@@ -167,16 +167,16 @@ abstract contract Hyperdrive is
             positionsClosed = true;
         }
 
-        // Update the checkpoint and global longExposure
+        // Update the checkpoint exposure and global long exposure.
         if (positionsClosed) {
             uint256 maturityTime = _checkpointTime - _positionDuration;
             int128 checkpointExposureBefore = int128(
-                _checkpoints[maturityTime].longExposure
+                _checkpoints[maturityTime].exposure
             );
-            _checkpoints[maturityTime].longExposure = 0;
+            _checkpoints[maturityTime].exposure = 0;
             _updateLongExposure(
                 checkpointExposureBefore,
-                _checkpoints[maturityTime].longExposure
+                _checkpoints[maturityTime].exposure
             );
 
             // Distribute the excess idle to the withdrawal pool.

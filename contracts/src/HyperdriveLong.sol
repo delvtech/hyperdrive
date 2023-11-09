@@ -22,16 +22,16 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
     using SafeCast for int256;
 
     /// @notice Opens a long position.
-    /// @param _baseAmount The amount of base to use when trading.
-    /// @param _minOutput The minium number of bonds to receive.
-    /// @param _minSharePrice The minium share price at which to open the long.
+    /// @param _amount The amount to open a long with.
+    /// @param _minOutput The minimum number of bonds to receive.
+    /// @param _minSharePrice The minimum share price at which to open the long.
     ///        This allows traders to protect themselves from opening a long in
     ///        a checkpoint where negative interest has accrued.
     /// @param _options The options that configure how the trade is settled.
     /// @return maturityTime The maturity time of the bonds.
     /// @return bondProceeds The amount of bonds the user received
     function openLong(
-        uint256 _baseAmount,
+        uint256 _amount,
         uint256 _minOutput,
         uint256 _minSharePrice,
         IHyperdrive.Options calldata _options
@@ -42,14 +42,24 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         isNotPaused
         returns (uint256 maturityTime, uint256 bondProceeds)
     {
-        // Check that the message value and base amount are valid.
+        // Check that the message value is valid.
         _checkMessageValue();
-        if (_baseAmount < _minimumTransactionAmount) {
+
+        // Deposit the user's input amount.
+        (uint256 sharesDeposited, uint256 sharePrice) = _deposit(
+            _amount,
+            _options
+        );
+
+        // Enforce min user inputs and min share price
+        uint256 baseDeposited = _convertToBaseFromOption(
+            _amount,
+            sharePrice,
+            _options
+        );
+        if (baseDeposited < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
-
-        // Deposit the user's base.
-        (uint256 shares, uint256 sharePrice) = _deposit(_baseAmount, _options);
         if (sharePrice < _minSharePrice) {
             revert IHyperdrive.MinimumSharePrice();
         }
@@ -68,20 +78,7 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             bondReservesDelta,
             bondProceeds,
             totalGovernanceFee
-        ) = _calculateOpenLong(shares, sharePrice);
-
-        // If the ending spot price is greater than 1, we are in the negative
-        // interest region of the trading function. The spot price is given by
-        // ((mu * (z - zeta)) / y) ** tau, so all that we need to check is that
-        // (mu * (z - zeta)) / y <= 1. With this in mind, we can use a revert
-        // condition of mu * (z - zeta) > y.
-        if (
-            _initialSharePrice.mulDown(
-                _effectiveShareReserves() + shareReservesDelta
-            ) > _marketState.bondReserves - bondReservesDelta
-        ) {
-            revert IHyperdrive.NegativeInterest();
-        }
+        ) = _calculateOpenLong(sharesDeposited, sharePrice);
 
         // Enforce min user outputs
         if (_minOutput > bondProceeds) revert IHyperdrive.OutputLimit();
@@ -108,12 +105,12 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         _mint(assetId, _options.destination, bondProceeds);
 
         // Emit an OpenLong event.
-        uint256 baseAmount = _baseAmount; // Avoid stack too deep error.
         emit OpenLong(
             _options.destination,
             assetId,
             maturityTime,
-            baseAmount,
+            baseDeposited,
+            sharePrice,
             bondProceeds
         );
 
@@ -174,12 +171,12 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
                 maturityTime
             );
 
-            // Update the checkpoint and global longExposure
+            // Update the checkpoint exposure and global long exposure.
             uint256 checkpointTime = maturityTime - _positionDuration;
             int128 checkpointExposureBefore = int128(
-                _checkpoints[checkpointTime].longExposure
+                _checkpoints[checkpointTime].exposure
             );
-            _updateCheckpointLongExposureOnClose(
+            _updateCheckpointExposureOnClose(
                 _bondAmount,
                 shareCurveDelta,
                 bondReservesDelta,
@@ -190,7 +187,7 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             );
             _updateLongExposure(
                 checkpointExposureBefore,
-                _checkpoints[checkpointTime].longExposure
+                _checkpoints[checkpointTime].exposure
             );
 
             // Distribute the excess idle to the withdrawal pool.
@@ -198,9 +195,14 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         }
 
         // Withdraw the profit to the trader.
-        uint256 baseProceeds = _withdraw(shareProceeds, _options);
+        uint256 proceeds = _withdraw(shareProceeds, _options);
 
-        // Enforce min user outputs
+        // Enforce min user outputs.
+        uint256 baseProceeds = _convertToBaseFromOption(
+            proceeds,
+            sharePrice,
+            _options
+        );
         if (_minOutput > baseProceeds) revert IHyperdrive.OutputLimit();
 
         // Emit a CloseLong event.
@@ -210,10 +212,11 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             maturityTime,
             baseProceeds,
+            sharePrice,
             bondAmount
         );
 
-        return (baseProceeds);
+        return proceeds;
     }
 
     /// @dev Applies an open long to the state. This includes updating the
@@ -259,12 +262,12 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         IHyperdrive.Checkpoint storage checkpoint = _checkpoints[
             _checkpointTime
         ];
-        int128 checkpointExposureBefore = int128(checkpoint.longExposure);
-        uint128 longExposureDelta = (2 *
+        int128 checkpointExposureBefore = int128(checkpoint.exposure);
+        uint128 exposureDelta = (2 *
             _bondProceeds -
             _shareReservesDelta.mulDown(_sharePrice)).toUint128();
-        checkpoint.longExposure += int128(longExposureDelta);
-        _updateLongExposure(checkpointExposureBefore, checkpoint.longExposure);
+        checkpoint.exposure += int128(exposureDelta);
+        _updateLongExposure(checkpointExposureBefore, checkpoint.exposure);
 
         // We need to check solvency because longs increase the system's exposure.
         if (!_isSolvent(_sharePrice)) {
@@ -368,40 +371,46 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             _initialSharePrice
         );
 
-        // Calculate the fees charged on the curve and flat parts of the trade.
-        // Since we calculate the amount of bonds received given shares in, we
-        // subtract the fee from the bond deltas so that the trader receives
-        // less bonds.
+        // Ensure that the trader didn't purchase bonds at a negative interest
+        // rate after accounting for fees.
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
             _effectiveShareReserves(),
             _marketState.bondReserves,
             _initialSharePrice,
             _timeStretch
         );
+        if (
+            _isNegativeInterest(
+                _shareAmount,
+                bondReservesDelta,
+                HyperdriveMath.calculateOpenLongMaxSpotPrice(
+                    spotPrice,
+                    _curveFee
+                )
+            )
+        ) {
+            revert IHyperdrive.NegativeInterest();
+        }
 
-        // Record an oracle update
+        // Record an oracle update if enough time has elapsed.
         recordPrice(spotPrice);
 
-        // Calculate the fees charged to the user (totalCurveFee) and the portion
+        // Calculate the fees charged to the user (curveFee) and the portion
         // of those fees that are paid to governance (governanceCurveFee).
         (
-            uint256 totalCurveFee, // bonds
+            uint256 curveFee, // bonds
             uint256 governanceCurveFee // bonds
-        ) = _calculateFeesOutGivenSharesIn(
-                _shareAmount,
-                spotPrice,
-                _sharePrice
-            );
+        ) = _calculateFeesGivenShares(_shareAmount, spotPrice, _sharePrice);
 
         // Calculate the number of bonds the trader receives.
         // This is the amount of bonds the trader receives minus the fees.
-        bondProceeds = bondReservesDelta - totalCurveFee;
+        bondProceeds = bondReservesDelta - curveFee;
 
         // Calculate how many bonds to remove from the bondReserves.
         // The bondReservesDelta represents how many bonds to remove
-        // This should be the number of bonds the trader
-        // receives plus the number of bonds we need to pay to governance.
-        // In other words, we want to keep the totalCurveFee in the bondReserves;
+        // This should be the number of bonds the trader receives plus
+        // the number of bonds we need to pay to governance.
+        // In other words, we want to keep the curveFee in the bondReserves;
         // however, since the governanceCurveFee will be paid from the
         // sharesReserves we don't need it removed from the bondReserves.
         // bondProceeds and governanceCurveFee are already in bonds so no
@@ -500,13 +509,15 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             // Calculate the fees that should be paid by the trader. The trader
             // pays a fee on the curve and flat parts of the trade. Most of the
             // fees go the LPs, but a portion goes to governance.
-            uint256 totalCurveFee;
-            uint256 totalFlatFee;
+            uint256 curveFee;
+            uint256 flatFee;
             (
-                totalCurveFee, // shares
-                totalFlatFee, // shares
+                curveFee, // shares
+                flatFee, // shares
+                ,
+                ,
                 totalGovernanceFee // shares
-            ) = _calculateFeesOutGivenBondsIn(
+            ) = _calculateFeesGivenBonds(
                 _bondAmount,
                 timeRemaining,
                 spotPrice,
@@ -516,12 +527,12 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             // The curve fee (shares) is paid to the LPs, so we subtract it from
             // the share curve delta (shares) to prevent it from being debited
             // from the reserves when the state is updated.
-            shareCurveDelta -= totalCurveFee;
+            shareCurveDelta -= curveFee;
 
             // The trader pays the curve fee (shares) and flat fee (shares) to
             // the pool, so we debit them from the trader's share proceeds
             // (shares).
-            shareProceeds -= totalCurveFee + totalFlatFee;
+            shareProceeds -= curveFee + flatFee;
 
             // We applied the full curve and flat fees to the share proceeds,
             // which reduce the trader's proceeds. To calculate the payment that

@@ -320,12 +320,7 @@ impl TestChain {
         let hyperdrive = IERC4626Hyperdrive::new(addresses.hyperdrive, client.clone());
 
         // Get the contract addresses of the vault and the data provider.
-        //
-        // HACK(jalextowle): This getter is new, so we hardcode the address
-        // to the competition's data provider until the v0.0.17 release.
-        // let data_provider_address = hyperdrive.data_provider().call().await?;
-        let data_provider_address =
-            "0x9bd03768a7DCc129555dE410FF8E85528A4F88b5".parse::<Address>()?;
+        let data_provider_address = hyperdrive.data_provider().call().await?;
         let vault_address = hyperdrive.pool().call().await?;
 
         // Deploy templates for each of the contracts that should be etched and
@@ -336,31 +331,36 @@ impl TestChain {
         let etch_pairs = {
             let mut pairs = Vec::new();
 
-            // TODO: We should set `isCompetitionMode` to the real value.
-            //
             // Deploy the base token template.
             let base = ERC20Mintable::new(addresses.base, client.clone());
             let name = base.name().call().await?;
             let symbol = base.symbol().call().await?;
             let decimals = base.decimals().call().await?;
+            let is_competition_mode = base.is_competition_mode().call().await?;
             let base_template = ERC20Mintable::deploy(
                 client.clone(),
-                (name, symbol, decimals, Address::zero(), false),
+                (name, symbol, decimals, Address::zero(), is_competition_mode),
             )?
             .send()
             .await?;
             pairs.push((addresses.base, base_template.address()));
 
-            // TODO: We should set `isCompetitionMode` to the real value.
-            //
             // Deploy the vault template.
             let vault = MockERC4626::new(vault_address, client.clone());
             let asset = vault.asset().call().await?;
             let name = vault.name().call().await?;
             let symbol = vault.symbol().call().await?;
+            let is_competition_mode = vault.is_competition_mode().call().await?;
             let vault_template = MockERC4626::deploy(
                 client.clone(),
-                (asset, name, symbol, uint256!(0), Address::zero(), false),
+                (
+                    asset,
+                    name,
+                    symbol,
+                    uint256!(0),
+                    Address::zero(),
+                    is_competition_mode,
+                ),
             )?
             .send()
             .await?;

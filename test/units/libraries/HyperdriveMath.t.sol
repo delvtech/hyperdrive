@@ -7,8 +7,8 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
+import { IMockHyperdrive } from "contracts/test/MockHyperdrive.sol";
 import { MockHyperdriveMath } from "contracts/test/MockHyperdriveMath.sol";
-import { IMockHyperdrive } from "test/mocks/MockHyperdrive.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
@@ -49,7 +49,7 @@ contract HyperdriveMathTest is HyperdriveTest {
 
         // equal reserves should make 0% APR
         assertEq(
-            hyperdriveMath.calculateAPRFromReserves(
+            hyperdriveMath.calculateSpotAPR(
                 1 ether, // shareReserves
                 1 ether, // bondReserves
                 1 ether, // initialSharePrice
@@ -61,7 +61,7 @@ contract HyperdriveMathTest is HyperdriveTest {
 
         // target a 10% APR
         assertApproxEqAbs(
-            hyperdriveMath.calculateAPRFromReserves(
+            hyperdriveMath.calculateSpotAPR(
                 1 ether, // shareReserves
                 1.1 ether, // bondReserves
                 1 ether, // initialSharePrice
@@ -74,7 +74,7 @@ contract HyperdriveMathTest is HyperdriveTest {
 
         // target a 10% APR with a 6 month term
         assertApproxEqAbs(
-            hyperdriveMath.calculateAPRFromReserves(
+            hyperdriveMath.calculateSpotAPR(
                 1 ether, // shareReserves
                 1.05 ether, // bondReserves
                 1 ether, // initialSharePrice
@@ -105,7 +105,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             positionDuration,
             timeStretch
         );
-        uint256 result = hyperdriveMath.calculateAPRFromReserves(
+        uint256 result = hyperdriveMath.calculateSpotAPR(
             shareReserves,
             bondReserves,
             initialSharePrice,
@@ -124,7 +124,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             positionDuration,
             timeStretch
         );
-        result = hyperdriveMath.calculateAPRFromReserves(
+        result = hyperdriveMath.calculateSpotAPR(
             shareReserves,
             bondReserves,
             initialSharePrice,
@@ -143,7 +143,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             positionDuration,
             timeStretch
         );
-        result = hyperdriveMath.calculateAPRFromReserves(
+        result = hyperdriveMath.calculateSpotAPR(
             shareReserves,
             bondReserves,
             initialSharePrice,
@@ -162,7 +162,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             positionDuration,
             timeStretch
         );
-        result = hyperdriveMath.calculateAPRFromReserves(
+        result = hyperdriveMath.calculateSpotAPR(
             shareReserves,
             bondReserves,
             initialSharePrice,
@@ -181,7 +181,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             positionDuration,
             timeStretch
         );
-        result = hyperdriveMath.calculateAPRFromReserves(
+        result = hyperdriveMath.calculateSpotAPR(
             shareReserves,
             bondReserves,
             initialSharePrice,
@@ -200,7 +200,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             positionDuration,
             timeStretch
         );
-        result = hyperdriveMath.calculateAPRFromReserves(
+        result = hyperdriveMath.calculateSpotAPR(
             shareReserves,
             bondReserves,
             initialSharePrice,
@@ -236,7 +236,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         );
         bondReserves -= bondReservesDelta;
         shareReserves += amountIn;
-        uint256 result = hyperdriveMath.calculateAPRFromReserves(
+        uint256 result = hyperdriveMath.calculateSpotAPR(
             shareReserves,
             bondReserves,
             initialSharePrice,
@@ -281,7 +281,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         assertEq(bondReservesDelta, amountIn.mulDown(normalizedTimeRemaining));
         shareReserves -= shareReservesDelta;
         bondReserves += bondReservesDelta;
-        uint256 result = hyperdriveMath.calculateAPRFromReserves(
+        uint256 result = hyperdriveMath.calculateSpotAPR(
             shareReserves,
             bondReserves,
             1 ether,
@@ -355,7 +355,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             bondReserves += amountIn;
             shareReserves -= shareReservesDelta;
         }
-        uint256 result = hyperdriveMath.calculateAPRFromReserves(
+        uint256 result = hyperdriveMath.calculateSpotAPR(
             shareReserves,
             bondReserves,
             1 ether,
@@ -433,7 +433,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         assertEq(bondReservesDelta, amountOut.mulDown(normalizedTimeRemaining));
         shareReserves += shareReservesDelta;
         bondReserves -= bondReservesDelta;
-        uint256 result = hyperdriveMath.calculateAPRFromReserves(
+        uint256 result = hyperdriveMath.calculateSpotAPR(
             shareReserves,
             bondReserves,
             1 ether,
@@ -710,9 +710,6 @@ contract HyperdriveMathTest is HyperdriveTest {
         uint256 initialShortAmount,
         uint256 finalLongAmount
     ) external {
-        // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
-
         // Deploy Hyperdrive.
         fixedRate = fixedRate.normalizeToRange(0.001e18, 0.5e18);
         deploy(alice, fixedRate, 0, 0, 0);
@@ -732,7 +729,6 @@ contract HyperdriveMathTest is HyperdriveTest {
 
         // Ensure that the max long is actually the max long.
         _verifyMaxLong(
-            hyperdriveMath,
             fixedRate,
             initialLongAmount,
             initialShortAmount,
@@ -748,9 +744,6 @@ contract HyperdriveMathTest is HyperdriveTest {
         uint256 initialShortAmount,
         uint256 finalLongAmount
     ) external {
-        // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
-
         // Deploy Hyperdrive.
         fixedRate = fixedRate.normalizeToRange(0.001e18, 0.5e18);
         deploy(alice, fixedRate, 0, 0, 0);
@@ -770,7 +763,6 @@ contract HyperdriveMathTest is HyperdriveTest {
 
         // Ensure that the max long is actually the max long.
         _verifyMaxLong(
-            hyperdriveMath,
             fixedRate,
             initialLongAmount,
             initialShortAmount,
@@ -791,7 +783,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         );
     }
 
-    function test__calculateMaxLong_fuzz(
+    function test__calculateMaxLong__fuzz(
         uint256 fixedRate,
         uint256 contribution,
         uint256 initialLongAmount,
@@ -814,9 +806,6 @@ contract HyperdriveMathTest is HyperdriveTest {
         uint256 initialShortAmount,
         uint256 finalLongAmount
     ) internal {
-        // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
-
         // Deploy Hyperdrive.
         fixedRate = fixedRate.normalizeToRange(0.001e18, 0.5e18);
         deploy(alice, fixedRate, 0, 0, 0);
@@ -827,7 +816,6 @@ contract HyperdriveMathTest is HyperdriveTest {
 
         // Ensure that the max long is actually the max long.
         _verifyMaxLong(
-            hyperdriveMath,
             fixedRate,
             initialLongAmount,
             initialShortAmount,
@@ -836,7 +824,6 @@ contract HyperdriveMathTest is HyperdriveTest {
     }
 
     function _verifyMaxLong(
-        MockHyperdriveMath hyperdriveMath,
         uint256 fixedRate,
         uint256 initialLongAmount,
         uint256 initialShortAmount,
@@ -868,8 +855,8 @@ contract HyperdriveMathTest is HyperdriveTest {
         if (fixedRate > 0.35e18) {
             maxIterations += 5;
         }
-        (uint256 maxLong, ) = hyperdriveMath.calculateMaxLong(
-            HyperdriveMath.MaxTradeParams({
+        (uint256 maxLong, ) = HyperdriveUtils.calculateMaxLong(
+            HyperdriveUtils.MaxTradeParams({
                 shareReserves: info.shareReserves,
                 shareAdjustment: info.shareAdjustment,
                 bondReserves: info.bondReserves,
@@ -882,18 +869,21 @@ contract HyperdriveMathTest is HyperdriveTest {
                 curveFee: config.fees.curve,
                 governanceFee: config.fees.governance
             }),
-            hyperdrive
-                .getCheckpoint(hyperdrive.latestCheckpoint())
-                .longExposure,
+            hyperdrive.getCheckpoint(hyperdrive.latestCheckpoint()).exposure,
             maxIterations
         );
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, maxLong);
 
-        // TODO: Re-evaluate this once we close the negative interest loophole
-        //       to opening larger longs.
+        // TODO: Re-visit this after fixing `calculateMaxLong` to work with
+        // matured positions.
         //
         // Ensure that opening another long fails. We fuzz in the range of
         // 10% to 1000x the max long.
+        //
+        // NOTE: The max spot price increases after we open the first long
+        // because the spot price increases. In some cases, this could cause
+        // a small trade to suceed after the large trade, so we use relatively
+        // large amounts for the second trade.
         vm.stopPrank();
         vm.startPrank(bob);
         finalLongAmount = finalLongAmount.normalizeToRange(
@@ -928,19 +918,6 @@ contract HyperdriveMathTest is HyperdriveTest {
         uint256 initialShortAmount,
         uint256 finalShortAmount
     ) external {
-        // FIXME: The following case causes this test to fail with an output
-        // limit.
-        //
-        // fixedRate = 499242737251331042;
-        // contribution = 383238727479163837146208449484606976;
-        // matureLongAmount = 12364;
-        // initialLongAmount = 3026694408745229844;
-        // initialShortAmount = 193882152699643256039;
-        // finalShortAmount = 147;
-
-        // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
-
         // Initialize the Hyperdrive pool.
         contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
         fixedRate = fixedRate.normalizeToRange(0.0001e18, 0.5e18);
@@ -957,7 +934,6 @@ contract HyperdriveMathTest is HyperdriveTest {
 
         // Ensure that the max short is actually the max short.
         _verifyMaxShort(
-            hyperdriveMath,
             initialLongAmount,
             initialShortAmount,
             finalShortAmount
@@ -972,9 +948,6 @@ contract HyperdriveMathTest is HyperdriveTest {
         uint256 initialShortAmount,
         uint256 finalShortAmount
     ) external {
-        // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
-
         // Initialize the Hyperdrive pool.
         contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
         fixedRate = fixedRate.normalizeToRange(0.0001e18, 0.5e18);
@@ -991,7 +964,6 @@ contract HyperdriveMathTest is HyperdriveTest {
 
         // Ensure that the max short is actually the max short.
         _verifyMaxShort(
-            hyperdriveMath,
             initialLongAmount,
             initialShortAmount,
             finalShortAmount
@@ -1005,9 +977,6 @@ contract HyperdriveMathTest is HyperdriveTest {
         uint256 initialShortAmount,
         uint256 finalShortAmount
     ) external {
-        // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
-
         // Initialize the Hyperdrive pool.
         contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
         fixedRate = fixedRate.normalizeToRange(0.0001e18, 0.5e18);
@@ -1015,7 +984,6 @@ contract HyperdriveMathTest is HyperdriveTest {
 
         // Ensure that the max short is actually the max short.
         _verifyMaxShort(
-            hyperdriveMath,
             initialLongAmount,
             initialShortAmount,
             finalShortAmount
@@ -1023,7 +991,6 @@ contract HyperdriveMathTest is HyperdriveTest {
     }
 
     function _verifyMaxShort(
-        MockHyperdriveMath hyperdriveMath,
         uint256 initialLongAmount,
         uint256 initialShortAmount,
         uint256 finalShortAmount
@@ -1047,8 +1014,8 @@ contract HyperdriveMathTest is HyperdriveTest {
         );
         IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
-        uint256 maxShort = hyperdriveMath.calculateMaxShort(
-            HyperdriveMath.MaxTradeParams({
+        uint256 maxShort = HyperdriveUtils.calculateMaxShort(
+            HyperdriveUtils.MaxTradeParams({
                 shareReserves: info.shareReserves,
                 shareAdjustment: info.shareAdjustment,
                 bondReserves: info.bondReserves,
@@ -1061,7 +1028,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 curveFee: config.fees.curve,
                 governanceFee: config.fees.governance
             }),
-            checkpoint.longExposure,
+            checkpoint.exposure,
             7
         );
         (uint256 maturityTime, ) = openShort(bob, maxShort);

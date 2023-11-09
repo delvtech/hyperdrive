@@ -10,11 +10,11 @@ import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeploye
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
-import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
-import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
-import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
-import { Lib } from "../utils/Lib.sol";
-import { ERC4626ValidationTest } from "./ERC4626Validation.t.sol";
+import { MockERC4626Hyperdrive } from "contracts/test/MockERC4626Hyperdrive.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Lib } from "test/utils/Lib.sol";
+import { ERC4626ValidationTest } from "test/integrations/ERC4626Validation.t.sol";
 
 // Interface for the `Pot` of the underlying DSR
 interface PotLike {
@@ -44,7 +44,7 @@ contract sDaiTest is ERC4626ValidationTest {
 
     function advanceTimeWithYield(
         uint256 timeDelta,
-        int256 variableRate
+        int256 // unused
     ) public override {
         vm.warp(block.timestamp + timeDelta);
         // Interest accumulates in the dsr based on time passed.

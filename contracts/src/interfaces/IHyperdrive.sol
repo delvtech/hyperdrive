@@ -19,26 +19,32 @@ interface IHyperdrive is
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 apr
     );
 
     event AddLiquidity(
         address indexed provider,
         uint256 lpAmount,
-        uint256 baseAmount
+        uint256 baseAmount,
+        uint256 sharePrice,
+        uint256 lpSharePrice
     );
 
     event RemoveLiquidity(
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
-        uint256 withdrawalShareAmount
+        uint256 sharePrice,
+        uint256 withdrawalShareAmount,
+        uint256 lpSharePrice
     );
 
     event RedeemWithdrawalShares(
         address indexed provider,
         uint256 withdrawalShareAmount,
-        uint256 baseAmount
+        uint256 baseAmount,
+        uint256 sharePrice
     );
 
     event OpenLong(
@@ -46,6 +52,7 @@ interface IHyperdrive is
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 bondAmount
     );
 
@@ -54,6 +61,7 @@ interface IHyperdrive is
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 bondAmount
     );
 
@@ -62,6 +70,7 @@ interface IHyperdrive is
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 bondAmount
     );
 
@@ -70,6 +79,7 @@ interface IHyperdrive is
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 bondAmount
     );
 
@@ -81,7 +91,11 @@ interface IHyperdrive is
         uint256 lpSharePrice
     );
 
-    event CollectGovernanceFee(address indexed collector, uint256 fees);
+    event CollectGovernanceFee(
+        address indexed collector,
+        uint256 baseFees,
+        uint256 sharePrice
+    );
 
     /// Structs ///
 
@@ -116,8 +130,9 @@ interface IHyperdrive is
         ///      as well as the share price at closing of matured longs and
         ///      shorts.
         uint128 sharePrice;
-        /// @dev The amount lp exposure on longs.
-        int128 longExposure;
+        /// @dev If exposure is positive, then we have net long exposure, otherwise
+        ///      we have net short exposure in the checkpoint.
+        int128 exposure;
     }
 
     struct WithdrawPool {

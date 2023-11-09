@@ -11,15 +11,15 @@ import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeploye
 import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
-import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
-import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
-import { Mock4626, ERC20 } from "../mocks/Mock4626.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
-import { Lib } from "test/utils/Lib.sol";
-import { ERC4626ValidationTest } from "./ERC4626Validation.t.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
+import { MockERC4626Hyperdrive } from "contracts/test/MockERC4626Hyperdrive.sol";
+import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
+import { MockERC4626 } from "contracts/test/MockERC4626.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Lib } from "test/utils/Lib.sol";
+import { ERC4626ValidationTest } from "test/integrations/ERC4626Validation.t.sol";
 
 contract UsdcERC4626 is ERC4626ValidationTest {
     using FixedPointMath for *;
@@ -34,10 +34,13 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         );
         token = IERC4626(
             address(
-                new Mock4626(
-                    ERC20(address(underlyingToken)),
+                new MockERC4626(
+                    ERC20Mintable(address(underlyingToken)),
                     "yearn usdc",
-                    "yUSDC"
+                    "yUSDC",
+                    0,
+                    address(0),
+                    false
                 )
             )
         );

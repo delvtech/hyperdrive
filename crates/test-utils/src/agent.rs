@@ -658,7 +658,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
     ) -> Result<()> {
         let tx = ContractCall_(self.hyperdrive.checkpoint(checkpoint))
             .apply(self.pre_process_options(maybe_tx_options));
-        tx.0.send().await?;
+        tx.0.send().await?.await?;
         Ok(())
     }
 
@@ -921,6 +921,11 @@ impl Agent<ChainClient, ChaCha8Rng> {
         Ok(self.hyperdrive.get_checkpoint(id).await?)
     }
 
+    /// Gets the spot price.
+    pub async fn get_spot_price(&self) -> Result<FixedPoint> {
+        Ok(self.get_state().await?.get_spot_price())
+    }
+
     /// Gets the amount of longs that will be opened for a given amount of base
     /// with the current market state.
     pub async fn get_long_amount(&self, base_amount: FixedPoint) -> Result<FixedPoint> {
@@ -949,11 +954,11 @@ impl Agent<ChainClient, ChaCha8Rng> {
     /// Gets the max long that can be opened in the current checkpoint.
     pub async fn get_max_long(&self, maybe_max_iterations: Option<usize>) -> Result<FixedPoint> {
         let state = self.get_state().await?;
-        let Checkpoint { long_exposure, .. } = self
+        let Checkpoint { exposure, .. } = self
             .hyperdrive
             .get_checkpoint(state.to_checkpoint(self.now().await?))
             .await?;
-        Ok(state.get_max_long(self.wallet.base, long_exposure, maybe_max_iterations))
+        Ok(state.get_max_long(self.wallet.base, exposure, maybe_max_iterations))
     }
 
     /// Gets the max short that can be opened in the current checkpoint.
@@ -971,7 +976,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         let state = self.get_state().await?;
         let Checkpoint {
             share_price: open_share_price,
-            long_exposure: checkpoint_exposure,
+            exposure: checkpoint_exposure,
             ..
         } = self
             .hyperdrive

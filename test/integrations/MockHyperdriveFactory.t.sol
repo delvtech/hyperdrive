@@ -8,9 +8,9 @@ import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeploye
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
-import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
-import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
-import { MockHyperdriveFactory } from "../mocks/MockHyperdriveFactory.sol";
+import { MockHyperdriveFactory } from "contracts/test/MockHyperdriveFactory.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
 contract MockHyperdriveFactoryTest is HyperdriveTest {
     function test_hyperdrive_factory_fees() external {

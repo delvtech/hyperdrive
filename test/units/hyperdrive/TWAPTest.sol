@@ -7,8 +7,8 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveDataProvider } from "contracts/src/HyperdriveDataProvider.sol";
-import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
-import { MockHyperdrive } from "../../mocks/MockHyperdrive.sol";
+import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
+import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "test/utils/HyperdriveTest.sol";
 
 contract TWAPTest is HyperdriveTest {
     using FixedPointMath for uint256;

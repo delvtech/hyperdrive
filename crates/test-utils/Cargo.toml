@@ -3,10 +3,27 @@ name = "test-utils"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "pause"
+path = "src/bin/pause.rs"
+
+[[example]]
+name = "dev_chain"
+
+[[example]]
+name = "max_short"
+
+[[example]]
+name = "test_chain_new"
+
+[[example]]
+name = "test_chain_load_crash"
+
 [dependencies]
 
 # External dependencies.
 async-trait = "0.1.73"
+dotenvy = "0.15"
 ethers = "2.0.8"
 eyre = "0.6.8"
 lazy_static = "1.4.0"
@@ -24,15 +41,3 @@ fixed-point-macros = { path = "../fixed-point-macros" }
 hyperdrive-addresses = { path = "../hyperdrive-addresses" }
 hyperdrive-math = { path = "../hyperdrive-math" }
 hyperdrive-wrappers = { path = "../hyperdrive-wrappers" }
-
-[[example]]
-name = "dev_chain"
-
-[[example]]
-name = "max_short"
-
-[[example]]
-name = "test_chain_new"
-
-[[example]]
-name = "test_chain_load_crash"

@@ -118,7 +118,7 @@ pub async fn test_integration_get_max_short() -> Result<()> {
         let state = alice.get_state().await?;
         let Checkpoint {
             share_price: open_share_price,
-            long_exposure: checkpoint_exposure,
+            exposure: checkpoint_exposure,
             ..
         } = alice
             .get_checkpoint(state.to_checkpoint(alice.now().await?))
@@ -198,15 +198,17 @@ pub async fn test_integration_get_max_long() -> Result<()> {
         let fixed_rate = fixed!(0.05e18);
         preamble(&mut rng, &mut alice, &mut bob, &mut celine, fixed_rate).await?;
 
-        // Bob opens a max long. Despite the trading that happened before this,
-        // we expect Bob's max long to bring the spot price close to 1, exhaust the
-        // pool's solvency, or exhaust Bob's budget.
+        // One of three things should be true after opening the long:
+        //
+        // 1. The pool's spot price reached the max spot price prior to
+        //    considering fees.
+        // 2. The pool's solvency is close to zero.
+        // 3. Bob's budget is consumed.
+        let max_spot_price = bob.get_state().await?.get_max_spot_price();
         let max_long = bob.get_max_long(None).await?;
+        let spot_price_after_long = bob.get_state().await?.get_spot_price_after_long(max_long);
         bob.open_long(max_long, None, None).await?;
-        let is_max_price = {
-            let state = bob.get_state().await?;
-            fixed!(1e18) - state.get_spot_price() < fixed!(1e15)
-        };
+        let is_max_price = max_spot_price - spot_price_after_long < fixed!(1e15);
         let is_solvency_consumed = {
             let state = bob.get_state().await?;
             let error_tolerance = fixed!(1_000e18).mul_div_down(fixed_rate, fixed!(0.1e18));

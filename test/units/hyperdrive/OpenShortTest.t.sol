@@ -371,10 +371,12 @@ contract OpenShortTest is HyperdriveTest {
             (
                 uint256 eventMaturityTime,
                 uint256 eventBaseAmount,
+                uint256 eventSharePrice,
                 uint256 eventBondAmount
-            ) = abi.decode(log.data, (uint256, uint256, uint256));
+            ) = abi.decode(log.data, (uint256, uint256, uint256, uint256));
             assertEq(eventMaturityTime, maturityTime);
             assertEq(eventBaseAmount, basePaid);
+            assertEq(eventSharePrice, hyperdrive.getPoolInfo().sharePrice);
             assertEq(eventBondAmount, shortAmount);
         }
 
@@ -444,8 +446,8 @@ contract OpenShortTest is HyperdriveTest {
         // transferred; however, the pool's APR should be identical to the APR
         // that the bond amount transfer implies.
         assertApproxEqAbs(
-            HyperdriveUtils.calculateAPRFromReserves(hyperdrive),
-            HyperdriveMath.calculateAPRFromReserves(
+            HyperdriveUtils.calculateSpotAPR(hyperdrive),
+            HyperdriveMath.calculateSpotAPR(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.bondReserves + shortAmount,
                 INITIAL_SHARE_PRICE,

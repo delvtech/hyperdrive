@@ -12,10 +12,10 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { Mock4626, ERC20 } from "../../mocks/Mock4626.sol";
-import { MockERC4626Hyperdrive } from "../../mocks/Mock4626Hyperdrive.sol";
-import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
-import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
+import { MockERC4626 } from "contracts/test/MockERC4626.sol";
+import { MockERC4626Hyperdrive } from "contracts/test/MockERC4626Hyperdrive.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
 contract HyperdriveFactoryTest is HyperdriveTest {
     function test_hyperdrive_factory_admin_functions()
@@ -28,7 +28,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
         vm.startPrank(deployer);
 
-        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer();
+        // Deploy the ERC4626Hyperdrive factory and deployer.
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
@@ -41,12 +41,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 IHyperdrive.Fees(1e18, 1e18, 1e18),
                 defaults
             ),
-            simpleDeployer,
+            new ERC4626HyperdriveDeployer(),
             address(forwarderFactory),
             forwarderFactory.ERC20LINK_HASH(),
             new address[](0)
         );
-
         assertEq(factory.governance(), alice);
 
         // Bob can't change access the admin functions.

@@ -5,10 +5,10 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { MockHyperdrive } from "../../mocks/MockHyperdrive.sol";
-import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
-import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
-import { Lib } from "../../utils/Lib.sol";
+import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract NonstandardDecimalsTest is HyperdriveTest {
     using FixedPointMath for int256;
@@ -122,7 +122,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
 
         // Initialize the pool and ensure that the APR is correct.
         initialize(alice, apr, contribution);
-        assertApproxEqAbs(hyperdrive.calculateAPRFromReserves(), apr, 1e12);
+        assertApproxEqAbs(hyperdrive.calculateSpotAPR(), apr, 1e12);
     }
 
     function test_nonstandard_decimals_long(
@@ -372,6 +372,11 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             uint256 shortAmount = 4726;
             _test_nonstandard_decimals_lp(longBasePaid, shortAmount);
         }
+        {
+            uint256 longBasePaid = 23380152699926527608478591154369565406497241350176542278464371342740135389;
+            uint256 shortAmount = 38653169555116283775616658498588757899099;
+            _test_nonstandard_decimals_lp(longBasePaid, shortAmount);
+        }
     }
 
     // TODO: This test should be re-written to avoid such large tolerances.
@@ -384,7 +389,6 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         config.minimumShareReserves = 1e6;
         config.minimumTransactionAmount = 1e6;
         deploy(deployer, config);
-
         uint256 minimumTransactionAmount = hyperdrive
             .getPoolConfig()
             .minimumTransactionAmount;
@@ -411,6 +415,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
 
         // Bob adds liquidity.
         uint256 bobLpShares = addLiquidity(bob, testParams.contribution);
+        uint256 spotAPRBefore = hyperdrive.calculateSpotAPR();
 
         // Bob opens a long.
         {
@@ -436,6 +441,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
                 minimumTransactionAmount,
                 maxShort - minimumTransactionAmount
             );
+
             testParams.shortAmount = shortAmount;
             (uint256 shortMaturityTime, uint256 shortBasePaid) = openShort(
                 bob,
@@ -458,58 +464,95 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         assertEq(aliceBaseProceeds, estimatedBaseProceeds);
 
         // Celine adds liquidity.
-        uint256 celineLpShares = addLiquidity(celine, testParams.contribution);
+        // Note that fuzzing will occasionally create long and short trades so large
+        // that the Celine gets less than the minimum transaction amount. This situation
+        // can be caught by setting Min/Max APR slippage guards and checking for revert
+        DepositOverrides memory overrides = DepositOverrides({
+            asBase: true,
+            depositAmount: testParams.contribution,
+            minSharePrice: 0, // unused
+            minSlippage: spotAPRBefore - 0.015e18, // min spot rate of .5%
+            maxSlippage: spotAPRBefore + 0.015e18, // max spot rate of 3.5%
+            extraData: new bytes(0) // unused
+        });
+        uint256 celineLpShares;
+        if (
+            hyperdrive.calculateSpotAPR() < overrides.minSlippage ||
+            hyperdrive.calculateSpotAPR() > overrides.maxSlippage
+        ) {
+            baseToken.mint(overrides.depositAmount);
+            baseToken.approve(address(hyperdrive), overrides.depositAmount);
+            vm.expectRevert(IHyperdrive.InvalidApr.selector);
 
-        // Bob closes his long and his short.
-        {
-            closeLong(bob, testParams.longMaturityTime, testParams.longAmount);
-            closeShort(
-                bob,
-                testParams.shortMaturityTime,
-                testParams.shortAmount
+            celineLpShares = hyperdrive.addLiquidity(
+                overrides.depositAmount,
+                overrides.minSlippage, // min spot rate
+                overrides.maxSlippage, // max spot rate
+                IHyperdrive.Options({
+                    destination: celine,
+                    asBase: overrides.asBase,
+                    extraData: overrides.extraData
+                })
             );
-        }
+        } else {
+            celineLpShares = addLiquidity(celine, testParams.contribution);
 
-        // Redeem Alice's withdrawal shares. Alice gets at least the margin released
-        // from Bob's long.
-        (uint256 aliceRedeemProceeds, ) = redeemWithdrawalShares(
-            alice,
-            aliceWithdrawalShares
-        );
-        {
-            uint256 estimatedRedeemProceeds = lpMargin.mulDivDown(
-                aliceLpShares,
-                aliceLpShares + bobLpShares
+            // Bob closes his long and his short.
+            {
+                closeLong(
+                    bob,
+                    testParams.longMaturityTime,
+                    testParams.longAmount
+                );
+                closeShort(
+                    bob,
+                    testParams.shortMaturityTime,
+                    testParams.shortAmount
+                );
+            }
+
+            // Redeem Alice's withdrawal shares. Alice gets at least the margin released
+            // from Bob's long.
+            (uint256 aliceRedeemProceeds, ) = redeemWithdrawalShares(
+                alice,
+                aliceWithdrawalShares
             );
-            assertGe(aliceRedeemProceeds, estimatedRedeemProceeds);
+            {
+                uint256 estimatedRedeemProceeds = lpMargin.mulDivDown(
+                    aliceLpShares,
+                    aliceLpShares + bobLpShares
+                );
+                assertGe(aliceRedeemProceeds, estimatedRedeemProceeds);
+            }
+
+            // Bob and Celine remove their liquidity. Bob should receive more base
+            // proceeds than Celine since Celine's add liquidity resulted in an
+            // increase in slippage for the outstanding positions.
+            (
+                uint256 bobBaseProceeds,
+                uint256 bobWithdrawalShares
+            ) = removeLiquidity(bob, bobLpShares);
+            (
+                uint256 celineBaseProceeds,
+                uint256 celineWithdrawalShares
+            ) = removeLiquidity(celine, celineLpShares);
+            assertGe(bobBaseProceeds + 1e6, celineBaseProceeds);
+            uint256 _contribution = testParams.contribution; // Avoid stack too deep error
+            assertGe(bobBaseProceeds + 1e6, _contribution);
+            assertApproxEqAbs(bobWithdrawalShares, 0, 1);
+            assertApproxEqAbs(celineWithdrawalShares, 0, 1);
+            assertApproxEqAbs(
+                hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
+                    hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw,
+                0,
+                1 wei
+            );
+
+            // TODO: There is an edge case where the withdrawal pool doesn't receive
+            // all of its portion of the available idle liquidity when a closed
+            // position doesn't perform well.
+            // Ensure that the ending base balance of Hyperdrive is zero.
+            // assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
         }
-
-        // Bob and Celine remove their liquidity. Bob should receive more base
-        // proceeds than Celine since Celine's add liquidity resulted in an
-        // increase in slippage for the outstanding positions.
-        (
-            uint256 bobBaseProceeds,
-            uint256 bobWithdrawalShares
-        ) = removeLiquidity(bob, bobLpShares);
-        (
-            uint256 celineBaseProceeds,
-            uint256 celineWithdrawalShares
-        ) = removeLiquidity(celine, celineLpShares);
-        assertGe(bobBaseProceeds + 1e6, celineBaseProceeds);
-        assertGe(bobBaseProceeds + 1e6, testParams.contribution);
-        assertApproxEqAbs(bobWithdrawalShares, 0, 1);
-        assertApproxEqAbs(celineWithdrawalShares, 0, 1);
-        assertApproxEqAbs(
-            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
-                hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw,
-            0,
-            1 wei
-        );
-
-        // TODO: There is an edge case where the withdrawal pool doesn't receive
-        // all of its portion of the available idle liquidity when a closed
-        // position doesn't perform well.
-        // Ensure that the ending base balance of Hyperdrive is zero.
-        // assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
     }
 }
