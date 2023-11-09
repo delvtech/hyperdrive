@@ -47,6 +47,9 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
     /// @notice The minimum amount of tokens that a position can be opened/closed with.
     uint256 internal immutable _minimumTransactionAmount;
 
+    /// @notice The amount of precision expected to lose due to exponentiation implementation.
+    uint256 internal immutable _precisionThreshold;
+
     /// @notice The state of the market. This includes the reserves, buffers,
     ///         and other data used to price trades and maintain solvency.
     IHyperdrive.MarketState internal _marketState;
@@ -119,6 +122,7 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
         _minimumShareReserves = _config.minimumShareReserves;
 
         _minimumTransactionAmount = _config.minimumTransactionAmount;
+        _precisionThreshold = _config.precisionThreshold;
 
         // Initialize the time configurations. There must be at least one
         // checkpoint per term to avoid having a position duration of zero.

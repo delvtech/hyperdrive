@@ -285,7 +285,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256 tradeSize = 504168.031667365798150347e18;
         uint256 numTrades = 100;
 
-        // If you increase numTrades enought it will eventually fail in openLong()
+        // If you increase numTrades enough it will eventually fail in openLong()
         // due to minOutput > bondProceeds where minOutput = baseAmount from openLong()
         open_close_long_short_different_checkpoints(
             initialSharePrice,
@@ -744,10 +744,20 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             );
             longMaturityTimes[i] = maturityTimeLong;
             bondAmounts[i] = bondAmount;
-
             (uint256 maturityTimeShort, ) = openShort(bob, bondAmount);
             shortMaturityTimes[i] = maturityTimeShort;
         }
+
+        // Checkpoint Exposure should be small even if there are many trades
+        int256 checkpointExposure = int256(
+            hyperdrive
+                .getCheckpoint(HyperdriveUtils.latestCheckpoint(hyperdrive))
+                .exposure
+        );
+        checkpointExposure = checkpointExposure < 0
+            ? -checkpointExposure
+            : checkpointExposure;
+        assertLe(uint256(checkpointExposure), PRECISION_THRESHOLD * numTrades);
 
         // fast forward time, create checkpoints and accrue interest
         advanceTimeWithCheckpoints(timeElapsed, variableInterest);

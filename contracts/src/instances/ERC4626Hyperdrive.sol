@@ -88,7 +88,8 @@ contract ERC4626Hyperdrive is Hyperdrive {
     /// @notice Accepts a trader's deposit in either base or vault shares. If
     ///         the deposit is settled in base, the base is deposited into the
     ///         yield source immediately.
-    /// @param _amount The amount of token to transfer
+    /// @param _amount The amount of token to transfer. It will be in either
+    //          base or shares depending on the `asBase` option.
     /// @param _options The options that configure the deposit. The only option
     ///        used in this implementation is "asBase" which determines if
     ///        the deposit is settled in base or vault shares.
@@ -129,7 +130,9 @@ contract ERC4626Hyperdrive is Hyperdrive {
     ///        used in this implementation are "destination" which specifies the
     ///        recipient of the withdrawal and "asBase" which determines
     ///        if the withdrawal is settled in base or vault shares.
-    /// @return amountWithdrawn The amount withdrawn from the yield source.
+    /// @return amountWithdrawn The amount withdrawn from the yield source.  
+    ///         it will be in either base or shares depending on the `asBase`
+    ///         option.
     function _withdraw(
         uint256 _shares,
         IHyperdrive.Options calldata _options
