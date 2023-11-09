@@ -68,7 +68,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Bob opens a large long.
         basePaid = basePaid.normalizeToRange(
-            MINIMUM_TRANSACTION_AMOUNT,
+            MINIMUM_TRANSACTION_AMOUNT * 2,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);

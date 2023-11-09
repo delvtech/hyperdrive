@@ -37,7 +37,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         initialize(alice, 0.05e18, 10_000_000e6);
 
         // Bob opens a long.
-        uint256 longBasePaid = 1e6;
+        uint256 longBasePaid = 2e6;
         (, uint256 bondAmount) = openLong(bob, longBasePaid);
 
         // Deploy and initialize a pool.

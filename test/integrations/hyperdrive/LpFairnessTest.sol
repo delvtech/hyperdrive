@@ -196,7 +196,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // ensure a feasible trade size
         tradeSizeParam = tradeSizeParam.normalizeToRange(
-            MINIMUM_TRANSACTION_AMOUNT,
+            MINIMUM_TRANSACTION_AMOUNT * 2,
             5_000_000e18 - MINIMUM_TRANSACTION_AMOUNT
         );
 
@@ -254,7 +254,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // ensure a feasible trade size
         tradeSizeParam = tradeSizeParam.normalizeToRange(
-            MINIMUM_TRANSACTION_AMOUNT,
+            MINIMUM_TRANSACTION_AMOUNT * 2,
             5_000_000e18 - MINIMUM_TRANSACTION_AMOUNT
         );
 

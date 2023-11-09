@@ -74,12 +74,16 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         // Take custody of the trader's deposit and ensure that the trader
         // doesn't pay more than their max deposit. The trader's deposit is
         // equal to the proceeds that they would receive if they closed
-        // immediately (without fees). Trader deposit is in base, 
+        // immediately (without fees). Trader deposit is in base,
         // so we need to ensure it matches the options specified by the user.
         // Note: We don't check the maxDeposit against the output of deposit
         // because slippage from a deposit could cause a larger deposit taken
         // from the user to fail.
-        uint256 traderDeposit = _convertToOptionFromBase(baseDeposit,sharePrice,_options);
+        uint256 traderDeposit = _convertToOptionFromBase(
+            baseDeposit,
+            sharePrice,
+            _options
+        );
         if (_maxDeposit < traderDeposit) {
             revert IHyperdrive.OutputLimit();
         }
@@ -87,7 +91,7 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
 
         // Apply the state updates caused by opening the short.
         // Note: Updating the state using the result using the
-        // deltas calculated from function inputs is consistent with 
+        // deltas calculated from function inputs is consistent with
         // openLong.
         _applyOpenShort(
             _bondAmount,
@@ -441,17 +445,19 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         // accrued during the current checkpoint, we set close share price to
         // equal the open share price. This ensures that shorts don't benefit
         // from negative interest that accrued during the current checkpoint.
-        baseDeposit = HyperdriveMath.calculateShortProceeds(
-            _bondAmount,
-            // NOTE: We add the governance fee back to the share reserves
-            // delta here because the trader will need to provide this in
-            // their deposit.
-            shareReservesDelta - governanceCurveFee,
-            _openSharePrice,
-            _sharePrice.max(_openSharePrice),
-            _sharePrice,
-            _flatFee
-        ).mulDown(_sharePrice);
+        baseDeposit = HyperdriveMath
+            .calculateShortProceeds(
+                _bondAmount,
+                // NOTE: We add the governance fee back to the share reserves
+                // delta here because the trader will need to provide this in
+                // their deposit.
+                shareReservesDelta - governanceCurveFee,
+                _openSharePrice,
+                _sharePrice.max(_openSharePrice),
+                _sharePrice,
+                _flatFee
+            )
+            .mulDown(_sharePrice);
 
         return (baseDeposit, shareReservesDelta, governanceCurveFee);
     }

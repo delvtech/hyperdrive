@@ -71,7 +71,7 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds purchased to the beginning of the checkpoint.
-        // Note: All state deltas are derived from the output of the 
+        // Note: All state deltas are derived from the output of the
         // deposit function.
         uint256 shareReservesDelta;
         uint256 bondReservesDelta;
