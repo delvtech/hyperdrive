@@ -4,8 +4,6 @@ pragma solidity 0.8.19;
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 
-// TODO: Clean up this contract's comments.
-//
 /// @author DELV
 /// @title HyperdriveMultiToken
 /// @notice Implements the MultiToken accounting that Hyperdrive uses to track
