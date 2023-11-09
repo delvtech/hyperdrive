@@ -869,9 +869,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 curveFee: config.fees.curve,
                 governanceFee: config.fees.governance
             }),
-            hyperdrive
-                .getCheckpoint(hyperdrive.latestCheckpoint())
-                .longExposure,
+            hyperdrive.getCheckpoint(hyperdrive.latestCheckpoint()).exposure,
             maxIterations
         );
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, maxLong);
@@ -1030,7 +1028,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 curveFee: config.fees.curve,
                 governanceFee: config.fees.governance
             }),
-            checkpoint.longExposure,
+            checkpoint.exposure,
             7
         );
         (uint256 maturityTime, ) = openShort(bob, maxShort);

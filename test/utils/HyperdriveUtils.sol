@@ -192,7 +192,7 @@ library HyperdriveUtils {
                 curveFee: poolConfig.fees.curve,
                 governanceFee: poolConfig.fees.governance
             }),
-            checkpoint.longExposure,
+            checkpoint.exposure,
             _maxIterations
         );
         return baseAmount;
@@ -235,7 +235,7 @@ library HyperdriveUtils {
                     curveFee: poolConfig.fees.curve,
                     governanceFee: poolConfig.fees.governance
                 }),
-                checkpoint.longExposure,
+                checkpoint.exposure,
                 _maxIterations
             );
     }
@@ -269,14 +269,14 @@ library HyperdriveUtils {
     ///      to 1. If we are solvent at this point, then we're done. Otherwise,
     ///      we approach the max long iteratively using Newton's method.
     /// @param _params The parameters for the max long calculation.
-    /// @param _checkpointLongExposure The long exposure in the checkpoint.
+    /// @param _checkpointExposure The exposure in the checkpoint.
     /// @param _maxIterations The maximum number of iterations to use in the
     ///                       Newton's method loop.
     /// @return maxBaseAmount The maximum base amount.
     /// @return maxBondAmount The maximum bond amount.
     function calculateMaxLong(
         MaxTradeParams memory _params,
-        int256 _checkpointLongExposure,
+        int256 _checkpointExposure,
         uint256 _maxIterations
     ) internal pure returns (uint256 maxBaseAmount, uint256 maxBondAmount) {
         // Get the maximum long that brings the spot price to 1. If the pool is
@@ -305,7 +305,7 @@ library HyperdriveUtils {
             );
             (, bool isSolvent_) = calculateSolvencyAfterLong(
                 _params,
-                _checkpointLongExposure,
+                _checkpointExposure,
                 absoluteMaxBaseAmount,
                 absoluteMaxBondAmount,
                 spotPrice
@@ -335,7 +335,7 @@ library HyperdriveUtils {
         maxBaseAmount = calculateMaxLongGuess(
             _params,
             absoluteMaxBaseAmount,
-            _checkpointLongExposure,
+            _checkpointExposure,
             spotPrice
         );
         maxBondAmount = calculateLongAmount(
@@ -346,7 +346,7 @@ library HyperdriveUtils {
         );
         (uint256 solvency_, bool success) = calculateSolvencyAfterLong(
             _params,
-            _checkpointLongExposure,
+            _checkpointExposure,
             maxBaseAmount,
             maxBondAmount,
             spotPrice
@@ -390,7 +390,7 @@ library HyperdriveUtils {
             );
             (solvency_, success) = calculateSolvencyAfterLong(
                 _params,
-                _checkpointLongExposure,
+                _checkpointExposure,
                 possibleMaxBaseAmount,
                 possibleMaxBondAmount,
                 spotPrice
@@ -510,20 +510,20 @@ library HyperdriveUtils {
     /// @param _params The max long calculation parameters.
     /// @param _absoluteMaxBaseAmount The absolute max base amount that can be
     ///        used to open a long.
-    /// @param _checkpointLongExposure The long exposure in the checkpoint.
+    /// @param _checkpointExposure The exposure in the checkpoint.
     /// @param _spotPrice The spot price of the pool.
     /// @return A conservative estimate of the max long that the pool can open.
     function calculateMaxLongGuess(
         MaxTradeParams memory _params,
         uint256 _absoluteMaxBaseAmount,
-        int256 _checkpointLongExposure,
+        int256 _checkpointExposure,
         uint256 _spotPrice
     ) internal pure returns (uint256) {
         // Get an initial estimate of the max long by using the spot price as
         // our conservative price.
         uint256 guess = calculateMaxLongEstimate(
             _params,
-            _checkpointLongExposure,
+            _checkpointExposure,
             _spotPrice,
             _spotPrice
         );
@@ -545,7 +545,7 @@ library HyperdriveUtils {
         // estimate of the realized price.
         guess = calculateMaxLongEstimate(
             _params,
-            _checkpointLongExposure,
+            _checkpointExposure,
             _spotPrice,
             estimateSpotPrice
         );
@@ -589,17 +589,17 @@ library HyperdriveUtils {
     ///          }
     ///      $$
     /// @param _params The max long calculation parameters.
-    /// @param _checkpointLongExposure The long exposure in the checkpoint.
+    /// @param _checkpointExposure The exposure in the checkpoint.
     /// @param _spotPrice The spot price of the pool.
     /// @param _estimatePrice The estimated realized price the max long will pay.
     /// @return A conservative estimate of the max long that the pool can open.
     function calculateMaxLongEstimate(
         MaxTradeParams memory _params,
-        int256 _checkpointLongExposure,
+        int256 _checkpointExposure,
         uint256 _spotPrice,
         uint256 _estimatePrice
     ) internal pure returns (uint256) {
-        uint256 checkpointExposure = uint256(-_checkpointLongExposure.min(0));
+        uint256 checkpointExposure = uint256(-_checkpointExposure.min(0));
         uint256 estimate = (_params.shareReserves +
             checkpointExposure.divDown(_params.sharePrice) -
             _params.longExposure.divDown(_params.sharePrice) -
@@ -619,7 +619,7 @@ library HyperdriveUtils {
     ///      base amount $x$.
     ///
     ///      Since longs can net out with shorts in this checkpoint, we decrease
-    ///      the global exposure variable by any negative long exposure we have
+    ///      the global exposure variable by any negative exposure we have
     ///      in the checkpoint. The pool's solvency is calculated as:
     ///
     ///      $$
@@ -637,7 +637,7 @@ library HyperdriveUtils {
     ///
     ///      ```
     ///      shareReservesDelta = _shareAmount - governanceCurveFee.divDown(_sharePrice)
-    ///      uint128 longExposureDelta = (2 *
+    ///      uint128 exposureDelta = (2 *
     ///          _bondProceeds -
     ///          _shareReservesDelta.mulDown(_sharePrice)).toUint128();
     ///      ```
@@ -660,7 +660,7 @@ library HyperdriveUtils {
     ///      this case, we return `false` since the fixed point library can't
     ///      represent negative numbers.
     /// @param _params The max long calculation parameters.
-    /// @param _checkpointLongExposure The long exposure in the checkpoint.
+    /// @param _checkpointExposure The exposure in the checkpoint.
     /// @param _baseAmount The base amount.
     /// @param _bondAmount The bond amount.
     /// @param _spotPrice The spot price.
@@ -669,7 +669,7 @@ library HyperdriveUtils {
     ///         if false.
     function calculateSolvencyAfterLong(
         MaxTradeParams memory _params,
-        int256 _checkpointLongExposure,
+        int256 _checkpointExposure,
         uint256 _baseAmount,
         uint256 _bondAmount,
         uint256 _spotPrice
@@ -688,7 +688,7 @@ library HyperdriveUtils {
             _bondAmount -
             _baseAmount +
             governanceFee;
-        uint256 checkpointExposure = uint256(-_checkpointLongExposure.min(0));
+        uint256 checkpointExposure = uint256(-_checkpointExposure.min(0));
         if (
             shareReserves + checkpointExposure.divDown(_params.sharePrice) >=
             exposure.divDown(_params.sharePrice) + _params.minimumShareReserves
@@ -1131,7 +1131,7 @@ library HyperdriveUtils {
     /// @param _params Information about the market state and pool configuration
     ///        used to compute the maximum trade.
     /// @param _spotPrice The spot price.
-    /// @param _checkpointExposure The long exposure from the current checkpoint.
+    /// @param _checkpointExposure The exposure from the current checkpoint.
     /// @return The initial guess for the max short calculation.
     function calculateMaxShortGuess(
         MaxTradeParams memory _params,
@@ -1196,7 +1196,7 @@ library HyperdriveUtils {
     /// @param _shortAmount The short amount.
     /// @param _effectiveShareReserves The effective share reserves.
     /// @param _spotPrice The spot price.
-    /// @param _checkpointExposure The long exposure in the current checkpoint.
+    /// @param _checkpointExposure The exposure in the current checkpoint.
     /// @return The pool's solvency after a short is opened.
     /// @return A flag indicating whether or not the derivative was
     ///         successfully calculated.

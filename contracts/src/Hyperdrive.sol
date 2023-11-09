@@ -167,16 +167,16 @@ abstract contract Hyperdrive is
             positionsClosed = true;
         }
 
-        // Update the checkpoint and global longExposure
+        // Update the checkpoint exposure and global long exposure.
         if (positionsClosed) {
             uint256 maturityTime = _checkpointTime - _positionDuration;
             int128 checkpointExposureBefore = int128(
-                _checkpoints[maturityTime].longExposure
+                _checkpoints[maturityTime].exposure
             );
-            _checkpoints[maturityTime].longExposure = 0;
+            _checkpoints[maturityTime].exposure = 0;
             _updateLongExposure(
                 checkpointExposureBefore,
-                _checkpoints[maturityTime].longExposure
+                _checkpoints[maturityTime].exposure
             );
 
             // Distribute the excess idle to the withdrawal pool.

@@ -175,12 +175,12 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
                 maturityTime
             );
 
-            // Update the checkpoint and global longExposure
+            // Update the checkpoint exposure and global long exposure.
             uint256 checkpointTime = maturityTime - _positionDuration;
             int128 checkpointExposureBefore = int128(
-                _checkpoints[checkpointTime].longExposure
+                _checkpoints[checkpointTime].exposure
             );
-            _updateCheckpointLongExposureOnClose(
+            _updateCheckpointExposureOnClose(
                 bondAmount,
                 shareCurveDelta,
                 bondReservesDelta,
@@ -191,7 +191,7 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             );
             _updateLongExposure(
                 checkpointExposureBefore,
-                _checkpoints[checkpointTime].longExposure
+                _checkpoints[checkpointTime].exposure
             );
 
             // Distribute the excess idle to the withdrawal pool.
@@ -277,17 +277,17 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             revert IHyperdrive.InvalidShareReserves();
         }
 
-        // Update the checkpoint's short deposits and decrease the long exposure.
+        // Update the checkpoint's short deposits and decrease the exposure.
         uint256 _latestCheckpoint = _latestCheckpoint();
         int128 checkpointExposureBefore = int128(
-            _checkpoints[_latestCheckpoint].longExposure
+            _checkpoints[_latestCheckpoint].exposure
         );
-        _checkpoints[_latestCheckpoint].longExposure -= int128(
+        _checkpoints[_latestCheckpoint].exposure -= int128(
             _bondAmount.toUint128()
         );
         _updateLongExposure(
             checkpointExposureBefore,
-            _checkpoints[_latestCheckpoint].longExposure
+            _checkpoints[_latestCheckpoint].exposure
         );
 
         // Opening a short decreases the system's exposure because the short's
