@@ -49,10 +49,13 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
             revert IHyperdrive.InvalidBaseToken();
         }
 
-        // Set immutables and prepare for deposits by setting immutables
-        if (!_config.baseToken.approve(address(_pool), type(uint256).max)) {
-            revert IHyperdrive.ApprovalFailed();
-        }
+        // Approve the base token with 1 wei. This ensures that all of the
+        // subsequent approvals will be writing to a dirty storage slot.
+        SafeTransferLib.safeApprove(
+            ERC20(address(_config.baseToken)),
+            address(_pool),
+            1
+        );
 
         // Set the sweep targets. The base and pool tokens can't be set as sweep
         // targets to prevent governance from rugging the pool.
