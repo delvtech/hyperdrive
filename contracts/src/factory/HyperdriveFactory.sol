@@ -72,13 +72,13 @@ abstract contract HyperdriveFactory {
     /// @notice The fee collector used when new instances are deployed.
     address public feeCollector;
 
-    // The maximum curve fee that can be used as a factory default.
+    /// @dev The maximum curve fee that can be used as a factory default.
     uint256 internal immutable maxCurveFee;
 
-    // The maximum flat fee that can be used as a factory default.
+    /// @dev The maximum flat fee that can be used as a factory default.
     uint256 internal immutable maxFlatFee;
 
-    // The maximum governance fee that can be used as a factory default.
+    /// @dev The maximum governance fee that can be used as a factory default.
     uint256 internal immutable maxGovernanceFee;
 
     /// @dev The defaultPausers used when new instances are deployed.
@@ -99,11 +99,10 @@ abstract contract HyperdriveFactory {
         address[] defaultPausers;
     }
 
-    // Array of all instances deployed by this factory.
-    // Can be manually updated by governance to add previous instances deployed.
+    // @dev Array of all instances deployed by this factory.
     address[] internal _instances;
 
-    // Mapping to check if an instance is in the _instances array.
+    /// @dev Mapping to check if an instance is in the _instances array.
     mapping(address => bool) public isInstance;
 
     /// @notice Initializes the factory.
@@ -302,6 +301,7 @@ abstract contract HyperdriveFactory {
             _extraData
         );
 
+        // Add the newly deployed Hyperdrive instance to the registry.
         _instances.push(address(hyperdrive));
         isInstance[address(hyperdrive)] = true;
 
