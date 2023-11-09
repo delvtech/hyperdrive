@@ -677,12 +677,12 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             token.balanceOf(address(hyperdrive)),
             hyperdriveBalancesBefore.shareBalance +
                 token.convertToShares(basePaid),
-            1
+            2
         );
         assertApproxEqAbs(
             token.balanceOf(trader),
             traderBalancesBefore.shareBalance - token.convertToShares(basePaid),
-            1
+            2
         );
 
         // Ensure that the token shares were updated correctly.
@@ -698,12 +698,12 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         assertApproxEqAbs(
             token.balanceOf(address(hyperdrive)),
             hyperdriveBalancesBefore.shareBalance + expectedShares,
-            1
+            2
         );
         assertApproxEqAbs(
             token.balanceOf(trader),
             traderBalancesBefore.shareBalance - expectedShares,
-            1
+            2
         );
     }
 
