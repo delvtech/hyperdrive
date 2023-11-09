@@ -415,13 +415,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _timeStretch
         );
 
-        (
-            curveFee, // flatFee
-            ,
-            governanceCurveFee,
-            // totalGovernanceFee (equal to governanceCurveFee)
-
-        ) = _calculateFeesGivenBonds(
+        // Calculate the fees charged to the user (curveFee) and the portion
+        // of those fees that are paid to governance (governanceCurveFee).
+        (curveFee, , governanceCurveFee, ) = _calculateFeesGivenBonds(
             _bondAmount,
             ONE, // shorts are opened at the beginning of the term
             spotPrice,

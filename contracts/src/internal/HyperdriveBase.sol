@@ -497,12 +497,12 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         );
         flatFee = flat.mulDown(_flatFee);
 
-        // Calculate the flat portion of the governance fee:
+        // We calculate the flat portion of the governance fee as:
         //
-        // governanceFlatFee = flat_fee * phi_gov
-        //                   = shares * phi_gov
-
-        // The totalGovernanceFee is the sum of the curve and flat governance fees
+        // governance_flat_fee = flat_fee * phi_gov
+        //                     = shares * phi_gov
+        //
+        // The totalGovernanceFee is the sum of the curve and flat governance fees.
         totalGovernanceFee =
             governanceCurveFee +
             flatFee.mulDown(_governanceFee);
