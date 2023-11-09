@@ -55,9 +55,6 @@ contract HyperdriveFactory {
     ///         of the deployer that deployed them.
     mapping(address instance => uint256 version) public isOfficial;
 
-    /// @notice The contract used to deploy new instances.
-    IHyperdriveDeployer public hyperdriveDeployer;
-
     /// @notice The governance address used when new instances are deployed.
     address public hyperdriveGovernance;
 
@@ -72,6 +69,11 @@ contract HyperdriveFactory {
 
     /// @notice The fee collector used when new instances are deployed.
     address public feeCollector;
+
+    /// @notice Lookup table for hyperdrive deployer => data provider deployer
+    /// @dev This mapping also serves as a whitelist for hyperdrive deployers
+    /// @dev because this mapping can only be added to by governance.
+    mapping(address => address) public dataProviderDeployers;
 
     // The maximum curve fee that can be used as a factory default.
     uint256 internal immutable maxCurveFee;
@@ -99,6 +101,9 @@ contract HyperdriveFactory {
         /// @dev The default addresses which will be set to have the pauser role.
         address[] defaultPausers;
     }
+
+    // List of all hyperdrive deployers onboarded by governance.
+    address[] public _hyperdriveDeployers;
 
     // Array of all instances deployed by this factory.
     // Can be manually updated by governance to add previous instances deployed.
@@ -151,23 +156,6 @@ contract HyperdriveFactory {
     modifier onlyGovernance() {
         if (msg.sender != governance) revert IHyperdrive.Unauthorized();
         _;
-    }
-
-    /// @notice Allows governance to update the deployer contract.
-    /// @param newDeployer The new deployment contract.
-    function updateImplementation(
-        IHyperdriveDeployer newDeployer
-    ) external onlyGovernance {
-        // Update the deployer.
-        require(address(newDeployer) != address(0));
-        hyperdriveDeployer = newDeployer;
-
-        // Increment the version number.
-        unchecked {
-            ++versionCounter;
-        }
-
-        emit ImplementationUpdated(address(newDeployer));
     }
 
     /// @notice Allows governance to transfer the governance role.
@@ -238,6 +226,12 @@ contract HyperdriveFactory {
         _defaultPausers = _defaultPausers_;
     }
 
+    function addDeployerSet(address hyperdriveDeployer, address dataProviderDeployer) external onlyGovernance {
+        dataProviderDeployers[hyperdriveDeployer] = dataProviderDeployer;
+
+        _hyperdriveDeployers.push(hyperdriveDeployer);
+    }
+
     /// @notice Deploys a Hyperdrive instance with the factory's configuration.
     /// @dev This function is declared as payable to allow payable overrides
     ///      to accept ether on initialization, but payability is not supported
@@ -248,7 +242,6 @@ contract HyperdriveFactory {
     /// @param _apr The apr to call init with
     /// @param _initializeExtraData The extra data for the `initialize` call.
     /// @param _hyperdriveDeployer Address of the hyperdrive deployer.
-    /// @param _dataProviderDeployer Address of the hyperdrive data provider deployer.
     /// @return The hyperdrive address deployed
     function deployAndInitialize(
         IHyperdrive.PoolConfig memory _config,
@@ -256,11 +249,16 @@ contract HyperdriveFactory {
         uint256 _contribution,
         uint256 _apr,
         bytes memory _initializeExtraData,
-        address _hyperdriveDeployer,
-        address _dataProviderDeployer
+        address _hyperdriveDeployer
     ) public payable virtual returns (IHyperdrive) {
         if (msg.value > 0) {
             revert IHyperdrive.NonPayableInitialization();
+        }
+
+        address dataProviderDeployer = dataProviderDeployers[_hyperdriveDeployer];
+
+        if (dataProviderDeployer == address(0)) {
+            revert IHyperdrive.InvalidDeployer();
         }
 
         // Deploy the data provider and the instance with the factory's
@@ -274,7 +272,7 @@ contract HyperdriveFactory {
         _config.fees = fees;
         // bytes32 _linkerCodeHash = linkerCodeHash;  // TODO: See if we can add back without STD
         // address _linkerFactory = linkerFactory;
-        address dataProvider = IDataProviderDeployer(_dataProviderDeployer).deploy(
+        address dataProvider = IDataProviderDeployer(dataProviderDeployer).deploy(
             _config,
             linkerCodeHash,
             linkerFactory,
@@ -370,6 +368,36 @@ contract HyperdriveFactory {
         range = new address[](endIndex - startIndex + 1);
         for (uint256 i = startIndex; i <= endIndex; i++) {
             range[i - startIndex] = _instances[i];
+        }
+    }
+
+    /// @notice Gets the number of hyperdrive deployers deployed by this factory.
+    /// @return The number of hyperdrive deployers deployed by this factory.
+    function getNumberOfHyperdriveDeployers() external view returns (uint256) {
+        return _hyperdriveDeployers.length;
+    }
+
+    /// @notice Gets the instance at the specified index.
+    /// @param index The index of the instance to get.
+    /// @return The instance at the specified index.
+    function getHyperdriveDeployerAtIndex(uint256 index) external view returns (address) {
+        return _hyperdriveDeployers[index];
+    }
+
+    /// @notice Returns the hyperdrive deployers array according to specified indices.
+    /// @param startIndex The starting index of the hyperdrive deployers to get.
+    /// @param endIndex The ending index of the hyperdrive deployers to get.
+    /// @return range The resulting custom portion of the hyperdrive deployers array.
+    function getHyperdriveDeployersInRange(
+        uint256 startIndex,
+        uint256 endIndex
+    ) external view returns (address[] memory range) {
+        if (startIndex > endIndex) revert IHyperdrive.InvalidIndexes();
+        if (endIndex > _hyperdriveDeployers.length) revert IHyperdrive.EndIndexTooLarge();
+
+        range = new address[](endIndex - startIndex + 1);
+        for (uint256 i = startIndex; i <= endIndex; i++) {
+            range[i - startIndex] = _hyperdriveDeployers[i];
         }
     }
 }

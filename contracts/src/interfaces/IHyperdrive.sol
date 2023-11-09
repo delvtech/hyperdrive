@@ -274,6 +274,7 @@ interface IHyperdrive is
     error NonPayableInitialization();
     error InvalidIndexes();
     error EndIndexTooLarge();
+    error InvalidDeployer();
 
     /// ######################
     /// ### ERC20Forwarder ###

@@ -240,8 +240,7 @@ contract DevnetMigration is Script {
                 contribution,
                 fixedRate,
                 new bytes(0),
-                address(new ERC4626HyperdriveDeployer()),
-                address(new ERC4626DataProviderDeployer())
+                address(new ERC4626HyperdriveDeployer())
             );
         }
 

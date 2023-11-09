@@ -88,8 +88,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
             contribution,
             FIXED_RATE,
             new bytes(0),
-            hyperdriveDeployer,
-            dataProviderDeployer
+            hyperdriveDeployer
         );
 
         // Setup maximum approvals so transfers don't require further approval.

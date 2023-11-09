@@ -210,8 +210,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             contribution,
             apr,
             new bytes(0),
-            hyperdriveDeployer,
-            dataProviderDeployer
+            hyperdriveDeployer
         );
 
         // The initial price per share is one so the LP shares will initially
@@ -263,8 +262,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             contribution,
             apr,
             new bytes(0),
-            hyperdriveDeployer,
-            dataProviderDeployer
+            hyperdriveDeployer
         );
 
         // Ensure the share price is 1 after initialization.

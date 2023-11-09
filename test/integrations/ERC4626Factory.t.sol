@@ -107,8 +107,7 @@ contract ERC4626FactoryBaseTest is HyperdriveTest {
             CONTRIBUTION,
             APR,
             new bytes(0),
-            hyperdriveDeployer,
-            dataProviderDeployer
+            hyperdriveDeployer
         );
 
         vm.stopPrank();
@@ -139,8 +138,7 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
             CONTRIBUTION,
             APR,
             new bytes(0),
-            hyperdriveDeployer,
-            dataProviderDeployer
+            hyperdriveDeployer
         );
 
         assertEq(dai.balanceOf(charlie), 0);
@@ -186,8 +184,7 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
             CONTRIBUTION,
             APR,
             new bytes(0),
-            hyperdriveDeployer,
-            dataProviderDeployer
+            hyperdriveDeployer
         );
 
         assertEq(dai.balanceOf(charlie), 0);
@@ -240,8 +237,7 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
             CONTRIBUTION,
             APR,
             new bytes(0),
-            hyperdriveDeployer,
-            dataProviderDeployer
+            hyperdriveDeployer
         );
 
         assertEq(dai.balanceOf(dan), 0);

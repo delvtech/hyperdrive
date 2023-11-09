@@ -50,8 +50,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
         factory.updateGovernance(bob);
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
-        factory.updateImplementation(IHyperdriveDeployer(bob));
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
         factory.updateHyperdriveGovernance(bob);
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
         factory.updateLinkerFactory(address(uint160(0xdeadbeef)));
@@ -65,16 +63,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         factory.updateDefaultPausers(defaults);
         vm.stopPrank();
 
-        // Alice can change governance and then bob can change implementation
+        // Alice can change governance
         vm.startPrank(alice);
         factory.updateGovernance(bob);
         assertEq(factory.governance(), bob);
         vm.stopPrank();
-        vm.startPrank(bob);
-        factory.updateImplementation(IHyperdriveDeployer(bob));
-        uint256 counter = factory.versionCounter();
-        assertEq(counter, 2);
-        assertEq(address(factory.hyperdriveDeployer()), bob);
 
         // Bob can change the other values as well.
         factory.updateHyperdriveGovernance(alice);

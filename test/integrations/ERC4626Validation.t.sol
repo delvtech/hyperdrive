@@ -76,8 +76,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             contribution,
             FIXED_RATE,
             new bytes(0),
-            hyperdriveDeployer,
-            dataProviderDeployer
+            hyperdriveDeployer
         );
 
         // Setup maximum approvals so transfers don't require further approval
@@ -119,8 +118,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             contribution,
             FIXED_RATE,
             new bytes(0),
-            hyperdriveDeployer,
-            dataProviderDeployer
+            hyperdriveDeployer
         );
 
         // Ensure minimumShareReserves were added, and lpTotalSupply increased
