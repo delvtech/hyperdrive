@@ -404,11 +404,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         uint256 _shareAmount,
         uint256 _spotPrice,
         uint256 _sharePrice
-    )
-        internal
-        view
-        returns (uint256 curveFee, uint256 governanceCurveFee)
-    {
+    ) internal view returns (uint256 curveFee, uint256 governanceCurveFee) {
         // Fixed Rate (r) = (value at maturity - purchase price)/(purchase price)
         //                = (1-p)/p
         //                = ((1 / p) - 1)
@@ -434,7 +430,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
             .mulDown(_shareAmount);
 
         // We leave the governance fee in terms of bonds:
-        // governanceCurveFee = total_curve_fee * p * phi_gov
+        // governanceCurveFee = curve_fee * p * phi_gov
         //                    = bonds * phi_gov
         governanceCurveFee = curveFee.mulDown(_governanceFee);
     }
@@ -483,7 +479,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
 
         // Calculate the curve portion of the governance fee:
         //
-        // governanceCurveFee = total_curve_fee * phi_gov
+        // governanceCurveFee = curve_fee * phi_gov
         //                    = shares * phi_gov
         governanceCurveFee = curveFee.mulDown(_governanceFee);
 
@@ -501,8 +497,15 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         );
         flatFee = flat.mulDown(_flatFee);
 
+        // Calculate the flat portion of the governance fee:
+        //
+        // governanceFlatFee = flat_fee * phi_gov
+        //                   = shares * phi_gov
+
         // The totalGovernanceFee is the sum of the curve and flat governance fees
-        totalGovernanceFee = governanceCurveFee + flatFee.mulDown(_governanceFee);
+        totalGovernanceFee =
+            governanceCurveFee +
+            flatFee.mulDown(_governanceFee);
     }
 
     /// @dev Converts input to base if necessary according to what is specified in options.

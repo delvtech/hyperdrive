@@ -46,20 +46,6 @@ interface IMockHyperdrive {
             uint256 totalGovernanceFee
         );
 
-    function calculateOpenLong(
-        uint256 _shareAmount,
-        uint256 _sharePrice,
-        uint256 _timeRemaining
-    )
-        external
-        view
-        returns (
-            uint256 shareReservesDelta,
-            uint256 bondReservesDelta,
-            uint256 bondProceeds,
-            uint256 totalGovernanceFee
-        );
-
     function calculateTimeRemaining(
         uint256 _maturityTime
     ) external view returns (uint256);
@@ -142,11 +128,7 @@ abstract contract MockHyperdriveBase is HyperdriveBase {
         uint256 _shareAmount,
         uint256 _spotPrice,
         uint256 sharePrice
-    )
-        external
-        view
-        returns (uint256 curveFee, uint256 governanceCurveFee)
-    {
+    ) external view returns (uint256 curveFee, uint256 governanceCurveFee) {
         (curveFee, governanceCurveFee) = _calculateFeesGivenShares(
             _shareAmount,
             _spotPrice,
@@ -181,28 +163,7 @@ abstract contract MockHyperdriveBase is HyperdriveBase {
             _spotPrice,
             sharePrice
         );
-        return (
-            curveFee,
-            flatFee,
-            governanceCurveFee,
-            totalGovernanceFee
-        );
-    }
-
-    // Calls Hyperdrive._calculateOpenLong
-    function calculateOpenLong(
-        uint256 _shareAmount,
-        uint256 _sharePrice
-    )
-        external
-        returns (
-            uint256 shareReservesDelta,
-            uint256 bondReservesDelta,
-            uint256 bondProceeds,
-            uint256 totalGovernanceFee
-        )
-    {
-        return _calculateOpenLong(_shareAmount, _sharePrice);
+        return (curveFee, flatFee, governanceCurveFee, totalGovernanceFee);
     }
 
     function calculateTimeRemaining(

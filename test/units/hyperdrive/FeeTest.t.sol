@@ -540,7 +540,7 @@ contract FeeTest is HyperdriveTest {
         assertEq(curveFee, .01 ether);
         assertEq(flatFee, 0 ether);
         assertEq(governanceCurveFee, .005 ether);
-        assertEq(totalGovernanceFee-governanceCurveFee, 0 ether);
+        assertEq(totalGovernanceFee - governanceCurveFee, 0 ether);
 
         (
             curveFee,
@@ -556,6 +556,6 @@ contract FeeTest is HyperdriveTest {
         assertEq(curveFee, 0 ether);
         assertEq(flatFee, 0.1 ether);
         assertEq(governanceCurveFee, 0 ether);
-        assertEq(totalGovernanceFee-governanceCurveFee, 0.05 ether);
+        assertEq(totalGovernanceFee - governanceCurveFee, 0.05 ether);
     }
 }
