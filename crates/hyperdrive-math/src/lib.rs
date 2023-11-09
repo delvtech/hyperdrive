@@ -26,6 +26,8 @@ impl Distribution<State> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> State {
         let config = PoolConfig {
             base_token: Address::zero(),
+            linker_factory: Address::zero(),
+            linker_code_hash: [0; 32],
             governance: Address::zero(),
             fee_collector: Address::zero(),
             fees: Fees {
@@ -45,8 +47,6 @@ impl Distribution<State> for Standard {
             checkpoint_duration: rng
                 .gen_range(FixedPoint::from(60 * 60)..=FixedPoint::from(60 * 60 * 24))
                 .into(),
-            oracle_size: fixed!(0).into(),
-            update_gap: fixed!(0).into(),
         };
         // We need the spot price to be less than or equal to 1, so we need to
         // generate the bond reserves so that mu * z <= y

@@ -5,7 +5,7 @@ use ethers::{
     middleware::SignerMiddleware,
     providers::{Http, Middleware, Provider},
     signers::{coins_bip39::English, LocalWallet, MnemonicBuilder, Signer},
-    types::{Address, Bytes, H256, U256},
+    types::{Address, Bytes, U256},
     utils::AnvilInstance,
 };
 use eyre::{eyre, Result};
@@ -15,8 +15,9 @@ use hyperdrive_addresses::Addresses;
 use hyperdrive_math::get_time_stretch;
 use hyperdrive_wrappers::wrappers::{
     erc20_mintable::ERC20Mintable,
-    erc4626_data_provider::ERC4626DataProvider,
     erc4626_hyperdrive::ERC4626Hyperdrive,
+    erc4626_target0::ERC4626Target0,
+    erc4626_target1::ERC4626Target1,
     etching_vault::EtchingVault,
     i_hyperdrive::{Fees, PoolConfig},
     ierc4626_hyperdrive::IERC4626Hyperdrive,
@@ -258,6 +259,8 @@ impl TestChain {
         // Deploy the Hyperdrive instance.
         let config = PoolConfig {
             base_token: base.address(),
+            linker_factory: Address::from_low_u64_be(1),
+            linker_code_hash: [1; 32],
             initial_share_price: uint256!(1e18),
             minimum_share_reserves: uint256!(10e18),
             minimum_transaction_amount: uint256!(0.001e18),
@@ -271,27 +274,19 @@ impl TestChain {
                 flat: uint256!(0.0005e18),
                 governance: uint256!(0.15e18),
             },
-            oracle_size: uint256!(10),
-            update_gap: U256::from(60 * 60), // 1 hour,
         };
-        let data_provider = ERC4626DataProvider::deploy(
-            client.clone(),
-            (
-                config.clone(),
-                H256::zero(),
-                Address::zero(),
-                pool.address(),
-            ),
-        )?
-        .send()
-        .await?;
+        let target0 = ERC4626Target0::deploy(client.clone(), (config.clone(), pool.address()))?
+            .send()
+            .await?;
+        let target1 = ERC4626Target1::deploy(client.clone(), (config.clone(), pool.address()))?
+            .send()
+            .await?;
         let erc4626_hyperdrive = ERC4626Hyperdrive::deploy(
             client.clone(),
             (
                 config,
-                data_provider.address(),
-                H256::zero(),
-                Address::zero(),
+                target0.address(),
+                target1.address(),
                 pool.address(),
                 Vec::<U256>::new(),
             ),
@@ -319,8 +314,9 @@ impl TestChain {
         ));
         let hyperdrive = IERC4626Hyperdrive::new(addresses.hyperdrive, client.clone());
 
-        // Get the contract addresses of the vault and the data provider.
-        let data_provider_address = hyperdrive.data_provider().call().await?;
+        // Get the contract addresses of the vault and the targets.
+        let target0_address = hyperdrive.target_0().call().await?;
+        let target1_address = hyperdrive.target_1().call().await?;
         let vault_address = hyperdrive.pool().call().await?;
 
         // Deploy templates for each of the contracts that should be etched and
@@ -366,17 +362,20 @@ impl TestChain {
             .await?;
             pairs.push((vault_address, vault_template.address()));
 
-            // Deploy the data provider template.
+            // Deploy the target0 template.
             let config = hyperdrive.get_pool_config().call().await?;
-            let linker_code_hash = hyperdrive.linker_code_hash().call().await?;
-            let factory = hyperdrive.factory().call().await?;
-            let data_provider_template = ERC4626DataProvider::deploy(
-                client.clone(),
-                (config.clone(), linker_code_hash, factory, vault_address),
-            )?
-            .send()
-            .await?;
-            pairs.push((data_provider_address, data_provider_template.address()));
+            let target0_template =
+                ERC4626Target0::deploy(client.clone(), (config.clone(), vault_address))?
+                    .send()
+                    .await?;
+            pairs.push((target0_address, target0_template.address()));
+
+            // Deploy the target1 template.
+            let target1_template =
+                ERC4626Target0::deploy(client.clone(), (config.clone(), vault_address))?
+                    .send()
+                    .await?;
+            pairs.push((target1_address, target1_template.address()));
 
             // Etch the "etching vault" onto the current vault contract. The
             // etching vault implements `convertToAssets` to return the immutable
@@ -399,9 +398,8 @@ impl TestChain {
                 client.clone(),
                 (
                     config,
-                    data_provider_address,
-                    linker_code_hash,
-                    factory,
+                    target0_address,
+                    target1_address,
                     vault_address,
                     Vec::<Address>::new(),
                 ),
@@ -584,6 +582,8 @@ mod tests {
         // Verify that the pool config is correct.
         let config = hyperdrive.get_pool_config().call().await?;
         assert_eq!(config.base_token, chain.addresses.base);
+        assert_eq!(config.linker_factory, Address::from_low_u64_be(1));
+        assert_eq!(config.linker_code_hash, [1; 32]);
         assert_eq!(config.initial_share_price, uint256!(1e18));
         assert_eq!(config.minimum_share_reserves, uint256!(10e18));
         assert_eq!(config.position_duration, U256::from(60 * 60 * 24 * 365));
@@ -602,8 +602,6 @@ mod tests {
                 governance: uint256!(0.15e18),
             }
         );
-        assert_eq!(config.oracle_size, uint256!(10));
-        assert_eq!(config.update_gap, U256::from(60 * 60));
 
         // Initialize the pool.
         let contribution = uint256!(100e18);
