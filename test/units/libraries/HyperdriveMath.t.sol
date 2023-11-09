@@ -451,7 +451,6 @@ contract HyperdriveMathTest is HyperdriveTest {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
-        // Test open long at 5% APR, No backdating
         fixedRate = fixedRate.normalizeToRange(0.005e18, 1e18);
         uint256 initialShareReserves = 500_000_000e18;
         uint256 initialSharePrice = INITIAL_SHARE_PRICE;

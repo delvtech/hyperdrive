@@ -74,8 +74,8 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         // Take custody of the trader's deposit and ensure that the trader
         // doesn't pay more than their max deposit. The trader's deposit is
         // equal to the proceeds that they would receive if they closed
-        // immediately (without fees). Trader deposit is in base,
-        // so we need to ensure it matches the options specified by the user.
+        // immediately (without fees). Trader deposit is created to ensure that
+        // the input to _deposit is denominated according to _options.
         // Note: We don't check the maxDeposit against the output of deposit
         // because slippage from a deposit could cause a larger deposit taken
         // from the user to fail.

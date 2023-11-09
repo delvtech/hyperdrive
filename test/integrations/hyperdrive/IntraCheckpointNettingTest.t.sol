@@ -10,11 +10,8 @@ import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-import "forge-std/console2.sol";
-
 contract IntraCheckpointNettingTest is HyperdriveTest {
     using FixedPointMath for uint256;
-    using FixedPointMath for int256;
     using HyperdriveUtils for *;
     using Lib for *;
 
