@@ -1060,16 +1060,17 @@ contract HyperdriveTest is BaseTest {
                     filteredLogs[0].data,
                     (uint256, uint256, uint256, uint256)
                 );
-            uint256 _contribution = contribution;
+            uint256 contribution_ = contribution;
+            IHyperdrive hyperdrive_ = _hyperdrive;
             assertApproxEqAbs(
                 eventLpAmount,
-                _contribution.divDown(
-                    hyperdrive.getPoolConfig().initialSharePrice
+                contribution_.divDown(
+                    hyperdrive_.getPoolConfig().initialSharePrice
                 ) - 2 * minimumShareReserves,
                 tolerance
             );
-            assertEq(eventBaseAmount, _contribution);
-            assertEq(eventSharePrice, hyperdrive.getPoolInfo().sharePrice);
+            assertEq(eventBaseAmount, contribution_);
+            assertEq(eventSharePrice, hyperdrive_.getPoolInfo().sharePrice);
             assertEq(eventApr, apr);
         }
     }

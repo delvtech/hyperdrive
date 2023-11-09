@@ -133,7 +133,7 @@ contract ERC4626FactoryBaseTest is HyperdriveTest {
 }
 
 contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
-    function test_erc464FactoryDeploy_multiDeploy_multiPool() external {
+    function test_erc4646FactoryDeploy_multiDeploy_multiPool() external {
         address charlie = createUser("charlie"); // External user 1
         address dan = createUser("dan"); // External user 2
 
@@ -294,7 +294,7 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
 }
 
 contract ERC4626InstanceGetterTest is ERC4626FactoryBaseTest {
-    function testFuzz_erc464Factory_getNumberOfInstances(
+    function testFuzz_erc4646Factory_getNumberOfInstances(
         uint256 numberOfInstances
     ) external {
         address charlie = createUser("charlie");
@@ -308,7 +308,7 @@ contract ERC4626InstanceGetterTest is ERC4626FactoryBaseTest {
         assertEq(factory.getNumberOfInstances(), numberOfInstances);
     }
 
-    function testFuzz_erc464Factory_getInstanceAtIndex(
+    function testFuzz_erc4646Factory_getInstanceAtIndex(
         uint256 numberOfInstances
     ) external {
         address charlie = createUser("charlie");
