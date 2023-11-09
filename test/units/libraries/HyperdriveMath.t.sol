@@ -504,7 +504,11 @@ contract HyperdriveMathTest is HyperdriveTest {
                 );
             bondReserves += bondReservesDelta;
             shareReserves -= shareReservesDelta;
-            assertApproxEqAbs(shareReserves, initialShareReserves, 1e14);
+            assertApproxEqAbs(
+                shareReserves,
+                initialShareReserves,
+                PRECISION_THRESHOLD
+            );
             assertEq(bondReserves, initialBondReserves);
         }
     }
@@ -562,7 +566,11 @@ contract HyperdriveMathTest is HyperdriveTest {
             );
             bondReserves += bondAmountIn;
             shareReserves -= shareReservesDelta;
-            assertApproxEqAbs(shareReserves, initialShareReserves, 1e14);
+            assertApproxEqAbs(
+                shareReserves,
+                initialShareReserves,
+                PRECISION_THRESHOLD
+            );
             assertEq(bondReserves, initialBondReserves);
         }
     }

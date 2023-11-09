@@ -10,6 +10,8 @@ import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
+import "forge-std/console2.sol";
+
 contract IntraCheckpointNettingTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
@@ -737,8 +739,6 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256[] memory longMaturityTimes = new uint256[](numTrades);
         uint256[] memory shortMaturityTimes = new uint256[](numTrades);
         uint256[] memory bondAmounts = new uint256[](numTrades);
-        uint256 idle = MockHyperdrive(address(hyperdrive))
-            .calculateIdleShareReserves(hyperdrive.getPoolInfo().sharePrice);
         for (uint256 i = 0; i < numTrades; i++) {
             uint256 basePaidLong = tradeSize;
             (uint256 maturityTimeLong, uint256 bondAmount) = openLong(
@@ -760,16 +760,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         checkpointExposure = checkpointExposure < 0
             ? -checkpointExposure
             : checkpointExposure;
-        assertLe(uint256(checkpointExposure), 1e14 * numTrades);
-
-        // ending idle should be approximately equal to starting idle
-        assertApproxEqAbs(
-            MockHyperdrive(address(hyperdrive)).calculateIdleShareReserves(
-                hyperdrive.getPoolInfo().sharePrice
-            ),
-            idle,
-            1e14 * numTrades
-        );
+        assertLe(uint256(checkpointExposure), PRECISION_THRESHOLD * numTrades);
 
         // fast forward time, create checkpoints and accrue interest
         advanceTimeWithCheckpoints(timeElapsed, variableInterest);

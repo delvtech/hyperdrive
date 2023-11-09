@@ -295,7 +295,16 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         int128 checkpointExposureBefore = int128(
             _checkpoints[_latestCheckpoint].exposure
         );
-        _baseDeposit = _baseDeposit - (_baseDeposit % 1e14);
+
+        // Round the base deposit down to the nearest multiple of the precision
+        // threshold. We specifically round down because there are cases where
+        // a smaller short deposit is larger than a larger long's fixed interest.
+        // This happens because exponentiation in FixedPointMath is only accurate
+        // to 1e14. The result of this innacuracy is that it causes a solvency issue
+        // once all LPs have withdrawn, all positions mature, and the shorts have
+        // been closed. When applyCheckpoint is closing the longs, it results in an
+        // underflow bc there aren't enough shareReserves available.
+        _baseDeposit = _baseDeposit - (_baseDeposit % _precisionThreshold);
         uint256 exposureDelta = _baseDeposit + _bondAmount;
         _checkpoints[_latestCheckpoint].exposure -= int128(
             exposureDelta.toUint128()

@@ -99,8 +99,6 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
             _options
         );
 
-        // TODO: all other events emit the result of the deposit (except add liquidity).
-        // Should i change this to be consistent with the other events?
         emit Initialize(
             _options.destination,
             lpShares,
