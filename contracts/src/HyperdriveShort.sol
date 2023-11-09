@@ -78,7 +78,7 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         // the input to _deposit is denominated according to _options.
         // Note: We don't check the maxDeposit against the output of deposit
         // because slippage from a deposit could cause a larger deposit taken
-        // from the user to fail.
+        // from the user to pass due to the shares being worth less after deposit.
         uint256 traderDeposit = _convertToOptionFromBase(
             baseDeposit,
             sharePrice,
