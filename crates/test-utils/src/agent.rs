@@ -944,11 +944,11 @@ impl Agent<ChainClient, ChaCha8Rng> {
             .hyperdrive
             .get_checkpoint(state.to_checkpoint(self.now().await?))
             .await?;
-        Ok(state.get_short_deposit(
+        state.get_short_deposit(
             short_amount,
             state.get_spot_price(),
             open_share_price.into(),
-        )?)
+        )
     }
 
     /// Gets the max long that can be opened in the current checkpoint.

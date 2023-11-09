@@ -184,7 +184,7 @@ impl State {
     }
 
     fn share_adjustment(&self) -> I256 {
-        self.info.share_adjustment.into()
+        self.info.share_adjustment
     }
 }
 

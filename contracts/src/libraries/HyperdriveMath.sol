@@ -563,19 +563,15 @@ library HyperdriveMath {
         return _params.shareReserves - _params.minimumShareReserves;
     }
 
-    // FIXME: Is this right? Double check this.
-    //
     /// @dev Calculates the proceeds in shares of closing a short position. This
     ///      takes into account the trading profits, the interest that was
     ///      earned by the short, the flat fee the short pays, and the amount of
     ///      margin that was released by closing the short. The math for the
     ///      short's proceeds in base is given by:
     ///
-    ///      FIXME
-    ///
-    ///      proceeds = dy - c * dz + (c1 - c0) * (dy / c0)
-    ///               = dy - c * dz + (c1 / c0) * dy - dy
-    ///               = (c1 / c0) * dy - c * dz
+    ///      proceeds = (1 + flat_fee) * dy - c * dz + (c1 - c0) * (dy / c0)
+    ///               = (1 + flat_fee) * dy - c * dz + (c1 / c0) * dy - dy
+    ///               = (c1 / c0 + flat_fee) * dy - c * dz
     ///
     ///      We convert the proceeds to shares by dividing by the current share
     ///      price. In the event that the interest is negative and outweighs the

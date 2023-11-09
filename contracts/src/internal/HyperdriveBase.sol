@@ -287,11 +287,9 @@ abstract contract HyperdriveBase is HyperdriveStorage {
     /// @return True if the share reserves are greater than the exposure plus
     ///         the minimum share reserves.
     function _isSolvent(uint256 _sharePrice) internal view returns (bool) {
-        // TODO: Can we remove the `.max(0)` here?
         return
-            (int256(
-                (uint256(_marketState.shareReserves).mulDown(_sharePrice))
-            ) - int128(_marketState.longExposure)).max(0) >=
+            int256((uint256(_marketState.shareReserves).mulDown(_sharePrice))) -
+                int128(_marketState.longExposure) >=
             int256(_minimumShareReserves.mulDown(_sharePrice));
     }
 

@@ -149,8 +149,8 @@ struct RawCheckpoint {
 impl From<RawCheckpoint> for Checkpoint {
     fn from(r: RawCheckpoint) -> Self {
         Self {
-            share_price: r.share_price.into(),
-            exposure: r.exposure.into(),
+            share_price: r.share_price,
+            exposure: r.exposure,
         }
     }
 }
@@ -218,7 +218,7 @@ impl From<RawCrashReport> for CrashReport {
             block_timestamp: r.block_timestamp,
             // Agent Context
             addresses: r.addresses,
-            agent_info: r.agent_info.into(),
+            agent_info: r.agent_info,
             trade: r.trade.into(),
             // Pool Context
             pool_config: r.pool_config.into(),
