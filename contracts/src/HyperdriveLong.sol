@@ -71,6 +71,8 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds purchased to the beginning of the checkpoint.
+        // Note: All state deltas are derived from the output of the 
+        // deposit function.
         uint256 shareReservesDelta;
         uint256 bondReservesDelta;
         uint256 totalGovernanceFee;
@@ -90,9 +92,6 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         _governanceFeesAccrued += totalGovernanceFee;
 
         // Apply the open long to the state.
-        // Note: Updating the state using the result of the deposit
-        //       ensures that whatever slippage (if any) that occurs
-        //       from the deposit is accounted for in the reserves.
         maturityTime = latestCheckpoint + _positionDuration;
         _applyOpenLong(
             shareReservesDelta,
@@ -111,16 +110,19 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         _mint(assetId, _options.destination, bondProceeds);
 
         // Emit an OpenLong event.
+        uint256 amount = _amount; // Avoid stack too deep error.
+        IHyperdrive.Options calldata options = _options; // Avoid stack too deep error.
+        uint256 _bondProceeds = bondProceeds; // Avoid stack too deep error.
         emit OpenLong(
             _options.destination,
             assetId,
             maturityTime,
-            baseDeposited,
+            _convertToBaseFromOption(amount, sharePrice, options),
             sharePrice,
-            bondProceeds
+            _bondProceeds
         );
 
-        return (maturityTime, bondProceeds);
+        return (maturityTime, _bondProceeds);
     }
 
     /// @notice Closes a long position with a specified maturity time.
@@ -153,6 +155,7 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         );
 
         // Calculate the pool and user deltas using the trading function.
+        // Note: All state deltas are derived from external function inputs.
         (
             uint256 bondReservesDelta,
             uint256 shareProceeds,
@@ -201,10 +204,6 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         }
 
         // Withdraw the profit to the trader.
-        // TODO: Should we consider moving the withdraw to before the
-        //       applyCloseLong call? This would be consistent with
-        //       openLong in that whatever slippage (if any) that occurs
-        //       from the withdraw is accounted for in the reserves.
         uint256 proceeds = _withdraw(shareProceeds, _options);
 
         // Enforce min user outputs.

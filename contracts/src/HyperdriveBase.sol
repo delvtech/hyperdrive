@@ -531,20 +531,20 @@ abstract contract HyperdriveBase is
         }
     }
 
-    /// @dev Converts input to what is specified in the options from shares.
+    /// @dev Converts input to what is specified in the options from base.
     /// @param _amount The amount to convert.
     /// @param _sharePrice The current share price.
     /// @param _options The options that configure the conversion.
     /// @return The converted amount.
-    function _convertToOptionFromShares(
+    function _convertToOptionFromBase(
         uint256 _amount,
         uint256 _sharePrice,
         IHyperdrive.Options calldata _options
     ) internal pure returns (uint256) {
         if (_options.asBase) {
-            return _amount.mulDown(_sharePrice);
-        } else {
             return _amount;
+        } else {
+            return _amount.divDown(_sharePrice);
         }
     }
 }
