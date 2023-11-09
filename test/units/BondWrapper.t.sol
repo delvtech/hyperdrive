@@ -177,16 +177,16 @@ contract BondWrapperTest is BaseTest {
     function test_sweepAndRedeem_inputLengthMismatch() external {
         vm.startPrank(alice);
 
-        // maturityTimes.length > extraDatas.length
+        // maturityTimes.length > extraData.length
         uint256[] memory maturityTimes = new uint256[](2);
-        bytes[] memory extraDatas = new bytes[](1);
+        bytes[] memory extraData = new bytes[](1);
         vm.expectRevert(IHyperdrive.InputLengthMismatch.selector);
-        bondWrapper.sweepAndRedeem(maturityTimes, 10e18, extraDatas);
+        bondWrapper.sweepAndRedeem(maturityTimes, 10e18, extraData);
 
-        // maturityTimes.length < extraDatas.length
+        // maturityTimes.length < extraData.length
         maturityTimes = new uint256[](1);
-        extraDatas = new bytes[](2);
+        extraData = new bytes[](2);
         vm.expectRevert(IHyperdrive.InputLengthMismatch.selector);
-        bondWrapper.sweepAndRedeem(maturityTimes, 10e18, extraDatas);
+        bondWrapper.sweepAndRedeem(maturityTimes, 10e18, extraData);
     }
 }

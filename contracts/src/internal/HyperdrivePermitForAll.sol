@@ -24,7 +24,7 @@ abstract contract HyperdrivePermitForAll is
         );
 
     /// @notice This contract's EIP712 domain separator.
-    bytes32 public immutable DOMAIN_SEPARATOR;
+    bytes32 public immutable DOMAIN_SEPARATOR; // solhint-disable-line var-name-mixedcase
 
     /// @dev Computes the EIP712 domain separator and stores it as an immutable.
     constructor() {

@@ -50,7 +50,6 @@ abstract contract Hyperdrive is
         target1 = _target1;
     }
 
-    // solhint-disable no-complex-fallback
     /// @notice If we get to the fallback function, we make a read-only
     ///         delegatecall to the target0 contract. This target contains all
     ///         of the getters for the Hyperdrive pool.
@@ -59,7 +58,6 @@ abstract contract Hyperdrive is
     fallback(bytes calldata _data) external returns (bytes memory) {
         // We use a force-revert delegatecall pattern to ensure that no state
         // changes were made during the read call.
-        // solhint-disable avoid-low-level-calls
         (bool success, bytes memory returndata) = target0.delegatecall(_data);
         if (success) {
             revert IHyperdrive.UnexpectedSuccess();

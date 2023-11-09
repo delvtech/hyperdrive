@@ -80,14 +80,11 @@ contract MockMultiToken is
         );
     }
 
-    // solhint-disable no-complex-fallback
-    //
     // NOTE: We delegate read and write access to the target0 contract. This
     // target includes all of the read and write functions for the multi-token.
     fallback(bytes calldata _data) external returns (bytes memory) {
         // We use a force-revert delegatecall pattern to ensure that no state
         // changes were made during the read call.
-        // solhint-disable avoid-low-level-calls
         (bool success, bytes memory returndata) = target0.delegatecall(_data);
         if (!success) {
             bytes4 selector = bytes4(returndata);

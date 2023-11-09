@@ -5,12 +5,16 @@
     "avoid-throw": "off",
     "avoid-suicide": "error",
     "avoid-sha3": "warn",
+    "avoid-low-level-calls": "off",
     "reason-string": "off",
     "private-vars-leading-underscore": "off",
     "compiler-version": ["off"],
     "func-visibility": ["warn",{"ignoreConstructors":true}],
     "not-rely-on-time": "off",
     "no-inline-assembly": "off",
+    "no-empty-blocks": "off",
+    "no-complex-fallback": "off",
+    "payable-fallback": "off",
     "max-states-count": ["off", 15]
   },
   "plugins": ["prettier"]
