@@ -29,15 +29,15 @@ contract BondWrapper is ERC20 {
     /// @param _hyperdrive The hyperdrive contract.
     /// @param _token The underlying token of the bonds.
     /// @param _mintPercent How many tokens will be minted per bond.
-    /// @param name_ The ERC20 name.
-    /// @param symbol_ The ERC20 symbol.
+    /// @param __name The ERC20 name.
+    /// @param __symbol The ERC20 symbol.
     constructor(
         IHyperdrive _hyperdrive,
         IERC20 _token,
         uint256 _mintPercent,
-        string memory name_,
-        string memory symbol_
-    ) ERC20(name_, symbol_, 18) {
+        string memory __name,
+        string memory __symbol
+    ) ERC20(__name, __symbol, 18) {
         if (_mintPercent >= 10_000) {
             revert IHyperdrive.MintPercentTooHigh();
         }

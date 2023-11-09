@@ -45,6 +45,8 @@ contract MockMultiToken is
         HyperdriveStorage(
             IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(0)),
+                linkerFactory: _linkerFactory,
+                linkerCodeHash: _linkerCodeHash,
                 initialSharePrice: 1e18,
                 minimumShareReserves: 1e18,
                 minimumTransactionAmount: 1e15,
@@ -54,9 +56,7 @@ contract MockMultiToken is
                 governance: address(0),
                 feeCollector: address(0),
                 fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 })
-            }),
-            _linkerCodeHash,
-            _linkerFactory
+            })
         )
         HyperdrivePermitForAll()
     {
@@ -64,6 +64,8 @@ contract MockMultiToken is
             new MockHyperdriveTarget0(
                 IHyperdrive.PoolConfig({
                     baseToken: IERC20(address(0)),
+                    linkerFactory: _linkerFactory,
+                    linkerCodeHash: _linkerCodeHash,
                     initialSharePrice: 1e18,
                     minimumShareReserves: 1e18,
                     minimumTransactionAmount: 1e15,
@@ -73,9 +75,7 @@ contract MockMultiToken is
                     governance: address(0),
                     feeCollector: address(0),
                     fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 })
-                }),
-                _linkerCodeHash,
-                _linkerFactory
+                })
             )
         );
     }

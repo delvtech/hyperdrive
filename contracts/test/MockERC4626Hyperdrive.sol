@@ -12,20 +12,10 @@ contract MockERC4626Hyperdrive is ERC4626Hyperdrive {
         IHyperdrive.PoolConfig memory _config,
         address _extras,
         address _dataProvider,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory,
         IERC4626 _pool,
         address[] memory _sweepTargets
     )
-        ERC4626Hyperdrive(
-            _config,
-            _extras,
-            _dataProvider,
-            _linkerCodeHash,
-            _linkerFactory,
-            _pool,
-            _sweepTargets
-        )
+        ERC4626Hyperdrive(_config, _extras, _dataProvider, _pool, _sweepTargets)
     {}
 
     function deposit(

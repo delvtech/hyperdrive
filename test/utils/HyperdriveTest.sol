@@ -37,26 +37,10 @@ contract HyperdriveTest is BaseTest {
 
         // Instantiate the base token.
         baseToken = new ERC20Mintable("Base", "BASE", 18, address(0), false);
-        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
-            curve: 0,
-            flat: 0,
-            governance: 0
-        });
+
         // Instantiate Hyperdrive.
-        uint256 apr = 0.05e18;
-        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
-            baseToken: IERC20(address(baseToken)),
-            initialSharePrice: INITIAL_SHARE_PRICE,
-            minimumShareReserves: MINIMUM_SHARE_RESERVES,
-            minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
-            positionDuration: POSITION_DURATION,
-            checkpointDuration: CHECKPOINT_DURATION,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
-            governance: governance,
-            feeCollector: feeCollector,
-            fees: fees
-        });
-        hyperdrive = IHyperdrive(address(new MockHyperdrive(config)));
+        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        deploy(alice, config);
         vm.stopPrank();
         vm.startPrank(governance);
         hyperdrive.setPauser(pauser, true);
@@ -104,23 +88,11 @@ contract HyperdriveTest is BaseTest {
         uint256 flatFee,
         uint256 governanceFee
     ) internal {
-        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
-            curve: curveFee,
-            flat: flatFee,
-            governance: governanceFee
-        });
-        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
-            baseToken: IERC20(address(baseToken)),
-            initialSharePrice: initialSharePrice,
-            minimumShareReserves: MINIMUM_SHARE_RESERVES,
-            minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
-            positionDuration: POSITION_DURATION,
-            checkpointDuration: CHECKPOINT_DURATION,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
-            governance: governance,
-            feeCollector: feeCollector,
-            fees: fees
-        });
+        IHyperdrive.PoolConfig memory config = testConfig(apr);
+        config.initialSharePrice = initialSharePrice;
+        config.fees.curve = curveFee;
+        config.fees.flat = flatFee;
+        config.fees.governance = governanceFee;
         deploy(deployer, config);
     }
 
@@ -135,6 +107,8 @@ contract HyperdriveTest is BaseTest {
         return
             IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(baseToken)),
+                linkerFactory: address(0),
+                linkerCodeHash: bytes32(0),
                 initialSharePrice: ONE,
                 minimumShareReserves: MINIMUM_SHARE_RESERVES,
                 minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
@@ -464,6 +438,7 @@ contract HyperdriveTest is BaseTest {
         vm.startPrank(trader);
 
         // Open the long.
+        hyperdrive.getPoolConfig();
         if (
             address(hyperdrive.getPoolConfig().baseToken) == address(ETH) &&
             overrides.asBase
@@ -876,8 +851,6 @@ contract HyperdriveTest is BaseTest {
         uint256 indexed version,
         address hyperdrive,
         IHyperdrive.PoolConfig config,
-        address linkerFactory,
-        bytes32 linkerCodeHash,
         bytes32[] extraData
     );
 
@@ -991,26 +964,16 @@ contract HyperdriveTest is BaseTest {
             (
                 address eventHyperdrive,
                 IHyperdrive.PoolConfig memory eventConfig,
-                address eventLinkerFactory,
-                bytes32 eventLinkerCodeHash,
                 bytes32[] memory eventExtraData
             ) = abi.decode(
                     log.data,
-                    (
-                        address,
-                        IHyperdrive.PoolConfig,
-                        address,
-                        bytes32,
-                        bytes32[]
-                    )
+                    (address, IHyperdrive.PoolConfig, bytes32[])
                 );
             assertEq(eventHyperdrive, address(hyperdrive));
             assertEq(
                 keccak256(abi.encode(eventConfig)),
                 keccak256(abi.encode(hyperdrive.getPoolConfig()))
             );
-            assertEq(eventLinkerFactory, address(forwarderFactory));
-            assertEq(eventLinkerCodeHash, forwarderFactory.ERC20LINK_HASH());
             assertEq(
                 keccak256(abi.encode(eventExtraData)),
                 keccak256(abi.encode(expectedExtraData))

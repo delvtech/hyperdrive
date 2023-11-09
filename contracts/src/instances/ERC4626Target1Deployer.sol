@@ -27,27 +27,12 @@ contract ERC4626Target1Deployer is IHyperdriveTargetDeployer {
 
     /// @notice Deploys a target1 instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _linkerCodeHash The hash of the ERC20 linker contract's
-    ///        constructor code.
-    /// @param _linkerFactory The address of the factory which is used to deploy
-    ///        the ERC20 linker contracts.
     /// @return The address of the newly deployed ERC4626Hyperdrive Instance
     function deploy(
         IHyperdrive.PoolConfig memory _config,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory,
         bytes32[] memory
     ) external override returns (address) {
         // Deploy the ERC4626Target1 instance.
-        return (
-            address(
-                new ERC4626Target1(
-                    _config,
-                    _linkerCodeHash,
-                    _linkerFactory,
-                    pool
-                )
-            )
-        );
+        return (address(new ERC4626Target1(_config, pool)));
     }
 }

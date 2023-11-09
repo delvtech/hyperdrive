@@ -131,16 +131,7 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
 
     /// @notice Instantiates Hyperdrive's storage.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _linkerCodeHash_ The hash of the ERC20 linker contract's
-    ///        constructor code.
-    /// @param _linkerFactory_ The address of the factory which is used to
-    ///        deploy the ERC20 linker contracts.
-    constructor(
-        IHyperdrive.PoolConfig memory _config,
-        // TODO: Why don't we put these in the config?
-        bytes32 _linkerCodeHash_,
-        address _linkerFactory_
-    ) {
+    constructor(IHyperdrive.PoolConfig memory _config) {
         // Initialize the base token address.
         _baseToken = _config.baseToken;
 
@@ -189,7 +180,7 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
         _governanceFee = _config.fees.governance;
 
         // Initialize the MultiToken immutables.
-        _linkerFactory = _linkerFactory_;
-        _linkerCodeHash = _linkerCodeHash_;
+        _linkerFactory = _config.linkerFactory;
+        _linkerCodeHash = _config.linkerCodeHash;
     }
 }

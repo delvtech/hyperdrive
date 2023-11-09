@@ -27,30 +27,28 @@ contract ForwarderFactory is IForwarderFactory {
     bytes32 public constant ERC20LINK_HASH =
         keccak256(type(ERC20Forwarder).creationCode);
 
-    constructor() {} // solhint-disable-line no-empty-blocks
-
     /// @notice Uses create2 to deploy a forwarder at a predictable address as
     ///         part of our ERC20 multitoken implementation.
-    /// @param token The multitoken which the forwarder should link to.
-    /// @param tokenId The id of the sub token from the multitoken which we are
+    /// @param __token The multitoken which the forwarder should link to.
+    /// @param __tokenId The id of the sub token from the multitoken which we are
     ///        creating an interface for.
     /// @return Returns the address of the deployed forwarder
     function create(
-        IMultiToken token,
-        uint256 tokenId
+        IMultiToken __token,
+        uint256 __tokenId
     ) external returns (ERC20Forwarder) {
         // Set the transient state variables before deploy.
-        _tokenId = tokenId;
-        _token = token;
+        _tokenId = __tokenId;
+        _token = __token;
 
         // The salt is the _tokenId hashed with the multi token.
-        bytes32 salt = keccak256(abi.encode(token, tokenId));
+        bytes32 salt = keccak256(abi.encode(__token, __tokenId));
 
         // Deploy using create2 with that salt.
         ERC20Forwarder deployed = new ERC20Forwarder{ salt: salt }();
 
         // As a consistency check we check that this is in the right address.
-        if (!(address(deployed) == getForwarder(token, tokenId))) {
+        if (!(address(deployed) == getForwarder(__token, __tokenId))) {
             revert IHyperdrive.InvalidForwarderAddress();
         }
 
@@ -59,7 +57,7 @@ contract ForwarderFactory is IForwarderFactory {
         _tokenId = 1;
 
         // Return the deployed forwarder.
-        return (deployed);
+        return deployed;
     }
 
     /// @notice Returns the transient storage of this contract.
@@ -69,15 +67,15 @@ contract ForwarderFactory is IForwarderFactory {
     }
 
     /// @notice Helper to calculate expected forwarder contract addresses.
-    /// @param token The multitoken which the forwarder should link to.
-    /// @param tokenId The id of the sub token from the multitoken.
+    /// @param __token The multitoken which the forwarder should link to.
+    /// @param __tokenId The id of the sub token from the multitoken.
     /// @return The expected address of the forwarder.
     function getForwarder(
-        IMultiToken token,
-        uint256 tokenId
+        IMultiToken __token,
+        uint256 __tokenId
     ) public view returns (address) {
         // Get the salt and hash to predict the address.
-        bytes32 salt = keccak256(abi.encode(token, tokenId));
+        bytes32 salt = keccak256(abi.encode(__token, __tokenId));
         bytes32 addressBytes = keccak256(
             abi.encodePacked(bytes1(0xff), address(this), salt, ERC20LINK_HASH)
         );

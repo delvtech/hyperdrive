@@ -16,18 +16,11 @@ import { ERC4626Base } from "./ERC4626Base.sol";
 ///                    particular legal or regulatory significance.
 contract ERC4626Target0 is HyperdriveTarget0, ERC4626Base {
     /// @notice Initializes the target0 contract.
-    /// @param _linkerCodeHash_ The code hash of the linker contract.
-    /// @param _linkerFactory_ The address of the linker factory.
-    /// @param _pool_ The ERC4626 pool.
+    /// @param __pool The ERC4626 pool.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        bytes32 _linkerCodeHash_,
-        address _linkerFactory_,
-        IERC4626 _pool_
-    )
-        HyperdriveTarget0(_config, _linkerCodeHash_, _linkerFactory_)
-        ERC4626Base(_pool_)
-    {}
+        IERC4626 __pool
+    ) HyperdriveTarget0(_config) ERC4626Base(__pool) {}
 
     /// Getters ///
 

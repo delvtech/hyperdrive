@@ -198,10 +198,8 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
     )
         Hyperdrive(
             _config,
-            address(new MockHyperdriveTarget0(_config, bytes32(0), address(0))),
-            address(new MockHyperdriveTarget1(_config, bytes32(0), address(0))),
-            bytes32(0),
-            address(0)
+            address(new MockHyperdriveTarget0(_config)),
+            address(new MockHyperdriveTarget1(_config))
         )
     {}
 
@@ -352,10 +350,8 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
 
 contract MockHyperdriveTarget0 is HyperdriveTarget0, MockHyperdriveBase {
     constructor(
-        IHyperdrive.PoolConfig memory _config,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory
-    ) HyperdriveTarget0(_config, _linkerCodeHash, _linkerFactory) {}
+        IHyperdrive.PoolConfig memory _config
+    ) HyperdriveTarget0(_config) {}
 
     /// Mocks ///
 
@@ -366,8 +362,6 @@ contract MockHyperdriveTarget0 is HyperdriveTarget0, MockHyperdriveBase {
 
 contract MockHyperdriveTarget1 is HyperdriveTarget1, MockHyperdriveBase {
     constructor(
-        IHyperdrive.PoolConfig memory _config,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory
-    ) HyperdriveTarget1(_config, _linkerCodeHash, _linkerFactory) {}
+        IHyperdrive.PoolConfig memory _config
+    ) HyperdriveTarget1(_config) {}
 }

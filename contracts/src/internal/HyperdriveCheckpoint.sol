@@ -10,11 +10,8 @@ import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveLong } from "./HyperdriveLong.sol";
 import { HyperdriveShort } from "./HyperdriveShort.sol";
 
-// FIXME: Update the Natspec
-//
 /// @author DELV
-/// @title Hyperdrive
-/// @notice A fixed-rate AMM that mints bonds on demand for longs and shorts.
+/// @notice Implements the checkpoint accounting for Hyperdrive.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.

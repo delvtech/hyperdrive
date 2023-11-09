@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IMultiTokenMetadata } from "../interfaces/IMultiTokenMetadata.sol";
 import { HyperdriveMultiToken } from "./HyperdriveMultiToken.sol";
 
 /// @author DELV
@@ -12,7 +13,10 @@ import { HyperdriveMultiToken } from "./HyperdriveMultiToken.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdrivePermitForAll is HyperdriveMultiToken {
+abstract contract HyperdrivePermitForAll is
+    IMultiTokenMetadata,
+    HyperdriveMultiToken
+{
     /// @notice The typehash used to calculate the EIP712 hash for `permitForAll`.
     bytes32 public constant PERMIT_TYPEHASH =
         keccak256(

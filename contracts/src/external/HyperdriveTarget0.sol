@@ -33,15 +33,9 @@ abstract contract HyperdriveTarget0 is
 
     /// @notice Instantiates target0.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _linkerCodeHash The hash of the ERC20 linker contract's
-    ///        constructor code.
-    /// @param _linkerFactory The address of the factory which is used to deploy
-    ///        the ERC20 linker contracts.
     constructor(
-        IHyperdrive.PoolConfig memory _config,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory
-    ) HyperdriveStorage(_config, _linkerCodeHash, _linkerFactory) {}
+        IHyperdrive.PoolConfig memory _config
+    ) HyperdriveStorage(_config) {}
 
     /// Admin ///
 
@@ -194,6 +188,8 @@ abstract contract HyperdriveTarget0 is
             abi.encode(
                 IHyperdrive.PoolConfig({
                     baseToken: _baseToken,
+                    linkerFactory: _linkerFactory,
+                    linkerCodeHash: _linkerCodeHash,
                     initialSharePrice: _initialSharePrice,
                     minimumShareReserves: _minimumShareReserves,
                     minimumTransactionAmount: _minimumTransactionAmount,
@@ -297,18 +293,6 @@ abstract contract HyperdriveTarget0 is
         }
 
         _revert(abi.encode(loaded));
-    }
-
-    /// @notice Gets the code hash of the erc20 linker contract.
-    /// @return The code hash.
-    function linkerCodeHash() external view returns (bytes32) {
-        _revert(abi.encode(_linkerCodeHash));
-    }
-
-    /// @notice Gets the factory which is used to deploy the linking contracts.
-    /// @return The linking factory.
-    function linkerFactory() external view returns (address) {
-        _revert(abi.encode(_linkerFactory));
     }
 
     /// @notice Gets an account's balance of a sub-token.

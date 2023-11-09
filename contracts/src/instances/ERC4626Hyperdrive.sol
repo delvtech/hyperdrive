@@ -25,38 +25,20 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
 
     /// @notice Instantiates Hyperdrive with a ERC4626 vault as the yield source.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _extras The address of the extras contract.
-    /// @param _dataProvider The address of the data provider.
-    /// @param _linkerCodeHash The hash of the ERC20 linker contract's
-    ///        constructor code.
-    /// @param _linkerFactory The factory which is used to deploy the ERC20
-    ///        linker contracts.
-    /// @param _pool The ERC4626 compatible yield source.
+    /// @param _target0 The target0 address.
+    /// @param _target1 The target1 address.
+    /// @param __pool The ERC4626 compatible yield source.
     /// @param _targets The addresses that can be swept by governance. This
     ///        allows governance to collect rewards derived from incentive
     ///        programs while also preventing edge cases where `sweep` is used
     ///        to access the pool or base tokens.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        address _extras,
-        address _dataProvider,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory,
-        IERC4626 _pool,
+        address _target0,
+        address _target1,
+        IERC4626 __pool,
         address[] memory _targets
-    )
-        Hyperdrive(
-            _config,
-            _extras,
-            _dataProvider,
-            _linkerCodeHash,
-            _linkerFactory
-        )
-        ERC4626Base(_pool)
-    {
-        // FIXME: We should verify that the immutables are the same between
-        // extras, the data provider, and this contract.
-        //
+    ) Hyperdrive(_config, _target0, _target1) ERC4626Base(__pool) {
         // Ensure that the Hyperdrive pool was configured properly.
         // WARN: 4626 implementations should be checked that if they use an
         // asset with decimals less than 18 that the preview deposit is scale

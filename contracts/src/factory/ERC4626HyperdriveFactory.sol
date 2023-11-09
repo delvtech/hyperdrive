@@ -28,26 +28,26 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
     /// @notice Initializes the factory.
     /// @param _factoryConfig The variables that configure the factory;
     /// @param _pool The ERC4626 pool.
-    /// @param _sweepTargets_ The addresses that can be swept by the fee collector.
+    /// @param __sweepTargets The addresses that can be swept by the fee collector.
     constructor(
         FactoryConfig memory _factoryConfig,
         IERC4626 _pool,
-        address[] memory _sweepTargets_
+        address[] memory __sweepTargets
     ) HyperdriveFactory(_factoryConfig) {
         // Initialize the ERC4626 pool.
         pool = _pool;
 
         // Initialize the default sweep targets.
-        _sweepTargets = _sweepTargets_;
+        _sweepTargets = __sweepTargets;
     }
 
     /// @notice Allows governance to change the sweep targets used in deployed
     ///         instances.
-    /// @param _sweepTargets_ The new sweep targets.
+    /// @param __sweepTargets The new sweep targets.
     function updateSweepTargets(
-        address[] calldata _sweepTargets_
+        address[] calldata __sweepTargets
     ) external onlyGovernance {
-        _sweepTargets = _sweepTargets_;
+        _sweepTargets = __sweepTargets;
     }
 
     /// @notice This deploys and initializes a new ERC4626Hyperdrive instance.

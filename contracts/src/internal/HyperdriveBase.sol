@@ -177,8 +177,6 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         uint256 _sharePrice
     ) internal virtual returns (uint256 openSharePrice);
 
-    // FIXME: Re-organize these functions.
-    //
     /// Helpers ///
 
     /// @dev Calculates the normalized time remaining of a position.

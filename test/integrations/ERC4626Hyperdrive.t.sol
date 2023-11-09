@@ -22,7 +22,6 @@ import { MockERC4626Hyperdrive } from "contracts/test/MockERC4626Hyperdrive.sol"
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
-// FIXME: Remove the casts to ERC4626Target0 in this contract.
 contract ERC4626HyperdriveTest is HyperdriveTest {
     using FixedPointMath for *;
 
@@ -79,6 +78,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // Deploy a MockHyperdrive instance.
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
+            linkerFactory: address(0),
+            linkerCodeHash: bytes32(0),
             initialSharePrice: ONE,
             minimumShareReserves: ONE,
             minimumTransactionAmount: 0.001e18,
@@ -89,18 +90,12 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             feeCollector: bob,
             fees: IHyperdrive.Fees(0, 0, 0)
         });
-        address target0 = address(
-            new ERC4626Target0(config, bytes32(0), address(0), pool)
-        );
-        address target1 = address(
-            new ERC4626Target1(config, bytes32(0), address(0), pool)
-        );
+        address target0 = address(new ERC4626Target0(config, pool));
+        address target1 = address(new ERC4626Target1(config, pool));
         mockHyperdrive = new MockERC4626Hyperdrive(
             config,
             target0,
             target1,
-            bytes32(0),
-            address(0),
             pool,
             new address[](0)
         );
@@ -199,6 +194,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         uint256 contribution = 2_500e18;
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
+            linkerFactory: address(0),
+            linkerCodeHash: bytes32(0),
             initialSharePrice: ONE,
             minimumShareReserves: ONE,
             minimumTransactionAmount: 0.001e18,
@@ -240,15 +237,14 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
     }
 
     function test_erc4626_sharePrice() public {
-        // FIXME: Update this comment.
-        //
-        // This test makes sure that the ERC4626DataProvider function returns
-        // the correct share price.
+        // This test ensures that `getPoolInfo` returns the correct share price.
         vm.startPrank(alice);
         uint256 apr = 0.01e18; // 1% apr
         uint256 contribution = 2_500e18;
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
+            linkerFactory: address(0),
+            linkerCodeHash: bytes32(0),
             initialSharePrice: ONE,
             minimumShareReserves: ONE,
             minimumTransactionAmount: 0.001e18,
@@ -319,7 +315,9 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             new bytes32[](0)
         );
         assert(
-            !ERC4626Target0(address(mockHyperdrive)).isSweepable(address(dai))
+            !IERC4626Hyperdrive(address(mockHyperdrive)).isSweepable(
+                address(dai)
+            )
         );
         sweepTargets[0] = address(pool);
         factory.updateSweepTargets(sweepTargets);
@@ -332,7 +330,9 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             new bytes32[](0)
         );
         assert(
-            !ERC4626Target0(address(mockHyperdrive)).isSweepable(address(pool))
+            !IERC4626Hyperdrive(address(mockHyperdrive)).isSweepable(
+                address(pool)
+            )
         );
         vm.stopPrank();
 
@@ -370,7 +370,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             )
         );
         assert(
-            ERC4626Target0(address(mockHyperdrive)).isSweepable(
+            IERC4626Hyperdrive(address(mockHyperdrive)).isSweepable(
                 address(otherToken)
             )
         );

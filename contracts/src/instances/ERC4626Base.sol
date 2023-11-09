@@ -27,10 +27,9 @@ abstract contract ERC4626Base is HyperdriveBase {
     ///      mapping does not change after construction.
     mapping(address target => bool canSweep) internal _isSweepable;
 
-    // FIXME: Fix the Natspec.
-    //
-    /// @notice Instantiates Hyperdrive with a ERC4626 vault as the yield source.
-    /// @param __pool The ERC4626 compatible yield source.
+    /// @notice Instantiates the ERC4626 Hyperdrive base contract.
+    /// @param __pool The ERC4626 compatible yield source that this Hyperdrive
+    ///        instance it's capital into..
     constructor(IERC4626 __pool) {
         // Initialize the pool immutable.
         _pool = __pool;

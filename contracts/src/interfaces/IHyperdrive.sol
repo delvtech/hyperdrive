@@ -149,11 +149,17 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     struct PoolConfig {
         /// @dev The address of the base token.
         IERC20 baseToken;
+        /// @dev The linker factory used by this Hyperdrive instance.
+        address linkerFactory;
+        /// @dev The hash of the ERC20 linker's code. This is used to derive the
+        ///      create2 addresses of the ERC20 linkers used by this instance.
+        bytes32 linkerCodeHash;
         /// @dev The initial share price.
         uint256 initialSharePrice;
         /// @dev The minimum share reserves.
         uint256 minimumShareReserves;
-        /// @dev The minimum amount of tokens that a position can be opened/closed with.
+        /// @dev The minimum amount of tokens that a position can be opened or
+        ///      closed with.
         uint256 minimumTransactionAmount;
         /// @dev The duration of a position prior to maturity.
         uint256 positionDuration;

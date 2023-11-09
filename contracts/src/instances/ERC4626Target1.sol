@@ -23,20 +23,11 @@ contract ERC4626Target1 is HyperdriveTarget1, ERC4626Base {
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _linkerCodeHash The hash of the ERC20 linker contract's
-    ///        constructor code.
-    /// @param _linkerFactory The address of the factory which is used to deploy
-    ///        the ERC20 linker contracts.
-    /// @param _pool The ERC4626 compatible yield source.
+    /// @param __pool The ERC4626 compatible yield source.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory,
-        IERC4626 _pool
-    )
-        HyperdriveTarget1(_config, _linkerCodeHash, _linkerFactory)
-        ERC4626Base(_pool)
-    {}
+        IERC4626 __pool
+    ) HyperdriveTarget1(_config) ERC4626Base(__pool) {}
 
     /// Extras ///
 

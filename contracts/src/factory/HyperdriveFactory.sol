@@ -32,15 +32,13 @@ contract HyperdriveFactory {
     event LinkerFactoryUpdated(address indexed newLinkerFactory);
 
     /// @notice Emitted when the linker code hash is updated.
-    event LinkerCodeHashUpdated(bytes32 indexed newCodeHash);
+    event LinkerCodeHashUpdated(bytes32 indexed newLinkerCodeHash);
 
     /// @notice The event that is emitted when new instances are deployed.
     event Deployed(
         uint256 indexed version,
         address hyperdrive,
         IHyperdrive.PoolConfig config,
-        address linkerFactory,
-        bytes32 linkerCodeHash,
         bytes32[] extraData
     );
 
@@ -264,47 +262,33 @@ contract HyperdriveFactory {
             revert IHyperdrive.NonPayableInitialization();
         }
 
+        // TODO: Should we do some input validation on the config like making
+        // sure that the linker factory and linker code hash are set to zero?
+        // This kind of check makes it clear that the deployer knows the values
+        // will be overridden.
+        //
         // Deploy the data provider and the instance with the factory's
         // configuration. Add this instance to the registry and emit an event
         // with the deployment configuration. The factory assumes the governance
         // role during deployment so that it can set up some initial values;
         // however the governance role will ultimately be transferred to the
         // hyperdrive governance address.
+        _config.linkerFactory = linkerFactory;
+        _config.linkerCodeHash = linkerCodeHash;
         _config.feeCollector = feeCollector;
         _config.governance = address(this);
         _config.fees = fees;
-        bytes32 _linkerCodeHash = linkerCodeHash;
-        address _linkerFactory = linkerFactory;
         IHyperdrive hyperdrive = IHyperdrive(
             hyperdriveDeployer.deploy(
                 _config,
-                _deployTarget0(
-                    _config,
-                    _linkerCodeHash,
-                    _linkerFactory,
-                    _extraData
-                ),
-                _deployTarget1(
-                    _config,
-                    _linkerCodeHash,
-                    _linkerFactory,
-                    _extraData
-                ),
-                _linkerCodeHash,
-                _linkerFactory,
+                target0Deployer.deploy(_config, _extraData),
+                target1Deployer.deploy(_config, _extraData),
                 _extraData
             )
         );
         isOfficial[address(hyperdrive)] = versionCounter;
         _config.governance = hyperdriveGovernance;
-        emit Deployed(
-            versionCounter,
-            address(hyperdrive),
-            _config,
-            _linkerFactory,
-            _linkerCodeHash,
-            _extraData
-        );
+        emit Deployed(versionCounter, address(hyperdrive), _config, _extraData);
 
         // Initialize the Hyperdrive instance.
         _config.baseToken.transferFrom(
@@ -338,50 +322,6 @@ contract HyperdriveFactory {
         hyperdrive.setGovernance(hyperdriveGovernance);
 
         return hyperdrive;
-    }
-
-    /// @notice Deploys a Hyperdrive target0 contract.
-    /// @param _config The configuration of the pool we are deploying
-    /// @param _linkerCodeHash The code hash from the multitoken deployer
-    /// @param _linkerFactory The factory of the multitoken deployer
-    /// @param _extraData The extra data from the pool deployment
-    /// @return The address of the new data provider contract.
-    function _deployTarget0(
-        IHyperdrive.PoolConfig memory _config,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory,
-        // TODO: Use raw bytes instead of bytes32
-        bytes32[] memory _extraData
-    ) internal returns (address) {
-        return
-            target0Deployer.deploy(
-                _config,
-                _linkerCodeHash,
-                _linkerFactory,
-                _extraData
-            );
-    }
-
-    /// @notice Deploys a Hyperdrive target1 contract.
-    /// @param _config The configuration of the pool we are deploying
-    /// @param _linkerCodeHash The code hash from the multitoken deployer
-    /// @param _linkerFactory The factory of the multitoken deployer
-    /// @param _extraData The extra data from the pool deployment
-    /// @return The address of the new data provider contract.
-    function _deployTarget1(
-        IHyperdrive.PoolConfig memory _config,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory,
-        // TODO: Use raw bytes instead of bytes32
-        bytes32[] memory _extraData
-    ) internal returns (address) {
-        return
-            target1Deployer.deploy(
-                _config,
-                _linkerCodeHash,
-                _linkerFactory,
-                _extraData
-            );
     }
 
     /// @notice Gets the default pausers.

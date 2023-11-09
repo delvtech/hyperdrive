@@ -29,6 +29,8 @@ contract DummyHyperdrive is Hyperdrive, MockHyperdriveBase {
         Hyperdrive(
             IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(0)),
+                linkerFactory: address(0),
+                linkerCodeHash: bytes32(0),
                 initialSharePrice: 1e18,
                 minimumShareReserves: 1e18,
                 minimumTransactionAmount: 1e15,
@@ -40,8 +42,6 @@ contract DummyHyperdrive is Hyperdrive, MockHyperdriveBase {
                 fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 })
             }),
             address(new DummyProvider()),
-            address(0),
-            bytes32(0),
             address(0)
         )
     {}

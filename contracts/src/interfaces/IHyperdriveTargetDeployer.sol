@@ -6,8 +6,6 @@ import { IHyperdrive } from "./IHyperdrive.sol";
 interface IHyperdriveTargetDeployer {
     function deploy(
         IHyperdrive.PoolConfig memory _config,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory,
         bytes32[] memory _extraData
     ) external returns (address);
 }

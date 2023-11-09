@@ -227,6 +227,8 @@ contract DevnetMigration is Script {
             baseToken.approve(address(factory), contribution);
             IHyperdrive.PoolConfig memory poolConfig = IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(baseToken)),
+                linkerFactory: address(0),
+                linkerCodeHash: bytes32(0),
                 initialSharePrice: config.hyperdriveInitialSharePrice,
                 minimumShareReserves: config.hyperdriveMinimumShareReserves,
                 minimumTransactionAmount: config

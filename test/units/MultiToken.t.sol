@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { MockAssetId } from "contracts/test/MockAssetId.sol";
@@ -28,12 +29,18 @@ contract MultiTokenTest is BaseTest {
     }
 
     function testFactory() public {
-        assertEq(multiToken.linkerFactory(), address(forwarderFactory));
+        assertEq(
+            IHyperdrive(address(multiToken)).getPoolConfig().linkerFactory,
+            address(forwarderFactory)
+        );
     }
 
     // TODO - really needs a better test
     function testLinkerCodeHash() public {
-        assertEq(multiToken.linkerCodeHash(), bytes32(0));
+        assertEq(
+            IHyperdrive(address(multiToken)).getPoolConfig().linkerCodeHash,
+            bytes32(0)
+        );
     }
 
     function test__metadata() public {

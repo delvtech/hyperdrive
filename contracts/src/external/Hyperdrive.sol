@@ -40,18 +40,11 @@ abstract contract Hyperdrive is
     /// @param _config The configuration of the pool.
     /// @param _target0 The target0 address.
     /// @param _target1 The target1 address.
-    /// @param _linkerCodeHash The code hash of the linker contract.
-    /// @param _linkerFactory The address of the linker factory.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         address _target0,
-        address _target1,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory
-    )
-        HyperdriveStorage(_config, _linkerCodeHash, _linkerFactory)
-        HyperdrivePermitForAll()
-    {
+        address _target1
+    ) HyperdriveStorage(_config) HyperdrivePermitForAll() {
         // Initialize the target contracts.
         target0 = _target0;
         target1 = _target1;

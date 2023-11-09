@@ -26,15 +26,9 @@ abstract contract HyperdriveTarget1 is
 {
     /// @notice Instantiates target1.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _linkerCodeHash The hash of the ERC20 linker contract's
-    ///        constructor code.
-    /// @param _linkerFactory The address of the factory which is used to deploy
-    ///        the ERC20 linker contracts.
     constructor(
-        IHyperdrive.PoolConfig memory _config,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory
-    ) HyperdriveStorage(_config, _linkerCodeHash, _linkerFactory) {}
+        IHyperdrive.PoolConfig memory _config
+    ) HyperdriveStorage(_config) {}
 
     /// Longs ///
 
