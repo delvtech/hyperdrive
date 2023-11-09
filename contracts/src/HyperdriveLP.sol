@@ -98,7 +98,6 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
             sharePrice,
             _options
         );
-
         emit Initialize(
             _options.destination,
             lpShares,
