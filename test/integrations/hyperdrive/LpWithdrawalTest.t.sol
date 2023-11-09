@@ -687,7 +687,7 @@ contract LpWithdrawalTest is HyperdriveTest {
     ) internal {
         // Set up the test parameters.
         TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
-            fixedRate: 0.03e18,
+            fixedRate: 0.05e18,
             variableRate: 0,
             contribution: 500_000_000e18,
             longAmount: 0,
