@@ -127,7 +127,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @param _bondAmount The amount of shorts to close.
     /// @param _minOutput The minimum output of this trade.
     /// @param _options The options that configure how the trade is settled.
-    /// @return The amount of base tokens produced by closing this short
+    /// @return The amount of base tokens produced by closing this short.
     function _closeShort(
         uint256 _maturityTime,
         uint256 _bondAmount,

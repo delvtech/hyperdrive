@@ -22,38 +22,38 @@ import { HyperdriveBase } from "./HyperdriveBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveMultiToken is HyperdriveBase {
-    /// @notice This modifier checks the caller is the create2 validated ERC20 bridge
-    /// @param tokenID The internal token identifier
+    /// @notice This modifier checks the caller is the create2 validated ERC20 bridge.
+    /// @param tokenID The internal token identifier.
     modifier onlyLinker(uint256 tokenID) {
         // If the caller does not match the address hash, we revert because it is not
         // allowed to access permission-ed methods.
         if (msg.sender != _deriveForwarderAddress(tokenID)) {
             revert IHyperdrive.InvalidERC20Bridge();
         }
-        // Execute the following function
+        // Execute the following function.
         _;
     }
 
     /// @dev Transfers several assets from one account to another
-    /// @param from the source account
-    /// @param to the destination account
-    /// @param ids The array of token ids of the asset to transfer
-    /// @param values The amount of each token to transfer
+    /// @param from the source account.
+    /// @param to the destination account.
+    /// @param ids The array of token ids of the asset to transfer.
+    /// @param values The amount of each token to transfer.
     function _batchTransferFrom(
         address from,
         address to,
         uint256[] calldata ids,
         uint256[] calldata values
     ) internal {
-        // Checks for inconsistent addresses
+        // Checks for inconsistent addresses.
         if (from == address(0) || to == address(0))
             revert IHyperdrive.RestrictedZeroAddress();
 
-        // Check for inconsistent length
+        // Check for inconsistent length.
         if (ids.length != values.length)
             revert IHyperdrive.BatchInputLengthMismatch();
 
-        // Call internal transfer for each asset
+        // Call internal transfer for each asset.
         for (uint256 i = 0; i < ids.length; ) {
             _transferFrom(ids[i], from, to, values[i], msg.sender);
             unchecked {
@@ -75,16 +75,16 @@ abstract contract HyperdriveMultiToken is HyperdriveBase {
         uint256 amount,
         address caller
     ) internal {
-        // Checks for inconsistent addresses
+        // Checks for inconsistent addresses.
         if (from == address(0) || to == address(0))
             revert IHyperdrive.RestrictedZeroAddress();
 
-        // If the transaction sender is calling no need for further validation
+        // If the transaction sender is calling no need for further validation.
         if (caller != from) {
             // Or if the transaction sender can access all user assets, no need
-            // for more validation
+            // for more validation.
             if (!_isApprovedForAll[from][caller]) {
-                // Finally we load the per asset approval
+                // Finally we load the per asset approval.
                 uint256 approved = _perTokenApprovals[tokenID][from][caller];
                 // If it is not an infinite approval
                 if (approved != type(uint256).max) {

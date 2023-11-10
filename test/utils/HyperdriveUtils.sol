@@ -541,7 +541,7 @@ library HyperdriveUtils {
         uint256 estimateSpotPrice = _spotPrice.mulDown(ONE - t) +
             ONE.mulDown(t);
 
-        // Recalculate our initial guess using the bootstrapped conservative
+        // Recalculate our initial guess using the bootstrapped conservative.
         // estimate of the realized price.
         guess = calculateMaxLongEstimate(
             _params,

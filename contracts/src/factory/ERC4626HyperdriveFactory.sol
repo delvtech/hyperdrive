@@ -23,7 +23,7 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
     address[] internal _sweepTargets;
 
     /// @notice Initializes the factory.
-    /// @param _factoryConfig The variables that configure the factory;
+    /// @param _factoryConfig The variables that configure the factory.
     /// @param __sweepTargets The addresses that can be swept by the fee collector.
     constructor(
         FactoryConfig memory _factoryConfig,

@@ -107,7 +107,7 @@ abstract contract HyperdrivePermitForAll is
         // Set the state.
         _isApprovedForAll[owner][spender] = _approved;
 
-        // Emit an event to track approval
+        // Emit an event to track approval.
         emit ApprovalForAll(owner, spender, _approved);
     }
 }

@@ -131,8 +131,8 @@ abstract contract HyperdriveTarget0 is
 
     /// @notice Allows a user to set an approval for an individual asset with
     ///         specific amount.
-    /// @param tokenID The asset to approve the use of
-    /// @param operator The address who will be able to use the tokens
+    /// @param tokenID The asset to approve the use of.
+    /// @param operator The address who will be able to use the tokens.
     /// @param amount The max tokens the approved person can use, setting to
     ///        uint256.max will cause the value to never decrement [saving gas
     ///        on transfer].
@@ -144,11 +144,11 @@ abstract contract HyperdriveTarget0 is
         _setApproval(tokenID, operator, amount, msg.sender);
     }
 
-    /// @notice Transfers several assets from one account to another
-    /// @param from the source account
-    /// @param to the destination account
-    /// @param ids The array of token ids of the asset to transfer
-    /// @param values The amount of each token to transfer
+    /// @notice Transfers several assets from one account to another.
+    /// @param from the source account.
+    /// @param to the destination account.
+    /// @param ids The array of token ids of the asset to transfer.
+    /// @param values The amount of each token to transfer.
     function batchTransferFrom(
         address from,
         address to,

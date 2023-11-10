@@ -54,7 +54,7 @@ abstract contract HyperdriveTarget1 is
     /// @param _bondAmount The amount of shorts to close.
     /// @param _minOutput The minimum output of this trade.
     /// @param _options The options that configure how the trade is settled.
-    /// @return The amount of base tokens produced by closing this short
+    /// @return The amount of base tokens produced by closing this short.
     function closeShort(
         uint256 _maturityTime,
         uint256 _bondAmount,
@@ -84,7 +84,7 @@ abstract contract HyperdriveTarget1 is
     /// @param _minApr The minimum APR at which the LP is willing to supply.
     /// @param _maxApr The maximum APR at which the LP is willing to supply.
     /// @param _options The options that configure how the operation is settled.
-    /// @return lpShares The number of LP tokens created
+    /// @return lpShares The number of LP tokens created.
     function addLiquidity(
         uint256 _contribution,
         uint256 _minApr,
