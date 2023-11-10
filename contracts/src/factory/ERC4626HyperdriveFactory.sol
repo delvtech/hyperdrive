@@ -17,9 +17,6 @@ import { HyperdriveFactory } from "./HyperdriveFactory.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ERC4626HyperdriveFactory is HyperdriveFactory {
-    /// @dev The address of the ERC4626 pool used in this factory.
-    IERC4626 internal immutable pool;
-
     /// @notice The sweep targets used in deployed instances. This specifies
     ///         the addresses that the fee collector can sweep to collect
     ///         incentives and redistribute them.
@@ -27,16 +24,11 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
 
     /// @notice Initializes the factory.
     /// @param _factoryConfig The variables that configure the factory;
-    /// @param _pool The ERC4626 pool.
     /// @param __sweepTargets The addresses that can be swept by the fee collector.
     constructor(
         FactoryConfig memory _factoryConfig,
-        IERC4626 _pool,
         address[] memory __sweepTargets
     ) HyperdriveFactory(_factoryConfig) {
-        // Initialize the ERC4626 pool.
-        pool = _pool;
-
         // Initialize the default sweep targets.
         _sweepTargets = __sweepTargets;
     }
@@ -55,12 +47,14 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
     /// @param _contribution The contribution amount.
     /// @param _apr The initial spot rate.
     /// @param _initializeExtraData The extra data for the `initialize` call.
+    /// @param _pool The ERC4626 compatible yield source.
     function deployAndInitialize(
         IHyperdrive.PoolConfig memory _config,
         uint256 _contribution,
         uint256 _apr,
         bytes memory _initializeExtraData,
-        bytes32[] memory // unused
+        bytes32[] memory, // unused
+        address _pool
     ) public payable override returns (IHyperdrive) {
         // Deploy and initialize the ERC4626 hyperdrive instance with the
         // default sweep targets provided as extra data.
@@ -74,7 +68,8 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
             _contribution,
             _apr,
             _initializeExtraData,
-            extraData
+            extraData,
+            _pool
         );
 
         // Return the hyperdrive instance.

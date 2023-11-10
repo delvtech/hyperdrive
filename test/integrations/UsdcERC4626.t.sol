@@ -65,13 +65,12 @@ contract UsdcERC4626 is ERC4626ValidationTest {
                 feeCollector: bob,
                 fees: IHyperdrive.Fees(0, 0, 0),
                 maxFees: IHyperdrive.Fees(1e18, 1e18, 1e18),
-                hyperdriveDeployer: new ERC4626HyperdriveDeployer(token),
-                target0Deployer: new ERC4626Target0Deployer(token),
-                target1Deployer: new ERC4626Target1Deployer(token),
+                hyperdriveDeployer: new ERC4626HyperdriveDeployer(),
+                target0Deployer: new ERC4626Target0Deployer(),
+                target1Deployer: new ERC4626Target1Deployer(),
                 linkerFactory: address(forwarderFactory),
                 linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
             }),
-            token,
             new address[](0)
         );
 
@@ -94,7 +93,8 @@ contract UsdcERC4626 is ERC4626ValidationTest {
             contribution,
             FIXED_RATE,
             new bytes(0),
-            new bytes32[](0)
+            new bytes32[](0),
+            address(token)
         );
 
         // Setup maximum approvals so transfers don't require further approval.

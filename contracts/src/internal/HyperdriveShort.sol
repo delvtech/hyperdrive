@@ -54,24 +54,17 @@ abstract contract HyperdriveShort is HyperdriveLP {
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds sold to the beginning of the checkpoint.
+        // Note: All state deltas are derived from the external function input.
         uint256 maturityTime = latestCheckpoint + _positionDuration;
         uint256 shareReservesDelta;
-        uint256 traderDeposit;
+        uint256 baseDeposit;
         {
             uint256 totalGovernanceFee;
             (
-                traderDeposit,
+                baseDeposit,
                 shareReservesDelta,
                 totalGovernanceFee
             ) = _calculateOpenShort(_bondAmount, sharePrice, openSharePrice);
-
-            // Trader deposit is in shares, so we need to ensure it matches the
-            // options specified by the user.
-            traderDeposit = _convertToOptionFromShares(
-                traderDeposit,
-                sharePrice,
-                _options
-            );
 
             // Attribute the governance fees.
             _governanceFeesAccrued += totalGovernanceFee;
@@ -80,15 +73,28 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Take custody of the trader's deposit and ensure that the trader
         // doesn't pay more than their max deposit. The trader's deposit is
         // equal to the proceeds that they would receive if they closed
-        // immediately (without fees).
+        // immediately (without fees). Trader deposit is created to ensure that
+        // the input to _deposit is denominated according to _options.
+        // Note: We don't check the maxDeposit against the output of deposit
+        // because slippage from a deposit could cause a larger deposit taken
+        // from the user to pass due to the shares being worth less after deposit.
+        uint256 traderDeposit = _convertToOptionFromBase(
+            baseDeposit,
+            sharePrice,
+            _options
+        );
         if (_maxDeposit < traderDeposit) {
             revert IHyperdrive.OutputLimit();
         }
-        (uint256 sharesDeposited, ) = _deposit(traderDeposit, _options);
+        _deposit(traderDeposit, _options);
 
         // Apply the state updates caused by opening the short.
+        // Note: Updating the state using the result using the
+        // deltas calculated from function inputs is consistent with
+        // openLong.
         _applyOpenShort(
             _bondAmount,
+            baseDeposit,
             shareReservesDelta,
             sharePrice,
             maturityTime
@@ -108,7 +114,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _options.destination,
             assetId,
             maturityTime,
-            sharesDeposited.mulDown(sharePrice),
+            baseDeposit,
             sharePrice,
             bondAmount
         );
@@ -146,6 +152,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Calculate the changes to the reserves and the traders proceeds up
         // front. This will also verify that the calculated values don't break
         // any invariants.
+        // Note: All state deltas are derived from the external function input.
         (
             uint256 bondReservesDelta,
             uint256 shareProceeds,
@@ -203,6 +210,10 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 proceeds = _withdraw(shareProceeds, _options);
 
         // Enforce the user's minimum output.
+        // Note: We use the value that is returned from the
+        // withdraw to check against the minOutput because
+        // in the event of slippage on the withdraw, we want
+        // it to be caught be the minOutput check.
         IHyperdrive.Options calldata options = _options; // Avoid stack too deep error.
         uint256 baseProceeds = _convertToBaseFromOption(
             proceeds,
@@ -229,11 +240,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @dev Applies an open short to the state. This includes updating the
     ///      reserves and maintaining the reserve invariants.
     /// @param _bondAmount The amount of bonds shorted.
+    /// @param _baseDeposit The deposit, in base, required to open the short.
     /// @param _shareReservesDelta The amount of shares paid to the curve.
     /// @param _sharePrice The share price.
     /// @param _maturityTime The maturity time of the long.
     function _applyOpenShort(
         uint256 _bondAmount,
+        uint256 _baseDeposit,
         uint256 _shareReservesDelta,
         uint256 _sharePrice,
         uint256 _maturityTime
@@ -281,8 +294,19 @@ abstract contract HyperdriveShort is HyperdriveLP {
         int128 checkpointExposureBefore = int128(
             _checkpoints[_latestCheckpoint].exposure
         );
+
+        // Round the base deposit down to the nearest multiple of the precision
+        // threshold. We specifically round down because there are cases where
+        // a smaller short deposit is larger than a larger long's fixed interest.
+        // This happens because exponentiation in FixedPointMath is only accurate
+        // to 1e14. The result of this innacuracy is that it causes a solvency issue
+        // once all LPs have withdrawn, all positions mature, and the shorts have
+        // been closed. When applyCheckpoint is closing the longs, it results in an
+        // underflow bc there aren't enough shareReserves available.
+        _baseDeposit = _baseDeposit - (_baseDeposit % _precisionThreshold);
+        uint256 exposureDelta = _baseDeposit + _bondAmount;
         _checkpoints[_latestCheckpoint].exposure -= int128(
-            _bondAmount.toUint128()
+            exposureDelta.toUint128()
         );
         _updateLongExposure(
             checkpointExposureBefore,
@@ -345,7 +369,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @param _bondAmount The amount of bonds being sold to open the short.
     /// @param _sharePrice The current share price.
     /// @param _openSharePrice The share price at the beginning of the checkpoint.
-    /// @return traderDeposit The deposit, in shares, required to open the short.
+    /// @return baseDeposit The deposit, in base, required to open the short.
     /// @return shareReservesDelta The change in the share reserves.
     /// @return totalGovernanceFee The governance fee in shares.
     function _calculateOpenShort(
@@ -356,7 +380,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         internal
         view
         returns (
-            uint256 traderDeposit,
+            uint256 baseDeposit,
             uint256 shareReservesDelta,
             uint256 totalGovernanceFee
         )
@@ -424,19 +448,21 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // accrued during the current checkpoint, we set close share price to
         // equal the open share price. This ensures that shorts don't benefit
         // from negative interest that accrued during the current checkpoint.
-        traderDeposit = HyperdriveMath.calculateShortProceeds(
-            _bondAmount,
-            // NOTE: We add the governance fee back to the share reserves
-            // delta here because the trader will need to provide this in
-            // their deposit.
-            shareReservesDelta - governanceCurveFee,
-            _openSharePrice,
-            _sharePrice.max(_openSharePrice),
-            _sharePrice,
-            _flatFee
-        );
+        baseDeposit = HyperdriveMath
+            .calculateShortProceeds(
+                _bondAmount,
+                // NOTE: We add the governance fee back to the share reserves
+                // delta here because the trader will need to provide this in
+                // their deposit.
+                shareReservesDelta - governanceCurveFee,
+                _openSharePrice,
+                _sharePrice.max(_openSharePrice),
+                _sharePrice,
+                _flatFee
+            )
+            .mulDown(_sharePrice);
 
-        return (traderDeposit, shareReservesDelta, governanceCurveFee);
+        return (baseDeposit, shareReservesDelta, governanceCurveFee);
     }
 
     /// @dev Calculate the pool reserve and trader deltas that result from

@@ -38,6 +38,7 @@ impl Distribution<State> for Standard {
             initial_share_price: rng.gen_range(fixed!(0.5e18)..=fixed!(2.5e18)).into(),
             minimum_share_reserves: rng.gen_range(fixed!(0.1e18)..=fixed!(1e18)).into(),
             minimum_transaction_amount: rng.gen_range(fixed!(0.1e18)..=fixed!(1e18)).into(),
+            precision_threshold: rng.gen_range(fixed!(0.1e18)..=fixed!(1e18)).into(),
             time_stretch: rng.gen_range(fixed!(0.005e18)..=fixed!(0.5e18)).into(),
             position_duration: rng
                 .gen_range(

@@ -162,6 +162,9 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         /// @dev The minimum amount of tokens that a position can be opened or
         ///      closed with.
         uint256 minimumTransactionAmount;
+        /// @dev The amount of precision expected to lose due to exponentiation
+        ///      implementation.
+        uint256 precisionThreshold;
         /// @dev The duration of a position prior to maturity.
         uint256 positionDuration;
         /// @dev The duration of a checkpoint.
@@ -278,6 +281,8 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     error MaxFeeTooHigh();
     error FeeTooHigh();
     error NonPayableInitialization();
+    error InvalidIndexes();
+    error EndIndexTooLarge();
 
     /// ######################
     /// ### ERC20Forwarder ###

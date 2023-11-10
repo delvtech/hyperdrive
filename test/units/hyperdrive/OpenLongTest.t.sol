@@ -305,7 +305,7 @@ contract OpenLongTest is HyperdriveTest {
 
         advanceTime(POSITION_DURATION, int256(apr));
 
-        openLong(bob, config.minimumTransactionAmount);
+        openLong(bob, config.minimumTransactionAmount * 2);
 
         IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
         uint256 averageMaturityTimeBefore = info.longAverageMaturityTime;

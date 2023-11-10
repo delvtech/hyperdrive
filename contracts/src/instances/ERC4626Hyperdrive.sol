@@ -49,7 +49,7 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
         if (_config.initialSharePrice != _pricePerShare()) {
             revert IHyperdrive.InvalidInitialSharePrice();
         }
-        if (address(_config.baseToken) != _pool.asset()) {
+        if (address(_config.baseToken) != IERC4626(_pool).asset()) {
             revert IHyperdrive.InvalidBaseToken();
         }
 

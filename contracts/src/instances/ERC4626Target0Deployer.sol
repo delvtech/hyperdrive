@@ -16,23 +16,16 @@ import { ERC4626Target0 } from "../instances/ERC4626Target0.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ERC4626Target0Deployer is IHyperdriveTargetDeployer {
-    // @dev TODO: This should be removed when we update the factory.
-    IERC4626 internal immutable pool;
-
-    /// @notice Instantiates the target0 deployer.
-    /// @param _pool The address of the ERC4626 pool this deployer utilizes.
-    constructor(IERC4626 _pool) {
-        pool = _pool;
-    }
-
     /// @notice Deploys a target0 instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _pool The address of the ERC4626 compatible yield source.
     /// @return The address of the newly deployed ERC4626Hyperdrive Instance
     function deploy(
         IHyperdrive.PoolConfig memory _config,
-        bytes32[] memory
+        bytes32[] memory,
+        address _pool
     ) external override returns (address) {
         // Deploy the ERC4626Target0 instance.
-        return (address(new ERC4626Target0(_config, pool)));
+        return (address(new ERC4626Target0(_config, IERC4626(_pool))));
     }
 }

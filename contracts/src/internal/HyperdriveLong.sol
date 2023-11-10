@@ -50,11 +50,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
         );
 
         // Enforce min user inputs and min share price
-        uint256 baseDeposited = _convertToBaseFromOption(
-            _amount,
-            sharePrice,
-            _options
-        );
+        // Note: We use the value that is returned from the
+        // deposit to check against the min transaction
+        // amount because in the event of slippage on the
+        // deposit, we want the inputs to the state updates
+        // to respect the min transaction amount requirements.
+        uint256 baseDeposited = sharesDeposited.mulDown(sharePrice);
         if (baseDeposited < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
@@ -68,6 +69,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds purchased to the beginning of the checkpoint.
+        // Note: All state deltas are derived from the output of the
+        // deposit function.
         uint256 shareReservesDelta;
         uint256 bondReservesDelta;
         uint256 totalGovernanceFee;
@@ -79,7 +82,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
         ) = _calculateOpenLong(sharesDeposited, sharePrice);
 
         // Enforce min user outputs
-        if (_minOutput > bondProceeds) revert IHyperdrive.OutputLimit();
+        if (_minOutput > bondProceeds) {
+            revert IHyperdrive.OutputLimit();
+        }
 
         // Attribute the governance fee.
         _governanceFeesAccrued += totalGovernanceFee;
@@ -103,16 +108,19 @@ abstract contract HyperdriveLong is HyperdriveLP {
         _mint(assetId, _options.destination, bondProceeds);
 
         // Emit an OpenLong event.
+        uint256 amount = _amount; // Avoid stack too deep error.
+        IHyperdrive.Options calldata options = _options; // Avoid stack too deep error.
+        uint256 _bondProceeds = bondProceeds; // Avoid stack too deep error.
         emit OpenLong(
             _options.destination,
             assetId,
             maturityTime,
-            baseDeposited,
+            _convertToBaseFromOption(amount, sharePrice, options),
             sharePrice,
-            bondProceeds
+            _bondProceeds
         );
 
-        return (maturityTime, bondProceeds);
+        return (maturityTime, _bondProceeds);
     }
 
     /// @dev Closes a long position with a specified maturity time.
@@ -145,6 +153,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         );
 
         // Calculate the pool and user deltas using the trading function.
+        // Note: All state deltas are derived from external function inputs.
         (
             uint256 bondReservesDelta,
             uint256 shareProceeds,
@@ -196,12 +205,18 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 proceeds = _withdraw(shareProceeds, _options);
 
         // Enforce min user outputs.
+        // Note: We use the value that is returned from the
+        // withdraw to check against the minOutput because
+        // in the event of slippage on the withdraw, we want
+        // it to be caught be the minOutput check.
         uint256 baseProceeds = _convertToBaseFromOption(
             proceeds,
             sharePrice,
             _options
         );
-        if (_minOutput > baseProceeds) revert IHyperdrive.OutputLimit();
+        if (_minOutput > baseProceeds) {
+            revert IHyperdrive.OutputLimit();
+        }
 
         // Emit a CloseLong event.
         uint256 bondAmount = _bondAmount; // Avoid stack too deep error.

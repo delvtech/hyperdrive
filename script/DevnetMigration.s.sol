@@ -57,6 +57,7 @@ contract DevnetMigration is Script {
         uint256 hyperdriveInitialSharePrice;
         uint256 hyperdriveMinimumShareReserves;
         uint256 hyperdriveMinimumTransactionAmount;
+        uint256 hyperdrivePrecisionThreshold;
         uint256 hyperdrivePositionDuration;
         uint256 hyperdriveCheckpointDuration;
         uint256 hyperdriveTimeStretchApr;
@@ -124,6 +125,10 @@ contract DevnetMigration is Script {
             hyperdriveMinimumTransactionAmount: vm.envOr(
                 "HYPERDRIVE_MINIMUM_TRANSACTION_AMOUNT",
                 uint256(0.001e18)
+            ),
+            hyperdrivePrecisionThreshold: vm.envOr(
+                "HYPERDRIVE_PRECISION_THRESHOLD",
+                uint256(1e14)
             ),
             hyperdrivePositionDuration: vm.envOr(
                 "HYPERDRIVE_POSITION_DURATION",
@@ -199,21 +204,14 @@ contract DevnetMigration is Script {
                         governance: config.factoryMaxGovernanceFee
                     }),
                     defaultPausers: defaultPausers,
-                    hyperdriveDeployer: new ERC4626HyperdriveDeployer(
-                        IERC4626(address(pool))
-                    ),
-                    target0Deployer: new ERC4626Target0Deployer(
-                        IERC4626(address(pool))
-                    ),
-                    target1Deployer: new ERC4626Target1Deployer(
-                        IERC4626(address(pool))
-                    ),
+                    hyperdriveDeployer: new ERC4626HyperdriveDeployer(),
+                    target0Deployer: new ERC4626Target0Deployer(),
+                    target1Deployer: new ERC4626Target1Deployer(),
                     linkerFactory: address(forwarderFactory),
                     linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
                 });
             factory = new ERC4626HyperdriveFactory(
                 factoryConfig,
-                IERC4626(address(pool)),
                 new address[](0)
             );
         }
@@ -233,6 +231,7 @@ contract DevnetMigration is Script {
                 minimumShareReserves: config.hyperdriveMinimumShareReserves,
                 minimumTransactionAmount: config
                     .hyperdriveMinimumTransactionAmount,
+                precisionThreshold: config.hyperdrivePrecisionThreshold,
                 positionDuration: config.hyperdrivePositionDuration,
                 checkpointDuration: config.hyperdriveCheckpointDuration,
                 timeStretch: config
@@ -251,7 +250,8 @@ contract DevnetMigration is Script {
                 contribution,
                 fixedRate,
                 new bytes(0),
-                new bytes32[](0)
+                new bytes32[](0),
+                address(pool)
             );
         }
 

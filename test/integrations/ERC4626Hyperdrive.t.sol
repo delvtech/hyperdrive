@@ -61,13 +61,12 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 defaultPausers: defaults,
                 fees: IHyperdrive.Fees(0, 0, 0),
                 maxFees: IHyperdrive.Fees(0, 0, 0),
-                hyperdriveDeployer: new ERC4626HyperdriveDeployer(pool),
-                target0Deployer: new ERC4626Target0Deployer(pool),
-                target1Deployer: new ERC4626Target1Deployer(pool),
+                hyperdriveDeployer: new ERC4626HyperdriveDeployer(),
+                target0Deployer: new ERC4626Target0Deployer(),
+                target1Deployer: new ERC4626Target1Deployer(),
                 linkerFactory: address(forwarderFactory),
                 linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
             }),
-            pool,
             new address[](0)
         );
 
@@ -83,6 +82,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             initialSharePrice: ONE,
             minimumShareReserves: ONE,
             minimumTransactionAmount: 0.001e18,
+            precisionThreshold: PRECISION_THRESHOLD,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: ONE.divDown(22.186877016851916266e18),
@@ -199,6 +199,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             initialSharePrice: ONE,
             minimumShareReserves: ONE,
             minimumTransactionAmount: 0.001e18,
+            precisionThreshold: PRECISION_THRESHOLD,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
@@ -212,7 +213,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             contribution,
             apr,
             new bytes(0),
-            new bytes32[](0)
+            new bytes32[](0),
+            address(pool)
         );
 
         // The initial price per share is one so the LP shares will initially
@@ -227,6 +229,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
             factory,
+            hyperdrive,
             alice,
             contribution,
             apr,
@@ -248,6 +251,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             initialSharePrice: ONE,
             minimumShareReserves: ONE,
             minimumTransactionAmount: 0.001e18,
+            precisionThreshold: PRECISION_THRESHOLD,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
@@ -261,7 +265,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             contribution,
             apr,
             new bytes(0),
-            new bytes32[](0)
+            new bytes32[](0),
+            address(pool)
         );
 
         // Ensure the share price is 1 after initialization.
@@ -312,7 +317,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             1_000e18,
             0.05e18,
             new bytes(0),
-            new bytes32[](0)
+            new bytes32[](0),
+            address(pool)
         );
         assert(
             !IERC4626Hyperdrive(address(mockHyperdrive)).isSweepable(
@@ -327,7 +333,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             1_000e18,
             0.05e18,
             new bytes(0),
-            new bytes32[](0)
+            new bytes32[](0),
+            address(pool)
         );
         assert(
             !IERC4626Hyperdrive(address(mockHyperdrive)).isSweepable(
@@ -365,7 +372,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                     1_000e18,
                     0.05e18,
                     new bytes(0),
-                    new bytes32[](0)
+                    new bytes32[](0),
+                    address(pool)
                 )
             )
         );

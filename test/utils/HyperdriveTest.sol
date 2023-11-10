@@ -28,6 +28,7 @@ contract HyperdriveTest is BaseTest {
     uint256 internal constant INITIAL_SHARE_PRICE = ONE;
     uint256 internal constant MINIMUM_SHARE_RESERVES = ONE;
     uint256 internal constant MINIMUM_TRANSACTION_AMOUNT = 0.001e18;
+    uint256 internal constant PRECISION_THRESHOLD = 1e14;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
     uint256 internal constant POSITION_DURATION = 365 days;
 
@@ -112,6 +113,7 @@ contract HyperdriveTest is BaseTest {
                 initialSharePrice: ONE,
                 minimumShareReserves: MINIMUM_SHARE_RESERVES,
                 minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
+                precisionThreshold: PRECISION_THRESHOLD,
                 positionDuration: POSITION_DURATION,
                 checkpointDuration: CHECKPOINT_DURATION,
                 timeStretch: HyperdriveUtils.calculateTimeStretch(fixedRate),
@@ -938,6 +940,7 @@ contract HyperdriveTest is BaseTest {
 
     function verifyFactoryEvents(
         HyperdriveFactory factory,
+        IHyperdrive _hyperdrive,
         address deployer,
         uint256 contribution,
         uint256 apr,
@@ -954,11 +957,13 @@ contract HyperdriveTest is BaseTest {
                 Deployed.selector
             );
             assertEq(filteredLogs.length, 1);
-            VmSafe.Log memory log = filteredLogs[0];
 
             // Verify the event topics.
-            assertEq(log.topics[0], Deployed.selector);
-            assertEq(uint256(log.topics[1]), factory.versionCounter());
+            assertEq(filteredLogs[0].topics[0], Deployed.selector);
+            assertEq(
+                uint256(filteredLogs[0].topics[1]),
+                factory.versionCounter()
+            );
 
             // Verify the event data.
             (
@@ -966,13 +971,13 @@ contract HyperdriveTest is BaseTest {
                 IHyperdrive.PoolConfig memory eventConfig,
                 bytes32[] memory eventExtraData
             ) = abi.decode(
-                    log.data,
+                    filteredLogs[0].data,
                     (address, IHyperdrive.PoolConfig, bytes32[])
                 );
-            assertEq(eventHyperdrive, address(hyperdrive));
+            assertEq(eventHyperdrive, address(_hyperdrive));
             assertEq(
                 keccak256(abi.encode(eventConfig)),
-                keccak256(abi.encode(hyperdrive.getPoolConfig()))
+                keccak256(abi.encode(_hyperdrive.getPoolConfig()))
             );
             assertEq(
                 keccak256(abi.encode(eventExtraData)),
@@ -987,11 +992,13 @@ contract HyperdriveTest is BaseTest {
                 Initialize.selector
             );
             assertEq(filteredLogs.length, 1);
-            VmSafe.Log memory log = filteredLogs[0];
 
             // Verify the event topics.
-            assertEq(log.topics[0], Initialize.selector);
-            assertEq(address(uint160(uint256(log.topics[1]))), deployer);
+            assertEq(filteredLogs[0].topics[0], Initialize.selector);
+            assertEq(
+                address(uint160(uint256(filteredLogs[0].topics[1]))),
+                deployer
+            );
 
             // Verify the event data.
             (
@@ -999,17 +1006,21 @@ contract HyperdriveTest is BaseTest {
                 uint256 eventBaseAmount,
                 uint256 eventSharePrice,
                 uint256 eventApr
-            ) = abi.decode(log.data, (uint256, uint256, uint256, uint256));
-            uint256 _contribution = contribution;
+            ) = abi.decode(
+                    filteredLogs[0].data,
+                    (uint256, uint256, uint256, uint256)
+                );
+            uint256 contribution_ = contribution;
+            IHyperdrive hyperdrive_ = _hyperdrive;
             assertApproxEqAbs(
                 eventLpAmount,
-                _contribution.divDown(
-                    hyperdrive.getPoolConfig().initialSharePrice
+                contribution_.divDown(
+                    hyperdrive_.getPoolConfig().initialSharePrice
                 ) - 2 * minimumShareReserves,
                 tolerance
             );
-            assertEq(eventBaseAmount, _contribution);
-            assertEq(eventSharePrice, hyperdrive.getPoolInfo().sharePrice);
+            assertEq(eventBaseAmount, contribution_);
+            assertEq(eventSharePrice, hyperdrive_.getPoolInfo().sharePrice);
             assertEq(eventApr, apr);
         }
     }

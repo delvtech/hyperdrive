@@ -429,6 +429,136 @@ contract HyperdriveMathTest is HyperdriveTest {
         assertApproxEqAbs(result, expectedAPR.divDown(100e18), 3e12);
     }
 
+    function test__OpenLongCloseLongSymmetry(
+        uint256 amountIn,
+        uint256 fixedRate
+    ) external {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+
+        fixedRate = fixedRate.normalizeToRange(0.005e18, 1e18);
+        uint256 initialShareReserves = 500_000_000e18;
+        uint256 initialSharePrice = INITIAL_SHARE_PRICE;
+        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(fixedRate);
+        uint256 normalizedTimeRemaining = 1e18;
+        uint256 initialBondReserves = hyperdriveMath
+            .calculateInitialBondReserves(
+                initialShareReserves,
+                initialSharePrice,
+                fixedRate,
+                POSITION_DURATION,
+                timeStretch
+            );
+
+        uint256 shareReserves = initialShareReserves;
+        uint256 bondReserves = initialBondReserves;
+        uint256 baseAmountIn = amountIn.normalizeToRange(
+            MINIMUM_TRANSACTION_AMOUNT,
+            initialShareReserves / 2
+        );
+        uint256 bondAmountIn;
+        {
+            uint256 bondReservesDelta = hyperdriveMath.calculateOpenLong(
+                shareReserves,
+                bondReserves,
+                baseAmountIn,
+                timeStretch,
+                initialSharePrice, // sharePrice
+                initialSharePrice
+            );
+            bondReserves -= bondReservesDelta;
+            shareReserves += baseAmountIn;
+            bondAmountIn = bondReservesDelta;
+        }
+
+        {
+            uint256 _initialSharePrice = initialSharePrice; // Avoid stack too deep error
+            (
+                uint256 shareReservesDelta,
+                uint256 bondReservesDelta,
+
+            ) = hyperdriveMath.calculateCloseLong(
+                    shareReserves,
+                    bondReserves,
+                    bondAmountIn,
+                    normalizedTimeRemaining,
+                    timeStretch,
+                    _initialSharePrice, // sharePrice
+                    _initialSharePrice
+                );
+            bondReserves += bondReservesDelta;
+            shareReserves -= shareReservesDelta;
+            assertApproxEqAbs(
+                shareReserves,
+                initialShareReserves,
+                PRECISION_THRESHOLD
+            );
+            assertEq(bondReserves, initialBondReserves);
+        }
+    }
+
+    function test__OpenLongOpenShortSymmetry(
+        uint256 amountIn,
+        uint256 fixedRate
+    ) external {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+
+        fixedRate = fixedRate.normalizeToRange(0.005e18, 1e18);
+        uint256 initialShareReserves = 500_000_000e18;
+        uint256 initialSharePrice = INITIAL_SHARE_PRICE;
+        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(fixedRate);
+        uint256 initialBondReserves = hyperdriveMath
+            .calculateInitialBondReserves(
+                initialShareReserves,
+                initialSharePrice,
+                fixedRate,
+                POSITION_DURATION,
+                timeStretch
+            );
+
+        uint256 shareReserves = initialShareReserves;
+        uint256 bondReserves = initialBondReserves;
+        uint256 baseAmountIn = amountIn.normalizeToRange(
+            MINIMUM_TRANSACTION_AMOUNT,
+            initialShareReserves / 2
+        );
+        uint256 bondAmountIn;
+        {
+            uint256 bondReservesDelta = hyperdriveMath.calculateOpenLong(
+                shareReserves,
+                bondReserves,
+                baseAmountIn,
+                timeStretch,
+                initialSharePrice, // sharePrice
+                initialSharePrice
+            );
+            bondReserves -= bondReservesDelta;
+            shareReserves += baseAmountIn;
+            bondAmountIn = bondReservesDelta;
+        }
+
+        {
+            uint256 _initialSharePrice = initialSharePrice; // Avoid stack too deep error
+            uint256 shareReservesDelta = hyperdriveMath.calculateOpenShort(
+                shareReserves,
+                bondReserves,
+                bondAmountIn,
+                timeStretch,
+                _initialSharePrice, // sharePrice
+                _initialSharePrice
+            );
+            bondReserves += bondAmountIn;
+            shareReserves -= shareReservesDelta;
+            assertApproxEqAbs(
+                shareReserves,
+                initialShareReserves,
+                PRECISION_THRESHOLD
+            );
+            assertEq(bondReserves, initialBondReserves);
+        }
+    }
+
     struct TestCaseInput {
         uint256 closeSharePrice;
         uint256 openSharePrice;

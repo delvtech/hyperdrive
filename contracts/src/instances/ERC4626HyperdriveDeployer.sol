@@ -16,25 +16,19 @@ import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
-    IERC4626 internal immutable pool;
-
-    /// @notice Instantiates the Hyperdrive deployer.
-    /// @param _pool The address of the ERC4626 pool this deployer utilizes.
-    constructor(IERC4626 _pool) {
-        pool = _pool;
-    }
-
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _target0 The target0 address.
     /// @param _target1 The target1 address.
     /// @param _extraData The extra data that contains the sweep targets.
+    /// @param _pool The ERC4626 compatible yield source. TODO: Remove
     /// @return The address of the newly deployed ERC4626Hyperdrive Instance
     function deploy(
         IHyperdrive.PoolConfig memory _config,
         address _target0,
         address _target1,
-        bytes32[] memory _extraData
+        bytes32[] memory _extraData,
+        address _pool
     ) external override returns (address) {
         // Convert the extra data to an array of addresses.
         address[] memory sweepTargets;
@@ -49,7 +43,7 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
                     _config,
                     _target0,
                     _target1,
-                    pool,
+                    IERC4626(_pool),
                     sweepTargets
                 )
             )
