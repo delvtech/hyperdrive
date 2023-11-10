@@ -68,7 +68,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Bob opens a large long.
         basePaid = basePaid.normalizeToRange(
-            MINIMUM_TRANSACTION_AMOUNT,
+            MINIMUM_TRANSACTION_AMOUNT * 2,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
@@ -900,8 +900,8 @@ contract LpWithdrawalTest is HyperdriveTest {
     function test_single_lp_withdrawal_long_short_redemption_edge_case()
         external
     {
-        uint256 longBasePaid = 4107; //0.001000000000004107
-        uint256 shortAmount = 49890332890205; //0.001049890332890205
+        uint256 longBasePaid = 11754624137;
+        uint256 shortAmount = 49890332890205;
         _test_single_lp_withdrawal_long_short_redemption(
             longBasePaid,
             shortAmount
@@ -1048,7 +1048,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         }
 
         // Ensure that the ending base balance of Hyperdrive about zero.
-        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e9); // TODO: This bound is too large
+        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e9);
         assertApproxEqAbs(
             hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
             0,

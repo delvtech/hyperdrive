@@ -152,7 +152,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
         uint256 maxLong = HyperdriveUtils.calculateMaxLong(hyperdrive);
         basePaid = basePaid.normalizeToRange(
-            hyperdrive.getPoolConfig().minimumTransactionAmount,
+            hyperdrive.getPoolConfig().minimumTransactionAmount * 2,
             maxLong.min(underlyingToken.balanceOf(alice))
         );
 
@@ -214,7 +214,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         // Alice opens a long.
         uint256 maxLong = HyperdriveUtils.calculateMaxLong(hyperdrive);
         basePaid = basePaid.normalizeToRange(
-            hyperdrive.getPoolConfig().minimumTransactionAmount,
+            hyperdrive.getPoolConfig().minimumTransactionAmount * 2,
             maxLong.min(underlyingToken.balanceOf(alice))
         );
 

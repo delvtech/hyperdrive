@@ -72,6 +72,7 @@ abstract contract HyperdriveDataProvider is
                     initialSharePrice: _initialSharePrice,
                     minimumShareReserves: _minimumShareReserves,
                     minimumTransactionAmount: _minimumTransactionAmount,
+                    precisionThreshold: _precisionThreshold,
                     positionDuration: _positionDuration,
                     checkpointDuration: _checkpointDuration,
                     timeStretch: _timeStretch,
