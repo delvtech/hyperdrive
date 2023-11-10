@@ -315,6 +315,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         );
     }
 
+    /// forge-config: default.fuzz.runs = 1000
     function test_netting_fuzz(
         uint256 initialSharePrice,
         int256 variableInterest,

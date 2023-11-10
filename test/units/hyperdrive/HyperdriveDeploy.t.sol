@@ -26,29 +26,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         alice = createUser("alice");
         bob = createUser("bob");
 
-        IERC20 dai = IERC20(
-            address(0x6B175474E89094C44Da98b954EedeAC495271d0F)
-        );
-
         vm.startPrank(deployer);
 
         // Deploy the ERC4626Hyperdrive factory and deployer.
-        IERC4626 pool = IERC4626(
-            address(
-                new MockERC4626(
-                    ERC20Mintable(address(dai)),
-                    "yearn dai",
-                    "yDai",
-                    0,
-                    address(0),
-                    false
-                )
-            )
-        );
-
-        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
-                pool
-            );
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
@@ -61,13 +41,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 IHyperdrive.Fees(1e18, 1e18, 1e18),
                 defaults
             ),
-            simpleDeployer,
+            new ERC4626HyperdriveDeployer(),
             address(forwarderFactory),
             forwarderFactory.ERC20LINK_HASH(),
-            pool,
             new address[](0)
         );
-
         assertEq(factory.governance(), alice);
 
         // Bob can't change access the admin functions.

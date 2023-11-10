@@ -50,7 +50,6 @@ contract sDaiTest is ERC4626ValidationTest {
         // Interest accumulates in the dsr based on time passed.
         // This may caused insolvency if too much interest accrues as no real dai is being
         // accrued.
-
         // Note - Mainnet only address for Pot, but fine since this test explicitly uses a Mainnet fork in test
         PotLike(0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7).drip();
     }

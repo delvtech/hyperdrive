@@ -46,9 +46,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 )
             )
         );
-        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
-                pool
-            );
+        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer();
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
@@ -64,7 +62,6 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             simpleDeployer,
             address(forwarderFactory),
             forwarderFactory.ERC20LINK_HASH(),
-            pool,
             new address[](0)
         );
 
@@ -91,14 +88,19 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             updateGap: 0
         });
         address dataProvider = address(
-            new ERC4626DataProvider(config, bytes32(0), address(0), pool)
+            new ERC4626DataProvider(
+                config,
+                bytes32(0),
+                address(0),
+                address(pool)
+            )
         );
         mockHyperdrive = new MockERC4626Hyperdrive(
             config,
             dataProvider,
             bytes32(0),
             address(0),
-            pool,
+            address(pool),
             new address[](0)
         );
 
@@ -215,7 +217,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             new bytes32[](0),
             contribution,
             apr,
-            new bytes(0)
+            new bytes(0),
+            address(pool)
         );
 
         // The initial price per share is one so the LP shares will initially
@@ -230,6 +233,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
             factory,
+            hyperdrive,
             alice,
             contribution,
             apr,
@@ -266,7 +270,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             new bytes32[](0),
             contribution,
             apr,
-            new bytes(0)
+            new bytes(0),
+            address(pool)
         );
 
         // Ensure the share price is 1 after initialization.
@@ -317,7 +322,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             new bytes32[](0),
             1_000e18,
             0.05e18,
-            new bytes(0)
+            new bytes(0),
+            address(pool)
         );
         assert(
             !ERC4626DataProvider(address(mockHyperdrive)).isSweepable(
@@ -332,7 +338,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             new bytes32[](0),
             1_000e18,
             0.05e18,
-            new bytes(0)
+            new bytes(0),
+            address(pool)
         );
         assert(
             !ERC4626DataProvider(address(mockHyperdrive)).isSweepable(
@@ -368,7 +375,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                     new bytes32[](0),
                     1_000e18,
                     0.05e18,
-                    new bytes(0)
+                    new bytes(0),
+                    address(pool)
                 )
             )
         );

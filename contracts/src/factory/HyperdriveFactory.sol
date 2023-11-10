@@ -72,13 +72,13 @@ abstract contract HyperdriveFactory {
     /// @notice The fee collector used when new instances are deployed.
     address public feeCollector;
 
-    // The maximum curve fee that can be used as a factory default.
+    /// @dev The maximum curve fee that can be used as a factory default.
     uint256 internal immutable maxCurveFee;
 
-    // The maximum flat fee that can be used as a factory default.
+    /// @dev The maximum flat fee that can be used as a factory default.
     uint256 internal immutable maxFlatFee;
 
-    // The maximum governance fee that can be used as a factory default.
+    /// @dev The maximum governance fee that can be used as a factory default.
     uint256 internal immutable maxGovernanceFee;
 
     /// @dev The defaultPausers used when new instances are deployed.
@@ -98,6 +98,12 @@ abstract contract HyperdriveFactory {
         /// @dev The default addresses which will be set to have the pauser role.
         address[] defaultPausers;
     }
+
+    // @dev Array of all instances deployed by this factory.
+    address[] internal _instances;
+
+    /// @dev Mapping to check if an instance is in the _instances array.
+    mapping(address => bool) public isInstance;
 
     /// @notice Initializes the factory.
     /// @param _factoryConfig Configuration of the Hyperdrive Factory.
@@ -242,14 +248,16 @@ abstract contract HyperdriveFactory {
     /// @param _contribution Base token to call init with
     /// @param _apr The apr to call init with
     /// @param _initializeExtraData The extra data for the `initialize` call.
-    /// @return The hyperdrive address deployed
+    /// @param _pool The ERC4626 compatible yield source. TODO: Remove
+    /// @return The hyperdrive address deployed.
     function deployAndInitialize(
         IHyperdrive.PoolConfig memory _config,
         // TODO: We should use raw bytes instead of bytes32.
         bytes32[] memory _extraData,
         uint256 _contribution,
         uint256 _apr,
-        bytes memory _initializeExtraData
+        bytes memory _initializeExtraData,
+        address _pool
     ) public payable virtual returns (IHyperdrive) {
         if (msg.value > 0) {
             revert IHyperdrive.NonPayableInitialization();
@@ -270,7 +278,8 @@ abstract contract HyperdriveFactory {
             _config,
             _extraData,
             _linkerCodeHash,
-            _linkerFactory
+            _linkerFactory,
+            _pool
         );
         IHyperdrive hyperdrive = IHyperdrive(
             hyperdriveDeployer.deploy(
@@ -278,7 +287,8 @@ abstract contract HyperdriveFactory {
                 dataProvider,
                 _linkerCodeHash,
                 _linkerFactory,
-                _extraData
+                _extraData,
+                _pool
             )
         );
         isOfficial[address(hyperdrive)] = versionCounter;
@@ -291,6 +301,10 @@ abstract contract HyperdriveFactory {
             _linkerCodeHash,
             _extraData
         );
+
+        // Add the newly deployed Hyperdrive instance to the registry.
+        _instances.push(address(hyperdrive));
+        isInstance[address(hyperdrive)] = true;
 
         // Initialize the Hyperdrive instance.
         _config.baseToken.transferFrom(
@@ -333,20 +347,59 @@ abstract contract HyperdriveFactory {
     /// @notice Deploys a Hyperdrive instance with the factory's configuration.
     /// @dev This should be overrided so that the data provider corresponding
     ///      to an individual instance is used.
-    /// @param _config The configuration of the pool we are deploying
-    /// @param _extraData The extra data from the pool deployment
-    /// @param _linkerCodeHash The code hash from the multitoken deployer
-    /// @param _linkerFactory The factory of the multitoken deployer
+    /// @param _config The configuration of the pool we are deploying.
+    /// @param _extraData The extra data from the pool deployment.
+    /// @param _linkerCodeHash The code hash from the multitoken deployer.
+    /// @param _linkerFactory The factory of the multitoken deployer.
+    /// @param _pool The ERC4626 compatible yield source. TODO: Remove
+    /// @return The data provider address deployed.
     function deployDataProvider(
         IHyperdrive.PoolConfig memory _config,
         bytes32[] memory _extraData,
         bytes32 _linkerCodeHash,
-        address _linkerFactory
+        address _linkerFactory,
+        address _pool
     ) internal virtual returns (address);
 
     /// @notice Gets the default pausers.
     /// @return The default pausers.
     function getDefaultPausers() external view returns (address[] memory) {
         return _defaultPausers;
+    }
+
+    /// @notice Gets the number of instances deployed by this factory.
+    /// @return The number of instances deployed by this factory.
+    function getNumberOfInstances() external view returns (uint256) {
+        return _instances.length;
+    }
+
+    /// @notice Gets the instance at the specified index.
+    /// @param index The index of the instance to get.
+    /// @return The instance at the specified index.
+    function getInstanceAtIndex(uint256 index) external view returns (address) {
+        return _instances[index];
+    }
+
+    /// @notice Returns the _instances array according to specified indices.
+    /// @param startIndex The starting index of the instances to get.
+    /// @param endIndex The ending index of the instances to get.
+    /// @return range The resulting custom portion of the _instances array.
+    function getInstancesInRange(
+        uint256 startIndex,
+        uint256 endIndex
+    ) external view returns (address[] memory range) {
+        // If the indexes are malformed, revert.
+        if (startIndex > endIndex) {
+            revert IHyperdrive.InvalidIndexes();
+        }
+        if (endIndex > _instances.length) {
+            revert IHyperdrive.EndIndexTooLarge();
+        }
+
+        // Return the range of instances.
+        range = new address[](endIndex - startIndex + 1);
+        for (uint256 i = startIndex; i <= endIndex; i++) {
+            range[i - startIndex] = _instances[i];
+        }
     }
 }

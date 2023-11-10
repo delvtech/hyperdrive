@@ -13,7 +13,7 @@ contract MockERC4626Hyperdrive is ERC4626Hyperdrive {
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
-        IERC4626 _pool,
+        address _pool,
         address[] memory _sweepTargets
     )
         ERC4626Hyperdrive(

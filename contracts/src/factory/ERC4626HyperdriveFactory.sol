@@ -2,8 +2,6 @@
 pragma solidity 0.8.19;
 
 import { ERC4626DataProvider } from "../instances/ERC4626DataProvider.sol";
-import { IERC20 } from "../interfaces/IERC20.sol";
-import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 import { HyperdriveFactory } from "./HyperdriveFactory.sol";
@@ -16,9 +14,6 @@ import { HyperdriveFactory } from "./HyperdriveFactory.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ERC4626HyperdriveFactory is HyperdriveFactory {
-    /// @dev The address of the ERC4626 pool used in this factory.
-    IERC4626 internal immutable pool;
-
     /// @notice The sweep targets used in deployed instances. This specifies
     ///         the addresses that the fee collector can sweep to collect
     ///         incentives and redistribute them.
@@ -29,14 +24,12 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
     /// @param _deployer The contract that deploys new hyperdrive instances.
     /// @param _linkerFactory The linker factory.
     /// @param _linkerCodeHash The hash of the linker contract's constructor code.
-    /// @param _pool The ERC4626 pool.
     /// @param _sweepTargets_ The addresses that can be swept by the fee collector.
     constructor(
         FactoryConfig memory _factoryConfig,
         IHyperdriveDeployer _deployer,
         address _linkerFactory,
         bytes32 _linkerCodeHash,
-        IERC4626 _pool,
         address[] memory _sweepTargets_
     )
         HyperdriveFactory(
@@ -46,9 +39,6 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
             _linkerCodeHash
         )
     {
-        // Initialize the ERC4626 pool.
-        pool = _pool;
-
         // Initialize the default sweep targets.
         _sweepTargets = _sweepTargets_;
     }
@@ -67,12 +57,14 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
     /// @param _contribution The contribution amount.
     /// @param _apr The initial spot rate.
     /// @param _initializeExtraData The extra data for the `initialize` call.
+    /// @param _pool The ERC4626 compatible yield source.
     function deployAndInitialize(
         IHyperdrive.PoolConfig memory _config,
         bytes32[] memory, // unused
         uint256 _contribution,
         uint256 _apr,
-        bytes memory _initializeExtraData
+        bytes memory _initializeExtraData,
+        address _pool
     ) public payable override returns (IHyperdrive) {
         // Deploy and initialize the ERC4626 hyperdrive instance with the
         // default sweep targets provided as extra data.
@@ -86,7 +78,8 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
             extraData,
             _contribution,
             _apr,
-            _initializeExtraData
+            _initializeExtraData,
+            _pool
         );
 
         // Return the hyperdrive instance.
@@ -97,11 +90,13 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
     /// @param _config The configuration of the pool we are deploying
     /// @param _linkerCodeHash The code hash from the multitoken deployer
     /// @param _linkerFactory The factory of the multitoken deployer
+    /// @param _pool The ERC4626 compatible yield source.
     function deployDataProvider(
         IHyperdrive.PoolConfig memory _config,
         bytes32[] memory,
         bytes32 _linkerCodeHash,
-        address _linkerFactory
+        address _linkerFactory,
+        address _pool
     ) internal override returns (address) {
         return (
             address(
@@ -109,7 +104,7 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
                     _config,
                     _linkerCodeHash,
                     _linkerFactory,
-                    pool
+                    _pool
                 )
             )
         );
