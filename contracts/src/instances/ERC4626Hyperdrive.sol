@@ -130,7 +130,7 @@ contract ERC4626Hyperdrive is Hyperdrive {
     ///        used in this implementation are "destination" which specifies the
     ///        recipient of the withdrawal and "asBase" which determines
     ///        if the withdrawal is settled in base or vault shares.
-    /// @return amountWithdrawn The amount withdrawn from the yield source.  
+    /// @return amountWithdrawn The amount withdrawn from the yield source.
     ///         it will be in either base or shares depending on the `asBase`
     ///         option.
     function _withdraw(

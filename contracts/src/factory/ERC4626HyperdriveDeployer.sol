@@ -23,6 +23,7 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
     /// @param _linkerFactory The address of the factory which is used to deploy
     ///        the ERC20 linker contracts.
     /// @param _extraData The extra data that contains the sweep targets.
+    /// @param _pool The ERC4626 compatible yield source. TODO: Remove
     /// @return The address of the newly deployed ERC4626Hyperdrive Instance
     function deploy(
         IHyperdrive.PoolConfig memory _config,

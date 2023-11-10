@@ -39,6 +39,7 @@ contract ERC4626FactoryBaseTest is HyperdriveTest {
             initialSharePrice: 1e18,
             minimumShareReserves: 1e18,
             minimumTransactionAmount: 0.001e18,
+            precisionThreshold: 0.001e18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: HyperdriveUtils.calculateTimeStretch(APR),
