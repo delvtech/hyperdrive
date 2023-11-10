@@ -16,14 +16,18 @@ import { AssetId } from "../libraries/AssetId.sol";
 contract BondWrapper is ERC20 {
     using SafeTransferLib for ERC20;
 
-    // The multitoken of the bond
+    /// @notice The multitoken of the bond.
     IHyperdrive public immutable hyperdrive;
-    // The underlying token from the bond
+
+    /// @notice The underlying token from the bond.
     IERC20 public immutable token;
-    // The basis points [ie out of 10000] which will be minted for a bond deposit
+
+    /// @notice The basis points (i.e. out of 10000) which will be minted for a
+    ///         bond deposit.
     uint256 public immutable mintPercent;
 
-    // Store the user deposits as a mapping from user address -> asset id -> amount
+    /// @notice Store the user deposits as a mapping from user address to asset
+    ///         ID to amount.
     mapping(address user => mapping(uint256 assetId => uint256 amount))
         public deposits;
 
@@ -44,19 +48,27 @@ contract BondWrapper is ERC20 {
             revert IHyperdrive.MintPercentTooHigh();
         }
 
-        // By setting these addresses to the max uint256, attempting to execute
-        // a transfer to either of them will revert. This is a gas efficient way
-        // to prevent a common user mistake where they transfer to the token
-        // address. These values are not considered 'real' tokens and so are not
-        // included in 'total supply' which only contains minted tokens.
-        // WARN - Never allow allowances to be set for these addresses.
-        balanceOf[address(0)] = type(uint256).max;
-        balanceOf[address(this)] = type(uint256).max;
-
         // Set the immutables
         hyperdrive = _hyperdrive;
         token = _token;
         mintPercent = _mintPercent;
+    }
+
+    /// @notice Transfers bonds from the user to the recipient.
+    /// @param to The recipient of the bonds.
+    /// @param amount The amount of bonds to transfer.
+    /// @return True if the transfer succeeded.
+    function transfer(
+        address to,
+        uint256 amount
+    ) public override returns (bool) {
+        // Ensure that the recipient isn't the zero address or this address.
+        if (to == address(0) || to == address(this)) {
+            revert IHyperdrive.InvalidRecipient(to);
+        }
+
+        // Complete the transfer.
+        return super.transfer(to, amount);
     }
 
     /// @notice Transfers bonds from the user and then mints erc20 for the
