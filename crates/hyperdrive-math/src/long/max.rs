@@ -15,12 +15,12 @@ impl State {
     /// p_max = \frac{1 - \phi_f}{1 + \phi_c * \left( p_0^{-1} - 1 \right) * \left( \phi_f - 1 \right)}
     /// $$
     pub fn get_max_spot_price(&self) -> FixedPoint {
-        (fixed!(1e18) - self.flat_fee()
+        (fixed!(1e18) - self.flat_fee())
             / (fixed!(1e18)
                 + self
                     .curve_fee()
                     .mul_up(fixed!(1e18).div_up(self.get_spot_price()) - fixed!(1e18)))
-                    .mul_up(fixed!(1e18) - self.flat_fee()))
+                    .mul_up(fixed!(1e18) - self.flat_fee())
     }
 
     /// Gets the pool's solvency.
@@ -146,7 +146,7 @@ impl State {
     fn absolute_max_long(&self) -> (FixedPoint, FixedPoint) {
         // We are targeting the pool's max spot price of:
         //
-        // p_max = 1 / (1 + curveFee * (1 / p_0 - 1))
+        // p_max = (1 - flatFee) / (1 + curveFee * (1 / p_0 - 1) * (1 - flatFee))
         //
         // We can derive a formula for the target bond reserves y_t in
         // terms of the target share reserves z_t as follows:
@@ -155,13 +155,13 @@ impl State {
         //
         //                       =>
         //
-        // y_t = (mu * z_t) * (1 + curveFee * (1 / p_0 - 1)) ** (1 / t_s)
+        // y_t = (mu * z_t) * ((1 + curveFee * (1 / p_0 - 1) * (1 - flatFee))/(1 - flatFee)) ** (1 / t_s)
         //
         // We can use this formula to solve our YieldSpace invariant for z_t:
         //
         // k = (c / mu) * (mu * z_t) ** (1 - t_s) +
         //     (
-        //         (mu * z_t) * (1 + curveFee * (1 / p_0 - 1)) ** (1 / t_s)
+        //         (mu * z_t) * ((1 + curveFee * (1 / p_0 - 1) * (1 - flatFee))/(1 - flatFee)) ** (1 / t_s)
         //     ) ** (1 - t_s)
         //
         //                       =>
@@ -169,33 +169,39 @@ impl State {
         // z_t = (1 / mu) * (
         //           k / (
         //               (c / mu) +
-        //               (1 + curveFee * ((1 / p_0) - 1) ** ((1 - t_s) / t_s))
+        //               ((1 + curveFee * (1 / p_0 - 1) * (1 - flatFee))/(1 - flatFee)) ** ((1 - t_s) / t_s))
         //           )
         //       ) ** (1 / (1 - t_s))
         let inner = (self.k_down()
             / (self.share_price().div_up(self.initial_share_price())
-                + (fixed!(1e18)
-                    + self
-                        .curve_fee()
-                        .mul_up(fixed!(1e18).div_up(self.get_spot_price()) - fixed!(1e18)))
-                .pow((fixed!(1e18) - self.time_stretch()) / self.time_stretch())))
-        .pow(fixed!(1e18) / (fixed!(1e18) - self.time_stretch()));
+                + (
+                    (fixed!(1e18)
+                        + self
+                            .curve_fee()
+                            .mul_up(fixed!(1e18).div_up(self.get_spot_price()) - fixed!(1e18))
+                            .mul_up(fixed!(1e18) - self.flat_fee()))
+                    .div_up(fixed!(1e18) - self.flat_fee())
+                ).pow((fixed!(1e18) - self.time_stretch()).div_down(self.time_stretch()))))
+        .pow(fixed!(1e18).div_down(fixed!(1e18) - self.time_stretch()));
         let target_share_reserves = inner / self.initial_share_price();
 
         // Now that we have the target share reserves, we can calculate the
         // target bond reserves using the formula:
         //
-        // y_t = (mu * z_t) * (1 + curveFee * (1 / p_0 - 1)) ** (1 / t_s)
-        let target_bond_reserves = (fixed!(1e18)
-            + self.curve_fee() * (fixed!(1e18) / self.get_spot_price() - fixed!(1e18)))
-        .pow(fixed!(1e18).div_up(self.time_stretch()))
+        // y_t = (mu * z_t) * ((1 + curveFee * (1 / p_0 - 1) * (1 - flatFee))/(1 - flatFee)) ** (1 / t_s)
+        let target_bond_reserves = (
+            (fixed!(1e18)
+            + self.curve_fee().mul_down(fixed!(1e18).div_down(self.get_spot_price()) - fixed!(1e18))
+            .mul_down(fixed!(1e18) - self.flat_fee()))
+            ).div_down(fixed!(1e18) - self.flat_fee()
+        ).pow(fixed!(1e18).div_up(self.time_stretch()))
             * inner;
 
         // The absolute max base amount is given by:
         //
         // absoluteMaxBaseAmount = c * (z_t - z)
         let absolute_max_base_amount =
-            (target_share_reserves - self.effective_share_reserves()) * self.share_price();
+            (target_share_reserves - self.effective_share_reserves()).mul_down(self.share_price());
 
         // The absolute max bond amount is given by:
         //
@@ -480,6 +486,7 @@ mod tests {
                         initial_share_price: state.config.initial_share_price,
                         minimum_share_reserves: state.config.minimum_share_reserves,
                         curve_fee: state.config.fees.curve,
+                        flat_fee: state.config.fees.flat,
                         governance_fee: state.config.fees.governance,
                     },
                     get_effective_share_reserves(
@@ -543,6 +550,7 @@ mod tests {
                         initial_share_price: state.config.initial_share_price,
                         minimum_share_reserves: state.config.minimum_share_reserves,
                         curve_fee: state.config.fees.curve,
+                        flat_fee: state.config.fees.flat,
                         governance_fee: state.config.fees.governance,
                     },
                     checkpoint_exposure,

@@ -122,8 +122,10 @@ library HyperdriveMath {
     ) internal pure returns (uint256) {
         return
             (ONE - _flatFee).divDown(
-                ONE + _curveFee.mulUp(ONE.divUp(_startingSpotPrice) - ONE)
-                    .mulUp(ONE - _flatFee)
+                ONE +
+                    _curveFee.mulUp(ONE.divUp(_startingSpotPrice) - ONE).mulUp(
+                        ONE - _flatFee
+                    )
             );
     }
 
