@@ -57,6 +57,7 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
     /// @param _contribution The contribution amount.
     /// @param _apr The initial spot rate.
     /// @param _initializeExtraData The extra data for the `initialize` call.
+    /// @param _pool The ERC4626 compatible yield source.
     function deployAndInitialize(
         IHyperdrive.PoolConfig memory _config,
         bytes32[] memory, // unused
@@ -89,6 +90,7 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
     /// @param _config The configuration of the pool we are deploying
     /// @param _linkerCodeHash The code hash from the multitoken deployer
     /// @param _linkerFactory The factory of the multitoken deployer
+    /// @param _pool The ERC4626 compatible yield source.
     function deployDataProvider(
         IHyperdrive.PoolConfig memory _config,
         bytes32[] memory,

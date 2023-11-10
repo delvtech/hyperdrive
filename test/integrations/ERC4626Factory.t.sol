@@ -188,7 +188,7 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
         assertEq(instances.length, 1);
         assertEq(instances[0], address(hyperdrive1));
 
-        // 2. Charlie deploys factory with sDAI as yield source
+        // 2. Charlie deploys factory with sDAI as yield source.
 
         deal(address(dai), charlie, CONTRIBUTION);
 
@@ -236,7 +236,7 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
         assertEq(instances[0], address(hyperdrive1));
         assertEq(instances[1], address(hyperdrive2));
 
-        // 3. Dan deploys factory with sDAI as yield source
+        // 3. Dan deploys factory with sDAI as yield source.
 
         deal(address(dai), dan, CONTRIBUTION);
 

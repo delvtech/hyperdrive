@@ -248,7 +248,8 @@ abstract contract HyperdriveFactory {
     /// @param _contribution Base token to call init with
     /// @param _apr The apr to call init with
     /// @param _initializeExtraData The extra data for the `initialize` call.
-    /// @return The hyperdrive address deployed
+    /// @param _pool The ERC4626 compatible yield source. TODO: Remove
+    /// @return The hyperdrive address deployed.
     function deployAndInitialize(
         IHyperdrive.PoolConfig memory _config,
         // TODO: We should use raw bytes instead of bytes32.
@@ -346,10 +347,12 @@ abstract contract HyperdriveFactory {
     /// @notice Deploys a Hyperdrive instance with the factory's configuration.
     /// @dev This should be overrided so that the data provider corresponding
     ///      to an individual instance is used.
-    /// @param _config The configuration of the pool we are deploying
-    /// @param _extraData The extra data from the pool deployment
-    /// @param _linkerCodeHash The code hash from the multitoken deployer
-    /// @param _linkerFactory The factory of the multitoken deployer
+    /// @param _config The configuration of the pool we are deploying.
+    /// @param _extraData The extra data from the pool deployment.
+    /// @param _linkerCodeHash The code hash from the multitoken deployer.
+    /// @param _linkerFactory The factory of the multitoken deployer.
+    /// @param _pool The ERC4626 compatible yield source. TODO: Remove
+    /// @return The data provider address deployed.
     function deployDataProvider(
         IHyperdrive.PoolConfig memory _config,
         bytes32[] memory _extraData,
@@ -385,9 +388,15 @@ abstract contract HyperdriveFactory {
         uint256 startIndex,
         uint256 endIndex
     ) external view returns (address[] memory range) {
-        if (startIndex > endIndex) revert IHyperdrive.InvalidIndexes();
-        if (endIndex > _instances.length) revert IHyperdrive.EndIndexTooLarge();
+        // If the indexes are malformed, revert.
+        if (startIndex > endIndex) {
+            revert IHyperdrive.InvalidIndexes();
+        }
+        if (endIndex > _instances.length) {
+            revert IHyperdrive.EndIndexTooLarge();
+        }
 
+        // Return the range of instances.
         range = new address[](endIndex - startIndex + 1);
         for (uint256 i = startIndex; i <= endIndex; i++) {
             range[i - startIndex] = _instances[i];
