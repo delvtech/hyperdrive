@@ -255,8 +255,8 @@ abstract contract HyperdriveTarget0 is
         );
     }
 
-    /// @notice Gets info about the fees presently accrued by the pool
-    /// @return Governance fees denominated in shares yet to be collected
+    /// @notice Gets info about the fees presently accrued by the pool.
+    /// @return Governance fees denominated in shares yet to be collected.
     function getUncollectedGovernanceFees() external view returns (uint256) {
         _revert(abi.encode(_governanceFeesAccrued));
     }
@@ -273,14 +273,14 @@ abstract contract HyperdriveTarget0 is
 
     /// @notice Allows plugin data libs to provide getters or other complex
     ///         logic instead of the main.
-    /// @param _slots The storage slots the caller wants the data from
-    /// @return A raw array of loaded data
+    /// @param _slots The storage slots the caller wants the data from.
+    /// @return A raw array of loaded data.
     function load(
         uint256[] calldata _slots
     ) external view returns (bytes32[] memory) {
         bytes32[] memory loaded = new bytes32[](_slots.length);
 
-        // Iterate on requested loads and then do them
+        // Iterate on requested loads and then do them.
         for (uint256 i = 0; i < _slots.length; ) {
             uint256 slot = _slots[i];
             bytes32 data;

@@ -32,7 +32,7 @@ contract ForwarderFactory is IForwarderFactory {
     /// @param __token The multitoken which the forwarder should link to.
     /// @param __tokenId The id of the sub token from the multitoken which we are
     ///        creating an interface for.
-    /// @return Returns the address of the deployed forwarder
+    /// @return Returns the address of the deployed forwarder.
     function create(
         IMultiToken __token,
         uint256 __tokenId
