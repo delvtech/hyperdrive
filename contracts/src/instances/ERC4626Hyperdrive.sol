@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import { ERC20 } from "solmate/tokens/ERC20.sol";
-import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 import { Hyperdrive } from "../external/Hyperdrive.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IERC4626 } from "../interfaces/IERC4626.sol";
@@ -19,7 +18,6 @@ import { ERC4626Base } from "./ERC4626Base.sol";
 ///                    particular legal or regulatory significance.
 contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
     using FixedPointMath for uint256;
-    using SafeTransferLib for IERC20;
 
     /// @notice Instantiates Hyperdrive with a ERC4626 vault as the yield source.
     /// @param _config The configuration of the Hyperdrive pool.

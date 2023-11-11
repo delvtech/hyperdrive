@@ -14,6 +14,8 @@ import { AssetId } from "../libraries/AssetId.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract BondWrapper is ERC20 {
+    using SafeTransferLib for ERC20;
+
     // The multitoken of the bond
     IHyperdrive public immutable hyperdrive;
     // The underlying token from the bond
@@ -152,11 +154,7 @@ contract BondWrapper is ERC20 {
         if (userFunds < minOutput) revert IHyperdrive.OutputLimit();
 
         // Transfer the released funds to the user
-        SafeTransferLib.safeTransfer(
-            ERC20(address(token)),
-            destination,
-            userFunds
-        );
+        ERC20(address(token)).safeTransfer(destination, userFunds);
     }
 
     /// @notice Sells all assets from the contract if they are matured, has no affect if
@@ -195,7 +193,7 @@ contract BondWrapper is ERC20 {
         _burn(msg.sender, amount);
 
         // Transfer the released funds to the user
-        SafeTransferLib.safeTransfer(ERC20(address(token)), msg.sender, amount);
+        ERC20(address(token)).safeTransfer(msg.sender, amount);
     }
 
     /// @notice Calls both force close and redeem to enable easy liquidation of a user account

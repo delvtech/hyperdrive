@@ -18,7 +18,7 @@ import { ERC4626Base } from "./ERC4626Base.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ERC4626Target1 is HyperdriveTarget1, ERC4626Base {
-    using SafeTransferLib for IERC20;
+    using SafeTransferLib for ERC20;
 
     /// @notice Initializes the target1 contract.
     /// @param _config The configuration of the Hyperdrive pool.
@@ -53,10 +53,6 @@ contract ERC4626Target1 is HyperdriveTarget1, ERC4626Base {
 
         // Transfer the entire balance of the sweep target to the fee collector.
         uint256 balance = _target.balanceOf(address(this));
-        SafeTransferLib.safeTransfer(
-            ERC20(address(_target)),
-            _feeCollector,
-            balance
-        );
+        ERC20(address(_target)).safeTransfer(_feeCollector, balance);
     }
 }

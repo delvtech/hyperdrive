@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
-import { IERC20 } from "../interfaces/IERC20.sol";
 import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IERC4626Hyperdrive } from "../interfaces/IERC4626Hyperdrive.sol";
@@ -18,7 +17,7 @@ import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 ///                    particular legal or regulatory significance.
 abstract contract ERC4626Base is HyperdriveBase {
     using FixedPointMath for uint256;
-    using SafeTransferLib for IERC20;
+    using SafeTransferLib for ERC20;
 
     /// @dev The yield source contract for this hyperdrive.
     IERC4626 internal immutable _pool;
@@ -52,8 +51,7 @@ abstract contract ERC4626Base is HyperdriveBase {
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
         if (_options.asBase) {
             // Take custody of the deposit in base.
-            SafeTransferLib.safeTransferFrom(
-                ERC20(address(_baseToken)),
+            ERC20(address(_baseToken)).safeTransferFrom(
                 msg.sender,
                 address(this),
                 _amount
@@ -69,8 +67,7 @@ abstract contract ERC4626Base is HyperdriveBase {
             sharesMinted = _amount;
 
             // Take custody of the deposit in vault shares.
-            SafeTransferLib.safeTransferFrom(
-                ERC20(address(_pool)),
+            ERC20(address(_pool)).safeTransferFrom(
                 msg.sender,
                 address(this),
                 sharesMinted
@@ -104,11 +101,7 @@ abstract contract ERC4626Base is HyperdriveBase {
             );
         } else {
             // Transfer vault shares to the destination.
-            SafeTransferLib.safeTransfer(
-                ERC20(address(_pool)),
-                _options.destination,
-                _shares
-            );
+            ERC20(address(_pool)).safeTransfer(_options.destination, _shares);
             amountWithdrawn = _shares;
         }
     }
