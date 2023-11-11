@@ -5,7 +5,8 @@ import { Script } from "forge-std/Script.sol";
 import { stdJson } from "forge-std/StdJson.sol";
 import { MultiRolesAuthority } from "solmate/auth/authorities/MultiRolesAuthority.sol";
 import { ERC4626HyperdriveDeployer } from "contracts/src/factory/ERC4626HyperdriveDeployer.sol";
-import { ERC4626HyperdriveFactory } from "contracts/src/factory/ERC4626HyperdriveFactory.sol";
+import { ERC4626DataProviderDeployer } from "contracts/src/factory/ERC4626DataProviderDeployer.sol";
+import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
@@ -181,7 +182,7 @@ contract DevnetMigration is Script {
         }
 
         // Deploy the Hyperdrive factory.
-        ERC4626HyperdriveFactory factory;
+        HyperdriveFactory factory;
         {
             address[] memory defaultPausers = new address[](1);
             defaultPausers[0] = config.admin;
@@ -203,13 +204,10 @@ contract DevnetMigration is Script {
                     defaultPausers: defaultPausers
                 });
             ForwarderFactory forwarderFactory = new ForwarderFactory();
-            ERC4626HyperdriveDeployer deployer = new ERC4626HyperdriveDeployer();
-            factory = new ERC4626HyperdriveFactory(
+            factory = new HyperdriveFactory(
                 factoryConfig,
-                deployer,
                 address(forwarderFactory),
-                forwarderFactory.ERC20LINK_HASH(),
-                new address[](0)
+                forwarderFactory.ERC20LINK_HASH()
             );
         }
 
@@ -244,11 +242,11 @@ contract DevnetMigration is Script {
             });
             hyperdrive = factory.deployAndInitialize(
                 poolConfig,
-                new bytes32[](0),
+                abi.encode(address(pool), new address[](0)),
                 contribution,
                 fixedRate,
                 new bytes(0),
-                address(pool)
+                address(new ERC4626HyperdriveDeployer())
             );
         }
 

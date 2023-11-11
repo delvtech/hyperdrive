@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { ERC4626HyperdriveDeployer } from "contracts/src/factory/ERC4626HyperdriveDeployer.sol";
-import { ERC4626HyperdriveFactory } from "contracts/src/factory/ERC4626HyperdriveFactory.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
@@ -12,10 +10,10 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { MockERC4626 } from "contracts/test/MockERC4626.sol";
+import { MockERC4626, ERC20 } from "contracts/test/MockERC4626.sol";
 import { MockERC4626Hyperdrive } from "contracts/test/MockERC4626Hyperdrive.sol";
-import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 
 contract HyperdriveFactoryTest is HyperdriveTest {
     function test_hyperdrive_factory_admin_functions()
@@ -28,11 +26,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
         vm.startPrank(deployer);
 
-        // Deploy the ERC4626Hyperdrive factory and deployer.
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
-        ERC4626HyperdriveFactory factory = new ERC4626HyperdriveFactory(
+        HyperdriveFactory factory = new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig(
                 alice,
                 bob,
@@ -41,11 +38,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 IHyperdrive.Fees(1e18, 1e18, 1e18),
                 defaults
             ),
-            new ERC4626HyperdriveDeployer(),
             address(forwarderFactory),
-            forwarderFactory.ERC20LINK_HASH(),
-            new address[](0)
+            forwarderFactory.ERC20LINK_HASH()
         );
+
         assertEq(factory.governance(), alice);
 
         // Bob can't change access the admin functions.
@@ -53,8 +49,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
         factory.updateGovernance(bob);
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
-        factory.updateImplementation(IHyperdriveDeployer(bob));
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
         factory.updateHyperdriveGovernance(bob);
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
@@ -69,18 +63,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         factory.updateDefaultPausers(defaults);
         vm.stopPrank();
 
-        // Alice can change governance and then bob can change implementation
+        // Alice can change governance
         vm.startPrank(alice);
         factory.updateGovernance(bob);
         assertEq(factory.governance(), bob);
         vm.stopPrank();
-        vm.startPrank(bob);
-        factory.updateImplementation(IHyperdriveDeployer(bob));
-        uint256 counter = factory.versionCounter();
-        assertEq(counter, 2);
-        assertEq(address(factory.hyperdriveDeployer()), bob);
 
-        // Bob can change the other values as well.
+        // Bob can change the other values.
+        vm.startPrank(bob);
         factory.updateHyperdriveGovernance(alice);
         assertEq(factory.hyperdriveGovernance(), alice);
         factory.updateLinkerFactory(address(uint160(0xdeadbeef)));

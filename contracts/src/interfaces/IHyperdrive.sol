@@ -267,6 +267,9 @@ interface IHyperdrive is
     error MinimumSharePrice();
     error MinimumTransactionAmount();
     error ZeroLpTotalSupply();
+    error InvalidIndexes();
+    error EndIndexTooLarge();
+    error InvalidDeployer();
 
     /// ############
     /// ### TWAP ###
@@ -289,8 +292,6 @@ interface IHyperdrive is
     error MaxFeeTooHigh();
     error FeeTooHigh();
     error NonPayableInitialization();
-    error InvalidIndexes();
-    error EndIndexTooLarge();
 
     /// ######################
     /// ### ERC20Forwarder ###
