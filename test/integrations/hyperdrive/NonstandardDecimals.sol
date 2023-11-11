@@ -438,7 +438,10 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         {
             uint256 maxShort = HyperdriveUtils.calculateMaxShort(hyperdrive);
             shortAmount = shortAmount.normalizeToRange(
-                minimumTransactionAmount,
+                // NOTE: We multiply the lower bound by two to avoid situations
+                // where we are trying to open a tiny short position that ends
+                // up with 1 wei of negative interest due to rounding.
+                2 * minimumTransactionAmount,
                 maxShort - minimumTransactionAmount
             );
 

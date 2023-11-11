@@ -281,7 +281,7 @@ impl State {
     ///
     /// We debit and negative checkpoint exposure from $e_0$ since the
     /// global exposure doesn't take into account the negative exposure
-    /// from unnetted shorts in the checkpoint. These forumulas allow us
+    /// from non-netted shorts in the checkpoint. These forumulas allow us
     /// to calculate the approximate ending solvency of:
     ///
     /// $$

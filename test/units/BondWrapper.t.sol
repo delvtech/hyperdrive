@@ -3,22 +3,19 @@ pragma solidity ^0.8.18;
 
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockBondWrapper } from "contracts/test/MockBondWrapper.sol";
 import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
-import { MultiTokenDataProvider } from "contracts/src/token/MultiTokenDataProvider.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
 
 contract __MockHyperDrive__ is MockMultiToken {
     uint256 __closeLongReturnValue__;
 
     constructor(
-        address _dataProvider,
         address forwarderFactory
-    ) MockMultiToken(_dataProvider, bytes32(0), forwarderFactory) {}
+    ) MockMultiToken(bytes32(0), forwarderFactory) {}
 
     event __CloseLong__(
         uint256 indexed _maturityTime,
@@ -60,23 +57,12 @@ contract BondWrapperTest is BaseTest {
         super.setUp();
         ForwarderFactory forwarderFactory = new ForwarderFactory();
 
-        address dataProvider = address(
-            new MultiTokenDataProvider(bytes32(0), address(forwarderFactory))
-        );
-
         __MockHyperDrive__ hyperdrive = new __MockHyperDrive__(
-            dataProvider,
             address(forwarderFactory)
         );
 
         multiToken = IMockMultiToken(
-            address(
-                new MockMultiToken(
-                    dataProvider,
-                    bytes32(0),
-                    address(forwarderFactory)
-                )
-            )
+            address(new MockMultiToken(bytes32(0), address(forwarderFactory)))
         );
         baseToken = new ERC20Mintable("Base", "BASE", 18, address(0), false);
 
@@ -99,7 +85,10 @@ contract BondWrapperTest is BaseTest {
 
         // Ensure that the bondWrapper contract has been approved by the user
         vm.startPrank(alice);
-        hyperdrive.setApprovalForAll(address(bondWrapper), true);
+        IMockMultiToken(address(hyperdrive)).setApprovalForAll(
+            address(bondWrapper),
+            true
+        );
         vm.stopPrank();
     }
 
@@ -188,16 +177,16 @@ contract BondWrapperTest is BaseTest {
     function test_sweepAndRedeem_inputLengthMismatch() external {
         vm.startPrank(alice);
 
-        // maturityTimes.length > extraDatas.length
+        // maturityTimes.length > extraData.length
         uint256[] memory maturityTimes = new uint256[](2);
-        bytes[] memory extraDatas = new bytes[](1);
+        bytes[] memory extraData = new bytes[](1);
         vm.expectRevert(IHyperdrive.InputLengthMismatch.selector);
-        bondWrapper.sweepAndRedeem(maturityTimes, 10e18, extraDatas);
+        bondWrapper.sweepAndRedeem(maturityTimes, 10e18, extraData);
 
-        // maturityTimes.length < extraDatas.length
+        // maturityTimes.length < extraData.length
         maturityTimes = new uint256[](1);
-        extraDatas = new bytes[](2);
+        extraData = new bytes[](2);
         vm.expectRevert(IHyperdrive.InputLengthMismatch.selector);
-        bondWrapper.sweepAndRedeem(maturityTimes, 10e18, extraDatas);
+        bondWrapper.sweepAndRedeem(maturityTimes, 10e18, extraData);
     }
 }

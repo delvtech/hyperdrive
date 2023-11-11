@@ -565,13 +565,13 @@ library HyperdriveMath {
 
     /// @dev Calculates the proceeds in shares of closing a short position. This
     ///      takes into account the trading profits, the interest that was
-    ///      earned by the short, and the amount of margin that was released
-    ///      by closing the short. The math for the short's proceeds in base is
-    ///      given by:
+    ///      earned by the short, the flat fee the short pays, and the amount of
+    ///      margin that was released by closing the short. The math for the
+    ///      short's proceeds in base is given by:
     ///
-    ///      proceeds = dy - c * dz + (c1 - c0) * (dy / c0)
-    ///               = dy - c * dz + (c1 / c0) * dy - dy
-    ///               = (c1 / c0) * dy - c * dz
+    ///      proceeds = (1 + flat_fee) * dy - c * dz + (c1 - c0) * (dy / c0)
+    ///               = (1 + flat_fee) * dy - c * dz + (c1 / c0) * dy - dy
+    ///               = (c1 / c0 + flat_fee) * dy - c * dz
     ///
     ///      We convert the proceeds to shares by dividing by the current share
     ///      price. In the event that the interest is negative and outweighs the
@@ -613,37 +613,6 @@ library HyperdriveMath {
             shareProceeds = bondFactor - _shareAmount;
         }
         return shareProceeds;
-    }
-
-    /// @dev Calculates the interest in shares earned by a short position. The
-    ///      math for the short's interest in shares is given by:
-    ///
-    ///      interest = ((c1 / c0 - 1) * dy) / c
-    ///               = (((c1 - c0) / c0) * dy) / c
-    ///               = ((c1 - c0) / (c0 * c)) * dy
-    ///
-    ///      In the event that the interest is negative, we mark the interest
-    ///      to zero.
-    /// @param _bondAmount The amount of bonds underlying the closed short.
-    /// @param _openSharePrice The share price at the short's open.
-    /// @param _closeSharePrice The share price at the short's close.
-    /// @param _sharePrice The current share price.
-    /// @return shareInterest The short interest in shares.
-    function calculateShortInterest(
-        uint256 _bondAmount,
-        uint256 _openSharePrice,
-        uint256 _closeSharePrice,
-        uint256 _sharePrice
-    ) internal pure returns (uint256 shareInterest) {
-        // If the interest is negative, we mark it to zero.
-        if (_closeSharePrice > _openSharePrice) {
-            // interest = dy * ((c1 - c0) / (c0 * c))
-            shareInterest = _bondAmount.mulDivDown(
-                _closeSharePrice - _openSharePrice,
-                // We round up here do avoid overestimating the share interest.
-                _openSharePrice.mulUp(_sharePrice)
-            );
-        }
     }
 
     /// @dev Calculates the effective share reserves. The effective share

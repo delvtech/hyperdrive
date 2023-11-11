@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { AssetId } from "../libraries/AssetId.sol";
+import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
+import { SafeCast } from "../libraries/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
-import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
-import { IHyperdriveWrite } from "./interfaces/IHyperdriveWrite.sol";
-import { AssetId } from "./libraries/AssetId.sol";
-import { FixedPointMath } from "./libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
-import { SafeCast } from "./libraries/SafeCast.sol";
 
 /// @author DELV
 /// @title HyperdriveShort
@@ -15,13 +14,13 @@ import { SafeCast } from "./libraries/SafeCast.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
+abstract contract HyperdriveShort is HyperdriveLP {
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;
     using SafeCast for int256;
 
-    /// @notice Opens a short position.
+    /// @dev Opens a short position.
     /// @param _bondAmount The amount of bonds to short.
     /// @param _maxDeposit The most the user expects to deposit for this trade.
     /// @param _minSharePrice The minium share price at which to open the long.
@@ -30,12 +29,12 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
     /// @param _options The options that configure how the trade is settled.
     /// @return The maturity time of the short.
     /// @return The amount the user deposited for this trade.
-    function openShort(
+    function _openShort(
         uint256 _bondAmount,
         uint256 _maxDeposit,
         uint256 _minSharePrice,
         IHyperdrive.Options calldata _options
-    ) external payable nonReentrant isNotPaused returns (uint256, uint256) {
+    ) internal nonReentrant isNotPaused returns (uint256, uint256) {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
         if (_bondAmount < _minimumTransactionAmount) {
@@ -128,13 +127,13 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
     /// @param _bondAmount The amount of shorts to close.
     /// @param _minOutput The minimum output of this trade.
     /// @param _options The options that configure how the trade is settled.
-    /// @return The amount of base tokens produced by closing this short
-    function closeShort(
+    /// @return The amount of base tokens produced by closing this short.
+    function _closeShort(
         uint256 _maturityTime,
         uint256 _bondAmount,
         uint256 _minOutput,
         IHyperdrive.Options calldata _options
-    ) external nonReentrant returns (uint256) {
+    ) internal nonReentrant returns (uint256) {
         if (_bondAmount < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
@@ -341,25 +340,23 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         int256 _shareAdjustmentDelta,
         uint256 _maturityTime
     ) internal {
-        {
-            // Update the short average maturity time.
-            uint128 shortsOutstanding_ = _marketState.shortsOutstanding;
-            _marketState.shortAverageMaturityTime = uint256(
-                _marketState.shortAverageMaturityTime
+        // Update the short average maturity time.
+        uint128 shortsOutstanding_ = _marketState.shortsOutstanding;
+        _marketState.shortAverageMaturityTime = uint256(
+            _marketState.shortAverageMaturityTime
+        )
+            .updateWeightedAverage(
+                shortsOutstanding_,
+                _maturityTime * 1e18, // scale up to fixed point scale
+                _bondAmount,
+                false
             )
-                .updateWeightedAverage(
-                    shortsOutstanding_,
-                    _maturityTime * 1e18, // scale up to fixed point scale
-                    _bondAmount,
-                    false
-                )
-                .toUint128();
+            .toUint128();
 
-            // Decrease the amount of shorts outstanding.
-            _marketState.shortsOutstanding =
-                shortsOutstanding_ -
-                _bondAmount.toUint128();
-        }
+        // Decrease the amount of shorts outstanding.
+        _marketState.shortsOutstanding =
+            shortsOutstanding_ -
+            _bondAmount.toUint128();
 
         // Update the reserves and the share adjustment.
         _marketState.shareReserves += _shareReservesDelta.toUint128();
@@ -381,6 +378,7 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         uint256 _openSharePrice
     )
         internal
+        view
         returns (
             uint256 baseDeposit,
             uint256 shareReservesDelta,
@@ -406,20 +404,16 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             revert IHyperdrive.NegativeInterest();
         }
 
-        // Record an oracle update with the pre-trade spot price if enough time
-        // has passed since the last oracle update.
+        // Calculate the fees charged to the user (totalCurveFee) and the portion
+        // of those fees that are paid to governance (totalGovernanceFee).
+        uint256 curveFee;
+        uint256 governanceCurveFee;
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
             _effectiveShareReserves(),
             _marketState.bondReserves,
             _initialSharePrice,
             _timeStretch
         );
-        recordPrice(spotPrice);
-
-        // Calculate the fees charged to the user (totalCurveFee) and the portion
-        // of those fees that are paid to governance (totalGovernanceFee).
-        uint256 curveFee;
-        uint256 governanceCurveFee;
         (
             curveFee, // flatFee
             ,
@@ -429,7 +423,7 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
 
         ) = _calculateFeesGivenBonds(
             _bondAmount,
-            FixedPointMath.ONE_18, // shorts are opened at the beginning of the term
+            ONE, // shorts are opened at the beginning of the term
             spotPrice,
             _sharePrice
         );
@@ -490,6 +484,7 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         uint256 _maturityTime
     )
         internal
+        view
         returns (
             uint256 bondReservesDelta,
             uint256 shareProceeds,
@@ -545,9 +540,6 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             ) {
                 revert IHyperdrive.NegativeInterest();
             }
-
-            // Record an oracle update if enough time has elapsed.
-            recordPrice(spotPrice);
 
             // Calculate the fees charged to the user (totalCurveFee and
             // totalFlatFee) and the portion of those fees that are paid to

@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { ERC4626DataProvider } from "../instances/ERC4626DataProvider.sol";
+import { ERC4626Target0 } from "../instances/ERC4626Target0.sol";
+import { ERC4626Target1 } from "../instances/ERC4626Target1.sol";
+import { IERC20 } from "../interfaces/IERC20.sol";
+import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 import { HyperdriveFactory } from "./HyperdriveFactory.sol";
@@ -20,36 +23,23 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
     address[] internal _sweepTargets;
 
     /// @notice Initializes the factory.
-    /// @param _factoryConfig The variables that configure the factory;
-    /// @param _deployer The contract that deploys new hyperdrive instances.
-    /// @param _linkerFactory The linker factory.
-    /// @param _linkerCodeHash The hash of the linker contract's constructor code.
-    /// @param _sweepTargets_ The addresses that can be swept by the fee collector.
+    /// @param _factoryConfig The variables that configure the factory.
+    /// @param __sweepTargets The addresses that can be swept by the fee collector.
     constructor(
         FactoryConfig memory _factoryConfig,
-        IHyperdriveDeployer _deployer,
-        address _linkerFactory,
-        bytes32 _linkerCodeHash,
-        address[] memory _sweepTargets_
-    )
-        HyperdriveFactory(
-            _factoryConfig,
-            _deployer,
-            _linkerFactory,
-            _linkerCodeHash
-        )
-    {
+        address[] memory __sweepTargets
+    ) HyperdriveFactory(_factoryConfig) {
         // Initialize the default sweep targets.
-        _sweepTargets = _sweepTargets_;
+        _sweepTargets = __sweepTargets;
     }
 
     /// @notice Allows governance to change the sweep targets used in deployed
     ///         instances.
-    /// @param _sweepTargets_ The new sweep targets.
+    /// @param __sweepTargets The new sweep targets.
     function updateSweepTargets(
-        address[] calldata _sweepTargets_
+        address[] calldata __sweepTargets
     ) external onlyGovernance {
-        _sweepTargets = _sweepTargets_;
+        _sweepTargets = __sweepTargets;
     }
 
     /// @notice This deploys and initializes a new ERC4626Hyperdrive instance.
@@ -60,10 +50,10 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
     /// @param _pool The ERC4626 compatible yield source.
     function deployAndInitialize(
         IHyperdrive.PoolConfig memory _config,
-        bytes32[] memory, // unused
         uint256 _contribution,
         uint256 _apr,
         bytes memory _initializeExtraData,
+        bytes32[] memory, // unused
         address _pool
     ) public payable override returns (IHyperdrive) {
         // Deploy and initialize the ERC4626 hyperdrive instance with the
@@ -75,39 +65,15 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
         }
         IHyperdrive hyperdrive = super.deployAndInitialize(
             _config,
-            extraData,
             _contribution,
             _apr,
             _initializeExtraData,
+            extraData,
             _pool
         );
 
         // Return the hyperdrive instance.
         return hyperdrive;
-    }
-
-    /// @notice This deploys a data provider for the ERC4626 hyperdrive instance
-    /// @param _config The configuration of the pool we are deploying
-    /// @param _linkerCodeHash The code hash from the multitoken deployer
-    /// @param _linkerFactory The factory of the multitoken deployer
-    /// @param _pool The ERC4626 compatible yield source.
-    function deployDataProvider(
-        IHyperdrive.PoolConfig memory _config,
-        bytes32[] memory,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory,
-        address _pool
-    ) internal override returns (address) {
-        return (
-            address(
-                new ERC4626DataProvider(
-                    _config,
-                    _linkerCodeHash,
-                    _linkerFactory,
-                    _pool
-                )
-            )
-        );
     }
 
     /// @notice Gets the sweep targets.

@@ -63,7 +63,7 @@ library YieldSpaceMath {
 
         // NOTE: We round _y up to make the rhs of the equation larger.
         //
-        // k - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
+        // (k - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t))
         uint256 _y = k - z;
         if (_y >= ONE) {
             // Rounding up the exponent results in a larger result.
@@ -73,7 +73,7 @@ library YieldSpaceMath {
             _y = _y.pow(ONE.divDown(t));
         }
 
-        // Δy = y - (k - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
+        // Δy = y - (k - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t))
         return y - _y;
     }
 

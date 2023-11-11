@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { ERC4626HyperdriveDeployer } from "contracts/src/factory/ERC4626HyperdriveDeployer.sol";
 import { ERC4626HyperdriveFactory } from "contracts/src/factory/ERC4626HyperdriveFactory.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { ERC4626DataProvider } from "contracts/src/instances/ERC4626DataProvider.sol";
+import { ERC4626Target0 } from "contracts/src/instances/ERC4626Target0.sol";
+import { ERC4626Target1 } from "contracts/src/instances/ERC4626Target1.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
+import { IERC4626Hyperdrive } from "contracts/src/interfaces/IERC4626Hyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
+import { ERC4626HyperdriveDeployer } from "contracts/src/instances/ERC4626HyperdriveDeployer.sol";
+import { ERC4626Target0Deployer } from "contracts/src/instances/ERC4626Target0Deployer.sol";
+import { ERC4626Target1Deployer } from "contracts/src/instances/ERC4626Target1Deployer.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockERC4626 } from "contracts/test/MockERC4626.sol";
@@ -46,22 +50,23 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 )
             )
         );
-        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer();
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
         factory = new ERC4626HyperdriveFactory(
-            HyperdriveFactory.FactoryConfig(
-                alice,
-                bob,
-                bob,
-                IHyperdrive.Fees(0, 0, 0),
-                IHyperdrive.Fees(0, 0, 0),
-                defaults
-            ),
-            simpleDeployer,
-            address(forwarderFactory),
-            forwarderFactory.ERC20LINK_HASH(),
+            HyperdriveFactory.FactoryConfig({
+                governance: alice,
+                hyperdriveGovernance: bob,
+                feeCollector: bob,
+                defaultPausers: defaults,
+                fees: IHyperdrive.Fees(0, 0, 0),
+                maxFees: IHyperdrive.Fees(0, 0, 0),
+                hyperdriveDeployer: new ERC4626HyperdriveDeployer(),
+                target0Deployer: new ERC4626Target0Deployer(),
+                target1Deployer: new ERC4626Target1Deployer(),
+                linkerFactory: address(forwarderFactory),
+                linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
+            }),
             new address[](0)
         );
 
@@ -72,35 +77,26 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // Deploy a MockHyperdrive instance.
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
-            initialSharePrice: FixedPointMath.ONE_18,
-            minimumShareReserves: FixedPointMath.ONE_18,
+            linkerFactory: address(0),
+            linkerCodeHash: bytes32(0),
+            initialSharePrice: ONE,
+            minimumShareReserves: ONE,
             minimumTransactionAmount: 0.001e18,
             precisionThreshold: PRECISION_THRESHOLD,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
-            timeStretch: FixedPointMath.ONE_18.divDown(
-                22.186877016851916266e18
-            ),
+            timeStretch: ONE.divDown(22.186877016851916266e18),
             governance: alice,
             feeCollector: bob,
-            fees: IHyperdrive.Fees(0, 0, 0),
-            oracleSize: 2,
-            updateGap: 0
+            fees: IHyperdrive.Fees(0, 0, 0)
         });
-        address dataProvider = address(
-            new ERC4626DataProvider(
-                config,
-                bytes32(0),
-                address(0),
-                address(pool)
-            )
-        );
+        address target0 = address(new ERC4626Target0(config, pool));
+        address target1 = address(new ERC4626Target1(config, pool));
         mockHyperdrive = new MockERC4626Hyperdrive(
             config,
-            dataProvider,
-            bytes32(0),
-            address(0),
-            address(pool),
+            target0,
+            target1,
+            pool,
             new address[](0)
         );
 
@@ -198,8 +194,10 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         uint256 contribution = 2_500e18;
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
-            initialSharePrice: FixedPointMath.ONE_18,
-            minimumShareReserves: FixedPointMath.ONE_18,
+            linkerFactory: address(0),
+            linkerCodeHash: bytes32(0),
+            initialSharePrice: ONE,
+            minimumShareReserves: ONE,
             minimumTransactionAmount: 0.001e18,
             precisionThreshold: PRECISION_THRESHOLD,
             positionDuration: 365 days,
@@ -207,17 +205,15 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
             governance: alice,
             feeCollector: bob,
-            fees: IHyperdrive.Fees(0, 0, 0),
-            oracleSize: 2,
-            updateGap: 0
+            fees: IHyperdrive.Fees(0, 0, 0)
         });
         dai.approve(address(factory), type(uint256).max);
         hyperdrive = factory.deployAndInitialize(
             config,
-            new bytes32[](0),
             contribution,
             apr,
             new bytes(0),
+            new bytes32[](0),
             address(pool)
         );
 
@@ -244,15 +240,16 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
     }
 
     function test_erc4626_sharePrice() public {
-        // This test makes sure that the ERC4626DataProvider function returns
-        // the correct share price.
+        // This test ensures that `getPoolInfo` returns the correct share price.
         vm.startPrank(alice);
         uint256 apr = 0.01e18; // 1% apr
         uint256 contribution = 2_500e18;
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
-            initialSharePrice: FixedPointMath.ONE_18,
-            minimumShareReserves: FixedPointMath.ONE_18,
+            linkerFactory: address(0),
+            linkerCodeHash: bytes32(0),
+            initialSharePrice: ONE,
+            minimumShareReserves: ONE,
             minimumTransactionAmount: 0.001e18,
             precisionThreshold: PRECISION_THRESHOLD,
             positionDuration: 365 days,
@@ -260,17 +257,15 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
             governance: alice,
             feeCollector: bob,
-            fees: IHyperdrive.Fees(0, 0, 0),
-            oracleSize: 2,
-            updateGap: 0
+            fees: IHyperdrive.Fees(0, 0, 0)
         });
         dai.approve(address(factory), type(uint256).max);
         hyperdrive = factory.deployAndInitialize(
             config,
-            new bytes32[](0),
             contribution,
             apr,
             new bytes(0),
+            new bytes32[](0),
             address(pool)
         );
 
@@ -319,14 +314,14 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         factory.deployAndInitialize(
             config,
-            new bytes32[](0),
             1_000e18,
             0.05e18,
             new bytes(0),
+            new bytes32[](0),
             address(pool)
         );
         assert(
-            !ERC4626DataProvider(address(mockHyperdrive)).isSweepable(
+            !IERC4626Hyperdrive(address(mockHyperdrive)).isSweepable(
                 address(dai)
             )
         );
@@ -335,14 +330,14 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         factory.deployAndInitialize(
             config,
-            new bytes32[](0),
             1_000e18,
             0.05e18,
             new bytes(0),
+            new bytes32[](0),
             address(pool)
         );
         assert(
-            !ERC4626DataProvider(address(mockHyperdrive)).isSweepable(
+            !IERC4626Hyperdrive(address(mockHyperdrive)).isSweepable(
                 address(pool)
             )
         );
@@ -351,9 +346,11 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // Ensure that the base token and the pool cannot be swept.
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-        mockHyperdrive.sweep(dai);
+        IERC4626Hyperdrive(address(mockHyperdrive)).sweep(dai);
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-        mockHyperdrive.sweep(IERC20(address(pool)));
+        IERC4626Hyperdrive(address(mockHyperdrive)).sweep(
+            IERC20(address(pool))
+        );
         vm.stopPrank();
 
         // Ensure that a sweep target that isn't the base token or the pool
@@ -372,41 +369,47 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             address(
                 factory.deployAndInitialize(
                     config,
-                    new bytes32[](0),
                     1_000e18,
                     0.05e18,
                     new bytes(0),
+                    new bytes32[](0),
                     address(pool)
                 )
             )
         );
         assert(
-            ERC4626DataProvider(address(mockHyperdrive)).isSweepable(
+            IERC4626Hyperdrive(address(mockHyperdrive)).isSweepable(
                 address(otherToken)
             )
         );
         vm.stopPrank();
         vm.startPrank(bob);
         otherToken.mint(address(mockHyperdrive), 1e18);
-        mockHyperdrive.sweep(IERC20(address(otherToken)));
+        IERC4626Hyperdrive(address(mockHyperdrive)).sweep(
+            IERC20(address(otherToken))
+        );
         assertEq(otherToken.balanceOf(bob), 1e18);
         vm.stopPrank();
 
         // Alice should not be able to sweep the target since she isn't a pauser.
         vm.startPrank(alice);
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
-        mockHyperdrive.sweep(IERC20(address(otherToken)));
+        IERC4626Hyperdrive(address(mockHyperdrive)).sweep(
+            IERC20(address(otherToken))
+        );
         vm.stopPrank();
 
         // Bob adds Alice as a pauser.
         vm.startPrank(bob);
-        mockHyperdrive.setPauser(alice, true);
+        IERC4626Hyperdrive(address(mockHyperdrive)).setPauser(alice, true);
         vm.stopPrank();
 
         // Alice should be able to sweep the target successfully.
         vm.startPrank(alice);
         otherToken.mint(address(mockHyperdrive), 1e18);
-        mockHyperdrive.sweep(IERC20(address(otherToken)));
+        IERC4626Hyperdrive(address(mockHyperdrive)).sweep(
+            IERC20(address(otherToken))
+        );
         assertEq(otherToken.balanceOf(bob), 2e18);
         vm.stopPrank();
     }

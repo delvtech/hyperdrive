@@ -7,7 +7,6 @@ import "forge-std/console2.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { MultiTokenDataProvider } from "contracts/src/token/MultiTokenDataProvider.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockBondWrapper } from "contracts/test/MockBondWrapper.sol";
 import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
@@ -21,17 +20,8 @@ contract BondWrapper_mint is CombinatorialTest {
     function setUp() public override {
         super.setUp();
         vm.startPrank(deployer);
-        address dataProvider = address(
-            new MultiTokenDataProvider(bytes32(0), address(forwarderFactory))
-        );
         multiToken = IMockMultiToken(
-            address(
-                new MockMultiToken(
-                    dataProvider,
-                    bytes32(0),
-                    address(forwarderFactory)
-                )
-            )
+            address(new MockMultiToken(bytes32(0), address(forwarderFactory)))
         );
         baseToken = new ERC20Mintable("Base", "BASE", 18, address(0), false);
     }

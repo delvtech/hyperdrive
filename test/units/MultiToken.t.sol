@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
-import { MultiTokenDataProvider } from "contracts/src/token/MultiTokenDataProvider.sol";
 import { MockAssetId } from "contracts/test/MockAssetId.sol";
 import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
@@ -22,29 +22,25 @@ contract MultiTokenTest is BaseTest {
         super.setUp();
         vm.startPrank(deployer);
         forwarderFactory = new ForwarderFactory();
-        address dataProvider = address(
-            new MultiTokenDataProvider(bytes32(0), address(forwarderFactory))
-        );
-
         multiToken = IMockMultiToken(
-            address(
-                new MockMultiToken(
-                    dataProvider,
-                    bytes32(0),
-                    address(forwarderFactory)
-                )
-            )
+            address(new MockMultiToken(bytes32(0), address(forwarderFactory)))
         );
         vm.stopPrank();
     }
 
     function testFactory() public {
-        assertEq(multiToken.factory(), address(forwarderFactory));
+        assertEq(
+            IHyperdrive(address(multiToken)).getPoolConfig().linkerFactory,
+            address(forwarderFactory)
+        );
     }
 
     // TODO - really needs a better test
     function testLinkerCodeHash() public {
-        assertEq(multiToken.linkerCodeHash(), bytes32(0));
+        assertEq(
+            IHyperdrive(address(multiToken)).getPoolConfig().linkerCodeHash,
+            bytes32(0)
+        );
     }
 
     function test__metadata() public {
@@ -59,9 +55,6 @@ contract MultiTokenTest is BaseTest {
         // Generate expected token name and symbol.
         string memory expectedName = "Hyperdrive Long: 126144000";
         string memory expectedSymbol = "HYPERDRIVE-LONG:126144000";
-        vm.startPrank(alice);
-        multiToken.__setNameAndSymbol(id, expectedName, expectedSymbol);
-        vm.stopPrank();
 
         // Test that the name and symbol are correct.
         assertEq(multiToken.name(id), expectedName);

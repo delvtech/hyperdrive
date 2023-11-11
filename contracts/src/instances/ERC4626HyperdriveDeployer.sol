@@ -2,34 +2,31 @@
 pragma solidity 0.8.19;
 
 import { ERC4626Hyperdrive } from "../instances/ERC4626Hyperdrive.sol";
+import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 
 /// @author DELV
-/// @title ERC4626HyperdriveFactory
+/// @title ERC4626HyperdriveDeployer
 /// @notice This is a minimal factory which contains only the logic to deploy
-///         hyperdrive and is called by a more complex factory which
+///         Hyperdrive and is called by a more complex factory which
 ///         initializes the Hyperdrive instances and acts as a registry.
 /// @dev We use two contracts to avoid any code size limit issues with Hyperdrive.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
-    /// @notice Deploys a copy of hyperdrive with the given params.
+    /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _dataProvider The address of the data provider.
-    /// @param _linkerCodeHash The hash of the ERC20 linker contract's
-    ///        constructor code.
-    /// @param _linkerFactory The address of the factory which is used to deploy
-    ///        the ERC20 linker contracts.
+    /// @param _target0 The target0 address.
+    /// @param _target1 The target1 address.
     /// @param _extraData The extra data that contains the sweep targets.
     /// @param _pool The ERC4626 compatible yield source. TODO: Remove
     /// @return The address of the newly deployed ERC4626Hyperdrive Instance
     function deploy(
         IHyperdrive.PoolConfig memory _config,
-        address _dataProvider,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory,
+        address _target0,
+        address _target1,
         bytes32[] memory _extraData,
         address _pool
     ) external override returns (address) {
@@ -44,10 +41,9 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
             address(
                 new ERC4626Hyperdrive(
                     _config,
-                    _dataProvider,
-                    _linkerCodeHash,
-                    _linkerFactory,
-                    _pool,
+                    _target0,
+                    _target1,
+                    IERC4626(_pool),
                     sweepTargets
                 )
             )

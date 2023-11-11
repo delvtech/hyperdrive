@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import { stdError } from "forge-std/StdError.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { MockHyperdrive, IMockHyperdrive } from "contracts/test/MockHyperdrive.sol";
 import { HyperdriveTest, HyperdriveUtils } from "test/utils/HyperdriveTest.sol";
@@ -244,12 +244,11 @@ contract FeeTest is HyperdriveTest {
 
         // Test that expected Fees ~ actual Fees
         {
-            uint256 normalizedTimeRemaining = FixedPointMath.ONE_18 -
+            uint256 normalizedTimeRemaining = ONE -
                 (timeElapsed).divDown(POSITION_DURATION);
 
             // Calculate curve fee
-            uint256 expectedFeeSubtractedFromShareReserves = FixedPointMath
-                .ONE_18 - spotPrice;
+            uint256 expectedFeeSubtractedFromShareReserves = ONE - spotPrice;
             expectedFeeSubtractedFromShareReserves = expectedFeeSubtractedFromShareReserves
                 .mulDown(curveFee)
                 .mulDown(bondsPurchased)

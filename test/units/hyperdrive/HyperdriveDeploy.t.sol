@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { ERC4626HyperdriveDeployer } from "contracts/src/factory/ERC4626HyperdriveDeployer.sol";
 import { ERC4626HyperdriveFactory } from "contracts/src/factory/ERC4626HyperdriveFactory.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
+import { ERC4626HyperdriveDeployer } from "contracts/src/instances/ERC4626HyperdriveDeployer.sol";
+import { ERC4626Target0Deployer } from "contracts/src/instances/ERC4626Target0Deployer.sol";
+import { ERC4626Target1Deployer } from "contracts/src/instances/ERC4626Target1Deployer.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
@@ -33,17 +35,19 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
         ERC4626HyperdriveFactory factory = new ERC4626HyperdriveFactory(
-            HyperdriveFactory.FactoryConfig(
-                alice,
-                bob,
-                bob,
-                IHyperdrive.Fees(0, 0, 0),
-                IHyperdrive.Fees(1e18, 1e18, 1e18),
-                defaults
-            ),
-            new ERC4626HyperdriveDeployer(),
-            address(forwarderFactory),
-            forwarderFactory.ERC20LINK_HASH(),
+            HyperdriveFactory.FactoryConfig({
+                governance: alice,
+                hyperdriveGovernance: bob,
+                defaultPausers: defaults,
+                feeCollector: bob,
+                fees: IHyperdrive.Fees(0, 0, 0),
+                maxFees: IHyperdrive.Fees(1e18, 1e18, 1e18),
+                hyperdriveDeployer: new ERC4626HyperdriveDeployer(),
+                target0Deployer: new ERC4626Target0Deployer(),
+                target1Deployer: new ERC4626Target1Deployer(),
+                linkerFactory: address(forwarderFactory),
+                linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
+            }),
             new address[](0)
         );
         assertEq(factory.governance(), alice);

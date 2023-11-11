@@ -5,7 +5,7 @@ import { stdError } from "forge-std/StdError.sol";
 import { VmSafe } from "forge-std/Vm.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { SafeCast } from "contracts/src/libraries/SafeCast.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
@@ -437,7 +437,7 @@ contract OpenLongTest is HyperdriveTest {
         uint256 realizedApr = HyperdriveUtils.calculateAPRFromRealizedPrice(
             baseAmount,
             bondAmount,
-            FixedPointMath.ONE_18
+            ONE
         );
         assertGt(apr, realizedApr);
 

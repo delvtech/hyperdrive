@@ -34,7 +34,7 @@ lint-sol:
 	make solhint && make style-check && make spell-check && make warnings-check && make code-size-check
 
 code-size-check:
-	FOUNDRY_PROFILE=production forge build && python python/contract_size.py out
+	FOUNDRY_PROFILE=production forge build && python3 python/contract_size.py out
 
 solhint:
 	npx solhint -f table contracts/src/*.sol contracts/src/**/*.sol

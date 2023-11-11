@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { MockHyperdrive, IMockHyperdrive } from "contracts/test/MockHyperdrive.sol";
@@ -598,13 +598,13 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         uint256 flatFee,
         uint256 governanceFee
     ) internal pure returns (uint256) {
-        uint256 totalCurveFee = (FixedPointMath.ONE_18 - calculatedSpotPrice)
+        uint256 totalCurveFee = (ONE - calculatedSpotPrice)
             .mulDown(curveFee)
             .mulDown(bondAmount)
             .mulDivDown(normalizedTimeRemaining, sharePrice);
         uint256 totalGovernanceFee = totalCurveFee.mulDown(governanceFee);
         uint256 flat = bondAmount.mulDivDown(
-            FixedPointMath.ONE_18 - normalizedTimeRemaining,
+            ONE - normalizedTimeRemaining,
             sharePrice
         );
         uint256 totalFlatFee = (flat.mulDown(flatFee));
@@ -622,14 +622,14 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         uint256 flatFee,
         uint256 governanceFee
     ) internal pure returns (uint256) {
-        uint256 totalCurveFee = FixedPointMath.ONE_18 - calculatedSpotPrice;
+        uint256 totalCurveFee = ONE - calculatedSpotPrice;
         totalCurveFee = totalCurveFee
             .mulDown(curveFee)
             .mulDown(bondAmount)
             .mulDivDown(normalizedTimeRemaining, sharePrice);
         uint256 totalGovernanceFee = totalCurveFee.mulDown(governanceFee);
         uint256 flat = bondAmount.mulDivDown(
-            FixedPointMath.ONE_18 - normalizedTimeRemaining,
+            ONE - normalizedTimeRemaining,
             sharePrice
         );
         uint256 totalFlatFee = (flat.mulDown(flatFee));

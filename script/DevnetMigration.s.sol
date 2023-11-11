@@ -4,12 +4,14 @@ pragma solidity 0.8.19;
 import { Script } from "forge-std/Script.sol";
 import { stdJson } from "forge-std/StdJson.sol";
 import { MultiRolesAuthority } from "solmate/auth/authorities/MultiRolesAuthority.sol";
-import { ERC4626HyperdriveDeployer } from "contracts/src/factory/ERC4626HyperdriveDeployer.sol";
 import { ERC4626HyperdriveFactory } from "contracts/src/factory/ERC4626HyperdriveFactory.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { ERC4626HyperdriveDeployer } from "contracts/src/instances/ERC4626HyperdriveDeployer.sol";
+import { ERC4626Target0Deployer } from "contracts/src/instances/ERC4626Target0Deployer.sol";
+import { ERC4626Target1Deployer } from "contracts/src/instances/ERC4626Target1Deployer.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockERC4626 } from "contracts/test/MockERC4626.sol";
@@ -185,6 +187,7 @@ contract DevnetMigration is Script {
         {
             address[] memory defaultPausers = new address[](1);
             defaultPausers[0] = config.admin;
+            ForwarderFactory forwarderFactory = new ForwarderFactory();
             HyperdriveFactory.FactoryConfig
                 memory factoryConfig = HyperdriveFactory.FactoryConfig({
                     governance: config.admin,
@@ -200,15 +203,15 @@ contract DevnetMigration is Script {
                         flat: config.factoryMaxFlatFee,
                         governance: config.factoryMaxGovernanceFee
                     }),
-                    defaultPausers: defaultPausers
+                    defaultPausers: defaultPausers,
+                    hyperdriveDeployer: new ERC4626HyperdriveDeployer(),
+                    target0Deployer: new ERC4626Target0Deployer(),
+                    target1Deployer: new ERC4626Target1Deployer(),
+                    linkerFactory: address(forwarderFactory),
+                    linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
                 });
-            ForwarderFactory forwarderFactory = new ForwarderFactory();
-            ERC4626HyperdriveDeployer deployer = new ERC4626HyperdriveDeployer();
             factory = new ERC4626HyperdriveFactory(
                 factoryConfig,
-                deployer,
-                address(forwarderFactory),
-                forwarderFactory.ERC20LINK_HASH(),
                 new address[](0)
             );
         }
@@ -222,6 +225,8 @@ contract DevnetMigration is Script {
             baseToken.approve(address(factory), contribution);
             IHyperdrive.PoolConfig memory poolConfig = IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(baseToken)),
+                linkerFactory: address(0),
+                linkerCodeHash: bytes32(0),
                 initialSharePrice: config.hyperdriveInitialSharePrice,
                 minimumShareReserves: config.hyperdriveMinimumShareReserves,
                 minimumTransactionAmount: config
@@ -238,16 +243,14 @@ contract DevnetMigration is Script {
                     curve: config.factoryCurveFee,
                     flat: config.factoryFlatFee,
                     governance: config.factoryGovernanceFee
-                }),
-                oracleSize: config.hyperdriveOracleSize,
-                updateGap: config.hyperdriveUpdateGap
+                })
             });
             hyperdrive = factory.deployAndInitialize(
                 poolConfig,
-                new bytes32[](0),
                 contribution,
                 fixedRate,
                 new bytes(0),
+                new bytes32[](0),
                 address(pool)
             );
         }

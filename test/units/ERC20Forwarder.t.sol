@@ -5,7 +5,6 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { IMultiToken } from "contracts/src/interfaces/IMultiToken.sol";
 import { ERC20Forwarder } from "contracts/src/token/ERC20Forwarder.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
-import { MultiTokenDataProvider } from "contracts/src/token/MultiTokenDataProvider.sol";
 import { MockAssetId } from "contracts/test/MockAssetId.sol";
 import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
@@ -26,17 +25,8 @@ contract ERC20ForwarderFactoryTest is BaseTest {
         vm.startPrank(deployer);
         forwarderFactory = new ForwarderFactory();
         bytes32 codeHash = keccak256(type(ERC20Forwarder).creationCode);
-        address dataProvider = address(
-            new MultiTokenDataProvider(codeHash, address(forwarderFactory))
-        );
         multiToken = IMockMultiToken(
-            address(
-                new MockMultiToken(
-                    dataProvider,
-                    codeHash,
-                    address(forwarderFactory)
-                )
-            )
+            address(new MockMultiToken(codeHash, address(forwarderFactory)))
         );
 
         forwarder = forwarderFactory.create(multiToken, 9);

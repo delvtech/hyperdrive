@@ -14,8 +14,8 @@ use hyperdrive_addresses::Addresses;
 use hyperdrive_math::State;
 use hyperdrive_wrappers::wrappers::{
     erc20_mintable::ERC20Mintable,
-    erc4626_data_provider::ERC4626DataProvider,
     i_hyperdrive::{Checkpoint, IHyperdrive, IHyperdriveEvents, Options, PoolConfig},
+    ierc4626_hyperdrive::IERC4626Hyperdrive,
     mock_erc4626::MockERC4626,
 };
 use rand::{Rng, SeedableRng};
@@ -165,7 +165,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         maybe_seed: Option<u64>,
     ) -> Result<Self> {
         let seed = maybe_seed.unwrap_or(17);
-        let pool = ERC4626DataProvider::new(addresses.hyperdrive, client.clone())
+        let pool = IERC4626Hyperdrive::new(addresses.hyperdrive, client.clone())
             .pool()
             .call()
             .await?;
@@ -944,11 +944,11 @@ impl Agent<ChainClient, ChaCha8Rng> {
             .hyperdrive
             .get_checkpoint(state.to_checkpoint(self.now().await?))
             .await?;
-        Ok(state.get_short_deposit(
+        state.get_short_deposit(
             short_amount,
             state.get_spot_price(),
             open_share_price.into(),
-        )?)
+        )
     }
 
     /// Gets the max long that can be opened in the current checkpoint.
