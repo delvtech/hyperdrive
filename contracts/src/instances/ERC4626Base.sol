@@ -28,8 +28,7 @@ abstract contract ERC4626Base is HyperdriveBase {
     mapping(address target => bool canSweep) internal _isSweepable;
 
     /// @notice Instantiates the ERC4626 Hyperdrive base contract.
-    /// @param __pool The ERC4626 compatible yield source that this Hyperdrive
-    ///        instance it's capital into..
+    /// @param __pool The ERC4626 compatible yield source.
     constructor(IERC4626 __pool) {
         // Initialize the pool immutable.
         _pool = __pool;
@@ -88,7 +87,7 @@ abstract contract ERC4626Base is HyperdriveBase {
     ///        used in this implementation are "destination" which specifies the
     ///        recipient of the withdrawal and "asBase" which determines
     ///        if the withdrawal is settled in base or vault shares.
-    /// @return amountWithdrawn The amount withdrawn from the yield source.  
+    /// @return amountWithdrawn The amount withdrawn from the yield source.
     ///         it will be in either base or shares depending on the `asBase`
     ///         option.
     function _withdraw(

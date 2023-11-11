@@ -9,21 +9,20 @@ import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { ERC4626Base } from "./ERC4626Base.sol";
 
-// TODO: Polish the comments as part of #621.
-//
 /// @author DELV
-/// @title ERC4626Extras
-/// @notice ERC4626Hyperdrive's target 0 logic contract. This contract several
-///         stateful functions that couldn't fit into the Hyperdrive contract.
+/// @title ERC4626Target1
+/// @notice ERC4626Hyperdrive's target 1 logic contract. This contract contains
+///         several stateful functions that couldn't fit into the Hyperdrive
+///         contract.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ERC4626Target1 is HyperdriveTarget1, ERC4626Base {
     using SafeTransferLib for IERC20;
 
-    /// @notice Initializes a Hyperdrive pool.
+    /// @notice Initializes the target1 contract.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param __pool The ERC4626 compatible yield source.
+    /// @param __pool The ERC4626 pool.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         IERC4626 __pool
@@ -43,8 +42,9 @@ contract ERC4626Target1 is HyperdriveTarget1, ERC4626Base {
     /// @param _target The token to sweep.
     function sweep(IERC20 _target) external {
         // Ensure that the sender is the fee collector or a pauser.
-        if (msg.sender != _feeCollector && !_pausers[msg.sender])
+        if (msg.sender != _feeCollector && !_pausers[msg.sender]) {
             revert IHyperdrive.Unauthorized();
+        }
 
         // Ensure that thet target can be swept by governance.
         if (!_isSweepable[address(_target)]) {

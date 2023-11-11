@@ -16,6 +16,7 @@ import { ERC4626Base } from "./ERC4626Base.sol";
 ///                    particular legal or regulatory significance.
 contract ERC4626Target0 is HyperdriveTarget0, ERC4626Base {
     /// @notice Initializes the target0 contract.
+    /// @param _config The configuration of the Hyperdrive pool.
     /// @param __pool The ERC4626 pool.
     constructor(
         IHyperdrive.PoolConfig memory _config,

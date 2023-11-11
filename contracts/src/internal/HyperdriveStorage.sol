@@ -64,18 +64,15 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
 
     /// @dev The state of the market. This includes the reserves, buffers, and
     ///      other data used to price trades and maintain solvency.
-    ///      NOTE: Storage Offset = 1
     IHyperdrive.MarketState internal _marketState;
 
     /// @dev The state corresponding to the withdraw pool.
-    ///      NOTE: Storage Offset = 6
     IHyperdrive.WithdrawPool internal _withdrawPool;
 
     /// @dev Hyperdrive positions are bucketed into checkpoints, which allows us
     ///      to avoid poking in any period that has LP or trading activity. The
     ///      checkpoints contain the starting share price from the checkpoint as
     ///      well as aggregate volume values.
-    ///      NOTE: Storage Offset = 7
     mapping(uint256 checkpointNumber => IHyperdrive.Checkpoint checkpoint)
         internal _checkpoints;
 
@@ -85,16 +82,13 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
     address internal immutable _feeCollector;
 
     /// @dev The address that can pause the contract.
-    ///      NOTE: Storage Offset = 8
     address internal _governance;
 
     /// @dev Governance fees that haven't been collected yet denominated in shares.
-    ///      NOTE: Storage Offset = 9
     uint256 internal _governanceFeesAccrued;
 
     /// @dev Addresses approved in this mapping can pause all deposits into the
     ///      contract and other non essential functionality.
-    ///      NOTE: Storage Offset = 10
     mapping(address user => bool isPauser) internal _pausers;
 
     /// MultiToken ///
@@ -108,27 +102,22 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
     bytes32 internal immutable _linkerCodeHash;
 
     /// @dev Allows loading of each balance.
-    ///      NOTE: Storage Offset = 11
     mapping(uint256 tokenId => mapping(address user => uint256 balance))
         internal _balanceOf;
 
     /// @dev Allows loading of each total supply.
-    ///      NOTE: Storage Offset = 12
     mapping(uint256 tokenId => uint256 supply) internal _totalSupply;
 
     /// @dev Uniform approval for all tokens.
-    ///      NOTE: Storage Offset = 13
     mapping(address from => mapping(address caller => bool isApproved))
         internal _isApprovedForAll;
 
     /// @dev Additional optional per token approvals. This is non-standard for
     ///      ERC1155, but it's necessary to replicate the ERC20 interface.
-    ///      NOTE: Storage Offset = 14
     mapping(uint256 tokenId => mapping(address from => mapping(address caller => uint256 approved)))
         internal _perTokenApprovals;
 
     /// @dev A mapping to track the permitForAll signature nonces.
-    ///      NOTE: Storage Offset = 15
     mapping(address user => uint256 nonce) internal _nonces;
 
     /// Constructor ///

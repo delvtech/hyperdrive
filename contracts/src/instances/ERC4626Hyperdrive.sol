@@ -11,8 +11,6 @@ import { IERC4626Hyperdrive } from "../interfaces/IERC4626Hyperdrive.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { ERC4626Base } from "./ERC4626Base.sol";
 
-// TODO: Polish the comments as part of #621.
-//
 /// @author DELV
 /// @title ERC4626Hyperdrive
 /// @notice A Hyperdrive instance that uses a ERC4626 vault as the yield source.
