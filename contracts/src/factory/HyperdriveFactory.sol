@@ -332,8 +332,13 @@ contract HyperdriveFactory {
         uint256 startIndex,
         uint256 endIndex
     ) external view returns (address[] memory range) {
-        if (startIndex > endIndex) revert IHyperdrive.InvalidIndexes();
-        if (endIndex > _instances.length) revert IHyperdrive.EndIndexTooLarge();
+        // If the indexes are malformed, revert.
+        if (startIndex > endIndex) {
+            revert IHyperdrive.InvalidIndexes();
+        }
+        if (endIndex > _instances.length) {
+            revert IHyperdrive.EndIndexTooLarge();
+        }
 
         range = new address[](endIndex - startIndex + 1);
         for (uint256 i = startIndex; i <= endIndex; i++) {
@@ -362,8 +367,13 @@ contract HyperdriveFactory {
         uint256 startIndex,
         uint256 endIndex
     ) external view returns (address[] memory range) {
-        if (startIndex > endIndex) revert IHyperdrive.InvalidIndexes();
-        if (endIndex > _hyperdriveDeployers.length) revert IHyperdrive.EndIndexTooLarge();
+        // If the indexes are malformed, revert.
+        if (startIndex > endIndex) {
+            revert IHyperdrive.InvalidIndexes();
+        }
+        if (endIndex > _instances.length) {
+            revert IHyperdrive.EndIndexTooLarge();
+        }
 
         range = new address[](endIndex - startIndex + 1);
         for (uint256 i = startIndex; i <= endIndex; i++) {

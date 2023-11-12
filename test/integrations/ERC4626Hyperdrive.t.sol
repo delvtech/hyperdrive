@@ -287,131 +287,116 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         );
     }
 
-    // TODO: Update these tests
+    function test_erc4626_sweep() public {
+        // Ensure that deployment will fail if the pool or base token is
+        // specified as a sweep target.
+        vm.startPrank(alice);
+        address[] memory sweepTargets = new address[](1);
+        sweepTargets[0] = address(dai);
+        bytes memory extraData = abi.encode(address(pool), sweepTargets);
+        IHyperdrive.PoolConfig memory config = IHyperdrive(
+            address(mockHyperdrive)
+        ).getPoolConfig();
+        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        factory.deployAndInitialize(
+            config,
+            extraData,
+            1_000e18,
+            0.05e18,
+            new bytes(0),
+            hyperdriveDeployer
+        );
+        assert(
+            !IERC4626Hyperdrive(address(mockHyperdrive)).isSweepable(
+                address(dai)
+            )
+        );
+        sweepTargets[0] = address(pool);
+        extraData = abi.encode(address(pool), sweepTargets);
+        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        factory.deployAndInitialize(
+            config,
+            extraData,
+            1_000e18,
+            0.05e18,
+            new bytes(0),
+            hyperdriveDeployer
+        );
+        assert(
+            !IERC4626Hyperdrive(address(mockHyperdrive)).isSweepable(
+                address(pool)
+            )
+        );
+        vm.stopPrank();
 
-    // function test_erc4626_updateSweepTargets() public {
-    //     // Ensure that the sweep targets can be updated by governance.
-    //     vm.startPrank(alice);
-    //     address[] memory sweepTargets = new address[](2);
-    //     sweepTargets[0] = address(bob);
-    //     sweepTargets[1] = address(celine);
-    //     factory.updateSweepTargets(sweepTargets);
-    //     address[] memory updatedTargets = factory.getSweepTargets();
-    //     assertEq(updatedTargets.length, 2);
-    //     assertEq(updatedTargets[0], address(bob));
-    //     assertEq(updatedTargets[1], address(celine));
-    //     vm.stopPrank();
+        // Ensure that the base token and the pool cannot be swept.
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        IERC4626Hyperdrive(address(mockHyperdrive)).sweep(dai);
+        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        IERC4626Hyperdrive(address(mockHyperdrive)).sweep(
+            IERC20(address(pool))
+        );
+        vm.stopPrank();
 
-    // function test_erc4626_sweep() public {
-    //     // Ensure that deployment will fail if the pool or base token is
-    //     // specified as a sweep target.
-    //     vm.startPrank(alice);
-    //     address[] memory sweepTargets = new address[](1);
-    //     sweepTargets[0] = address(dai);
-    //     factory.updateSweepTargets(sweepTargets);
-    //     IHyperdrive.PoolConfig memory config = IHyperdrive(
-    //         address(mockHyperdrive)
-    //     ).getPoolConfig();
-    //     vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-    //     factory.deployAndInitialize(
-    //         config,
-    //         1_000e18,
-    //         0.05e18,
-    //         new bytes(0),
-    //         new bytes32[](0),
-    //         address(pool)
-    //     );
-    //     assert(
-    //         !IERC4626Hyperdrive(address(mockHyperdrive)).isSweepable(
-    //             address(dai)
-    //         )
-    //     );
-    //     sweepTargets[0] = address(pool);
-    //     factory.updateSweepTargets(sweepTargets);
-    //     vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-    //     factory.deployAndInitialize(
-    //         config,
-    //         1_000e18,
-    //         0.05e18,
-    //         new bytes(0),
-    //         new bytes32[](0),
-    //         address(pool)
-    //     );
-    //     assert(
-    //         !IERC4626Hyperdrive(address(mockHyperdrive)).isSweepable(
-    //             address(pool)
-    //         )
-    //     );
-    //     vm.stopPrank();
+        // Ensure that a sweep target that isn't the base token or the pool
+        // can be initialized and that the target can be swept successfully.
+        vm.startPrank(alice);
+        ERC20Mintable otherToken = new ERC20Mintable(
+            "Other",
+            "OTHER",
+            18,
+            address(0),
+            false
+        );
+        sweepTargets[0] = address(otherToken);
+        extraData = abi.encode(address(pool), sweepTargets);
+        mockHyperdrive = MockERC4626Hyperdrive(
+            address(
+                factory.deployAndInitialize(
+                    config,
+                    extraData,
+                    1_000e18,
+                    0.05e18,
+                    new bytes(0),
+                    hyperdriveDeployer
+                )
+            )
+        );
+        assert(
+            IERC4626Hyperdrive(address(mockHyperdrive)).isSweepable(
+                address(otherToken)
+            )
+        );
+        vm.stopPrank();
+        vm.startPrank(bob);
+        otherToken.mint(address(mockHyperdrive), 1e18);
+        IERC4626Hyperdrive(address(mockHyperdrive)).sweep(
+            IERC20(address(otherToken))
+        );
+        assertEq(otherToken.balanceOf(bob), 1e18);
+        vm.stopPrank();
 
-    //     // Ensure that the base token and the pool cannot be swept.
-    //     vm.startPrank(bob);
-    //     vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-    //     IERC4626Hyperdrive(address(mockHyperdrive)).sweep(dai);
-    //     vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-    //     IERC4626Hyperdrive(address(mockHyperdrive)).sweep(
-    //         IERC20(address(pool))
-    //     );
-    //     vm.stopPrank();
+        // Alice should not be able to sweep the target since she isn't a pauser.
+        vm.startPrank(alice);
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        IERC4626Hyperdrive(address(mockHyperdrive)).sweep(
+            IERC20(address(otherToken))
+        );
+        vm.stopPrank();
 
-    //     // Ensure that a sweep target that isn't the base token or the pool
-    //     // can be initialized and that the target can be swept successfully.
-    //     vm.startPrank(alice);
-    //     ERC20Mintable otherToken = new ERC20Mintable(
-    //         "Other",
-    //         "OTHER",
-    //         18,
-    //         address(0),
-    //         false
-    //     );
-    //     sweepTargets[0] = address(otherToken);
-    //     factory.updateSweepTargets(sweepTargets);
-    //     mockHyperdrive = MockERC4626Hyperdrive(
-    //         address(
-    //             factory.deployAndInitialize(
-    //                 config,
-    //                 1_000e18,
-    //                 0.05e18,
-    //                 new bytes(0),
-    //                 new bytes32[](0),
-    //                 address(pool)
-    //             )
-    //         )
-    //     );
-    //     assert(
-    //         IERC4626Hyperdrive(address(mockHyperdrive)).isSweepable(
-    //             address(otherToken)
-    //         )
-    //     );
-    //     vm.stopPrank();
-    //     vm.startPrank(bob);
-    //     otherToken.mint(address(mockHyperdrive), 1e18);
-    //     IERC4626Hyperdrive(address(mockHyperdrive)).sweep(
-    //         IERC20(address(otherToken))
-    //     );
-    //     assertEq(otherToken.balanceOf(bob), 1e18);
-    //     vm.stopPrank();
+        // Bob adds Alice as a pauser.
+        vm.startPrank(bob);
+        IERC4626Hyperdrive(address(mockHyperdrive)).setPauser(alice, true);
+        vm.stopPrank();
 
-    //     // Alice should not be able to sweep the target since she isn't a pauser.
-    //     vm.startPrank(alice);
-    //     vm.expectRevert(IHyperdrive.Unauthorized.selector);
-    //     IERC4626Hyperdrive(address(mockHyperdrive)).sweep(
-    //         IERC20(address(otherToken))
-    //     );
-    //     vm.stopPrank();
-
-    //     // Bob adds Alice as a pauser.
-    //     vm.startPrank(bob);
-    //     IERC4626Hyperdrive(address(mockHyperdrive)).setPauser(alice, true);
-    //     vm.stopPrank();
-
-    //     // Alice should be able to sweep the target successfully.
-    //     vm.startPrank(alice);
-    //     otherToken.mint(address(mockHyperdrive), 1e18);
-    //     IERC4626Hyperdrive(address(mockHyperdrive)).sweep(
-    //         IERC20(address(otherToken))
-    //     );
-    //     assertEq(otherToken.balanceOf(bob), 2e18);
-    //     vm.stopPrank();
-    // }
+        // Alice should be able to sweep the target successfully.
+        vm.startPrank(alice);
+        otherToken.mint(address(mockHyperdrive), 1e18);
+        IERC4626Hyperdrive(address(mockHyperdrive)).sweep(
+            IERC20(address(otherToken))
+        );
+        assertEq(otherToken.balanceOf(bob), 2e18);
+        vm.stopPrank();
+    }
 }
