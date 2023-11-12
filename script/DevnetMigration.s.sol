@@ -206,9 +206,7 @@ contract DevnetMigration is Script {
                     linkerFactory: address(forwarderFactory),
                     linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
                 });
-            factory = new HyperdriveFactory(
-                factoryConfig
-            );
+            factory = new HyperdriveFactory(factoryConfig);
         }
 
         // Deploy and initialize an initial Hyperdrive instance for the devnet.
@@ -240,9 +238,12 @@ contract DevnetMigration is Script {
                     governance: config.factoryGovernanceFee
                 })
             });
-            address hyperdriveDeployer = address(new ERC4626HyperdriveDeployer(
-                address(new ERC4626Target0Deployer()), address(new ERC4626Target1Deployer())
-            ));
+            address hyperdriveDeployer = address(
+                new ERC4626HyperdriveDeployer(
+                    address(new ERC4626Target0Deployer()),
+                    address(new ERC4626Target1Deployer())
+                )
+            );
             hyperdrive = factory.deployAndInitialize(
                 poolConfig,
                 abi.encode(address(pool), new address[](0)),

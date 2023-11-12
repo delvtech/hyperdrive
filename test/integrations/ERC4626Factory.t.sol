@@ -48,7 +48,9 @@ contract ERC4626FactoryBaseTest is HyperdriveTest {
         // Deploy the ERC4626Hyperdrive factory and deployer.
         target0Deployer = address(new ERC4626Target0Deployer());
         target1Deployer = address(new ERC4626Target1Deployer());
-        hyperdriveDeployer = address(new ERC4626HyperdriveDeployer(target0Deployer, target1Deployer));
+        hyperdriveDeployer = address(
+            new ERC4626HyperdriveDeployer(target0Deployer, target1Deployer)
+        );
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
@@ -129,7 +131,7 @@ contract ERC4626FactoryBaseTest is HyperdriveTest {
 
         IHyperdrive hyperdrive = factory.deployAndInitialize(
             config,
-            abi.encode(address(pool), new address[](0)),  // TODO: Add test with sweeps
+            abi.encode(address(pool), new address[](0)), // TODO: Add test with sweeps
             CONTRIBUTION,
             APR,
             new bytes(0),

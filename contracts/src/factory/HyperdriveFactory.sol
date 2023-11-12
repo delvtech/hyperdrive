@@ -217,7 +217,10 @@ contract HyperdriveFactory {
     /// @notice Allows governance to add/remove a hyperdrive deployer from the whitelist.
     /// @param _hyperdriveDeployer The address of the deployer to add.
     /// @param _isValid Whether the deployer is valid or not.
-    function updateHyperdriveDeployer(address _hyperdriveDeployer, bool _isValid) external onlyGovernance {
+    function updateHyperdriveDeployer(
+        address _hyperdriveDeployer,
+        bool _isValid
+    ) external onlyGovernance {
         isValidHyperdriveDeployer[_hyperdriveDeployer] = _isValid;
     }
 
@@ -259,10 +262,7 @@ contract HyperdriveFactory {
         _config.governance = address(this);
         _config.fees = fees;
         IHyperdrive hyperdrive = IHyperdrive(
-            IHyperdriveDeployer(_hyperdriveDeployer).deploy(
-                _config,
-                _extraData
-            )
+            IHyperdriveDeployer(_hyperdriveDeployer).deploy(_config, _extraData)
         );
         isOfficial[address(hyperdrive)] = versionCounter;
         _config.governance = hyperdriveGovernance;
@@ -355,7 +355,9 @@ contract HyperdriveFactory {
     /// @notice Gets the instance at the specified index.
     /// @param index The index of the instance to get.
     /// @return The instance at the specified index.
-    function getHyperdriveDeployerAtIndex(uint256 index) external view returns (address) {
+    function getHyperdriveDeployerAtIndex(
+        uint256 index
+    ) external view returns (address) {
         return _hyperdriveDeployers[index];
     }
 

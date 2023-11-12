@@ -55,7 +55,9 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         // Initialize deployer contracts and forwarder
         target0Deployer = address(new ERC4626Target0Deployer());
         target1Deployer = address(new ERC4626Target1Deployer());
-        hyperdriveDeployer = address(new ERC4626HyperdriveDeployer(target0Deployer, target1Deployer));
+        hyperdriveDeployer = address(
+            new ERC4626HyperdriveDeployer(target0Deployer, target1Deployer)
+        );
 
         address[] memory defaults = new address[](1);
         defaults[0] = bob;

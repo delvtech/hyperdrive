@@ -17,7 +17,6 @@ import { IHyperdriveTargetDeployer } from "../interfaces/IHyperdriveTargetDeploy
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
-
     /// @notice The contract used to deploy new instances of Hyperdrive.
     address public immutable target0Deployer;
 
@@ -37,11 +36,21 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
         IHyperdrive.PoolConfig memory _config,
         bytes memory _extraData
     ) external override returns (address) {
+        (address pool, address[] memory sweepTargets) = abi.decode(
+            _extraData,
+            (address, address[])
+        );
 
-        (address pool, address[] memory sweepTargets) = abi.decode(_extraData, (address, address[]));
-
-        address target0 = IHyperdriveTargetDeployer(target0Deployer).deploy(_config, _extraData, pool);
-        address target1 = IHyperdriveTargetDeployer(target1Deployer).deploy(_config, _extraData, pool);
+        address target0 = IHyperdriveTargetDeployer(target0Deployer).deploy(
+            _config,
+            _extraData,
+            pool
+        );
+        address target1 = IHyperdriveTargetDeployer(target1Deployer).deploy(
+            _config,
+            _extraData,
+            pool
+        );
 
         // Deploy the ERC4626Hyperdrive instance.
         return (
