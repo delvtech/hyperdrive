@@ -160,7 +160,7 @@ library HyperdriveUtils {
         uint256 timeStretch = uint256(5.24592e18).divDown(
             uint256(0.04665e18).mulDown(apr * 100)
         );
-        return FixedPointMath.ONE_18.divDown(timeStretch);
+        return ONE.divDown(timeStretch);
     }
 
     /// Trade Utils ///
@@ -541,7 +541,7 @@ library HyperdriveUtils {
         uint256 estimateSpotPrice = _spotPrice.mulDown(ONE - t) +
             ONE.mulDown(t);
 
-        // Recalculate our intial guess using the bootstrapped conservative
+        // Recalculate our initial guess using the bootstrapped conservative.
         // estimate of the realized price.
         guess = calculateMaxLongEstimate(
             _params,
@@ -570,7 +570,7 @@ library HyperdriveUtils {
     ///
     ///      We debit and negative checkpoint exposure from $e_0$ since the
     ///      global exposure doesn't take into account the negative exposure
-    ///      from unnetted shorts in the checkpoint. These forumulas allow us
+    ///      from non-netted shorts in the checkpoint. These formulas allow us
     ///      to calculate the approximate ending solvency of:
     ///
     ///      $$

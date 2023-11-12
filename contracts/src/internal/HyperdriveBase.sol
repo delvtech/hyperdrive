@@ -1,27 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { IERC20 } from "../interfaces/IERC20.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { AssetId } from "../libraries/AssetId.sol";
+import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
+import { SafeCast } from "../libraries/SafeCast.sol";
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
-import { IERC20 } from "./interfaces/IERC20.sol";
-import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
-import { IHyperdriveWrite } from "./interfaces/IHyperdriveWrite.sol";
-import { AssetId } from "./libraries/AssetId.sol";
-import { FixedPointMath } from "./libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
-import { SafeCast } from "./libraries/SafeCast.sol";
-import { MultiToken } from "./token/MultiToken.sol";
 
 /// @author DELV
 /// @title HyperdriveBase
-/// @notice The base contract of the Hyperdrive inheritance hierarchy.
+/// @notice The Hyperdrive base contract that provides a set of helper methods
+///         and defines the functions that must be overridden by implementations.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveBase is
-    IHyperdriveWrite,
-    MultiToken,
-    HyperdriveStorage
-{
+abstract contract HyperdriveBase is HyperdriveStorage {
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;
@@ -103,48 +98,33 @@ abstract contract HyperdriveBase is
         uint256 lpSharePrice
     );
 
-    event CollectGovernanceFee(
-        address indexed collector,
-        uint256 baseFees,
-        uint256 sharePrice
+    event TransferSingle(
+        address indexed operator,
+        address indexed from,
+        address indexed to,
+        uint256 id,
+        uint256 value
     );
 
-    /// @notice Initializes a Hyperdrive pool.
-    /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _dataProvider The address of the data provider.
-    /// @param _linkerCodeHash The hash of the ERC20 linker contract's
-    ///        constructor code.
-    /// @param _linkerFactory The address of the factory which is used to deploy
-    ///        the ERC20 linker contracts.
-    constructor(
-        IHyperdrive.PoolConfig memory _config,
-        address _dataProvider,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory
-    )
-        MultiToken(_dataProvider, _linkerCodeHash, _linkerFactory)
-        HyperdriveStorage(_config)
-    {
-        // Initialize the oracle.
-        for (uint256 i = 0; i < _config.oracleSize; ) {
-            _buffer.push(OracleData(uint32(block.timestamp), 0));
-            unchecked {
-                ++i;
-            }
-        }
-    }
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
+
+    event ApprovalForAll(
+        address indexed account,
+        address indexed operator,
+        bool approved
+    );
 
     /// Yield Source ///
 
-    /// @notice A YieldSource dependent check that prevents ether from being
+    /// @dev A YieldSource dependent check that prevents ether from being
     ///         transferred to Hyperdrive instances that don't accept ether.
-    function _checkMessageValue() internal view virtual {
-        if (msg.value != 0) {
-            revert IHyperdrive.NotPayable();
-        }
-    }
+    function _checkMessageValue() internal view virtual;
 
-    /// @notice Transfers base from the user and commits it to the yield source.
+    /// @dev Transfers base from the user and commits it to the yield source.
     /// @param _amount The amount of base to deposit.
     /// @param _options The options that configure how the withdrawal is
     ///        settled. In particular, the currency used in the deposit is
@@ -157,7 +137,7 @@ abstract contract HyperdriveBase is
         IHyperdrive.Options calldata _options
     ) internal virtual returns (uint256 sharesMinted, uint256 sharePrice);
 
-    /// @notice Withdraws shares from the yield source and sends the base
+    /// @dev Withdraws shares from the yield source and sends the base
     ///         released to the destination.
     /// @param _shares The shares to withdraw from the yield source.
     /// @param _options The options that configure how the withdrawal is
@@ -170,7 +150,7 @@ abstract contract HyperdriveBase is
         IHyperdrive.Options calldata _options
     ) internal virtual returns (uint256 amountWithdrawn);
 
-    /// @notice Loads the share price from the yield source.
+    /// @dev Loads the share price from the yield source.
     /// @return sharePrice The current share price.
     function _pricePerShare()
         internal
@@ -180,36 +160,7 @@ abstract contract HyperdriveBase is
 
     /// Pause ///
 
-    event PauserUpdated(address indexed newPauser);
-
-    /// @notice Allows governance to change the pauser status of an address.
-    /// @param who The address to change.
-    /// @param status The new pauser status.
-    function setPauser(address who, bool status) external {
-        if (msg.sender != _governance) revert IHyperdrive.Unauthorized();
-        _pausers[who] = status;
-        emit PauserUpdated(who);
-    }
-
-    event GovernanceUpdated(address indexed newGovernance);
-
-    /// @notice Allows governance to change governance.
-    /// @param _who The new governance address.
-    function setGovernance(address _who) external {
-        if (msg.sender != _governance) revert IHyperdrive.Unauthorized();
-        _governance = _who;
-
-        emit GovernanceUpdated(_who);
-    }
-
-    /// @notice Allows an authorized address to pause this contract.
-    /// @param _status True to pause all deposits and false to unpause them.
-    function pause(bool _status) external {
-        if (!_pausers[msg.sender]) revert IHyperdrive.Unauthorized();
-        _marketState.isPaused = _status;
-    }
-
-    /// @notice Blocks a function execution if the contract is paused.
+    /// @dev Blocks a function execution if the contract is paused.
     modifier isNotPaused() {
         if (_marketState.isPaused) revert IHyperdrive.Paused();
         _;
@@ -226,34 +177,85 @@ abstract contract HyperdriveBase is
         uint256 _sharePrice
     ) internal virtual returns (uint256 openSharePrice);
 
-    /// @notice This function collects the governance fees accrued by the pool.
-    /// @param _options The options that configure how the fees are settled.
-    /// @return proceeds The amount of base collected.
-    function collectGovernanceFee(
-        IHyperdrive.Options calldata _options
-    ) external nonReentrant returns (uint256 proceeds) {
-        // Ensure that the destination is set to the fee collector.
-        if (_options.destination != _feeCollector) {
-            revert IHyperdrive.InvalidFeeDestination();
-        }
+    /// Helpers ///
 
-        // Ensure that the caller is authorized to collect fees.
-        if (
-            !_pausers[msg.sender] &&
-            msg.sender != _feeCollector &&
-            msg.sender != _governance
-        ) {
-            revert IHyperdrive.Unauthorized();
-        }
-
-        // Withdraw the accrued governance fees to the fee collector.
-        uint256 governanceFeesAccrued = _governanceFeesAccrued;
-        delete _governanceFeesAccrued;
-        proceeds = _withdraw(governanceFeesAccrued, _options);
-        emit CollectGovernanceFee(_feeCollector, proceeds, _pricePerShare());
+    /// @dev Calculates the normalized time remaining of a position.
+    /// @param _maturityTime The maturity time of the position.
+    /// @return timeRemaining The normalized time remaining (in [0, 1]).
+    function _calculateTimeRemaining(
+        uint256 _maturityTime
+    ) internal view returns (uint256 timeRemaining) {
+        uint256 latestCheckpoint = _latestCheckpoint();
+        timeRemaining = _maturityTime > latestCheckpoint
+            ? _maturityTime - latestCheckpoint
+            : 0;
+        timeRemaining = (timeRemaining).divDown(_positionDuration);
     }
 
-    /// Helpers ///
+    /// @dev Calculates the normalized time remaining of a position when the
+    ///      maturity time is scaled up 18 decimals.
+    /// @param _maturityTime The maturity time of the position.
+    function _calculateTimeRemainingScaled(
+        uint256 _maturityTime
+    ) internal view returns (uint256 timeRemaining) {
+        uint256 latestCheckpoint = _latestCheckpoint() * ONE;
+        timeRemaining = _maturityTime > latestCheckpoint
+            ? _maturityTime - latestCheckpoint
+            : 0;
+        timeRemaining = (timeRemaining).divDown(_positionDuration * ONE);
+    }
+
+    /// @dev Gets the most recent checkpoint time.
+    /// @return latestCheckpoint The latest checkpoint.
+    function _latestCheckpoint()
+        internal
+        view
+        returns (uint256 latestCheckpoint)
+    {
+        latestCheckpoint =
+            block.timestamp -
+            (block.timestamp % _checkpointDuration);
+    }
+
+    /// @dev Gets the effective share reserves.
+    /// @return The effective share reserves. This is the share reserves used
+    ///         by the YieldSpace pricing model.
+    function _effectiveShareReserves() internal view returns (uint256) {
+        return
+            HyperdriveMath.calculateEffectiveShareReserves(
+                _marketState.shareReserves,
+                _marketState.shareAdjustment
+            );
+    }
+
+    /// @dev Gets the present value parameters from the current state.
+    /// @param _sharePrice The current share price.
+    /// @return presentValue The present value parameters.
+    function _getPresentValueParams(
+        uint256 _sharePrice
+    )
+        internal
+        view
+        returns (HyperdriveMath.PresentValueParams memory presentValue)
+    {
+        presentValue = HyperdriveMath.PresentValueParams({
+            shareReserves: _marketState.shareReserves,
+            shareAdjustment: _marketState.shareAdjustment,
+            bondReserves: _marketState.bondReserves,
+            sharePrice: _sharePrice,
+            initialSharePrice: _initialSharePrice,
+            minimumShareReserves: _minimumShareReserves,
+            timeStretch: _timeStretch,
+            longsOutstanding: _marketState.longsOutstanding,
+            longAverageTimeRemaining: _calculateTimeRemainingScaled(
+                _marketState.longAverageMaturityTime
+            ),
+            shortsOutstanding: _marketState.shortsOutstanding,
+            shortAverageTimeRemaining: _calculateTimeRemainingScaled(
+                _marketState.shortAverageMaturityTime
+            )
+        });
+    }
 
     /// @dev Checks if any of the bonds the trader purchased on the curve
     ///      were purchased above price of 1 base per bonds.
@@ -286,9 +288,8 @@ abstract contract HyperdriveBase is
     ///         the minimum share reserves.
     function _isSolvent(uint256 _sharePrice) internal view returns (bool) {
         return
-            (int256(
-                (uint256(_marketState.shareReserves).mulDown(_sharePrice))
-            ) - int128(_marketState.longExposure)).max(0) >=
+            int256((uint256(_marketState.shareReserves).mulDown(_sharePrice))) -
+                int128(_marketState.longExposure) >=
             int256(_minimumShareReserves.mulDown(_sharePrice));
     }
 
@@ -427,8 +428,7 @@ abstract contract HyperdriveBase is
         //                 = r * phi_curve * base/shares * shares
         //                 = bonds/base * phi_curve * base
         //                 = bonds * phi_curve
-        totalCurveFee = (FixedPointMath.ONE_18.divDown(_spotPrice) -
-            FixedPointMath.ONE_18)
+        totalCurveFee = (ONE.divDown(_spotPrice) - ONE)
             .mulDown(_curveFee)
             .mulDown(_sharePrice)
             .mulDown(_amount);
@@ -480,7 +480,7 @@ abstract contract HyperdriveBase is
         //                 = (base * phi_curve * t) * (shares/base)
         //                 = phi_curve * t * shares
         totalCurveFee = _curveFee
-            .mulDown(FixedPointMath.ONE_18 - _spotPrice)
+            .mulDown(ONE - _spotPrice)
             .mulDown(_amount)
             .mulDivDown(_normalizedTimeRemaining, _sharePrice);
 
@@ -499,7 +499,7 @@ abstract contract HyperdriveBase is
         //          = (base * (1 - t) * phi_flat) * (shares/base)
         //          = shares * (1 - t) * phi_flat
         uint256 flat = _amount.mulDivDown(
-            FixedPointMath.ONE_18 - _normalizedTimeRemaining,
+            ONE - _normalizedTimeRemaining,
             _sharePrice
         );
         totalFlatFee = flat.mulDown(_flatFee);

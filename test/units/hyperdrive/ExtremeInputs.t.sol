@@ -303,6 +303,19 @@ contract ExtremeInputs is HyperdriveTest {
                 _shortAmount
             );
         }
+
+        // This cases produced a failure due to the input being less than the
+        // minimum transaction amount.
+        {
+            uint256 _contribution = 13083;
+            uint256 _longAmount = 115792089237316192247082740042611018616959225516561624832306239692771187490815;
+            uint256 _shortAmount = 7865494169775540955914006602;
+            _test__updateLiquidity__extremeValues__fuzz(
+                _contribution,
+                _longAmount,
+                _shortAmount
+            );
+        }
     }
 
     function test__updateLiquidity__extremeValues__fuzz(
@@ -562,11 +575,26 @@ contract ExtremeInputs is HyperdriveTest {
                     0.9e18
                 );
                 if (maxLong < minimumTransactionAmount) {
+                    vm.stopPrank();
+                    vm.startPrank(celine);
+                    baseToken.mint(celine, maxLong);
+                    baseToken.approve(address(hyperdrive), maxLong);
                     vm.expectRevert(
                         IHyperdrive.MinimumTransactionAmount.selector
                     );
+                    hyperdrive.openLong(
+                        maxLong,
+                        0,
+                        0,
+                        IHyperdrive.Options({
+                            destination: bob,
+                            asBase: true,
+                            extraData: new bytes(0)
+                        })
+                    );
+                } else {
+                    openLong(celine, maxLong);
                 }
-                openLong(celine, maxLong);
             }
 
             // The rest of the term passes.
@@ -615,11 +643,26 @@ contract ExtremeInputs is HyperdriveTest {
                     0.9e18
                 );
                 if (maxLong < minimumTransactionAmount) {
+                    vm.stopPrank();
+                    vm.startPrank(celine);
+                    baseToken.mint(celine, maxLong);
+                    baseToken.approve(address(hyperdrive), maxLong);
                     vm.expectRevert(
                         IHyperdrive.MinimumTransactionAmount.selector
                     );
+                    hyperdrive.openLong(
+                        maxLong,
+                        0,
+                        0,
+                        IHyperdrive.Options({
+                            destination: bob,
+                            asBase: true,
+                            extraData: new bytes(0)
+                        })
+                    );
+                } else {
+                    openLong(celine, maxLong);
                 }
-                openLong(celine, maxLong);
             }
 
             // The rest of the term passes.
@@ -670,11 +713,26 @@ contract ExtremeInputs is HyperdriveTest {
                     0.9e18
                 );
                 if (maxShort < minimumTransactionAmount) {
+                    vm.stopPrank();
+                    vm.startPrank(celine);
+                    baseToken.mint(celine, maxShort);
+                    baseToken.approve(address(hyperdrive), maxShort);
                     vm.expectRevert(
                         IHyperdrive.MinimumTransactionAmount.selector
                     );
+                    hyperdrive.openShort(
+                        maxShort,
+                        type(uint256).max,
+                        0,
+                        IHyperdrive.Options({
+                            destination: bob,
+                            asBase: true,
+                            extraData: new bytes(0)
+                        })
+                    );
+                } else {
+                    openShort(celine, maxShort);
                 }
-                openShort(celine, maxShort);
             }
 
             // TODO: When we address the issue related to sandwiching large
@@ -720,11 +778,26 @@ contract ExtremeInputs is HyperdriveTest {
                     0.9e18
                 );
                 if (maxShort < minimumTransactionAmount) {
+                    vm.stopPrank();
+                    vm.startPrank(celine);
+                    baseToken.mint(celine, maxShort);
+                    baseToken.approve(address(hyperdrive), maxShort);
                     vm.expectRevert(
                         IHyperdrive.MinimumTransactionAmount.selector
                     );
+                    hyperdrive.openShort(
+                        maxShort,
+                        type(uint256).max,
+                        0,
+                        IHyperdrive.Options({
+                            destination: bob,
+                            asBase: true,
+                            extraData: new bytes(0)
+                        })
+                    );
+                } else {
+                    openShort(celine, maxShort);
                 }
-                openShort(celine, maxShort);
             }
 
             // The rest of the term passes.
@@ -773,11 +846,26 @@ contract ExtremeInputs is HyperdriveTest {
                     0.9e18
                 );
                 if (maxShort < minimumTransactionAmount) {
+                    vm.stopPrank();
+                    vm.startPrank(celine);
+                    baseToken.mint(celine, maxShort);
+                    baseToken.approve(address(hyperdrive), maxShort);
                     vm.expectRevert(
                         IHyperdrive.MinimumTransactionAmount.selector
                     );
+                    hyperdrive.openShort(
+                        maxShort,
+                        type(uint256).max,
+                        0,
+                        IHyperdrive.Options({
+                            destination: bob,
+                            asBase: true,
+                            extraData: new bytes(0)
+                        })
+                    );
+                } else {
+                    openShort(celine, maxShort);
                 }
-                openShort(celine, maxShort);
             }
 
             // The rest of the term passes.

@@ -12,11 +12,13 @@ import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockMultiToken } from "contracts/test/MockMultiToken.sol";
 import { MockBondWrapper } from "contracts/test/MockBondWrapper.sol";
 import { CombinatorialTest } from "test/utils/CombinatorialTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Lib } from "test/utils/Lib.sol";
 
-contract __MockHyperDrive__ {
+contract __MockHyperDrive__ is MockMultiToken {
     uint256 __closeLongReturnValue__;
 
-    constructor() {}
+    constructor() MockMultiToken(bytes32(0), address(0)) {}
 
     event __CloseLong__(
         uint256 indexed _maturityTime,
@@ -55,6 +57,7 @@ contract __MockHyperDrive__ {
 
 contract BondWrapper_close is CombinatorialTest {
     using FixedPointMath for uint256;
+    using Lib for *;
 
     __MockHyperDrive__ hyperdrive;
     MockBondWrapper bondWrapper;
@@ -232,7 +235,7 @@ contract BondWrapper_close is CombinatorialTest {
         } else if (userWrappedBondUnderflow) {
             __fail_error = stdError.arithmeticError;
         } else if (baseTokenTransferWillFail) {
-            __fail_error = stdError.arithmeticError;
+            __fail_error = bytes("TRANSFER_FAILED");
         }
 
         if (

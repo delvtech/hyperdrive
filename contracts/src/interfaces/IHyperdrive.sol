@@ -1,18 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IDataProvider } from "./IDataProvider.sol";
 import { IERC20 } from "./IERC20.sol";
+import { IHyperdriveCore } from "./IHyperdriveCore.sol";
 import { IHyperdriveRead } from "./IHyperdriveRead.sol";
-import { IHyperdriveWrite } from "./IHyperdriveWrite.sol";
 import { IMultiToken } from "./IMultiToken.sol";
 
-interface IHyperdrive is
-    IDataProvider,
-    IHyperdriveRead,
-    IHyperdriveWrite,
-    IMultiToken
-{
+interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     /// Events ///
 
     event Initialize(
@@ -99,7 +93,6 @@ interface IHyperdrive is
 
     /// Structs ///
 
-    // TODO: Re-evaluate the order of these fields to optimize gas usage.
     struct MarketState {
         /// @dev The pool's share reserves.
         uint128 shareReserves;
@@ -151,23 +144,23 @@ interface IHyperdrive is
         uint256 governance;
     }
 
-    struct OracleState {
-        /// @notice The pointer to the most recent buffer entry
-        uint128 head;
-        /// @notice The last timestamp we wrote to the buffer
-        uint128 lastTimestamp;
-    }
-
     struct PoolConfig {
         /// @dev The address of the base token.
         IERC20 baseToken;
+        /// @dev The linker factory used by this Hyperdrive instance.
+        address linkerFactory;
+        /// @dev The hash of the ERC20 linker's code. This is used to derive the
+        ///      create2 addresses of the ERC20 linkers used by this instance.
+        bytes32 linkerCodeHash;
         /// @dev The initial share price.
         uint256 initialSharePrice;
         /// @dev The minimum share reserves.
         uint256 minimumShareReserves;
-        /// @dev The minimum amount of tokens that a position can be opened/closed with.
+        /// @dev The minimum amount of tokens that a position can be opened or
+        ///      closed with.
         uint256 minimumTransactionAmount;
-        /// @dev The amount of precision expected to lose due to exponentiation implementation.
+        /// @dev The amount of precision expected to lose due to exponentiation
+        ///      implementation.
         uint256 precisionThreshold;
         /// @dev The duration of a position prior to maturity.
         uint256 positionDuration;
@@ -181,10 +174,6 @@ interface IHyperdrive is
         address feeCollector;
         /// @dev The fees applied to trades.
         IHyperdrive.Fees fees;
-        /// @dev The amount of TWAP entries to store.
-        uint256 oracleSize;
-        /// @dev The amount of time between TWAP updates.
-        uint256 updateGap;
     }
 
     struct PoolInfo {
@@ -335,9 +324,15 @@ interface IHyperdrive is
     /// ######################
     error InvalidTradeSize();
 
-    /// ######################
+    /// ################
     /// ### SafeCast ###
-    /// ######################
+    /// ################
     error UnsafeCastToUint128();
     error UnsafeCastToInt128();
+
+    /// Getters ///
+
+    function target0() external view returns (address);
+
+    function target1() external view returns (address);
 }

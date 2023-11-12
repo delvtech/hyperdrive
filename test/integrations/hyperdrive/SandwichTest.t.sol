@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 
@@ -15,7 +15,7 @@ contract SandwichTest is HyperdriveTest {
         uint256 apr = uint256(_apr) * 0.01e18;
         uint256 timeDelta = uint256(_timeDelta);
         vm.assume(apr >= 0.01e18 && apr <= 0.2e18);
-        vm.assume(timeDelta <= FixedPointMath.ONE_18 && timeDelta >= 0);
+        vm.assume(timeDelta <= ONE && timeDelta >= 0);
 
         // Deploy the pool and initialize the market
         {

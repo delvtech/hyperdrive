@@ -1,6 +1,6 @@
 /// This module provides the `CrashReport` struct which implents `Deserialize`.
 /// It is intended to be used to deserialize crash reports from JSON.
-use ethers::types::{Address, Bytes, U256};
+use ethers::types::{Address, Bytes, H256, U256};
 use hyperdrive_addresses::Addresses;
 use hyperdrive_wrappers::wrappers::i_hyperdrive::{Checkpoint, Fees, PoolConfig, PoolInfo};
 use serde::{Deserialize, Deserializer};
@@ -62,6 +62,8 @@ impl From<RawTrade> for Trade {
 #[serde(rename_all = "camelCase")]
 struct RawPoolConfig {
     base_token: Address,
+    linker_factory: Address,
+    linker_code_hash: H256,
     initial_share_price: u128,
     minimum_share_reserves: u128,
     minimum_transaction_amount: u128,
@@ -72,8 +74,6 @@ struct RawPoolConfig {
     governance: Address,
     fee_collector: Address,
     fees: Vec<u128>,
-    oracle_size: u128,
-    update_gap: u128,
 }
 
 impl From<RawPoolConfig> for PoolConfig {
@@ -83,6 +83,8 @@ impl From<RawPoolConfig> for PoolConfig {
         }
         Self {
             base_token: r.base_token,
+            linker_factory: r.linker_factory,
+            linker_code_hash: r.linker_code_hash.into(),
             initial_share_price: r.initial_share_price.into(),
             minimum_share_reserves: r.minimum_share_reserves.into(),
             minimum_transaction_amount: r.minimum_transaction_amount.into(),
@@ -97,8 +99,6 @@ impl From<RawPoolConfig> for PoolConfig {
                 flat: r.fees[1].into(),
                 governance: r.fees[2].into(),
             },
-            oracle_size: r.oracle_size.into(),
-            update_gap: r.update_gap.into(),
         }
     }
 }
@@ -151,8 +151,8 @@ struct RawCheckpoint {
 impl From<RawCheckpoint> for Checkpoint {
     fn from(r: RawCheckpoint) -> Self {
         Self {
-            share_price: r.share_price.into(),
-            exposure: r.exposure.into(),
+            share_price: r.share_price,
+            exposure: r.exposure,
         }
     }
 }
@@ -220,7 +220,7 @@ impl From<RawCrashReport> for CrashReport {
             block_timestamp: r.block_timestamp,
             // Agent Context
             addresses: r.addresses,
-            agent_info: r.agent_info.into(),
+            agent_info: r.agent_info,
             trade: r.trade.into(),
             // Pool Context
             pool_config: r.pool_config.into(),
@@ -280,6 +280,8 @@ mod tests {
     },
     "raw_pool_config": {
         "baseToken": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "linkerFactory": "0x33027547537D35728a741470dF1CCf65dE10b454",
+        "linkerCodeHash": "0x33027547537d35728a741470df1ccf65de10b454ca0def7c5c20b257b7b8d161",
         "initialSharePrice": 1000000000000000000,
         "minimumShareReserves": 10000000000000000000,
         "minimumTransactionAmount": 1000000000000000,
@@ -293,9 +295,7 @@ mod tests {
             100000000000000000,
             500000000000000,
             150000000000000000
-        ],
-        "oracleSize": 10,
-        "updateGap": 3600
+        ]
     },
     "raw_pool_info": {
         "shareReserves": 100000000000000000000000000,
@@ -349,6 +349,8 @@ mod tests {
     },
     "pool_config": {
         "baseToken": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "linkerFactory": "0x33027547537D35728a741470dF1CCf65dE10b454",
+        "linkerCodeHash": "0x33027547537d35728a741470df1ccf65de10b454ca0def7c5c20b257b7b8d161",
         "initialSharePrice": "1.0",
         "minimumShareReserves": "10.0",
         "minimumTransactionAmount": "0.001",
@@ -363,8 +365,6 @@ mod tests {
             "0.0005",
             "0.15"
         ],
-        "oracleSize": 10,
-        "updateGap": 3600,
         "contractAddress": "0xd8058efe0198ae9dD7D563e1b4938Dcbc86A1F81",
         "curveFee": "0.1",
         "flatFee": "0.0005",
@@ -431,6 +431,8 @@ mod tests {
                 // Pool Context
                 pool_config: PoolConfig {
                     base_token: "0x5FbDB2315678afecb367f032d93F642f64180aa3".parse()?,
+                    linker_factory: "0x33027547537D35728a741470dF1CCf65dE10b454".parse()?,
+                    linker_code_hash: "0x33027547537d35728a741470df1ccf65de10b454ca0def7c5c20b257b7b8d161".parse::<H256>()?.into(),
                     initial_share_price: uint256!(1000000000000000000),
                     minimum_share_reserves: uint256!(10000000000000000000),
                     minimum_transaction_amount: uint256!(1000000000000000),
@@ -445,8 +447,6 @@ mod tests {
                         flat: uint256!(500000000000000),
                         governance: uint256!(150000000000000000),
                     },
-                    oracle_size: uint256!(10),
-                    update_gap: uint256!(3600)
                 },
                 pool_info: PoolInfo {
                     share_reserves: uint256!(100000000000000000000000000),

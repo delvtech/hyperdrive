@@ -3,11 +3,11 @@ pragma solidity 0.8.19;
 
 import { IHyperdrive } from "./IHyperdrive.sol";
 
-interface IDataProviderDeployer {
+interface IHyperdriveTargetDeployer {
     function deploy(
         IHyperdrive.PoolConfig memory _config,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory,
-        bytes memory _extraData
+        bytes memory _extraData,
+        // TODO: Remove this from the interface.
+        address _pool
     ) external returns (address);
 }

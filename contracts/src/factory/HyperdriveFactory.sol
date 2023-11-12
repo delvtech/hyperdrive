@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
-import { IDataProviderDeployer } from "../interfaces/IDataProviderDeployer.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title HyperdriveFactory
@@ -33,15 +31,13 @@ contract HyperdriveFactory {
     event LinkerFactoryUpdated(address indexed newLinkerFactory);
 
     /// @notice Emitted when the linker code hash is updated.
-    event LinkerCodeHashUpdated(bytes32 indexed newCodeHash);
+    event LinkerCodeHashUpdated(bytes32 indexed newLinkerCodeHash);
 
     /// @notice The event that is emitted when new instances are deployed.
     event Deployed(
         uint256 indexed version,
         address hyperdrive,
         IHyperdrive.PoolConfig config,
-        address linkerFactory,
-        bytes32 linkerCodeHash,
         bytes extraData
     );
 
@@ -70,10 +66,8 @@ contract HyperdriveFactory {
     /// @notice The fee collector used when new instances are deployed.
     address public feeCollector;
 
-    /// @notice Lookup table for hyperdrive deployer => data provider deployer
-    /// @dev This mapping also serves as a whitelist for hyperdrive deployers
-    /// @dev because this mapping can only be added to by governance.
-    mapping(address => address) public dataProviderDeployers;
+    /// @notice The whitelist of current deployers
+    mapping(address => bool) public isValidHyperdriveDeployer;
 
     /// @dev The maximum curve fee that can be used as a factory default.
     uint256 internal immutable maxCurveFee;
@@ -92,14 +86,18 @@ contract HyperdriveFactory {
         address governance;
         /// @dev The address which is set as the governor of hyperdrive.
         address hyperdriveGovernance;
-        /// @dev The address which should be set as the fee collector in new deployments.
+        /// @dev The default addresses which will be set to have the pauser role.
+        address[] defaultPausers;
+        /// @dev The recipient of governance fees from new deployments.
         address feeCollector;
         /// @dev The fees each deployed instance will have.
         IHyperdrive.Fees fees;
-        /// @dev The maximum values that governance can use when updating the default fees.
+        /// @dev The upper bounds on the fee parameters that governance can set.
         IHyperdrive.Fees maxFees;
-        /// @dev The default addresses which will be set to have the pauser role.
-        address[] defaultPausers;
+        /// @dev The address of the linker factory.
+        address linkerFactory;
+        /// @dev The hash of the linker contract's constructor code.
+        bytes32 linkerCodeHash;
     }
 
     // List of all hyperdrive deployers onboarded by governance.
@@ -114,24 +112,14 @@ contract HyperdriveFactory {
 
     /// @notice Initializes the factory.
     /// @param _factoryConfig Configuration of the Hyperdrive Factory.
-    /// @param _linkerFactory The address of the linker factory.
-    /// @param _linkerCodeHash The hash of the linker contract's constructor code.
-    constructor(
-        FactoryConfig memory _factoryConfig,
-        address _linkerFactory,
-        bytes32 _linkerCodeHash
-    ) {
+    constructor(FactoryConfig memory _factoryConfig) {
         // Initialize fee parameters to ensure that max fees are less than
         // 100% and that the initial fee configuration satisfies the max fee
         // constraint.
         maxCurveFee = _factoryConfig.maxFees.curve;
         maxFlatFee = _factoryConfig.maxFees.flat;
         maxGovernanceFee = _factoryConfig.maxFees.governance;
-        if (
-            maxCurveFee > FixedPointMath.ONE_18 ||
-            maxFlatFee > FixedPointMath.ONE_18 ||
-            maxGovernanceFee > FixedPointMath.ONE_18
-        ) {
+        if (maxCurveFee > ONE || maxFlatFee > ONE || maxGovernanceFee > ONE) {
             revert IHyperdrive.MaxFeeTooHigh();
         }
         if (
@@ -148,8 +136,8 @@ contract HyperdriveFactory {
         hyperdriveGovernance = _factoryConfig.hyperdriveGovernance;
         feeCollector = _factoryConfig.feeCollector;
         _defaultPausers = _factoryConfig.defaultPausers;
-        linkerFactory = _linkerFactory;
-        linkerCodeHash = _linkerCodeHash;
+        linkerFactory = _factoryConfig.linkerFactory;
+        linkerCodeHash = _factoryConfig.linkerCodeHash;
     }
 
     /// @dev Ensure that the sender is the governance address.
@@ -226,10 +214,11 @@ contract HyperdriveFactory {
         _defaultPausers = _defaultPausers_;
     }
 
-    function addDeployerSet(address hyperdriveDeployer, address dataProviderDeployer) external onlyGovernance {
-        dataProviderDeployers[hyperdriveDeployer] = dataProviderDeployer;
-
-        _hyperdriveDeployers.push(hyperdriveDeployer);
+    /// @notice Allows governance to add/remove a hyperdrive deployer from the whitelist.
+    /// @param _hyperdriveDeployer The address of the deployer to add.
+    /// @param _isValid Whether the deployer is valid or not.
+    function updateHyperdriveDeployer(address _hyperdriveDeployer, bool _isValid) external onlyGovernance {
+        isValidHyperdriveDeployer[_hyperdriveDeployer] = _isValid;
     }
 
     /// @notice Deploys a Hyperdrive instance with the factory's configuration.
@@ -237,7 +226,6 @@ contract HyperdriveFactory {
     ///      to accept ether on initialization, but payability is not supported
     ///      by default.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _extraData The extra data is used by some factories
     /// @param _contribution Base token to call init with
     /// @param _apr The apr to call init with
     /// @param _initializeExtraData The extra data for the `initialize` call.
@@ -255,9 +243,7 @@ contract HyperdriveFactory {
             revert IHyperdrive.NonPayableInitialization();
         }
 
-        address dataProviderDeployer = dataProviderDeployers[_hyperdriveDeployer];
-
-        if (dataProviderDeployer == address(0)) {
+        if (!isValidHyperdriveDeployer[_hyperdriveDeployer]) {
             revert IHyperdrive.InvalidDeployer();
         }
 
@@ -267,36 +253,20 @@ contract HyperdriveFactory {
         // role during deployment so that it can set up some initial values;
         // however the governance role will ultimately be transferred to the
         // hyperdrive governance address.
+        _config.linkerFactory = linkerFactory;
+        _config.linkerCodeHash = linkerCodeHash;
         _config.feeCollector = feeCollector;
         _config.governance = address(this);
         _config.fees = fees;
-        // bytes32 _linkerCodeHash = linkerCodeHash;  // TODO: See if we can add back without STD
-        // address _linkerFactory = linkerFactory;
-        address dataProvider = IDataProviderDeployer(dataProviderDeployer).deploy(
-            _config,
-            linkerCodeHash,
-            linkerFactory,
-            _extraData
-        );
         IHyperdrive hyperdrive = IHyperdrive(
             IHyperdriveDeployer(_hyperdriveDeployer).deploy(
                 _config,
-                dataProvider,
-                linkerCodeHash,
-                linkerFactory,
                 _extraData
             )
         );
         isOfficial[address(hyperdrive)] = versionCounter;
         _config.governance = hyperdriveGovernance;
-        emit Deployed(
-            versionCounter,
-            address(hyperdrive),
-            _config,
-            linkerFactory,
-            linkerCodeHash,
-            _extraData
-        );
+        emit Deployed(versionCounter, address(hyperdrive), _config, _extraData);
 
         _instances.push(address(hyperdrive));
         isInstance[address(hyperdrive)] = true;

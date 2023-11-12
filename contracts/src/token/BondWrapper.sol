@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { AssetId } from "../libraries/AssetId.sol";
@@ -14,7 +14,7 @@ import { AssetId } from "../libraries/AssetId.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract BondWrapper is ERC20 {
-    using SafeERC20 for IERC20;
+    using SafeTransferLib for ERC20;
 
     // The multitoken of the bond
     IHyperdrive public immutable hyperdrive;
@@ -31,15 +31,15 @@ contract BondWrapper is ERC20 {
     /// @param _hyperdrive The hyperdrive contract.
     /// @param _token The underlying token of the bonds.
     /// @param _mintPercent How many tokens will be minted per bond.
-    /// @param name_ The ERC20 name.
-    /// @param symbol_ The ERC20 symbol.
+    /// @param __name The ERC20 name.
+    /// @param __symbol The ERC20 symbol.
     constructor(
         IHyperdrive _hyperdrive,
         IERC20 _token,
         uint256 _mintPercent,
-        string memory name_,
-        string memory symbol_
-    ) ERC20(name_, symbol_, 18) {
+        string memory __name,
+        string memory __symbol
+    ) ERC20(__name, __symbol, 18) {
         if (_mintPercent >= 10_000) {
             revert IHyperdrive.MintPercentTooHigh();
         }
@@ -154,7 +154,7 @@ contract BondWrapper is ERC20 {
         if (userFunds < minOutput) revert IHyperdrive.OutputLimit();
 
         // Transfer the released funds to the user
-        token.safeTransfer(destination, userFunds);
+        ERC20(address(token)).safeTransfer(destination, userFunds);
     }
 
     /// @notice Sells all assets from the contract if they are matured, has no affect if
@@ -193,7 +193,7 @@ contract BondWrapper is ERC20 {
         _burn(msg.sender, amount);
 
         // Transfer the released funds to the user
-        token.safeTransfer(msg.sender, amount);
+        ERC20(address(token)).safeTransfer(msg.sender, amount);
     }
 
     /// @notice Calls both force close and redeem to enable easy liquidation of a user account

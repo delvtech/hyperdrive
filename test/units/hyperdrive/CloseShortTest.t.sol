@@ -725,15 +725,14 @@ contract CloseShortTest is HyperdriveTest {
             // be better to use HyperdriveMath or find an approximation so that we
             // aren't repeating ourselves.
             uint256 shareReservesDelta = testCase.bondAmount.mulDivDown(
-                FixedPointMath.ONE_18 - timeRemaining,
+                ONE - timeRemaining,
                 testCase.poolInfoBefore.sharePrice
             ) +
                 YieldSpaceMath.calculateSharesInGivenBondsOutUp(
                     testCase.poolInfoBefore.shareReserves,
                     testCase.poolInfoBefore.bondReserves,
                     testCase.bondAmount.mulDown(timeRemaining),
-                    FixedPointMath.ONE_18 -
-                        hyperdrive.getPoolConfig().timeStretch,
+                    ONE - hyperdrive.getPoolConfig().timeStretch,
                     testCase.poolInfoBefore.sharePrice,
                     hyperdrive.getPoolConfig().initialSharePrice
                 );

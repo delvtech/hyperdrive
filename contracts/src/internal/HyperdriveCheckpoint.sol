@@ -1,25 +1,21 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { AssetId } from "../libraries/AssetId.sol";
+import { FixedPointMath } from "../libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
+import { SafeCast } from "../libraries/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveLong } from "./HyperdriveLong.sol";
 import { HyperdriveShort } from "./HyperdriveShort.sol";
-import { IERC20 } from "./interfaces/IERC20.sol";
-import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
-import { IHyperdriveWrite } from "./interfaces/IHyperdriveWrite.sol";
-import { AssetId } from "./libraries/AssetId.sol";
-import { FixedPointMath } from "./libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
-import { SafeCast } from "./libraries/SafeCast.sol";
 
 /// @author DELV
-/// @title Hyperdrive
-/// @notice A fixed-rate AMM that mints bonds on demand for longs and shorts.
+/// @notice Implements the checkpoint accounting for Hyperdrive.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract Hyperdrive is
-    IHyperdriveWrite,
+abstract contract HyperdriveCheckpoint is
     HyperdriveBase,
     HyperdriveLong,
     HyperdriveShort
@@ -27,23 +23,9 @@ abstract contract Hyperdrive is
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
-    /// @notice Initializes a Hyperdrive pool.
-    /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _dataProvider The address of the data provider.
-    /// @param _linkerCodeHash The hash of the ERC20 linker contract's
-    ///        constructor code.
-    /// @param _linkerFactory The address of the factory which is used to deploy
-    ///        the ERC20 linker contracts.
-    constructor(
-        IHyperdrive.PoolConfig memory _config,
-        address _dataProvider,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory
-    ) HyperdriveBase(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {} // solhint-disable-line no-empty-blocks
-
-    /// @notice Allows anyone to mint a new checkpoint.
+    /// @dev Attempts to mint a checkpoint with the specified checkpoint time.
     /// @param _checkpointTime The time of the checkpoint to create.
-    function checkpoint(uint256 _checkpointTime) public {
+    function _checkpoint(uint256 _checkpointTime) internal {
         // If the checkpoint has already been set, return early.
         if (_checkpoints[_checkpointTime].sharePrice != 0) {
             return;
@@ -183,6 +165,8 @@ abstract contract Hyperdrive is
             _distributeExcessIdle(_sharePrice);
         }
 
+        // Emit an event about the checkpoint creation that includes the LP
+        // share price.
         uint256 presentValue = _sharePrice > 0
             ? HyperdriveMath
                 .calculatePresentValue(_getPresentValueParams(_sharePrice))

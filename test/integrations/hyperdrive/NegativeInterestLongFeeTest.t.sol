@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { MockHyperdrive, IMockHyperdrive } from "contracts/test/MockHyperdrive.sol";
@@ -160,10 +160,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         // Calculate the expected fees from opening the long
         uint256 curveFee_ = curveFee; // avoid stack too deep
         uint256 expectedGovernanceFees = curveFee_
-            .mulDown(
-                FixedPointMath.ONE_18.divDown(calculatedSpotPrice) -
-                    FixedPointMath.ONE_18
-            )
+            .mulDown(ONE.divDown(calculatedSpotPrice) - ONE)
             .mulDown(basePaid)
             .mulDivDown(calculatedSpotPrice, sharePrice);
         assertApproxEqAbs(
@@ -182,7 +179,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
 
         // Calculate the expected fees from closing the long
         expectedGovernanceFees = curveFee_
-            .mulDown(FixedPointMath.ONE_18 - calculatedSpotPrice)
+            .mulDown(ONE - calculatedSpotPrice)
             .mulDivDown(bondAmount, sharePrice);
         assertApproxEqAbs(
             governanceFeesAfterCloseLong,
@@ -544,12 +541,11 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
 
         // Calculate the expected accrued fees from opening the long and compare to the actual.
         {
-            uint256 expectedGovernanceFees = (FixedPointMath.ONE_18.divDown(
-                calculatedSpotPrice
-            ) - FixedPointMath.ONE_18)
-                .mulDown(basePaid)
-                .mulDown(curveFee)
-                .mulDivDown(calculatedSpotPrice, openSharePrice);
+            uint256 expectedGovernanceFees = (ONE.divDown(calculatedSpotPrice) -
+                ONE).mulDown(basePaid).mulDown(curveFee).mulDivDown(
+                    calculatedSpotPrice,
+                    openSharePrice
+                );
             assertApproxEqAbs(
                 governanceFeesAfterOpenLong,
                 expectedGovernanceFees,
@@ -574,13 +570,9 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
 
             // Calculate the flat and curve fees and compare then to the actual fees
             uint256 expectedFlat = bondAmount
-                .mulDivDown(
-                    FixedPointMath.ONE_18 - normalizedTimeRemaining,
-                    openSharePrice
-                )
+                .mulDivDown(ONE - normalizedTimeRemaining, openSharePrice)
                 .mulDown(0.1e18);
-            uint256 expectedCurve = (FixedPointMath.ONE_18 -
-                calculatedSpotPrice)
+            uint256 expectedCurve = (ONE - calculatedSpotPrice)
                 .mulDown(0.1e18)
                 .mulDown(bondAmount)
                 .mulDivDown(normalizedTimeRemaining, openSharePrice);

@@ -8,21 +8,11 @@ import { ERC4626Hyperdrive, IHyperdrive, IERC4626 } from "contracts/src/instance
 contract MockERC4626Hyperdrive is ERC4626Hyperdrive {
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        address _dataProvider,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory,
-        address _pool,
+        address _target0,
+        address _target1,
+        IERC4626 _pool,
         address[] memory _sweepTargets
-    )
-        ERC4626Hyperdrive(
-            _config,
-            _dataProvider,
-            _linkerCodeHash,
-            _linkerFactory,
-            _pool,
-            _sweepTargets
-        )
-    {}
+    ) ERC4626Hyperdrive(_config, _target0, _target1, _pool, _sweepTargets) {}
 
     function deposit(
         uint256 _amount,

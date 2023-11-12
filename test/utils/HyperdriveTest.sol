@@ -2,17 +2,16 @@
 pragma solidity 0.8.19;
 
 import { VmSafe } from "forge-std/Vm.sol";
-import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { MockHyperdrive, MockHyperdriveDataProvider } from "contracts/test/MockHyperdrive.sol";
+import { MockHyperdrive, MockHyperdriveTarget0, MockHyperdriveTarget1 } from "contracts/test/MockHyperdrive.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
 import { ETH } from "test/utils/Constants.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
@@ -26,14 +25,12 @@ contract HyperdriveTest is BaseTest {
     ERC20Mintable baseToken;
     IHyperdrive hyperdrive;
 
-    uint256 internal constant INITIAL_SHARE_PRICE = FixedPointMath.ONE_18;
-    uint256 internal constant MINIMUM_SHARE_RESERVES = FixedPointMath.ONE_18;
+    uint256 internal constant INITIAL_SHARE_PRICE = ONE;
+    uint256 internal constant MINIMUM_SHARE_RESERVES = ONE;
     uint256 internal constant MINIMUM_TRANSACTION_AMOUNT = 0.001e18;
     uint256 internal constant PRECISION_THRESHOLD = 1e14;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
     uint256 internal constant POSITION_DURATION = 365 days;
-    uint256 internal constant ORACLE_SIZE = 5;
-    uint256 internal constant UPDATE_GAP = 1000;
 
     function setUp() public virtual override {
         super.setUp();
@@ -41,32 +38,10 @@ contract HyperdriveTest is BaseTest {
 
         // Instantiate the base token.
         baseToken = new ERC20Mintable("Base", "BASE", 18, address(0), false);
-        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
-            curve: 0,
-            flat: 0,
-            governance: 0
-        });
+
         // Instantiate Hyperdrive.
-        uint256 apr = 0.05e18;
-        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
-            baseToken: IERC20(address(baseToken)),
-            initialSharePrice: INITIAL_SHARE_PRICE,
-            minimumShareReserves: MINIMUM_SHARE_RESERVES,
-            minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
-            precisionThreshold: PRECISION_THRESHOLD,
-            positionDuration: POSITION_DURATION,
-            checkpointDuration: CHECKPOINT_DURATION,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
-            governance: governance,
-            feeCollector: feeCollector,
-            fees: fees,
-            oracleSize: ORACLE_SIZE,
-            updateGap: UPDATE_GAP
-        });
-        address dataProvider = address(new MockHyperdriveDataProvider(config));
-        hyperdrive = IHyperdrive(
-            address(new MockHyperdrive(config, dataProvider))
-        );
+        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        deploy(alice, config);
         vm.stopPrank();
         vm.startPrank(governance);
         hyperdrive.setPauser(pauser, true);
@@ -86,10 +61,7 @@ contract HyperdriveTest is BaseTest {
     ) internal {
         vm.stopPrank();
         vm.startPrank(deployer);
-        address dataProvider = address(new MockHyperdriveDataProvider(_config));
-        hyperdrive = IHyperdrive(
-            address(new MockHyperdrive(_config, dataProvider))
-        );
+        hyperdrive = IHyperdrive(address(new MockHyperdrive(_config)));
     }
 
     function deploy(
@@ -117,26 +89,11 @@ contract HyperdriveTest is BaseTest {
         uint256 flatFee,
         uint256 governanceFee
     ) internal {
-        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
-            curve: curveFee,
-            flat: flatFee,
-            governance: governanceFee
-        });
-        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
-            baseToken: IERC20(address(baseToken)),
-            initialSharePrice: initialSharePrice,
-            minimumShareReserves: MINIMUM_SHARE_RESERVES,
-            minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
-            precisionThreshold: PRECISION_THRESHOLD,
-            positionDuration: POSITION_DURATION,
-            checkpointDuration: CHECKPOINT_DURATION,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
-            governance: governance,
-            feeCollector: feeCollector,
-            fees: fees,
-            oracleSize: ORACLE_SIZE,
-            updateGap: UPDATE_GAP
-        });
+        IHyperdrive.PoolConfig memory config = testConfig(apr);
+        config.initialSharePrice = initialSharePrice;
+        config.fees.curve = curveFee;
+        config.fees.flat = flatFee;
+        config.fees.governance = governanceFee;
         deploy(deployer, config);
     }
 
@@ -151,7 +108,9 @@ contract HyperdriveTest is BaseTest {
         return
             IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(baseToken)),
-                initialSharePrice: FixedPointMath.ONE_18,
+                linkerFactory: address(0),
+                linkerCodeHash: bytes32(0),
+                initialSharePrice: ONE,
                 minimumShareReserves: MINIMUM_SHARE_RESERVES,
                 minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
                 precisionThreshold: PRECISION_THRESHOLD,
@@ -160,9 +119,7 @@ contract HyperdriveTest is BaseTest {
                 timeStretch: HyperdriveUtils.calculateTimeStretch(fixedRate),
                 governance: governance,
                 feeCollector: feeCollector,
-                fees: fees,
-                oracleSize: ORACLE_SIZE,
-                updateGap: UPDATE_GAP
+                fees: fees
             });
     }
 
@@ -483,6 +440,7 @@ contract HyperdriveTest is BaseTest {
         vm.startPrank(trader);
 
         // Open the long.
+        hyperdrive.getPoolConfig();
         if (
             address(hyperdrive.getPoolConfig().baseToken) == address(ETH) &&
             overrides.asBase
@@ -895,8 +853,6 @@ contract HyperdriveTest is BaseTest {
         uint256 indexed version,
         address hyperdrive,
         IHyperdrive.PoolConfig config,
-        address linkerFactory,
-        bytes32 linkerCodeHash,
         bytes extraData
     );
 
@@ -1013,26 +969,16 @@ contract HyperdriveTest is BaseTest {
             (
                 address eventHyperdrive,
                 IHyperdrive.PoolConfig memory eventConfig,
-                address eventLinkerFactory,
-                bytes32 eventLinkerCodeHash,
                 bytes memory eventExtraData
             ) = abi.decode(
                     filteredLogs[0].data,
-                    (
-                        address,
-                        IHyperdrive.PoolConfig,
-                        address,
-                        bytes32,
-                        bytes
-                    )
+                    (address, IHyperdrive.PoolConfig, bytes)
                 );
             assertEq(eventHyperdrive, address(_hyperdrive));
             assertEq(
                 keccak256(abi.encode(eventConfig)),
                 keccak256(abi.encode(_hyperdrive.getPoolConfig()))
             );
-            assertEq(eventLinkerFactory, address(forwarderFactory));
-            assertEq(eventLinkerCodeHash, forwarderFactory.ERC20LINK_HASH());
             assertEq(
                 keccak256(abi.encode(eventExtraData)),
                 keccak256(abi.encode(expectedExtraData))

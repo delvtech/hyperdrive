@@ -297,9 +297,7 @@ contract CloseLongTest is HyperdriveTest {
             HyperdriveUtils.calculateAPRFromRealizedPrice(
                 basePaid,
                 baseProceeds,
-                FixedPointMath.ONE_18 -
-                    timeDelta -
-                    checkpointDistance.divDown(POSITION_DURATION)
+                ONE - timeDelta - checkpointDistance.divDown(POSITION_DURATION)
             ),
             fixedRate,
             1e10
@@ -453,7 +451,7 @@ contract CloseLongTest is HyperdriveTest {
             // All mature bonds are redeemed at the equivalent amount of shares
             // held throughout the duration, losing capital
             uint256 matureBonds = bondAmount.mulDown(
-                FixedPointMath.ONE_18 -
+                ONE -
                     HyperdriveUtils.calculateTimeRemaining(
                         hyperdrive,
                         maturityTime
@@ -468,8 +466,7 @@ contract CloseLongTest is HyperdriveTest {
                     poolInfoBefore.shareReserves,
                     poolInfoBefore.bondReserves,
                     immatureBonds,
-                    FixedPointMath.ONE_18 -
-                        hyperdrive.getPoolConfig().timeStretch,
+                    ONE - hyperdrive.getPoolConfig().timeStretch,
                     poolInfoBefore.sharePrice,
                     initialSharePrice
                 )
