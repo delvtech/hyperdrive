@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { ERC4626Target0 } from "contracts/src/instances/ERC4626Target0.sol";
 import { ERC4626Target1 } from "contracts/src/instances/ERC4626Target1.sol";
+import { ERC4626HyperdriveCoreDeployer } from "contracts/src/instances/ERC4626HyperdriveCoreDeployer.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IERC4626Hyperdrive } from "contracts/src/interfaces/IERC4626Hyperdrive.sol";
@@ -27,6 +28,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
     HyperdriveFactory factory;
 
     address hyperdriveDeployer;
+    address hyperdriveCoreDeployer;
     address target0Deployer;
     address target1Deployer;
 
@@ -54,10 +56,16 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 )
             )
         );
+        hyperdriveCoreDeployer = address(new ERC4626HyperdriveCoreDeployer());
         target0Deployer = address(new ERC4626Target0Deployer());
         target1Deployer = address(new ERC4626Target1Deployer());
+
         hyperdriveDeployer = address(
-            new ERC4626HyperdriveDeployer(target0Deployer, target1Deployer)
+            new ERC4626HyperdriveDeployer(
+                hyperdriveCoreDeployer,
+                target0Deployer,
+                target1Deployer
+            )
         );
         address[] memory defaults = new address[](1);
         defaults[0] = bob;

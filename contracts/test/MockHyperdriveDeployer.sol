@@ -20,8 +20,7 @@ contract MockHyperdriveDeployer is IHyperdriveDeployer {
 contract MockHyperdriveTargetDeployer is IHyperdriveTargetDeployer {
     function deploy(
         IHyperdrive.PoolConfig memory,
-        bytes memory,
-        address
+        bytes memory
     ) external pure override returns (address) {
         return address(0);
     }

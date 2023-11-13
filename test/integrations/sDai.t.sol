@@ -51,6 +51,8 @@ contract sDaiTest is ERC4626ValidationTest {
         // This may caused insolvency if too much interest accrues as no real dai is being
         // accrued.
 
+        variableRate;
+
         // NOTE: Remove this note after PR, but wanted to point out that variableRate is not
         //       used in this function.
 

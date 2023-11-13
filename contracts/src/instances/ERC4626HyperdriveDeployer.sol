@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import { ERC4626Hyperdrive } from "../instances/ERC4626Hyperdrive.sol";
 import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IERC4626HyperdriveDeployer } from "../interfaces/IERC4626HyperdriveDeployer.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 import { IHyperdriveTargetDeployer } from "../interfaces/IHyperdriveTargetDeployer.sol";
 
@@ -18,51 +19,48 @@ import { IHyperdriveTargetDeployer } from "../interfaces/IHyperdriveTargetDeploy
 ///                    particular legal or regulatory significance.
 contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
     /// @notice The contract used to deploy new instances of Hyperdrive.
+    address public immutable hyperdriveCoreDeployer;
+
+    /// @notice The contract used to deploy new instances of Hyperdrive target0.
     address public immutable target0Deployer;
 
-    /// @notice The contract used to deploy new instances of Hyperdrive.
+    /// @notice The contract used to deploy new instances of Hyperdrive target1.
     address public immutable target1Deployer;
 
-    constructor(address _target0Deployer, address _target1Deployer) {
+    constructor(
+        address _hyperdriveCoreDeployer,
+        address _target0Deployer,
+        address _target1Deployer
+    ) {
+        hyperdriveCoreDeployer = _hyperdriveCoreDeployer;
         target0Deployer = _target0Deployer;
         target1Deployer = _target1Deployer;
     }
 
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _extraData The extra data that contains the sweep targets.
+    /// @param _extraData The extra data that contains the pool and sweep targets.
     /// @return The address of the newly deployed ERC4626Hyperdrive Instance
     function deploy(
         IHyperdrive.PoolConfig memory _config,
         bytes memory _extraData
     ) external override returns (address) {
-        (address pool, address[] memory sweepTargets) = abi.decode(
-            _extraData,
-            (address, address[])
-        );
-
         address target0 = IHyperdriveTargetDeployer(target0Deployer).deploy(
             _config,
-            _extraData,
-            pool
+            _extraData
         );
         address target1 = IHyperdriveTargetDeployer(target1Deployer).deploy(
             _config,
-            _extraData,
-            pool
+            _extraData
         );
 
         // Deploy the ERC4626Hyperdrive instance.
-        return (
-            address(
-                new ERC4626Hyperdrive(
-                    _config,
-                    target0,
-                    target1,
-                    IERC4626(pool),
-                    sweepTargets
-                )
-            )
-        );
+        return
+            IERC4626HyperdriveDeployer(hyperdriveCoreDeployer).deploy(
+                _config,
+                _extraData,
+                target0,
+                target1
+            );
     }
 }
