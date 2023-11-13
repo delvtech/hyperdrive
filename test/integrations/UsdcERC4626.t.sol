@@ -100,12 +100,12 @@ contract UsdcERC4626 is ERC4626ValidationTest {
 
         // Deploy and set hyperdrive instance.
         hyperdrive = factory.deployAndInitialize(
+            hyperdriveDeployer,
             config,
             abi.encode(address(token), new address[](0)),
             contribution,
             FIXED_RATE,
-            new bytes(0),
-            hyperdriveDeployer
+            new bytes(0)
         );
 
         // Setup maximum approvals so transfers don't require further approval.

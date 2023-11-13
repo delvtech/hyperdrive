@@ -247,12 +247,12 @@ contract DevnetMigration is Script {
                 )
             );
             hyperdrive = factory.deployAndInitialize(
+                hyperdriveDeployer,
                 poolConfig,
                 abi.encode(address(pool), new address[](0)),
                 contribution,
                 fixedRate,
-                new bytes(0),
-                hyperdriveDeployer
+                new bytes(0)
             );
         }
 

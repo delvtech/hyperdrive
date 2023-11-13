@@ -222,12 +222,12 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         });
         dai.approve(address(factory), type(uint256).max);
         hyperdrive = factory.deployAndInitialize(
+            hyperdriveDeployer,
             config,
             abi.encode(address(pool), new address[](0)),
             contribution,
             apr,
-            new bytes(0),
-            hyperdriveDeployer
+            new bytes(0)
         );
 
         // The initial price per share is one so the LP shares will initially
@@ -274,12 +274,12 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         });
         dai.approve(address(factory), type(uint256).max);
         hyperdrive = factory.deployAndInitialize(
+            hyperdriveDeployer,
             config,
             abi.encode(address(pool), new address[](0)),
             contribution,
             apr,
-            new bytes(0),
-            hyperdriveDeployer
+            new bytes(0)
         );
 
         // Ensure the share price is 1 after initialization.
@@ -307,12 +307,12 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         ).getPoolConfig();
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         factory.deployAndInitialize(
+            hyperdriveDeployer,
             config,
             extraData,
             1_000e18,
             0.05e18,
-            new bytes(0),
-            hyperdriveDeployer
+            new bytes(0)
         );
         assert(
             !IERC4626Hyperdrive(address(mockHyperdrive)).isSweepable(
@@ -323,12 +323,12 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         extraData = abi.encode(address(pool), sweepTargets);
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         factory.deployAndInitialize(
+            hyperdriveDeployer,
             config,
             extraData,
             1_000e18,
             0.05e18,
-            new bytes(0),
-            hyperdriveDeployer
+            new bytes(0)
         );
         assert(
             !IERC4626Hyperdrive(address(mockHyperdrive)).isSweepable(
@@ -362,12 +362,12 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         mockHyperdrive = MockERC4626Hyperdrive(
             address(
                 factory.deployAndInitialize(
+                    hyperdriveDeployer,
                     config,
                     extraData,
                     1_000e18,
                     0.05e18,
-                    new bytes(0),
-                    hyperdriveDeployer
+                    new bytes(0)
                 )
             )
         );

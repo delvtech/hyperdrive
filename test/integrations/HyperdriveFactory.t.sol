@@ -207,12 +207,12 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
         dai.approve(address(factory), CONTRIBUTION);
 
         IHyperdrive hyperdrive = factory.deployAndInitialize(
+            hyperdriveDeployer,
             config,
             abi.encode(address(pool), new address[](0)), // TODO: Add test with sweeps
             CONTRIBUTION,
             APR,
-            new bytes(0),
-            hyperdriveDeployer
+            new bytes(0)
         );
 
         vm.stopPrank();
@@ -257,12 +257,12 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
         assertEq(dai.balanceOf(address(pool1)), 0);
 
         IHyperdrive hyperdrive1 = factory.deployAndInitialize(
+            hyperdriveDeployer,
             config,
             abi.encode(address(pool1), new address[](0)),
             CONTRIBUTION,
             APR,
-            new bytes(0),
-            hyperdriveDeployer
+            new bytes(0)
         );
 
         assertEq(dai.balanceOf(charlie), 0);
@@ -303,12 +303,12 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
         dai.approve(address(factory), CONTRIBUTION);
 
         IHyperdrive hyperdrive2 = factory.deployAndInitialize(
+            hyperdriveDeployer1,
             config,
             abi.encode(address(pool2), new address[](0)),
             CONTRIBUTION,
             APR,
-            new bytes(0),
-            hyperdriveDeployer1
+            new bytes(0)
         );
 
         assertEq(dai.balanceOf(charlie), 0);
@@ -356,12 +356,12 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
         assertEq(dai.balanceOf(address(pool2)), CONTRIBUTION); // From Charlie
 
         IHyperdrive hyperdrive3 = factory.deployAndInitialize(
+            hyperdriveDeployer,
             config,
             abi.encode(address(pool2), new address[](0)),
             CONTRIBUTION,
             APR,
-            new bytes(0),
-            hyperdriveDeployer
+            new bytes(0)
         );
 
         assertEq(dai.balanceOf(dan), 0);

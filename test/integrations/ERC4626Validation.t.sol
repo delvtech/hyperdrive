@@ -87,12 +87,12 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
         // Deploy and set hyperdrive instance
         hyperdrive = factory.deployAndInitialize(
+            hyperdriveDeployer,
             config,
             abi.encode(address(token), new address[](0)),
             contribution,
             FIXED_RATE,
-            new bytes(0),
-            hyperdriveDeployer
+            new bytes(0)
         );
 
         // Setup maximum approvals so transfers don't require further approval
@@ -129,12 +129,12 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
         // Deploy a new hyperdrive instance
         hyperdrive = factory.deployAndInitialize(
+            hyperdriveDeployer,
             config,
             abi.encode(address(token), new address[](0)),
             contribution,
             FIXED_RATE,
-            new bytes(0),
-            hyperdriveDeployer
+            new bytes(0)
         );
 
         // Ensure minimumShareReserves were added, and lpTotalSupply increased
