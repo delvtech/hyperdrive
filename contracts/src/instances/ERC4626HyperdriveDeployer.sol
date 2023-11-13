@@ -27,6 +27,10 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
     /// @notice The contract used to deploy new instances of Hyperdrive target1.
     address public immutable target1Deployer;
 
+    /// @notice Initializes the contract with the given parameters.
+    /// @param _hyperdriveCoreDeployer The contract used to deploy new instances of Hyperdrive.
+    /// @param _target0Deployer The contract used to deploy new instances of Hyperdrive target0.
+    /// @param _target1Deployer The contract used to deploy new instances of Hyperdrive target1.
     constructor(
         address _hyperdriveCoreDeployer,
         address _target0Deployer,

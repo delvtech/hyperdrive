@@ -19,8 +19,8 @@ import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockERC4626, ERC20 } from "contracts/test/MockERC4626.sol";
 import { MockERC4626Hyperdrive } from "contracts/test/MockERC4626Hyperdrive.sol";
-import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
-import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
 contract ERC4626HyperdriveTest is HyperdriveTest {
     using FixedPointMath for *;
@@ -59,7 +59,6 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         hyperdriveCoreDeployer = address(new ERC4626HyperdriveCoreDeployer());
         target0Deployer = address(new ERC4626Target0Deployer());
         target1Deployer = address(new ERC4626Target1Deployer());
-
         hyperdriveDeployer = address(
             new ERC4626HyperdriveDeployer(
                 hyperdriveCoreDeployer,
@@ -114,7 +113,6 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         );
 
         vm.stopPrank();
-
         vm.startPrank(alice);
         factory.addHyperdriveDeployer(hyperdriveDeployer);
         dai.approve(address(factory), type(uint256).max);

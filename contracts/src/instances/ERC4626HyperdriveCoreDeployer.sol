@@ -18,6 +18,8 @@ contract ERC4626HyperdriveCoreDeployer is IERC4626HyperdriveDeployer {
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _extraData The extra data that contains the sweep targets.
+    /// @param target0 The address of the first target contract.
+    /// @param target1 The address of the second target contract.
     /// @return The address of the newly deployed ERC4626Hyperdrive Instance
     function deploy(
         IHyperdrive.PoolConfig memory _config,

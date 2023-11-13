@@ -268,6 +268,11 @@ contract HyperdriveFactory {
             revert IHyperdrive.NonPayableInitialization();
         }
 
+        // TODO: Should we do some input validation on the config like making
+        // sure that the linker factory and linker code hash are set to zero?
+        // This kind of check makes it clear that the deployer knows the values
+        // will be overridden.
+
         if (!isHyperdriveDeployer[_hyperdriveDeployer]) {
             revert IHyperdrive.InvalidDeployer();
         }
@@ -290,6 +295,7 @@ contract HyperdriveFactory {
         _config.governance = hyperdriveGovernance;
         emit Deployed(versionCounter, address(hyperdrive), _config, _extraData);
 
+        // Add the newly deployed Hyperdrive instance to the registry.
         _instances.push(address(hyperdrive));
         isInstance[address(hyperdrive)] = true;
 
@@ -399,6 +405,7 @@ contract HyperdriveFactory {
             revert IHyperdrive.EndIndexTooLarge();
         }
 
+        // Return the range of instances.
         range = new address[](endIndex - startIndex + 1);
         for (uint256 i = startIndex; i <= endIndex; i++) {
             range[i - startIndex] = _hyperdriveDeployers[i];

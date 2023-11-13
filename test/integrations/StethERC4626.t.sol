@@ -11,9 +11,9 @@ import { ERC4626HyperdriveDeployer } from "contracts/src/instances/ERC4626Hyperd
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
-import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { MockERC4626Hyperdrive } from "contracts/test/MockERC4626Hyperdrive.sol";
-import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 import { ERC4626ValidationTest } from "./ERC4626Validation.t.sol";
 

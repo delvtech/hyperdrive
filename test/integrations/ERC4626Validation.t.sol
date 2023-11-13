@@ -15,9 +15,9 @@ import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol"
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { MockERC4626Hyperdrive } from "contracts/test/MockERC4626Hyperdrive.sol";
-import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
-import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
-import { Lib } from "../utils/Lib.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Lib } from "test/utils/Lib.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 
 abstract contract ERC4626ValidationTest is HyperdriveTest {
