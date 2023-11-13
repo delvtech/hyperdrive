@@ -66,9 +66,6 @@ contract HyperdriveFactory {
     /// @notice The fee collector used when new instances are deployed.
     address public feeCollector;
 
-    /// @notice The whitelist of current deployers
-    mapping(address => bool) public isValidHyperdriveDeployer;
-
     /// @dev The maximum curve fee that can be used as a factory default.
     uint256 internal immutable maxCurveFee;
 
@@ -100,8 +97,11 @@ contract HyperdriveFactory {
         bytes32 linkerCodeHash;
     }
 
-    // List of all hyperdrive deployers onboarded by governance.
-    address[] public _hyperdriveDeployers;
+    /// @dev List of all hyperdrive deployers onboarded by governance.
+    address[] internal _hyperdriveDeployers;
+
+    /// @notice Mapping to check if an hyperdriveDeployer is in the _hyperdriveDeployers array.
+    mapping(address => bool) public isHyperdriveDeployer;
 
     /// @dev Array of all instances deployed by this factory.
     /// @dev Can be manually updated by governance to add previous instances deployed.
@@ -214,15 +214,36 @@ contract HyperdriveFactory {
         _defaultPausers = _defaultPausers_;
     }
 
-    /// @notice Allows governance to add/remove a hyperdrive deployer from the whitelist.
-    /// @param _hyperdriveDeployer The address of the deployer to add.
-    /// @param _isValid Whether the deployer is valid or not.
-    function updateHyperdriveDeployer(
-        address _hyperdriveDeployer,
-        bool _isValid
+    /// @notice Allows governance to add a new hyperdrive deployer.
+    /// @param _hyperdriveDeployer The new hyperdrive deployer.
+    function addHyperdriveDeployer(
+        address _hyperdriveDeployer
     ) external onlyGovernance {
-        isValidHyperdriveDeployer[_hyperdriveDeployer] = _isValid;
+        if (isHyperdriveDeployer[_hyperdriveDeployer]) {
+            revert IHyperdrive.HyperdriveDeployerAlreadyAdded();
+        }
+        isHyperdriveDeployer[_hyperdriveDeployer] = true;
         _hyperdriveDeployers.push(_hyperdriveDeployer);
+    }
+
+    /// @notice Allows governance to remove an existing hyperdrive deployer.
+    /// @param _hyperdriveDeployer The hyperdrive deployer to remove.
+    /// @param _index The index of the hyperdrive deployer to remove.
+    function removeHyperdriveDeployer(
+        address _hyperdriveDeployer,
+        uint256 _index
+    ) external onlyGovernance {
+        if (!isHyperdriveDeployer[_hyperdriveDeployer]) {
+            revert IHyperdrive.HyperdriveDeployerNotAdded();
+        }
+        if (_hyperdriveDeployers[_index] != _hyperdriveDeployer) {
+            revert IHyperdrive.HyperdriveDeployerIndexMismatch();
+        }
+        isHyperdriveDeployer[_hyperdriveDeployer] = false;
+        _hyperdriveDeployers[_index] = _hyperdriveDeployers[
+            _hyperdriveDeployers.length - 1
+        ];
+        _hyperdriveDeployers.pop();
     }
 
     /// @notice Deploys a Hyperdrive instance with the factory's configuration.
@@ -247,7 +268,7 @@ contract HyperdriveFactory {
             revert IHyperdrive.NonPayableInitialization();
         }
 
-        if (!isValidHyperdriveDeployer[_hyperdriveDeployer]) {
+        if (!isHyperdriveDeployer[_hyperdriveDeployer]) {
             revert IHyperdrive.InvalidDeployer();
         }
 

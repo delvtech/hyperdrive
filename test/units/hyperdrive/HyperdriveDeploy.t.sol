@@ -67,7 +67,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
         factory.updateDefaultPausers(defaults);
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
-        factory.updateHyperdriveDeployer(hyperdriveDeployer, true);
+        factory.addHyperdriveDeployer(hyperdriveDeployer);
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        factory.removeHyperdriveDeployer(hyperdriveDeployer, 0);
         vm.stopPrank();
 
         // Alice can change governance
@@ -96,7 +98,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         assertEq(updateDefaultPausers[0], alice);
         factory.updateFeeCollector(alice);
         assertEq(factory.feeCollector(), alice);
-        factory.updateHyperdriveDeployer(hyperdriveDeployer, true);
-        assertEq(factory.isValidHyperdriveDeployer(hyperdriveDeployer), true);
+        factory.addHyperdriveDeployer(hyperdriveDeployer);
+        assertEq(factory.isHyperdriveDeployer(hyperdriveDeployer), true);
+        factory.removeHyperdriveDeployer(hyperdriveDeployer, 0);
+        assertEq(factory.isHyperdriveDeployer(hyperdriveDeployer), false);
     }
 }

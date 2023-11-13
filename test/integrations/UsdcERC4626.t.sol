@@ -93,7 +93,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         vm.stopPrank();
         vm.startPrank(alice);
 
-        factory.updateHyperdriveDeployer(hyperdriveDeployer, true);
+        factory.addHyperdriveDeployer(hyperdriveDeployer);
 
         // Set approval to allow initial contribution to factory.
         underlyingToken.approve(address(factory), type(uint256).max);

@@ -116,7 +116,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         vm.stopPrank();
 
         vm.startPrank(alice);
-        factory.updateHyperdriveDeployer(hyperdriveDeployer, true);
+        factory.addHyperdriveDeployer(hyperdriveDeployer);
         dai.approve(address(factory), type(uint256).max);
         dai.approve(address(hyperdrive), type(uint256).max);
         dai.approve(address(mockHyperdrive), type(uint256).max);

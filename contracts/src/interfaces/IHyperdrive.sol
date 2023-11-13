@@ -281,6 +281,9 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     error MaxFeeTooHigh();
     error FeeTooHigh();
     error NonPayableInitialization();
+    error HyperdriveDeployerAlreadyAdded();
+    error HyperdriveDeployerNotAdded();
+    error HyperdriveDeployerIndexMismatch();
 
     /// ######################
     /// ### ERC20Forwarder ###
