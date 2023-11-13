@@ -45,9 +45,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             })
         );
 
+        address hyperdriveDeployer = makeAddr("hyperdriveDeployer");
+
         assertEq(factory.governance(), alice);
 
-        // Bob can't change access the admin functions.
+        // Bob can't access the admin functions.
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
@@ -64,6 +66,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         factory.updateFees(IHyperdrive.Fees(1, 2, 4));
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
         factory.updateDefaultPausers(defaults);
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        factory.updateHyperdriveDeployer(hyperdriveDeployer, true);
         vm.stopPrank();
 
         // Alice can change governance
@@ -92,5 +96,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         assertEq(updateDefaultPausers[0], alice);
         factory.updateFeeCollector(alice);
         assertEq(factory.feeCollector(), alice);
+        factory.updateHyperdriveDeployer(hyperdriveDeployer, true);
+        assertEq(factory.isValidHyperdriveDeployer(hyperdriveDeployer), true);
     }
 }

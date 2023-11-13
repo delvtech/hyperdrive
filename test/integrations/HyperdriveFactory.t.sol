@@ -219,10 +219,31 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
 
         return hyperdrive;
     }
+
 }
 
 contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
-    function test_erc4646FactoryDeploy_multiDeploy_multiPool() external {
+
+    address hyperdriveDeployer2;
+
+    function setUp() public override {
+        super.setUp();
+        // Deploy a new hyperdrive deployer to demonstrate multiple deployers can be used
+        // with different hyperdrive implementations. The first implementation is ERC4626 so
+        // the logic is the same, but future implementations may have different logic.
+        hyperdriveDeployer2 = address(
+            new ERC4626HyperdriveDeployer(
+                address(new ERC4626HyperdriveCoreDeployer()),
+                address(new ERC4626Target0Deployer()),
+                address(new ERC4626Target1Deployer())
+            )
+        );
+
+        vm.prank(alice);
+        factory.updateHyperdriveDeployer(hyperdriveDeployer2, true);
+    }
+
+    function test_hyperdriveFactoryDeploy_multiDeploy_multiPool() external {
         address charlie = createUser("charlie"); // External user 1
         address dan = createUser("dan"); // External user 2
 
@@ -230,7 +251,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
 
         deal(address(dai), charlie, CONTRIBUTION);
 
-        // 1. Charlie deploys factory with yDAI as yield source
+        // 1. Charlie deploys factory with yDAI as yield source, hyperdrive deployer 1
 
         dai.approve(address(factory), CONTRIBUTION);
 
@@ -277,7 +298,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
         assertEq(instances.length, 1);
         assertEq(instances[0], address(hyperdrive1));
 
-        // 2. Charlie deploys factory with sDAI as yield source
+        // 2. Charlie deploys factory with sDAI as yield source, hyperdrive deployer 2
 
         deal(address(dai), charlie, CONTRIBUTION);
 
@@ -289,7 +310,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             CONTRIBUTION,
             APR,
             new bytes(0),
-            hyperdriveDeployer
+            hyperdriveDeployer2
         );
 
         assertEq(dai.balanceOf(charlie), 0);
@@ -325,7 +346,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
         assertEq(instances[0], address(hyperdrive1));
         assertEq(instances[1], address(hyperdrive2));
 
-        // 3. Dan deploys factory with sDAI as yield source
+        // 3. Dan deploys factory with sDAI as yield source, hyperdrive deployer 1
 
         deal(address(dai), dan, CONTRIBUTION);
 
@@ -383,7 +404,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
 }
 
 contract ERC4626InstanceGetterTest is HyperdriveFactoryBaseTest {
-    function testFuzz_erc4646Factory_getNumberOfInstances(
+    function testFuzz_hyperdriveFactory_getNumberOfInstances(
         uint256 numberOfInstances
     ) external {
         address charlie = createUser("charlie");
@@ -397,7 +418,7 @@ contract ERC4626InstanceGetterTest is HyperdriveFactoryBaseTest {
         assertEq(factory.getNumberOfInstances(), numberOfInstances);
     }
 
-    function testFuzz_erc4646Factory_getInstanceAtIndex(
+    function testFuzz_hyperdriveFactory_getInstanceAtIndex(
         uint256 numberOfInstances
     ) external {
         address charlie = createUser("charlie");
@@ -441,6 +462,119 @@ contract ERC4626InstanceGetterTest is HyperdriveFactoryBaseTest {
 
         for (uint256 i; i < instances.length; i++) {
             assertEq(instances[i], address(hyperdrives[i + startingIndex]));
+        }
+    }
+}
+
+contract HyperdriveDeployerGetterTest is HyperdriveTest {
+
+    HyperdriveFactory factory;
+
+    function setUp() public override {
+        super.setUp();
+
+        vm.stopPrank();
+
+        address[] memory defaults = new address[](1);
+        defaults[0] = bob;
+        factory = new HyperdriveFactory(
+            HyperdriveFactory.FactoryConfig({
+                governance: alice,
+                hyperdriveGovernance: bob,
+                feeCollector: bob,
+                defaultPausers: defaults,
+                fees: IHyperdrive.Fees(0, 0, 0),
+                maxFees: IHyperdrive.Fees(0, 0, 0),
+                linkerFactory: address(0),
+                linkerCodeHash: bytes32(0)
+            })
+        );
+    }
+
+    function testFuzz_hyperdriveFactory_getNumberOfHyperdriveDeployers(
+        uint256 numberOfHyperdriveDeployers
+    ) external {
+        numberOfHyperdriveDeployers = _bound(numberOfHyperdriveDeployers, 1, 10);
+
+        address[] memory hyperdriveDeployers = new address[](
+            numberOfHyperdriveDeployers
+        );
+
+        for (uint256 i; i < numberOfHyperdriveDeployers; i++) {
+            hyperdriveDeployers[i] = address(new ERC4626HyperdriveDeployer(
+                    address(new ERC4626HyperdriveCoreDeployer()),
+                    address(new ERC4626Target0Deployer()),
+                    address(new ERC4626Target1Deployer())
+                )
+            );
+
+            vm.prank(alice);
+            factory.updateHyperdriveDeployer(hyperdriveDeployers[i], true);
+        }
+
+        assertEq(factory.getNumberOfHyperdriveDeployers(), numberOfHyperdriveDeployers);
+    }
+
+    function testFuzz_hyperdriveFactory_getHyperdriveDeployerAtIndex(
+        uint256 numberOfHyperdriveDeployers
+    ) external {
+        numberOfHyperdriveDeployers = _bound(numberOfHyperdriveDeployers, 1, 10);
+
+        address[] memory hyperdriveDeployers = new address[](
+            numberOfHyperdriveDeployers
+        );
+
+        for (uint256 i; i < numberOfHyperdriveDeployers; i++) {
+            hyperdriveDeployers[i] = address(new ERC4626HyperdriveDeployer(
+                    address(new ERC4626HyperdriveCoreDeployer()),
+                    address(new ERC4626Target0Deployer()),
+                    address(new ERC4626Target1Deployer())
+                )
+            );
+
+            vm.prank(alice);
+            factory.updateHyperdriveDeployer(hyperdriveDeployers[i], true);
+        }
+
+        for (uint256 i; i < numberOfHyperdriveDeployers; i++) {
+            assertEq(factory.getHyperdriveDeployerAtIndex(i), address(hyperdriveDeployers[i]));
+        }
+    }
+
+    function testFuzz_hyperdriveFactory_getHyperdriveDeployersInRange(
+        uint256 numberOfHyperdriveDeployers,
+        uint256 startingIndex,
+        uint256 endingIndex
+    ) external {
+        numberOfHyperdriveDeployers = bound(numberOfHyperdriveDeployers, 1, 10);
+        startingIndex = bound(startingIndex, 0, numberOfHyperdriveDeployers - 1);
+        endingIndex = bound(endingIndex, startingIndex, numberOfHyperdriveDeployers - 1);
+
+        address[] memory hyperdriveDeployers = new address[](
+            numberOfHyperdriveDeployers
+        );
+
+        for (uint256 i; i < numberOfHyperdriveDeployers; i++) {
+            hyperdriveDeployers[i] = address(new ERC4626HyperdriveDeployer(
+                    address(new ERC4626HyperdriveCoreDeployer()),
+                    address(new ERC4626Target0Deployer()),
+                    address(new ERC4626Target1Deployer())
+                )
+            );
+
+            vm.prank(alice);
+            factory.updateHyperdriveDeployer(hyperdriveDeployers[i], true);
+        }
+
+        address[] memory hyperdriveDeployersArray = factory.getHyperdriveDeployersInRange(
+            startingIndex,
+            endingIndex
+        );
+
+        assertEq(hyperdriveDeployersArray.length, endingIndex - startingIndex + 1);
+
+        for (uint256 i; i < hyperdriveDeployersArray.length; i++) {
+            assertEq(hyperdriveDeployersArray[i], address(hyperdriveDeployers[i + startingIndex]));
         }
     }
 }

@@ -222,6 +222,7 @@ contract HyperdriveFactory {
         bool _isValid
     ) external onlyGovernance {
         isValidHyperdriveDeployer[_hyperdriveDeployer] = _isValid;
+        _hyperdriveDeployers.push(_hyperdriveDeployer);
     }
 
     /// @notice Deploys a Hyperdrive instance with the factory's configuration.
@@ -373,7 +374,7 @@ contract HyperdriveFactory {
         if (startIndex > endIndex) {
             revert IHyperdrive.InvalidIndexes();
         }
-        if (endIndex > _instances.length) {
+        if (endIndex > _hyperdriveDeployers.length) {
             revert IHyperdrive.EndIndexTooLarge();
         }
 
