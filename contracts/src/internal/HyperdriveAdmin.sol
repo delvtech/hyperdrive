@@ -20,7 +20,7 @@ abstract contract HyperdriveAdmin is HyperdriveBase {
 
     /// @dev This function collects the governance fees accrued by the pool.
     /// @param _options The options that configure how the fees are settled.
-    /// @return proceeds The amount of base collected.
+    /// @return proceeds The amount collected in units specified by _options.
     function _collectGovernanceFee(
         IHyperdrive.Options calldata _options
     ) internal nonReentrant returns (uint256 proceeds) {
@@ -42,7 +42,10 @@ abstract contract HyperdriveAdmin is HyperdriveBase {
         uint256 governanceFeesAccrued = _governanceFeesAccrued;
         delete _governanceFeesAccrued;
         proceeds = _withdraw(governanceFeesAccrued, _options);
-        emit CollectGovernanceFee(_feeCollector, proceeds);
+        emit CollectGovernanceFee(
+            _feeCollector,
+            _convertToBaseFromOption(proceeds, _pricePerShare(), _options)
+        );
     }
 
     /// @dev Allows an authorized address to pause this contract.
