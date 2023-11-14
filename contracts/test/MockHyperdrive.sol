@@ -238,11 +238,7 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
         uint256 _shareAmount,
         uint256 _spotPrice,
         uint256 sharePrice
-    )
-        external
-        view
-        returns (uint256 curveFee, uint256 governanceCurveFee)
-    {
+    ) external view returns (uint256 curveFee, uint256 governanceCurveFee) {
         (curveFee, governanceCurveFee) = _calculateFeesGivenShares(
             _shareAmount,
             _spotPrice,
