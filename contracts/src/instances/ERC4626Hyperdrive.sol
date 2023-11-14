@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { ERC20 } from "solmate/tokens/ERC20.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 import { Hyperdrive } from "../external/Hyperdrive.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IERC4626 } from "../interfaces/IERC4626.sol";
@@ -18,6 +19,7 @@ import { ERC4626Base } from "./ERC4626Base.sol";
 ///                    particular legal or regulatory significance.
 contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
     using FixedPointMath for uint256;
+    using SafeTransferLib for ERC20;
 
     /// @notice Instantiates Hyperdrive with a ERC4626 vault as the yield source.
     /// @param _config The configuration of the Hyperdrive pool.
@@ -49,10 +51,9 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
             revert IHyperdrive.InvalidBaseToken();
         }
 
-        // Set immutables and prepare for deposits by setting immutables
-        if (!_config.baseToken.approve(address(_pool), type(uint256).max)) {
-            revert IHyperdrive.ApprovalFailed();
-        }
+        // Approve the base token with 1 wei. This ensures that all of the
+        // subsequent approvals will be writing to a dirty storage slot.
+        ERC20(address(_config.baseToken)).safeApprove(address(_pool), 1);
 
         // Set the sweep targets. The base and pool tokens can't be set as sweep
         // targets to prevent governance from rugging the pool.

@@ -306,18 +306,20 @@ contract BondWrapper_close is CombinatorialTest {
         }
 
         // A users wrapped long tokens should be burned if they specify to do so
-        if (testCase.andBurn) {
+        if (testCase.andBurn && testCase.mintedFromBonds > 0) {
             vm.expectEmit(true, true, true, true);
             emit Transfer(testCase.user, address(0), testCase.mintedFromBonds);
         }
 
         // Some amount of baseToken should be sent to the user
-        vm.expectEmit(true, true, true, true);
-        emit Transfer(
-            address(bondWrapper),
-            testCase.destination,
-            testCase.userFunds
-        );
+        if (testCase.userFunds > 0) {
+            vm.expectEmit(true, true, true, true);
+            emit Transfer(
+                address(bondWrapper),
+                testCase.destination,
+                testCase.userFunds
+            );
+        }
 
         // Caching balances prior to executing transaction for differentials
         uint256 userDeposit = bondWrapper.deposits(
