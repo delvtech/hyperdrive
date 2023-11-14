@@ -171,7 +171,6 @@ contract RoundTripTest is HyperdriveTest {
         uint256 timeStretchApr,
         uint256 basePaid
     ) external {
-        basePaid = 10e18;
         _test_long_multiblock_round_trip_end_of_checkpoint(
             apr,
             timeStretchApr,
