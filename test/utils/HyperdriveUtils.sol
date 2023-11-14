@@ -464,9 +464,9 @@ library HyperdriveUtils {
                 _params.sharePrice,
                 _params.initialSharePrice
             );
-            inner = _params.curveFee
-                .mulUp(ONE.divUp(_spotPrice) - ONE)
-                .mulUp(ONE - _params.flatFee);
+            inner = _params.curveFee.mulUp(ONE.divUp(_spotPrice) - ONE).mulUp(
+                ONE - _params.flatFee
+            );
             inner = (ONE + inner).divUp(ONE - _params.flatFee);
             inner = inner.pow(
                 (ONE - _params.timeStretch).divDown(_params.timeStretch)
@@ -482,7 +482,7 @@ library HyperdriveUtils {
         //
         // y_t = (mu * z_t) * ((1 + curveFee * (1 / p_0 - 1) * (1 - flatFee)) / (1 - flatFee)) ** (1 / t_s)
         //
-        // Here we round down, to under-estimate the number of bonds that can be longed.
+        // Here we round down to underestimate the number of bonds that can be longed.
         uint256 targetBondReserves;
         {
             uint256 feeAdjustment = _params

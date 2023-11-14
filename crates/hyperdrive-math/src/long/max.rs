@@ -188,20 +188,23 @@ impl State {
         // target bond reserves using the formula:
         //
         // y_t = (mu * z_t) * ((1 + curveFee * (1 / p_0 - 1) * (1 - flatFee)) / (1 - flatFee)) ** (1 / t_s)
-        let target_bond_reserves = (fixed!(1e18)
-            + self
-                .curve_fee()
-                * (fixed!(1e18) / (self.get_spot_price()) - fixed!(1e18))
-                * (fixed!(1e18) - self.flat_fee()))
-        / (fixed!(1e18) - self.flat_fee())
-        .pow(fixed!(1e18).div_up(self.time_stretch()))
-            * inner;
+        //
+        // `inner` as defined above is `mu * z_t` so we calculate y_t as
+        //
+        // y_t = inner * ((1 + curveFee * (1 / p_0 - 1) * (1 - flatFee)) / (1 - flatFee)) ** (1 / t_s)
+        let target_bond_reserves = inner
+            * ((fixed!(1e18)
+                + self.curve_fee()
+                    * (fixed!(1e18) / (self.get_spot_price()) - fixed!(1e18))
+                    * (fixed!(1e18) - self.flat_fee()))
+                / (fixed!(1e18) - self.flat_fee()))
+            .pow(fixed!(1e18).div_up(self.time_stretch()));
 
         // The absolute max base amount is given by:
         //
         // absoluteMaxBaseAmount = c * (z_t - z)
         let absolute_max_base_amount =
-            (target_share_reserves - self.effective_share_reserves()) * (self.share_price());
+            (target_share_reserves - self.effective_share_reserves()) * self.share_price();
 
         // The absolute max bond amount is given by:
         //
