@@ -178,7 +178,7 @@ contract BondWrapper is ERC20 {
     }
 
     /// @notice Sells all assets from the contract if they are matured, has no
-    ///         affect if the contract has no assets from a timestamp.
+    ///         effect if the contract has no assets from a timestamp.
     /// @param maturityTime The maturity time of the asset to sell.
     /// @param extraData Extra data to pass to the yield source.
     function sweep(uint256 maturityTime, bytes memory extraData) public {
