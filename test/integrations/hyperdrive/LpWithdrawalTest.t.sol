@@ -4,25 +4,17 @@ pragma solidity 0.8.19;
 import { stdError } from "forge-std/StdError.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-// FIXME:
-//
-// [ ] We need the following tests if they don't exist yet:
-//     - [ ] Two LPs remove all of their liquidity and a long position matures.
-//     - [ ] Two LPs remove all of their liquidity and a short position matures.
-//     - [ ] All of the liquidity is removed and a long and short mature.
-//     - [ ] One LP joins, and a long is opened. A new LP adds and removes
-//           liquidity. Then the long is closed. The original LP should get
-//           back their contribution.
-//     - [ ] Tests with fees that ensure that any instantaneous trading will be
-//           favorable for LPs that join the pool.
 contract LpWithdrawalTest is HyperdriveTest {
     using FixedPointMath for int256;
     using FixedPointMath for uint256;
+    using HyperdriveMath for uint256;
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
 
@@ -658,6 +650,24 @@ contract LpWithdrawalTest is HyperdriveTest {
             );
         }
         vm.revertTo(snapshotId);
+
+        // This edge cases results in Celine receiving less base than the
+        // contribution minus the uncorrected slippage payment (i.e. the
+        // slippage payment before we add the difference between the long base
+        // paid and present value of the long) minus the fixed interest. We
+        // fixed this by correcting the slippage payment.
+        snapshotId = vm.snapshot();
+        {
+            uint256 longBasePaid = 340282366920938463463374607431765834840;
+            uint256 shortAmount = 151708338147873952396386;
+            int256 variableRate = 13130;
+            _test_lp_withdrawal_long_short_redemption(
+                longBasePaid,
+                shortAmount,
+                variableRate
+            );
+        }
+        vm.revertTo(snapshotId);
     }
 
     function test_lp_withdrawal_long_short_redemption(
@@ -672,10 +682,6 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
     }
 
-    // FIXME: Add more lpSharePrice checks.
-    //
-    // FIXME: Update the description.
-    //
     // This test ensures that two LPs (Alice and Celine) will receive a fair
     // share of the withdrawal pool's profits if Alice has entirely long
     // exposure, Celine has entirely short exposure, Alice redeems immediately
@@ -748,9 +754,36 @@ contract LpWithdrawalTest is HyperdriveTest {
                 .mulDown(hyperdrive.lpSharePrice());
             // Celine adds liquidity.
             celineLpShares = addLiquidity(celine, testParams.contribution);
+
+            // Celine's slippage payment is the difference between the amount
+            // she contributed and her ending present value.
             celineSlippagePayment =
                 testParams.contribution -
                 celineLpShares.mulDown(hyperdrive.lpSharePrice());
+
+            // The long can't be sold on the curve for the base paid because
+            // Celine's slippage payment resulted in some of her liquidity being
+            // sent to the withdrawal pool. The difference between the base paid
+            // and the current value of the long is added to the slippage
+            // payment to correct for the amount of fixed interest Celine will
+            // owe in the worst case.
+            celineSlippagePayment +=
+                testParams.longBasePaid -
+                YieldSpaceMath
+                    .calculateSharesOutGivenBondsInDown(
+                        hyperdrive
+                            .getPoolInfo()
+                            .shareReserves
+                            .calculateEffectiveShareReserves(
+                                hyperdrive.getPoolInfo().shareAdjustment
+                            ),
+                        hyperdrive.getPoolInfo().bondReserves,
+                        testParams.longAmount,
+                        ONE - hyperdrive.getPoolConfig().timeStretch,
+                        hyperdrive.getPoolInfo().sharePrice,
+                        hyperdrive.getPoolConfig().initialSharePrice
+                    )
+                    .mulDown(hyperdrive.getPoolInfo().sharePrice);
 
             // Redeem Alice's withdrawal shares. Alice should receive the margin
             // released from Bob's long as well as a payment for the additional
@@ -879,9 +912,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertGt(
             celineBaseProceeds +
                 celineRedeemProceeds +
-                celineWithdrawalShares.mulDown(hyperdrive.lpSharePrice()) +
-                // TODO(#604):  Why do we need this fudge factor?
-                1e9,
+                celineWithdrawalShares.mulDown(hyperdrive.lpSharePrice()),
             uint256(
                 int256(testParams.contribution - celineSlippagePayment) +
                     fixedInterest.min(0)

@@ -809,20 +809,20 @@ contract HyperdriveTest is BaseTest {
         // _applyCheckpoint() in removeLiquidity and this will update the state if
         // any positions have matured.
         hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
-        uint256 startingPresentValue = hyperdrive.presentValue();
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        uint256 startingPresentValue = hyperdrive.presentValue().divDown(
+            poolInfo.sharePrice
+        );
         uint256 shareProceeds = MockHyperdrive(address(hyperdrive))
             .calculateIdleShareReserves(poolInfo.sharePrice);
-        shareProceeds = shareProceeds.mulDivDown(
-            _shares,
-            hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
-        );
 
         // This logic is here to determine if backtracking needed to calculate the lp proceeds
         MockHyperdrive(address(hyperdrive)).updateLiquidity(
             -int256(shareProceeds)
         );
-        uint256 endingPresentValue = hyperdrive.presentValue();
+        uint256 endingPresentValue = hyperdrive.presentValue().divDown(
+            poolInfo.sharePrice
+        );
         uint256 totalActiveLpSupply = hyperdrive.totalSupply(
             AssetId._LP_ASSET_ID
         );

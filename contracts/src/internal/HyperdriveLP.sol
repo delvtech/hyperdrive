@@ -254,11 +254,10 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         _distributeExcessIdle(sharePrice);
 
         // Burn the LP shares.
-        uint256 totalActiveLpSupply = _totalSupply[AssetId._LP_ASSET_ID];
         uint256 withdrawalSharesOutstanding = _totalSupply[
             AssetId._WITHDRAWAL_SHARE_ASSET_ID
         ] - _withdrawPool.readyToWithdraw;
-        uint256 totalLpSupply = totalActiveLpSupply +
+        uint256 totalLpSupply = _totalSupply[AssetId._LP_ASSET_ID] +
             withdrawalSharesOutstanding;
         _burn(AssetId._LP_ASSET_ID, msg.sender, _lpShares);
 
@@ -273,7 +272,6 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
             _lpShares,
             sharePrice,
             totalLpSupply,
-            totalActiveLpSupply,
             withdrawalSharesOutstanding
         );
 
@@ -472,7 +470,6 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
     /// @param _shares The amount of shares to remove.
     /// @param _sharePrice The current price of a share.
     /// @param _totalLpSupply The total amount of LP shares.
-    /// @param _totalActiveLpSupply The total amount of active LP shares.
     /// @param _withdrawalSharesOutstanding The total amount of withdrawal
     ///        shares outstanding.
     /// @return shareProceeds The share proceeds that will be paid to the LP.
@@ -482,7 +479,6 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         uint256 _shares,
         uint256 _sharePrice,
         uint256 _totalLpSupply,
-        uint256 _totalActiveLpSupply,
         uint256 _withdrawalSharesOutstanding
     ) internal returns (uint256 shareProceeds, uint256, uint256) {
         // The LP is given their share of the idle capital in the pool. Since we
@@ -497,7 +493,6 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
             params
         );
         shareProceeds = _calculateIdleShareReserves(_pricePerShare());
-        shareProceeds = shareProceeds.mulDivDown(_shares, _totalActiveLpSupply);
         _updateLiquidity(-int256(shareProceeds));
         params.shareReserves = _marketState.shareReserves;
         params.shareAdjustment = _marketState.shareAdjustment;
@@ -550,21 +545,13 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         uint256 presentValue = HyperdriveMath.calculatePresentValue(
             _getPresentValueParams(_sharePrice)
         );
-        uint256 activeLpValue = activeLpSupply.mulDivDown(
-            presentValue,
-            totalLpSupply
-        );
 
         // If the value of the active LP shares is less than the idle capital,
         // then all of the active LPs could be paid out in base with liquidity
         // to spare. We pay out this excess idle to the withdrawal pool. In
         // the case that the pool's present value is zero, all of the
         // withdrawal shares are paid out.
-        uint256 withdrawalProceeds = 0;
-        uint256 idle = _calculateIdleShareReserves(_sharePrice);
-        if (idle > activeLpValue) {
-            withdrawalProceeds = idle - activeLpValue;
-        }
+        uint256 withdrawalProceeds = _calculateIdleShareReserves(_sharePrice);
         if (withdrawalProceeds > 0 || presentValue == 0) {
             _compensateWithdrawalPool(
                 withdrawalProceeds,

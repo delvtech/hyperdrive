@@ -488,8 +488,6 @@ library HyperdriveMath {
             );
             maxCurveTrade = maxCurveTrade.min(uint256(netCurveTrade)); // netCurveTrade is non-negative, so this is safe.
             if (maxCurveTrade > 0) {
-                // NOTE: We underestimate here to match the behavior of
-                // `calculateCloseLong`.
                 _params.shareReserves -= YieldSpaceMath
                     .calculateSharesOutGivenBondsInDown(
                         effectiveShareReserves,
