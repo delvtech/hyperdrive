@@ -295,9 +295,10 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     /// #############################
     error InvalidForwarderAddress();
 
-    /// #####################
+    /// ###################
     /// ### BondWrapper ###
-    /// #####################
+    /// ###################
+    error InvalidRecipient(address recipient);
     error AlreadyClosed();
     error BondMatured();
     error BondNotMatured();
