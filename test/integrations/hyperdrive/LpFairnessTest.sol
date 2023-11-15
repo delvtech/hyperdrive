@@ -6,7 +6,7 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-contract LPFairnessTest is HyperdriveTest {
+contract LpFairnessTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for *;
     using Lib for *;
