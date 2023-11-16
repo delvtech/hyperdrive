@@ -305,6 +305,22 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
     function setLongExposure(uint128 longExposure) external {
         _marketState.longExposure = longExposure;
     }
+
+    function mint(
+        uint256 _tokenId,
+        address _account,
+        uint256 _amount
+    ) external {
+        _mint(_tokenId, _account, _amount);
+    }
+
+    function burn(
+        uint256 _tokenId,
+        address _account,
+        uint256 _amount
+    ) external {
+        _burn(_tokenId, _account, _amount);
+    }
 }
 
 contract MockHyperdriveTarget0 is HyperdriveTarget0, MockHyperdriveBase {
