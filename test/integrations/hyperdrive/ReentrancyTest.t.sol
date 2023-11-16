@@ -87,10 +87,10 @@ contract ReentrantERC20 is ERC20Mintable, ReentrancyTester {
 contract ReentrancyTest is HyperdriveTest {
     ReentrancyTester tester;
 
-    uint256 internal constant CONTRIBUTION = 1_000e18;
+    uint256 internal constant BASE_PAID = 1_000e18;
+    uint256 internal constant BOND_AMOUNT = 1_000e18;
+    uint256 internal constant CONTRIBUTION = 1_000_000e18;
     uint256 internal constant FIXED_RATE = 0.02e18;
-    uint256 internal constant BASE_PAID = 10e18;
-    uint256 internal constant BOND_AMOUNT = 10e18;
 
     /// Test ///
 
@@ -261,7 +261,7 @@ contract ReentrancyTest is HyperdriveTest {
         // Deploy a Hyperdrive term with a reentrant ERC20 as the base token.
         vm.startPrank(deployer);
         tester = new ReentrantEthReceiver();
-        vm.deal(address(tester), 10_000e18);
+        vm.deal(address(tester), CONTRIBUTION * 10);
         baseToken = ERC20Mintable(address(ETH));
         IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
         config.baseToken = IERC20(address(ETH));
