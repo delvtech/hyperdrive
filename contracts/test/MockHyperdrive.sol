@@ -15,50 +15,6 @@ import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 interface IMockHyperdrive {
     function accrue(uint256 time, int256 apr) external;
 
-    function calculateFeesGivenShares(
-        uint256 _amountIn,
-        uint256 _amountOut,
-        uint256 _normalizedTimeRemaining,
-        uint256 _spotPrice,
-        uint256 sharePrice
-    )
-        external
-        view
-        returns (
-            uint256 totalCurveFee,
-            uint256 totalFlatFee,
-            uint256 governanceCurveFee,
-            uint256 governanceFlatFee
-        );
-
-    function calculateFeesGivenBonds(
-        uint256 _amountIn,
-        uint256 _normalizedTimeRemaining,
-        uint256 _spotPrice,
-        uint256 sharePrice
-    )
-        external
-        view
-        returns (
-            uint256 totalCurveFee,
-            uint256 totalFlatFee,
-            uint256 totalGovernanceFee
-        );
-
-    function calculateOpenLong(
-        uint256 _shareAmount,
-        uint256 _sharePrice,
-        uint256 _timeRemaining
-    )
-        external
-        view
-        returns (
-            uint256 shareReservesDelta,
-            uint256 bondReservesDelta,
-            uint256 bondProceeds,
-            uint256 totalGovernanceFee
-        );
-
     function calculateTimeRemaining(
         uint256 _maturityTime
     ) external view returns (uint256);
@@ -248,24 +204,20 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
     }
 
     function calculateFeesGivenShares(
-        uint256 _amountIn,
+        uint256 _shareAmount,
         uint256 _spotPrice,
         uint256 sharePrice
-    )
-        external
-        view
-        returns (uint256 totalCurveFee, uint256 governanceCurveFee)
-    {
-        (totalCurveFee, governanceCurveFee) = _calculateFeesGivenShares(
-            _amountIn,
+    ) external view returns (uint256 curveFee, uint256 governanceCurveFee) {
+        (curveFee, governanceCurveFee) = _calculateFeesGivenShares(
+            _shareAmount,
             _spotPrice,
             sharePrice
         );
-        return (totalCurveFee, governanceCurveFee);
+        return (curveFee, governanceCurveFee);
     }
 
     function calculateFeesGivenBonds(
-        uint256 _amountOut,
+        uint256 _bondAmount,
         uint256 _normalizedTimeRemaining,
         uint256 _spotPrice,
         uint256 sharePrice
@@ -276,7 +228,6 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
             uint256 totalCurveFee,
             uint256 totalFlatFee,
             uint256 governanceCurveFee,
-            uint256 governanceFlatFee,
             uint256 totalGovernanceFee
         )
     {
@@ -284,10 +235,9 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
             totalCurveFee,
             totalFlatFee,
             governanceCurveFee,
-            governanceFlatFee,
             totalGovernanceFee
         ) = _calculateFeesGivenBonds(
-            _amountOut,
+            _bondAmount,
             _normalizedTimeRemaining,
             _spotPrice,
             sharePrice
@@ -296,7 +246,6 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
             totalCurveFee,
             totalFlatFee,
             governanceCurveFee,
-            governanceFlatFee,
             totalGovernanceFee
         );
     }
