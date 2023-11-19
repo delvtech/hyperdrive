@@ -203,7 +203,6 @@ contract ExtremeInputs is HyperdriveTest {
                 longExposure: poolInfo.longExposure,
                 timeStretch: poolConfig.timeStretch,
                 sharePrice: poolInfo.sharePrice,
-                initialSharePrice: poolConfig.initialSharePrice,
                 minimumShareReserves: targetReserves,
                 curveFee: poolConfig.fees.curve,
                 governanceFee: poolConfig.fees.governance

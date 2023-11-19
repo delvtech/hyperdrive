@@ -756,8 +756,7 @@ contract HyperdriveTest is BaseTest {
             bondAmount,
             normalizedTimeRemaining,
             poolConfig.timeStretch,
-            poolInfo.sharePrice,
-            poolConfig.initialSharePrice
+            poolInfo.sharePrice
         );
         if (closeSharePrice < openSharePrice) {
             shareProceeds = shareProceeds.mulDivDown(
@@ -783,8 +782,7 @@ contract HyperdriveTest is BaseTest {
             shortAmount,
             normalizedTimeRemaining,
             poolConfig.timeStretch,
-            poolInfo.sharePrice,
-            poolConfig.initialSharePrice
+            poolInfo.sharePrice
         );
         (, int256 expectedInterest) = HyperdriveUtils.calculateCompoundInterest(
             shortAmount,

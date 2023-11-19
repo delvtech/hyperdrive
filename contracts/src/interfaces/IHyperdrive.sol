@@ -152,8 +152,6 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         /// @dev The hash of the ERC20 linker's code. This is used to derive the
         ///      create2 addresses of the ERC20 linkers used by this instance.
         bytes32 linkerCodeHash;
-        /// @dev The initial share price.
-        uint256 initialSharePrice;
         /// @dev The minimum share reserves.
         uint256 minimumShareReserves;
         /// @dev The minimum amount of tokens that a position can be opened or
@@ -187,6 +185,8 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         uint256 bondReserves;
         /// @dev The total supply of LP shares.
         uint256 lpTotalSupply;
+        /// @dev The initial share price.
+        uint256 initialSharePrice;
         /// @dev The current share price.
         uint256 sharePrice;
         /// @dev An amount of bonds representing outstanding unmatured longs.

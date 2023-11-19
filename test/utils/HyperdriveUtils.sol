@@ -57,7 +57,7 @@ library HyperdriveUtils {
                     poolInfo.shareAdjustment
                 ),
                 poolInfo.bondReserves,
-                poolConfig.initialSharePrice,
+                poolInfo.initialSharePrice,
                 poolConfig.timeStretch
             );
     }
@@ -74,7 +74,7 @@ library HyperdriveUtils {
                     poolInfo.shareAdjustment
                 ),
                 poolInfo.bondReserves,
-                poolConfig.initialSharePrice,
+                poolInfo.initialSharePrice,
                 poolConfig.positionDuration,
                 poolConfig.timeStretch
             );
@@ -187,7 +187,7 @@ library HyperdriveUtils {
                 longExposure: poolInfo.longExposure,
                 timeStretch: poolConfig.timeStretch,
                 sharePrice: poolInfo.sharePrice,
-                initialSharePrice: poolConfig.initialSharePrice,
+                initialSharePrice: poolInfo.initialSharePrice,
                 minimumShareReserves: poolConfig.minimumShareReserves,
                 curveFee: poolConfig.fees.curve,
                 governanceFee: poolConfig.fees.governance
@@ -230,7 +230,7 @@ library HyperdriveUtils {
                     longExposure: poolInfo.longExposure,
                     timeStretch: poolConfig.timeStretch,
                     sharePrice: poolInfo.sharePrice,
-                    initialSharePrice: poolConfig.initialSharePrice,
+                    initialSharePrice: poolInfo.initialSharePrice,
                     minimumShareReserves: poolConfig.minimumShareReserves,
                     curveFee: poolConfig.fees.curve,
                     governanceFee: poolConfig.fees.governance
@@ -1383,7 +1383,7 @@ library HyperdriveUtils {
                         shareAdjustment: poolInfo.shareAdjustment,
                         bondReserves: poolInfo.bondReserves,
                         sharePrice: poolInfo.sharePrice,
-                        initialSharePrice: poolConfig.initialSharePrice,
+                        initialSharePrice: poolInfo.initialSharePrice,
                         minimumShareReserves: poolConfig.minimumShareReserves,
                         timeStretch: poolConfig.timeStretch,
                         longsOutstanding: poolInfo.longsOutstanding,
@@ -1441,7 +1441,7 @@ library HyperdriveUtils {
                 info.bondReserves,
                 ONE - config.timeStretch,
                 info.sharePrice,
-                config.initialSharePrice
+                info.initialSharePrice
             );
     }
 
