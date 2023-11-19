@@ -524,7 +524,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 curveFee, // shares
                 flatFee, // shares
                 ,
-                ,
                 totalGovernanceFee // shares
             ) = _calculateFeesGivenBonds(
                 _bondAmount,

@@ -92,7 +92,31 @@ contract BondWrapperTest is BaseTest {
         vm.stopPrank();
     }
 
-    function test_BondWrapperRedeem() public {
+    function test_FailsToTransferToInvalidRecipient() external {
+        uint256 amount = 1e18;
+        bondWrapper.mint(alice, amount);
+
+        // Ensure that Alice can't transfer to the zero address.
+        vm.startPrank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IHyperdrive.InvalidRecipient.selector,
+                address(0)
+            )
+        );
+        bondWrapper.transfer(address(0), amount);
+
+        // Ensure that Alice can't transfer to the bond wrapper address.
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IHyperdrive.InvalidRecipient.selector,
+                address(bondWrapper)
+            )
+        );
+        bondWrapper.transfer(address(bondWrapper), amount);
+    }
+
+    function test_BondWrapperRedeem() external {
         // Ensure that the bondWrapper contract has been approved by the user
         vm.startPrank(alice);
         multiToken.setApprovalForAll(address(bondWrapper), true);
@@ -113,7 +137,7 @@ contract BondWrapperTest is BaseTest {
         assert(balance == 0);
     }
 
-    function test_bond_wrapper_closeLimit() public {
+    function test_bond_wrapper_closeLimit() external {
         // Ensure that the bondWrapper contract has been approved by the user
         vm.startPrank(alice);
         multiToken.setApprovalForAll(address(bondWrapper), true);
@@ -155,7 +179,7 @@ contract BondWrapperTest is BaseTest {
         );
     }
 
-    function test_sweepAndRedeem() public {
+    function test_sweepAndRedeem() external {
         // Alice mints some BondWrapper tokens.
         vm.startPrank(alice);
         uint256 balance = bondWrapper.balanceOf(alice);

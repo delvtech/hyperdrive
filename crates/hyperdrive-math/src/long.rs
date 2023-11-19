@@ -165,6 +165,15 @@ impl State {
             }
         }
 
+        // Ensure that the final result is less than the absolute max and clamp
+        // to the budget.
+        if max_base_amount >= absolute_max_base_amount {
+            panic!("Reached absolute max bond amount in `get_max_long`.");
+        }
+        if max_base_amount >= budget {
+            return budget;
+        }
+
         max_base_amount
     }
 
