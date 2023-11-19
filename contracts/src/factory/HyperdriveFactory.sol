@@ -369,6 +369,7 @@ contract HyperdriveFactory {
             revert IHyperdrive.EndIndexTooLarge();
         }
 
+        // Return the range of instances.
         range = new address[](endIndex - startIndex + 1);
         for (uint256 i = startIndex; i <= endIndex; i++) {
             range[i - startIndex] = _instances[i];
