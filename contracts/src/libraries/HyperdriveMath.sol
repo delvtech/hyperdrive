@@ -454,9 +454,40 @@ library HyperdriveMath {
     function calculatePresentValue(
         PresentValueParams memory _params
     ) internal pure returns (uint256) {
-        // Compute the net of the longs and shorts that will be traded on the
-        // curve and apply this net to the reserves.
-        int256 netCurveTrade = int256(
+        // We calculate the LP present value by simulating the closing of all
+        // of the outstanding long and short positions and applying this impact
+        // on the share reserves. The present value is the share reserves after
+        // the impact of the trades minus the minimum share reserves:
+        //
+        // PV = z + net_c + net_f - z_min
+        int256 presentValue = int256(_params.shareReserves) +
+            calculateNetCurveTrade(_params) +
+            calculateNetFlatTrade(_params) -
+            int256(_params.minimumShareReserves);
+
+        // If the present value is negative, we revert.
+        if (presentValue < 0) {
+            revert IHyperdrive.NegativePresentValue();
+        }
+
+        return uint256(presentValue);
+    }
+
+    /// @dev Calculates the result of closing the net curve position.
+    /// @param _params The parameters for the present value calculation.
+    /// @return The impact of closing the net curve position on the share
+    ///         reserves.
+    function calculateNetCurveTrade(
+        PresentValueParams memory _params
+    ) internal pure returns (int256) {
+        // The net curve position is the net of the longs and shorts that are
+        // currently tradeable on the curve. Given the amount of outstanding
+        // longs `y_l` and shorts `y_s` as well as the average time remaining
+        // of outstanding longs `t_l` and shorts `t_s`, we can
+        // compute the net curve position as:
+        //
+        // netCurveTrade = y_l * t_l - y_s * t_s.
+        int256 netCurvePosition = int256(
             _params.longsOutstanding.mulDown(_params.longAverageTimeRemaining)
         ) -
             int256(
@@ -468,50 +499,55 @@ library HyperdriveMath {
             _params.shareReserves,
             _params.shareAdjustment
         );
-        if (netCurveTrade > 0) {
-            // Close as many longs as possible on the curve. Any longs that
-            // can't be closed will be stuck until maturity (assuming nothing
-            // changes) at which time the longs will receive the bond's face
-            // value and the LPs will receive any variable interest that is
-            // collected. It turns out that the value that we place on these
-            // stuck longs doesn't have an impact on LP fairness since longs
-            // are only stuck when there is no idle remaining. With this in
-            // mind, we mark the longs to zero for simplicity and to avoid
-            // unnecessary computation.
-            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxSell(
-                effectiveShareReserves,
-                _params.bondReserves,
-                _params.minimumShareReserves,
-                ONE - _params.timeStretch,
-                _params.sharePrice,
-                _params.initialSharePrice
-            );
-            maxCurveTrade = maxCurveTrade.min(uint256(netCurveTrade)); // netCurveTrade is non-negative, so this is safe.
-            if (maxCurveTrade > 0) {
-                // NOTE: We underestimate here to match the behavior of
-                // `calculateCloseLong`.
-                _params.shareReserves -= YieldSpaceMath
-                    .calculateSharesOutGivenBondsInDown(
-                        effectiveShareReserves,
-                        _params.bondReserves,
-                        maxCurveTrade,
-                        ONE - _params.timeStretch,
-                        _params.sharePrice,
-                        _params.initialSharePrice
-                    );
+
+        // If the net curve position is positive, then the pool is net long.
+        // Closing the net curve position results in the longs being paid out
+        // from the share reserves, so we negate the result.
+        if (netCurvePosition > 0) {
+            uint256 netCurvePosition_ = uint256(netCurvePosition);
+
+            // Calculate the maximum amount of bonds that can be sold on
+            // YieldSpace.
+            (uint256 maxShareProceeds, uint256 maxCurveTrade) = YieldSpaceMath
+                .calculateMaxSell(
+                    effectiveShareReserves,
+                    _params.bondReserves,
+                    _params.minimumShareReserves,
+                    ONE - _params.timeStretch,
+                    _params.sharePrice,
+                    _params.initialSharePrice
+                );
+
+            // If the max curve trade is greater than the net curve position,
+            // then we can close the entire net curve position.
+            if (maxCurveTrade >= netCurvePosition_) {
+                (uint256 netCurveTrade, , ) = HyperdriveMath.calculateCloseLong(
+                    effectiveShareReserves,
+                    _params.bondReserves,
+                    netCurvePosition_,
+                    ONE,
+                    _params.timeStretch,
+                    _params.sharePrice,
+                    _params.initialSharePrice
+                );
+                return -int256(netCurveTrade);
             }
-        } else if (netCurveTrade < 0) {
-            // Close as many shorts as possible on the curve. Any shorts that
-            // can't be closed will be stuck until maturity (assuming nothing
-            // changes) at which time the LPs will receive the bond's face
-            // value. If we value the stuck shorts at less than the face value,
-            // LPs that remove liquidity before liquidity will receive a smaller
-            // amount of withdrawal shares than they should. On the other hand,
-            // if we value the stuck shorts at more than the face value, LPs
-            // that remove liquidity before maturity will receive a larger
-            // amount of withdrawal shares than they should. With this in mind,
-            // we value the stuck shorts at exactly the face value.
-            netCurveTrade = -netCurveTrade; // Switch to a positive value for convenience.
+            // Otherwise, we can only close part of the net curve position.
+            // Since the spot price is approximately zero after closing the
+            // entire net curve position, we mark any remaining bonds to zero.
+            else {
+                return -int256(maxShareProceeds);
+            }
+        }
+        // If the net curve position is negative, then the pool is net short.
+        else if (netCurvePosition < 0) {
+            uint256 netCurvePosition_ = uint256(-netCurvePosition);
+
+            // FIXME: This should return the share amount so that we can use it
+            // later.
+            //
+            // Calculate the maximum amount of bonds that can be bought on
+            // YieldSpace.
             uint256 maxCurveTrade = YieldSpaceMath.calculateMaxBuy(
                 effectiveShareReserves,
                 _params.bondReserves,
@@ -519,48 +555,75 @@ library HyperdriveMath {
                 _params.sharePrice,
                 _params.initialSharePrice
             );
-            maxCurveTrade = maxCurveTrade.min(uint256(netCurveTrade)); // netCurveTrade is positive, so this is safe.
-            if (maxCurveTrade > 0) {
-                // NOTE: We overestimate here to match the behavior of
-                // `calculateCloseShort`.
-                _params.shareReserves += YieldSpaceMath
-                    .calculateSharesInGivenBondsOutUp(
+
+            // If the max curve trade is greater than the net curve position,
+            // then we can close the entire net curve position.
+            if (maxCurveTrade >= netCurvePosition_) {
+                (uint256 netCurveTrade, , ) = HyperdriveMath
+                    .calculateCloseShort(
                         effectiveShareReserves,
                         _params.bondReserves,
-                        maxCurveTrade,
-                        ONE - _params.timeStretch,
+                        netCurvePosition_,
+                        ONE,
+                        _params.timeStretch,
                         _params.sharePrice,
                         _params.initialSharePrice
                     );
+                return int256(netCurveTrade);
             }
-            _params.shareReserves += uint256(netCurveTrade) - maxCurveTrade;
+            // Otherwise, we can only close part of the net curve position.
+            // Since the spot price is equal to one after closing the entire net
+            // curve position, we mark any remaining bonds to zero.
+            else {
+                (uint256 netCurveTrade, , ) = HyperdriveMath
+                    .calculateCloseShort(
+                        effectiveShareReserves,
+                        _params.bondReserves,
+                        maxCurveTrade,
+                        ONE,
+                        _params.timeStretch,
+                        _params.sharePrice,
+                        _params.initialSharePrice
+                    );
+                return
+                    int256(
+                        netCurveTrade +
+                            (netCurvePosition_ - maxCurveTrade).divDown(
+                                _params.sharePrice
+                            )
+                    );
+            }
         }
 
-        // Compute the net of the longs and shorts that will be traded flat and
-        // apply this net to the reserves.
-        int256 netFlatTrade = int256(
-            _params.shortsOutstanding.mulDivDown(
-                ONE - _params.shortAverageTimeRemaining,
-                _params.sharePrice
-            )
-        ) -
+        return 0;
+    }
+
+    /// @dev Calculates the result of closing the net flat position.
+    /// @param _params The parameters for the present value calculation.
+    /// @return The impact of closing the net flat position on the share
+    ///         reserves.
+    function calculateNetFlatTrade(
+        PresentValueParams memory _params
+    ) internal pure returns (int256) {
+        // The net curve position is the net of the component of longs and
+        // shorts that have matured. Given the amount of outstanding longs `y_l`
+        // and shorts `y_s` as well as the average time remaining of outstanding
+        // longs `t_l` and shorts `t_s`, we can compute the net flat trade as:
+        //
+        // netFlatTrade = y_s * (1 - t_s) - y_l * (1 - t_l).
+        return
+            int256(
+                _params.shortsOutstanding.mulDivDown(
+                    ONE - _params.shortAverageTimeRemaining,
+                    _params.sharePrice
+                )
+            ) -
             int256(
                 _params.longsOutstanding.mulDivDown(
                     ONE - _params.longAverageTimeRemaining,
                     _params.sharePrice
                 )
             );
-        int256 updatedShareReserves = int256(_params.shareReserves) +
-            netFlatTrade;
-        if (updatedShareReserves < int256(_params.minimumShareReserves)) {
-            revert IHyperdrive.NegativePresentValue();
-        }
-        _params.shareReserves = uint256(updatedShareReserves);
-
-        // The present value is the final share reserves minus the minimum share
-        // reserves. This ensures that LP withdrawals won't include the minimum
-        // share reserves.
-        return _params.shareReserves - _params.minimumShareReserves;
     }
 
     /// @dev Calculates the proceeds in shares of closing a short position. This

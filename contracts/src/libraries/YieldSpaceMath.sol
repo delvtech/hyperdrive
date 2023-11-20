@@ -298,7 +298,8 @@ library YieldSpaceMath {
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
-    /// @return The maximum amount of bonds that can be sold.
+    /// @return maxShareAmount The share proceeds of the maximum sale.
+    /// @return maxBondAmount The maximum amount of bonds that can be sold.
     function calculateMaxSell(
         uint256 z,
         uint256 y,
@@ -306,25 +307,34 @@ library YieldSpaceMath {
         uint256 t,
         uint256 c,
         uint256 mu
-    ) internal pure returns (uint256) {
-        // We solve for the maximum sell using the constraint that the pool's
-        // share reserves can never fall below the minimum share reserves zMin.
-        // Substituting z = zMin simplifies YieldSpace to
-        // k = (c / mu) * (mu * (zMin)) ** (1 - tau) + y' ** (1 - tau), and
-        // gives us the maximum bond reserves of
-        // y' = (k - (c / mu) * (mu * (zMin)) ** (1 - tau)) ** (1 / (1 - tau)).
-        uint256 k = kDown(z, y, t, c, mu);
-        uint256 optimalY = k - c.mulDivUp(mu.mulUp(zMin).pow(t), mu);
-        if (optimalY >= ONE) {
-            // Rounding the exponent down results in a smaller outcome.
-            optimalY = optimalY.pow(ONE.divDown(t));
-        } else {
-            // Rounding the exponent up results in a smaller outcome.
-            optimalY = optimalY.pow(ONE.divUp(t));
-        }
+    ) internal pure returns (uint256 maxShareAmount, uint256 maxBondAmount) {
+        // The effective share reserves can't fall below the minimum share
+        // reserves `z_min`, so the maximum share amount is:
+        //
+        // maxShareAmount = z - z_min
+        maxShareAmount = z - zMin;
 
-        // The optimal trade size is given by dy = y' - y.
-        return optimalY - y;
+        // We solve for the maximum bond amount using the constraint that the
+        // pool's share reserves can never fall below the minimum share reserves
+        // `z_min`. Substituting `z = z_min` simplifies YieldSpace to:
+        //
+        // k = (c / mu) * (mu * (zMin)) ** (1 - tau) + y' ** (1 - tau)
+        //
+        // y' = (k - (c / mu) * (mu * (zMin)) ** (1 - tau)) ** (1 / (1 - tau)).
+        {
+            uint256 k = kDown(z, y, t, c, mu);
+            uint256 optimalY = k - c.mulDivUp(mu.mulUp(zMin).pow(t), mu);
+            if (optimalY >= ONE) {
+                // Rounding the exponent down results in a smaller outcome.
+                optimalY = optimalY.pow(ONE.divDown(t));
+            } else {
+                // Rounding the exponent up results in a smaller outcome.
+                optimalY = optimalY.pow(ONE.divUp(t));
+            }
+
+            // The optimal trade size is given by dy = y' - y.
+            maxBondAmount = optimalY - y;
+        }
     }
 
     /// @dev Calculates the YieldSpace invariant k. This invariant is given by:

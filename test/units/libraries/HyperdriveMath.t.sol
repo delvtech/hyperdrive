@@ -1631,7 +1631,9 @@ contract HyperdriveMathTest is HyperdriveTest {
                     params.sharePrice,
                     params.initialSharePrice
                 );
-            params.shareReserves += netCurveTrade - maxCurveTrade;
+            params.shareReserves += (netCurveTrade - maxCurveTrade).divDown(
+                params.sharePrice
+            );
 
             // Apply the flat part to the reserves.
             params.shareReserves +=
@@ -1699,7 +1701,9 @@ contract HyperdriveMathTest is HyperdriveTest {
                     params.sharePrice,
                     params.initialSharePrice
                 );
-            params.shareReserves += netCurveTrade - maxCurveTrade;
+            params.shareReserves += (netCurveTrade - maxCurveTrade).divDown(
+                params.sharePrice
+            );
 
             // Apply the flat part to the reserves.
             params.shareReserves +=
@@ -1767,7 +1771,9 @@ contract HyperdriveMathTest is HyperdriveTest {
                     params.sharePrice,
                     params.initialSharePrice
                 );
-            params.shareReserves += netCurveTrade - maxCurveTrade;
+            params.shareReserves += (netCurveTrade - maxCurveTrade).divDown(
+                params.sharePrice
+            );
 
             // Apply the flat part to the reserves.
             params.shareReserves +=

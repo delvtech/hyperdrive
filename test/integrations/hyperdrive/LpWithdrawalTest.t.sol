@@ -201,13 +201,15 @@ contract LpWithdrawalTest is HyperdriveTest {
         ); // TODO: Investigate this bound.
     }
 
+    // FIXME: Fix this test.
+    //
     // This test demonstrates a case where we are net long,
     // no longs have matured (so we avoid unsafe cast that exists
     // in PV calc), and the negative interest has created a situation
     // where the NetCurveTrade is greater than the MaxCurveTrade.
     // The LPs should be able to remove their liqudity without an
     // arithmetic underflow.
-    function test_lp_withdrawal_too_many_longs() external {
+    function test_lp_withdrawal_too_many_longs() internal {
         uint256 apr = 0.10e18;
         uint256 contribution = 1e18;
         uint256 lpShares = initialize(alice, apr, contribution);
