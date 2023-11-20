@@ -3,8 +3,7 @@ use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
-use crate::State;
-use crate::{get_effective_share_reserves, YieldSpace};
+use crate::{get_effective_share_reserves, State, YieldSpace};
 
 impl State {
     /// Gets the minimum price that the pool can support.

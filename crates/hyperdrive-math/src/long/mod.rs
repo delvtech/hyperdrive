@@ -1,7 +1,7 @@
+mod fees;
 mod max;
 mod open;
-mod fees;
 
+pub use fees::*;
 pub use max::*;
 pub use open::*;
-pub use fees::*;

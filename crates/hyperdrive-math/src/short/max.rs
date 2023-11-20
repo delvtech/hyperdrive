@@ -3,8 +3,7 @@ use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
-use crate::State;
-use crate::{get_effective_share_reserves, YieldSpace};
+use crate::{get_effective_share_reserves, State, YieldSpace};
 
 impl State {
     // TODO: Make it clear to the consumer that the maximum number of iterations
