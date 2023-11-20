@@ -2,37 +2,10 @@ use ethers::types::I256;
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, int256};
 
-use super::State;
+use crate::State;
 use crate::YieldSpace;
 
 impl State {
-    /// Gets the pool's max spot price.
-    ///
-    /// Hyperdrive has assertions to ensure that traders don't purchase bonds at
-    /// negative interest rates. The maximum spot price that longs can push the
-    /// market to is given by:
-    ///
-    /// $$
-    /// p_max = \frac{1}{1 + \phi_c * \left( p_0^{-1} - 1 \right)}
-    /// $$
-    pub fn get_max_spot_price(&self) -> FixedPoint {
-        fixed!(1e18)
-            / (fixed!(1e18)
-                + self
-                    .curve_fee()
-                    .mul_up(fixed!(1e18).div_up(self.get_spot_price()) - fixed!(1e18)))
-    }
-
-    /// Gets the spot price after opening the long on the YieldSpace curve and
-    /// before calculating the fees.
-    pub fn get_spot_price_after_long(&self, long_amount: FixedPoint) -> FixedPoint {
-        let mut state: State = self.clone();
-        state.info.bond_reserves -= state
-            .calculate_bonds_out_given_shares_in_down(long_amount / state.share_price())
-            .into();
-        state.info.share_reserves += (long_amount / state.share_price()).into();
-        state.get_spot_price()
-    }
 
     /// Gets the pool's solvency.
     pub fn get_solvency(&self) -> FixedPoint {
@@ -470,30 +443,6 @@ impl State {
         derivative -= self.curve_fee() * ((fixed!(1e18) / self.get_spot_price()) - fixed!(1e18));
 
         Some(derivative)
-    }
-
-    /// Gets the curve fee paid by longs for a given base amount.
-    ///
-    /// The curve fee $c(x)$ paid by longs is given by:
-    ///
-    /// $$
-    /// c(x) = \phi_{c} \cdot \left( \tfrac{1}{p} - 1 \right) \cdot x
-    /// $$
-    fn long_curve_fee(&self, base_amount: FixedPoint) -> FixedPoint {
-        self.curve_fee() * ((fixed!(1e18) / self.get_spot_price()) - fixed!(1e18)) * base_amount
-    }
-
-    /// Gets the governance fee paid by longs for a given base amount.
-    ///
-    /// Unlike the [curve fee](long_curve_fee) which is paid in bonds, the
-    /// governance fee is paid in base. The governance fee $g(x)$ paid by longs
-    /// is given by:
-    ///
-    /// $$
-    /// g(x) = \phi_{g} \cdot p \cdot c(x)
-    /// $$
-    fn long_governance_fee(&self, base_amount: FixedPoint) -> FixedPoint {
-        self.governance_fee() * self.get_spot_price() * self.long_curve_fee(base_amount)
     }
 }
 
