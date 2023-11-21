@@ -99,9 +99,15 @@ contract MockYieldSpaceMath {
         uint256 t,
         uint256 c,
         uint256 mu
-    ) external pure returns (uint256) {
-        uint256 result1 = YieldSpaceMath.calculateMaxBuy(z, y, t, c, mu);
-        return result1;
+    ) external pure returns (uint256, uint256) {
+        (uint256 result1, uint256 result2) = YieldSpaceMath.calculateMaxBuy(
+            z,
+            y,
+            t,
+            c,
+            mu
+        );
+        return (result1, result2);
     }
 
     function calculateMaxSell(

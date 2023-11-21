@@ -260,33 +260,57 @@ library YieldSpaceMath {
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
-    /// @return The maximum amount of bonds that can be purchased.
+    /// @return shareAmount The share amount required to purchase the maximum
+    ///         amount of bonds.
+    /// @return bondAmount The maximum amount of bonds that can be purchased.
     function calculateMaxBuy(
         uint256 z,
         uint256 y,
         uint256 t,
         uint256 c,
         uint256 mu
-    ) internal pure returns (uint256) {
+    ) internal pure returns (uint256 shareAmount, uint256 bondAmount) {
         // We solve for the maximum buy using the constraint that the pool's
         // spot price can never exceed 1. We do this by noting that a spot price
-        // of 1, (mu * z) / y ** tau = 1, implies that mu * z = y. This
-        // simplifies YieldSpace to k = ((c / mu) + 1) * y' ** (1 - tau), and
-        // gives us the maximum bond reserves of
-        // y' = (k / ((c / mu) + 1)) ** (1 / (1 - tau)) and the maximum share
-        // reserves of z' = y/mu.
-        uint256 k = kUp(z, y, t, c, mu);
-        uint256 optimalY = k.divUp(c.divDown(mu) + ONE);
-        if (optimalY >= ONE) {
-            // Rounding the exponent up results in a larger outcome.
-            optimalY = optimalY.pow(ONE.divUp(t));
-        } else {
-            // Rounding the exponent down results in a larger outcome.
-            optimalY = optimalY.pow(ONE.divDown(t));
+        // of 1, ((mu * z) / y) ** tau = 1, implies that mu * z = y. This
+        // simplifies YieldSpace to k = ((c / mu) + 1) * (mu * z') ** (1 - tau),
+        // and gives us the maximum share reserves of:
+        //
+        // z' = (1 / mu) * (k / ((c / mu) + 1)) ** (1 / (1 - tau)).
+        {
+            uint256 k = kDown(z, y, t, c, mu);
+            uint256 optimalZ = k.divDown(c.divUp(mu) + ONE);
+            if (optimalZ >= ONE) {
+                // Rounding the exponent down results in a smaller outcome.
+                optimalZ = optimalZ.pow(ONE.divDown(t));
+            } else {
+                // Rounding the exponent up results in a smaller outcome.
+                optimalZ = optimalZ.pow(ONE.divUp(t));
+            }
+            optimalZ = optimalZ.divDown(mu);
+
+            // The optimal trade size is given by dz = z' - z.
+            shareAmount = optimalZ - z;
         }
 
-        // The optimal trade size is given by dy = y - y'.
-        return y - optimalY;
+        // We can use the same derivation to calculate the minimum bond reserves
+        // as:
+        //
+        // y' = (k / ((c / mu) + 1)) ** (1 / (1 - tau)).
+        {
+            uint256 k = kUp(z, y, t, c, mu);
+            uint256 optimalY = k.divUp(c.divDown(mu) + ONE);
+            if (optimalY >= ONE) {
+                // Rounding the exponent up results in a larger outcome.
+                optimalY = optimalY.pow(ONE.divUp(t));
+            } else {
+                // Rounding the exponent down results in a larger outcome.
+                optimalY = optimalY.pow(ONE.divDown(t));
+            }
+
+            // The optimal trade size is given by dy = y - y'.
+            bondAmount = y - optimalY;
+        }
     }
 
     /// @dev Calculates the maximum amount of bonds that can be sold with the
