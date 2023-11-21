@@ -6,36 +6,6 @@ use fixed_point_macros::fixed;
 use crate::{get_effective_share_reserves, State, YieldSpace};
 
 impl State {
-    /// Gets the minimum price that the pool can support.
-    ///
-    /// YieldSpace intersects the y-axis with a finite slope, so there is a
-    /// minimum price that the pool can support. This is the price at which the
-    /// share reserves are equal to the minimum share reserves.
-    ///
-    /// We can solve for the bond reserves $y_{max}$ implied by the share reserves
-    /// being equal to $z_{min}$ using the current k value:
-    ///
-    /// $$
-    /// k = \tfrac{c}{\mu} \cdot \left( \mu \cdot z_{min} \right)^{1 - t_s} + y_{max}^{1 - t_s} \\
-    /// \implies \\
-    /// y_{max} = \left( k - \tfrac{c}{\mu} \cdot \left( \mu \cdot z_{min} \right)^{1 - t_s} \right)^{\tfrac{1}{1 - t_s}}
-    /// $$
-    ///
-    /// From there, we can calculate the spot price as normal as:
-    ///
-    /// $$
-    /// p = \left( \tfrac{\mu \cdot z_{min}}{y_{max}} \right)^{t_s}
-    /// $$
-    pub fn get_min_price(&self) -> FixedPoint {
-        let y_max = (self.k_up()
-            - (self.share_price() / self.initial_share_price())
-                * (self.initial_share_price() * self.minimum_share_reserves())
-                    .pow(fixed!(1e18) - self.time_stretch()))
-        .pow(fixed!(1e18).div_up(fixed!(1e18) - self.time_stretch()));
-        ((self.initial_share_price() * self.minimum_share_reserves()) / y_max)
-            .pow(self.time_stretch())
-    }
-
     /// Gets the amount of base the trader will need to deposit for a short of
     /// a given size.
     ///
