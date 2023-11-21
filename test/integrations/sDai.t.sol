@@ -44,17 +44,12 @@ contract sDaiTest is ERC4626ValidationTest {
 
     function advanceTimeWithYield(
         uint256 timeDelta,
-        int256 variableRate
+        int256 // unused
     ) public override {
         vm.warp(block.timestamp + timeDelta);
         // Interest accumulates in the dsr based on time passed.
         // This may caused insolvency if too much interest accrues as no real dai is being
         // accrued.
-
-        variableRate;
-
-        // NOTE: Remove this note after PR, but wanted to point out that variableRate is not
-        //       used in this function.
 
         // Note - Mainnet only address for Pot, but fine since this test explicitly uses a Mainnet fork in test
         PotLike(0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7).drip();

@@ -250,8 +250,8 @@ contract HyperdriveFactory {
     /// @dev This function is declared as payable to allow payable overrides
     ///      to accept ether on initialization, but payability is not supported
     ///      by default.
-    /// @param _config The configuration of the Hyperdrive pool.
     /// @param _hyperdriveDeployer Address of the hyperdrive deployer.
+    /// @param _config The configuration of the Hyperdrive pool.
     /// @param _extraData The extra data that contains data necessary for the specific deployer.
     /// @param _contribution Base token to call init with
     /// @param _apr The apr to call init with

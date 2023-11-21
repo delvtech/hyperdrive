@@ -72,7 +72,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         factory.removeHyperdriveDeployer(hyperdriveDeployer, 0);
         vm.stopPrank();
 
-        // Alice can change governance
+        // Alice can change governance.
         vm.startPrank(alice);
         factory.updateGovernance(bob);
         assertEq(factory.governance(), bob);

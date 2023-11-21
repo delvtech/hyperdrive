@@ -249,7 +249,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
 
         deal(address(dai), charlie, CONTRIBUTION);
 
-        // 1. Charlie deploys factory with yDAI as yield source, hyperdrive deployer 1
+        // 1. Charlie deploys factory with yDAI as yield source, hyperdrive deployer 1.
 
         dai.approve(address(factory), CONTRIBUTION);
 
@@ -296,7 +296,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
         assertEq(instances.length, 1);
         assertEq(instances[0], address(hyperdrive1));
 
-        // 2. Charlie deploys factory with sDAI as yield source, hyperdrive deployer 2
+        // 2. Charlie deploys factory with sDAI as yield source, hyperdrive deployer 2.
 
         deal(address(dai), charlie, CONTRIBUTION);
 
@@ -344,7 +344,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
         assertEq(instances[0], address(hyperdrive1));
         assertEq(instances[1], address(hyperdrive2));
 
-        // 3. Dan deploys factory with sDAI as yield source, hyperdrive deployer 1
+        // 3. Dan deploys factory with sDAI as yield source, hyperdrive deployer 1.
 
         deal(address(dai), dan, CONTRIBUTION);
 

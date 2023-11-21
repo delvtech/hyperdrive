@@ -7,7 +7,7 @@ import { IERC4626HyperdriveDeployer } from "../interfaces/IERC4626HyperdriveDepl
 import { ERC4626Hyperdrive } from "../instances/ERC4626Hyperdrive.sol";
 
 /// @author DELV
-/// @title ERC4626HyperdriveDeployer
+/// @title ERC4626HyperdriveCoreDeployer
 /// @notice This is a minimal factory which contains only the logic to deploy
 ///         the hyperdrive contract and is called by a more complex factory which
 ///         initializes the Hyperdrive instances and acts as a registry.
