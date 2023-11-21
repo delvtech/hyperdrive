@@ -102,9 +102,10 @@ mod tests {
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
-            let current_block_timestamp = rng.gen();
-            let actual =
-                panic::catch_unwind(|| state.calculate_present_value(current_block_timestamp));
+            let current_block_timestamp = rng.gen_range(fixed!(1)..=fixed!(1e4));
+            let actual = panic::catch_unwind(|| {
+                state.calculate_present_value(current_block_timestamp.into())
+            });
             match mock
                 .calculate_present_value(PresentValueParams {
                     share_reserves: state.info.share_reserves,
