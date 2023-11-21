@@ -1,11 +1,12 @@
 mod long;
+mod lp;
 mod short;
 mod utils;
 mod yield_space;
 
 use ethers::types::{Address, I256, U256};
 use fixed_point::FixedPoint;
-use fixed_point_macros::fixed;
+use fixed_point_macros::{fixed, uint256};
 use hyperdrive_wrappers::wrappers::i_hyperdrive::{Fees, PoolConfig, PoolInfo};
 pub use long::*;
 use rand::{
@@ -122,6 +123,20 @@ impl State {
         time - time % self.config.checkpoint_duration
     }
 
+    pub fn time_remaining_scaled(
+        &self,
+        current_block_timestamp: U256,
+        maturity_time: U256,
+    ) -> FixedPoint {
+        let latest_checkpoint = self.to_checkpoint(current_block_timestamp) * uint256!(1e18);
+        if maturity_time > latest_checkpoint {
+            FixedPoint::from(maturity_time - latest_checkpoint)
+                / FixedPoint::from(U256::from(self.position_duration()) * uint256!(1e18))
+        } else {
+            fixed!(0)
+        }
+    }
+
     /// Config ///
 
     fn position_duration(&self) -> FixedPoint {
@@ -178,8 +193,16 @@ impl State {
         self.info.longs_outstanding.into()
     }
 
+    fn long_average_maturity_time(&self) -> FixedPoint {
+        self.info.long_average_maturity_time.into()
+    }
+
     fn shorts_outstanding(&self) -> FixedPoint {
         self.info.shorts_outstanding.into()
+    }
+
+    fn short_average_maturity_time(&self) -> FixedPoint {
+        self.info.short_average_maturity_time.into()
     }
 
     fn long_exposure(&self) -> FixedPoint {
