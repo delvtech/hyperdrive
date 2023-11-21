@@ -441,7 +441,7 @@ mod tests {
                 .call()
                 .await
             {
-                Ok(expected) => {
+                Ok((.., expected)) => {
                     assert_eq!(actual.unwrap(), FixedPoint::from(expected));
                 }
                 Err(_) => assert!(actual.is_err()),
@@ -474,7 +474,7 @@ mod tests {
                 .call()
                 .await
             {
-                Ok(expected) => {
+                Ok((.., expected)) => {
                     assert_eq!(actual.unwrap(), FixedPoint::from(expected));
                 }
                 Err(_) => assert!(actual.is_err()),
