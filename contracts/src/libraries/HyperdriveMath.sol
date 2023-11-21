@@ -210,16 +210,18 @@ library HyperdriveMath {
             uint256 shareProceeds
         )
     {
-        // We consider (1 - timeRemaining) * amountIn of the bonds to be fully
+        // We consider `(1 - timeRemaining) * amountIn` of the bonds to be fully
         // matured and timeRemaining * amountIn of the bonds to be newly
         // minted. The fully matured bonds are redeemed one-to-one to base
         // (our result is given in shares, so we divide the one-to-one
         // redemption by the share price) and the newly minted bonds are
-        // traded on a YieldSpace curve configured to timeRemaining = 1.
-        shareProceeds = _amountIn.mulDivDown(
-            ONE - _normalizedTimeRemaining,
-            _sharePrice
-        );
+        // traded on a YieldSpace curve configured to `timeRemaining = 1`.
+        if (_normalizedTimeRemaining < ONE) {
+            shareProceeds = _amountIn.mulDivDown(
+                ONE - _normalizedTimeRemaining,
+                _sharePrice
+            );
+        }
         if (_normalizedTimeRemaining > 0) {
             // Calculate the curved part of the trade.
             bondCurveDelta = _amountIn.mulDown(_normalizedTimeRemaining);
@@ -307,20 +309,23 @@ library HyperdriveMath {
             uint256 sharePayment
         )
     {
-        // Since we are buying bonds, it's possible that timeRemaining < 1.
-        // We consider (1-timeRemaining)*amountOut of the bonds being
-        // purchased to be fully matured and timeRemaining*amountOut of the
+        // Since we are buying bonds, it's possible that `timeRemaining < 1`.
+        // We consider `(1 - timeRemaining) * amountOut` of the bonds being
+        // purchased to be fully matured and `timeRemaining * amountOut of the
         // bonds to be newly minted. The fully matured bonds are redeemed
         // one-to-one to base (our result is given in shares, so we divide
         // the one-to-one redemption by the share price) and the newly
         // minted bonds are traded on a YieldSpace curve configured to
         // timeRemaining = 1.
-        sharePayment = _amountOut.mulDivDown(
-            ONE - _normalizedTimeRemaining,
-            _sharePrice
-        );
-        bondCurveDelta = _amountOut.mulDown(_normalizedTimeRemaining);
-        if (bondCurveDelta > 0) {
+        if (_normalizedTimeRemaining < ONE) {
+            sharePayment = _amountOut.mulDivDown(
+                ONE - _normalizedTimeRemaining,
+                _sharePrice
+            );
+        }
+        if (_normalizedTimeRemaining > 0) {
+            bondCurveDelta = _amountOut.mulDown(_normalizedTimeRemaining);
+
             // NOTE: We overestimate the trader's share payment to avoid
             // sandwiches.
             shareCurveDelta = YieldSpaceMath.calculateSharesInGivenBondsOutUp(
