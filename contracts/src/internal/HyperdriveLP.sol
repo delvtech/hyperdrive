@@ -511,10 +511,16 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         // follows:
         //
         // PV0 / l0 = PV1 / (l0 - dl + dw) => dw = (PV1 / PV0) * l0 - (l0 - dl)
-        int256 withdrawalShares = int256(
-            _totalLpSupply.mulDivDown(endingPresentValue, startingPresentValue)
-        );
-        withdrawalShares -= int256(_totalLpSupply) - int256(_shares);
+        int256 withdrawalShares;
+        if (startingPresentValue > 0 && endingPresentValue > 0) {
+            withdrawalShares = int256(
+                _totalLpSupply.mulDivDown(
+                    endingPresentValue,
+                    startingPresentValue
+                )
+            );
+            withdrawalShares -= int256(_totalLpSupply) - int256(_shares);
+        }
         if (withdrawalShares < 0) {
             // We backtrack by calculating the amount of the idle that should
             // be returned to the pool using the original present value ratio.
