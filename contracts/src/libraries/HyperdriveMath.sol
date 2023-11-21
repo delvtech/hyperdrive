@@ -572,7 +572,7 @@ library HyperdriveMath {
             }
             // Otherwise, we can only close part of the net curve position.
             // Since the spot price is equal to one after closing the entire net
-            // curve position, we mark any remaining bonds to zero.
+            // curve position, we mark any remaining bonds to one.
             else {
                 uint256 maxSharePayment = YieldSpaceMath
                     .calculateMaxBuySharesIn(
