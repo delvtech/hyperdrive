@@ -209,7 +209,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         let log = {
             let min_output = {
                 let slippage_tolerance = maybe_slippage_tolerance.unwrap_or(fixed!(0.01e18));
-                self.get_long_amount(base_paid).await? * (fixed!(1e18) - slippage_tolerance)
+                self.calculate_open_long(base_paid).await? * (fixed!(1e18) - slippage_tolerance)
             };
             let tx = ContractCall_(self.hyperdrive.open_long(
                 base_paid.into(),
@@ -326,7 +326,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         let log = {
             let max_deposit = {
                 let slippage_tolerance = maybe_slippage_tolerance.unwrap_or(fixed!(0.01e18));
-                self.get_short_deposit(bond_amount).await? * (fixed!(1e18) + slippage_tolerance)
+                self.calculate_open_short(bond_amount).await? * (fixed!(1e18) + slippage_tolerance)
             };
             let tx = ContractCall_(self.hyperdrive.open_short(
                 bond_amount.into(),
@@ -928,14 +928,14 @@ impl Agent<ChainClient, ChaCha8Rng> {
 
     /// Gets the amount of longs that will be opened for a given amount of base
     /// with the current market state.
-    pub async fn get_long_amount(&self, base_amount: FixedPoint) -> Result<FixedPoint> {
+    pub async fn calculate_open_long(&self, base_amount: FixedPoint) -> Result<FixedPoint> {
         let state = self.get_state().await?;
-        Ok(state.get_long_amount(base_amount))
+        Ok(state.calculate_open_long(base_amount))
     }
 
     /// Gets the deposit required to short a given amount of bonds with the
     /// current market state.
-    pub async fn get_short_deposit(&self, short_amount: FixedPoint) -> Result<FixedPoint> {
+    pub async fn calculate_open_short(&self, short_amount: FixedPoint) -> Result<FixedPoint> {
         let state = self.get_state().await?;
         let Checkpoint {
             share_price: open_share_price,
@@ -944,7 +944,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
             .hyperdrive
             .get_checkpoint(state.to_checkpoint(self.now().await?))
             .await?;
-        state.get_short_deposit(
+        state.calculate_open_short(
             short_amount,
             state.get_spot_price(),
             open_share_price.into(),

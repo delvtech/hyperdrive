@@ -28,7 +28,7 @@ impl State {
     /// $x$ is the number of bonds being shorted and $P(x)$ is the amount of
     /// shares the curve says the LPs need to pay the shorts (i.e. the LP
     /// principal).
-    pub fn get_short_deposit(
+    pub fn calculate_open_short(
         &self,
         short_amount: FixedPoint,
         spot_price: FixedPoint,
@@ -48,6 +48,16 @@ impl State {
                 + self.curve_fee() * (fixed!(1e18) - spot_price) * short_amount
                 - self.share_price() * self.short_principal(short_amount)?,
         )
+    }
+
+    #[deprecated(since="0.4.0", note="please use `calculate_open_short` instead")]    
+    pub fn get_short_deposit(
+        &self,
+        short_amount: FixedPoint,
+        spot_price: FixedPoint,
+        mut open_share_price: FixedPoint,
+    ) -> Result<FixedPoint> {
+        self.calculate_open_short(short_amount, spot_price, open_share_price)
     }
 
     /// Gets the amount of short principal that the LPs need to pay to back a

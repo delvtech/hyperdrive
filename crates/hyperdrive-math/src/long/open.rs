@@ -24,11 +24,16 @@ impl State {
     ///                \right) \right)^{1 - t_s}
     ///            \right)^{\tfrac{1}{1 - t_s}}
     /// $$
-    pub fn get_long_amount<F: Into<FixedPoint>>(&self, base_amount: F) -> FixedPoint {
+    pub fn calculate_open_long<F: Into<FixedPoint>>(&self, base_amount: F) -> FixedPoint {
         let base_amount = base_amount.into();
         let long_amount =
             self.calculate_bonds_out_given_shares_in_down(base_amount / self.share_price());
         long_amount - self.long_curve_fee(base_amount)
+    }
+
+    #[deprecated(since="0.4.0", note="please use `calculate_open_long` instead")]
+    pub fn get_long_amount<F: Into<FixedPoint>>(&self, base_amount: F) -> FixedPoint {
+        self.calculate_open_long(base_amount)
     }
 
     /// Gets the spot price after opening the long on the YieldSpace curve and
