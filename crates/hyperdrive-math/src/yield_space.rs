@@ -431,7 +431,7 @@ mod tests {
             let state = rng.gen::<State>();
             let actual = panic::catch_unwind(|| state.calculate_max_buy());
             match mock
-                .calculate_max_buy(
+                .calculate_max_buy_bonds_out(
                     state.z().into(),
                     state.y().into(),
                     (fixed!(1e18) - state.t()).into(),
@@ -441,7 +441,7 @@ mod tests {
                 .call()
                 .await
             {
-                Ok((.., expected)) => {
+                Ok(expected) => {
                     assert_eq!(actual.unwrap(), FixedPoint::from(expected));
                 }
                 Err(_) => assert!(actual.is_err()),
@@ -463,7 +463,7 @@ mod tests {
             let z_min = rng.gen::<FixedPoint>();
             let actual = panic::catch_unwind(|| state.calculate_max_sell(z_min));
             match mock
-                .calculate_max_sell(
+                .calculate_max_sell_bonds_in(
                     state.z().into(),
                     state.y().into(),
                     z_min.into(),
@@ -474,7 +474,7 @@ mod tests {
                 .call()
                 .await
             {
-                Ok((.., expected)) => {
+                Ok(expected) => {
                     assert_eq!(actual.unwrap(), FixedPoint::from(expected));
                 }
                 Err(_) => assert!(actual.is_err()),

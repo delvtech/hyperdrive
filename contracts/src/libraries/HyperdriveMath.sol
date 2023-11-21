@@ -216,12 +216,10 @@ library HyperdriveMath {
         // (our result is given in shares, so we divide the one-to-one
         // redemption by the share price) and the newly minted bonds are
         // traded on a YieldSpace curve configured to `timeRemaining = 1`.
-        if (_normalizedTimeRemaining < ONE) {
-            shareProceeds = _amountIn.mulDivDown(
-                ONE - _normalizedTimeRemaining,
-                _sharePrice
-            );
-        }
+        shareProceeds = _amountIn.mulDivDown(
+            ONE - _normalizedTimeRemaining,
+            _sharePrice
+        );
         if (_normalizedTimeRemaining > 0) {
             // Calculate the curved part of the trade.
             bondCurveDelta = _amountIn.mulDown(_normalizedTimeRemaining);
@@ -317,12 +315,10 @@ library HyperdriveMath {
         // the one-to-one redemption by the share price) and the newly
         // minted bonds are traded on a YieldSpace curve configured to
         // timeRemaining = 1.
-        if (_normalizedTimeRemaining < ONE) {
-            sharePayment = _amountOut.mulDivDown(
-                ONE - _normalizedTimeRemaining,
-                _sharePrice
-            );
-        }
+        sharePayment = _amountOut.mulDivDown(
+            ONE - _normalizedTimeRemaining,
+            _sharePrice
+        );
         if (_normalizedTimeRemaining > 0) {
             bondCurveDelta = _amountOut.mulDown(_normalizedTimeRemaining);
 
@@ -525,15 +521,15 @@ library HyperdriveMath {
             // If the max curve trade is greater than the net curve position,
             // then we can close the entire net curve position.
             if (maxCurveTrade >= netCurvePosition_) {
-                (uint256 netCurveTrade, , ) = HyperdriveMath.calculateCloseLong(
-                    effectiveShareReserves,
-                    _params.bondReserves,
-                    netCurvePosition_,
-                    ONE,
-                    _params.timeStretch,
-                    _params.sharePrice,
-                    _params.initialSharePrice
-                );
+                uint256 netCurveTrade = YieldSpaceMath
+                    .calculateSharesOutGivenBondsInDown(
+                        effectiveShareReserves,
+                        _params.bondReserves,
+                        netCurvePosition_,
+                        ONE - _params.timeStretch,
+                        _params.sharePrice,
+                        _params.initialSharePrice
+                    );
                 return -int256(netCurveTrade);
             }
             // Otherwise, we can only close part of the net curve position.
@@ -563,13 +559,12 @@ library HyperdriveMath {
             // If the max curve trade is greater than the net curve position,
             // then we can close the entire net curve position.
             if (maxCurveTrade >= netCurvePosition_) {
-                (uint256 netCurveTrade, , ) = HyperdriveMath
-                    .calculateCloseShort(
+                uint256 netCurveTrade = YieldSpaceMath
+                    .calculateSharesInGivenBondsOutUp(
                         effectiveShareReserves,
                         _params.bondReserves,
                         netCurvePosition_,
-                        ONE,
-                        _params.timeStretch,
+                        ONE - _params.timeStretch,
                         _params.sharePrice,
                         _params.initialSharePrice
                     );
