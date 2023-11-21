@@ -93,32 +93,49 @@ contract MockYieldSpaceMath {
         return (result1, result2);
     }
 
-    function calculateMaxBuy(
+    function calculateMaxBuySharesIn(
         uint256 z,
         uint256 y,
         uint256 t,
         uint256 c,
         uint256 mu
-    ) external pure returns (uint256, uint256) {
-        (uint256 result1, uint256 result2) = YieldSpaceMath.calculateMaxBuy(
+    ) external pure returns (uint256) {
+        uint256 result1 = YieldSpaceMath.calculateMaxBuySharesIn(
             z,
             y,
             t,
             c,
             mu
         );
-        return (result1, result2);
+        return result1;
     }
 
-    function calculateMaxSell(
+    function calculateMaxBuyBondsOut(
+        uint256 z,
+        uint256 y,
+        uint256 t,
+        uint256 c,
+        uint256 mu
+    ) external pure returns (uint256) {
+        uint256 result1 = YieldSpaceMath.calculateMaxBuyBondsOut(
+            z,
+            y,
+            t,
+            c,
+            mu
+        );
+        return result1;
+    }
+
+    function calculateMaxSellBondsIn(
         uint256 z,
         uint256 y,
         uint256 zMin,
         uint256 t,
         uint256 c,
         uint256 mu
-    ) external pure returns (uint256, uint256) {
-        (uint256 result1, uint256 result2) = YieldSpaceMath.calculateMaxSell(
+    ) external pure returns (uint256) {
+        uint256 result1 = YieldSpaceMath.calculateMaxSellBondsIn(
             z,
             y,
             zMin,
@@ -126,7 +143,7 @@ contract MockYieldSpaceMath {
             c,
             mu
         );
-        return (result1, result2);
+        return result1;
     }
 
     function kUp(

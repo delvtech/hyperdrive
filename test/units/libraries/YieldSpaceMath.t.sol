@@ -199,7 +199,14 @@ contract YieldSpaceMathTest is Test {
         );
 
         // Calculatethe share payment and bonds proceeds of the max buy.
-        (uint256 maxDz, uint256 maxDy) = yieldSpaceMath.calculateMaxBuy(
+        uint256 maxDy = yieldSpaceMath.calculateMaxBuyBondsOut(
+            shareReserves,
+            bondReserves,
+            1e18 - ONE.mulDown(timeStretch),
+            sharePrice,
+            initialSharePrice
+        );
+        uint256 maxDz = yieldSpaceMath.calculateMaxBuySharesIn(
             shareReserves,
             bondReserves,
             1e18 - ONE.mulDown(timeStretch),

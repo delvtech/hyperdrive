@@ -513,15 +513,14 @@ library HyperdriveMath {
 
             // Calculate the maximum amount of bonds that can be sold on
             // YieldSpace.
-            (uint256 maxShareProceeds, uint256 maxCurveTrade) = YieldSpaceMath
-                .calculateMaxSell(
-                    effectiveShareReserves,
-                    _params.bondReserves,
-                    _params.minimumShareReserves,
-                    ONE - _params.timeStretch,
-                    _params.sharePrice,
-                    _params.initialSharePrice
-                );
+            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxSellBondsIn(
+                effectiveShareReserves,
+                _params.bondReserves,
+                _params.minimumShareReserves,
+                ONE - _params.timeStretch,
+                _params.sharePrice,
+                _params.initialSharePrice
+            );
 
             // If the max curve trade is greater than the net curve position,
             // then we can close the entire net curve position.
@@ -541,7 +540,10 @@ library HyperdriveMath {
             // Since the spot price is approximately zero after closing the
             // entire net curve position, we mark any remaining bonds to zero.
             else {
-                return -int256(maxShareProceeds);
+                return
+                    -int256(
+                        effectiveShareReserves - _params.minimumShareReserves
+                    );
             }
         }
         // If the net curve position is negative, then the pool is net short.
@@ -550,14 +552,13 @@ library HyperdriveMath {
 
             // Calculate the maximum amount of bonds that can be bought on
             // YieldSpace.
-            (uint256 maxSharePayment, uint256 maxCurveTrade) = YieldSpaceMath
-                .calculateMaxBuy(
-                    effectiveShareReserves,
-                    _params.bondReserves,
-                    ONE - _params.timeStretch,
-                    _params.sharePrice,
-                    _params.initialSharePrice
-                );
+            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxBuyBondsOut(
+                effectiveShareReserves,
+                _params.bondReserves,
+                ONE - _params.timeStretch,
+                _params.sharePrice,
+                _params.initialSharePrice
+            );
 
             // If the max curve trade is greater than the net curve position,
             // then we can close the entire net curve position.
@@ -578,6 +579,14 @@ library HyperdriveMath {
             // Since the spot price is equal to one after closing the entire net
             // curve position, we mark any remaining bonds to zero.
             else {
+                uint256 maxSharePayment = YieldSpaceMath
+                    .calculateMaxBuySharesIn(
+                        effectiveShareReserves,
+                        _params.bondReserves,
+                        ONE - _params.timeStretch,
+                        _params.sharePrice,
+                        _params.initialSharePrice
+                    );
                 return
                     int256(
                         maxSharePayment +

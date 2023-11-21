@@ -1613,16 +1613,20 @@ contract HyperdriveMathTest is HyperdriveTest {
                 params.longsOutstanding.mulDown(
                     params.longAverageTimeRemaining
                 );
-            (uint256 maxShareProceeds, uint256 maxCurveTrade) = YieldSpaceMath
-                .calculateMaxBuy(
-                    uint256(
-                        int256(params.shareReserves) - params.shareAdjustment
-                    ),
-                    params.bondReserves,
-                    ONE - params.timeStretch,
-                    params.sharePrice,
-                    params.initialSharePrice
-                );
+            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxBuyBondsOut(
+                uint256(int256(params.shareReserves) - params.shareAdjustment),
+                params.bondReserves,
+                ONE - params.timeStretch,
+                params.sharePrice,
+                params.initialSharePrice
+            );
+            uint256 maxShareProceeds = YieldSpaceMath.calculateMaxBuySharesIn(
+                uint256(int256(params.shareReserves) - params.shareAdjustment),
+                params.bondReserves,
+                ONE - params.timeStretch,
+                params.sharePrice,
+                params.initialSharePrice
+            );
             params.shareReserves += maxShareProceeds;
             params.shareReserves += (netCurveTrade - maxCurveTrade).divDown(
                 params.sharePrice
@@ -1676,16 +1680,20 @@ contract HyperdriveMathTest is HyperdriveTest {
                 params.longsOutstanding.mulDown(
                     params.longAverageTimeRemaining
                 );
-            (uint256 maxShareProceeds, uint256 maxCurveTrade) = YieldSpaceMath
-                .calculateMaxBuy(
-                    uint256(
-                        int256(params.shareReserves) - params.shareAdjustment
-                    ),
-                    params.bondReserves,
-                    ONE - params.timeStretch,
-                    params.sharePrice,
-                    params.initialSharePrice
-                );
+            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxBuyBondsOut(
+                uint256(int256(params.shareReserves) - params.shareAdjustment),
+                params.bondReserves,
+                ONE - params.timeStretch,
+                params.sharePrice,
+                params.initialSharePrice
+            );
+            uint256 maxShareProceeds = YieldSpaceMath.calculateMaxBuySharesIn(
+                uint256(int256(params.shareReserves) - params.shareAdjustment),
+                params.bondReserves,
+                ONE - params.timeStretch,
+                params.sharePrice,
+                params.initialSharePrice
+            );
             params.shareReserves += maxShareProceeds;
             params.shareReserves += (netCurveTrade - maxCurveTrade).divDown(
                 params.sharePrice
@@ -1739,16 +1747,20 @@ contract HyperdriveMathTest is HyperdriveTest {
                 params.longsOutstanding.mulDown(
                     params.longAverageTimeRemaining
                 );
-            (uint256 maxShareProceeds, uint256 maxCurveTrade) = YieldSpaceMath
-                .calculateMaxBuy(
-                    uint256(
-                        int256(params.shareReserves) - params.shareAdjustment
-                    ),
-                    params.bondReserves,
-                    ONE - params.timeStretch,
-                    params.sharePrice,
-                    params.initialSharePrice
-                );
+            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxBuyBondsOut(
+                uint256(int256(params.shareReserves) - params.shareAdjustment),
+                params.bondReserves,
+                ONE - params.timeStretch,
+                params.sharePrice,
+                params.initialSharePrice
+            );
+            uint256 maxShareProceeds = YieldSpaceMath.calculateMaxBuySharesIn(
+                uint256(int256(params.shareReserves) - params.shareAdjustment),
+                params.bondReserves,
+                ONE - params.timeStretch,
+                params.sharePrice,
+                params.initialSharePrice
+            );
             params.shareReserves += maxShareProceeds;
             params.shareReserves += (netCurveTrade - maxCurveTrade).divDown(
                 params.sharePrice
