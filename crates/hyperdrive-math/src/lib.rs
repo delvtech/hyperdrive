@@ -7,10 +7,12 @@ use ethers::types::{Address, I256, U256};
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 use hyperdrive_wrappers::wrappers::i_hyperdrive::{Fees, PoolConfig, PoolInfo};
+pub use long::*;
 use rand::{
     distributions::{Distribution, Standard},
     Rng,
 };
+pub use short::*;
 pub use utils::*;
 pub use yield_space::YieldSpace;
 
