@@ -84,20 +84,12 @@ impl State {
 mod tests {
     use std::panic;
 
-    use ethers::types::U256;
     use eyre::Result;
-    use fixed_point_macros::uint256;
     use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::PresentValueParams;
     use rand::{thread_rng, Rng};
-    use test_utils::{
-        agent::Agent,
-        chain::{Chain, TestChain, TestChainWithMocks},
-        constants::{FAST_FUZZ_RUNS, FUZZ_RUNS},
-    };
-    use tracing_test::traced_test;
+    use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};
 
     use super::*;
-    use crate::get_effective_share_reserves;
 
     /// This test differentially fuzzes the `absolute_max_long` function against
     /// the Solidity analogue `calculateAbsoluteMaxLong`.
@@ -123,15 +115,19 @@ mod tests {
                     share_price: state.info.share_price,
                     initial_share_price: state.config.initial_share_price,
                     minimum_share_reserves: state.config.minimum_share_reserves,
-                    long_average_time_remaining: self.time_remaining_scaled(
-                        current_block_timestamp,
-                        self.long_average_maturity_time().into(),
-                    ),
-                    short_average_time_remaining: self.time_remaining_scaled(
-                        current_block_timestamp,
-                        self.short_average_maturity_time().into(),
-                    ),
-                    shorts_outstanding: state.shorts_outstanding(),
+                    long_average_time_remaining: state
+                        .time_remaining_scaled(
+                            current_block_timestamp.into(),
+                            state.long_average_maturity_time().into(),
+                        )
+                        .into(),
+                    short_average_time_remaining: state
+                        .time_remaining_scaled(
+                            current_block_timestamp.into(),
+                            state.short_average_maturity_time().into(),
+                        )
+                        .into(),
+                    shorts_outstanding: state.shorts_outstanding().into(),
                 })
                 .call()
                 .await
