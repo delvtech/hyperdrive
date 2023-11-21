@@ -1606,32 +1606,31 @@ contract HyperdriveMathTest is HyperdriveTest {
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
 
             // Apply as much as possible to the curve and mark the rest of the
-            // curve trade to the short base volume.
+            // curve trade to a price of 1.
             uint256 netCurveTrade = params.shortsOutstanding.mulDown(
                 params.shortAverageTimeRemaining
             ) -
                 params.longsOutstanding.mulDown(
                     params.longAverageTimeRemaining
                 );
-            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxBuy(
+            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxBuyBondsOut(
                 uint256(int256(params.shareReserves) - params.shareAdjustment),
                 params.bondReserves,
                 ONE - params.timeStretch,
                 params.sharePrice,
                 params.initialSharePrice
             );
-            params.shareReserves += YieldSpaceMath
-                .calculateSharesInGivenBondsOutUp(
-                    uint256(
-                        int256(params.shareReserves) - params.shareAdjustment
-                    ),
-                    params.bondReserves,
-                    maxCurveTrade,
-                    ONE - params.timeStretch,
-                    params.sharePrice,
-                    params.initialSharePrice
-                );
-            params.shareReserves += netCurveTrade - maxCurveTrade;
+            uint256 maxShareProceeds = YieldSpaceMath.calculateMaxBuySharesIn(
+                uint256(int256(params.shareReserves) - params.shareAdjustment),
+                params.bondReserves,
+                ONE - params.timeStretch,
+                params.sharePrice,
+                params.initialSharePrice
+            );
+            params.shareReserves += maxShareProceeds;
+            params.shareReserves += (netCurveTrade - maxCurveTrade).divDown(
+                params.sharePrice
+            );
 
             // Apply the flat part to the reserves.
             params.shareReserves +=
@@ -1674,32 +1673,31 @@ contract HyperdriveMathTest is HyperdriveTest {
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
 
             // Apply as much as possible to the curve and mark the rest of the
-            // curve trade to the short base volume.
+            // curve trade to a price of 1.
             uint256 netCurveTrade = params.shortsOutstanding.mulDown(
                 params.shortAverageTimeRemaining
             ) -
                 params.longsOutstanding.mulDown(
                     params.longAverageTimeRemaining
                 );
-            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxBuy(
+            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxBuyBondsOut(
                 uint256(int256(params.shareReserves) - params.shareAdjustment),
                 params.bondReserves,
                 ONE - params.timeStretch,
                 params.sharePrice,
                 params.initialSharePrice
             );
-            params.shareReserves += YieldSpaceMath
-                .calculateSharesInGivenBondsOutUp(
-                    uint256(
-                        int256(params.shareReserves) - params.shareAdjustment
-                    ),
-                    params.bondReserves,
-                    maxCurveTrade,
-                    ONE - params.timeStretch,
-                    params.sharePrice,
-                    params.initialSharePrice
-                );
-            params.shareReserves += netCurveTrade - maxCurveTrade;
+            uint256 maxShareProceeds = YieldSpaceMath.calculateMaxBuySharesIn(
+                uint256(int256(params.shareReserves) - params.shareAdjustment),
+                params.bondReserves,
+                ONE - params.timeStretch,
+                params.sharePrice,
+                params.initialSharePrice
+            );
+            params.shareReserves += maxShareProceeds;
+            params.shareReserves += (netCurveTrade - maxCurveTrade).divDown(
+                params.sharePrice
+            );
 
             // Apply the flat part to the reserves.
             params.shareReserves +=
@@ -1742,32 +1740,31 @@ contract HyperdriveMathTest is HyperdriveTest {
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
 
             // Apply as much as possible to the curve and mark the rest of the
-            // curve trade to the short base volume.
+            // curve trade to a price of 1.
             uint256 netCurveTrade = params.shortsOutstanding.mulDown(
                 params.shortAverageTimeRemaining
             ) -
                 params.longsOutstanding.mulDown(
                     params.longAverageTimeRemaining
                 );
-            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxBuy(
+            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxBuyBondsOut(
                 uint256(int256(params.shareReserves) - params.shareAdjustment),
                 params.bondReserves,
                 ONE - params.timeStretch,
                 params.sharePrice,
                 params.initialSharePrice
             );
-            params.shareReserves += YieldSpaceMath
-                .calculateSharesInGivenBondsOutUp(
-                    uint256(
-                        int256(params.shareReserves) - params.shareAdjustment
-                    ),
-                    params.bondReserves,
-                    maxCurveTrade,
-                    ONE - params.timeStretch,
-                    params.sharePrice,
-                    params.initialSharePrice
-                );
-            params.shareReserves += netCurveTrade - maxCurveTrade;
+            uint256 maxShareProceeds = YieldSpaceMath.calculateMaxBuySharesIn(
+                uint256(int256(params.shareReserves) - params.shareAdjustment),
+                params.bondReserves,
+                ONE - params.timeStretch,
+                params.sharePrice,
+                params.initialSharePrice
+            );
+            params.shareReserves += maxShareProceeds;
+            params.shareReserves += (netCurveTrade - maxCurveTrade).divDown(
+                params.sharePrice
+            );
 
             // Apply the flat part to the reserves.
             params.shareReserves +=

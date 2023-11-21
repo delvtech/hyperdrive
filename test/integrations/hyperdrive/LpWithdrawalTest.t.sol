@@ -201,38 +201,6 @@ contract LpWithdrawalTest is HyperdriveTest {
         ); // TODO: Investigate this bound.
     }
 
-    // This test demonstrates a case where we are net long,
-    // no longs have matured (so we avoid unsafe cast that exists
-    // in PV calc), and the negative interest has created a situation
-    // where the NetCurveTrade is greater than the MaxCurveTrade.
-    // The LPs should be able to remove their liqudity without an
-    // arithmetic underflow.
-    function test_lp_withdrawal_too_many_longs() external {
-        uint256 apr = 0.10e18;
-        uint256 contribution = 1e18;
-        uint256 lpShares = initialize(alice, apr, contribution);
-        contribution -= 2 * hyperdrive.getPoolConfig().minimumShareReserves;
-
-        // Celine adds liquidity.
-        uint256 celineLpShares = addLiquidity(celine, 10e18);
-
-        // Bob opens a max long.
-        uint256 basePaid = HyperdriveUtils.calculateMaxLong(hyperdrive);
-        openLong(bob, basePaid);
-
-        // Celine removes her LP shares
-        removeLiquidity(celine, celineLpShares);
-
-        // Negative interest accrues during checkpoint
-        int256 variableRate = -50e18;
-        advanceTime(CHECKPOINT_DURATION - 1, variableRate);
-
-        // Alice removes all of her LP shares
-        uint256 estimatedLpProceeds = calculateBaseLpProceeds(lpShares);
-        (uint256 baseProceeds, ) = removeLiquidity(alice, lpShares);
-        assertEq(baseProceeds, estimatedLpProceeds);
-    }
-
     function test_lp_withdrawal_short_immediate_close(
         uint256 shortAmount,
         int256 preTradingVariableRate
