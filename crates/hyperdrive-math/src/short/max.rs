@@ -81,7 +81,8 @@ impl State {
         // short amount.
         let mut max_bond_amount =
             self.absolute_max_short(spot_price, checkpoint_exposure, maybe_max_iterations);
-        let deposit = match self.get_short_deposit(max_bond_amount, spot_price, open_share_price) {
+        let deposit = match self.calculate_open_short(max_bond_amount, spot_price, open_share_price)
+        {
             Ok(d) => d,
             Err(_) => return max_bond_amount,
         };
@@ -117,7 +118,7 @@ impl State {
         );
         for _ in 0..maybe_max_iterations.unwrap_or(7) {
             let deposit =
-                match self.get_short_deposit(max_bond_amount, spot_price, open_share_price) {
+                match self.calculate_open_short(max_bond_amount, spot_price, open_share_price) {
                     Ok(d) => d,
                     Err(_) => return max_bond_amount,
                 };
@@ -128,7 +129,7 @@ impl State {
         // Verify that the max short satisfies the budget.
         if budget
             < self
-                .get_short_deposit(max_bond_amount, spot_price, open_share_price)
+                .calculate_open_short(max_bond_amount, spot_price, open_share_price)
                 .unwrap()
         {
             panic!("max short exceeded budget");
@@ -177,7 +178,7 @@ impl State {
                     + self.flat_fee()
                     + self.curve_fee() * (fixed!(1e18) - spot_price)
                     - conservative_price);
-            if let Ok(deposit) = self.get_short_deposit(guess, spot_price, open_share_price) {
+            if let Ok(deposit) = self.calculate_open_short(guess, spot_price, open_share_price) {
                 if budget >= deposit {
                     return guess;
                 }
@@ -194,11 +195,11 @@ impl State {
         // subtract these components from the budget to get a better estimate of
         // the max bond amount. If subtracting these components results in a
         // negative number, we just 0 as our initial guess.
-        let worst_case_deposit = match self.get_short_deposit(budget, spot_price, open_share_price)
-        {
-            Ok(d) => d,
-            Err(_) => return fixed!(0),
-        };
+        let worst_case_deposit =
+            match self.calculate_open_short(budget, spot_price, open_share_price) {
+                Ok(d) => d,
+                Err(_) => return fixed!(0),
+            };
         if budget >= worst_case_deposit {
             budget - worst_case_deposit
         } else {
@@ -415,8 +416,8 @@ impl State {
         };
         let share_reserves = self.share_reserves()
             - (principal
-                - (self.short_curve_fee(short_amount, spot_price)
-                    - self.short_governance_fee(short_amount, spot_price))
+                - (self.open_short_curve_fee(short_amount, spot_price)
+                    - self.open_short_governance_fee(short_amount, spot_price))
                     / self.share_price());
         let exposure = {
             let checkpoint_exposure: FixedPoint = checkpoint_exposure.max(I256::zero()).into();
