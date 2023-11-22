@@ -45,13 +45,12 @@ impl State {
         );
         bond_factor += bond_amount.mul_div_down(flat_fee, share_price);
 
-        let share_proceeds = if bond_factor > share_amount {
+        if bond_factor > share_amount {
             // proceeds = (c1 / c0 * c) * dy - dz
             bond_factor - share_amount
         } else {
             fixed!(0)
-        };
-        share_proceeds
+        }
     }
 
     /// Gets the amount of shares the trader will receive after fees for closing a long

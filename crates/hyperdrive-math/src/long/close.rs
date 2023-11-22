@@ -66,8 +66,9 @@ mod tests {
             let state = rng.gen::<State>();
             let in_ = rng.gen_range(fixed!(0)..=state.effective_share_reserves());
             let normalized_time_remaining = rng.gen_range(fixed!(0)..=fixed!(1e18));
-            let actual =
-                panic::catch_unwind(|| state.calculate_close_long_flat_plus_curve(in_, normalized_time_remaining));
+            let actual = panic::catch_unwind(|| {
+                state.calculate_close_long_flat_plus_curve(in_, normalized_time_remaining)
+            });
             match mock
                 .calculate_close_long(
                     state.effective_share_reserves().into(),

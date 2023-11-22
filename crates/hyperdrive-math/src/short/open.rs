@@ -55,7 +55,7 @@ impl State {
         &self,
         short_amount: FixedPoint,
         spot_price: FixedPoint,
-        mut open_share_price: FixedPoint,
+        open_share_price: FixedPoint,
     ) -> Result<FixedPoint> {
         self.calculate_open_short(short_amount, spot_price, open_share_price)
     }
