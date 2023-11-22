@@ -67,7 +67,7 @@ impl State {
         let close_share_price = close_share_price.into();
         let normalized_time_remaining = normalized_time_remaining.into();
 
-        // Subtract the fees from the trade.
+        // Calculate flat + curve and subtract the fees from the trade.
         let share_reserves_delta = self
             ._calculate_close_short(bond_amount, normalized_time_remaining)
             + self.close_short_curve_fee(bond_amount, normalized_time_remaining)
