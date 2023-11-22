@@ -50,7 +50,7 @@ impl State {
         )
     }
 
-    #[deprecated(since="0.4.0", note="please use `calculate_open_short` instead")]    
+    #[deprecated(since = "0.4.0", note = "please use `calculate_open_short` instead")]
     pub fn get_short_deposit(
         &self,
         short_amount: FixedPoint,

@@ -81,7 +81,8 @@ impl State {
         // short amount.
         let mut max_bond_amount =
             self.absolute_max_short(spot_price, checkpoint_exposure, maybe_max_iterations);
-        let deposit = match self.calculate_open_short(max_bond_amount, spot_price, open_share_price) {
+        let deposit = match self.calculate_open_short(max_bond_amount, spot_price, open_share_price)
+        {
             Ok(d) => d,
             Err(_) => return max_bond_amount,
         };
@@ -194,11 +195,11 @@ impl State {
         // subtract these components from the budget to get a better estimate of
         // the max bond amount. If subtracting these components results in a
         // negative number, we just 0 as our initial guess.
-        let worst_case_deposit = match self.calculate_open_short(budget, spot_price, open_share_price)
-        {
-            Ok(d) => d,
-            Err(_) => return fixed!(0),
-        };
+        let worst_case_deposit =
+            match self.calculate_open_short(budget, spot_price, open_share_price) {
+                Ok(d) => d,
+                Err(_) => return fixed!(0),
+            };
         if budget >= worst_case_deposit {
             budget - worst_case_deposit
         } else {
