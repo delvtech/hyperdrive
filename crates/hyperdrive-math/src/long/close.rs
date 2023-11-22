@@ -5,7 +5,7 @@ use fixed_point_macros::{fixed, int256};
 use crate::{State, YieldSpace};
 
 impl State {
-    fn _calculate_close_long<F: Into<FixedPoint>>(
+    fn calculate_close_long_flat_plus_curve<F: Into<FixedPoint>>(
         &self,
         bond_amount: F,
         normalized_time_remaining: F,
@@ -18,11 +18,11 @@ impl State {
             bond_amount.mul_div_down(fixed!(1e18) - normalized_time_remaining, self.share_price());
 
         // Calculate the curve part of the trade
-        let curve = if normalized_time_remaining > fixed!(0e18) {
+        let curve = if normalized_time_remaining > fixed!(0) {
             let curve_bonds_in = bond_amount * normalized_time_remaining;
             self.calculate_shares_out_given_bonds_in_down(curve_bonds_in)
         } else {
-            fixed!(0e18)
+            fixed!(0)
         };
 
         flat + curve
@@ -38,7 +38,7 @@ impl State {
         let normalized_time_remaining = normalized_time_remaining.into();
 
         // Subtract the fees from the trade
-        self._calculate_close_long(bond_amount, normalized_time_remaining)
+        self.calculate_close_long_flat_plus_curve(bond_amount, normalized_time_remaining)
             - self.close_long_curve_fee(bond_amount, normalized_time_remaining)
             - self.close_long_flat_fee(bond_amount, normalized_time_remaining)
     }
@@ -56,7 +56,7 @@ mod tests {
     use crate::State;
 
     #[tokio::test]
-    async fn fuzz_calculate_close_long() -> Result<()> {
+    async fn fuzz_calculate_close_long_flat_plus_curve() -> Result<()> {
         let chain = TestChainWithMocks::new(1).await?;
         let mock = chain.mock_hyperdrive_math();
 
@@ -64,10 +64,10 @@ mod tests {
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
-            let in_ = rng.gen_range(fixed!(0e18)..=state.effective_share_reserves());
-            let normalized_time_remaining = rng.gen_range(fixed!(0e18)..=fixed!(1e18));
+            let in_ = rng.gen_range(fixed!(0)..=state.effective_share_reserves());
+            let normalized_time_remaining = rng.gen_range(fixed!(0)..=fixed!(1e18));
             let actual =
-                panic::catch_unwind(|| state._calculate_close_long(in_, normalized_time_remaining));
+                panic::catch_unwind(|| state.calculate_close_long_flat_plus_curve(in_, normalized_time_remaining));
             match mock
                 .calculate_close_long(
                     state.effective_share_reserves().into(),

@@ -5,7 +5,7 @@ use fixed_point_macros::{fixed, int256};
 use crate::{State, YieldSpace};
 
 impl State {
-    fn _calculate_close_short<F: Into<FixedPoint>>(
+    fn calculate_close_short_flat_plus_curve<F: Into<FixedPoint>>(
         &self,
         bond_amount: F,
         normalized_time_remaining: F,
@@ -18,11 +18,11 @@ impl State {
             bond_amount.mul_div_down(fixed!(1e18) - normalized_time_remaining, self.share_price());
 
         // Calculate the curve part of the trade
-        let curve = if normalized_time_remaining > fixed!(0e18) {
+        let curve = if normalized_time_remaining > fixed!(0) {
             let curve_bonds_in = bond_amount * normalized_time_remaining;
             self.calculate_shares_in_given_bonds_out_up(curve_bonds_in)
         } else {
-            fixed!(0e18)
+            fixed!(0)
         };
 
         flat + curve
@@ -49,7 +49,7 @@ impl State {
             // proceeds = (c1 / c0 * c) * dy - dz
             bond_factor - share_amount
         } else {
-            fixed!(0e18)
+            fixed!(0)
         };
         share_proceeds
     }
@@ -69,7 +69,7 @@ impl State {
 
         // Calculate flat + curve and subtract the fees from the trade.
         let share_reserves_delta = self
-            ._calculate_close_short(bond_amount, normalized_time_remaining)
+            .calculate_close_short_flat_plus_curve(bond_amount, normalized_time_remaining)
             + self.close_short_curve_fee(bond_amount, normalized_time_remaining)
             + self.close_short_flat_fee(bond_amount, normalized_time_remaining);
 
@@ -105,9 +105,9 @@ mod tests {
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
-            let bond_amount = rng.gen_range(fixed!(0e18)..=state.bond_reserves());
-            let share_amount = rng.gen_range(fixed!(0e18)..=bond_amount);
-            let open_share_price = rng.gen_range(fixed!(0e18)..=state.share_price());
+            let bond_amount = rng.gen_range(fixed!(0)..=state.bond_reserves());
+            let share_amount = rng.gen_range(fixed!(0)..=bond_amount);
+            let open_share_price = rng.gen_range(fixed!(0)..=state.share_price());
             let actual = panic::catch_unwind(|| {
                 state.calculate_short_proceeds(
                     bond_amount,
@@ -139,7 +139,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn fuzz_calculate_close_short() -> Result<()> {
+    async fn fuzz_calculate_close_short_flat_plus_curve() -> Result<()> {
         let chain = TestChainWithMocks::new(1).await?;
         let mock = chain.mock_hyperdrive_math();
 
@@ -147,10 +147,10 @@ mod tests {
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
-            let in_ = rng.gen_range(fixed!(0e18)..=state.bond_reserves());
-            let normalized_time_remaining = rng.gen_range(fixed!(0e18)..=fixed!(1e18));
+            let in_ = rng.gen_range(fixed!(0)..=state.bond_reserves());
+            let normalized_time_remaining = rng.gen_range(fixed!(0)..=fixed!(1e18));
             let actual = panic::catch_unwind(|| {
-                state._calculate_close_short(in_, normalized_time_remaining)
+                state.calculate_close_short_flat_plus_curve(in_, normalized_time_remaining)
             });
             match mock
                 .calculate_close_short(

@@ -519,7 +519,7 @@ mod tests {
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let checkpoint_exposure = {
-                let value = rng.gen_range(fixed!(0e18)..=FixedPoint::from(I256::MAX));
+                let value = rng.gen_range(fixed!(0)..=FixedPoint::from(I256::MAX));
                 let sign = rng.gen::<bool>();
                 if sign {
                     -I256::from(value)
