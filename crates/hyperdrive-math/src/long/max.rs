@@ -200,7 +200,7 @@ impl State {
         //
         // absoluteMaxBondAmount = (y - y_t) - c(x)
         let absolute_max_bond_amount = (self.bond_reserves() - target_bond_reserves)
-            - self.long_curve_fee(absolute_max_base_amount);
+            - self.open_long_curve_fees_given_base(absolute_max_base_amount);
 
         (absolute_max_base_amount, absolute_max_bond_amount)
     }
@@ -336,7 +336,7 @@ impl State {
         bond_amount: FixedPoint,
         checkpoint_exposure: I256,
     ) -> Option<FixedPoint> {
-        let governance_fee = self.long_governance_fee(base_amount);
+        let governance_fee = self.open_long_governance_fee_given_base(base_amount);
         let share_reserves = self.share_reserves() + base_amount / self.share_price()
             - governance_fee / self.share_price();
         let exposure =

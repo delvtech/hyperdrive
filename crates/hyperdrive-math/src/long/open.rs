@@ -28,7 +28,7 @@ impl State {
         let base_amount = base_amount.into();
         let long_amount =
             self.calculate_bonds_out_given_shares_in_down(base_amount / self.share_price());
-        long_amount - self.long_curve_fee(base_amount)
+        long_amount - self.open_long_curve_fees_given_base(base_amount)
     }
 
     #[deprecated(since="0.4.0", note="please use `calculate_open_long` instead")]
