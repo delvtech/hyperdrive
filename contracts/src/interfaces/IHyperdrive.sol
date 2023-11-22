@@ -256,6 +256,9 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     error MinimumSharePrice();
     error MinimumTransactionAmount();
     error ZeroLpTotalSupply();
+    error InvalidIndexes();
+    error EndIndexTooLarge();
+    error InvalidDeployer();
 
     /// ############
     /// ### TWAP ###
@@ -278,8 +281,9 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     error MaxFeeTooHigh();
     error FeeTooHigh();
     error NonPayableInitialization();
-    error InvalidIndexes();
-    error EndIndexTooLarge();
+    error HyperdriveDeployerAlreadyAdded();
+    error HyperdriveDeployerNotAdded();
+    error HyperdriveDeployerIndexMismatch();
 
     /// ######################
     /// ### ERC20Forwarder ###

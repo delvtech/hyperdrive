@@ -33,6 +33,8 @@
         "degradation",
         "delegatecall",
         "denormalize",
+        "deployers",
+        "Deployers",
         "destinatary",
         "ecsign",
         "EIP",

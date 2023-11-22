@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { ERC4626HyperdriveFactory } from "contracts/src/factory/ERC4626HyperdriveFactory.sol";
+import { ERC4626HyperdriveDeployer } from "contracts/src/instances/ERC4626HyperdriveDeployer.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -14,7 +14,7 @@ import { MockERC4626Hyperdrive } from "contracts/test/MockERC4626Hyperdrive.sol"
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
-import { ERC4626ValidationTest } from "test/integrations/ERC4626Validation.t.sol";
+import { ERC4626ValidationTest } from "./ERC4626Validation.t.sol";
 
 // Interface for the `Pot` of the underlying DSR
 interface PotLike {
@@ -50,6 +50,7 @@ contract sDaiTest is ERC4626ValidationTest {
         // Interest accumulates in the dsr based on time passed.
         // This may caused insolvency if too much interest accrues as no real dai is being
         // accrued.
+
         // Note - Mainnet only address for Pot, but fine since this test explicitly uses a Mainnet fork in test
         PotLike(0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7).drip();
     }

@@ -859,7 +859,7 @@ contract HyperdriveTest is BaseTest {
         uint256 indexed version,
         address hyperdrive,
         IHyperdrive.PoolConfig config,
-        bytes32[] extraData
+        bytes extraData
     );
 
     event Initialize(
@@ -951,7 +951,7 @@ contract HyperdriveTest is BaseTest {
         uint256 contribution,
         uint256 apr,
         uint256 minimumShareReserves,
-        bytes32[] memory expectedExtraData,
+        bytes memory expectedExtraData,
         uint256 tolerance
     ) internal {
         // Ensure that the correct `Deployed` and `Initialize` events were emitted.
@@ -975,10 +975,10 @@ contract HyperdriveTest is BaseTest {
             (
                 address eventHyperdrive,
                 IHyperdrive.PoolConfig memory eventConfig,
-                bytes32[] memory eventExtraData
+                bytes memory eventExtraData
             ) = abi.decode(
                     filteredLogs[0].data,
-                    (address, IHyperdrive.PoolConfig, bytes32[])
+                    (address, IHyperdrive.PoolConfig, bytes)
                 );
             assertEq(eventHyperdrive, address(_hyperdrive));
             assertEq(

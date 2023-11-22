@@ -18,14 +18,14 @@ import { ERC4626Target0 } from "../instances/ERC4626Target0.sol";
 contract ERC4626Target0Deployer is IHyperdriveTargetDeployer {
     /// @notice Deploys a target0 instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _pool The address of the ERC4626 compatible yield source.
+    /// @param _extraData The extra data that contains the pool and sweep targets.
     /// @return The address of the newly deployed ERC4626Hyperdrive Instance
     function deploy(
         IHyperdrive.PoolConfig memory _config,
-        bytes32[] memory,
-        address _pool
+        bytes memory _extraData
     ) external override returns (address) {
+        (address pool, ) = abi.decode(_extraData, (address, address[]));
         // Deploy the ERC4626Target0 instance.
-        return (address(new ERC4626Target0(_config, IERC4626(_pool))));
+        return (address(new ERC4626Target0(_config, IERC4626(pool))));
     }
 }

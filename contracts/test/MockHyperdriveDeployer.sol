@@ -9,10 +9,7 @@ import { MockHyperdrive } from "./MockHyperdrive.sol";
 contract MockHyperdriveDeployer is IHyperdriveDeployer {
     function deploy(
         IHyperdrive.PoolConfig memory _config,
-        address,
-        address,
-        bytes32[] memory,
-        address
+        bytes memory
     ) external override returns (address) {
         return (address(new MockHyperdrive(_config)));
     }
@@ -23,8 +20,7 @@ contract MockHyperdriveDeployer is IHyperdriveDeployer {
 contract MockHyperdriveTargetDeployer is IHyperdriveTargetDeployer {
     function deploy(
         IHyperdrive.PoolConfig memory,
-        bytes32[] memory,
-        address
+        bytes memory
     ) external pure override returns (address) {
         return address(0);
     }

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { ERC4626HyperdriveFactory } from "contracts/src/factory/ERC4626HyperdriveFactory.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { ERC4626Target0 } from "contracts/src/instances/ERC4626Target0.sol";
 import { ERC4626Target1 } from "contracts/src/instances/ERC4626Target1.sol";
+import { ERC4626HyperdriveCoreDeployer } from "contracts/src/instances/ERC4626HyperdriveCoreDeployer.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IERC4626Hyperdrive } from "contracts/src/interfaces/IERC4626Hyperdrive.sol";
@@ -17,7 +17,7 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { MockERC4626 } from "contracts/test/MockERC4626.sol";
+import { MockERC4626, ERC20 } from "contracts/test/MockERC4626.sol";
 import { MockERC4626Hyperdrive } from "contracts/test/MockERC4626Hyperdrive.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
@@ -25,7 +25,13 @@ import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 contract ERC4626HyperdriveTest is HyperdriveTest {
     using FixedPointMath for *;
 
-    ERC4626HyperdriveFactory factory;
+    HyperdriveFactory factory;
+
+    address hyperdriveDeployer;
+    address hyperdriveCoreDeployer;
+    address target0Deployer;
+    address target1Deployer;
+
     IERC20 dai = IERC20(address(0x6B175474E89094C44Da98b954EedeAC495271d0F));
     IERC4626 pool;
     uint256 aliceShares;
@@ -50,10 +56,20 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 )
             )
         );
+        hyperdriveCoreDeployer = address(new ERC4626HyperdriveCoreDeployer());
+        target0Deployer = address(new ERC4626Target0Deployer());
+        target1Deployer = address(new ERC4626Target1Deployer());
+        hyperdriveDeployer = address(
+            new ERC4626HyperdriveDeployer(
+                hyperdriveCoreDeployer,
+                target0Deployer,
+                target1Deployer
+            )
+        );
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
-        factory = new ERC4626HyperdriveFactory(
+        factory = new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
@@ -61,13 +77,9 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 defaultPausers: defaults,
                 fees: IHyperdrive.Fees(0, 0, 0),
                 maxFees: IHyperdrive.Fees(0, 0, 0),
-                hyperdriveDeployer: new ERC4626HyperdriveDeployer(),
-                target0Deployer: new ERC4626Target0Deployer(),
-                target1Deployer: new ERC4626Target1Deployer(),
                 linkerFactory: address(forwarderFactory),
                 linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
-            }),
-            new address[](0)
+            })
         );
 
         // Transfer a large amount of DAI to Alice.
@@ -102,6 +114,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
 
         vm.stopPrank();
         vm.startPrank(alice);
+        factory.addHyperdriveDeployer(hyperdriveDeployer);
         dai.approve(address(factory), type(uint256).max);
         dai.approve(address(hyperdrive), type(uint256).max);
         dai.approve(address(mockHyperdrive), type(uint256).max);
@@ -209,12 +222,12 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         });
         dai.approve(address(factory), type(uint256).max);
         hyperdrive = factory.deployAndInitialize(
+            hyperdriveDeployer,
             config,
+            abi.encode(address(pool), new address[](0)),
             contribution,
             apr,
-            new bytes(0),
-            new bytes32[](0),
-            address(pool)
+            new bytes(0)
         );
 
         // The initial price per share is one so the LP shares will initially
@@ -234,7 +247,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             contribution,
             apr,
             config.minimumShareReserves,
-            new bytes32[](0),
+            abi.encode(address(pool), new address[](0)),
             0
         );
     }
@@ -261,12 +274,12 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         });
         dai.approve(address(factory), type(uint256).max);
         hyperdrive = factory.deployAndInitialize(
+            hyperdriveDeployer,
             config,
+            abi.encode(address(pool), new address[](0)),
             contribution,
             apr,
-            new bytes(0),
-            new bytes32[](0),
-            address(pool)
+            new bytes(0)
         );
 
         // Ensure the share price is 1 after initialization.
@@ -282,43 +295,24 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         );
     }
 
-    function test_erc4626_updateSweepTargets() public {
-        // Ensure that the sweep targets can be updated by governance.
-        vm.startPrank(alice);
-        address[] memory sweepTargets = new address[](2);
-        sweepTargets[0] = address(bob);
-        sweepTargets[1] = address(celine);
-        factory.updateSweepTargets(sweepTargets);
-        address[] memory updatedTargets = factory.getSweepTargets();
-        assertEq(updatedTargets.length, 2);
-        assertEq(updatedTargets[0], address(bob));
-        assertEq(updatedTargets[1], address(celine));
-        vm.stopPrank();
-
-        // Ensure that the sweep targets cannot be updated by non-governance.
-        vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
-        factory.updateSweepTargets(sweepTargets);
-    }
-
     function test_erc4626_sweep() public {
         // Ensure that deployment will fail if the pool or base token is
         // specified as a sweep target.
         vm.startPrank(alice);
         address[] memory sweepTargets = new address[](1);
         sweepTargets[0] = address(dai);
-        factory.updateSweepTargets(sweepTargets);
+        bytes memory extraData = abi.encode(address(pool), sweepTargets);
         IHyperdrive.PoolConfig memory config = IHyperdrive(
             address(mockHyperdrive)
         ).getPoolConfig();
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         factory.deployAndInitialize(
+            hyperdriveDeployer,
             config,
+            extraData,
             1_000e18,
             0.05e18,
-            new bytes(0),
-            new bytes32[](0),
-            address(pool)
+            new bytes(0)
         );
         assert(
             !IERC4626Hyperdrive(address(mockHyperdrive)).isSweepable(
@@ -326,15 +320,15 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             )
         );
         sweepTargets[0] = address(pool);
-        factory.updateSweepTargets(sweepTargets);
+        extraData = abi.encode(address(pool), sweepTargets);
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         factory.deployAndInitialize(
+            hyperdriveDeployer,
             config,
+            extraData,
             1_000e18,
             0.05e18,
-            new bytes(0),
-            new bytes32[](0),
-            address(pool)
+            new bytes(0)
         );
         assert(
             !IERC4626Hyperdrive(address(mockHyperdrive)).isSweepable(
@@ -364,16 +358,16 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             false
         );
         sweepTargets[0] = address(otherToken);
-        factory.updateSweepTargets(sweepTargets);
+        extraData = abi.encode(address(pool), sweepTargets);
         mockHyperdrive = MockERC4626Hyperdrive(
             address(
                 factory.deployAndInitialize(
+                    hyperdriveDeployer,
                     config,
+                    extraData,
                     1_000e18,
                     0.05e18,
-                    new bytes(0),
-                    new bytes32[](0),
-                    address(pool)
+                    new bytes(0)
                 )
             )
         );
