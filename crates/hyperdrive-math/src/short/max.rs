@@ -416,8 +416,8 @@ impl State {
         };
         let share_reserves = self.share_reserves()
             - (principal
-                - (self.short_curve_fee(short_amount, spot_price)
-                    - self.short_governance_fee(short_amount, spot_price))
+                - (self.open_short_curve_fee(short_amount, spot_price)
+                    - self.open_short_governance_fee(short_amount, spot_price))
                     / self.share_price());
         let exposure = {
             let checkpoint_exposure: FixedPoint = checkpoint_exposure.max(I256::zero()).into();

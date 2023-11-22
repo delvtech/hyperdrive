@@ -12,7 +12,7 @@ impl State {
     /// $$
     /// c(x) = \phi_{c} \cdot \left( \tfrac{1}{p} - 1 \right) \cdot x
     /// $$
-    pub fn open_long_curve_fees_given_base(&self, base_amount: FixedPoint) -> FixedPoint {
+    pub fn open_long_curve_fees(&self, base_amount: FixedPoint) -> FixedPoint {
         // curve fee = ((1 / p) - 1) * phi_curve * dz
         self.curve_fee() * ((fixed!(1e18) / self.get_spot_price()) - fixed!(1e18)) * base_amount
     }
@@ -26,15 +26,13 @@ impl State {
     /// $$
     /// g(x) = \phi_{g} \cdot p \cdot c(x)
     /// $$
-    pub fn open_long_governance_fee_given_base(&self, base_amount: FixedPoint) -> FixedPoint {
-        self.governance_fee()
-            * self.get_spot_price()
-            * self.open_long_curve_fees_given_base(base_amount)
+    pub fn open_long_governance_fee(&self, base_amount: FixedPoint) -> FixedPoint {
+        self.governance_fee() * self.get_spot_price() * self.open_long_curve_fees(base_amount)
     }
 
-    /// Gets the flat fee paid by longs for a given bond amount.
+    /// Gets the curve fee paid by longs for a given bond amount.
     /// Returns the fee in shares
-    pub fn close_long_curve_fee_given_bonds(
+    pub fn close_long_curve_fee(
         &self,
         bond_amount: FixedPoint,
         normalized_time_remaining: FixedPoint,
@@ -47,7 +45,7 @@ impl State {
 
     /// Gets the flat fee paid by longs for a given bond amount
     /// Returns the fee in shares
-    pub fn close_long_flat_fee_given_bonds(
+    pub fn close_long_flat_fee(
         &self,
         bond_amount: FixedPoint,
         normalized_time_remaining: FixedPoint,

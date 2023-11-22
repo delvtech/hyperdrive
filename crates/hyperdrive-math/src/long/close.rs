@@ -39,8 +39,8 @@ impl State {
 
         // Subtract the fees from the trade
         self._calculate_close_long(bond_amount, normalized_time_remaining)
-            - self.close_long_curve_fee_given_bonds(bond_amount, normalized_time_remaining)
-            - self.close_long_flat_fee_given_bonds(bond_amount, normalized_time_remaining)
+            - self.close_long_curve_fee(bond_amount, normalized_time_remaining)
+            - self.close_long_flat_fee(bond_amount, normalized_time_remaining)
     }
 }
 
