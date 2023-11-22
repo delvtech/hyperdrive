@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { HyperdriveTarget0 } from "contracts/src/external/HyperdriveTarget0.sol";
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IMultiToken } from "contracts/src/interfaces/IMultiToken.sol";
+import { HyperdriveMultiToken } from "contracts/src/internal/HyperdriveMultiToken.sol";
+import { HyperdriveStorage } from "contracts/src/internal/HyperdriveStorage.sol";
+import { MockHyperdriveBase, MockHyperdriveTarget0 } from "contracts/test/MockHyperdrive.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
-import { IERC20 } from "../src/interfaces/IERC20.sol";
-import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
-import { IMultiToken } from "../src/interfaces/IMultiToken.sol";
-import { HyperdriveMultiToken } from "../src/internal/HyperdriveMultiToken.sol";
-import { HyperdrivePermitForAll } from "../src/internal/HyperdrivePermitForAll.sol";
-import { HyperdriveStorage } from "../src/internal/HyperdriveStorage.sol";
-import { MockHyperdriveBase, MockHyperdriveTarget0 } from "./MockHyperdrive.sol";
 
 /// DEPRECATED: Don't use this for new tests.
 interface IMockMultiToken is IMultiToken {
@@ -31,12 +31,17 @@ interface IMockMultiToken is IMultiToken {
     function burn(uint256 tokenID, address from, uint256 amount) external;
 }
 
-contract MockMultiToken is
-    HyperdriveMultiToken,
-    HyperdrivePermitForAll,
-    MockHyperdriveBase
-{
+contract MockMultiToken is HyperdriveMultiToken, MockHyperdriveBase {
     address internal immutable target0;
+
+    /// @notice The typehash used to calculate the EIP712 hash for `permitForAll`.
+    bytes32 public constant PERMIT_TYPEHASH =
+        keccak256(
+            "PermitForAll(address owner,address spender,bool _approved,uint256 nonce,uint256 deadline)"
+        );
+
+    /// @notice This contract's EIP712 domain separator.
+    bytes32 public immutable DOMAIN_SEPARATOR; // solhint-disable-line var-name-mixedcase
 
     constructor(
         bytes32 _linkerCodeHash,
@@ -59,8 +64,8 @@ contract MockMultiToken is
                 fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 })
             })
         )
-        HyperdrivePermitForAll()
     {
+        // Deploy the target0 contract.
         target0 = address(
             new MockHyperdriveTarget0(
                 IHyperdrive.PoolConfig({
@@ -78,6 +83,22 @@ contract MockMultiToken is
                     feeCollector: address(0),
                     fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 })
                 })
+            )
+        );
+
+        // NOTE: It's convenient to keep this in the `Hyperdrive.sol`
+        //       entry-point to avoiding issues with initializing the domain
+        //       separator with the contract address. If this is moved to one of
+        //       the targets, the domain separator will need to be computed
+        //       differently.
+        DOMAIN_SEPARATOR = keccak256(
+            abi.encode(
+                keccak256(
+                    "EIP712Domain(string version,uint256 chainId,address verifyingContract)"
+                ),
+                keccak256(bytes("1")),
+                block.chainid,
+                address(this)
             )
         );
     }
@@ -149,7 +170,30 @@ contract MockMultiToken is
         bytes32 r,
         bytes32 s
     ) external {
-        _permitForAll(owner, spender, _approved, deadline, v, r, s);
+        (bool success, bytes memory result) = target0.delegatecall(
+            abi.encodeCall(
+                HyperdriveTarget0.permitForAll,
+                (
+                    DOMAIN_SEPARATOR,
+                    PERMIT_TYPEHASH,
+                    owner,
+                    spender,
+                    _approved,
+                    deadline,
+                    v,
+                    r,
+                    s
+                )
+            )
+        );
+        if (!success) {
+            assembly {
+                revert(add(result, 32), mload(result))
+            }
+        }
+        assembly {
+            return(add(result, 32), mload(result))
+        }
     }
 
     /// Mocks ///

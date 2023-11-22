@@ -831,10 +831,16 @@ contract HyperdriveTest is BaseTest {
         ) - hyperdrive.getWithdrawPool().readyToWithdraw;
         uint256 totalLpSupply = totalActiveLpSupply +
             withdrawalSharesOutstanding;
-        int256 withdrawalShares = int256(
-            totalLpSupply.mulDivDown(endingPresentValue, startingPresentValue)
-        );
-        withdrawalShares -= int256(totalLpSupply) - int256(_shares);
+        int256 withdrawalShares;
+        if (startingPresentValue > 0 && endingPresentValue > 0) {
+            withdrawalShares = int256(
+                totalLpSupply.mulDivDown(
+                    endingPresentValue,
+                    startingPresentValue
+                )
+            );
+            withdrawalShares -= int256(totalLpSupply) - int256(_shares);
+        }
         if (withdrawalShares < 0) {
             uint256 overestimatedProceeds = startingPresentValue.mulDivDown(
                 uint256(-withdrawalShares),

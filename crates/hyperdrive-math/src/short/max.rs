@@ -3,8 +3,7 @@ use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
-use super::State;
-use crate::{get_effective_share_reserves, YieldSpace};
+use crate::{get_effective_share_reserves, State, YieldSpace};
 
 impl State {
     /// Gets the minimum price that the pool can support.
@@ -35,50 +34,6 @@ impl State {
         .pow(fixed!(1e18).div_up(fixed!(1e18) - self.time_stretch()));
         ((self.initial_share_price() * self.minimum_share_reserves()) / y_max)
             .pow(self.time_stretch())
-    }
-
-    /// Gets the amount of base the trader will need to deposit for a short of
-    /// a given size.
-    ///
-    /// The short deposit is made up of several components:
-    /// - The long's fixed rate (without considering fees): $\Delta y - c \cdot \Delta
-    /// - The curve fee: $c \cdot (1 - p) \cdot \Delta y$
-    /// - The backpaid short interest: $(c - c_0) \cdot \Delta y$
-    /// - The flat fee: $f \cdot \Delta y$
-    ///
-    /// Putting these components together, we can write out the short deposit
-    /// function as:
-    ///
-    /// $$
-    /// D(x) = \Delta y - (c \cdot P(x) - \phi_{curve} \cdot (1 - p) \cdot \Delta y)
-    ///        + (c - c_0) \cdot \tfrac{\Delta y}{c_0} + \phi_{flat} \cdot \Delta y \\
-    ///      = \tfrac{c}{c_0} \cdot \Delta y - (c \cdot P(x) - \phi_{curve} \cdot (1 - p) \cdot \Delta y)
-    ///        + \phi_{flat} \cdot \Delta y
-    /// $$
-    ///
-    /// $x$ is the number of bonds being shorted and $P(x)$ is the amount of
-    /// shares the curve says the LPs need to pay the shorts (i.e. the LP
-    /// principal).
-    pub fn get_short_deposit(
-        &self,
-        short_amount: FixedPoint,
-        spot_price: FixedPoint,
-        mut open_share_price: FixedPoint,
-    ) -> Result<FixedPoint> {
-        // If the open share price hasn't been set, we use the current share
-        // price, since this is what will be set as the checkpoint share price
-        // in the next transaction.
-        if open_share_price == fixed!(0) {
-            open_share_price = self.share_price();
-        }
-
-        // NOTE: The order of additions and subtractions is important to avoid underflows.
-        Ok(
-            short_amount.mul_div_down(self.share_price(), open_share_price)
-                + self.flat_fee() * short_amount
-                + self.curve_fee() * (fixed!(1e18) - spot_price) * short_amount
-                - self.share_price() * self.short_principal(short_amount)?,
-        )
     }
 
     // TODO: Make it clear to the consumer that the maximum number of iterations
@@ -505,21 +460,6 @@ impl State {
         }
     }
 
-    /// Gets the amount of short principal that the LPs need to pay to back a
-    /// short before fees are taken into consideration, $P(x)$.
-    ///
-    /// Let the LP principal that backs $x$ shorts be given by $P(x)$. We can
-    /// solve for this in terms of $x$ using the YieldSpace invariant:
-    ///
-    /// $$
-    /// k = \tfrac{c}{\mu} \cdot (\mu \cdot (z - P(x)))^{1 - t_s} + (y + x)^{1 - t_s} \\
-    /// \implies \\
-    /// P(x) = z - \tfrac{1}{\mu} \cdot (\tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s}))^{\tfrac{1}{1 - t_s}}
-    /// $$
-    fn short_principal(&self, short_amount: FixedPoint) -> Result<FixedPoint> {
-        self.calculate_shares_out_given_bonds_in_down_safe(short_amount)
-    }
-
     /// Gets the derivative of the short principal $P(x)$ w.r.t. the amount of
     /// bonds that are shorted $x$.
     ///
@@ -558,16 +498,6 @@ impl State {
         (self.initial_share_price() / self.share_price())
             * (self.k_down()
                 - (self.bond_reserves() + short_amount).pow(fixed!(1e18) - self.time_stretch()))
-    }
-
-    /// Gets the curve fee paid by the trader when they open a short.
-    fn short_curve_fee(&self, short_amount: FixedPoint, spot_price: FixedPoint) -> FixedPoint {
-        self.curve_fee() * (fixed!(1e18) - spot_price) * short_amount
-    }
-
-    /// Gets the governance fee paid by the trader when they open a short.
-    fn short_governance_fee(&self, short_amount: FixedPoint, spot_price: FixedPoint) -> FixedPoint {
-        self.governance_fee() * self.short_curve_fee(short_amount, spot_price)
     }
 }
 

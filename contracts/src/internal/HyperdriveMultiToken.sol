@@ -155,6 +155,76 @@ abstract contract HyperdriveMultiToken is HyperdriveBase {
         emit TransferSingle(msg.sender, from, address(0), tokenID, amount);
     }
 
+    /// @dev Allows a caller who is not the owner of an account to execute the
+    ///      functionality of 'approve' for all assets with the owners signature.
+    /// @param domainSeparator The EIP712 domain separator for this contract.
+    /// @param permitTypehash The EIP712 typehash for the permit data.
+    /// @param owner The owner of the account which is having the new approval set.
+    /// @param spender The address which will be allowed to spend owner's tokens.
+    /// @param _approved A boolean of the approval status to set to.
+    /// @param deadline The timestamp which the signature must be submitted by
+    ///        to be valid.
+    /// @param v Extra ECDSA data which allows public key recovery from
+    ///        signature assumed to be 27 or 28.
+    /// @param r The r component of the ECDSA signature.
+    /// @param s The s component of the ECDSA signature.
+    /// @dev The signature for this function follows EIP 712 standard and should
+    ///      be generated with the eth_signTypedData JSON RPC call instead of
+    ///      the eth_sign JSON RPC call. If using out of date parity signing
+    ///      libraries the v component may need to be adjusted. Also it is very
+    ///      rare but possible for v to be other values, those values are not
+    ///      supported.
+    function _permitForAll(
+        bytes32 domainSeparator,
+        bytes32 permitTypehash,
+        address owner,
+        address spender,
+        bool _approved,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal {
+        // Require that the signature is not expired.
+        if (block.timestamp > deadline) {
+            revert IHyperdrive.ExpiredDeadline();
+        }
+
+        // Require that the owner is not zero.
+        if (owner == address(0)) {
+            revert IHyperdrive.RestrictedZeroAddress();
+        }
+
+        // Check that the signature is valid and recovers to the owner.
+        bytes32 structHash = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                domainSeparator,
+                keccak256(
+                    abi.encode(
+                        permitTypehash,
+                        owner,
+                        spender,
+                        _approved,
+                        _nonces[owner],
+                        deadline
+                    )
+                )
+            )
+        );
+        address signer = ecrecover(structHash, v, r, s);
+        if (signer != owner) revert IHyperdrive.InvalidSignature();
+
+        // Increment the signature nonce.
+        ++_nonces[owner];
+
+        // Set the state.
+        _isApprovedForAll[owner][spender] = _approved;
+
+        // Emit an event to track approval.
+        emit ApprovalForAll(owner, spender, _approved);
+    }
+
     /// @notice Derive the ERC20 forwarder address for a provided `tokenId`.
     /// @param tokenId Token Id of the token whose forwarder contract address
     ///        need to derived.

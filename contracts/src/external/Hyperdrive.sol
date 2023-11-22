@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { HyperdriveTarget0 } from "../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveCore } from "../interfaces/IHyperdriveCore.sol";
 import { HyperdriveAdmin } from "../internal/HyperdriveAdmin.sol";
@@ -8,7 +9,6 @@ import { HyperdriveBase } from "../internal/HyperdriveBase.sol";
 import { HyperdriveCheckpoint } from "../internal/HyperdriveCheckpoint.sol";
 import { HyperdriveLong } from "../internal/HyperdriveLong.sol";
 import { HyperdriveLP } from "../internal/HyperdriveLP.sol";
-import { HyperdrivePermitForAll } from "../internal/HyperdrivePermitForAll.sol";
 import { HyperdriveShort } from "../internal/HyperdriveShort.sol";
 import { HyperdriveStorage } from "../internal/HyperdriveStorage.sol";
 
@@ -20,7 +20,6 @@ import { HyperdriveStorage } from "../internal/HyperdriveStorage.sol";
 ///                    particular legal or regulatory significance.
 abstract contract Hyperdrive is
     IHyperdriveCore,
-    HyperdrivePermitForAll,
     HyperdriveAdmin,
     HyperdriveLP,
     HyperdriveLong,
@@ -36,6 +35,15 @@ abstract contract Hyperdrive is
     ///         some stateful functions.
     address public immutable target1;
 
+    /// @notice The typehash used to calculate the EIP712 hash for `permitForAll`.
+    bytes32 public constant PERMIT_TYPEHASH =
+        keccak256(
+            "PermitForAll(address owner,address spender,bool _approved,uint256 nonce,uint256 deadline)"
+        );
+
+    /// @notice This contract's EIP712 domain separator.
+    bytes32 public immutable DOMAIN_SEPARATOR; // solhint-disable-line var-name-mixedcase
+
     /// @notice Instantiates a Hyperdrive pool.
     /// @param _config The configuration of the pool.
     /// @param _target0 The target0 address.
@@ -44,10 +52,26 @@ abstract contract Hyperdrive is
         IHyperdrive.PoolConfig memory _config,
         address _target0,
         address _target1
-    ) HyperdriveStorage(_config) HyperdrivePermitForAll() {
+    ) HyperdriveStorage(_config) {
         // Initialize the target contracts.
         target0 = _target0;
         target1 = _target1;
+
+        // NOTE: It's convenient to keep this in the `Hyperdrive.sol`
+        //       entry-point to avoiding issues with initializing the domain
+        //       separator with the contract address. If this is moved to one of
+        //       the targets, the domain separator will need to be computed
+        //       differently.
+        DOMAIN_SEPARATOR = keccak256(
+            abi.encode(
+                keccak256(
+                    "EIP712Domain(string version,uint256 chainId,address verifyingContract)"
+                ),
+                keccak256(bytes("1")),
+                block.chainid,
+                address(this)
+            )
+        );
     }
 
     /// @notice If we get to the fallback function, we make a read-only
@@ -288,7 +312,30 @@ abstract contract Hyperdrive is
         bytes32 r,
         bytes32 s
     ) external {
-        _permitForAll(owner, spender, _approved, deadline, v, r, s);
+        (bool success, bytes memory result) = target0.delegatecall(
+            abi.encodeCall(
+                HyperdriveTarget0.permitForAll,
+                (
+                    DOMAIN_SEPARATOR,
+                    PERMIT_TYPEHASH,
+                    owner,
+                    spender,
+                    _approved,
+                    deadline,
+                    v,
+                    r,
+                    s
+                )
+            )
+        );
+        if (!success) {
+            assembly {
+                revert(add(result, 32), mload(result))
+            }
+        }
+        assembly {
+            return(add(result, 32), mload(result))
+        }
     }
 
     /// Helpers ///
