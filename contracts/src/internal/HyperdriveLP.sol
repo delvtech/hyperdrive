@@ -278,11 +278,13 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         );
 
         // Mint the withdrawal shares to the LP.
-        _mint(
-            AssetId._WITHDRAWAL_SHARE_ASSET_ID,
-            _options.destination,
-            withdrawalShares
-        );
+        if (withdrawalShares > 0) {
+            _mint(
+                AssetId._WITHDRAWAL_SHARE_ASSET_ID,
+                _options.destination,
+                withdrawalShares
+            );
+        }
 
         // Withdraw the shares from the yield source.
         proceeds = _withdraw(shareProceeds, _options);

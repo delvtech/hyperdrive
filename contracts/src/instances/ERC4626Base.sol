@@ -60,7 +60,6 @@ abstract contract ERC4626Base is HyperdriveBase {
             // Deposit the base into the yield source.
             ERC20(address(_baseToken)).safeApprove(address(_pool), _amount);
             sharesMinted = _pool.deposit(_amount, address(this));
-            sharePrice = _pricePerShare();
         } else {
             // WARN: This logic doesn't account for slippage in the conversion
             // from base to shares. If deposits to the yield source incur
@@ -73,8 +72,8 @@ abstract contract ERC4626Base is HyperdriveBase {
                 address(this),
                 sharesMinted
             );
-            sharePrice = _pricePerShare();
         }
+        sharePrice = _pricePerShare();
     }
 
     /// @notice Processes a trader's withdrawal in either base or vault shares.
