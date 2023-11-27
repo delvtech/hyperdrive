@@ -78,7 +78,7 @@ impl State {
             self.max_long_guess(absolute_max_base_amount, checkpoint_exposure);
         let mut maybe_solvency = self.solvency_after_long(
             max_base_amount,
-            self.get_long_amount(max_base_amount),
+            self.calculate_open_long(max_base_amount),
             checkpoint_exposure,
         );
         if maybe_solvency.is_none() {
@@ -116,7 +116,7 @@ impl State {
             let possible_max_base_amount = max_base_amount + solvency / maybe_derivative.unwrap();
             maybe_solvency = self.solvency_after_long(
                 possible_max_base_amount,
-                self.get_long_amount(possible_max_base_amount),
+                self.calculate_open_long(possible_max_base_amount),
                 checkpoint_exposure,
             );
             if let Some(s) = maybe_solvency {
@@ -200,7 +200,7 @@ impl State {
         //
         // absoluteMaxBondAmount = (y - y_t) - c(x)
         let absolute_max_bond_amount = (self.bond_reserves() - target_bond_reserves)
-            - self.long_curve_fee(absolute_max_base_amount);
+            - self.open_long_curve_fees(absolute_max_base_amount);
 
         (absolute_max_base_amount, absolute_max_bond_amount)
     }
@@ -336,7 +336,7 @@ impl State {
         bond_amount: FixedPoint,
         checkpoint_exposure: I256,
     ) -> Option<FixedPoint> {
-        let governance_fee = self.long_governance_fee(base_amount);
+        let governance_fee = self.open_long_governance_fee(base_amount);
         let share_reserves = self.share_reserves() + base_amount / self.share_price()
             - governance_fee / self.share_price();
         let exposure =
@@ -519,7 +519,7 @@ mod tests {
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let checkpoint_exposure = {
-                let value = rng.gen_range(fixed!(0e18)..=FixedPoint::from(I256::MAX));
+                let value = rng.gen_range(fixed!(0)..=FixedPoint::from(I256::MAX));
                 let sign = rng.gen::<bool>();
                 if sign {
                     -I256::from(value)

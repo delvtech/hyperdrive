@@ -5,9 +5,9 @@ import { stdError } from "forge-std/StdError.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
-import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
-import { Lib } from "../../utils/Lib.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 // FIXME:
 //

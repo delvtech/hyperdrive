@@ -3,8 +3,8 @@ pragma solidity 0.8.19;
 
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
-import { Lib } from "../../utils/Lib.sol";
+import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "test/utils/HyperdriveTest.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract SandwichTest is HyperdriveTest {
     using FixedPointMath for uint256;
