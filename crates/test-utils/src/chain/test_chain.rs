@@ -230,7 +230,7 @@ impl TestChain {
             provider.clone(),
             signer.with_chain_id(provider.get_chainid().await?.low_u64()),
         ));
-        let base = ERC20Mintable::deploy(
+        let mut contract_deployment_tx = ERC20Mintable::deploy(
             client.clone(),
             (
                 "Base".to_string(),
@@ -239,7 +239,9 @@ impl TestChain {
                 Address::zero(),
                 false,
             ),
-        )?
+        );
+        contract_deployment_tx.as_mut().unwrap().deployer.tx.set_gas_price(1_000_000_000);
+        let base = contract_deployment_tx?
         .send()
         .await?;
         let pool = MockERC4626::deploy(
