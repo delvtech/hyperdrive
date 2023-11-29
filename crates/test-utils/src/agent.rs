@@ -638,7 +638,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
                         }
                     })
                     .collect::<Vec<_>>();
-            logs.get(0).cloned()
+            logs.first().cloned()
         };
         if let Some(log) = log {
             self.wallet.base += log.base_amount.into();
