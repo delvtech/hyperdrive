@@ -30,7 +30,7 @@ use hyperdrive_wrappers::wrappers::{
 use super::{dev_chain::MNEMONIC, Chain, ChainClient};
 use crate::{
     agent::{Agent, TxOptions},
-    constants::MAYBE_ETHEREUM_URL,
+    constants::{DEFAULT_GAS_PRICE, MAYBE_ETHEREUM_URL},
     crash_reports::{ActionType, CrashReport},
 };
 
@@ -240,6 +240,7 @@ impl TestChain {
                 false,
             ),
         )?
+        .gas_price(DEFAULT_GAS_PRICE)
         .send()
         .await?;
         let pool = MockERC4626::deploy(
@@ -253,6 +254,7 @@ impl TestChain {
                 false,
             ),
         )?
+        .gas_price(DEFAULT_GAS_PRICE)
         .send()
         .await?;
 
@@ -277,9 +279,11 @@ impl TestChain {
             },
         };
         let target0 = ERC4626Target0::deploy(client.clone(), (config.clone(), pool.address()))?
+            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
         let target1 = ERC4626Target1::deploy(client.clone(), (config.clone(), pool.address()))?
+            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
         let erc4626_hyperdrive = ERC4626Hyperdrive::deploy(
@@ -292,6 +296,7 @@ impl TestChain {
                 Vec::<U256>::new(),
             ),
         )?
+        .gas_price(DEFAULT_GAS_PRICE)
         .send()
         .await?;
 
@@ -338,6 +343,7 @@ impl TestChain {
                 client.clone(),
                 (name, symbol, decimals, Address::zero(), is_competition_mode),
             )?
+            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
             pairs.push((addresses.base, base_template.address()));
@@ -359,6 +365,7 @@ impl TestChain {
                     is_competition_mode,
                 ),
             )?
+            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
             pairs.push((vault_address, vault_template.address()));
@@ -367,6 +374,7 @@ impl TestChain {
             let config = hyperdrive.get_pool_config().call().await?;
             let target0_template =
                 ERC4626Target0::deploy(client.clone(), (config.clone(), vault_address))?
+                    .gas_price(DEFAULT_GAS_PRICE)
                     .send()
                     .await?;
             pairs.push((target0_address, target0_template.address()));
@@ -374,6 +382,7 @@ impl TestChain {
             // Deploy the target1 template.
             let target1_template =
                 ERC4626Target0::deploy(client.clone(), (config.clone(), vault_address))?
+                    .gas_price(DEFAULT_GAS_PRICE)
                     .send()
                     .await?;
             pairs.push((target1_address, target1_template.address()));
@@ -385,6 +394,7 @@ impl TestChain {
             // is equal to the `_pricePerShare`.
             let etching_vault_template =
                 EtchingVault::deploy(client.clone(), (addresses.base, config.initial_share_price))?
+                    .gas_price(DEFAULT_GAS_PRICE)
                     .send()
                     .await?;
             let code = provider
@@ -405,6 +415,7 @@ impl TestChain {
                     Vec::<Address>::new(),
                 ),
             )?
+            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
             pairs.push((addresses.hyperdrive, hyperdrive_template.address()));
@@ -526,12 +537,15 @@ impl TestChainWithMocks {
 
         // Deploy the mock contracts.
         let mock_fixed_point_math = MockFixedPointMath::deploy(client.clone(), ())?
+            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
         let mock_hyperdrive_math = MockHyperdriveMath::deploy(client.clone(), ())?
+            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
         let mock_yield_space_math = MockYieldSpaceMath::deploy(client.clone(), ())?
+            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
 
