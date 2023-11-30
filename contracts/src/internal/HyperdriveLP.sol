@@ -5,6 +5,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
+import { LPMath } from "../libraries/LPMath.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveMultiToken } from "./HyperdriveMultiToken.sol";
@@ -164,9 +165,10 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         uint256 startingPresentValue;
         {
             // Calculate the present value before updating the reserves.
-            HyperdriveMath.PresentValueParams
-                memory params = _getPresentValueParams(sharePrice);
-            startingPresentValue = HyperdriveMath.calculatePresentValue(params);
+            LPMath.PresentValueParams memory params = _getPresentValueParams(
+                sharePrice
+            );
+            startingPresentValue = LPMath.calculatePresentValue(params);
 
             // Add the liquidity to the pool's reserves and calculate the new
             // present value.
@@ -174,7 +176,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
             params.shareReserves = _marketState.shareReserves;
             params.shareAdjustment = _marketState.shareAdjustment;
             params.bondReserves = _marketState.bondReserves;
-            endingPresentValue = HyperdriveMath.calculatePresentValue(params);
+            endingPresentValue = LPMath.calculatePresentValue(params);
 
             // The LP shares minted to the LP is derived by solving for the
             // change in LP shares that preserves the ratio of present value to
@@ -493,20 +495,17 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         // idle capital. The LP's proceeds are calculated as:
         //
         // proceeds = idle * (dl / l_a)
-        HyperdriveMath.PresentValueParams
-            memory params = _getPresentValueParams(_sharePrice);
-        uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(
-            params
+        LPMath.PresentValueParams memory params = _getPresentValueParams(
+            _sharePrice
         );
+        uint256 startingPresentValue = LPMath.calculatePresentValue(params);
         shareProceeds = _calculateIdleShareReserves(_pricePerShare());
         shareProceeds = shareProceeds.mulDivDown(_shares, _totalActiveLpSupply);
         _updateLiquidity(-int256(shareProceeds));
         params.shareReserves = _marketState.shareReserves;
         params.shareAdjustment = _marketState.shareAdjustment;
         params.bondReserves = _marketState.bondReserves;
-        uint256 endingPresentValue = HyperdriveMath.calculatePresentValue(
-            params
-        );
+        uint256 endingPresentValue = LPMath.calculatePresentValue(params);
 
         // Calculate the amount of withdrawal shares that should be minted. We
         // solve for this value by solving the present value equation as
@@ -549,7 +548,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
             AssetId._WITHDRAWAL_SHARE_ASSET_ID
         ] - _withdrawPool.readyToWithdraw;
         uint256 totalLpSupply = activeLpSupply + withdrawalSharesOutstanding;
-        uint256 presentValue = HyperdriveMath.calculatePresentValue(
+        uint256 presentValue = LPMath.calculatePresentValue(
             _getPresentValueParams(_sharePrice)
         );
         uint256 activeLpValue = activeLpSupply.mulDivDown(
@@ -588,7 +587,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         uint256 _withdrawalSharesOutstanding,
         uint256 _sharePrice
     ) internal {
-        uint256 presentValue = HyperdriveMath.calculatePresentValue(
+        uint256 presentValue = LPMath.calculatePresentValue(
             _getPresentValueParams(_sharePrice)
         );
         uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +

@@ -5,6 +5,7 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { LPMath } from "contracts/src/libraries/LPMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 
 library HyperdriveUtils {
@@ -1376,9 +1377,9 @@ library HyperdriveUtils {
         IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         return
-            HyperdriveMath
+            LPMath
                 .calculatePresentValue(
-                    HyperdriveMath.PresentValueParams({
+                    LPMath.PresentValueParams({
                         shareReserves: poolInfo.shareReserves,
                         shareAdjustment: poolInfo.shareAdjustment,
                         bondReserves: poolInfo.bondReserves,

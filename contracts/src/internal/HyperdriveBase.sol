@@ -6,6 +6,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
+import { LPMath } from "../libraries/LPMath.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 
@@ -233,12 +234,8 @@ abstract contract HyperdriveBase is HyperdriveStorage {
     /// @return presentValue The present value parameters.
     function _getPresentValueParams(
         uint256 _sharePrice
-    )
-        internal
-        view
-        returns (HyperdriveMath.PresentValueParams memory presentValue)
-    {
-        presentValue = HyperdriveMath.PresentValueParams({
+    ) internal view returns (LPMath.PresentValueParams memory presentValue) {
+        presentValue = LPMath.PresentValueParams({
             shareReserves: _marketState.shareReserves,
             shareAdjustment: _marketState.shareAdjustment,
             bondReserves: _marketState.bondReserves,
