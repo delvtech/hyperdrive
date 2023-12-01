@@ -111,6 +111,9 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         uint128 longAverageMaturityTime;
         /// @dev The average maturity time of outstanding short positions.
         uint128 shortAverageMaturityTime;
+        /// @dev The amount shares that associated with positions that are matured,
+        ///       but not yet redeemed.
+        uint128 zombieShares;
         /// @dev A flag indicating whether or not the pool has been initialized.
         bool isInitialized;
         /// @dev A flag indicating whether or not the pool is paused.

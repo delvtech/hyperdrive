@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { AssetId } from "../libraries/AssetId.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
@@ -84,6 +84,14 @@ abstract contract HyperdriveCheckpoint is
         // Create the share price checkpoint.
         checkpoint_.sharePrice = _sharePrice.toUint128();
 
+        // Collect the interest that has accrued since the last checkpoint.
+        _collectZombieInterest(
+            _marketState.zombieShares,
+            _checkpoints[_checkpointTime - _checkpointDuration].sharePrice,
+            _sharePrice,
+            ONE
+        );
+
         // Close out all of the short positions that matured at the beginning of
         // this checkpoint. This ensures that shorts don't continue to collect
         // free variable interest and that LP's can withdraw the proceeds of
@@ -117,6 +125,7 @@ abstract contract HyperdriveCheckpoint is
                 int256(shareProceeds), // keep the effective share reserves constant
                 _checkpointTime
             );
+            _marketState.zombieShares += shareProceeds.toUint128();
             positionsClosed = true;
         }
 
@@ -146,6 +155,7 @@ abstract contract HyperdriveCheckpoint is
                 int256(shareProceeds), // keep the effective share reserves constant
                 checkpointTime
             );
+            _marketState.zombieShares += shareProceeds.toUint128();
             positionsClosed = true;
         }
 

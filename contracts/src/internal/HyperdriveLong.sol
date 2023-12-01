@@ -199,6 +199,16 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
             // Distribute the excess idle to the withdrawal pool.
             _distributeExcessIdle(sharePrice);
+        } else {
+            // The user is redeeming a long that has already matured. So we
+            // collect the interest that has accrued since the last checkpoint.
+            uint256 checkpointTime = _latestCheckpoint();
+            _collectZombieInterest(
+                shareProceeds,
+                _checkpoints[checkpointTime - _checkpointDuration].sharePrice,
+                sharePrice,
+                _calculateCheckpointTimeElapsed()
+            );
         }
 
         // Withdraw the profit to the trader.

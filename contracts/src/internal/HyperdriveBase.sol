@@ -179,6 +179,20 @@ abstract contract HyperdriveBase is HyperdriveStorage {
 
     /// Helpers ///
 
+    /// @dev Calculates the normalized time elapsed since the last checkpoint.
+    /// @return timeElapsed The normalized time elapsed (in [0, 1]).
+    function _calculateCheckpointTimeElapsed()
+        internal
+        view
+        returns (uint256 timeElapsed)
+    {
+        uint256 latestCheckpoint = _latestCheckpoint();
+        timeElapsed = block.timestamp > latestCheckpoint
+            ? block.timestamp - latestCheckpoint
+            : 0;
+        timeElapsed = (timeElapsed).divDown(_checkpointDuration);
+    }
+
     /// @dev Calculates the normalized time remaining of a position.
     /// @param _maturityTime The maturity time of the position.
     /// @return timeRemaining The normalized time remaining (in [0, 1]).
@@ -370,6 +384,27 @@ abstract contract HyperdriveBase is HyperdriveStorage {
             } else {
                 _marketState.longExposure += uint128(_after.max(0).toInt128());
             }
+        }
+    }
+
+    /// @dev Collect the interest earned by closed positions
+    ///      that haven't been redeemed.
+    /// @param _amount The amount in shares that earned the zombie interest.
+    /// @param _newSharePrice The current share price.
+    /// @param _oldSharePrice The share price at the time of the last checkpoint.
+    /// @param _checkpointTimeElapsed The time remaining until the next checkpoint.
+    function _collectZombieInterest(
+        uint256 _amount,
+        uint256 _newSharePrice,
+        uint256 _oldSharePrice,
+        uint256 _checkpointTimeElapsed
+    ) internal {
+        if (_newSharePrice > _oldSharePrice) {
+            // dz * (c1 - c0)/c0 * dt
+            uint256 zombieInterest = _amount
+                .mulDivDown(_newSharePrice - _oldSharePrice, _oldSharePrice)
+                .mulDown(_checkpointTimeElapsed);
+            _marketState.shareReserves += zombieInterest.toUint128();
         }
     }
 
