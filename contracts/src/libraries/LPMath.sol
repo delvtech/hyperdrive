@@ -348,7 +348,8 @@ library LPMath {
         // after all of the withdrawal shares are redeemed.
         uint256 shareProceeds = calculateDistributeExcessIdleShareProceeds(
             _params,
-            withdrawalSharesRedeemed
+            originalEffectiveShareReserves,
+            netCurveTrade
         );
 
         return (withdrawalSharesRedeemed, shareProceeds);
@@ -373,26 +374,27 @@ library LPMath {
         if (_netCurveTrade >= 0) {
             return _params.idle;
         }
+        uint256 netCurveTrade = uint256(-_netCurveTrade);
 
         // Calculate the maximum amount of bonds that can be purchased after
         // removing all of the idle liquidity.
         (
-            uint256 shareReserves,
-            int256 shareAdjustment,
-            uint256 bondReserves
+            _params.presentValueParams.shareReserves,
+            _params.presentValueParams.shareAdjustment,
+            _params.presentValueParams.bondReserves
         ) = calculateUpdateLiquidity(
-                _params.originalShareReserves,
-                _params.originalShareAdjustment,
-                _params.originalBondReserves,
-                _params.presentValueParams.minimumShareReserves,
-                -int256(_params.idle)
-            );
+            _params.originalShareReserves,
+            _params.originalShareAdjustment,
+            _params.originalBondReserves,
+            _params.presentValueParams.minimumShareReserves,
+            -int256(_params.idle)
+        );
         uint256 maxBondAmount = YieldSpaceMath.calculateMaxBuyBondsOut(
             HyperdriveMath.calculateEffectiveShareReserves(
-                shareReserves,
-                shareAdjustment
+                _params.presentValueParams.shareReserves,
+                _params.presentValueParams.shareAdjustment
             ),
-            bondReserves,
+            _params.presentValueParams.bondReserves,
             ONE - _params.presentValueParams.timeStretch,
             _params.presentValueParams.sharePrice,
             _params.presentValueParams.initialSharePrice
@@ -401,7 +403,7 @@ library LPMath {
         // If the maximum amount of bonds that can be purchased is greater
         // than the net curve trade, then the max share delta is equal to
         // pool's idle capital.
-        if (maxBondAmount >= uint256(-_netCurveTrade)) {
+        if (maxBondAmount >= netCurveTrade) {
             return _params.idle;
         }
 
@@ -409,12 +411,14 @@ library LPMath {
         uint256 maxShareReservesDelta = calculateMaxShareReservesDeltaInitialGuess(
                 _params,
                 _originalEffectiveShareReserves,
-                uint256(-_netCurveTrade)
+                netCurveTrade,
+                maxBondAmount
             );
 
+        // FIXME: Use a constant for the number of iterations.
+        //
         // Proceed with Newton's method for a few iterations.
-        uint256 iterations = 3;
-        for (uint256 i = 0; i < iterations; i++) {
+        for (uint256 i = 0; i < 4; i++) {
             (
                 _params.presentValueParams.shareReserves,
                 _params.presentValueParams.shareAdjustment,
@@ -426,20 +430,24 @@ library LPMath {
                 _params.presentValueParams.minimumShareReserves,
                 -int256(maxShareReservesDelta)
             );
+
+            // FIXME: Alright, so this is now moving in the right direction.
+            // Now we just need a better guess.
+            //
+            // FIXME: Document this.
             maxShareReservesDelta =
-                maxShareReservesDelta +
-                YieldSpaceMath
-                    .calculateMaxBuyBondsOut(
+                maxShareReservesDelta -
+                (netCurveTrade -
+                    YieldSpaceMath.calculateMaxBuyBondsOut(
                         HyperdriveMath.calculateEffectiveShareReserves(
-                            shareReserves,
-                            shareAdjustment
+                            _params.presentValueParams.shareReserves,
+                            _params.presentValueParams.shareAdjustment
                         ),
-                        bondReserves,
+                        _params.presentValueParams.bondReserves,
                         ONE - _params.presentValueParams.timeStretch,
                         _params.presentValueParams.sharePrice,
                         _params.presentValueParams.initialSharePrice
-                    )
-                    .divDown(
+                    )).divDown(
                         calculateMaxBuyBondsOutDerivative(
                             _params,
                             _originalEffectiveShareReserves
@@ -447,6 +455,10 @@ library LPMath {
                     );
         }
 
+        // FIXME: Check on this elsewhere.
+        //
+        // FIXME: Do we really need to do this?
+        //
         // Reset the params to their original values.
         _params.presentValueParams.shareReserves = _params
             .originalShareReserves;
@@ -462,10 +474,14 @@ library LPMath {
     // FIXME: Think smarter about rounding.
     //
     // FIXME: Clean this up.
+    //
+    // FIXME: This guess needs to be improved significantly.
     function calculateMaxShareReservesDeltaInitialGuess(
         DistributeExcessIdleParams memory _params,
         uint256 _originalEffectiveShareReserves,
-        uint256 _netCurveTrade
+        uint256 _netCurveTrade,
+        // FIXME: Comment this.
+        uint256 _maxBondAmount
     ) internal pure returns (uint256) {
         uint256 zetaFactor;
         if (_params.originalShareAdjustment >= 0) {
@@ -485,22 +501,22 @@ library LPMath {
         uint256 inner;
         {
             (
-                uint256 shareReserves,
-                int256 shareAdjustment,
-                uint256 bondReserves
+                _params.presentValueParams.shareReserves,
+                _params.presentValueParams.shareAdjustment,
+                _params.presentValueParams.bondReserves
             ) = calculateUpdateLiquidity(
-                    _params.originalShareReserves,
-                    _params.originalShareAdjustment,
-                    _params.originalBondReserves,
-                    _params.presentValueParams.minimumShareReserves,
-                    -int256(_params.idle)
-                );
+                _params.originalShareReserves,
+                _params.originalShareAdjustment,
+                _params.originalBondReserves,
+                _params.presentValueParams.minimumShareReserves,
+                -int256(_params.idle)
+            );
             uint256 k = YieldSpaceMath.kDown(
                 HyperdriveMath.calculateEffectiveShareReserves(
-                    shareReserves,
-                    shareAdjustment
+                    _params.presentValueParams.shareReserves,
+                    _params.presentValueParams.shareAdjustment
                 ),
-                bondReserves,
+                _params.presentValueParams.bondReserves,
                 ONE - _params.presentValueParams.timeStretch,
                 _params.presentValueParams.sharePrice,
                 _params.presentValueParams.initialSharePrice
@@ -571,10 +587,300 @@ library LPMath {
     // FIXME: Document this.
     function calculateDistributeExcessIdleShareProceeds(
         DistributeExcessIdleParams memory _params,
-        uint256 _withdrawalSharesRedeemed
+        uint256 _originalEffectiveShareReserves,
+        int256 _netCurveTrade
     ) internal pure returns (uint256) {
-        // FIXME
-        return 0;
+        // If the pool is net neutral, we can solve directly.
+        uint256 startingPresentValue = calculatePresentValue(
+            _params.presentValueParams
+        );
+        uint256 lpTotalSupply = _params.activeLpTotalSupply +
+            _params.withdrawalSharesTotalSupply;
+        if (_netCurveTrade == 0) {
+            return
+                (ONE - _params.activeLpTotalSupply.divDown(lpTotalSupply))
+                    .mulDown(startingPresentValue);
+        }
+
+        // We make an initial guess for Newton's method by assuming that the
+        // ratio of the share reserves delta to the withdrawal shares
+        // outstanding is equal to the LP share price. In reality, the
+        // withdrawal pool should receive more than this, but it's a good
+        // starting point.
+        uint256 shareProceeds = _params.withdrawalSharesTotalSupply.mulDivDown(
+            startingPresentValue,
+            _params.activeLpTotalSupply + _params.withdrawalSharesTotalSupply
+        );
+
+        // If the net curve trade is positive, the pool is net long.
+        if (_netCurveTrade > 0) {
+            uint256 iterations = 3;
+            for (uint256 i = 0; i < iterations; i++) {
+                // Simulate applying the share proceeds to the reserves and
+                // recalculate the present value.
+                (
+                    _params.presentValueParams.shareReserves,
+                    _params.presentValueParams.shareAdjustment,
+                    _params.presentValueParams.bondReserves
+                ) = calculateUpdateLiquidity(
+                    _params.originalShareReserves,
+                    _params.originalShareAdjustment,
+                    _params.originalBondReserves,
+                    _params.presentValueParams.minimumShareReserves,
+                    -int256(shareProceeds)
+                );
+                uint256 presentValue = calculatePresentValue(
+                    _params.presentValueParams
+                );
+
+                // If the net curve trade is less than or equal to the maximum
+                // amount of bonds that can be sold with this share proceeds, we
+                // can calculate the derivative using the derivative of
+                // `calculateSharesOutGivenBondsIn`.
+                uint256 derivative;
+                if (
+                    uint256(_netCurveTrade) <=
+                    YieldSpaceMath.calculateMaxSellBondsIn(
+                        HyperdriveMath.calculateEffectiveShareReserves(
+                            _params.presentValueParams.shareReserves,
+                            _params.presentValueParams.shareAdjustment
+                        ),
+                        _params.presentValueParams.bondReserves,
+                        _params.presentValueParams.minimumShareReserves,
+                        ONE - _params.presentValueParams.timeStretch,
+                        _params.presentValueParams.sharePrice,
+                        _params.presentValueParams.initialSharePrice
+                    )
+                ) {
+                    derivative =
+                        ONE +
+                        calculateSharesOutGivenBondsInDerivative(
+                            _params,
+                            _originalEffectiveShareReserves,
+                            uint256(_netCurveTrade)
+                        );
+                }
+                // FIXME: If we get into this regime, we should be able to solve
+                // directly.
+                //
+                // Otherwise, we calculate the derivative using the derivative
+                // of `calculateMaxSellSharesOut`.
+                else {
+                    derivative =
+                        ONE +
+                        calculateMaxSellSharesOutDerivative(_params);
+                }
+
+                // FIXME: Double check this. Are the signs correct?
+                //
+                // FIXME: Document this.
+                shareProceeds =
+                    shareProceeds -
+                    (startingPresentValue.mulDown(_params.activeLpTotalSupply) -
+                        presentValue.mulDown(lpTotalSupply)).divDown(
+                            derivative
+                        );
+            }
+        }
+        // FIXME: We should probably make sure that we haven't gone too far.
+        //
+        // Otherwise, the pool is net short.
+        else {
+            uint256 iterations = 3;
+            for (uint256 i = 0; i < iterations; i++) {
+                // Simulate applying the share proceeds to the reserves and
+                // recalculate the present value.
+                (
+                    _params.presentValueParams.shareReserves,
+                    _params.presentValueParams.shareAdjustment,
+                    _params.presentValueParams.bondReserves
+                ) = calculateUpdateLiquidity(
+                    _params.originalShareReserves,
+                    _params.originalShareAdjustment,
+                    _params.originalBondReserves,
+                    _params.presentValueParams.minimumShareReserves,
+                    -int256(shareProceeds)
+                );
+                uint256 presentValue = calculatePresentValue(
+                    _params.presentValueParams
+                );
+
+                // If the net curve trade is less than or equal to the maximum
+                // amount of bonds that can be sold with this share proceeds, we
+                // can calculate the derivative using the derivative of
+                // `calculateSharesOutGivenBondsIn`.
+                uint256 derivative = ONE +
+                    calculateSharesInGivenBondsOutDerivative(
+                        _params,
+                        _originalEffectiveShareReserves,
+                        uint256(-_netCurveTrade)
+                    );
+
+                // FIXME: Double check this. Are the signs correct?
+                //
+                // FIXME: Document this.
+                shareProceeds =
+                    shareProceeds -
+                    (startingPresentValue.mulDown(_params.activeLpTotalSupply) -
+                        presentValue.mulDown(lpTotalSupply)).divDown(
+                            derivative
+                        );
+            }
+        }
+
+        return shareProceeds;
+    }
+
+    // FIXME: Document this.
+    //
+    // FIXME: Fix the rounding.
+    function calculateSharesOutGivenBondsInDerivative(
+        DistributeExcessIdleParams memory _params,
+        uint256 _originalEffectiveShareReserves,
+        uint256 _bondAmount
+    ) internal pure returns (uint256) {
+        uint256 effectiveShareReserves = HyperdriveMath
+            .calculateEffectiveShareReserves(
+                _params.presentValueParams.shareReserves,
+                _params.presentValueParams.shareAdjustment
+            );
+
+        uint256 derivative = (_params.presentValueParams.sharePrice.divDown(
+            _params
+                .presentValueParams
+                .initialSharePrice
+                .mulUp(effectiveShareReserves)
+                .pow(_params.presentValueParams.timeStretch)
+        ) +
+            _params.originalBondReserves.divDown(
+                _originalEffectiveShareReserves.mulUp(
+                    _params.presentValueParams.bondReserves.pow(
+                        _params.presentValueParams.timeStretch
+                    ) -
+                        (_params.presentValueParams.bondReserves + _bondAmount)
+                            .pow(_params.presentValueParams.timeStretch)
+                )
+            ));
+        derivative =
+            ONE -
+            derivative.mulDivDown(
+                _params
+                    .presentValueParams
+                    .initialSharePrice
+                    .mulDivDown(
+                        YieldSpaceMath.kDown(
+                            effectiveShareReserves,
+                            _params.presentValueParams.bondReserves,
+                            ONE - _params.presentValueParams.timeStretch,
+                            _params.presentValueParams.sharePrice,
+                            _params.presentValueParams.initialSharePrice
+                        ) -
+                            (_params.presentValueParams.bondReserves +
+                                _bondAmount).pow(
+                                    ONE - _params.presentValueParams.timeStretch
+                                ),
+                        _params.presentValueParams.sharePrice
+                    )
+                    .pow(
+                        _params.presentValueParams.timeStretch.divDown(
+                            ONE - _params.presentValueParams.timeStretch
+                        )
+                    ),
+                _params.presentValueParams.sharePrice
+            );
+        if (_params.originalShareAdjustment >= 0) {
+            derivative = derivative.mulDown(
+                ONE -
+                    uint256(_params.originalShareAdjustment).divDown(
+                        _params.originalShareReserves
+                    )
+            );
+        } else {
+            derivative = derivative.mulUp(
+                ONE +
+                    uint256(-_params.originalShareAdjustment).divUp(
+                        _params.originalShareReserves
+                    )
+            );
+        }
+
+        return derivative;
+    }
+
+    // FIXME: Document this.
+    //
+    // FIXME: Fix the rounding.
+    function calculateSharesInGivenBondsOutDerivative(
+        DistributeExcessIdleParams memory _params,
+        uint256 _originalEffectiveShareReserves,
+        uint256 _bondAmount
+    ) internal pure returns (uint256) {
+        uint256 effectiveShareReserves = HyperdriveMath
+            .calculateEffectiveShareReserves(
+                _params.presentValueParams.shareReserves,
+                _params.presentValueParams.shareAdjustment
+            );
+
+        uint256 derivative = (_params.presentValueParams.sharePrice.divDown(
+            _params
+                .presentValueParams
+                .initialSharePrice
+                .mulUp(effectiveShareReserves)
+                .pow(_params.presentValueParams.timeStretch)
+        ) +
+            _params.originalBondReserves.divDown(
+                _originalEffectiveShareReserves.mulUp(
+                    _params.presentValueParams.bondReserves.pow(
+                        _params.presentValueParams.timeStretch
+                    ) -
+                        (_params.presentValueParams.bondReserves - _bondAmount)
+                            .pow(_params.presentValueParams.timeStretch)
+                )
+            ));
+        derivative =
+            derivative.mulDivDown(
+                _params
+                    .presentValueParams
+                    .initialSharePrice
+                    .mulDivDown(
+                        YieldSpaceMath.kDown(
+                            effectiveShareReserves,
+                            _params.presentValueParams.bondReserves,
+                            ONE - _params.presentValueParams.timeStretch,
+                            _params.presentValueParams.sharePrice,
+                            _params.presentValueParams.initialSharePrice
+                        ) -
+                            (_params.presentValueParams.bondReserves -
+                                _bondAmount).pow(
+                                    ONE - _params.presentValueParams.timeStretch
+                                ),
+                        _params.presentValueParams.sharePrice
+                    )
+                    .pow(
+                        _params.presentValueParams.timeStretch.divDown(
+                            ONE - _params.presentValueParams.timeStretch
+                        )
+                    ),
+                _params.presentValueParams.sharePrice
+            ) -
+            ONE;
+        if (_params.originalShareAdjustment >= 0) {
+            derivative = derivative.mulDown(
+                ONE -
+                    uint256(_params.originalShareAdjustment).divDown(
+                        _params.originalShareReserves
+                    )
+            );
+        } else {
+            derivative = derivative.mulUp(
+                ONE +
+                    uint256(-_params.originalShareAdjustment).divUp(
+                        _params.originalShareReserves
+                    )
+            );
+        }
+
+        return derivative;
     }
 
     // FIXME: Make sure this rounds in the right direction.
@@ -598,7 +904,7 @@ library LPMath {
                 .mulUp(effectiveShareReserves)
                 .pow(_params.presentValueParams.timeStretch)
         ) +
-            _params.presentValueParams.bondReserves.divDown(
+            _params.originalBondReserves.divDown(
                 _originalEffectiveShareReserves.mulUp(
                     _params.presentValueParams.bondReserves.pow(
                         _params.presentValueParams.timeStretch
@@ -627,10 +933,10 @@ library LPMath {
                 )
         );
         derivative =
+            derivative -
             _params.originalBondReserves.divDown(
                 _originalEffectiveShareReserves
-            ) -
-            derivative;
+            );
         if (_params.originalShareAdjustment >= 0) {
             derivative = (ONE -
                 uint256(_params.originalShareAdjustment).divDown(
@@ -645,54 +951,24 @@ library LPMath {
         return derivative;
     }
 
-    // FIXME: Do we actually need this?
+    // FIXME: Document this.
     //
-    // FIXME: Add the equation somewhere.
-    //
-    /// @dev Calculates the derivative of k with respect to the amount of shares
-    ///      removed from the share reserves.
-    /// @param _params The parameters for the distribute excess idle calculation.
-    /// @param _originalEffectiveShareReserves The effective share reserves
-    ///        before the share reserves delta is applied.
-    /// @return The derivative of k with respect to the amount of shares removed
-    ///         from the share reserves.
-    function kDerivative(
-        DistributeExcessIdleParams memory _params,
-        uint256 _originalEffectiveShareReserves
-    ) internal pure returns (int256) {
-        uint256 effectiveShareReserves = HyperdriveMath
-            .calculateEffectiveShareReserves(
-                _params.presentValueParams.shareReserves,
-                _params.presentValueParams.shareAdjustment
-            );
-        uint256 derivative = (ONE - _params.presentValueParams.timeStretch)
-            .mulDown(
-                _params.presentValueParams.sharePrice.divDown(
-                    _params
-                        .presentValueParams
-                        .initialSharePrice
-                        .mulUp(effectiveShareReserves)
-                        .pow(_params.presentValueParams.timeStretch)
-                ) +
-                    _params.presentValueParams.bondReserves.divDown(
-                        _originalEffectiveShareReserves.mulUp(
-                            _params.presentValueParams.bondReserves.pow(
-                                _params.presentValueParams.timeStretch
-                            )
-                        )
-                    )
-            );
-        if (_params.originalShareAdjustment < 0) {
-            derivative = (ONE +
+    // FIXME: Fix the rounding.
+    function calculateMaxSellSharesOutDerivative(
+        DistributeExcessIdleParams memory _params
+    ) internal pure returns (uint256) {
+        if (_params.originalShareAdjustment >= 0) {
+            return
+                ONE -
                 uint256(_params.originalShareAdjustment).divDown(
                     _params.originalShareReserves
-                )).mulDown(derivative);
+                );
         } else {
-            derivative = (ONE -
-                uint256(_params.originalShareAdjustment).divDown(
+            return
+                ONE +
+                uint256(-_params.originalShareAdjustment).divDown(
                     _params.originalShareReserves
-                )).mulDown(derivative);
+                );
         }
-        return -int256(derivative);
     }
 }

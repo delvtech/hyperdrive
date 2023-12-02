@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { LPMath } from "contracts/src/libraries/LPMath.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { MockLPMath } from "contracts/test/MockLPMath.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
@@ -622,6 +623,368 @@ contract LPMathTest is HyperdriveTest {
                 params.shareReserves - params.minimumShareReserves
             );
         }
+    }
+
+    function test__calculateMaxShareReservesDelta() external {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockLPMath lpMath = new MockLPMath();
+
+        uint256 apr = 0.02e18;
+        uint256 initialSharePrice = 1e18;
+        uint256 positionDuration = 365 days;
+        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(apr);
+
+        // The pool is net neutral with no open positions.
+        {
+            uint256 shareReserves = 100_000_000e18;
+            int256 shareAdjustment = 0;
+            uint256 bondReserves = calculateBondReserves(
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    shareReserves,
+                    shareAdjustment
+                ),
+                initialSharePrice,
+                apr,
+                positionDuration,
+                timeStretch
+            );
+            LPMath.DistributeExcessIdleParams memory params = LPMath
+                .DistributeExcessIdleParams({
+                    presentValueParams: LPMath.PresentValueParams({
+                        shareReserves: shareReserves,
+                        shareAdjustment: shareAdjustment,
+                        bondReserves: bondReserves,
+                        sharePrice: 2e18,
+                        initialSharePrice: initialSharePrice,
+                        minimumShareReserves: 1e5,
+                        timeStretch: timeStretch,
+                        longsOutstanding: 0,
+                        longAverageTimeRemaining: 0,
+                        shortsOutstanding: 0,
+                        shortAverageTimeRemaining: 0
+                    }),
+                    originalShareReserves: shareReserves,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves,
+                    activeLpTotalSupply: 0, // unused
+                    withdrawalSharesTotalSupply: 0, // unused
+                    idle: 10_000_000e18
+                });
+            uint256 maxShareReservesDelta = lpMath
+                .calculateMaxShareReservesDelta(
+                    params,
+                    HyperdriveMath.calculateEffectiveShareReserves(
+                        shareReserves,
+                        shareAdjustment
+                    ),
+                    int256(
+                        params.presentValueParams.longsOutstanding.mulDown(
+                            params.presentValueParams.longAverageTimeRemaining
+                        )
+                    ) -
+                        int256(
+                            params.presentValueParams.shortsOutstanding.mulDown(
+                                params
+                                    .presentValueParams
+                                    .shortAverageTimeRemaining
+                            )
+                        )
+                );
+
+            // The max share reserves delta is just the idle.
+            assertEq(maxShareReservesDelta, params.idle);
+        }
+
+        // The pool is net neutral with open positions.
+        {
+            uint256 shareReserves = 100_000_000e18;
+            int256 shareAdjustment = 0;
+            uint256 bondReserves = calculateBondReserves(
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    shareReserves,
+                    shareAdjustment
+                ),
+                initialSharePrice,
+                apr,
+                positionDuration,
+                timeStretch
+            );
+            LPMath.DistributeExcessIdleParams memory params = LPMath
+                .DistributeExcessIdleParams({
+                    presentValueParams: LPMath.PresentValueParams({
+                        shareReserves: shareReserves,
+                        shareAdjustment: shareAdjustment,
+                        bondReserves: bondReserves,
+                        sharePrice: 2e18,
+                        initialSharePrice: initialSharePrice,
+                        minimumShareReserves: 1e5,
+                        timeStretch: timeStretch,
+                        longsOutstanding: 10_000_000e18,
+                        longAverageTimeRemaining: 0.5e18,
+                        shortsOutstanding: 10_000_000e18,
+                        shortAverageTimeRemaining: 0.5e18
+                    }),
+                    originalShareReserves: shareReserves,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves,
+                    activeLpTotalSupply: 0, // unused
+                    withdrawalSharesTotalSupply: 0, // unused
+                    idle: 10_000_000e18 // this is a fictional value for testing
+                });
+            uint256 maxShareReservesDelta = lpMath
+                .calculateMaxShareReservesDelta(
+                    params,
+                    HyperdriveMath.calculateEffectiveShareReserves(
+                        shareReserves,
+                        shareAdjustment
+                    ),
+                    int256(
+                        params.presentValueParams.longsOutstanding.mulDown(
+                            params.presentValueParams.longAverageTimeRemaining
+                        )
+                    ) -
+                        int256(
+                            params.presentValueParams.shortsOutstanding.mulDown(
+                                params
+                                    .presentValueParams
+                                    .shortAverageTimeRemaining
+                            )
+                        )
+                );
+
+            // The max share reserves delta is just the idle.
+            assertEq(maxShareReservesDelta, params.idle);
+        }
+
+        // The pool is net long.
+        {
+            uint256 shareReserves = 100_000_000e18;
+            int256 shareAdjustment = 0;
+            uint256 bondReserves = calculateBondReserves(
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    shareReserves,
+                    shareAdjustment
+                ),
+                initialSharePrice,
+                apr,
+                positionDuration,
+                timeStretch
+            );
+            LPMath.DistributeExcessIdleParams memory params = LPMath
+                .DistributeExcessIdleParams({
+                    presentValueParams: LPMath.PresentValueParams({
+                        shareReserves: shareReserves,
+                        shareAdjustment: shareAdjustment,
+                        bondReserves: bondReserves,
+                        sharePrice: 2e18,
+                        initialSharePrice: initialSharePrice,
+                        minimumShareReserves: 1e5,
+                        timeStretch: timeStretch,
+                        longsOutstanding: 10_000_000e18,
+                        longAverageTimeRemaining: 0.5e18,
+                        shortsOutstanding: 1_000_000e18,
+                        shortAverageTimeRemaining: 0.5e18
+                    }),
+                    originalShareReserves: shareReserves,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves,
+                    activeLpTotalSupply: 0, // unused
+                    withdrawalSharesTotalSupply: 0, // unused
+                    idle: 10_000_000e18 // this is a fictional value for testing
+                });
+            uint256 maxShareReservesDelta = lpMath
+                .calculateMaxShareReservesDelta(
+                    params,
+                    HyperdriveMath.calculateEffectiveShareReserves(
+                        shareReserves,
+                        shareAdjustment
+                    ),
+                    int256(
+                        params.presentValueParams.longsOutstanding.mulDown(
+                            params.presentValueParams.longAverageTimeRemaining
+                        )
+                    ) -
+                        int256(
+                            params.presentValueParams.shortsOutstanding.mulDown(
+                                params
+                                    .presentValueParams
+                                    .shortAverageTimeRemaining
+                            )
+                        )
+                );
+
+            // The max share reserves delta is just the idle.
+            assertEq(maxShareReservesDelta, params.idle);
+        }
+
+        // The pool is net short but is not constrained by the maximum amount of
+        // bonds that can be purchased.
+        {
+            uint256 shareReserves = 100_000_000e18;
+            int256 shareAdjustment = 0;
+            uint256 bondReserves = calculateBondReserves(
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    shareReserves,
+                    shareAdjustment
+                ),
+                initialSharePrice,
+                apr,
+                positionDuration,
+                timeStretch
+            );
+            LPMath.DistributeExcessIdleParams memory params = LPMath
+                .DistributeExcessIdleParams({
+                    presentValueParams: LPMath.PresentValueParams({
+                        shareReserves: shareReserves,
+                        shareAdjustment: shareAdjustment,
+                        bondReserves: bondReserves,
+                        sharePrice: 2e18,
+                        initialSharePrice: initialSharePrice,
+                        minimumShareReserves: 1e5,
+                        timeStretch: timeStretch,
+                        longsOutstanding: 1_000_000e18,
+                        longAverageTimeRemaining: 0.5e18,
+                        shortsOutstanding: 10_000_000e18,
+                        shortAverageTimeRemaining: 0.5e18
+                    }),
+                    originalShareReserves: shareReserves,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves,
+                    activeLpTotalSupply: 0, // unused
+                    withdrawalSharesTotalSupply: 0, // unused
+                    idle: 100e18 // this is a fictional value for testing
+                });
+            uint256 maxShareReservesDelta = lpMath
+                .calculateMaxShareReservesDelta(
+                    params,
+                    HyperdriveMath.calculateEffectiveShareReserves(
+                        shareReserves,
+                        shareAdjustment
+                    ),
+                    int256(
+                        params.presentValueParams.longsOutstanding.mulDown(
+                            params.presentValueParams.longAverageTimeRemaining
+                        )
+                    ) -
+                        int256(
+                            params.presentValueParams.shortsOutstanding.mulDown(
+                                params
+                                    .presentValueParams
+                                    .shortAverageTimeRemaining
+                            )
+                        )
+                );
+
+            // The max share reserves delta is just the idle.
+            assertEq(maxShareReservesDelta, params.idle);
+        }
+
+        // FIXME: This needs to be tested a lot more rigorously. Small values,
+        // more complicated scnearios, and overall fuzzing to make sure that
+        // it never fails due to arithmetic errors and is always acceptably
+        // accurate.
+        //
+        // The pool is net short and is constrained by the maximum amount of
+        // bonds that can be purchased.
+        {
+            uint256 shareReserves = 100_000_000e18;
+            int256 shareAdjustment = 0;
+            uint256 bondReserves = calculateBondReserves(
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    shareReserves,
+                    shareAdjustment
+                ),
+                initialSharePrice,
+                apr,
+                positionDuration,
+                timeStretch
+            );
+            LPMath.DistributeExcessIdleParams memory params = LPMath
+                .DistributeExcessIdleParams({
+                    presentValueParams: LPMath.PresentValueParams({
+                        shareReserves: shareReserves,
+                        shareAdjustment: shareAdjustment,
+                        bondReserves: bondReserves,
+                        sharePrice: 2e18,
+                        initialSharePrice: initialSharePrice,
+                        minimumShareReserves: 1e5,
+                        timeStretch: timeStretch,
+                        longsOutstanding: 0,
+                        longAverageTimeRemaining: 0,
+                        shortsOutstanding: 50_000_000e18,
+                        shortAverageTimeRemaining: 1e18
+                    }),
+                    originalShareReserves: shareReserves,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves,
+                    activeLpTotalSupply: 0, // unused
+                    withdrawalSharesTotalSupply: 0, // unused
+                    idle: 80_000_000e18 // this is a fictional value for testing
+                });
+            uint256 maxShareReservesDelta = lpMath
+                .calculateMaxShareReservesDelta(
+                    params,
+                    HyperdriveMath.calculateEffectiveShareReserves(
+                        shareReserves,
+                        shareAdjustment
+                    ),
+                    int256(
+                        params.presentValueParams.longsOutstanding.mulDown(
+                            params.presentValueParams.longAverageTimeRemaining
+                        )
+                    ) -
+                        int256(
+                            params.presentValueParams.shortsOutstanding.mulDown(
+                                params
+                                    .presentValueParams
+                                    .shortAverageTimeRemaining
+                            )
+                        )
+                );
+
+            // The max share reserves delta should have been calculated so that
+            // the maximum amount of bonds can be purchased is close to the net
+            // curve trade.
+            (
+                params.presentValueParams.shareReserves,
+                params.presentValueParams.shareAdjustment,
+                params.presentValueParams.bondReserves
+            ) = lpMath.calculateUpdateLiquidity(
+                params.originalShareReserves,
+                params.originalShareAdjustment,
+                params.originalBondReserves,
+                params.presentValueParams.minimumShareReserves,
+                -int256(maxShareReservesDelta)
+            );
+            uint256 maxBondAmount = YieldSpaceMath.calculateMaxBuyBondsOut(
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    params.presentValueParams.shareReserves,
+                    params.presentValueParams.shareAdjustment
+                ),
+                params.presentValueParams.bondReserves,
+                ONE - params.presentValueParams.timeStretch,
+                params.presentValueParams.sharePrice,
+                params.presentValueParams.initialSharePrice
+            );
+            assertApproxEqAbs(
+                maxBondAmount,
+                params.presentValueParams.shortsOutstanding,
+                params.presentValueParams.shortsOutstanding.mulDown(0.01e18)
+            );
+        }
+
+        // FIXME: What cases do we need to test? How should we test this?
+        //
+        // - [ ] netCurveTrade >= 0
+        //    - Just return the pool's idle
+        // - [ ] netCurveTrade < 0
+        //    - [ ] Case 1: Even after removing all of the pool's idle liquidity,
+        //          the max bond amount is still greater than the net curve
+        //          position.
+        //       - Return the pool's idle.
+        //    - [ ] Case 2: After removing all of the pool's idle liquidity, the
+        //          max bond amount is less than the net curve position.
+        //       - Solve the optimization problem.
     }
 
     function calculateBondReserves(
