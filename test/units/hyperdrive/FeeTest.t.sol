@@ -13,12 +13,15 @@ import { Lib } from "test/utils/Lib.sol";
 contract FeeTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;
+    uint256 deployCurveFee = 0.1e18; // 10%
+    uint256 deployFlatFee = 0.01e18; // 0.1%
+    uint256 deployGovernanceFee = 0.5e18; // 50%
 
     function test_governanceFeeAccrual_invalidFeeDestination_failure() public {
         // Deploy and initialize a new pool with fees.
         uint256 apr = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18);
+        deploy(alice, apr, deployCurveFee, deployFlatFee, deployGovernanceFee);
         initialize(alice, apr, contribution);
 
         // Open a long and ensure that the governance fees accrued are non-zero.
@@ -45,7 +48,7 @@ contract FeeTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
 
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18);
+        deploy(alice, apr, deployCurveFee, deployFlatFee, deployGovernanceFee);
         initialize(alice, apr, contribution);
 
         // Open a long, record the accrued fees x share price
@@ -78,9 +81,9 @@ contract FeeTest is HyperdriveTest {
     function test_flat_gov_fee_close_long() public {
         uint256 initialSharePrice = 1e18;
         int256 variableInterest = 0.0e18;
-        uint256 curveFee = 0e18;
-        uint256 flatFee = .1e18;
-        uint256 governanceFee = 1e18;
+        uint256 curveFee = 0e18; // 0%
+        uint256 flatFee = 0.001e18; // 0.1%
+        uint256 governanceFee = 1e18; // 100%
         uint256 timeElapsed = 73 days;
 
         uint256 governanceFees = 0;
@@ -183,9 +186,9 @@ contract FeeTest is HyperdriveTest {
     // This test demonstrates that the governance fees from curve fee are NOT included in the shareReserves.
     function test_curve_gov_fee_close_long() public {
         uint256 initialSharePrice = 1e18;
-        uint256 curveFee = 0.1e18;
-        uint256 flatFee = 0e18;
-        uint256 governanceFee = 1e18;
+        uint256 curveFee = 0.1e18; // 10%
+        uint256 flatFee = 0e18; // 0%
+        uint256 governanceFee = 1e18; // 100%
         uint256 timeElapsed = 73 days;
 
         uint256 governanceFeesFromCloseLong = 0;
@@ -329,7 +332,7 @@ contract FeeTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
 
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18);
+        deploy(alice, apr, deployCurveFee, deployFlatFee, deployGovernanceFee);
         initialize(alice, apr, contribution);
 
         // Ensure that the governance initially has zero balance
@@ -392,7 +395,7 @@ contract FeeTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
 
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18);
+        deploy(alice, apr, deployCurveFee, deployFlatFee, deployGovernanceFee);
         initialize(alice, apr, contribution);
 
         // Ensure that the governance initially has zero balance
@@ -462,7 +465,7 @@ contract FeeTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18);
+        deploy(alice, apr, deployCurveFee, deployFlatFee, deployGovernanceFee);
         initialize(alice, apr, contribution);
 
         (uint256 curveFee, uint256 governanceCurveFee) = MockHyperdrive(
@@ -485,7 +488,7 @@ contract FeeTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18);
+        deploy(alice, apr, deployCurveFee, 0.1e18, deployGovernanceFee);
         initialize(alice, apr, contribution);
         (
             uint256 curveFee,
@@ -524,7 +527,7 @@ contract FeeTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18);
+        deploy(alice, apr, deployCurveFee, 0.1e18, deployGovernanceFee);
         initialize(alice, apr, contribution);
         (
             uint256 curveFee,

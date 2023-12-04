@@ -141,6 +141,7 @@ mod tests {
                         initial_share_price: state.config.initial_share_price,
                         minimum_share_reserves: state.config.minimum_share_reserves,
                         curve_fee: state.config.fees.curve,
+                        flat_fee: state.config.fees.flat,
                         governance_fee: state.config.fees.governance,
                     },
                     checkpoint_exposure,

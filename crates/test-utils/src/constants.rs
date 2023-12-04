@@ -1,5 +1,7 @@
 use std::env;
 
+pub const DEFAULT_GAS_PRICE: u64 = 1_000_000_000;
+
 lazy_static! {
     // The Ethereum URL the tests should connect to. If None, then the tests
     // will spawn an anvil node.

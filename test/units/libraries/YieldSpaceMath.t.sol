@@ -148,6 +148,7 @@ contract YieldSpaceMathTest is Test {
                                 initialSharePrice: initialSharePrice,
                                 minimumShareReserves: minimumShareReserves,
                                 curveFee: 0,
+                                flatFee: 0,
                                 governanceFee: 0
                             }),
                             0,

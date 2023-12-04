@@ -206,6 +206,7 @@ contract ExtremeInputs is HyperdriveTest {
                 initialSharePrice: poolConfig.initialSharePrice,
                 minimumShareReserves: targetReserves,
                 curveFee: poolConfig.fees.curve,
+                flatFee: poolConfig.fees.flat,
                 governanceFee: poolConfig.fees.governance
             }),
             checkpoint.exposure,

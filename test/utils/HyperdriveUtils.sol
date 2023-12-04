@@ -191,6 +191,7 @@ library HyperdriveUtils {
                 initialSharePrice: poolConfig.initialSharePrice,
                 minimumShareReserves: poolConfig.minimumShareReserves,
                 curveFee: poolConfig.fees.curve,
+                flatFee: poolConfig.fees.flat,
                 governanceFee: poolConfig.fees.governance
             }),
             checkpoint.exposure,
@@ -234,6 +235,7 @@ library HyperdriveUtils {
                     initialSharePrice: poolConfig.initialSharePrice,
                     minimumShareReserves: poolConfig.minimumShareReserves,
                     curveFee: poolConfig.fees.curve,
+                    flatFee: poolConfig.fees.flat,
                     governanceFee: poolConfig.fees.governance
                 }),
                 checkpoint.exposure,
@@ -261,6 +263,7 @@ library HyperdriveUtils {
         uint256 initialSharePrice;
         uint256 minimumShareReserves;
         uint256 curveFee;
+        uint256 flatFee;
         uint256 governanceFee;
     }
 
@@ -427,7 +430,7 @@ library HyperdriveUtils {
     {
         // We are targeting the pool's max spot price of:
         //
-        // p_max = 1 / (1 + curveFee * (1 / p_0 - 1))
+        // p_max = (1 - flatFee) / (1 + curveFee * (1 / p_0 - 1) * (1 - flatFee))
         //
         // We can derive a formula for the target bond reserves y_t in
         // terms of the target share reserves z_t as follows:
@@ -436,13 +439,13 @@ library HyperdriveUtils {
         //
         //                       =>
         //
-        // y_t = (mu * z_t) * (1 + curveFee * (1 / p_0 - 1)) ** (1 / t_s)
+        // y_t = (mu * z_t) * ((1 + curveFee * (1 / p_0 - 1) * (1 - flatFee)) / (1 - flatFee)) ** (1 / t_s)
         //
         // We can use this formula to solve our YieldSpace invariant for z_t:
         //
         // k = (c / mu) * (mu * z_t) ** (1 - t_s) +
         //     (
-        //         (mu * z_t) * (1 + curveFee * (1 / p_0 - 1)) ** (1 / t_s)
+        //         (mu * z_t) * ((1 + curveFee * (1 / p_0 - 1) * (1 - flatFee)) / (1 - flatFee)) ** (1 / t_s)
         //     ) ** (1 - t_s)
         //
         //                       =>
@@ -450,7 +453,7 @@ library HyperdriveUtils {
         // z_t = (1 / mu) * (
         //           k / (
         //               (c / mu) +
-        //               (1 + curveFee * ((1 / p_0) - 1) ** ((1 - t_s) / t_s))
+        //               ((1 + curveFee * (1 / p_0 - 1) * (1 - flatFee)) / (1 - flatFee)) ** ((1 - t_s) / t_s))
         //           )
         //       ) ** (1 / (1 - t_s))
         uint256 inner;
@@ -462,29 +465,35 @@ library HyperdriveUtils {
                 _params.sharePrice,
                 _params.initialSharePrice
             );
-            inner = k_
-                .divDown(
-                    _params.sharePrice.divUp(_params.initialSharePrice) +
-                        (ONE +
-                            _params.curveFee.mulUp(ONE.divUp(_spotPrice) - ONE))
-                            .pow(
-                                (ONE - _params.timeStretch).divDown(
-                                    _params.timeStretch
-                                )
-                            )
-                )
-                .pow(ONE.divDown(ONE - _params.timeStretch));
+            inner = _params.curveFee.mulUp(ONE.divUp(_spotPrice) - ONE).mulUp(
+                ONE - _params.flatFee
+            );
+            inner = (ONE + inner).divUp(ONE - _params.flatFee);
+            inner = inner.pow(
+                (ONE - _params.timeStretch).divDown(_params.timeStretch)
+            );
+            inner += _params.sharePrice.divUp(_params.initialSharePrice);
+            inner = k_.divDown(inner);
+            inner = inner.pow(ONE.divDown(ONE - _params.timeStretch));
         }
         uint256 targetShareReserves = inner.divDown(_params.initialSharePrice);
 
         // Now that we have the target share reserves, we can calculate the
         // target bond reserves using the formula:
         //
-        // y_t = (mu * z_t) * (1 + curveFee * (1 / p_0 - 1)) ** (1 / t_s)
-        uint256 targetBondReserves = (ONE +
-            _params.curveFee.mulDown(ONE.divDown(_spotPrice) - ONE))
-            .pow(ONE.divUp(_params.timeStretch))
-            .mulDown(inner);
+        // y_t = (mu * z_t) * ((1 + curveFee * (1 / p_0 - 1) * (1 - flatFee)) / (1 - flatFee)) ** (1 / t_s)
+        //
+        // Here we round down to underestimate the number of bonds that can be longed.
+        uint256 targetBondReserves;
+        {
+            uint256 feeAdjustment = _params
+                .curveFee
+                .mulDown(ONE.divDown(_spotPrice) - ONE)
+                .mulDown(ONE - _params.flatFee);
+            targetBondReserves = (
+                (ONE + feeAdjustment).divDown(ONE - _params.flatFee)
+            ).pow(ONE.divUp(_params.timeStretch)).mulDown(inner);
+        }
 
         // The absolute max base amount is given by:
         //

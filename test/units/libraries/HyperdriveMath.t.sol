@@ -982,6 +982,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 initialSharePrice: config.initialSharePrice,
                 minimumShareReserves: config.minimumShareReserves,
                 curveFee: config.fees.curve,
+                flatFee: config.fees.flat,
                 governanceFee: config.fees.governance
             }),
             hyperdrive.getCheckpoint(hyperdrive.latestCheckpoint()).exposure,
@@ -1141,6 +1142,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 initialSharePrice: config.initialSharePrice,
                 minimumShareReserves: config.minimumShareReserves,
                 curveFee: config.fees.curve,
+                flatFee: config.fees.flat,
                 governanceFee: config.fees.governance
             }),
             checkpoint.exposure,

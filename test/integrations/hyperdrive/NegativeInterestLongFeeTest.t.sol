@@ -203,7 +203,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         );
         variableInterest = -variableInterest.normalizeToRange(0, .5e18);
         uint256 curveFee = 0e18;
-        uint256 flatFee = 0.1e18;
+        uint256 flatFee = 0.01e18;
         uint256 governanceFee = 1e18;
         test_negative_interest_long_full_term_fees(
             initialSharePrice,
@@ -228,7 +228,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             int256 preTradeVariableInterest = -0.05e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0e18;
-            uint256 flatFee = 0.1e18;
+            uint256 flatFee = 0.01e18;
             uint256 governanceFee = 1e18;
             test_negative_interest_long_full_term_fees(
                 initialSharePrice,
@@ -252,7 +252,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             int256 preTradeVariableInterest = -0.05e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0e18;
-            uint256 flatFee = 0.1e18;
+            uint256 flatFee = 0.01e18;
             uint256 governanceFee = 1e18;
             test_negative_interest_long_full_term_fees(
                 initialSharePrice,
@@ -276,7 +276,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             int256 preTradeVariableInterest = -0.05e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0e18;
-            uint256 flatFee = 0.1e18;
+            uint256 flatFee = 0.01e18;
             uint256 governanceFee = 1e18;
             test_negative_interest_long_full_term_fees(
                 initialSharePrice,
@@ -389,7 +389,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         );
         variableInterest = -variableInterest.normalizeToRange(0, .5e18);
         uint256 curveFee = 0.1e18;
-        uint256 flatFee = 0.1e18;
+        uint256 flatFee = 0.01e18;
         uint256 governanceFee = 1e18;
         test_negative_interest_long_half_term_fees(
             initialSharePrice,
@@ -415,7 +415,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             int256 preTradeVariableInterest = -0.05e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0.1e18;
-            uint256 flatFee = 0.1e18;
+            uint256 flatFee = 0.01e18;
             uint256 governanceFee = 1e18;
             test_negative_interest_long_half_term_fees(
                 initialSharePrice,
@@ -441,7 +441,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             int256 preTradeVariableInterest = -0.05e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0.1e18;
-            uint256 flatFee = 0.1e18;
+            uint256 flatFee = 0.01e18;
             uint256 governanceFee = 1e18;
             test_negative_interest_long_half_term_fees(
                 initialSharePrice,
@@ -467,7 +467,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             int256 preTradeVariableInterest = -0.05e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0.1e18;
-            uint256 flatFee = 0.1e18;
+            uint256 flatFee = 0.01e18;
             uint256 governanceFee = 1e18;
             test_negative_interest_long_half_term_fees(
                 initialSharePrice,
@@ -571,7 +571,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             // Calculate the flat and curve fees and compare then to the actual fees
             uint256 expectedFlat = bondAmount
                 .mulDivDown(ONE - normalizedTimeRemaining, openSharePrice)
-                .mulDown(0.1e18);
+                .mulDown(flatFee);
             uint256 expectedCurve = (ONE - calculatedSpotPrice)
                 .mulDown(0.1e18)
                 .mulDown(bondAmount)
