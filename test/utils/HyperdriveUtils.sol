@@ -1380,39 +1380,62 @@ library HyperdriveUtils {
 
     /// LP Utils ///
 
-    function presentValue(
+    function getPresentValueParams(
         IHyperdrive hyperdrive
-    ) internal view returns (uint256) {
+    ) internal view returns (LPMath.PresentValueParams memory) {
         IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         return
-            LPMath
-                .calculatePresentValue(
-                    LPMath.PresentValueParams({
-                        shareReserves: poolInfo.shareReserves,
-                        shareAdjustment: poolInfo.shareAdjustment,
-                        bondReserves: poolInfo.bondReserves,
-                        sharePrice: poolInfo.sharePrice,
-                        initialSharePrice: poolConfig.initialSharePrice,
-                        minimumShareReserves: poolConfig.minimumShareReserves,
-                        timeStretch: poolConfig.timeStretch,
-                        longsOutstanding: poolInfo.longsOutstanding,
-                        longAverageTimeRemaining: calculateTimeRemaining(
-                            hyperdrive,
-                            uint256(poolInfo.longAverageMaturityTime).divUp(
-                                1e36
-                            )
-                        ),
-                        shortsOutstanding: poolInfo.shortsOutstanding,
-                        shortAverageTimeRemaining: calculateTimeRemaining(
-                            hyperdrive,
-                            uint256(poolInfo.shortAverageMaturityTime).divUp(
-                                1e36
-                            )
-                        )
-                    })
+            LPMath.PresentValueParams({
+                shareReserves: poolInfo.shareReserves,
+                shareAdjustment: poolInfo.shareAdjustment,
+                bondReserves: poolInfo.bondReserves,
+                sharePrice: poolInfo.sharePrice,
+                initialSharePrice: poolConfig.initialSharePrice,
+                minimumShareReserves: poolConfig.minimumShareReserves,
+                timeStretch: poolConfig.timeStretch,
+                longsOutstanding: poolInfo.longsOutstanding,
+                longAverageTimeRemaining: calculateTimeRemaining(
+                    hyperdrive,
+                    uint256(poolInfo.longAverageMaturityTime).divUp(1e36)
+                ),
+                shortsOutstanding: poolInfo.shortsOutstanding,
+                shortAverageTimeRemaining: calculateTimeRemaining(
+                    hyperdrive,
+                    uint256(poolInfo.shortAverageMaturityTime).divUp(1e36)
                 )
-                .mulDown(poolInfo.sharePrice);
+            });
+    }
+
+    function getDistributeExcessIdleParams(
+        IHyperdrive hyperdrive
+    ) internal view returns (LPMath.DistributeExcessIdleParams memory) {
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        LPMath.PresentValueParams memory presentValueParams = hyperdrive
+            .getPresentValueParams();
+        return
+            LPMath.DistributeExcessIdleParams({
+                presentValueParams: presentValueParams,
+                originalShareReserves: presentValueParams.shareReserves,
+                originalShareAdjustment: presentValueParams.shareAdjustment,
+                originalBondReserves: presentValueParams.bondReserves,
+                activeLpTotalSupply: hyperdrive.totalSupply(
+                    AssetId._LP_ASSET_ID
+                ),
+                withdrawalSharesTotalSupply: hyperdrive.totalSupply(
+                    AssetId._WITHDRAWAL_SHARE_ASSET_ID
+                ) - poolInfo.withdrawalSharesReadyToWithdraw,
+                idle: uint256(hyperdrive.solvency())
+            });
+    }
+
+    function presentValue(
+        IHyperdrive hyperdrive
+    ) internal view returns (uint256) {
+        return
+            LPMath
+                .calculatePresentValue(hyperdrive.getPresentValueParams())
+                .mulDown(hyperdrive.getPoolInfo().sharePrice);
     }
 
     function lpSharePrice(

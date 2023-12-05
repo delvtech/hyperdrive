@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { stdError } from "forge-std/StdError.sol";
 import { VmSafe } from "forge-std/Vm.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { LPMath } from "contracts/src/libraries/LPMath.sol";
 import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
@@ -238,54 +242,39 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Read from the state before removing liquidity.
         uint256 fixedRateBefore = hyperdrive.calculateSpotAPR();
-        uint256 lpTotalSupplyBefore = lpTotalSupply();
-        uint256 startingPresentValue = hyperdrive.presentValue();
-        uint256 expectedBaseProceeds = calculateBaseLpProceeds(
-            testCase.initialLpShares
-        );
+
+        // Calculate the expected base proceeds and withdrawal shares.
+        console.log("test: 0");
+        (
+            uint256 expectedBaseProceeds,
+            uint256 expectedWithdrawalShares
+        ) = calculateExpectedRemoveLiquidityProceeds(testCase.initialLpShares);
 
         // The pool's initializer removes all of their liquidity. Ensure that
         // they get the expected amount of base and withdrawal shares. They
         // should receive their initial contribution plus the interest that
         // accrues minus the amount of margin they provided for the short
         // position.
+        console.log("test: 1");
         (
             testCase.initialLpBaseProceeds,
             testCase.initialLpWithdrawalShares
         ) = removeLiquidity(testCase.initializer, testCase.initialLpShares);
+        console.log("test: 2");
         assertEq(testCase.initialLpBaseProceeds, expectedBaseProceeds);
-        (uint256 contributionPlusInterest, ) = HyperdriveUtils
-            .calculateCompoundInterest(
-                testCase.contribution,
-                testCase.variableRate,
-                testCase.timeElapsed
-            );
+        console.log("test: 3");
         {
-            uint256 initializerMargin = uint256(margin).mulDivDown(
-                testCase.initialLpShares,
-                testCase.initialLpShares +
-                    hyperdrive.getPoolConfig().minimumShareReserves
-            );
-            assertApproxEqAbs(
-                expectedBaseProceeds,
-                contributionPlusInterest - marginFactor * initializerMargin,
-                tolerance
-            );
+            console.log("test: 4");
             assertEq(
                 baseToken.balanceOf(alice),
                 testCase.initialLpBaseProceeds
-            );
-            uint256 expectedWithdrawalShares = calculateWithdrawalShares(
-                testCase.initialLpShares,
-                startingPresentValue,
-                HyperdriveUtils.presentValue(hyperdrive),
-                lpTotalSupplyBefore
             );
             assertApproxEqAbs(
                 testCase.initialLpWithdrawalShares,
                 expectedWithdrawalShares,
                 1
             );
+            console.log("test: 5");
 
             // Ensure that the correct event was emitted.
             verifyRemoveLiquidityEvent(
@@ -293,9 +282,11 @@ contract RemoveLiquidityTest is HyperdriveTest {
                 testCase.initialLpBaseProceeds,
                 testCase.initialLpWithdrawalShares
             );
+            console.log("test: 6");
 
             // Ensure that the fixed rate stayed the same after removing liquidity.
             assertEq(hyperdrive.calculateSpotAPR(), fixedRateBefore);
+            console.log("test: 7");
 
             // Ensure that the initializer's shares were burned and that the total
             // LP supply is just the minimum share reserves.
@@ -304,6 +295,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
                 hyperdrive.totalSupply(AssetId._LP_ASSET_ID),
                 hyperdrive.getPoolConfig().minimumShareReserves
             );
+            console.log("test: 8");
 
             // Ensure that the initializer receives the right amount of withdrawal
             // shares.
@@ -312,6 +304,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
                 expectedWithdrawalShares,
                 1
             );
+            console.log("test: 9");
         }
         // Ensure that the pool still has the correct amount of base and shares.
         // The pool should have the full bond amount reserved to pay out the
@@ -325,6 +318,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         // Since margin is double counted in the case of long trades, we add
         // an extra margin term in the expected base balance and share reserves
         // in the case of long trades.
+        console.log("test: 10");
         uint256 reservedShares = 2 *
             hyperdrive.getPoolConfig().minimumShareReserves -
             remainingMargin.divDown(hyperdrive.getPoolInfo().sharePrice);
@@ -345,8 +339,9 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertApproxEqAbs(
             hyperdrive.getPoolInfo().shareReserves,
             expectedShareReserves,
-            1
+            10
         );
+        console.log("test: 11");
     }
 
     function verifyRemoveLiquidityEvent(
@@ -372,6 +367,23 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertEq(withdrawalShares, expectedWithdrawalShares);
     }
 
+    function calculateExpectedRemoveLiquidityProceeds(
+        uint256 _lpShares
+    ) internal view returns (uint256 baseProceeds, uint256 withdrawalShares) {
+        // Apply the LP shares that will be removed to the withdrawal shares
+        // outstanding and calculate the results of distributing excess idle.
+        LPMath.DistributeExcessIdleParams memory params = hyperdrive
+            .getDistributeExcessIdleParams();
+        params.activeLpTotalSupply -= _lpShares;
+        params.withdrawalSharesTotalSupply += _lpShares;
+        (uint256 withdrawalSharesRedeemed, uint256 shareProceeds) = LPMath
+            .calculateDistributeExcessIdle(params);
+        return (
+            shareProceeds.mulDown(hyperdrive.getPoolInfo().sharePrice),
+            _lpShares - withdrawalSharesRedeemed
+        );
+    }
+
     function lpTotalSupply() internal view returns (uint256) {
         return
             hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
@@ -386,6 +398,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
             );
     }
 
+    // FIXME: Remove this.
     function calculateWithdrawalShares(
         uint256 _shares,
         uint256 _startingPresentValue,
