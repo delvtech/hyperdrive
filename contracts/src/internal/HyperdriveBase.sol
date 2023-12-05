@@ -229,13 +229,34 @@ abstract contract HyperdriveBase is HyperdriveStorage {
             );
     }
 
+    /// @dev Gets the distribute excess idle parameters from the current state.
+    /// @param _sharePrice The current share price.
+    /// @return params The distribute excess idle parameters.
+    function _getDistributeExcessIdleParams(
+        uint256 _sharePrice
+    ) internal view returns (LPMath.DistributeExcessIdleParams memory params) {
+        LPMath.PresentValueParams
+            memory presentValueParams = _getPresentValueParams(_sharePrice);
+        params = LPMath.DistributeExcessIdleParams({
+            presentValueParams: presentValueParams,
+            originalShareReserves: presentValueParams.shareReserves,
+            originalShareAdjustment: presentValueParams.shareAdjustment,
+            originalBondReserves: presentValueParams.bondReserves,
+            activeLpTotalSupply: _totalSupply[AssetId._LP_ASSET_ID],
+            withdrawalSharesTotalSupply: _totalSupply[
+                AssetId._WITHDRAWAL_SHARE_ASSET_ID
+            ] - _withdrawPool.readyToWithdraw,
+            idle: _calculateIdleShareReserves(_sharePrice)
+        });
+    }
+
     /// @dev Gets the present value parameters from the current state.
     /// @param _sharePrice The current share price.
-    /// @return presentValue The present value parameters.
+    /// @return params The present value parameters.
     function _getPresentValueParams(
         uint256 _sharePrice
-    ) internal view returns (LPMath.PresentValueParams memory presentValue) {
-        presentValue = LPMath.PresentValueParams({
+    ) internal view returns (LPMath.PresentValueParams memory params) {
+        params = LPMath.PresentValueParams({
             shareReserves: _marketState.shareReserves,
             shareAdjustment: _marketState.shareAdjustment,
             bondReserves: _marketState.bondReserves,

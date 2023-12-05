@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -343,7 +346,11 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         uint256 longBasePaid,
         uint256 shortAmount
     ) external {
+        longBasePaid = 1008579;
+        shortAmount = 6598;
+        console.log("test: 1");
         _test_nonstandard_decimals_lp(longBasePaid, shortAmount);
+        console.log("test: 2");
     }
 
     function test_nonstandard_decimals_lp_edge_cases() external {
@@ -407,15 +414,18 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         });
 
         // Initialize the pool.
+        console.log("_test_nonstandard_decimals_lp: 1");
         uint256 aliceLpShares = initialize(
             alice,
             uint256(testParams.fixedRate),
             testParams.contribution
         );
+        console.log("_test_nonstandard_decimals_lp: 2");
 
         // Bob adds liquidity.
         uint256 bobLpShares = addLiquidity(bob, testParams.contribution);
         uint256 spotAPRBefore = hyperdrive.calculateSpotAPR();
+        console.log("_test_nonstandard_decimals_lp: 3");
 
         // Bob opens a long.
         {
@@ -433,6 +443,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             testParams.longMaturityTime = longMaturityTime;
             testParams.longAmount = longAmount;
         }
+        console.log("_test_nonstandard_decimals_lp: 4");
 
         // Bob opens a short.
         {
@@ -453,6 +464,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             testParams.shortMaturityTime = shortMaturityTime;
             testParams.shortBasePaid = shortBasePaid;
         }
+        console.log("_test_nonstandard_decimals_lp: 5");
 
         // Alice removes her liquidity.
         uint256 estimatedBaseProceeds = calculateBaseLpProceeds(aliceLpShares);
@@ -465,6 +477,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
                 int256(testParams.shortBasePaid)).max(0)
         );
         assertEq(aliceBaseProceeds, estimatedBaseProceeds);
+        console.log("_test_nonstandard_decimals_lp: 6");
 
         // Celine adds liquidity.
         // Note that fuzzing will occasionally create long and short trades so large
@@ -479,13 +492,18 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             extraData: new bytes(0) // unused
         });
         uint256 celineLpShares;
+        console.log("_test_nonstandard_decimals_lp: 6.1");
         if (
             hyperdrive.calculateSpotAPR() < overrides.minSlippage ||
             hyperdrive.calculateSpotAPR() > overrides.maxSlippage
         ) {
+            console.log("_test_nonstandard_decimals_lp: 6.2");
             baseToken.mint(overrides.depositAmount);
+            console.log("_test_nonstandard_decimals_lp: 6.3");
             baseToken.approve(address(hyperdrive), overrides.depositAmount);
+            console.log("_test_nonstandard_decimals_lp: 6.4");
             vm.expectRevert(IHyperdrive.InvalidApr.selector);
+            console.log("_test_nonstandard_decimals_lp: 6.5");
 
             celineLpShares = hyperdrive.addLiquidity(
                 overrides.depositAmount,
@@ -497,8 +515,11 @@ contract NonstandardDecimalsTest is HyperdriveTest {
                     extraData: overrides.extraData
                 })
             );
+            console.log("_test_nonstandard_decimals_lp: 6.6");
         } else {
+            console.log("_test_nonstandard_decimals_lp: 7");
             celineLpShares = addLiquidity(celine, testParams.contribution);
+            console.log("_test_nonstandard_decimals_lp: 8");
 
             // Bob closes his long and his short.
             {
@@ -513,6 +534,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
                     testParams.shortAmount
                 );
             }
+            console.log("_test_nonstandard_decimals_lp: 9");
 
             // Redeem Alice's withdrawal shares. Alice gets at least the margin released
             // from Bob's long.
@@ -520,6 +542,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
                 alice,
                 aliceWithdrawalShares
             );
+            console.log("_test_nonstandard_decimals_lp: 10");
             {
                 uint256 estimatedRedeemProceeds = lpMargin.mulDivDown(
                     aliceLpShares,
@@ -527,6 +550,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
                 );
                 assertGe(aliceRedeemProceeds, estimatedRedeemProceeds);
             }
+            console.log("_test_nonstandard_decimals_lp: 11");
 
             // Bob and Celine remove their liquidity. Bob should receive more base
             // proceeds than Celine since Celine's add liquidity resulted in an
@@ -550,6 +574,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
                 0,
                 1 wei
             );
+            console.log("_test_nonstandard_decimals_lp: 12");
 
             // TODO: There is an edge case where the withdrawal pool doesn't receive
             // all of its portion of the available idle liquidity when a closed

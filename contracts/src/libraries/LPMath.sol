@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+import { Lib } from "test/utils/Lib.sol";
+
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { HyperdriveMath } from "./HyperdriveMath.sol";
@@ -14,6 +18,9 @@ import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 library LPMath {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for *;
 
     /// @dev Calculates the new share reserves, share adjustment, and bond
@@ -320,11 +327,13 @@ library LPMath {
         }
 
         // Calculate the maximum amount the share reserves can be debited.
+        console.log("calculateDistributeExcessIdle: 1");
         uint256 originalEffectiveShareReserves = HyperdriveMath
             .calculateEffectiveShareReserves(
                 _params.originalShareReserves,
                 _params.originalShareAdjustment
             );
+        console.log("calculateDistributeExcessIdle: 2");
         int256 netCurveTrade = int256(
             _params.presentValueParams.longsOutstanding.mulDown(
                 _params.presentValueParams.shortAverageTimeRemaining
@@ -335,11 +344,13 @@ library LPMath {
                     _params.presentValueParams.longAverageTimeRemaining
                 )
             );
+        console.log("calculateDistributeExcessIdle: 3");
         uint256 maxShareReservesDelta = calculateMaxShareReservesDelta(
             _params,
             originalEffectiveShareReserves,
             netCurveTrade
         );
+        console.log("calculateDistributeExcessIdle: 4");
 
         // Calculate the amount of withdrawal shares that can be redeemed given
         // the maximum share reserves delta.  Otherwise, we
@@ -349,26 +360,31 @@ library LPMath {
                 _params,
                 maxShareReservesDelta
             );
+        console.log("calculateDistributeExcessIdle: 5");
 
         // If this amount is less than or equal to the amount of withdrawal
         // shares outstanding, then we're done and we pay out the full maximum
         // share reserves delta.
-        if (withdrawalSharesRedeemed >= _params.withdrawalSharesTotalSupply) {
-            return (maxShareReservesDelta, withdrawalSharesRedeemed);
+        if (withdrawalSharesRedeemed <= _params.withdrawalSharesTotalSupply) {
+            console.log("calculateDistributeExcessIdle: 6");
+            return (withdrawalSharesRedeemed, maxShareReservesDelta);
         }
         // Otherwise, all of the withdrawal shares are redeemed and we need to
         // calculate the amount of shares the withdrawal pool should receive.
         else {
+            console.log("calculateDistributeExcessIdle: 7");
             withdrawalSharesRedeemed = _params.withdrawalSharesTotalSupply;
         }
 
         // Solve for the share proceeds that hold the LP share price invariant
         // after all of the withdrawal shares are redeemed.
+        console.log("calculateDistributeExcessIdle: 8");
         uint256 shareProceeds = calculateDistributeExcessIdleShareProceeds(
             _params,
             originalEffectiveShareReserves,
             netCurveTrade
         );
+        console.log("calculateDistributeExcessIdle: 9");
 
         return (withdrawalSharesRedeemed, shareProceeds);
     }
@@ -410,9 +426,11 @@ library LPMath {
     ) internal pure returns (uint256) {
         // If the net curve position is zero or net long, then the maximum
         // share reserves delta is equal to the pool's idle.
+        console.log("calculateMaxShareReservesDelta: 1");
         if (_netCurveTrade >= 0) {
             return _params.idle;
         }
+        console.log("calculateMaxShareReservesDelta: 2");
         uint256 netCurveTrade = uint256(-_netCurveTrade);
 
         // FIXME: Considering the costs of this function as well as the pros and
@@ -427,6 +445,7 @@ library LPMath {
         {
             // Calculate the maximum amount of bonds that can be purchased after
             // removing all of the idle liquidity.
+            console.log("calculateMaxShareReservesDelta: 3");
             (
                 _params.presentValueParams.shareReserves,
                 _params.presentValueParams.shareAdjustment,
@@ -438,6 +457,7 @@ library LPMath {
                 _params.presentValueParams.minimumShareReserves,
                 -int256(_params.idle)
             );
+            console.log("calculateMaxShareReservesDelta: 4");
             uint256 maxBondAmount = YieldSpaceMath.calculateMaxBuyBondsOut(
                 HyperdriveMath.calculateEffectiveShareReserves(
                     _params.presentValueParams.shareReserves,
@@ -448,6 +468,7 @@ library LPMath {
                 _params.presentValueParams.sharePrice,
                 _params.presentValueParams.initialSharePrice
             );
+            console.log("calculateMaxShareReservesDelta: 5");
 
             // If the maximum amount of bonds that can be purchased is greater
             // than the net curve trade, then the max share delta is equal to
@@ -455,6 +476,7 @@ library LPMath {
             if (maxBondAmount >= netCurveTrade) {
                 return _params.idle;
             }
+            console.log("calculateMaxShareReservesDelta: 6");
         }
 
         // Calculate an initial guess for the max share delta.
@@ -463,9 +485,11 @@ library LPMath {
                 _originalEffectiveShareReserves,
                 netCurveTrade
             );
+        console.log("calculateMaxShareReservesDelta: 7");
 
         // Proceed with Newton's method for a few iterations.
         for (uint256 i = 0; i < 3; i++) {
+            console.log("calculateMaxShareReservesDelta: 8");
             (
                 _params.presentValueParams.shareReserves,
                 _params.presentValueParams.shareAdjustment,
@@ -477,6 +501,7 @@ library LPMath {
                 _params.presentValueParams.minimumShareReserves,
                 -int256(maxShareReservesDelta)
             );
+            console.log("calculateMaxShareReservesDelta: 9");
             maxShareReservesDelta =
                 maxShareReservesDelta +
                 (YieldSpaceMath.calculateMaxBuyBondsOut(
@@ -494,6 +519,7 @@ library LPMath {
                             _originalEffectiveShareReserves
                         )
                     );
+            console.log("calculateMaxShareReservesDelta: 9");
         }
 
         return maxShareReservesDelta;
@@ -600,7 +626,8 @@ library LPMath {
         // the maximum share reserves delta.
         return
             (ONE - endingPresentValue.divDown(startingPresentValue)).mulDown(
-                _params.activeLpTotalSupply
+                _params.activeLpTotalSupply +
+                    _params.withdrawalSharesTotalSupply
             );
     }
 
@@ -630,6 +657,7 @@ library LPMath {
         int256 _netCurveTrade
     ) internal pure returns (uint256) {
         // Calculate the starting present value and LP total supply.
+        console.log("calculateDistributeExcessIdleShareProceeds: 1");
         uint256 startingPresentValue;
         {
             _params.presentValueParams.shareReserves = _params
@@ -644,6 +672,7 @@ library LPMath {
         }
         uint256 lpTotalSupply = _params.activeLpTotalSupply +
             _params.withdrawalSharesTotalSupply;
+        console.log("calculateDistributeExcessIdleShareProceeds: 2");
 
         // If the pool is net neutral, we can solve directly.
         if (_netCurveTrade == 0) {
@@ -651,6 +680,7 @@ library LPMath {
                 (ONE - _params.activeLpTotalSupply.divDown(lpTotalSupply))
                     .mulDown(startingPresentValue);
         }
+        console.log("calculateDistributeExcessIdleShareProceeds: 3");
 
         // We make an initial guess for Newton's method by assuming that the
         // ratio of the share reserves delta to the withdrawal shares
@@ -661,9 +691,11 @@ library LPMath {
             startingPresentValue,
             _params.activeLpTotalSupply + _params.withdrawalSharesTotalSupply
         );
+        console.log("calculateDistributeExcessIdleShareProceeds: 4");
 
         // If the net curve trade is positive, the pool is net long.
         if (_netCurveTrade > 0) {
+            console.log("calculateDistributeExcessIdleShareProceeds: 5");
             // FIXME: Use a constant for the loop iterations.
             for (uint256 i = 0; i < 3; i++) {
                 // Simulate applying the share proceeds to the reserves and
@@ -721,17 +753,33 @@ library LPMath {
                         calculateMaxSellSharesOutDerivative(_params);
                 }
 
-                // FIXME: Explain this math.
-                shareProceeds =
-                    shareProceeds +
-                    (presentValue.mulDown(lpTotalSupply) -
+                // FIXME: Document this.
+                int256 delta = int256(presentValue.mulDown(lpTotalSupply)) -
+                    int256(
                         startingPresentValue.mulDown(
                             _params.activeLpTotalSupply
-                        )).divDown(derivative.mulDown(lpTotalSupply));
+                        )
+                    );
+                if (delta > 0) {
+                    shareProceeds =
+                        shareProceeds +
+                        uint256(delta).divDown(
+                            derivative.mulDown(lpTotalSupply)
+                        );
+                } else if (delta < 0) {
+                    shareProceeds =
+                        shareProceeds -
+                        uint256(-delta).divDown(
+                            derivative.mulDown(lpTotalSupply)
+                        );
+                } else {
+                    break;
+                }
             }
         }
         // Otherwise, the pool is net short.
         else {
+            console.log("calculateDistributeExcessIdleShareProceeds: 6");
             // FIXME: Use a constant for the loop iterations.
             for (uint256 i = 0; i < 3; i++) {
                 // Simulate applying the share proceeds to the reserves and
@@ -762,15 +810,28 @@ library LPMath {
                         uint256(-_netCurveTrade)
                     );
 
-                // FIXME: Double check this. Are the signs correct?
-                //
                 // FIXME: Document this.
-                shareProceeds =
-                    shareProceeds +
-                    (presentValue.mulDown(lpTotalSupply) -
+                int256 delta = int256(presentValue.mulDown(lpTotalSupply)) -
+                    int256(
                         startingPresentValue.mulDown(
                             _params.activeLpTotalSupply
-                        )).divDown(derivative.mulDown(lpTotalSupply));
+                        )
+                    );
+                if (delta > 0) {
+                    shareProceeds =
+                        shareProceeds +
+                        uint256(delta).divDown(
+                            derivative.mulDown(lpTotalSupply)
+                        );
+                } else if (delta < 0) {
+                    shareProceeds =
+                        shareProceeds -
+                        uint256(-delta).divDown(
+                            derivative.mulDown(lpTotalSupply)
+                        );
+                } else {
+                    break;
+                }
             }
         }
 
@@ -821,33 +882,35 @@ library LPMath {
                     )
                 )
             );
-        derivative =
-            ONE -
-            derivative.mulDivDown(
-                _params
-                    .presentValueParams
-                    .initialSharePrice
-                    .mulDivDown(
-                        YieldSpaceMath.kDown(
-                            effectiveShareReserves,
-                            _params.presentValueParams.bondReserves,
-                            ONE - _params.presentValueParams.timeStretch,
-                            _params.presentValueParams.sharePrice,
-                            _params.presentValueParams.initialSharePrice
-                        ) -
-                            (_params.presentValueParams.bondReserves +
-                                _bondAmount).pow(
-                                    ONE - _params.presentValueParams.timeStretch
-                                ),
-                        _params.presentValueParams.sharePrice
+        derivative = derivative.mulDivDown(
+            _params
+                .presentValueParams
+                .initialSharePrice
+                .mulDivDown(
+                    YieldSpaceMath.kDown(
+                        effectiveShareReserves,
+                        _params.presentValueParams.bondReserves,
+                        ONE - _params.presentValueParams.timeStretch,
+                        _params.presentValueParams.sharePrice,
+                        _params.presentValueParams.initialSharePrice
+                    ) -
+                        (_params.presentValueParams.bondReserves + _bondAmount)
+                            .pow(ONE - _params.presentValueParams.timeStretch),
+                    _params.presentValueParams.sharePrice
+                )
+                .pow(
+                    _params.presentValueParams.timeStretch.divDown(
+                        ONE - _params.presentValueParams.timeStretch
                     )
-                    .pow(
-                        _params.presentValueParams.timeStretch.divDown(
-                            ONE - _params.presentValueParams.timeStretch
-                        )
-                    ),
-                _params.presentValueParams.sharePrice
-            );
+                ),
+            _params.presentValueParams.sharePrice
+        );
+        if (ONE >= derivative) {
+            derivative = ONE - derivative;
+        } else {
+            // FIXME: Explain this decision.
+            return 0;
+        }
         if (_params.originalShareAdjustment >= 0) {
             derivative = derivative.mulDown(
                 ONE -
@@ -920,27 +983,29 @@ library LPMath {
                     )
                 )
             );
-        derivative =
-            ONE -
-            derivative.mulDivDown(
-                _params
-                    .presentValueParams
-                    .initialSharePrice
-                    .mulDivDown(
-                        k -
-                            (_params.presentValueParams.bondReserves -
-                                _bondAmount).pow(
-                                    ONE - _params.presentValueParams.timeStretch
-                                ),
-                        _params.presentValueParams.sharePrice
+        derivative = derivative.mulDivDown(
+            _params
+                .presentValueParams
+                .initialSharePrice
+                .mulDivDown(
+                    k -
+                        (_params.presentValueParams.bondReserves - _bondAmount)
+                            .pow(ONE - _params.presentValueParams.timeStretch),
+                    _params.presentValueParams.sharePrice
+                )
+                .pow(
+                    _params.presentValueParams.timeStretch.divDown(
+                        ONE - _params.presentValueParams.timeStretch
                     )
-                    .pow(
-                        _params.presentValueParams.timeStretch.divDown(
-                            ONE - _params.presentValueParams.timeStretch
-                        )
-                    ),
-                _params.presentValueParams.sharePrice
-            );
+                ),
+            _params.presentValueParams.sharePrice
+        );
+        if (ONE >= derivative) {
+            derivative = ONE - derivative;
+        } else {
+            // FIXME: Explain this decision.
+            return 0;
+        }
         if (_params.originalShareAdjustment >= 0) {
             derivative = derivative.mulDown(
                 ONE -

@@ -985,7 +985,7 @@ contract LPMathTest is HyperdriveTest {
         uint256 positionDuration = 365 days;
         uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(apr);
 
-        // Net neutral.
+        // The pool is net neutral.
         {
             uint256 shareReserves = 100_000_000e18;
             int256 shareAdjustment = 0;
@@ -1079,7 +1079,7 @@ contract LPMathTest is HyperdriveTest {
         // FIXME: We need a case that hits the condition where we can't close
         // the net long position on the curve.
         //
-        // Net long.
+        // The pool is net long.
         {
             uint256 shareReserves = 100_000_000e18;
             int256 shareAdjustment = 0;
@@ -1170,7 +1170,7 @@ contract LPMathTest is HyperdriveTest {
             assertApproxEqAbs(startingLPSharePrice, endingLPSharePrice, 1e9);
         }
 
-        // Net short.
+        // The pool is net short.
         {
             uint256 shareReserves = 100_000_000e18;
             int256 shareAdjustment = 0;
@@ -1265,11 +1265,256 @@ contract LPMathTest is HyperdriveTest {
     function test__calculateDistributeExcessIdleWithdrawalSharesRedeemed()
         external
     {
-        // FIXME
-    }
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockLPMath lpMath = new MockLPMath();
 
-    function test__calculateDistributeExcessIdle() external {
-        // FIXME
+        uint256 apr = 0.02e18;
+        uint256 initialSharePrice = 1e18;
+        uint256 positionDuration = 365 days;
+        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(apr);
+
+        // The pool is net neutral.
+        {
+            uint256 shareReserves = 100_000_000e18;
+            int256 shareAdjustment = 0;
+            uint256 bondReserves = calculateBondReserves(
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    shareReserves,
+                    shareAdjustment
+                ),
+                initialSharePrice,
+                apr,
+                positionDuration,
+                timeStretch
+            );
+            LPMath.DistributeExcessIdleParams memory params = LPMath
+                .DistributeExcessIdleParams({
+                    presentValueParams: LPMath.PresentValueParams({
+                        shareReserves: shareReserves,
+                        shareAdjustment: shareAdjustment,
+                        bondReserves: bondReserves,
+                        sharePrice: 2e18,
+                        initialSharePrice: initialSharePrice,
+                        minimumShareReserves: 1e5,
+                        timeStretch: timeStretch,
+                        longsOutstanding: 0,
+                        longAverageTimeRemaining: 0,
+                        shortsOutstanding: 0,
+                        shortAverageTimeRemaining: 0
+                    }),
+                    originalShareReserves: shareReserves,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves,
+                    activeLpTotalSupply: 1_000_000e18,
+                    withdrawalSharesTotalSupply: 1_000_000e18,
+                    idle: 100e18
+                });
+
+            // Calculate the starting LP share price.
+            uint256 startingLPSharePrice = LPMath
+                .calculatePresentValue(params.presentValueParams)
+                .divDown(
+                    params.activeLpTotalSupply +
+                        params.withdrawalSharesTotalSupply
+                );
+
+            // Calculate the share proceeds.
+            uint256 withdrawalSharesRedeemed = lpMath
+                .calculateDistributeExcessIdleWithdrawalSharesRedeemed(
+                    params,
+                    params.idle
+                );
+
+            // Calculate the ending LP share price.
+            uint256 endingLPSharePrice;
+            {
+                (
+                    params.presentValueParams.shareReserves,
+                    params.presentValueParams.shareAdjustment,
+                    params.presentValueParams.bondReserves
+                ) = LPMath.calculateUpdateLiquidity(
+                    params.originalShareReserves,
+                    params.originalShareAdjustment,
+                    params.originalBondReserves,
+                    params.presentValueParams.minimumShareReserves,
+                    -int256(params.idle)
+                );
+                endingLPSharePrice = LPMath
+                    .calculatePresentValue(params.presentValueParams)
+                    .divDown(
+                        params.activeLpTotalSupply +
+                            params.withdrawalSharesTotalSupply -
+                            withdrawalSharesRedeemed
+                    );
+            }
+
+            // Ensure that the starting and ending LP share prices are
+            // approximately equal.
+            assertApproxEqAbs(startingLPSharePrice, endingLPSharePrice, 100);
+        }
+
+        // FIXME: We need a case that hits the condition where we can't close
+        // the net long position on the curve.
+        //
+        // The pool is net long.
+        {
+            uint256 shareReserves = 100_000_000e18;
+            int256 shareAdjustment = 0;
+            uint256 bondReserves = calculateBondReserves(
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    shareReserves,
+                    shareAdjustment
+                ),
+                initialSharePrice,
+                apr,
+                positionDuration,
+                timeStretch
+            );
+            LPMath.DistributeExcessIdleParams memory params = LPMath
+                .DistributeExcessIdleParams({
+                    presentValueParams: LPMath.PresentValueParams({
+                        shareReserves: shareReserves,
+                        shareAdjustment: shareAdjustment,
+                        bondReserves: bondReserves,
+                        sharePrice: 2e18,
+                        initialSharePrice: initialSharePrice,
+                        minimumShareReserves: 1e5,
+                        timeStretch: timeStretch,
+                        longsOutstanding: 50_000_000e18,
+                        longAverageTimeRemaining: 1e18,
+                        shortsOutstanding: 0,
+                        shortAverageTimeRemaining: 0
+                    }),
+                    originalShareReserves: shareReserves,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves,
+                    activeLpTotalSupply: 1_000_000e18,
+                    withdrawalSharesTotalSupply: 1_000_000e18,
+                    idle: 100e18
+                });
+
+            // Calculate the starting LP share price.
+            uint256 startingLPSharePrice = LPMath
+                .calculatePresentValue(params.presentValueParams)
+                .divDown(
+                    params.activeLpTotalSupply +
+                        params.withdrawalSharesTotalSupply
+                );
+
+            // Calculate the share proceeds.
+            uint256 withdrawalSharesRedeemed = lpMath
+                .calculateDistributeExcessIdleWithdrawalSharesRedeemed(
+                    params,
+                    params.idle
+                );
+
+            // Calculate the ending LP share price.
+            uint256 endingLPSharePrice;
+            {
+                (
+                    params.presentValueParams.shareReserves,
+                    params.presentValueParams.shareAdjustment,
+                    params.presentValueParams.bondReserves
+                ) = LPMath.calculateUpdateLiquidity(
+                    params.originalShareReserves,
+                    params.originalShareAdjustment,
+                    params.originalBondReserves,
+                    params.presentValueParams.minimumShareReserves,
+                    -int256(params.idle)
+                );
+                endingLPSharePrice = LPMath
+                    .calculatePresentValue(params.presentValueParams)
+                    .divDown(
+                        params.activeLpTotalSupply +
+                            params.withdrawalSharesTotalSupply -
+                            withdrawalSharesRedeemed
+                    );
+            }
+
+            // Ensure that the starting and ending LP share prices are
+            // approximately equal.
+            assertApproxEqAbs(startingLPSharePrice, endingLPSharePrice, 100);
+        }
+
+        // The pool is net short.
+        {
+            uint256 shareReserves = 100_000_000e18;
+            int256 shareAdjustment = 0;
+            uint256 bondReserves = calculateBondReserves(
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    shareReserves,
+                    shareAdjustment
+                ),
+                initialSharePrice,
+                apr,
+                positionDuration,
+                timeStretch
+            );
+            LPMath.DistributeExcessIdleParams memory params = LPMath
+                .DistributeExcessIdleParams({
+                    presentValueParams: LPMath.PresentValueParams({
+                        shareReserves: shareReserves,
+                        shareAdjustment: shareAdjustment,
+                        bondReserves: bondReserves,
+                        sharePrice: 2e18,
+                        initialSharePrice: initialSharePrice,
+                        minimumShareReserves: 1e5,
+                        timeStretch: timeStretch,
+                        longsOutstanding: 0,
+                        longAverageTimeRemaining: 0,
+                        shortsOutstanding: 50_000_000e18,
+                        shortAverageTimeRemaining: 1e18
+                    }),
+                    originalShareReserves: shareReserves,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves,
+                    activeLpTotalSupply: 1_000_000e18,
+                    withdrawalSharesTotalSupply: 1_000_000e18,
+                    idle: 100e18
+                });
+
+            // Calculate the starting LP share price.
+            uint256 startingLPSharePrice = LPMath
+                .calculatePresentValue(params.presentValueParams)
+                .divDown(
+                    params.activeLpTotalSupply +
+                        params.withdrawalSharesTotalSupply
+                );
+
+            // Calculate the share proceeds.
+            uint256 withdrawalSharesRedeemed = lpMath
+                .calculateDistributeExcessIdleWithdrawalSharesRedeemed(
+                    params,
+                    params.idle
+                );
+
+            // Calculate the ending LP share price.
+            uint256 endingLPSharePrice;
+            {
+                (
+                    params.presentValueParams.shareReserves,
+                    params.presentValueParams.shareAdjustment,
+                    params.presentValueParams.bondReserves
+                ) = LPMath.calculateUpdateLiquidity(
+                    params.originalShareReserves,
+                    params.originalShareAdjustment,
+                    params.originalBondReserves,
+                    params.presentValueParams.minimumShareReserves,
+                    -int256(params.idle)
+                );
+                endingLPSharePrice = LPMath
+                    .calculatePresentValue(params.presentValueParams)
+                    .divDown(
+                        params.activeLpTotalSupply +
+                            params.withdrawalSharesTotalSupply -
+                            withdrawalSharesRedeemed
+                    );
+            }
+
+            // Ensure that the starting and ending LP share prices are
+            // approximately equal.
+            assertApproxEqAbs(startingLPSharePrice, endingLPSharePrice, 100);
+        }
     }
 
     function calculateBondReserves(

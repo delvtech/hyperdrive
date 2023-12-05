@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
@@ -199,7 +202,9 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         _mint(AssetId._LP_ASSET_ID, _options.destination, lpShares);
 
         // Distribute the excess idle to the withdrawal pool.
+        console.log("addLiquidity: 1");
         _distributeExcessIdle(sharePrice);
+        console.log("addLiquidity: 3");
 
         // Emit an AddLiquidity event.
         uint256 lpSharePrice = lpTotalSupply == 0
@@ -536,46 +541,35 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         return (shareProceeds, uint256(withdrawalShares), startingPresentValue);
     }
 
-    /// @dev If the idle capital in the pool is worth more than the active LP
-    ///      supply, then we pay out the withdrawal pool with the excess idle.
+    // FIXME: We need better short-circuiting here to prevent a lot of state
+    // usage.
+    //
+    /// @dev Distribute as much of the excess idle as possible to the withdrawal
+    ///      pool while holding the LP share price constant.
     /// @param _sharePrice The current share price.
     function _distributeExcessIdle(uint256 _sharePrice) internal {
-        // Calculate the value of the active LP shares as:
-        //
-        // activeLpValue = l_a * (PV / l).
-        uint256 activeLpSupply = _totalSupply[AssetId._LP_ASSET_ID];
-        uint256 withdrawalSharesOutstanding = _totalSupply[
-            AssetId._WITHDRAWAL_SHARE_ASSET_ID
-        ] - _withdrawPool.readyToWithdraw;
-        uint256 totalLpSupply = activeLpSupply + withdrawalSharesOutstanding;
-        uint256 presentValue = LPMath.calculatePresentValue(
-            _getPresentValueParams(_sharePrice)
-        );
-        uint256 activeLpValue = activeLpSupply.mulDivDown(
-            presentValue,
-            totalLpSupply
-        );
-
-        // If the value of the active LP shares is less than the idle capital,
-        // then all of the active LPs could be paid out in base with liquidity
-        // to spare. We pay out this excess idle to the withdrawal pool. In
-        // the case that the pool's present value is zero, all of the
-        // withdrawal shares are paid out.
-        uint256 withdrawalProceeds = 0;
-        uint256 idle = _calculateIdleShareReserves(_sharePrice);
-        if (idle > activeLpValue) {
-            withdrawalProceeds = idle - activeLpValue;
-        }
-        if (withdrawalProceeds > 0 || presentValue == 0) {
-            _compensateWithdrawalPool(
-                withdrawalProceeds,
-                presentValue,
-                totalLpSupply,
-                withdrawalSharesOutstanding
+        // Calculate the amount of withdrawal shares that should be redeemed
+        // and their share proceeds.
+        console.log("_distributeExcessIdle: 1");
+        (uint256 withdrawalSharesRedeemed, uint256 shareProceeds) = LPMath
+            .calculateDistributeExcessIdle(
+                _getDistributeExcessIdleParams(_sharePrice)
             );
-        }
+        console.log("_distributeExcessIdle: 2");
+
+        // Update the withdrawal pool's state.
+        _withdrawPool.readyToWithdraw += withdrawalSharesRedeemed.toUint128();
+        _withdrawPool.proceeds += shareProceeds.toUint128();
+
+        console.log("_distributeExcessIdle: 3");
+
+        // Remove the withdrawal pool proceeds from the reserves.
+        _updateLiquidity(-int256(shareProceeds));
+        console.log("_distributeExcessIdle: 4");
     }
 
+    // FIXME: We should be able to remove this.
+    //
     /// @dev Pays out the maximum amount of withdrawal shares given a specified
     ///      amount of withdrawal proceeds.
     /// @param _withdrawalProceeds The amount of withdrawal proceeds to pay out.
@@ -600,6 +594,8 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         );
     }
 
+    // FIXME: We should be able to remove this.
+    //
     /// @dev Pays out a specified amount of withdrawal proceeds to the
     ///      withdrawal pool. This function is useful for circumstances in which
     ///      core calculations have already been performed to avoid reloading

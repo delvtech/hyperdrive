@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { stdError } from "forge-std/StdError.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -1073,6 +1076,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         });
 
         // Initialize the pool.
+        console.log("_test_lp_withdrawal_three_lps: 1");
         uint256 aliceLpShares = initialize(
             alice,
             uint256(testParams.fixedRate),
@@ -1081,12 +1085,14 @@ contract LpWithdrawalTest is HyperdriveTest {
         testParams.contribution -=
             2 *
             hyperdrive.getPoolConfig().minimumShareReserves;
+        console.log("_test_lp_withdrawal_three_lps: 2");
 
         // Bob adds liquidity.
         uint256 lpSharePrice = hyperdrive.lpSharePrice();
         uint256 bobLpShares = addLiquidity(bob, testParams.contribution);
         assertEq(hyperdrive.lpSharePrice(), lpSharePrice);
         lpSharePrice = hyperdrive.lpSharePrice();
+        console.log("_test_lp_withdrawal_three_lps: 3");
 
         // Bob opens a long.
         longBasePaid = longBasePaid.normalizeToRange(
@@ -1104,6 +1110,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         }
         assertApproxEqAbs(hyperdrive.lpSharePrice(), lpSharePrice, 100);
         lpSharePrice = hyperdrive.lpSharePrice();
+        console.log("_test_lp_withdrawal_three_lps: 4");
 
         // Bob opens a short.
         shortAmount = shortAmount.normalizeToRange(
@@ -1122,6 +1129,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(hyperdrive.lpSharePrice(), lpSharePrice, 100);
         lpSharePrice = hyperdrive.lpSharePrice();
         uint256 estimatedLpProceeds = calculateBaseLpProceeds(aliceLpShares);
+        console.log("_test_lp_withdrawal_three_lps: 5");
 
         // Alice removes her liquidity.
         (
@@ -1131,6 +1139,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertEq(aliceBaseProceeds, estimatedLpProceeds);
         assertApproxEqAbs(hyperdrive.lpSharePrice(), lpSharePrice, 10);
         lpSharePrice = hyperdrive.lpSharePrice();
+        console.log("_test_lp_withdrawal_three_lps: 6");
 
         // Celine adds liquidity.
         uint256 celineLpShares = addLiquidity(celine, testParams.contribution);
@@ -1138,6 +1147,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // even larger than the contribution?
         assertApproxEqAbs(hyperdrive.lpSharePrice(), lpSharePrice, 1e16);
         lpSharePrice = hyperdrive.lpSharePrice();
+        console.log("_test_lp_withdrawal_three_lps: 7");
 
         // Bob closes his long and his short.
         {
@@ -1151,6 +1161,7 @@ contract LpWithdrawalTest is HyperdriveTest {
                 testParams.shortAmount.min(hyperdrive.calculateMaxLong())
             );
         }
+        console.log("_test_lp_withdrawal_three_lps: 8");
 
         // Redeem Alice's withdrawal shares. Alice should get at least the
         // margin released from Bob's long.
@@ -1158,12 +1169,14 @@ contract LpWithdrawalTest is HyperdriveTest {
             alice,
             aliceWithdrawalShares
         );
+        console.log("_test_lp_withdrawal_three_lps: 9");
 
         // Alice withdraws at least the original contribution.
         assertGe(
             aliceRedeemProceeds + aliceBaseProceeds,
             testParams.contribution
         );
+        console.log("_test_lp_withdrawal_three_lps: 10");
 
         // Bob and Celine remove their liquidity. Bob should receive more base
         // proceeds than Celine since Celine's add liquidity resulted in an
@@ -1180,6 +1193,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertGt(bobBaseProceeds, testParams.contribution);
         assertApproxEqAbs(bobWithdrawalShares, 0, 1);
         assertApproxEqAbs(celineWithdrawalShares, 0, 1);
+        console.log("_test_lp_withdrawal_three_lps: 11");
 
         assertApproxEqAbs(
             hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -

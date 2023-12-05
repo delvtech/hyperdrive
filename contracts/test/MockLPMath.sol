@@ -35,6 +35,17 @@ contract MockLPMath {
         return LPMath.calculatePresentValue(_params);
     }
 
+    function calculateDistributeExcessIdleWithdrawalSharesRedeemed(
+        LPMath.DistributeExcessIdleParams memory _params,
+        uint256 _shareReservesDelta
+    ) external pure returns (uint256) {
+        return
+            LPMath.calculateDistributeExcessIdleWithdrawalSharesRedeemed(
+                _params,
+                _shareReservesDelta
+            );
+    }
+
     function calculateDistributeExcessIdleShareProceeds(
         LPMath.DistributeExcessIdleParams memory _params,
         uint256 _originalEffectiveShareReserves,
