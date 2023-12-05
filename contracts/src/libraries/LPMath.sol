@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-import { Lib } from "test/utils/Lib.sol";
-
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { HyperdriveMath } from "./HyperdriveMath.sol";
@@ -18,9 +14,6 @@ import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 library LPMath {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for *;
 
     /// @dev Calculates the new share reserves, share adjustment, and bond
@@ -327,14 +320,11 @@ library LPMath {
         }
 
         // Calculate the maximum amount the share reserves can be debited.
-        console.log("calculateDistributeExcessIdle: 1");
-        console.log("calculateDistributeExcessIdle: 1.1");
         uint256 originalEffectiveShareReserves = HyperdriveMath
             .calculateEffectiveShareReserves(
                 _params.originalShareReserves,
                 _params.originalShareAdjustment
             );
-        console.log("calculateDistributeExcessIdle: 1.2");
         int256 netCurveTrade = int256(
             _params.presentValueParams.longsOutstanding.mulDown(
                 _params.presentValueParams.longAverageTimeRemaining
@@ -345,14 +335,11 @@ library LPMath {
                     _params.presentValueParams.shortAverageTimeRemaining
                 )
             );
-        console.log("calculateDistributeExcessIdle: 1.3");
         uint256 maxShareReservesDelta = calculateMaxShareReservesDelta(
             _params,
             originalEffectiveShareReserves,
             netCurveTrade
         );
-        console.log("calculateDistributeExcessIdle: 1.4");
-        console.log("calculateDistributeExcessIdle: 2");
 
         // Calculate the amount of withdrawal shares that can be redeemed given
         // the maximum share reserves delta.  Otherwise, we
@@ -362,40 +349,34 @@ library LPMath {
                 _params,
                 maxShareReservesDelta
             );
-        console.log("calculateDistributeExcessIdle: 3");
 
         // If this amount is less than or equal to the amount of withdrawal
         // shares outstanding, then we're done and we pay out the full maximum
         // share reserves delta.
         if (withdrawalSharesRedeemed <= _params.withdrawalSharesTotalSupply) {
-            console.log("calculateDistributeExcessIdle: 4");
             return (withdrawalSharesRedeemed, maxShareReservesDelta);
         }
         // Otherwise, all of the withdrawal shares are redeemed and we need to
         // calculate the amount of shares the withdrawal pool should receive.
         else {
-            console.log("calculateDistributeExcessIdle: 5");
             withdrawalSharesRedeemed = _params.withdrawalSharesTotalSupply;
-            console.log("calculateDistributeExcessIdle: 6");
         }
 
         // Solve for the share proceeds that hold the LP share price invariant
         // after all of the withdrawal shares are redeemed.
-        console.log("calculateDistributeExcessIdle: 7");
         uint256 shareProceeds = calculateDistributeExcessIdleShareProceeds(
             _params,
             originalEffectiveShareReserves,
             netCurveTrade
         );
-        console.log("calculateDistributeExcessIdle: 8");
 
         return (withdrawalSharesRedeemed, shareProceeds);
     }
 
-    // FIXME: This should be the first priority to fix tomorrow. It's
-    // overshooting, and we already know that we can't use it. As long as we
-    // have a decent guess, we can use the simpler approximation that
-    // undershoots the true value.
+    // FIXME: One solution to this problem that is worth exploring is to let the
+    //        user provide the answer and just verify that it's correct. This
+    //        would let us have a high level of accuracy without needing to
+    //        perform the computation on chain (or at least within the protocol).
     //
     // FIXME: This is *really* expensive. With 3 iterations, the sad path is
     // around 60k gas. With 4 iterations, it's around 80k gas.
@@ -426,19 +407,17 @@ library LPMath {
     ///      net short position.
     /// @param _params The parameters for the distribute excess idle calculation.
     /// @param _netCurveTrade The net curve trade.
-    /// @return The upper bound on the share proceeds.
+    /// @return maxShareReservesDelta The upper bound on the share proceeds.
     function calculateMaxShareReservesDelta(
         DistributeExcessIdleParams memory _params,
         uint256 _originalEffectiveShareReserves,
         int256 _netCurveTrade
-    ) internal pure returns (uint256) {
+    ) internal pure returns (uint256 maxShareReservesDelta) {
         // If the net curve position is zero or net long, then the maximum
         // share reserves delta is equal to the pool's idle.
-        console.log("calculateMaxShareReservesDelta = 1");
         if (_netCurveTrade >= 0) {
             return _params.idle;
         }
-        console.log("calculateMaxShareReservesDelta = 2");
         uint256 netCurveTrade = uint256(-_netCurveTrade);
 
         // FIXME: Considering the costs of this function as well as the pros and
@@ -453,7 +432,6 @@ library LPMath {
         {
             // Calculate the maximum amount of bonds that can be purchased after
             // removing all of the idle liquidity.
-            console.log("calculateMaxShareReservesDelta = 3");
             (
                 _params.presentValueParams.shareReserves,
                 _params.presentValueParams.shareAdjustment,
@@ -465,7 +443,6 @@ library LPMath {
                 _params.presentValueParams.minimumShareReserves,
                 -int256(_params.idle)
             );
-            console.log("calculateMaxShareReservesDelta = 4");
             uint256 maxBondAmount = YieldSpaceMath.calculateMaxBuyBondsOut(
                 HyperdriveMath.calculateEffectiveShareReserves(
                     _params.presentValueParams.shareReserves,
@@ -476,7 +453,6 @@ library LPMath {
                 _params.presentValueParams.sharePrice,
                 _params.presentValueParams.initialSharePrice
             );
-            console.log("calculateMaxShareReservesDelta = 5");
 
             // If the maximum amount of bonds that can be purchased is greater
             // than the net curve trade, then the max share delta is equal to
@@ -484,25 +460,24 @@ library LPMath {
             if (maxBondAmount >= netCurveTrade) {
                 return _params.idle;
             }
-            console.log("calculateMaxShareReservesDelta = 6");
         }
 
         // Calculate an initial guess for the max share delta.
-        console.log("calculateMaxShareReservesDelta = 7");
-        uint256 maxShareReservesDelta = calculateMaxShareReservesDeltaInitialGuess(
+        uint256 maybeMaxShareReservesDelta = calculateMaxShareReservesDeltaInitialGuess(
                 _params,
                 _originalEffectiveShareReserves,
                 netCurveTrade
             );
-        console.log("calculateMaxShareReservesDelta = 8");
 
+        // FIXME: For now, we'll do this "the right way" and calculate things
+        // using Newton's method.
+        //
+        // FIXME: We may want to add this back for LPs to have more accuracy,
+        // but it's very expensive and it may just be better to loop over
+        // redeemWithdrawalShares and use the guess.
+        //
         // Proceed with Newton's method for a few iterations.
-        for (uint256 i = 0; i < 3; i++) {
-            console.log("idle = %s", _params.idle.toString(18));
-            console.log(
-                "maxShareReservesDelta = %s",
-                maxShareReservesDelta.toString(18)
-            );
+        for (uint256 i = 0; i < 10; i++) {
             (
                 _params.presentValueParams.shareReserves,
                 _params.presentValueParams.shareAdjustment,
@@ -512,27 +487,71 @@ library LPMath {
                 _params.originalShareAdjustment,
                 _params.originalBondReserves,
                 _params.presentValueParams.minimumShareReserves,
-                -int256(maxShareReservesDelta)
+                -int256(maybeMaxShareReservesDelta)
             );
-            maxShareReservesDelta =
-                maxShareReservesDelta +
-                (YieldSpaceMath.calculateMaxBuyBondsOut(
-                    HyperdriveMath.calculateEffectiveShareReserves(
-                        _params.presentValueParams.shareReserves,
-                        _params.presentValueParams.shareAdjustment
-                    ),
-                    _params.presentValueParams.bondReserves,
-                    ONE - _params.presentValueParams.timeStretch,
-                    _params.presentValueParams.sharePrice,
-                    _params.presentValueParams.initialSharePrice
-                ) - netCurveTrade).divDown(
+            uint256 maxBondAmount = YieldSpaceMath.calculateMaxBuyBondsOut(
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    _params.presentValueParams.shareReserves,
+                    _params.presentValueParams.shareAdjustment
+                ),
+                _params.presentValueParams.bondReserves,
+                ONE - _params.presentValueParams.timeStretch,
+                _params.presentValueParams.sharePrice,
+                _params.presentValueParams.initialSharePrice
+            );
+            if (maxBondAmount > netCurveTrade) {
+                maxShareReservesDelta = maybeMaxShareReservesDelta;
+                maybeMaxShareReservesDelta =
+                    maybeMaxShareReservesDelta +
+                    (maxBondAmount - netCurveTrade).divDown(
                         calculateMaxBuyBondsOutDerivative(
                             _params,
                             _originalEffectiveShareReserves
                         )
                     );
+            } else if (maxBondAmount < netCurveTrade) {
+                maybeMaxShareReservesDelta =
+                    maybeMaxShareReservesDelta -
+                    (netCurveTrade - maxBondAmount).divDown(
+                        calculateMaxBuyBondsOutDerivative(
+                            _params,
+                            _originalEffectiveShareReserves
+                        )
+                    );
+            } else {
+                break;
+            }
+            if (maybeMaxShareReservesDelta > _params.idle) {
+                maybeMaxShareReservesDelta = _params.idle;
+            }
         }
-        console.log("calculateMaxShareReservesDelta = 9");
+
+        if (maybeMaxShareReservesDelta != maxShareReservesDelta) {
+            (
+                _params.presentValueParams.shareReserves,
+                _params.presentValueParams.shareAdjustment,
+                _params.presentValueParams.bondReserves
+            ) = calculateUpdateLiquidity(
+                _params.originalShareReserves,
+                _params.originalShareAdjustment,
+                _params.originalBondReserves,
+                _params.presentValueParams.minimumShareReserves,
+                -int256(maybeMaxShareReservesDelta)
+            );
+            uint256 maxBondAmount = YieldSpaceMath.calculateMaxBuyBondsOut(
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    _params.presentValueParams.shareReserves,
+                    _params.presentValueParams.shareAdjustment
+                ),
+                _params.presentValueParams.bondReserves,
+                ONE - _params.presentValueParams.timeStretch,
+                _params.presentValueParams.sharePrice,
+                _params.presentValueParams.initialSharePrice
+            );
+            if (maxBondAmount > netCurveTrade) {
+                maxShareReservesDelta = maybeMaxShareReservesDelta;
+            }
+        }
 
         return maxShareReservesDelta;
     }

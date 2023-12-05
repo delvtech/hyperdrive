@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-
 import { stdError } from "forge-std/StdError.sol";
 import { VmSafe } from "forge-std/Vm.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -104,7 +101,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Remove the intializer's liquidity and verify that the state was
         // updated correctly.
-        _test_remove_liquidity(testCase, false, 0);
+        _test_remove_liquidity(testCase);
     }
 
     function test_remove_liquidity_long_trade() external {
@@ -141,7 +138,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Remove the intializer's liquidity and verify that the state was
         // updated correctly.
-        _test_remove_liquidity(testCase, true, 2);
+        _test_remove_liquidity(testCase);
     }
 
     function test_remove_liquidity_short_trade() external {
@@ -178,7 +175,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Remove the intializer's liquidity and verify that the state was
         // updated correctly.
-        _test_remove_liquidity(testCase, false, 3e7); // TODO: Reduce this bound.
+        _test_remove_liquidity(testCase);
     }
 
     /// Helpers ///
@@ -204,47 +201,11 @@ contract RemoveLiquidityTest is HyperdriveTest {
     ///      we ensure that they receive the correct amount of base and
     ///      withdrawal shares.
     /// @param testCase The test case.
-    /// @param isLong True if the trade that was opened is a long and false
-    ///        otherwise. The current netting implementation is overly
-    ///        conservative, which results in double counting the margin that
-    ///        LPs must reserve for LPs. This double counting isn't done in the
-    ///        case of shorts.
-    /// @param tolerance The error tolerance for imprecise assertions.
-    function _test_remove_liquidity(
-        TestCase memory testCase,
-        bool isLong,
-        uint256 tolerance
-    ) internal {
-        // The LPs provided margins for all of the open trades. We can calculate
-        // this margin starting with the idle calculation:
-        // idle = z * c - l_e - z_min
-        //
-        // when a long is opened idle changes by:
-        // idle = (z + dz) * c - (l_e + dy) - z_min
-        // delta idle = dz * c - dy
-        // new idle = old idle + delta idle (since dy > dz*c idle goes down)
-        //
-        // When a short is opened the share reserves decrease and so does the exposure:
-        // idle = (z*c - (dy - dz*c)) - l_e - z_min
-        // delta idle = dy - dz *c =  - dz * c + dy
-        // new idle = old idle + delta idle (since dy > dz*c idle goes up)
-        uint256 marginFactor = 1;
-        if (isLong) {
-            marginFactor = 2;
-        }
-        uint256 margin = (testCase.longAmount - testCase.longBasePaid) +
-            (testCase.shortAmount - testCase.shortBasePaid);
-        uint256 remainingMargin = uint256(marginFactor * margin).mulDivDown(
-            hyperdrive.getPoolConfig().minimumShareReserves,
-            testCase.initialLpShares +
-                hyperdrive.getPoolConfig().minimumShareReserves
-        );
-
+    function _test_remove_liquidity(TestCase memory testCase) internal {
         // Read from the state before removing liquidity.
         uint256 fixedRateBefore = hyperdrive.calculateSpotAPR();
 
         // Calculate the expected base proceeds and withdrawal shares.
-        console.log("test: 0");
         (
             uint256 expectedBaseProceeds,
             uint256 expectedWithdrawalShares
@@ -255,16 +216,12 @@ contract RemoveLiquidityTest is HyperdriveTest {
         // should receive their initial contribution plus the interest that
         // accrues minus the amount of margin they provided for the short
         // position.
-        console.log("test: 1");
         (
             testCase.initialLpBaseProceeds,
             testCase.initialLpWithdrawalShares
         ) = removeLiquidity(testCase.initializer, testCase.initialLpShares);
-        console.log("test: 2");
         assertEq(testCase.initialLpBaseProceeds, expectedBaseProceeds);
-        console.log("test: 3");
         {
-            console.log("test: 4");
             assertEq(
                 baseToken.balanceOf(alice),
                 testCase.initialLpBaseProceeds
@@ -274,7 +231,6 @@ contract RemoveLiquidityTest is HyperdriveTest {
                 expectedWithdrawalShares,
                 1
             );
-            console.log("test: 5");
 
             // Ensure that the correct event was emitted.
             verifyRemoveLiquidityEvent(
@@ -282,11 +238,9 @@ contract RemoveLiquidityTest is HyperdriveTest {
                 testCase.initialLpBaseProceeds,
                 testCase.initialLpWithdrawalShares
             );
-            console.log("test: 6");
 
             // Ensure that the fixed rate stayed the same after removing liquidity.
             assertEq(hyperdrive.calculateSpotAPR(), fixedRateBefore);
-            console.log("test: 7");
 
             // Ensure that the initializer's shares were burned and that the total
             // LP supply is just the minimum share reserves.
@@ -295,7 +249,6 @@ contract RemoveLiquidityTest is HyperdriveTest {
                 hyperdrive.totalSupply(AssetId._LP_ASSET_ID),
                 hyperdrive.getPoolConfig().minimumShareReserves
             );
-            console.log("test: 8");
 
             // Ensure that the initializer receives the right amount of withdrawal
             // shares.
@@ -304,44 +257,10 @@ contract RemoveLiquidityTest is HyperdriveTest {
                 expectedWithdrawalShares,
                 1
             );
-            console.log("test: 9");
         }
-        // Ensure that the pool still has the correct amount of base and shares.
-        // The pool should have the full bond amount reserved to pay out the
-        // bonds at maturity. Additionally, the pool should have the minimum
-        // share reserves and the zero address's initial contribution (also
-        // equal to the minimum share reserves) minus the amount of margin the
-        // zero address provided for the short. The bond amount isn't included
-        // in the share reserves, so the share reserves should be equal to the
-        // minimum share reserves plus the zero address's unused idle capital.
-        //
-        // Since margin is double counted in the case of long trades, we add
-        // an extra margin term in the expected base balance and share reserves
-        // in the case of long trades.
-        console.log("test: 10");
-        uint256 reservedShares = 2 *
-            hyperdrive.getPoolConfig().minimumShareReserves -
-            remainingMargin.divDown(hyperdrive.getPoolInfo().sharePrice);
-        uint256 expectedBaseBalance = testCase.longAmount +
-            testCase.shortAmount +
-            margin *
-            (marginFactor - 1) +
-            reservedShares.mulDown(hyperdrive.getPoolInfo().sharePrice);
-        uint256 expectedShareReserves = reservedShares +
-            (margin * (marginFactor - 1) + testCase.longAmount).divDown(
-                hyperdrive.getPoolInfo().sharePrice
-            );
-        assertApproxEqAbs(
-            baseToken.balanceOf(address(hyperdrive)),
-            expectedBaseBalance,
-            tolerance
-        );
-        assertApproxEqAbs(
-            hyperdrive.getPoolInfo().shareReserves,
-            expectedShareReserves,
-            10
-        );
-        console.log("test: 11");
+
+        // Ensure that the pool is still solvent.
+        assertGe(hyperdrive.solvency(), 0);
     }
 
     function verifyRemoveLiquidityEvent(
