@@ -662,11 +662,11 @@ library LPMath {
         }
 
         // Calculate the amount of withdrawal shares that can be redeemed.
+        uint256 lpTotalSupply = _params.activeLpTotalSupply +
+            _params.withdrawalSharesTotalSupply;
         return
-            (ONE - endingPresentValue.divDown(startingPresentValue)).mulDown(
-                _params.activeLpTotalSupply +
-                    _params.withdrawalSharesTotalSupply
-            );
+            lpTotalSupply -
+            lpTotalSupply.mulDivUp(endingPresentValue, startingPresentValue);
     }
 
     // FIXME: Todos
@@ -713,8 +713,11 @@ library LPMath {
         // If the pool is net neutral, we can solve directly.
         if (_netCurveTrade == 0) {
             return
-                (ONE - _params.activeLpTotalSupply.divDown(lpTotalSupply))
-                    .mulDown(startingPresentValue);
+                startingPresentValue -
+                startingPresentValue.mulDivUp(
+                    _params.activeLpTotalSupply,
+                    lpTotalSupply
+                );
         }
 
         // We make an initial guess for Newton's method by assuming that the
