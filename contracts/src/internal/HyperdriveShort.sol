@@ -205,7 +205,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
         } else {
             // The user is redeeming a short that has already matured. So we
             // collect the interest that has accrued since the last checkpoint.
+            // NOTE: We only collect the interest on the position that is being closed.
             uint256 checkpointTime = _latestCheckpoint();
+            _marketState.zombieShares -= shareProceeds.toUint128();
             _collectZombieInterest(
                 shareProceeds,
                 _checkpoints[checkpointTime - _checkpointDuration].sharePrice,
