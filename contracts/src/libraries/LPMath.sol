@@ -179,7 +179,8 @@ library LPMath {
             // Calculate the maximum amount of bonds that can be sold on
             // YieldSpace.
             uint256 maxCurveTrade = YieldSpaceMath.calculateMaxSellBondsIn(
-                effectiveShareReserves,
+                _params.shareReserves,
+                _params.shareAdjustment,
                 _params.bondReserves,
                 _params.minimumShareReserves,
                 ONE - _params.timeStretch,
@@ -358,7 +359,9 @@ library LPMath {
         // Otherwise if this amount is less than or equal to the amount of
         // withdrawal shares outstanding, then we're done and we pay out the
         // full maximum share reserves delta.
-        if (withdrawalSharesRedeemed <= _params.withdrawalSharesTotalSupply) {
+        else if (
+            withdrawalSharesRedeemed <= _params.withdrawalSharesTotalSupply
+        ) {
             return (withdrawalSharesRedeemed, maxShareReservesDelta);
         }
         // Otherwise, all of the withdrawal shares are redeemed and we need to
@@ -670,6 +673,9 @@ library LPMath {
             _params.presentValueParams.minimumShareReserves,
             -int256(_shareReservesDelta)
         );
+        // FIXME: Use a safe form of `calculatePresentValue` that doesn't
+        //        revert if it goes negative. If it goes negative, we should
+        //        just return 0.
         uint256 endingPresentValue = calculatePresentValue(
             _params.presentValueParams
         );
@@ -748,15 +754,14 @@ library LPMath {
         // starting point.
         uint256 shareProceeds = _params.withdrawalSharesTotalSupply.mulDivDown(
             startingPresentValue,
-            _params.activeLpTotalSupply + _params.withdrawalSharesTotalSupply
+            lpTotalSupply
         );
 
         // If the net curve trade is positive, the pool is net long.
         if (_netCurveTrade > 0) {
             // FIXME: Use a constant for the loop iterations.
             for (uint256 i = 0; i < 3; i++) {
-                // Simulate applying the share proceeds to the reserves and
-                // recalculate the present value.
+                // Simulate applying the share proceeds to the reserves.
                 (
                     _params.presentValueParams.shareReserves,
                     _params.presentValueParams.shareAdjustment,
@@ -768,9 +773,6 @@ library LPMath {
                     _params.presentValueParams.minimumShareReserves,
                     -int256(shareProceeds)
                 );
-                uint256 presentValue = calculatePresentValue(
-                    _params.presentValueParams
-                );
 
                 // If the net curve trade is less than or equal to the maximum
                 // amount of bonds that can be sold with this share proceeds, we
@@ -780,10 +782,8 @@ library LPMath {
                 if (
                     uint256(_netCurveTrade) <=
                     YieldSpaceMath.calculateMaxSellBondsIn(
-                        HyperdriveMath.calculateEffectiveShareReserves(
-                            _params.presentValueParams.shareReserves,
-                            _params.presentValueParams.shareAdjustment
-                        ),
+                        _params.presentValueParams.shareReserves,
+                        _params.presentValueParams.shareAdjustment,
                         _params.presentValueParams.bondReserves,
                         _params.presentValueParams.minimumShareReserves,
                         ONE - _params.presentValueParams.timeStretch,
@@ -811,6 +811,9 @@ library LPMath {
                 }
 
                 // FIXME: Document this.
+                uint256 presentValue = calculatePresentValue(
+                    _params.presentValueParams
+                );
                 int256 delta = int256(presentValue.mulDown(lpTotalSupply)) -
                     int256(
                         startingPresentValue.mulDown(
