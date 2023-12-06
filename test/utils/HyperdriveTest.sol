@@ -731,7 +731,7 @@ contract HyperdriveTest is BaseTest {
     ) internal virtual {
         uint256 startTimeElapsed = block.timestamp;
         // Note: if time % CHECKPOINT_DURATION != 0 then it ends up
-        // advancing time too far.
+        // advancing time to the next checkpoint.
         while (block.timestamp - startTimeElapsed < time) {
             advanceTime(CHECKPOINT_DURATION, variableRate);
             hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));

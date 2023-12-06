@@ -10,6 +10,8 @@ import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
+import "forge-std/console2.sol";
+
 contract IntraCheckpointNettingTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for *;
@@ -731,7 +733,9 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256 aliceLpShares = initialize(alice, apr, contribution);
 
         // fast forward time and accrue interest
+        console2.log("1");
         advanceTime(POSITION_DURATION, variableInterest);
+        console2.log("2");
 
         // open positions
         uint256[] memory longMaturityTimes = new uint256[](numTrades);
@@ -748,6 +752,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             (uint256 maturityTimeShort, ) = openShort(bob, bondAmount);
             shortMaturityTimes[i] = maturityTimeShort;
         }
+        console2.log("3");
 
         // Checkpoint Exposure should be small even if there are many trades
         int256 checkpointExposure = int256(
@@ -762,7 +767,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
 
         // fast forward time, create checkpoints and accrue interest
         advanceTimeWithCheckpoints(timeElapsed, variableInterest);
-
+        console2.log("4");
         // remove liquidity
         removeLiquidity(alice, aliceLpShares);
 
@@ -774,16 +779,19 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             advanceTimeWithCheckpoints(POSITION_DURATION, variableInterest);
             poolInfo = hyperdrive.getPoolInfo();
         }
-
+        console2.log("5");
         // close positions
         for (uint256 i = 0; i < numTrades; i++) {
+            console2.log("shortMaturityTimes[i]", shortMaturityTimes[i]);
+            console2.log("bondAmounts[i]", bondAmounts[i].toString(18));
             // close the short positions
             closeShort(bob, shortMaturityTimes[i], bondAmounts[i]);
-
+            console2.log("i1", i);
             // close the long positions
             closeLong(bob, longMaturityTimes[i], bondAmounts[i]);
+            console2.log("i2", i);
         }
-
+        console2.log("6");
         // longExposure should be 0
         poolInfo = hyperdrive.getPoolInfo();
         assertApproxEqAbs(poolInfo.longExposure, 0, 1);

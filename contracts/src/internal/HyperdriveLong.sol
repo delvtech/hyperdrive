@@ -204,9 +204,16 @@ abstract contract HyperdriveLong is HyperdriveLP {
             // collect the interest that has accrued since the last checkpoint.
             // NOTE: We only collect the interest on the position that is being closed.
             uint256 checkpointTime = _latestCheckpoint();
-            _marketState.zombieShares -= shareProceeds.toUint128();
+            uint256 zombieAdjustment;
+            if(shareProceeds < _marketState.zombieShares) {
+                _marketState.zombieShares -= shareProceeds.toUint128();
+                zombieAdjustment = shareProceeds;
+            } else {
+                _marketState.zombieShares = 0;
+                zombieAdjustment = _marketState.zombieShares;
+            }
             _collectZombieInterest(
-                shareProceeds,
+                zombieAdjustment,
                 _checkpoints[checkpointTime - _checkpointDuration].sharePrice,
                 sharePrice,
                 _calculateCheckpointTimeElapsed()
