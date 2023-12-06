@@ -286,23 +286,6 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertEq(withdrawalShares, expectedWithdrawalShares);
     }
 
-    function calculateExpectedRemoveLiquidityProceeds(
-        uint256 _lpShares
-    ) internal view returns (uint256 baseProceeds, uint256 withdrawalShares) {
-        // Apply the LP shares that will be removed to the withdrawal shares
-        // outstanding and calculate the results of distributing excess idle.
-        LPMath.DistributeExcessIdleParams memory params = hyperdrive
-            .getDistributeExcessIdleParams();
-        params.activeLpTotalSupply -= _lpShares;
-        params.withdrawalSharesTotalSupply += _lpShares;
-        (uint256 withdrawalSharesRedeemed, uint256 shareProceeds) = LPMath
-            .calculateDistributeExcessIdle(params);
-        return (
-            shareProceeds.mulDown(hyperdrive.getPoolInfo().sharePrice),
-            _lpShares - withdrawalSharesRedeemed
-        );
-    }
-
     function lpTotalSupply() internal view returns (uint256) {
         return
             hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
@@ -315,21 +298,5 @@ contract RemoveLiquidityTest is HyperdriveTest {
             hyperdrive.presentValue().divDown(
                 lpTotalSupply().mulDown(hyperdrive.getPoolInfo().sharePrice)
             );
-    }
-
-    // FIXME: Remove this.
-    function calculateWithdrawalShares(
-        uint256 _shares,
-        uint256 _startingPresentValue,
-        uint256 _endingPresentValue,
-        uint256 _lpTotalSupplyBefore
-    ) internal pure returns (uint256) {
-        uint256 withdrawalShares = _endingPresentValue.mulDown(
-            _lpTotalSupplyBefore
-        );
-        withdrawalShares += _startingPresentValue.mulDown(_shares);
-        withdrawalShares -= _startingPresentValue.mulDown(_lpTotalSupplyBefore);
-        withdrawalShares = withdrawalShares.divDown(_startingPresentValue);
-        return withdrawalShares;
     }
 }

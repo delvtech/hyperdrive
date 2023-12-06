@@ -350,9 +350,14 @@ library LPMath {
                 maxShareReservesDelta
             );
 
-        // If this amount is less than or equal to the amount of withdrawal
-        // shares outstanding, then we're done and we pay out the full maximum
-        // share reserves delta.
+        // If none of the withdrawal shares could be redeemed, then we're done
+        // and we pay out nothing.
+        if (withdrawalSharesRedeemed == 0) {
+            return (0, 0);
+        }
+        // Otherwise if this amount is less than or equal to the amount of
+        // withdrawal shares outstanding, then we're done and we pay out the
+        // full maximum share reserves delta.
         if (withdrawalSharesRedeemed <= _params.withdrawalSharesTotalSupply) {
             return (withdrawalSharesRedeemed, maxShareReservesDelta);
         }
@@ -501,6 +506,13 @@ library LPMath {
             );
             if (maxBondAmount > netCurveTrade) {
                 maxShareReservesDelta = maybeMaxShareReservesDelta;
+                uint256 derivative = calculateMaxBuyBondsOutDerivative(
+                    _params,
+                    _originalEffectiveShareReserves
+                );
+                if (derivative == 0) {
+                    break;
+                }
                 maybeMaxShareReservesDelta =
                     maybeMaxShareReservesDelta +
                     (maxBondAmount - netCurveTrade).divDown(
@@ -510,14 +522,23 @@ library LPMath {
                         )
                     );
             } else if (maxBondAmount < netCurveTrade) {
-                maybeMaxShareReservesDelta =
-                    maybeMaxShareReservesDelta -
-                    (netCurveTrade - maxBondAmount).divDown(
-                        calculateMaxBuyBondsOutDerivative(
-                            _params,
-                            _originalEffectiveShareReserves
-                        )
-                    );
+                uint256 derivative = calculateMaxBuyBondsOutDerivative(
+                    _params,
+                    _originalEffectiveShareReserves
+                );
+                if (derivative == 0) {
+                    break;
+                }
+                uint256 delta = (netCurveTrade - maxBondAmount).divDown(
+                    calculateMaxBuyBondsOutDerivative(
+                        _params,
+                        _originalEffectiveShareReserves
+                    )
+                );
+                if (delta >= maybeMaxShareReservesDelta) {
+                    break;
+                }
+                maybeMaxShareReservesDelta = maybeMaxShareReservesDelta - delta;
             } else {
                 break;
             }
@@ -548,7 +569,7 @@ library LPMath {
                 _params.presentValueParams.sharePrice,
                 _params.presentValueParams.initialSharePrice
             );
-            if (maxBondAmount > netCurveTrade) {
+            if (maxBondAmount >= netCurveTrade) {
                 maxShareReservesDelta = maybeMaxShareReservesDelta;
             }
         }
@@ -1118,11 +1139,15 @@ library LPMath {
                     )
                 )
         );
-        derivative =
-            derivative -
-            _params.originalBondReserves.divDown(
-                _originalEffectiveShareReserves
-            );
+        uint256 delta = _params.originalBondReserves.divDown(
+            _originalEffectiveShareReserves
+        );
+        if (derivative > delta) {
+            derivative -= delta;
+        } else {
+            // FIXME: Explain this.
+            derivative = 0;
+        }
         if (_params.originalShareAdjustment >= 0) {
             derivative = (ONE -
                 uint256(_params.originalShareAdjustment).divDown(

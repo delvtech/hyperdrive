@@ -8,6 +8,7 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { LPMath } from "contracts/src/libraries/LPMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
@@ -801,6 +802,7 @@ contract HyperdriveTest is BaseTest {
         }
     }
 
+    // FIXME: Remove this.
     function calculateBaseLpProceeds(
         uint256 _shares
     ) internal returns (uint256) {
@@ -851,6 +853,23 @@ contract HyperdriveTest is BaseTest {
         vm.revertTo(snapshotId);
 
         return shareProceeds.mulDown(poolInfo.sharePrice);
+    }
+
+    function calculateExpectedRemoveLiquidityProceeds(
+        uint256 _lpShares
+    ) internal view returns (uint256 baseProceeds, uint256 withdrawalShares) {
+        // Apply the LP shares that will be removed to the withdrawal shares
+        // outstanding and calculate the results of distributing excess idle.
+        LPMath.DistributeExcessIdleParams memory params = hyperdrive
+            .getDistributeExcessIdleParams();
+        params.activeLpTotalSupply -= _lpShares;
+        params.withdrawalSharesTotalSupply += _lpShares;
+        (uint256 withdrawalSharesRedeemed, uint256 shareProceeds) = LPMath
+            .calculateDistributeExcessIdle(params);
+        return (
+            shareProceeds.mulDown(hyperdrive.getPoolInfo().sharePrice),
+            _lpShares - withdrawalSharesRedeemed
+        );
     }
 
     /// Event Utils ///
