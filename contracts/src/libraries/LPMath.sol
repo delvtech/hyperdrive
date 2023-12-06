@@ -117,12 +117,30 @@ library LPMath {
         uint256 shortAverageTimeRemaining;
     }
 
-    /// @dev Calculates the present value LPs capital in the pool.
+    /// @dev Calculates the present value LPs capital in the pool and reverts
+    ///      if the value is negative.
     /// @param _params The parameters for the present value calculation.
     /// @return The present value of the pool.
     function calculatePresentValue(
         PresentValueParams memory _params
     ) internal pure returns (uint256) {
+        (uint256 presentValue, bool success) = calculatePresentValueSafe(
+            _params
+        );
+        if (!success) {
+            revert IHyperdrive.NegativePresentValue();
+        }
+        return presentValue;
+    }
+
+    /// @dev Calculates the present value LPs capital in the pool and returns
+    ///      a flag indicating whether the calculation succeeded or failed.
+    /// @param _params The parameters for the present value calculation.
+    /// @return The present value of the pool.
+    /// @return A flag indicating whether the calculation succeeded or failed.
+    function calculatePresentValueSafe(
+        PresentValueParams memory _params
+    ) internal pure returns (uint256, bool) {
         // We calculate the LP present value by simulating the closing of all
         // of the outstanding long and short positions and applying this impact
         // on the share reserves. The present value is the share reserves after
@@ -134,12 +152,13 @@ library LPMath {
             calculateNetFlatTrade(_params) -
             int256(_params.minimumShareReserves);
 
-        // If the present value is negative, we revert.
+        // If the present value is negative, return a status code indicating the
+        // failure.
         if (presentValue < 0) {
-            revert IHyperdrive.NegativePresentValue();
+            return (0, false);
         }
 
-        return uint256(presentValue);
+        return (uint256(presentValue), true);
     }
 
     /// @dev Calculates the result of closing the net curve position.
@@ -673,18 +692,16 @@ library LPMath {
             _params.presentValueParams.minimumShareReserves,
             -int256(_shareReservesDelta)
         );
-        // FIXME: Use a safe form of `calculatePresentValue` that doesn't
-        //        revert if it goes negative. If it goes negative, we should
-        //        just return 0.
-        uint256 endingPresentValue = calculatePresentValue(
+        (uint256 endingPresentValue, bool success) = calculatePresentValueSafe(
             _params.presentValueParams
         );
 
-        // If the ending present value is greater than the starting present
-        // value, we forego the withdrawal shares redemption. This edge-case
-        // can occur when the share reserves is very close to the minimum
-        // share reserves with a large value of k.
-        if (endingPresentValue >= startingPresentValue) {
+        // If the present value calculation failed or if the ending present
+        // value is greater than the starting present value, we short-circuit to
+        // avoid distributing excess idle. This edge-case can occur when the
+        // share reserves is very close to the minimum share reserves with a
+        // large value of k.
+        if (!success || endingPresentValue >= startingPresentValue) {
             return 0;
         }
 
