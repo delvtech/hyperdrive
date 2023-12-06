@@ -157,7 +157,7 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
         }
         _positionDuration = _config.positionDuration;
         _timeStretch = _config.timeStretch;
-        _initialSharePrice = _pricePerShare();
+        _initialSharePrice = _pricePerShare();  // TODO: Make separate DeployConfig struct and keep in PoolConfig
         _governance = _config.governance;
         _feeCollector = _config.feeCollector;
 
