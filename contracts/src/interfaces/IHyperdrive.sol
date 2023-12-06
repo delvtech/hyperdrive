@@ -144,6 +144,38 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         uint256 governance;
     }
 
+    /// @dev This is the same as PoolConfig but without initialSharePrice since that is calculated
+    ///      on initialization.
+    struct PoolDeployConfig {
+        /// @dev The address of the base token.
+        IERC20 baseToken;
+        /// @dev The linker factory used by this Hyperdrive instance.
+        address linkerFactory;
+        /// @dev The hash of the ERC20 linker's code. This is used to derive the
+        ///      create2 addresses of the ERC20 linkers used by this instance.
+        bytes32 linkerCodeHash;
+        /// @dev The minimum share reserves.
+        uint256 minimumShareReserves;
+        /// @dev The minimum amount of tokens that a position can be opened or
+        ///      closed with.
+        uint256 minimumTransactionAmount;
+        /// @dev The amount of precision expected to lose due to exponentiation
+        ///      implementation.
+        uint256 precisionThreshold;
+        /// @dev The duration of a position prior to maturity.
+        uint256 positionDuration;
+        /// @dev The duration of a checkpoint.
+        uint256 checkpointDuration;
+        /// @dev A parameter which decreases slippage around a target rate.
+        uint256 timeStretch;
+        /// @dev The address of the governance contract.
+        address governance;
+        /// @dev The address which collects governance fees
+        address feeCollector;
+        /// @dev The fees applied to trades.
+        IHyperdrive.Fees fees;
+    }
+
     struct PoolConfig {
         /// @dev The address of the base token.
         IERC20 baseToken;

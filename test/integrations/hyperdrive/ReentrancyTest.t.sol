@@ -252,7 +252,7 @@ contract ReentrancyTest is HyperdriveTest {
         vm.startPrank(deployer);
         tester = new ReentrantERC20();
         baseToken = ERC20Mintable(address(tester));
-        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        IHyperdrive.PoolDeployConfig memory config = testConfig(0.05e18);
         config.baseToken = IERC20(address(baseToken));
         deploy(deployer, config);
     }
@@ -263,7 +263,7 @@ contract ReentrancyTest is HyperdriveTest {
         tester = new ReentrantEthReceiver();
         vm.deal(address(tester), 10_000e18);
         baseToken = ERC20Mintable(address(ETH));
-        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        IHyperdrive.PoolDeployConfig memory config = testConfig(0.05e18);
         config.baseToken = IERC20(address(ETH));
         deploy(deployer, config);
     }

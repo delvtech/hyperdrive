@@ -124,7 +124,7 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
 
     /// @notice Instantiates Hyperdrive's storage.
     /// @param _config The configuration of the Hyperdrive pool.
-    constructor(IHyperdrive.PoolConfig memory _config) {
+    constructor(IHyperdrive.PoolDeployConfig memory _config) {
         // Initialize the base token address.
         _baseToken = _config.baseToken;
 
@@ -157,7 +157,7 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
         }
         _positionDuration = _config.positionDuration;
         _timeStretch = _config.timeStretch;
-        _initialSharePrice = _config.initialSharePrice;
+        _initialSharePrice = _pricePerShare();
         _governance = _config.governance;
         _feeCollector = _config.feeCollector;
 
@@ -177,4 +177,13 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
         _linkerFactory = _config.linkerFactory;
         _linkerCodeHash = _config.linkerCodeHash;
     }
+
+    /// @dev Loads the share price from the yield source.
+    /// @return sharePrice The current share price.
+    function _pricePerShare()
+        internal
+        view
+        virtual
+        returns (uint256 sharePrice);
+
 }

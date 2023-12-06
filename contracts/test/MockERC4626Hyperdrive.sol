@@ -7,7 +7,7 @@ import { ERC4626Hyperdrive, IHyperdrive, IERC4626 } from "contracts/src/instance
 // so that we can test the `ERC4626Hyperdrive` contract in isolation.
 contract MockERC4626Hyperdrive is ERC4626Hyperdrive {
     constructor(
-        IHyperdrive.PoolConfig memory _config,
+        IHyperdrive.PoolDeployConfig memory _config,
         address _target0,
         address _target1,
         IERC4626 _pool,

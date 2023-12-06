@@ -482,7 +482,7 @@ contract CloseShortTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
 
         // 1. Deploy a pool with zero fees
-        IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+        IHyperdrive.PoolDeployConfig memory config = testConfig(fixedRate);
         deploy(address(deployer), config);
         // Initialize the pool with a large amount of capital.
         initialize(alice, fixedRate, contribution);
@@ -573,7 +573,7 @@ contract CloseShortTest is HyperdriveTest {
         uint256 maturityTime;
 
         // Initialize a pool with no flat fee as a baseline
-        IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+        IHyperdrive.PoolDeployConfig memory config = testConfig(fixedRate);
         config.fees = IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 });
         deploy(address(deployer), config);
         initialize(alice, fixedRate, contribution);

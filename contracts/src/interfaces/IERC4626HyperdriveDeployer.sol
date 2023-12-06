@@ -5,7 +5,7 @@ import { IHyperdrive } from "./IHyperdrive.sol";
 
 interface IERC4626HyperdriveDeployer {
     function deploy(
-        IHyperdrive.PoolConfig memory _config,
+        IHyperdrive.PoolDeployConfig memory _config,
         bytes memory _extraData,
         address target0,
         address target1

@@ -79,7 +79,6 @@ contract FeeTest is HyperdriveTest {
 
     // This test demonstrates that the governance fees from flat fee are NOT included in the shareReserves.
     function test_flat_gov_fee_close_long() public {
-        uint256 initialSharePrice = 1e18;
         int256 variableInterest = 0.0e18;
         uint256 curveFee = 0e18; // 0%
         uint256 flatFee = 0.001e18; // 0.1%
@@ -95,7 +94,6 @@ contract FeeTest is HyperdriveTest {
             deploy(
                 alice,
                 apr,
-                initialSharePrice,
                 curveFee,
                 flatFee,
                 governanceFee
@@ -141,7 +139,7 @@ contract FeeTest is HyperdriveTest {
         uint256 shareReservesFlatFee = 0;
         {
             uint256 apr = 0.01e18;
-            deploy(alice, apr, initialSharePrice, curveFee, flatFee, 0);
+            deploy(alice, apr, curveFee, flatFee, 0);
             uint256 contribution = 500_000_000e18;
             initialize(alice, apr, contribution);
 
@@ -185,7 +183,6 @@ contract FeeTest is HyperdriveTest {
 
     // This test demonstrates that the governance fees from curve fee are NOT included in the shareReserves.
     function test_curve_gov_fee_close_long() public {
-        uint256 initialSharePrice = 1e18;
         uint256 curveFee = 0.1e18; // 10%
         uint256 flatFee = 0e18; // 0%
         uint256 governanceFee = 1e18; // 100%
@@ -202,7 +199,6 @@ contract FeeTest is HyperdriveTest {
             deploy(
                 alice,
                 apr,
-                initialSharePrice,
                 curveFee,
                 flatFee,
                 governanceFee
@@ -268,7 +264,7 @@ contract FeeTest is HyperdriveTest {
         uint256 shareReservesCurveFee = 0;
         {
             uint256 apr = 0.01e18;
-            deploy(alice, apr, initialSharePrice, curveFee, flatFee, 0);
+            deploy(alice, apr, curveFee, flatFee, 0);
             uint256 contribution = 500_000_000e18;
             initialize(alice, apr, contribution);
 

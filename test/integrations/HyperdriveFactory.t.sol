@@ -108,7 +108,7 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
     uint256 constant APR = 0.01e18; // 1% apr
     uint256 constant CONTRIBUTION = 2_500e18;
 
-    IHyperdrive.PoolConfig config;
+    IHyperdrive.PoolDeployConfig config;
 
     function setUp() public virtual override __mainnet_fork(16_685_972) {
         alice = createUser("alice");
@@ -145,9 +145,8 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
         );
 
         // Initialize this test's pool config.
-        config = IHyperdrive.PoolConfig({
+        config = IHyperdrive.PoolDeployConfig({
             baseToken: dai,
-            initialSharePrice: 1e18,
             minimumShareReserves: 1e18,
             minimumTransactionAmount: 1e15,
             precisionThreshold: 1e14,

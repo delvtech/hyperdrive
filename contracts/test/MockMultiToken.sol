@@ -48,11 +48,10 @@ contract MockMultiToken is HyperdriveMultiToken, MockHyperdriveBase {
         address _linkerFactory
     )
         HyperdriveStorage(
-            IHyperdrive.PoolConfig({
+            IHyperdrive.PoolDeployConfig({
                 baseToken: IERC20(address(0)),
                 linkerFactory: _linkerFactory,
                 linkerCodeHash: _linkerCodeHash,
-                initialSharePrice: 1e18,
                 minimumShareReserves: 1e18,
                 minimumTransactionAmount: 1e15,
                 precisionThreshold: 1e14,
@@ -68,11 +67,10 @@ contract MockMultiToken is HyperdriveMultiToken, MockHyperdriveBase {
         // Deploy the target0 contract.
         target0 = address(
             new MockHyperdriveTarget0(
-                IHyperdrive.PoolConfig({
+                IHyperdrive.PoolDeployConfig({
                     baseToken: IERC20(address(0)),
                     linkerFactory: _linkerFactory,
                     linkerCodeHash: _linkerCodeHash,
-                    initialSharePrice: 1e18,
                     minimumShareReserves: 1e18,
                     minimumTransactionAmount: 1e15,
                     precisionThreshold: 1e14,

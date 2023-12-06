@@ -134,7 +134,7 @@ contract SandwichTest is HyperdriveTest {
         uint256 tradeAmount,
         uint256 sandwichAmount
     ) external {
-        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        IHyperdrive.PoolDeployConfig memory config = testConfig(0.05e18);
         deploy(alice, config);
         // FIXME: We can calculate the max rate that a given instantiation of
         // YieldSpace can support. We should use this in tests like this as it

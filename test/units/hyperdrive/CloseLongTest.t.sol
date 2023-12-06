@@ -684,7 +684,7 @@ contract CloseLongTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
 
         // 1. Deploy a pool with zero fees
-        IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+        IHyperdrive.PoolDeployConfig memory config = testConfig(fixedRate);
         deploy(address(deployer), config);
         // Initialize the pool with a large amount of capital.
         initialize(alice, fixedRate, contribution);

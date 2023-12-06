@@ -24,7 +24,7 @@ contract ERC4626Target1 is HyperdriveTarget1, ERC4626Base {
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param __pool The ERC4626 pool.
     constructor(
-        IHyperdrive.PoolConfig memory _config,
+        IHyperdrive.PoolDeployConfig memory _config,
         IERC4626 __pool
     ) HyperdriveTarget1(_config) ERC4626Base(__pool) {}
 

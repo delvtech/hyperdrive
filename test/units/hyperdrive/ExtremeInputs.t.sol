@@ -173,7 +173,7 @@ contract ExtremeInputs is HyperdriveTest {
         uint256 fixedRate = 0.02e18;
 
         // Deploy the pool with a small minimum share reserves.
-        IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+        IHyperdrive.PoolDeployConfig memory config = testConfig(fixedRate);
         config.minimumShareReserves = 1e6;
         config.minimumTransactionAmount = 0.01e6;
         deploy(deployer, config);
@@ -359,7 +359,7 @@ contract ExtremeInputs is HyperdriveTest {
                 1_000e6,
                 100_000_000_000e6
             );
-            IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+            IHyperdrive.PoolDeployConfig memory config = testConfig(fixedRate);
             config.minimumShareReserves = minimumShareReserves;
             config.minimumTransactionAmount = minimumTransactionAmount;
             deploy(deployer, config);
@@ -409,7 +409,7 @@ contract ExtremeInputs is HyperdriveTest {
                 1e18,
                 200_000_000e18
             );
-            IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+            IHyperdrive.PoolDeployConfig memory config = testConfig(fixedRate);
             config.minimumShareReserves = minimumShareReserves;
             config.minimumTransactionAmount = minimumTransactionAmount;
             deploy(deployer, config);
@@ -462,7 +462,7 @@ contract ExtremeInputs is HyperdriveTest {
                 1_000e18,
                 100_000_000_000e18
             );
-            IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+            IHyperdrive.PoolDeployConfig memory config = testConfig(fixedRate);
             config.minimumShareReserves = minimumShareReserves;
             config.minimumTransactionAmount = minimumTransactionAmount;
             deploy(deployer, config);
@@ -518,7 +518,7 @@ contract ExtremeInputs is HyperdriveTest {
         // `z_1 > z_0` and `y_0` is very large.
         {
             // Deploy the pool with the specified minimum share reserves.
-            IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+            IHyperdrive.PoolDeployConfig memory config = testConfig(fixedRate);
             config.minimumShareReserves = minimumShareReserves;
             config.minimumTransactionAmount = minimumTransactionAmount;
             deploy(deployer, config);
@@ -552,7 +552,7 @@ contract ExtremeInputs is HyperdriveTest {
         // edge case where `z_1 < z_0` and `y_0` is very small.
         {
             // Deploy the pool with the specified minimum share reserves.
-            IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+            IHyperdrive.PoolDeployConfig memory config = testConfig(fixedRate);
             config.minimumShareReserves = minimumShareReserves;
             config.minimumTransactionAmount = minimumTransactionAmount;
             deploy(deployer, config);
@@ -620,7 +620,7 @@ contract ExtremeInputs is HyperdriveTest {
         // edge case where `z_1 > z_0` and `y_0` is very small.
         {
             // Deploy the pool with the specified minimum share reserves.
-            IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+            IHyperdrive.PoolDeployConfig memory config = testConfig(fixedRate);
             config.minimumShareReserves = minimumShareReserves;
             config.minimumTransactionAmount = minimumTransactionAmount;
             deploy(deployer, config);
@@ -700,7 +700,7 @@ contract ExtremeInputs is HyperdriveTest {
         // This tests the edge case where `z_1 > z_0` and `y_0` is very large.
         {
             // Deploy the pool with the specified minimum share reserves.
-            IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+            IHyperdrive.PoolDeployConfig memory config = testConfig(fixedRate);
             config.minimumShareReserves = minimumShareReserves;
             config.minimumTransactionAmount = minimumTransactionAmount;
             deploy(deployer, config);
@@ -755,7 +755,7 @@ contract ExtremeInputs is HyperdriveTest {
         // edge case where `z_1 < z_0` and `y_0` is very large.
         {
             // Deploy the pool with the specified minimum share reserves.
-            IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+            IHyperdrive.PoolDeployConfig memory config = testConfig(fixedRate);
             config.minimumShareReserves = minimumShareReserves;
             config.minimumTransactionAmount = minimumTransactionAmount;
             deploy(deployer, config);
@@ -823,7 +823,7 @@ contract ExtremeInputs is HyperdriveTest {
         // edge case where `z_1 > z_0` and `y_0` is very large.
         {
             // Deploy the pool with the specified minimum share reserves.
-            IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+            IHyperdrive.PoolDeployConfig memory config = testConfig(fixedRate);
             config.minimumShareReserves = minimumShareReserves;
             config.minimumTransactionAmount = minimumTransactionAmount;
             deploy(deployer, config);

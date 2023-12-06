@@ -27,11 +27,10 @@ contract DummyProvider {
 contract DummyHyperdrive is Hyperdrive, MockHyperdriveBase {
     constructor()
         Hyperdrive(
-            IHyperdrive.PoolConfig({
+            IHyperdrive.PoolDeployConfig({
                 baseToken: IERC20(address(0)),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0),
-                initialSharePrice: 1e18,
                 minimumShareReserves: 1e18,
                 minimumTransactionAmount: 1e15,
                 precisionThreshold: 1e14,

@@ -31,7 +31,7 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
     ///        programs while also preventing edge cases where `sweep` is used
     ///        to access the pool or base tokens.
     constructor(
-        IHyperdrive.PoolConfig memory _config,
+        IHyperdrive.PoolDeployConfig memory _config,
         address _target0,
         address _target1,
         IERC4626 __pool,
@@ -44,9 +44,6 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
         // price for USDC if the price per share changes based on size of
         // deposit then this line will read an incorrect and possibly dangerous
         // price.
-        if (_config.initialSharePrice != _pricePerShare()) {
-            revert IHyperdrive.InvalidInitialSharePrice();
-        }
         if (address(_config.baseToken) != IERC4626(_pool).asset()) {
             revert IHyperdrive.InvalidBaseToken();
         }

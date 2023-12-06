@@ -37,7 +37,7 @@ contract HyperdriveFactory {
     event Deployed(
         uint256 indexed version,
         address hyperdrive,
-        IHyperdrive.PoolConfig config,
+        IHyperdrive.PoolDeployConfig config,
         bytes extraData
     );
 
@@ -259,7 +259,7 @@ contract HyperdriveFactory {
     /// @return The hyperdrive address deployed.
     function deployAndInitialize(
         address _hyperdriveDeployer,
-        IHyperdrive.PoolConfig memory _config,
+        IHyperdrive.PoolDeployConfig memory _config,
         bytes memory _extraData,
         uint256 _contribution,
         uint256 _apr,

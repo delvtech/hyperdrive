@@ -73,9 +73,8 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         );
 
         // Config changes required to support ERC4626 with the correct initial Share Price
-        IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
+        IHyperdrive.PoolDeployConfig memory config = testConfig(FIXED_RATE);
         config.baseToken = underlyingToken;
-        config.initialSharePrice = token.convertToAssets(ONE);
         uint256 contribution = 7_500e18;
         vm.stopPrank();
         vm.startPrank(alice);
@@ -113,11 +112,10 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     function test_deployAndInitialize() external {
         vm.startPrank(alice);
 
-        IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
+        IHyperdrive.PoolDeployConfig memory config = testConfig(FIXED_RATE);
         // Required to support ERC4626, since the test config initialSharePrice is wrong
         config.baseToken = underlyingToken;
         // Designed to ensure compatibility ../../contracts/src/instances/ERC4626Hyperdrive.sol#L122C1-L122C1
-        config.initialSharePrice = token.convertToAssets(ONE);
         config.minimumTransactionAmount = hyperdrive
             .getPoolConfig()
             .minimumTransactionAmount;

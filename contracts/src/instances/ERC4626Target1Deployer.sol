@@ -21,7 +21,7 @@ contract ERC4626Target1Deployer is IHyperdriveTargetDeployer {
     /// @param _extraData The extra data that contains the pool and sweep targets.
     /// @return The address of the newly deployed ERC4626Hyperdrive Instance
     function deploy(
-        IHyperdrive.PoolConfig memory _config,
+        IHyperdrive.PoolDeployConfig memory _config,
         bytes memory _extraData
     ) external override returns (address) {
         (address pool, ) = abi.decode(_extraData, (address, address[]));

@@ -14,19 +14,15 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
     using Lib for *;
 
     function test_negative_interest_short_immediate_open_close_fees_fuzz(
-        uint256 initialSharePrice,
         int256 variableInterest
     ) external {
         // Fuzz inputs
-        // initialSharePrice [0.5,10]
         // variableInterest [-50,0]
-        initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 10e18);
         variableInterest = -variableInterest.normalizeToRange(0, 0.5e18);
         uint256 curveFee = 0.1e18;
         uint256 flatFee = 0;
         uint256 governanceFee = 1e18;
         test_negative_interest_short_immediate_open_close_fees(
-            initialSharePrice,
             variableInterest,
             curveFee,
             flatFee,
@@ -36,18 +32,15 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
 
     function test_negative_interest_short_immediate_open_close_fees() external {
         // This tests the following scenario:
-        // - initial_share_price > 1
         // - negative interest causes the share price to go down
         // - a short is opened and immediately closed
         // - set the curve fee and governance fee to 100% to make the test easier to verify
         {
-            uint256 initialSharePrice = 1.5e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0.1e18;
             uint256 flatFee = 0;
             uint256 governanceFee = 1e18;
             test_negative_interest_short_immediate_open_close_fees(
-                initialSharePrice,
                 variableInterest,
                 curveFee,
                 flatFee,
@@ -56,18 +49,15 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         }
 
         // This tests the following scenario:
-        // - initial_share_price = 1
         // - negative interest causes the share price to go down
         // - a short is opened and immediately closed
         // - set the curve fee and governance fee to 100% to make the test easier to verify
         {
-            uint256 initialSharePrice = 1e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0.1e18;
             uint256 flatFee = 0;
             uint256 governanceFee = 1e18;
             test_negative_interest_short_immediate_open_close_fees(
-                initialSharePrice,
                 variableInterest,
                 curveFee,
                 flatFee,
@@ -76,18 +66,15 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         }
 
         // This tests the following scenario:
-        // - initial_share_price < 1
         // - negative interest causes the share price to go down
         // - a short is opened and immediately closed
         // - set the curve fee and governance fee to 100% to make the test easier to verify
         {
-            uint256 initialSharePrice = 0.95e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0.1e18;
             uint256 flatFee = 0;
             uint256 governanceFee = 1e18;
             test_negative_interest_short_immediate_open_close_fees(
-                initialSharePrice,
                 variableInterest,
                 curveFee,
                 flatFee,
@@ -97,7 +84,6 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
     }
 
     function test_negative_interest_short_immediate_open_close_fees(
-        uint256 initialSharePrice,
         int256 variableInterest,
         uint256 curveFee,
         uint256 flatFee,
@@ -105,7 +91,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
     ) internal {
         // Initialize the market
         uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, curveFee, flatFee, governanceFee);
+        deploy(alice, apr, curveFee, flatFee, governanceFee);
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
@@ -183,14 +169,11 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
     }
 
     function test_negative_interest_short_full_term_fees_fuzz(
-        uint256 initialSharePrice,
         int256 preTradeVariableInterest,
         int256 variableInterest
     ) external {
         // Fuzz inputs
-        // initialSharePrice [0.5,10]
         // variableInterest [-50,0]
-        initialSharePrice = initialSharePrice.normalizeToRange(.5e18, 10e18);
         preTradeVariableInterest = -preTradeVariableInterest.normalizeToRange(
             0,
             .5e18
@@ -200,7 +183,6 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         uint256 flatFee = 0.1e18;
         uint256 governanceFee = 1e18;
         test_negative_interest_short_full_term_fees(
-            initialSharePrice,
             preTradeVariableInterest,
             variableInterest,
             curveFee,
@@ -211,21 +193,18 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
 
     function test_negative_interest_short_full_term_fees() external {
         // This tests the following scenario:
-        // - initial_share_price > 1
         // - negative interest causes the share price to go down
         // - a short is opened
         // - negative interest accrues over the full term
         // - short is closed
         // - set the flat fee to 10% and governance fee to 100% to make the test easier to verify
         {
-            uint256 initialSharePrice = 1.5e18;
             int256 preTradeVariableInterest = -0.05e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0e18;
             uint256 flatFee = 0.1e18;
             uint256 governanceFee = 1e18;
             test_negative_interest_short_full_term_fees(
-                initialSharePrice,
                 preTradeVariableInterest,
                 variableInterest,
                 curveFee,
@@ -242,14 +221,12 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         // - short is closed
         // - set the flat fee to 10% and governance fee to 100% to make the test easier to verify
         {
-            uint256 initialSharePrice = 1e18;
             int256 preTradeVariableInterest = -0.05e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0e18;
             uint256 flatFee = 0.1e18;
             uint256 governanceFee = 1e18;
             test_negative_interest_short_full_term_fees(
-                initialSharePrice,
                 preTradeVariableInterest,
                 variableInterest,
                 curveFee,
@@ -259,21 +236,18 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         }
 
         // This tests the following scenario:
-        // - initial_share_price < 1
         // - negative interest causes the share price to go down
         // - a short is opened
         // - negative interest accrues over the full term
         // - short is closed
         // - set the flat fee to 10% and governance fee to 100% to make the test easier to verify
         {
-            uint256 initialSharePrice = 0.95e18;
             int256 preTradeVariableInterest = -0.05e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0e18;
             uint256 flatFee = 0.1e18;
             uint256 governanceFee = 1e18;
             test_negative_interest_short_full_term_fees(
-                initialSharePrice,
                 preTradeVariableInterest,
                 variableInterest,
                 curveFee,
@@ -284,7 +258,6 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
     }
 
     function test_negative_interest_short_full_term_fees(
-        uint256 initialSharePrice,
         int256 preTradeVariableInterest,
         int256 variableInterest,
         uint256 curveFee,
@@ -293,7 +266,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
     ) internal {
         // Initialize the market
         uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, curveFee, flatFee, governanceFee);
+        deploy(alice, apr, curveFee, flatFee, governanceFee);
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
@@ -377,14 +350,11 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
     }
 
     function test_negative_interest_short_half_term_fees_fuzz(
-        uint256 initialSharePrice,
         int256 preTradeVariableInterest,
         int256 variableInterest
     ) external {
         // Fuzz inputs
-        // initialSharePrice [0.5,10]
         // variableInterest [-50,0]
-        initialSharePrice = initialSharePrice.normalizeToRange(.5e18, 10e18);
         preTradeVariableInterest = -preTradeVariableInterest.normalizeToRange(
             0,
             .5e18
@@ -394,7 +364,6 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         uint256 flatFee = 0.1e18;
         uint256 governanceFee = 1e18;
         test_negative_interest_short_half_term_fees(
-            initialSharePrice,
             preTradeVariableInterest,
             variableInterest,
             curveFee,
@@ -405,7 +374,6 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
 
     function test_negative_interest_short_half_term_fees() external {
         // This tests the following scenario:
-        // - initial_share_price > 1
         // - negative interest causes the share price to go down
         // - a short is opened
         // - negative interest accrues over the half the term
@@ -413,14 +381,12 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         // - set the flat fee to 10%, curve fee to 10% and governance fee to 100% to make the test easier to verify
         uint256 snapshotId = vm.snapshot();
         {
-            uint256 initialSharePrice = 1.5e18;
             int256 preTradeVariableInterest = -0.05e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0.1e18;
             uint256 flatFee = 0.1e18;
             uint256 governanceFee = 1e18;
             test_negative_interest_short_half_term_fees(
-                initialSharePrice,
                 preTradeVariableInterest,
                 variableInterest,
                 curveFee,
@@ -431,7 +397,6 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         vm.revertTo(snapshotId);
 
         // This tests the following scenario:
-        // - initial_share_price = 1
         // - negative interest causes the share price to go down
         // - a short is opened
         // - negative interest accrues over the half the term
@@ -439,14 +404,12 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         // - set the flat fee to 10%, curve fee to 10% and governance fee to 100% to make the test easier to verify
         snapshotId = vm.snapshot();
         {
-            uint256 initialSharePrice = 1e18;
             int256 preTradeVariableInterest = -0.05e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0.1e18;
             uint256 flatFee = 0.1e18;
             uint256 governanceFee = 1e18;
             test_negative_interest_short_half_term_fees(
-                initialSharePrice,
                 preTradeVariableInterest,
                 variableInterest,
                 curveFee,
@@ -465,14 +428,12 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         // - set the flat fee to 10%, curve fee to 10% and governance fee to 100% to make the test easier to verify
         snapshotId = vm.snapshot();
         {
-            uint256 initialSharePrice = 0.95e18;
             int256 preTradeVariableInterest = -0.05e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0.1e18;
             uint256 flatFee = 0.1e18;
             uint256 governanceFee = 1e18;
             test_negative_interest_short_half_term_fees(
-                initialSharePrice,
                 preTradeVariableInterest,
                 variableInterest,
                 curveFee,
@@ -484,7 +445,6 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
     }
 
     function test_negative_interest_short_half_term_fees(
-        uint256 initialSharePrice,
         int256 preTradeVariableInterest,
         int256 variableInterest,
         uint256 curveFee,
@@ -493,7 +453,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
     ) internal {
         // Initialize the market
         uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, curveFee, flatFee, governanceFee);
+        deploy(alice, apr, curveFee, flatFee, governanceFee);
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 

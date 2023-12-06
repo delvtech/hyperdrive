@@ -71,13 +71,11 @@ contract InitializeTest is HyperdriveTest {
     }
 
     function test_initialize_success(
-        uint256 initialSharePrice,
         uint256 checkpointDuration,
         uint256 checkpointsPerTerm,
         uint256 targetRate,
         uint256 contribution
     ) external {
-        initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 5e18);
         checkpointDuration = checkpointDuration.normalizeToRange(1, 24);
         checkpointDuration *= 1 hours;
         checkpointsPerTerm = checkpointsPerTerm.normalizeToRange(7, 2 * 365);
@@ -85,8 +83,7 @@ contract InitializeTest is HyperdriveTest {
         contribution = contribution.normalizeToRange(1_000e18, 100_000_000e18);
 
         // Deploy a Hyperdrive pool with the given parameters.
-        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
-        config.initialSharePrice = initialSharePrice;
+        IHyperdrive.PoolDeployConfig memory config = testConfig(0.05e18);
         config.checkpointDuration = checkpointDuration;
         config.positionDuration = checkpointDuration * checkpointsPerTerm;
         deploy(alice, config);
