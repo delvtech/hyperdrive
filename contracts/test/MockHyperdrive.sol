@@ -160,7 +160,7 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
     using FixedPointMath for uint256;
 
     constructor(
-        IHyperdrive.PoolConfig memory _config
+        IHyperdrive.PoolDeployConfig memory _config
     )
         Hyperdrive(
             _config,
@@ -309,7 +309,7 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
 
 contract MockHyperdriveTarget0 is HyperdriveTarget0, MockHyperdriveBase {
     constructor(
-        IHyperdrive.PoolConfig memory _config
+        IHyperdrive.PoolDeployConfig memory _config
     ) HyperdriveTarget0(_config) {}
 
     /// Mocks ///
@@ -321,6 +321,6 @@ contract MockHyperdriveTarget0 is HyperdriveTarget0, MockHyperdriveBase {
 
 contract MockHyperdriveTarget1 is HyperdriveTarget1, MockHyperdriveBase {
     constructor(
-        IHyperdrive.PoolConfig memory _config
+        IHyperdrive.PoolDeployConfig memory _config
     ) HyperdriveTarget1(_config) {}
 }

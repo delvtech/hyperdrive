@@ -296,7 +296,7 @@ contract OpenLongTest is HyperdriveTest {
 
         // Deploy the pool with a minimum share reserves that is significantly
         // smaller than the contribution.
-        IHyperdrive.PoolConfig memory config = testConfig(apr);
+        IHyperdrive.PoolDeployConfig memory config = testConfig(apr);
         config.minimumShareReserves = 1e6;
         config.minimumTransactionAmount = 1e6;
         deploy(deployer, config);

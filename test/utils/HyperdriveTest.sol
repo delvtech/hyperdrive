@@ -39,7 +39,7 @@ contract HyperdriveTest is BaseTest {
         baseToken = new ERC20Mintable("Base", "BASE", 18, address(0), false);
 
         // Instantiate Hyperdrive.
-        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        IHyperdrive.PoolDeployConfig memory config = testConfig(0.05e18);
         deploy(alice, config);
         vm.stopPrank();
         vm.startPrank(governance);
@@ -56,7 +56,7 @@ contract HyperdriveTest is BaseTest {
 
     function deploy(
         address deployer,
-        IHyperdrive.PoolConfig memory _config
+        IHyperdrive.PoolDeployConfig memory _config
     ) internal {
         vm.stopPrank();
         vm.startPrank(deployer);
@@ -70,26 +70,7 @@ contract HyperdriveTest is BaseTest {
         uint256 flatFee,
         uint256 governanceFee
     ) internal {
-        deploy(
-            deployer,
-            apr,
-            INITIAL_SHARE_PRICE,
-            curveFee,
-            flatFee,
-            governanceFee
-        );
-    }
-
-    function deploy(
-        address deployer,
-        uint256 apr,
-        uint256 initialSharePrice,
-        uint256 curveFee,
-        uint256 flatFee,
-        uint256 governanceFee
-    ) internal {
-        IHyperdrive.PoolConfig memory config = testConfig(apr);
-        config.initialSharePrice = initialSharePrice;
+        IHyperdrive.PoolDeployConfig memory config = testConfig(apr);
         config.fees.curve = curveFee;
         config.fees.flat = flatFee;
         config.fees.governance = governanceFee;
@@ -98,18 +79,17 @@ contract HyperdriveTest is BaseTest {
 
     function testConfig(
         uint256 fixedRate
-    ) internal view returns (IHyperdrive.PoolConfig memory) {
+    ) internal view returns (IHyperdrive.PoolDeployConfig memory) {
         IHyperdrive.Fees memory fees = IHyperdrive.Fees({
             curve: 0,
             flat: 0,
             governance: 0
         });
         return
-            IHyperdrive.PoolConfig({
+            IHyperdrive.PoolDeployConfig({
                 baseToken: IERC20(address(baseToken)),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0),
-                initialSharePrice: ONE,
                 minimumShareReserves: MINIMUM_SHARE_RESERVES,
                 minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
                 positionDuration: POSITION_DURATION,

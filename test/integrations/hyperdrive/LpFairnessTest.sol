@@ -16,7 +16,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Deploy Hyperdrive with a small minimum share reserves so that it is
         // negligible relative to our error tolerances.
-        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        IHyperdrive.PoolDeployConfig memory config = testConfig(0.05e18);
         config.minimumShareReserves = 1e6;
         deploy(deployer, config);
     }

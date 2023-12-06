@@ -150,14 +150,6 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         IHyperdrive.Options calldata _options
     ) internal virtual returns (uint256 amountWithdrawn);
 
-    /// @dev Loads the share price from the yield source.
-    /// @return sharePrice The current share price.
-    function _pricePerShare()
-        internal
-        view
-        virtual
-        returns (uint256 sharePrice);
-
     /// Pause ///
 
     /// @dev Blocks a function execution if the contract is paused.
