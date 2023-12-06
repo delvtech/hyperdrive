@@ -1413,19 +1413,34 @@ library HyperdriveUtils {
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         LPMath.PresentValueParams memory presentValueParams = hyperdrive
             .getPresentValueParams();
+        uint256 startingPresentValue = LPMath.calculatePresentValue(
+            presentValueParams
+        );
+        int256 netCurveTrade = int256(
+            presentValueParams.longsOutstanding.mulDown(
+                presentValueParams.longAverageTimeRemaining
+            )
+        ) -
+            int256(
+                presentValueParams.shortsOutstanding.mulDown(
+                    presentValueParams.shortAverageTimeRemaining
+                )
+            );
         return
             LPMath.DistributeExcessIdleParams({
                 presentValueParams: presentValueParams,
-                originalShareReserves: presentValueParams.shareReserves,
-                originalShareAdjustment: presentValueParams.shareAdjustment,
-                originalBondReserves: presentValueParams.bondReserves,
+                startingPresentValue: startingPresentValue,
                 activeLpTotalSupply: hyperdrive.totalSupply(
                     AssetId._LP_ASSET_ID
                 ),
                 withdrawalSharesTotalSupply: hyperdrive.totalSupply(
                     AssetId._WITHDRAWAL_SHARE_ASSET_ID
                 ) - poolInfo.withdrawalSharesReadyToWithdraw,
-                idle: uint256(hyperdrive.solvency())
+                idle: uint256(hyperdrive.solvency()),
+                netCurveTrade: netCurveTrade,
+                originalShareReserves: presentValueParams.shareReserves,
+                originalShareAdjustment: presentValueParams.shareAdjustment,
+                originalBondReserves: presentValueParams.bondReserves
             });
     }
 

@@ -649,27 +649,42 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
+            LPMath.PresentValueParams memory presentValueParams = LPMath
+                .PresentValueParams({
+                    shareReserves: shareReserves,
+                    shareAdjustment: shareAdjustment,
+                    bondReserves: bondReserves,
+                    sharePrice: 2e18,
+                    initialSharePrice: initialSharePrice,
+                    minimumShareReserves: 1e5,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 0,
+                    longAverageTimeRemaining: 0,
+                    shortsOutstanding: 0,
+                    shortAverageTimeRemaining: 0
+                });
             LPMath.DistributeExcessIdleParams memory params = LPMath
                 .DistributeExcessIdleParams({
-                    presentValueParams: LPMath.PresentValueParams({
-                        shareReserves: shareReserves,
-                        shareAdjustment: shareAdjustment,
-                        bondReserves: bondReserves,
-                        sharePrice: 2e18,
-                        initialSharePrice: initialSharePrice,
-                        minimumShareReserves: 1e5,
-                        timeStretch: timeStretch,
-                        longsOutstanding: 0,
-                        longAverageTimeRemaining: 0,
-                        shortsOutstanding: 0,
-                        shortAverageTimeRemaining: 0
-                    }),
-                    originalShareReserves: shareReserves,
-                    originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
+                    presentValueParams: presentValueParams,
+                    startingPresentValue: LPMath.calculatePresentValue(
+                        presentValueParams
+                    ),
                     activeLpTotalSupply: 0, // unused
                     withdrawalSharesTotalSupply: 0, // unused
-                    idle: 10_000_000e18
+                    idle: 10_000_000e18, // this is a fictional value for testing
+                    netCurveTrade: int256(
+                        presentValueParams.longsOutstanding.mulDown(
+                            presentValueParams.longAverageTimeRemaining
+                        )
+                    ) -
+                        int256(
+                            presentValueParams.shortsOutstanding.mulDown(
+                                presentValueParams.shortAverageTimeRemaining
+                            )
+                        ),
+                    originalShareReserves: shareReserves,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves
                 });
             uint256 maxShareReservesDelta = lpMath
                 .calculateMaxShareReservesDelta(
@@ -677,19 +692,7 @@ contract LPMathTest is HyperdriveTest {
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
-                    ),
-                    int256(
-                        params.presentValueParams.longsOutstanding.mulDown(
-                            params.presentValueParams.longAverageTimeRemaining
-                        )
-                    ) -
-                        int256(
-                            params.presentValueParams.shortsOutstanding.mulDown(
-                                params
-                                    .presentValueParams
-                                    .shortAverageTimeRemaining
-                            )
-                        )
+                    )
                 );
 
             // The max share reserves delta is just the idle.
@@ -710,27 +713,42 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
+            LPMath.PresentValueParams memory presentValueParams = LPMath
+                .PresentValueParams({
+                    shareReserves: shareReserves,
+                    shareAdjustment: shareAdjustment,
+                    bondReserves: bondReserves,
+                    sharePrice: 2e18,
+                    initialSharePrice: initialSharePrice,
+                    minimumShareReserves: 1e5,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 10_000_000e18,
+                    longAverageTimeRemaining: 0.5e18,
+                    shortsOutstanding: 10_000_000e18,
+                    shortAverageTimeRemaining: 0.5e18
+                });
             LPMath.DistributeExcessIdleParams memory params = LPMath
                 .DistributeExcessIdleParams({
-                    presentValueParams: LPMath.PresentValueParams({
-                        shareReserves: shareReserves,
-                        shareAdjustment: shareAdjustment,
-                        bondReserves: bondReserves,
-                        sharePrice: 2e18,
-                        initialSharePrice: initialSharePrice,
-                        minimumShareReserves: 1e5,
-                        timeStretch: timeStretch,
-                        longsOutstanding: 10_000_000e18,
-                        longAverageTimeRemaining: 0.5e18,
-                        shortsOutstanding: 10_000_000e18,
-                        shortAverageTimeRemaining: 0.5e18
-                    }),
-                    originalShareReserves: shareReserves,
-                    originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
+                    presentValueParams: presentValueParams,
+                    startingPresentValue: LPMath.calculatePresentValue(
+                        presentValueParams
+                    ),
                     activeLpTotalSupply: 0, // unused
                     withdrawalSharesTotalSupply: 0, // unused
-                    idle: 10_000_000e18 // this is a fictional value for testing
+                    idle: 10_000_000e18, // this is a fictional value for testing
+                    netCurveTrade: int256(
+                        presentValueParams.longsOutstanding.mulDown(
+                            presentValueParams.longAverageTimeRemaining
+                        )
+                    ) -
+                        int256(
+                            presentValueParams.shortsOutstanding.mulDown(
+                                presentValueParams.shortAverageTimeRemaining
+                            )
+                        ),
+                    originalShareReserves: shareReserves,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves
                 });
             uint256 maxShareReservesDelta = lpMath
                 .calculateMaxShareReservesDelta(
@@ -738,19 +756,7 @@ contract LPMathTest is HyperdriveTest {
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
-                    ),
-                    int256(
-                        params.presentValueParams.longsOutstanding.mulDown(
-                            params.presentValueParams.longAverageTimeRemaining
-                        )
-                    ) -
-                        int256(
-                            params.presentValueParams.shortsOutstanding.mulDown(
-                                params
-                                    .presentValueParams
-                                    .shortAverageTimeRemaining
-                            )
-                        )
+                    )
                 );
 
             // The max share reserves delta is just the idle.
@@ -771,27 +777,42 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
+            LPMath.PresentValueParams memory presentValueParams = LPMath
+                .PresentValueParams({
+                    shareReserves: shareReserves,
+                    shareAdjustment: shareAdjustment,
+                    bondReserves: bondReserves,
+                    sharePrice: 2e18,
+                    initialSharePrice: initialSharePrice,
+                    minimumShareReserves: 1e5,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 10_000_000e18,
+                    longAverageTimeRemaining: 0.5e18,
+                    shortsOutstanding: 1_000_000e18,
+                    shortAverageTimeRemaining: 0.5e18
+                });
             LPMath.DistributeExcessIdleParams memory params = LPMath
                 .DistributeExcessIdleParams({
-                    presentValueParams: LPMath.PresentValueParams({
-                        shareReserves: shareReserves,
-                        shareAdjustment: shareAdjustment,
-                        bondReserves: bondReserves,
-                        sharePrice: 2e18,
-                        initialSharePrice: initialSharePrice,
-                        minimumShareReserves: 1e5,
-                        timeStretch: timeStretch,
-                        longsOutstanding: 10_000_000e18,
-                        longAverageTimeRemaining: 0.5e18,
-                        shortsOutstanding: 1_000_000e18,
-                        shortAverageTimeRemaining: 0.5e18
-                    }),
-                    originalShareReserves: shareReserves,
-                    originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
+                    presentValueParams: presentValueParams,
+                    startingPresentValue: LPMath.calculatePresentValue(
+                        presentValueParams
+                    ),
                     activeLpTotalSupply: 0, // unused
                     withdrawalSharesTotalSupply: 0, // unused
-                    idle: 10_000_000e18 // this is a fictional value for testing
+                    idle: 10_000_000e18, // this is a fictional value for testing
+                    netCurveTrade: int256(
+                        presentValueParams.longsOutstanding.mulDown(
+                            presentValueParams.longAverageTimeRemaining
+                        )
+                    ) -
+                        int256(
+                            presentValueParams.shortsOutstanding.mulDown(
+                                presentValueParams.shortAverageTimeRemaining
+                            )
+                        ),
+                    originalShareReserves: shareReserves,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves
                 });
             uint256 maxShareReservesDelta = lpMath
                 .calculateMaxShareReservesDelta(
@@ -799,19 +820,7 @@ contract LPMathTest is HyperdriveTest {
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
-                    ),
-                    int256(
-                        params.presentValueParams.longsOutstanding.mulDown(
-                            params.presentValueParams.longAverageTimeRemaining
-                        )
-                    ) -
-                        int256(
-                            params.presentValueParams.shortsOutstanding.mulDown(
-                                params
-                                    .presentValueParams
-                                    .shortAverageTimeRemaining
-                            )
-                        )
+                    )
                 );
 
             // The max share reserves delta is just the idle.
@@ -833,27 +842,42 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
+            LPMath.PresentValueParams memory presentValueParams = LPMath
+                .PresentValueParams({
+                    shareReserves: shareReserves,
+                    shareAdjustment: shareAdjustment,
+                    bondReserves: bondReserves,
+                    sharePrice: 2e18,
+                    initialSharePrice: initialSharePrice,
+                    minimumShareReserves: 1e5,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 1_000_000e18,
+                    longAverageTimeRemaining: 0.5e18,
+                    shortsOutstanding: 10_000_000e18,
+                    shortAverageTimeRemaining: 0.5e18
+                });
             LPMath.DistributeExcessIdleParams memory params = LPMath
                 .DistributeExcessIdleParams({
-                    presentValueParams: LPMath.PresentValueParams({
-                        shareReserves: shareReserves,
-                        shareAdjustment: shareAdjustment,
-                        bondReserves: bondReserves,
-                        sharePrice: 2e18,
-                        initialSharePrice: initialSharePrice,
-                        minimumShareReserves: 1e5,
-                        timeStretch: timeStretch,
-                        longsOutstanding: 1_000_000e18,
-                        longAverageTimeRemaining: 0.5e18,
-                        shortsOutstanding: 10_000_000e18,
-                        shortAverageTimeRemaining: 0.5e18
-                    }),
-                    originalShareReserves: shareReserves,
-                    originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
+                    presentValueParams: presentValueParams,
+                    startingPresentValue: LPMath.calculatePresentValue(
+                        presentValueParams
+                    ),
                     activeLpTotalSupply: 0, // unused
                     withdrawalSharesTotalSupply: 0, // unused
-                    idle: 100e18 // this is a fictional value for testing
+                    idle: 100e18, // this is a fictional value for testing
+                    netCurveTrade: int256(
+                        presentValueParams.longsOutstanding.mulDown(
+                            presentValueParams.longAverageTimeRemaining
+                        )
+                    ) -
+                        int256(
+                            presentValueParams.shortsOutstanding.mulDown(
+                                presentValueParams.shortAverageTimeRemaining
+                            )
+                        ),
+                    originalShareReserves: shareReserves,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves
                 });
             uint256 maxShareReservesDelta = lpMath
                 .calculateMaxShareReservesDelta(
@@ -861,30 +885,13 @@ contract LPMathTest is HyperdriveTest {
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
-                    ),
-                    int256(
-                        params.presentValueParams.longsOutstanding.mulDown(
-                            params.presentValueParams.longAverageTimeRemaining
-                        )
-                    ) -
-                        int256(
-                            params.presentValueParams.shortsOutstanding.mulDown(
-                                params
-                                    .presentValueParams
-                                    .shortAverageTimeRemaining
-                            )
-                        )
+                    )
                 );
 
             // The max share reserves delta is just the idle.
             assertEq(maxShareReservesDelta, params.idle);
         }
 
-        // FIXME: This needs to be tested a lot more rigorously. Small values,
-        // more complicated scenarios, and overall fuzzing to make sure that
-        // it never fails due to arithmetic errors and is always acceptably
-        // accurate.
-        //
         // The pool is net short and is constrained by the maximum amount of
         // bonds that can be purchased.
         {
@@ -900,27 +907,42 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
+            LPMath.PresentValueParams memory presentValueParams = LPMath
+                .PresentValueParams({
+                    shareReserves: shareReserves,
+                    shareAdjustment: shareAdjustment,
+                    bondReserves: bondReserves,
+                    sharePrice: 2e18,
+                    initialSharePrice: initialSharePrice,
+                    minimumShareReserves: 1e5,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 0,
+                    longAverageTimeRemaining: 0,
+                    shortsOutstanding: 50_000_000e18,
+                    shortAverageTimeRemaining: 1e18
+                });
             LPMath.DistributeExcessIdleParams memory params = LPMath
                 .DistributeExcessIdleParams({
-                    presentValueParams: LPMath.PresentValueParams({
-                        shareReserves: shareReserves,
-                        shareAdjustment: shareAdjustment,
-                        bondReserves: bondReserves,
-                        sharePrice: 2e18,
-                        initialSharePrice: initialSharePrice,
-                        minimumShareReserves: 1e5,
-                        timeStretch: timeStretch,
-                        longsOutstanding: 0,
-                        longAverageTimeRemaining: 0,
-                        shortsOutstanding: 50_000_000e18,
-                        shortAverageTimeRemaining: 1e18
-                    }),
-                    originalShareReserves: shareReserves,
-                    originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
+                    presentValueParams: presentValueParams,
+                    startingPresentValue: LPMath.calculatePresentValue(
+                        presentValueParams
+                    ),
                     activeLpTotalSupply: 0, // unused
                     withdrawalSharesTotalSupply: 0, // unused
-                    idle: 80_000_000e18 // this is a fictional value for testing
+                    idle: 80_000_000e18, // this is a fictional value for testing
+                    netCurveTrade: int256(
+                        presentValueParams.longsOutstanding.mulDown(
+                            presentValueParams.longAverageTimeRemaining
+                        )
+                    ) -
+                        int256(
+                            presentValueParams.shortsOutstanding.mulDown(
+                                presentValueParams.shortAverageTimeRemaining
+                            )
+                        ),
+                    originalShareReserves: shareReserves,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves
                 });
             uint256 maxShareReservesDelta = lpMath
                 .calculateMaxShareReservesDelta(
@@ -928,19 +950,7 @@ contract LPMathTest is HyperdriveTest {
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
-                    ),
-                    int256(
-                        params.presentValueParams.longsOutstanding.mulDown(
-                            params.presentValueParams.longAverageTimeRemaining
-                        )
-                    ) -
-                        int256(
-                            params.presentValueParams.shortsOutstanding.mulDown(
-                                params
-                                    .presentValueParams
-                                    .shortAverageTimeRemaining
-                            )
-                        )
+                    )
                 );
 
             // The max share reserves delta should have been calculated so that
@@ -999,27 +1009,42 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
+            LPMath.PresentValueParams memory presentValueParams = LPMath
+                .PresentValueParams({
+                    shareReserves: shareReserves,
+                    shareAdjustment: shareAdjustment,
+                    bondReserves: bondReserves,
+                    sharePrice: 2e18,
+                    initialSharePrice: initialSharePrice,
+                    minimumShareReserves: 1e5,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 0,
+                    longAverageTimeRemaining: 0,
+                    shortsOutstanding: 0,
+                    shortAverageTimeRemaining: 0
+                });
             LPMath.DistributeExcessIdleParams memory params = LPMath
                 .DistributeExcessIdleParams({
-                    presentValueParams: LPMath.PresentValueParams({
-                        shareReserves: shareReserves,
-                        shareAdjustment: shareAdjustment,
-                        bondReserves: bondReserves,
-                        sharePrice: 2e18,
-                        initialSharePrice: initialSharePrice,
-                        minimumShareReserves: 1e5,
-                        timeStretch: timeStretch,
-                        longsOutstanding: 0,
-                        longAverageTimeRemaining: 0,
-                        shortsOutstanding: 0,
-                        shortAverageTimeRemaining: 0
-                    }),
-                    originalShareReserves: shareReserves,
-                    originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
+                    presentValueParams: presentValueParams,
+                    startingPresentValue: LPMath.calculatePresentValue(
+                        presentValueParams
+                    ),
                     activeLpTotalSupply: 1_000_000e18,
                     withdrawalSharesTotalSupply: 1_000e18,
-                    idle: 10_000_000e18
+                    idle: 10_000_000e18,
+                    netCurveTrade: int256(
+                        presentValueParams.longsOutstanding.mulDown(
+                            presentValueParams.longAverageTimeRemaining
+                        )
+                    ) -
+                        int256(
+                            presentValueParams.shortsOutstanding.mulDown(
+                                presentValueParams.shortAverageTimeRemaining
+                            )
+                        ),
+                    originalShareReserves: shareReserves,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves
                 });
 
             // Calculate the starting LP share price.
@@ -1037,19 +1062,7 @@ contract LPMathTest is HyperdriveTest {
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
-                    ),
-                    int256(
-                        params.presentValueParams.longsOutstanding.mulDown(
-                            params.presentValueParams.longAverageTimeRemaining
-                        )
-                    ) -
-                        int256(
-                            params.presentValueParams.shortsOutstanding.mulDown(
-                                params
-                                    .presentValueParams
-                                    .shortAverageTimeRemaining
-                            )
-                        )
+                    )
                 );
 
             // Calculate the ending LP share price.
@@ -1076,9 +1089,6 @@ contract LPMathTest is HyperdriveTest {
             assertApproxEqAbs(startingLPSharePrice, endingLPSharePrice, 100);
         }
 
-        // FIXME: We need a case that hits the condition where we can't close
-        // the net long position on the curve.
-        //
         // The pool is net long.
         {
             uint256 shareReserves = 100_000_000e18;
@@ -1093,27 +1103,42 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
+            LPMath.PresentValueParams memory presentValueParams = LPMath
+                .PresentValueParams({
+                    shareReserves: shareReserves,
+                    shareAdjustment: shareAdjustment,
+                    bondReserves: bondReserves,
+                    sharePrice: 2e18,
+                    initialSharePrice: initialSharePrice,
+                    minimumShareReserves: 1e5,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 50_000_000e18,
+                    longAverageTimeRemaining: 1e18,
+                    shortsOutstanding: 0,
+                    shortAverageTimeRemaining: 0
+                });
             LPMath.DistributeExcessIdleParams memory params = LPMath
                 .DistributeExcessIdleParams({
-                    presentValueParams: LPMath.PresentValueParams({
-                        shareReserves: shareReserves,
-                        shareAdjustment: shareAdjustment,
-                        bondReserves: bondReserves,
-                        sharePrice: 2e18,
-                        initialSharePrice: initialSharePrice,
-                        minimumShareReserves: 1e5,
-                        timeStretch: timeStretch,
-                        longsOutstanding: 50_000_000e18,
-                        longAverageTimeRemaining: 1e18,
-                        shortsOutstanding: 0,
-                        shortAverageTimeRemaining: 0
-                    }),
-                    originalShareReserves: shareReserves,
-                    originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
+                    presentValueParams: presentValueParams,
+                    startingPresentValue: LPMath.calculatePresentValue(
+                        presentValueParams
+                    ),
                     activeLpTotalSupply: 1_000_000e18,
                     withdrawalSharesTotalSupply: 50_000e18,
-                    idle: 10_000_000e18
+                    idle: 10_000_000e18,
+                    netCurveTrade: int256(
+                        presentValueParams.longsOutstanding.mulDown(
+                            presentValueParams.longAverageTimeRemaining
+                        )
+                    ) -
+                        int256(
+                            presentValueParams.shortsOutstanding.mulDown(
+                                presentValueParams.shortAverageTimeRemaining
+                            )
+                        ),
+                    originalShareReserves: shareReserves,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves
                 });
 
             // Calculate the starting LP share price.
@@ -1131,19 +1156,7 @@ contract LPMathTest is HyperdriveTest {
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
-                    ),
-                    int256(
-                        params.presentValueParams.longsOutstanding.mulDown(
-                            params.presentValueParams.longAverageTimeRemaining
-                        )
-                    ) -
-                        int256(
-                            params.presentValueParams.shortsOutstanding.mulDown(
-                                params
-                                    .presentValueParams
-                                    .shortAverageTimeRemaining
-                            )
-                        )
+                    )
                 );
 
             // Calculate the ending LP share price.
@@ -1184,27 +1197,42 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
+            LPMath.PresentValueParams memory presentValueParams = LPMath
+                .PresentValueParams({
+                    shareReserves: shareReserves,
+                    shareAdjustment: shareAdjustment,
+                    bondReserves: bondReserves,
+                    sharePrice: 2e18,
+                    initialSharePrice: initialSharePrice,
+                    minimumShareReserves: 1e5,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 0,
+                    longAverageTimeRemaining: 0,
+                    shortsOutstanding: 50_000_000e18,
+                    shortAverageTimeRemaining: 1e18
+                });
             LPMath.DistributeExcessIdleParams memory params = LPMath
                 .DistributeExcessIdleParams({
-                    presentValueParams: LPMath.PresentValueParams({
-                        shareReserves: shareReserves,
-                        shareAdjustment: shareAdjustment,
-                        bondReserves: bondReserves,
-                        sharePrice: 2e18,
-                        initialSharePrice: initialSharePrice,
-                        minimumShareReserves: 1e5,
-                        timeStretch: timeStretch,
-                        longsOutstanding: 0,
-                        longAverageTimeRemaining: 0,
-                        shortsOutstanding: 50_000_000e18,
-                        shortAverageTimeRemaining: 1e18
-                    }),
-                    originalShareReserves: shareReserves,
-                    originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
+                    presentValueParams: presentValueParams,
+                    startingPresentValue: LPMath.calculatePresentValue(
+                        presentValueParams
+                    ),
                     activeLpTotalSupply: 1_000_000e18,
                     withdrawalSharesTotalSupply: 1_000e18,
-                    idle: 10_000_000e18
+                    idle: 10_000_000e18,
+                    netCurveTrade: int256(
+                        presentValueParams.longsOutstanding.mulDown(
+                            presentValueParams.longAverageTimeRemaining
+                        )
+                    ) -
+                        int256(
+                            presentValueParams.shortsOutstanding.mulDown(
+                                presentValueParams.shortAverageTimeRemaining
+                            )
+                        ),
+                    originalShareReserves: shareReserves,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves
                 });
 
             // Calculate the starting LP share price.
@@ -1222,19 +1250,7 @@ contract LPMathTest is HyperdriveTest {
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
-                    ),
-                    int256(
-                        params.presentValueParams.longsOutstanding.mulDown(
-                            params.presentValueParams.longAverageTimeRemaining
-                        )
-                    ) -
-                        int256(
-                            params.presentValueParams.shortsOutstanding.mulDown(
-                                params
-                                    .presentValueParams
-                                    .shortAverageTimeRemaining
-                            )
-                        )
+                    )
                 );
 
             // Calculate the ending LP share price.
@@ -1287,27 +1303,42 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
+            LPMath.PresentValueParams memory presentValueParams = LPMath
+                .PresentValueParams({
+                    shareReserves: shareReserves,
+                    shareAdjustment: shareAdjustment,
+                    bondReserves: bondReserves,
+                    sharePrice: 2e18,
+                    initialSharePrice: initialSharePrice,
+                    minimumShareReserves: 1e5,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 0,
+                    longAverageTimeRemaining: 0,
+                    shortsOutstanding: 0,
+                    shortAverageTimeRemaining: 0
+                });
             LPMath.DistributeExcessIdleParams memory params = LPMath
                 .DistributeExcessIdleParams({
-                    presentValueParams: LPMath.PresentValueParams({
-                        shareReserves: shareReserves,
-                        shareAdjustment: shareAdjustment,
-                        bondReserves: bondReserves,
-                        sharePrice: 2e18,
-                        initialSharePrice: initialSharePrice,
-                        minimumShareReserves: 1e5,
-                        timeStretch: timeStretch,
-                        longsOutstanding: 0,
-                        longAverageTimeRemaining: 0,
-                        shortsOutstanding: 0,
-                        shortAverageTimeRemaining: 0
-                    }),
-                    originalShareReserves: shareReserves,
-                    originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
+                    presentValueParams: presentValueParams,
+                    startingPresentValue: LPMath.calculatePresentValue(
+                        presentValueParams
+                    ),
                     activeLpTotalSupply: 1_000_000e18,
                     withdrawalSharesTotalSupply: 1_000_000e18,
-                    idle: 100e18
+                    idle: 100e18,
+                    netCurveTrade: int256(
+                        presentValueParams.longsOutstanding.mulDown(
+                            presentValueParams.longAverageTimeRemaining
+                        )
+                    ) -
+                        int256(
+                            presentValueParams.shortsOutstanding.mulDown(
+                                presentValueParams.shortAverageTimeRemaining
+                            )
+                        ),
+                    originalShareReserves: shareReserves,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves
                 });
 
             // Calculate the starting LP share price.
@@ -1370,27 +1401,42 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
+            LPMath.PresentValueParams memory presentValueParams = LPMath
+                .PresentValueParams({
+                    shareReserves: shareReserves,
+                    shareAdjustment: shareAdjustment,
+                    bondReserves: bondReserves,
+                    sharePrice: 2e18,
+                    initialSharePrice: initialSharePrice,
+                    minimumShareReserves: 1e5,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 50_000_000e18,
+                    longAverageTimeRemaining: 1e18,
+                    shortsOutstanding: 0,
+                    shortAverageTimeRemaining: 0
+                });
             LPMath.DistributeExcessIdleParams memory params = LPMath
                 .DistributeExcessIdleParams({
-                    presentValueParams: LPMath.PresentValueParams({
-                        shareReserves: shareReserves,
-                        shareAdjustment: shareAdjustment,
-                        bondReserves: bondReserves,
-                        sharePrice: 2e18,
-                        initialSharePrice: initialSharePrice,
-                        minimumShareReserves: 1e5,
-                        timeStretch: timeStretch,
-                        longsOutstanding: 50_000_000e18,
-                        longAverageTimeRemaining: 1e18,
-                        shortsOutstanding: 0,
-                        shortAverageTimeRemaining: 0
-                    }),
-                    originalShareReserves: shareReserves,
-                    originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
+                    presentValueParams: presentValueParams,
+                    startingPresentValue: LPMath.calculatePresentValue(
+                        presentValueParams
+                    ),
                     activeLpTotalSupply: 1_000_000e18,
                     withdrawalSharesTotalSupply: 1_000_000e18,
-                    idle: 100e18
+                    idle: 100e18,
+                    netCurveTrade: int256(
+                        presentValueParams.longsOutstanding.mulDown(
+                            presentValueParams.longAverageTimeRemaining
+                        )
+                    ) -
+                        int256(
+                            presentValueParams.shortsOutstanding.mulDown(
+                                presentValueParams.shortAverageTimeRemaining
+                            )
+                        ),
+                    originalShareReserves: shareReserves,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves
                 });
 
             // Calculate the starting LP share price.
@@ -1450,27 +1496,42 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
+            LPMath.PresentValueParams memory presentValueParams = LPMath
+                .PresentValueParams({
+                    shareReserves: shareReserves,
+                    shareAdjustment: shareAdjustment,
+                    bondReserves: bondReserves,
+                    sharePrice: 2e18,
+                    initialSharePrice: initialSharePrice,
+                    minimumShareReserves: 1e5,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 0,
+                    longAverageTimeRemaining: 0,
+                    shortsOutstanding: 50_000_000e18,
+                    shortAverageTimeRemaining: 1e18
+                });
             LPMath.DistributeExcessIdleParams memory params = LPMath
                 .DistributeExcessIdleParams({
-                    presentValueParams: LPMath.PresentValueParams({
-                        shareReserves: shareReserves,
-                        shareAdjustment: shareAdjustment,
-                        bondReserves: bondReserves,
-                        sharePrice: 2e18,
-                        initialSharePrice: initialSharePrice,
-                        minimumShareReserves: 1e5,
-                        timeStretch: timeStretch,
-                        longsOutstanding: 0,
-                        longAverageTimeRemaining: 0,
-                        shortsOutstanding: 50_000_000e18,
-                        shortAverageTimeRemaining: 1e18
-                    }),
-                    originalShareReserves: shareReserves,
-                    originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
+                    presentValueParams: presentValueParams,
+                    startingPresentValue: LPMath.calculatePresentValue(
+                        presentValueParams
+                    ),
                     activeLpTotalSupply: 1_000_000e18,
                     withdrawalSharesTotalSupply: 1_000_000e18,
-                    idle: 100e18
+                    idle: 100e18,
+                    netCurveTrade: int256(
+                        presentValueParams.longsOutstanding.mulDown(
+                            presentValueParams.longAverageTimeRemaining
+                        )
+                    ) -
+                        int256(
+                            presentValueParams.shortsOutstanding.mulDown(
+                                presentValueParams.shortAverageTimeRemaining
+                            )
+                        ),
+                    originalShareReserves: shareReserves,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves
                 });
 
             // Calculate the starting LP share price.

@@ -346,7 +346,8 @@ library YieldSpaceMath {
     /// @param c The share price.
     /// @param mu The initial share price.
     /// @return The maximum amount of bonds that can be sold.
-    function calculateMaxSellBondsIn(
+    /// @return A flag indicating whether or not the calculation was successful.
+    function calculateMaxSellBondsInSafe(
         uint256 z,
         int256 zeta,
         uint256 y,
@@ -354,7 +355,7 @@ library YieldSpaceMath {
         uint256 t,
         uint256 c,
         uint256 mu
-    ) internal pure returns (uint256) {
+    ) internal pure returns (uint256, bool) {
         // If the share adjustment is negative, the minimum share reserves is
         // given by `z_min - zeta`, which ensures that the share reserves never
         // fall below the minimum share reserves. Otherwise, the minimum share
@@ -383,8 +384,12 @@ library YieldSpaceMath {
             optimal_y = optimal_y.pow(ONE.divUp(t));
         }
 
-        // The optimal trade size is given by dy = y' - y.
-        return optimal_y - y;
+        // The optimal trade size is given by dy = y' - y. If this subtraction
+        // will underflow, we return a failure flag.
+        if (optimal_y < y) {
+            return (0, false);
+        }
+        return (optimal_y - y, true);
     }
 
     /// @dev Calculates the YieldSpace invariant k. This invariant is given by:

@@ -237,16 +237,31 @@ abstract contract HyperdriveBase is HyperdriveStorage {
     ) internal view returns (LPMath.DistributeExcessIdleParams memory params) {
         LPMath.PresentValueParams
             memory presentValueParams = _getPresentValueParams(_sharePrice);
+        uint256 startingPresentValue = LPMath.calculatePresentValue(
+            presentValueParams
+        );
+        int256 netCurveTrade = int256(
+            presentValueParams.longsOutstanding.mulDown(
+                presentValueParams.longAverageTimeRemaining
+            )
+        ) -
+            int256(
+                presentValueParams.shortsOutstanding.mulDown(
+                    presentValueParams.shortAverageTimeRemaining
+                )
+            );
         params = LPMath.DistributeExcessIdleParams({
             presentValueParams: presentValueParams,
-            originalShareReserves: presentValueParams.shareReserves,
-            originalShareAdjustment: presentValueParams.shareAdjustment,
-            originalBondReserves: presentValueParams.bondReserves,
+            startingPresentValue: startingPresentValue,
             activeLpTotalSupply: _totalSupply[AssetId._LP_ASSET_ID],
             withdrawalSharesTotalSupply: _totalSupply[
                 AssetId._WITHDRAWAL_SHARE_ASSET_ID
             ] - _withdrawPool.readyToWithdraw,
-            idle: _calculateIdleShareReserves(_sharePrice)
+            idle: _calculateIdleShareReserves(_sharePrice),
+            netCurveTrade: netCurveTrade,
+            originalShareReserves: presentValueParams.shareReserves,
+            originalShareAdjustment: presentValueParams.shareAdjustment,
+            originalBondReserves: presentValueParams.bondReserves
         });
     }
 

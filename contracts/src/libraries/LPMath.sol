@@ -127,6 +127,7 @@ library LPMath {
         (uint256 presentValue, bool success) = calculatePresentValueSafe(
             _params
         );
+        // FIXME: This hides errors that could occur in calculateNetCurveTradeSafe
         if (!success) {
             revert IHyperdrive.NegativePresentValue();
         }
@@ -147,10 +148,20 @@ library LPMath {
         // the impact of the trades minus the minimum share reserves:
         //
         // PV = z + net_c + net_f - z_min
-        int256 presentValue = int256(_params.shareReserves) +
-            calculateNetCurveTrade(_params) +
-            calculateNetFlatTrade(_params) -
-            int256(_params.minimumShareReserves);
+        int256 presentValue;
+        {
+            (int256 netCurveTrade, bool success) = calculateNetCurveTradeSafe(
+                _params
+            );
+            if (!success) {
+                return (0, false);
+            }
+            presentValue =
+                int256(_params.shareReserves) +
+                netCurveTrade +
+                calculateNetFlatTrade(_params) -
+                int256(_params.minimumShareReserves);
+        }
 
         // If the present value is negative, return a status code indicating the
         // failure.
@@ -165,9 +176,10 @@ library LPMath {
     /// @param _params The parameters for the present value calculation.
     /// @return The impact of closing the net curve position on the share
     ///         reserves.
-    function calculateNetCurveTrade(
+    /// @return A flag indicating whether the calculation succeeded or failed.
+    function calculateNetCurveTradeSafe(
         PresentValueParams memory _params
-    ) internal pure returns (int256) {
+    ) internal pure returns (int256, bool) {
         // The net curve position is the net of the longs and shorts that are
         // currently tradeable on the curve. Given the amount of outstanding
         // longs `y_l` and shorts `y_s` as well as the average time remaining
@@ -196,16 +208,21 @@ library LPMath {
             uint256 netCurvePosition_ = uint256(netCurvePosition);
 
             // Calculate the maximum amount of bonds that can be sold on
-            // YieldSpace.
-            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxSellBondsIn(
-                _params.shareReserves,
-                _params.shareAdjustment,
-                _params.bondReserves,
-                _params.minimumShareReserves,
-                ONE - _params.timeStretch,
-                _params.sharePrice,
-                _params.initialSharePrice
-            );
+            // YieldSpace. If this calculation fails, then we return a failure
+            // flag.
+            (uint256 maxCurveTrade, bool success) = YieldSpaceMath
+                .calculateMaxSellBondsInSafe(
+                    _params.shareReserves,
+                    _params.shareAdjustment,
+                    _params.bondReserves,
+                    _params.minimumShareReserves,
+                    ONE - _params.timeStretch,
+                    _params.sharePrice,
+                    _params.initialSharePrice
+                );
+            if (!success) {
+                return (0, false);
+            }
 
             // If the max curve trade is greater than the net curve position,
             // then we can close the entire net curve position.
@@ -219,16 +236,18 @@ library LPMath {
                         _params.sharePrice,
                         _params.initialSharePrice
                     );
-                return -int256(netCurveTrade);
+                return (-int256(netCurveTrade), true);
             }
             // Otherwise, we can only close part of the net curve position.
             // Since the spot price is approximately zero after closing the
             // entire net curve position, we mark any remaining bonds to zero.
             else {
-                return
+                return (
                     -int256(
                         effectiveShareReserves - _params.minimumShareReserves
-                    );
+                    ),
+                    true
+                );
             }
         }
         // If the net curve position is negative, then the pool is net short.
@@ -257,7 +276,7 @@ library LPMath {
                         _params.sharePrice,
                         _params.initialSharePrice
                     );
-                return int256(netCurveTrade);
+                return (int256(netCurveTrade), true);
             }
             // Otherwise, we can only close part of the net curve position.
             // Since the spot price is equal to one after closing the entire net
@@ -271,17 +290,19 @@ library LPMath {
                         _params.sharePrice,
                         _params.initialSharePrice
                     );
-                return
+                return (
                     int256(
                         maxSharePayment +
                             (netCurvePosition_ - maxCurveTrade).divDown(
                                 _params.sharePrice
                             )
-                    );
+                    ),
+                    true
+                );
             }
         }
 
-        return 0;
+        return (0, true);
     }
 
     /// @dev Calculates the result of closing the net flat position.
@@ -314,12 +335,14 @@ library LPMath {
 
     struct DistributeExcessIdleParams {
         PresentValueParams presentValueParams;
-        uint256 originalShareReserves;
-        int256 originalShareAdjustment;
-        uint256 originalBondReserves;
+        uint256 startingPresentValue;
         uint256 activeLpTotalSupply;
         uint256 withdrawalSharesTotalSupply;
         uint256 idle;
+        int256 netCurveTrade;
+        uint256 originalShareReserves;
+        int256 originalShareAdjustment;
+        uint256 originalBondReserves;
     }
 
     // FIXME: Benchmark this.
@@ -345,20 +368,9 @@ library LPMath {
                 _params.originalShareReserves,
                 _params.originalShareAdjustment
             );
-        int256 netCurveTrade = int256(
-            _params.presentValueParams.longsOutstanding.mulDown(
-                _params.presentValueParams.longAverageTimeRemaining
-            )
-        ) -
-            int256(
-                _params.presentValueParams.shortsOutstanding.mulDown(
-                    _params.presentValueParams.shortAverageTimeRemaining
-                )
-            );
         uint256 maxShareReservesDelta = calculateMaxShareReservesDelta(
             _params,
-            originalEffectiveShareReserves,
-            netCurveTrade
+            originalEffectiveShareReserves
         );
 
         // Calculate the amount of withdrawal shares that can be redeemed given
@@ -393,8 +405,7 @@ library LPMath {
         // after all of the withdrawal shares are redeemed.
         uint256 shareProceeds = calculateDistributeExcessIdleShareProceeds(
             _params,
-            originalEffectiveShareReserves,
-            netCurveTrade
+            originalEffectiveShareReserves
         );
 
         return (withdrawalSharesRedeemed, shareProceeds);
@@ -433,19 +444,19 @@ library LPMath {
     ///      maximum amount of bonds that can be purchased being equal to the
     ///      net short position.
     /// @param _params The parameters for the distribute excess idle calculation.
-    /// @param _netCurveTrade The net curve trade.
+    /// @param _originalEffectiveShareReserves The original effective share
+    ///        reserves.
     /// @return maxShareReservesDelta The upper bound on the share proceeds.
     function calculateMaxShareReservesDelta(
         DistributeExcessIdleParams memory _params,
-        uint256 _originalEffectiveShareReserves,
-        int256 _netCurveTrade
+        uint256 _originalEffectiveShareReserves
     ) internal pure returns (uint256 maxShareReservesDelta) {
         // If the net curve position is zero or net long, then the maximum
         // share reserves delta is equal to the pool's idle.
-        if (_netCurveTrade >= 0) {
+        if (_params.netCurveTrade >= 0) {
             return _params.idle;
         }
-        uint256 netCurveTrade = uint256(-_netCurveTrade);
+        uint256 netCurveTrade = uint256(-_params.netCurveTrade);
 
         // FIXME: Considering the costs of this function as well as the pros and
         // cons of really computing this accurately, it may be better to use a
@@ -666,20 +677,6 @@ library LPMath {
         DistributeExcessIdleParams memory _params,
         uint256 _shareReservesDelta
     ) internal pure returns (uint256) {
-        // Calculate the starting present value.
-        uint256 startingPresentValue;
-        {
-            _params.presentValueParams.shareReserves = _params
-                .originalShareReserves;
-            _params.presentValueParams.shareAdjustment = _params
-                .originalShareAdjustment;
-            _params.presentValueParams.bondReserves = _params
-                .originalBondReserves;
-            startingPresentValue = calculatePresentValue(
-                _params.presentValueParams
-            );
-        }
-
         // Calculate the present value after debiting the share reserves delta.
         (
             _params.presentValueParams.shareReserves,
@@ -701,7 +698,7 @@ library LPMath {
         // avoid distributing excess idle. This edge-case can occur when the
         // share reserves is very close to the minimum share reserves with a
         // large value of k.
-        if (!success || endingPresentValue >= startingPresentValue) {
+        if (!success || endingPresentValue >= _params.startingPresentValue) {
             return 0;
         }
 
@@ -710,7 +707,10 @@ library LPMath {
             _params.withdrawalSharesTotalSupply;
         return
             lpTotalSupply -
-            lpTotalSupply.mulDivUp(endingPresentValue, startingPresentValue);
+            lpTotalSupply.mulDivUp(
+                endingPresentValue,
+                _params.startingPresentValue
+            );
     }
 
     // FIXME: Todos
@@ -731,34 +731,20 @@ library LPMath {
     /// @param _params The parameters for the distribute excess idle calculation.
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
-    /// @param _netCurveTrade The net curve trade.
     /// @return The share proceeds to distribute to the withdrawal pool.
     function calculateDistributeExcessIdleShareProceeds(
         DistributeExcessIdleParams memory _params,
-        uint256 _originalEffectiveShareReserves,
-        int256 _netCurveTrade
+        uint256 _originalEffectiveShareReserves
     ) internal pure returns (uint256) {
-        // Calculate the starting present value and LP total supply.
-        uint256 startingPresentValue;
-        {
-            _params.presentValueParams.shareReserves = _params
-                .originalShareReserves;
-            _params.presentValueParams.shareAdjustment = _params
-                .originalShareAdjustment;
-            _params.presentValueParams.bondReserves = _params
-                .originalBondReserves;
-            startingPresentValue = calculatePresentValue(
-                _params.presentValueParams
-            );
-        }
+        // Calculate the LP total supply.
         uint256 lpTotalSupply = _params.activeLpTotalSupply +
             _params.withdrawalSharesTotalSupply;
 
         // If the pool is net neutral, we can solve directly.
-        if (_netCurveTrade == 0) {
+        if (_params.netCurveTrade == 0) {
             return
-                startingPresentValue -
-                startingPresentValue.mulDivUp(
+                _params.startingPresentValue -
+                _params.startingPresentValue.mulDivUp(
                     _params.activeLpTotalSupply,
                     lpTotalSupply
                 );
@@ -770,12 +756,12 @@ library LPMath {
         // withdrawal pool should receive more than this, but it's a good
         // starting point.
         uint256 shareProceeds = _params.withdrawalSharesTotalSupply.mulDivDown(
-            startingPresentValue,
+            _params.startingPresentValue,
             lpTotalSupply
         );
 
         // If the net curve trade is positive, the pool is net long.
-        if (_netCurveTrade > 0) {
+        if (_params.netCurveTrade > 0) {
             // FIXME: Use a constant for the loop iterations.
             for (uint256 i = 0; i < 3; i++) {
                 // Simulate applying the share proceeds to the reserves.
@@ -795,10 +781,8 @@ library LPMath {
                 // amount of bonds that can be sold with this share proceeds, we
                 // can calculate the derivative using the derivative of
                 // `calculateSharesOutGivenBondsIn`.
-                uint256 derivative;
-                if (
-                    uint256(_netCurveTrade) <=
-                    YieldSpaceMath.calculateMaxSellBondsIn(
+                (uint256 maxBondAmount, bool success) = YieldSpaceMath
+                    .calculateMaxSellBondsInSafe(
                         _params.presentValueParams.shareReserves,
                         _params.presentValueParams.shareAdjustment,
                         _params.presentValueParams.bondReserves,
@@ -806,14 +790,18 @@ library LPMath {
                         ONE - _params.presentValueParams.timeStretch,
                         _params.presentValueParams.sharePrice,
                         _params.presentValueParams.initialSharePrice
-                    )
-                ) {
+                    );
+                if (!success) {
+                    break;
+                }
+                uint256 derivative;
+                if (uint256(_params.netCurveTrade) <= maxBondAmount) {
                     derivative =
                         ONE +
                         calculateSharesOutGivenBondsInDerivative(
                             _params,
                             _originalEffectiveShareReserves,
-                            uint256(_netCurveTrade)
+                            uint256(_params.netCurveTrade)
                         );
                 }
                 // FIXME: If we get into this regime, we should be able to solve
@@ -833,7 +821,7 @@ library LPMath {
                 );
                 int256 delta = int256(presentValue.mulDown(lpTotalSupply)) -
                     int256(
-                        startingPresentValue.mulDown(
+                        _params.startingPresentValue.mulDown(
                             _params.activeLpTotalSupply
                         )
                     );
@@ -883,13 +871,13 @@ library LPMath {
                     calculateSharesInGivenBondsOutDerivative(
                         _params,
                         _originalEffectiveShareReserves,
-                        uint256(-_netCurveTrade)
+                        uint256(-_params.netCurveTrade)
                     );
 
                 // FIXME: Document this.
                 int256 delta = int256(presentValue.mulDown(lpTotalSupply)) -
                     int256(
-                        startingPresentValue.mulDown(
+                        _params.startingPresentValue.mulDown(
                             _params.activeLpTotalSupply
                         )
                     );
