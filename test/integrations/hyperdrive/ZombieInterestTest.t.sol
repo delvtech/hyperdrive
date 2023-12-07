@@ -220,14 +220,12 @@ contract ZombieInterestTest is HyperdriveTest {
             int256 variableRate = int256(
                 variableRateParam.normalizeToRange(0, 2e18)
             );
-            console2.log("variableRate", variableRate.toString(18));
 
             // Ensure a feasible trade size.
             uint256 longTradeSize = longTradeSizeParam.normalizeToRange(
                 2 * MINIMUM_TRANSACTION_AMOUNT,
                 hyperdrive.calculateMaxLong() - MINIMUM_TRANSACTION_AMOUNT
             );
-            console2.log("longTradeSize", longTradeSize.toString(18));
 
             // Celine opens a long.
             openLong(celine, longTradeSize);
