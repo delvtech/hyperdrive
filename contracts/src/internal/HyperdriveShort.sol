@@ -202,25 +202,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
 
             // Distribute the excess idle to the withdrawal pool.
             _distributeExcessIdle(sharePrice_);
-        } else {
-            // The user is redeeming a short that has already matured. So we
-            // collect the interest that has accrued since the last checkpoint.
-            // NOTE: We only collect the interest on the position that is being closed.
-            uint256 checkpointTime = _latestCheckpoint();
-            uint256 zombieAdjustment;
-            if(shareProceeds < _marketState.zombieShares) {
-                _marketState.zombieShares -= shareProceeds.toUint128();
-                zombieAdjustment = shareProceeds;
-            } else {
-                _marketState.zombieShares = 0;
-                zombieAdjustment = _marketState.zombieShares;
-            }
-            _collectZombieInterest(
-                zombieAdjustment,
-                _checkpoints[checkpointTime - _checkpointDuration].sharePrice,
-                sharePrice,
-                _calculateCheckpointTimeElapsed()
-            );
         }
 
         // Withdraw the profit to the trader. This includes the proceeds from
