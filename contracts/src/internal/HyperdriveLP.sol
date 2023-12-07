@@ -360,7 +360,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         }
         if (withdrawalSharesRedeemed == 0) return (0, 0);
 
-        // We burn the shares from the user
+        // We burn the shares from the user.
         _burn(
             AssetId._WITHDRAWAL_SHARE_ASSET_ID,
             msg.sender,

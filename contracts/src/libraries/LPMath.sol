@@ -743,9 +743,8 @@ library LPMath {
         // If the pool is net neutral, we can solve directly.
         if (_params.netCurveTrade == 0) {
             return
-                _params.startingPresentValue -
-                _params.startingPresentValue.mulDivUp(
-                    _params.activeLpTotalSupply,
+                _params.startingPresentValue.mulDivDown(
+                    _params.withdrawalSharesTotalSupply,
                     lpTotalSupply
                 );
         }
