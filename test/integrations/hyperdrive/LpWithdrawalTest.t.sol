@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { stdError } from "forge-std/StdError.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -73,20 +76,23 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
 
-        // Alice removes all of her LP shares. She should recover her initial
-        // contribution minus the amount of her capital that underlies Bob's
-        // long position.
-        uint256 estimatedLpProceeds = calculateBaseLpProceeds(lpShares);
+        // Alice removes all of her LP shares. The LP share price should be
+        // approximately equal before and after the transaction.
+        uint256 lpSharePrice = hyperdrive.lpSharePrice();
         (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
             alice,
             lpShares
         );
-        assertApproxEqAbs(baseProceeds, estimatedLpProceeds, 10);
+        assertApproxEqAbs(lpSharePrice, hyperdrive.lpSharePrice(), 1e9);
+        lpSharePrice = hyperdrive.lpSharePrice();
 
         // Bob closes his long. He will pay quite a bit of slippage on account
-        // of the LP's removed liquidity.
+        // of the LP's removed liquidity. The LP share price should be
+        // approximately equal before and after the transaction.
         uint256 longProceeds = closeLong(bob, maturityTime, longAmount);
         assertGt(basePaid - longProceeds, uint256(basePaid).mulDown(0.02e18));
+        assertApproxEqAbs(lpSharePrice, hyperdrive.lpSharePrice(), 1e13);
+        lpSharePrice = hyperdrive.lpSharePrice();
 
         // Alice redeems her withdrawal shares. She gets back the capital that
         // was underlying to Bob's long position plus the profits that Bob paid in
@@ -96,6 +102,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             withdrawalShares
         );
         assertGt(withdrawalProceeds + baseProceeds, contribution);
+        assertApproxEqAbs(lpSharePrice, hyperdrive.lpSharePrice(), 1e13);
 
         // Ensure the only remaining base is the base from the minimum share
         // reserves and the LP's present value.
@@ -107,6 +114,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             10
         );
 
+        // Ensure that all of the withdrawal shares were paid out.
         assertApproxEqAbs(
             hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
             0,
