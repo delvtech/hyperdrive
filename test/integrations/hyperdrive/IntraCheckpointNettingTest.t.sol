@@ -787,7 +787,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             // close the long positions
             closeLong(bob, longMaturityTimes[i], bondAmounts[i]);
         }
-        (uint256 withdrawalProceeds, ) = redeemWithdrawalShares(
+        redeemWithdrawalShares(
             alice,
             withdrawalShares
         );
@@ -843,7 +843,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             (uint256 maturityTimeShort, ) = openShort(bob, bondAmount);
             shortMaturityTimes[i] = maturityTimeShort;
         }
-        (, uint256 withdrawalShares) = removeLiquidity(alice, aliceLpShares);
+        removeLiquidity(alice, aliceLpShares);
 
         // Ensure all the positions have matured before trying to close them
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();

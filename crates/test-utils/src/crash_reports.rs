@@ -108,6 +108,7 @@ impl From<RawPoolConfig> for PoolConfig {
 struct RawPoolInfo {
     share_reserves: u128,
     share_adjustment: i128,
+    zombie_share_reserves: u128,
     bond_reserves: u128,
     lp_total_supply: u128,
     share_price: u128,
@@ -126,6 +127,7 @@ impl From<RawPoolInfo> for PoolInfo {
         Self {
             share_reserves: r.share_reserves.into(),
             share_adjustment: r.share_adjustment.into(),
+            zombie_share_reserves: r.zombie_share_reserves.into(),
             bond_reserves: r.bond_reserves.into(),
             lp_total_supply: r.lp_total_supply.into(),
             share_price: r.share_price.into(),
@@ -300,6 +302,7 @@ mod tests {
     "raw_pool_info": {
         "shareReserves": 100000000000000000000000000,
         "shareAdjustment": 0,
+        "zombieShareReserves": 0,
         "bondReserves": 102178995195337961200000000,
         "lpTotalSupply": 99999990000000000000000000,
         "sharePrice": 1000000006341958396,
@@ -374,6 +377,7 @@ mod tests {
     "pool_info": {
         "shareReserves": "100000000.0",
         "shareAdjustment": "0.0",
+        "zombieShareReserves": "0.0",
         "bondReserves": "102178995.1953379612",
         "lpTotalSupply": "99999990.0",
         "sharePrice": "1.000000006341958396",
@@ -451,6 +455,7 @@ mod tests {
                 pool_info: PoolInfo {
                     share_reserves: uint256!(100000000000000000000000000),
                     share_adjustment: int256!(0),
+                    zombie_share_reserves: uint256!(0),
                     bond_reserves: uint256!(102178995195337961200000000),
                     lp_total_supply: uint256!(99999990000000000000000000),
                     share_price: uint256!(1000000006341958396),
