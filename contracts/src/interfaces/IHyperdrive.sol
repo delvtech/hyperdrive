@@ -96,14 +96,14 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     struct MarketState {
         /// @dev The pool's share reserves.
         uint128 shareReserves;
+        /// @dev The pool's bond reserves.
+        uint128 bondReserves;
         /// @dev The net amount of shares that have been added and removed from
         ///      the share reserves due to flat updates.
         int128 shareAdjustment;
         /// @dev The amount shares that associated with positions that are matured,
         ///      but not yet redeemed.
         uint128 zombieShareReserves;
-        /// @dev The pool's bond reserves.
-        uint128 bondReserves;
         /// @dev The global exposure of the pool due to open longs
         uint128 longExposure;
         /// @dev The amount of longs that are still open.
