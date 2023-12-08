@@ -107,7 +107,7 @@ contract ZombieInterestTest is HyperdriveTest {
             CHECKPOINT_DURATION * 10
         );
 
-        // A random amount of time passes to pass after the term before the position is redeemed.
+        // A random amount of time passes after the term before the position is redeemed.
         uint256 zombieTime = zombieTimeParam.normalizeToRange(
             1,
             POSITION_DURATION
