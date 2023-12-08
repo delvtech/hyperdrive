@@ -787,10 +787,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             // close the long positions
             closeLong(bob, longMaturityTimes[i], bondAmounts[i]);
         }
-        redeemWithdrawalShares(
-            alice,
-            withdrawalShares
-        );
+        redeemWithdrawalShares(alice, withdrawalShares);
 
         // longExposure should be 0
         poolInfo = hyperdrive.getPoolInfo();
