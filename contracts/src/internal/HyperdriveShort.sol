@@ -295,6 +295,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _checkpoints[_latestCheckpoint].exposure
         );
 
+        // FIXME: It seems problematic to use the base deposit. It would be good
+        // to construct some examples that highlight how this can lead to
+        // insolvency (aka not being able to close positions at maturity).
+        //
+        // FIXME: Does this base deposit include the governance fee? That would
+        // be problematic since the governance fee doesn't go back to the pool.
+        //
         // Round the base deposit down to the nearest multiple of the precision
         // threshold. We specifically round down because there are cases where
         // a smaller short deposit is larger than a larger long's fixed interest.

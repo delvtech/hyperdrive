@@ -278,7 +278,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         int128 checkpointExposureBefore = int128(checkpoint.exposure);
         uint128 exposureDelta = (2 *
             _bondProceeds -
-            _shareReservesDelta.mulDown(_sharePrice)).toUint128();
+            _shareReservesDelta.mulUp(_sharePrice)).toUint128();
         checkpoint.exposure += int128(exposureDelta);
         _updateLongExposure(checkpointExposureBefore, checkpoint.exposure);
 

@@ -762,7 +762,7 @@ library LPMath {
         // If the net curve trade is positive, the pool is net long.
         if (_params.netCurveTrade > 0) {
             // FIXME: Use a constant for the loop iterations.
-            for (uint256 i = 0; i < 3; i++) {
+            for (uint256 i = 0; i < 4; i++) {
                 // Simulate applying the share proceeds to the reserves.
                 (
                     _params.presentValueParams.shareReserves,
@@ -844,7 +844,7 @@ library LPMath {
         // Otherwise, the pool is net short.
         else {
             // FIXME: Use a constant for the loop iterations.
-            for (uint256 i = 0; i < 3; i++) {
+            for (uint256 i = 0; i < 4; i++) {
                 // Simulate applying the share proceeds to the reserves and
                 // recalculate the present value.
                 (
