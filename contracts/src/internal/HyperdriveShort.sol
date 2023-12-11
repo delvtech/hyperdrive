@@ -160,37 +160,32 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 totalGovernanceFee
         ) = _calculateCloseShort(_bondAmount, sharePrice, _maturityTime);
 
-        // FIXME: Try to avoid some of this stack cycling.
-        //
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
         // withdrawal pool if necessary.
-        uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
-        uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
-        uint256 sharePrice_ = sharePrice; // Avoid stack too deep error.
-        if (block.timestamp < maturityTime) {
+        if (block.timestamp < _maturityTime) {
             // Attribute the governance fees.
             _governanceFeesAccrued += totalGovernanceFee;
 
             // Update the pool's state to account for the short being closed.
             _applyCloseShort(
-                bondAmount,
+                _bondAmount,
                 bondReservesDelta,
                 shareReservesDelta,
                 shareAdjustmentDelta,
-                maturityTime
+                _maturityTime
             );
 
             // Update the global long exposure. Since we're closing a short, the
             // number of non-netted longs increases by the bond amount.
-            int256 nonNettedLongs = _nonNettedLongs(maturityTime);
+            int256 nonNettedLongs = _nonNettedLongs(_maturityTime);
             _updateLongExposure(
-                nonNettedLongs - int256(bondAmount),
+                nonNettedLongs - int256(_bondAmount),
                 nonNettedLongs
             );
 
             // Distribute the excess idle to the withdrawal pool.
-            _distributeExcessIdle(sharePrice_);
+            _distributeExcessIdle(sharePrice);
         }
 
         // Withdraw the profit to the trader. This includes the proceeds from
@@ -203,23 +198,24 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // withdraw to check against the minOutput because
         // in the event of slippage on the withdraw, we want
         // it to be caught be the minOutput check.
-        IHyperdrive.Options calldata options = _options; // Avoid stack too deep error.
         uint256 baseProceeds = _convertToBaseFromOption(
             proceeds,
             sharePrice,
-            options
+            _options
         );
         if (baseProceeds < _minOutput) {
             revert IHyperdrive.OutputLimit();
         }
 
         // Emit a CloseShort event.
+        uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
+        uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
         emit CloseShort(
             _options.destination,
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime),
             maturityTime,
             baseProceeds,
-            sharePrice_,
+            sharePrice,
             bondAmount
         );
 
@@ -284,8 +280,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
             nonNettedLongs - int256(_bondAmount)
         );
 
-        // FIXME: Is this still needed?
-        //
         // Opening a short decreases the system's exposure because the short's
         // margin can be used to offset some of the long exposure. Despite this,
         // opening a short decreases the share reserves, which limits the amount
