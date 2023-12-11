@@ -222,9 +222,6 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     /// ### Hyperdrive ###
     /// ##################
     error ApprovalFailed();
-    // TODO: We should rename this so that it's clear that it pertains to
-    // solvency.
-    error BaseBufferExceedsShareReserves();
     error BelowMinimumContribution();
     error BelowMinimumShareReserves();
     error InvalidApr();
@@ -238,6 +235,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     error InvalidShareReserves();
     error InvalidFeeAmounts();
     error InvalidFeeDestination();
+    error Insolvency();
     error NegativeInterest();
     error NegativePresentValue();
     error NoAssetsToWithdraw();

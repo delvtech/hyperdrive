@@ -263,8 +263,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // We need to check solvency because longs increase the system's exposure.
         if (!_isSolvent(_sharePrice)) {
-            // FIXME: Change this error message.
-            revert IHyperdrive.BaseBufferExceedsShareReserves();
+            revert IHyperdrive.Insolvency();
         }
 
         // Distribute the excess idle to the withdrawal pool.
