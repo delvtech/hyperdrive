@@ -17,7 +17,7 @@ import { ERC4626Base } from "./ERC4626Base.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
+contract ERC4626Hyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
     using SafeTransferLib for ERC20;
 
@@ -44,20 +44,20 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
         // price for USDC if the price per share changes based on size of
         // deposit then this line will read an incorrect and possibly dangerous
         // price.
-        if (address(_config.baseToken) != IERC4626(_pool).asset()) {
+        if (address(_config.baseToken) != IERC4626(__pool).asset()) {
             revert IHyperdrive.InvalidBaseToken();
         }
 
         // Approve the base token with 1 wei. This ensures that all of the
         // subsequent approvals will be writing to a dirty storage slot.
-        ERC20(address(_config.baseToken)).safeApprove(address(_pool), 1);
+        ERC20(address(_config.baseToken)).safeApprove(address(__pool), 1);
 
         // Set the sweep targets. The base and pool tokens can't be set as sweep
         // targets to prevent governance from rugging the pool.
         for (uint256 i = 0; i < _targets.length; i++) {
             address target = _targets[i];
             if (
-                address(target) == address(_pool) ||
+                address(target) == address(__pool) ||
                 address(target) == address(_baseToken)
             ) {
                 revert IHyperdrive.UnsupportedToken();
