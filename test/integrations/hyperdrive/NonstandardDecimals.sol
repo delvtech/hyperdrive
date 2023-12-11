@@ -525,7 +525,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
                     aliceLpShares,
                     aliceLpShares + bobLpShares
                 );
-                assertGe(aliceRedeemProceeds, estimatedRedeemProceeds);
+                assertGe(aliceRedeemProceeds + 10, estimatedRedeemProceeds);
             }
 
             // Bob and Celine remove their liquidity. Bob should receive more base

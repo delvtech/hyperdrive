@@ -100,7 +100,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Remove the intializer's liquidity and verify that the state was
         // updated correctly.
-        _test_remove_liquidity(testCase, false, 0);
+        _test_remove_liquidity(testCase, 0);
     }
 
     function test_remove_liquidity_long_trade() external {
@@ -137,7 +137,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Remove the intializer's liquidity and verify that the state was
         // updated correctly.
-        _test_remove_liquidity(testCase, true, 2);
+        _test_remove_liquidity(testCase, 2);
     }
 
     function test_remove_liquidity_short_trade() external {
@@ -174,7 +174,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Remove the intializer's liquidity and verify that the state was
         // updated correctly.
-        _test_remove_liquidity(testCase, false, 3e7); // TODO: Reduce this bound.
+        _test_remove_liquidity(testCase, 3e7); // TODO: Reduce this bound.
     }
 
     /// Helpers ///
@@ -200,15 +200,9 @@ contract RemoveLiquidityTest is HyperdriveTest {
     ///      we ensure that they receive the correct amount of base and
     ///      withdrawal shares.
     /// @param testCase The test case.
-    /// @param isLong True if the trade that was opened is a long and false
-    ///        otherwise. The current netting implementation is overly
-    ///        conservative, which results in double counting the margin that
-    ///        LPs must reserve for LPs. This double counting isn't done in the
-    ///        case of shorts.
     /// @param tolerance The error tolerance for imprecise assertions.
     function _test_remove_liquidity(
         TestCase memory testCase,
-        bool isLong,
         uint256 tolerance
     ) internal {
         // The LPs provided margins for all of the open trades. We can calculate
@@ -225,9 +219,6 @@ contract RemoveLiquidityTest is HyperdriveTest {
         // delta idle = dy - dz *c =  - dz * c + dy
         // new idle = old idle + delta idle (since dy > dz*c idle goes up)
         uint256 marginFactor = 1;
-        if (isLong) {
-            marginFactor = 2;
-        }
         uint256 margin = (testCase.longAmount - testCase.longBasePaid) +
             (testCase.shortAmount - testCase.shortBasePaid);
         uint256 remainingMargin = uint256(marginFactor * margin).mulDivDown(
