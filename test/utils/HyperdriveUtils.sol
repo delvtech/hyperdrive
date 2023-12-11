@@ -175,9 +175,6 @@ library HyperdriveUtils {
     ) internal view returns (uint256 baseAmount) {
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
-        int256 nonNettedLongs = _hyperdrive.getNonNettedLongs(
-            _hyperdrive.latestCheckpoint() + poolConfig.positionDuration
-        );
         (baseAmount, ) = calculateMaxLong(
             MaxTradeParams({
                 shareReserves: poolInfo.shareReserves,
@@ -193,7 +190,7 @@ library HyperdriveUtils {
                 flatFee: poolConfig.fees.flat,
                 governanceFee: poolConfig.fees.governance
             }),
-            nonNettedLongs,
+            _hyperdrive.getCheckpointExposure(_hyperdrive.latestCheckpoint()),
             _maxIterations
         );
         return baseAmount;
@@ -218,9 +215,6 @@ library HyperdriveUtils {
     ) internal view returns (uint256) {
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
-        int256 nonNettedLongs = _hyperdrive.getNonNettedLongs(
-            _hyperdrive.latestCheckpoint() + poolConfig.positionDuration
-        );
         return
             calculateMaxShort(
                 MaxTradeParams({
@@ -237,7 +231,9 @@ library HyperdriveUtils {
                     flatFee: poolConfig.fees.flat,
                     governanceFee: poolConfig.fees.governance
                 }),
-                nonNettedLongs,
+                _hyperdrive.getCheckpointExposure(
+                    _hyperdrive.latestCheckpoint()
+                ),
                 _maxIterations
             );
     }

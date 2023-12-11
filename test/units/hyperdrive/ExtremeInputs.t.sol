@@ -206,9 +206,7 @@ contract ExtremeInputs is HyperdriveTest {
                 flatFee: poolConfig.fees.flat,
                 governanceFee: poolConfig.fees.governance
             }),
-            hyperdrive.getNonNettedLongs(
-                hyperdrive.latestCheckpoint() + poolConfig.positionDuration
-            ),
+            hyperdrive.getCheckpointExposure(hyperdrive.latestCheckpoint()),
             7
         );
         baseToken.mint(shortAmount);

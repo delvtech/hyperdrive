@@ -985,9 +985,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 flatFee: config.fees.flat,
                 governanceFee: config.fees.governance
             }),
-            hyperdrive.getNonNettedLongs(
-                hyperdrive.latestCheckpoint() + config.positionDuration
-            ),
+            hyperdrive.getCheckpointExposure(hyperdrive.latestCheckpoint()),
             maxIterations
         );
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, maxLong);
@@ -1144,9 +1142,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 flatFee: config.fees.flat,
                 governanceFee: config.fees.governance
             }),
-            hyperdrive.getNonNettedLongs(
-                hyperdrive.latestCheckpoint() + config.positionDuration
-            ),
+            hyperdrive.getCheckpointExposure(hyperdrive.latestCheckpoint()),
             7
         );
         (uint256 maturityTime, ) = openShort(bob, maxShort);

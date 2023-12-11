@@ -752,10 +752,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // The amount of non-netted longs should be equal to zero since the
         // bond amounts cancel out.
         assertEq(
-            hyperdrive.getNonNettedLongs(
-                hyperdrive.latestCheckpoint() +
-                    hyperdrive.getPoolConfig().positionDuration
-            ),
+            hyperdrive.getCheckpointExposure(hyperdrive.latestCheckpoint()),
             0
         );
 

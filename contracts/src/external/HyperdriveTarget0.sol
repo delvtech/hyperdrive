@@ -218,13 +218,15 @@ abstract contract HyperdriveTarget0 is
         _revert(abi.encode(_checkpoints[_checkpointId]));
     }
 
-    /// @notice Gets the non-netted longs with a given maturity time.
-    /// @param _maturityTime The maturity time.
-    /// @return The non-netted longs.
-    function getNonNettedLongs(
-        uint256 _maturityTime
+    /// @notice Gets the checkpoint exposure at a specified time.
+    /// @param _checkpointTime The checkpoint time.
+    /// @return The checkpoint exposure.
+    function getCheckpointExposure(
+        uint256 _checkpointTime
     ) external view returns (int256) {
-        _revert(abi.encode(_nonNettedLongs(_maturityTime)));
+        _revert(
+            abi.encode(_nonNettedLongs(_checkpointTime + _positionDuration))
+        );
     }
 
     /// @notice Gets the pool's configuration parameters.
