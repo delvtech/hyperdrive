@@ -94,7 +94,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // openLong.
         _applyOpenShort(
             _bondAmount,
-            baseDeposit,
             shareReservesDelta,
             sharePrice,
             maturityTime
@@ -157,11 +156,12 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 bondReservesDelta,
             uint256 shareProceeds,
             uint256 shareReservesDelta,
-            uint256 shareCurveDelta,
             int256 shareAdjustmentDelta,
             uint256 totalGovernanceFee
         ) = _calculateCloseShort(_bondAmount, sharePrice, _maturityTime);
 
+        // FIXME: Try to avoid some of this stack cycling.
+        //
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
         // withdrawal pool if necessary.
@@ -181,23 +181,12 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 maturityTime
             );
 
-            // Update the checkpoint exposure and global long exposure.
-            uint256 checkpointTime = maturityTime - _positionDuration;
-            int128 checkpointExposureBefore = int128(
-                _checkpoints[checkpointTime].exposure
-            );
-            _updateCheckpointExposureOnClose(
-                bondAmount,
-                shareCurveDelta,
-                bondReservesDelta,
-                shareReservesDelta,
-                maturityTime,
-                sharePrice_,
-                false
-            );
+            // Update the global long exposure. Since we're closing a short, the
+            // number of non-netted longs increases by the bond amount.
+            int256 nonNettedLongs = _nonNettedLongs(maturityTime);
             _updateLongExposure(
-                checkpointExposureBefore,
-                _checkpoints[checkpointTime].exposure
+                nonNettedLongs - int256(bondAmount),
+                nonNettedLongs
             );
 
             // Distribute the excess idle to the withdrawal pool.
@@ -240,13 +229,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @dev Applies an open short to the state. This includes updating the
     ///      reserves and maintaining the reserve invariants.
     /// @param _bondAmount The amount of bonds shorted.
-    /// @param _baseDeposit The deposit, in base, required to open the short.
     /// @param _shareReservesDelta The amount of shares paid to the curve.
     /// @param _sharePrice The share price.
     /// @param _maturityTime The maturity time of the long.
     function _applyOpenShort(
         uint256 _bondAmount,
-        uint256 _baseDeposit,
         uint256 _shareReservesDelta,
         uint256 _sharePrice,
         uint256 _maturityTime
@@ -289,30 +276,16 @@ abstract contract HyperdriveShort is HyperdriveLP {
             revert IHyperdrive.InvalidShareReserves();
         }
 
-        // Update the checkpoint's short deposits and decrease the exposure.
-        uint256 _latestCheckpoint = _latestCheckpoint();
-        int128 checkpointExposureBefore = int128(
-            _checkpoints[_latestCheckpoint].exposure
-        );
-
-        // Round the base deposit down to the nearest multiple of the precision
-        // threshold. We specifically round down because there are cases where
-        // a smaller short deposit is larger than a larger long's fixed interest.
-        // This happens because exponentiation in FixedPointMath is only accurate
-        // to 1e14. The result of this innacuracy is that it causes a solvency issue
-        // once all LPs have withdrawn, all positions mature, and the shorts have
-        // been closed. When applyCheckpoint is closing the longs, it results in an
-        // underflow bc there aren't enough shareReserves available.
-        _baseDeposit = _baseDeposit - (_baseDeposit % _precisionThreshold);
-        uint256 exposureDelta = _baseDeposit + _bondAmount;
-        _checkpoints[_latestCheckpoint].exposure -= int128(
-            exposureDelta.toUint128()
-        );
+        // Update the global long exposure. Since we're opening a short, the
+        // number of non-netted longs decreases by the bond amount.
+        int256 nonNettedLongs = _nonNettedLongs(_maturityTime);
         _updateLongExposure(
-            checkpointExposureBefore,
-            _checkpoints[_latestCheckpoint].exposure
+            nonNettedLongs,
+            nonNettedLongs - int256(_bondAmount)
         );
 
+        // FIXME: Is this still needed?
+        //
         // Opening a short decreases the system's exposure because the short's
         // margin can be used to offset some of the long exposure. Despite this,
         // opening a short decreases the share reserves, which limits the amount
@@ -470,8 +443,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @return bondReservesDelta The change in the bond reserves.
     /// @return shareProceeds The proceeds in shares of closing the short.
     /// @return shareReservesDelta The shares added to the reserves.
-    /// @return shareCurveDelta The curve portion of the proceeds that LPs
-    ///         receive from the trader in shares.
     /// @return shareAdjustmentDelta The change in the share adjustment.
     /// @return totalGovernanceFee The governance fee in shares.
     function _calculateCloseShort(
@@ -485,7 +456,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 bondReservesDelta,
             uint256 shareProceeds,
             uint256 shareReservesDelta,
-            uint256 shareCurveDelta,
             int256 shareAdjustmentDelta,
             uint256 totalGovernanceFee
         )
@@ -493,6 +463,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Calculate the effect that closing the short should have on the pool's
         // reserves as well as the amount of shares the trader pays to buy the
         // bonds that they shorted back at the market price.
+        uint256 shareCurveDelta;
         {
             // Calculate the effect that closing the short should have on the
             // pool's reserves as well as the amount of shares the trader needs
