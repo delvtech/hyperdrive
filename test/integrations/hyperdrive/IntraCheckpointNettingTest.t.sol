@@ -749,16 +749,15 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             shortMaturityTimes[i] = maturityTimeShort;
         }
 
-        // Checkpoint Exposure should be small even if there are many trades
-        int256 checkpointExposure = int256(
-            hyperdrive
-                .getCheckpoint(HyperdriveUtils.latestCheckpoint(hyperdrive))
-                .exposure
+        // The amount of non-netted longs should be equal to zero since the
+        // bond amounts cancel out.
+        assertEq(
+            hyperdrive.getNonNettedLongs(
+                hyperdrive.latestCheckpoint() +
+                    hyperdrive.getPoolConfig().positionDuration
+            ),
+            0
         );
-        checkpointExposure = checkpointExposure < 0
-            ? -checkpointExposure
-            : checkpointExposure;
-        assertLe(uint256(checkpointExposure), PRECISION_THRESHOLD * numTrades);
 
         // fast forward time, create checkpoints and accrue interest
         advanceTimeWithCheckpoints(timeElapsed, variableInterest);

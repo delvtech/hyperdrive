@@ -173,11 +173,11 @@ library HyperdriveUtils {
         IHyperdrive _hyperdrive,
         uint256 _maxIterations
     ) internal view returns (uint256 baseAmount) {
-        IHyperdrive.Checkpoint memory checkpoint = _hyperdrive.getCheckpoint(
-            _hyperdrive.latestCheckpoint()
-        );
-        IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
+        IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
+        int256 nonNettedLongs = _hyperdrive.getNonNettedLongs(
+            _hyperdrive.latestCheckpoint() + poolConfig.positionDuration
+        );
         (baseAmount, ) = calculateMaxLong(
             MaxTradeParams({
                 shareReserves: poolInfo.shareReserves,
@@ -193,7 +193,7 @@ library HyperdriveUtils {
                 flatFee: poolConfig.fees.flat,
                 governanceFee: poolConfig.fees.governance
             }),
-            checkpoint.exposure,
+            nonNettedLongs,
             _maxIterations
         );
         return baseAmount;
@@ -216,11 +216,11 @@ library HyperdriveUtils {
         IHyperdrive _hyperdrive,
         uint256 _maxIterations
     ) internal view returns (uint256) {
-        IHyperdrive.Checkpoint memory checkpoint = _hyperdrive.getCheckpoint(
-            _hyperdrive.latestCheckpoint()
-        );
-        IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
+        IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
+        int256 nonNettedLongs = _hyperdrive.getNonNettedLongs(
+            _hyperdrive.latestCheckpoint() + poolConfig.positionDuration
+        );
         return
             calculateMaxShort(
                 MaxTradeParams({
@@ -237,7 +237,7 @@ library HyperdriveUtils {
                     flatFee: poolConfig.fees.flat,
                     governanceFee: poolConfig.fees.governance
                 }),
-                checkpoint.exposure,
+                nonNettedLongs,
                 _maxIterations
             );
     }

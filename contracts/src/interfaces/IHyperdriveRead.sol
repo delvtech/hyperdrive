@@ -11,6 +11,10 @@ interface IHyperdriveRead is IMultiTokenRead {
         uint256 _checkpointId
     ) external view returns (IHyperdrive.Checkpoint memory);
 
+    function getNonNettedLongs(
+        uint256 _maturityTime
+    ) external view returns (int256);
+
     function getWithdrawPool()
         external
         view

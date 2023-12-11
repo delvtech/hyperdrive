@@ -218,6 +218,15 @@ abstract contract HyperdriveTarget0 is
         _revert(abi.encode(_checkpoints[_checkpointId]));
     }
 
+    /// @notice Gets the non-netted longs with a given maturity time.
+    /// @param _maturityTime The maturity time.
+    /// @return The non-netted longs.
+    function getNonNettedLongs(
+        uint256 _maturityTime
+    ) external view returns (int256) {
+        _revert(abi.encode(_nonNettedLongs(_maturityTime)));
+    }
+
     /// @notice Gets the pool's configuration parameters.
     /// @dev These parameters are immutable, so this should only need to be
     ///      called once.
