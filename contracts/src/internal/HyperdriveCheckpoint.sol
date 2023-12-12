@@ -127,7 +127,7 @@ abstract contract HyperdriveCheckpoint is
             uint256 shareReservesDelta = maturedShortsAmount.divDown(
                 _sharePrice
             );
-            uint256 shareProceeds = HyperdriveMath.calculateShortProceeds(
+            shareProceeds = HyperdriveMath.calculateShortProceeds(
                 maturedShortsAmount,
                 shareReservesDelta,
                 openSharePrice,
