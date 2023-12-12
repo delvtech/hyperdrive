@@ -38,11 +38,13 @@ impl State {
         share_price: FixedPoint,
         flat_fee: FixedPoint,
     ) -> FixedPoint {
-        let mut bond_factor = bond_amount.mul_div_down(
-            close_share_price,
-            // We round up here do avoid overestimating the share proceeds.
-            open_share_price.mul_up(share_price),
-        );
+        let mut bond_factor = bond_amount
+            .mul_div_down(
+                close_share_price,
+                // We round up here do avoid overestimating the share proceeds.
+                open_share_price,
+            )
+            .div_down(share_price);
         bond_factor += bond_amount.mul_div_down(flat_fee, share_price);
 
         if bond_factor > share_amount {
