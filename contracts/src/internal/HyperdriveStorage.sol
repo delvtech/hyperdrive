@@ -58,10 +58,6 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
     ///      closed with.
     uint256 internal immutable _minimumTransactionAmount;
 
-    /// @dev The amount of precision expected to lose due to exponentiation
-    ///      implementation.
-    uint256 internal immutable _precisionThreshold;
-
     /// @dev The state of the market. This includes the reserves, buffers, and
     ///      other data used to price trades and maintain solvency.
     IHyperdrive.MarketState internal _marketState;
@@ -140,8 +136,11 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
         }
         _minimumShareReserves = _config.minimumShareReserves;
 
+        // Initialize the minimum transaction amount. The minimum transaction
+        // amount defines the minimum input that the system will allow, which
+        // prevents weird rounding issues that can occur with very small
+        // amounts.
         _minimumTransactionAmount = _config.minimumTransactionAmount;
-        _precisionThreshold = _config.precisionThreshold;
 
         // Initialize the time configurations. There must be at least one
         // checkpoint per term to avoid having a position duration of zero.

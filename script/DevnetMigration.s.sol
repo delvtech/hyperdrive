@@ -57,7 +57,6 @@ contract DevnetMigration is Script {
         uint256 hyperdriveInitialSharePrice;
         uint256 hyperdriveMinimumShareReserves;
         uint256 hyperdriveMinimumTransactionAmount;
-        uint256 hyperdrivePrecisionThreshold;
         uint256 hyperdrivePositionDuration;
         uint256 hyperdriveCheckpointDuration;
         uint256 hyperdriveTimeStretchApr;
@@ -125,10 +124,6 @@ contract DevnetMigration is Script {
             hyperdriveMinimumTransactionAmount: vm.envOr(
                 "HYPERDRIVE_MINIMUM_TRANSACTION_AMOUNT",
                 uint256(0.001e18)
-            ),
-            hyperdrivePrecisionThreshold: vm.envOr(
-                "HYPERDRIVE_PRECISION_THRESHOLD",
-                uint256(1e14)
             ),
             hyperdrivePositionDuration: vm.envOr(
                 "HYPERDRIVE_POSITION_DURATION",
@@ -225,7 +220,6 @@ contract DevnetMigration is Script {
                 minimumShareReserves: config.hyperdriveMinimumShareReserves,
                 minimumTransactionAmount: config
                     .hyperdriveMinimumTransactionAmount,
-                precisionThreshold: config.hyperdrivePrecisionThreshold,
                 positionDuration: config.hyperdrivePositionDuration,
                 checkpointDuration: config.hyperdriveCheckpointDuration,
                 timeStretch: config

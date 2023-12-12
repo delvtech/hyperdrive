@@ -17,6 +17,8 @@ contract HyperdriveMathTest is HyperdriveTest {
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
 
+    uint256 internal constant PRECISION_THRESHOLD = 1e14;
+
     function test__calcSpotPrice() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
