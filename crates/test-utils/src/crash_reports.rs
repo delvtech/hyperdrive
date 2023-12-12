@@ -1,8 +1,7 @@
 /// This module provides the `CrashReport` struct which implents `Deserialize`.
 /// It is intended to be used to deserialize crash reports from JSON.
-use ethers::types::{Address, Bytes, H256, U256};
+use ethers::types::{Address, Bytes, U256};
 use hyperdrive_addresses::Addresses;
-use hyperdrive_wrappers::wrappers::i_hyperdrive::{Checkpoint, Fees, PoolConfig, PoolInfo};
 use serde::{Deserialize, Deserializer};
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
@@ -58,107 +57,6 @@ impl From<RawTrade> for Trade {
     }
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct RawPoolConfig {
-    base_token: Address,
-    linker_factory: Address,
-    linker_code_hash: H256,
-    initial_share_price: u128,
-    minimum_share_reserves: u128,
-    minimum_transaction_amount: u128,
-    precision_threshold: u128,
-    position_duration: u64,
-    checkpoint_duration: u64,
-    time_stretch: u128,
-    governance: Address,
-    fee_collector: Address,
-    fees: Vec<u128>,
-}
-
-impl From<RawPoolConfig> for PoolConfig {
-    fn from(r: RawPoolConfig) -> Self {
-        if r.fees.len() != 3 {
-            panic!("Expected 3 fees, got {}", r.fees.len());
-        }
-        Self {
-            base_token: r.base_token,
-            linker_factory: r.linker_factory,
-            linker_code_hash: r.linker_code_hash.into(),
-            initial_share_price: r.initial_share_price.into(),
-            minimum_share_reserves: r.minimum_share_reserves.into(),
-            minimum_transaction_amount: r.minimum_transaction_amount.into(),
-            precision_threshold: r.precision_threshold.into(),
-            position_duration: r.position_duration.into(),
-            checkpoint_duration: r.checkpoint_duration.into(),
-            time_stretch: r.time_stretch.into(),
-            governance: r.governance,
-            fee_collector: r.fee_collector,
-            fees: Fees {
-                curve: r.fees[0].into(),
-                flat: r.fees[1].into(),
-                governance: r.fees[2].into(),
-            },
-        }
-    }
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct RawPoolInfo {
-    share_reserves: u128,
-    share_adjustment: i128,
-    zombie_share_reserves: u128,
-    bond_reserves: u128,
-    lp_total_supply: u128,
-    share_price: u128,
-    longs_outstanding: u128,
-    long_average_maturity_time: u128,
-    shorts_outstanding: u128,
-    short_average_maturity_time: u128,
-    withdrawal_shares_ready_to_withdraw: u128,
-    withdrawal_shares_proceeds: u128,
-    lp_share_price: u128,
-    long_exposure: u128,
-}
-
-impl From<RawPoolInfo> for PoolInfo {
-    fn from(r: RawPoolInfo) -> Self {
-        Self {
-            share_reserves: r.share_reserves.into(),
-            share_adjustment: r.share_adjustment.into(),
-            zombie_share_reserves: r.zombie_share_reserves.into(),
-            bond_reserves: r.bond_reserves.into(),
-            lp_total_supply: r.lp_total_supply.into(),
-            share_price: r.share_price.into(),
-            longs_outstanding: r.longs_outstanding.into(),
-            long_average_maturity_time: r.long_average_maturity_time.into(),
-            shorts_outstanding: r.shorts_outstanding.into(),
-            short_average_maturity_time: r.short_average_maturity_time.into(),
-            withdrawal_shares_ready_to_withdraw: r.withdrawal_shares_ready_to_withdraw.into(),
-            withdrawal_shares_proceeds: r.withdrawal_shares_proceeds.into(),
-            lp_share_price: r.lp_share_price.into(),
-            long_exposure: r.long_exposure.into(),
-        }
-    }
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct RawCheckpoint {
-    share_price: u128,
-    exposure: i128,
-}
-
-impl From<RawCheckpoint> for Checkpoint {
-    fn from(r: RawCheckpoint) -> Self {
-        Self {
-            share_price: r.share_price,
-            exposure: r.exposure,
-        }
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CrashReport {
     /// Crash Metadata
@@ -173,10 +71,6 @@ pub struct CrashReport {
     pub addresses: Addresses,
     pub agent_info: AgentInfo,
     pub trade: Trade,
-    /// Pool Context
-    pub pool_config: PoolConfig,
-    pub pool_info: PoolInfo,
-    pub checkpoint: Checkpoint,
     /// State Dump
     pub state_dump: Bytes,
 }
@@ -197,13 +91,6 @@ struct RawCrashReport {
     agent_info: AgentInfo,
     #[serde(rename = "raw_trade_object")]
     trade: RawTrade,
-    // Pool Context
-    #[serde(rename = "raw_pool_config")]
-    pool_config: RawPoolConfig,
-    #[serde(rename = "raw_pool_info")]
-    pool_info: RawPoolInfo,
-    #[serde(rename = "raw_checkpoint")]
-    checkpoint: RawCheckpoint,
     // State Dump
     #[serde(rename = "anvil_dump_state")]
     state_dump: Bytes,
@@ -224,10 +111,6 @@ impl From<RawCrashReport> for CrashReport {
             addresses: r.addresses,
             agent_info: r.agent_info,
             trade: r.trade.into(),
-            // Pool Context
-            pool_config: r.pool_config.into(),
-            pool_info: r.pool_info.into(),
-            checkpoint: r.checkpoint.into(),
             // State Dump
             state_dump: r.state_dump,
         }
@@ -287,7 +170,6 @@ mod tests {
         "initialSharePrice": 1000000000000000000,
         "minimumShareReserves": 10000000000000000000,
         "minimumTransactionAmount": 1000000000000000,
-        "precisionThreshold" : 10000000000000,
         "positionDuration": 604800,
         "checkpointDuration": 3600,
         "timeStretch": 44463125629060298,
@@ -357,7 +239,6 @@ mod tests {
         "initialSharePrice": "1.0",
         "minimumShareReserves": "10.0",
         "minimumTransactionAmount": "0.001",
-        "precisionThreshold": "0.0001",
         "positionDuration": 604800,
         "checkpointDuration": 3600,
         "timeStretch": "0.044463125629060298",
@@ -431,46 +312,6 @@ mod tests {
                     trade_amount: uint256!(1000000000000000000),
                     slippage_tolerance: None,
                     maturity_time: 604800
-                },
-                // Pool Context
-                pool_config: PoolConfig {
-                    base_token: "0x5FbDB2315678afecb367f032d93F642f64180aa3".parse()?,
-                    linker_factory: "0x33027547537D35728a741470dF1CCf65dE10b454".parse()?,
-                    linker_code_hash: "0x33027547537d35728a741470df1ccf65de10b454ca0def7c5c20b257b7b8d161".parse::<H256>()?.into(),
-                    initial_share_price: uint256!(1000000000000000000),
-                    minimum_share_reserves: uint256!(10000000000000000000),
-                    minimum_transaction_amount: uint256!(1000000000000000),
-                    precision_threshold: uint256!(10000000000000),
-                    position_duration: uint256!(604800),
-                    checkpoint_duration: uint256!(3600),
-                    time_stretch: uint256!(44463125629060298),
-                    governance: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266".parse()?,
-                    fee_collector: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266".parse()?,
-                    fees: Fees {
-                        curve: uint256!(100000000000000000),
-                        flat: uint256!(500000000000000),
-                        governance: uint256!(150000000000000000),
-                    },
-                },
-                pool_info: PoolInfo {
-                    share_reserves: uint256!(100000000000000000000000000),
-                    share_adjustment: int256!(0),
-                    zombie_share_reserves: uint256!(0),
-                    bond_reserves: uint256!(102178995195337961200000000),
-                    lp_total_supply: uint256!(99999990000000000000000000),
-                    share_price: uint256!(1000000006341958396),
-                    longs_outstanding: uint256!(0),
-                    long_average_maturity_time: uint256!(0),
-                    shorts_outstanding: uint256!(0),
-                    short_average_maturity_time: uint256!(0),
-                    withdrawal_shares_ready_to_withdraw: uint256!(0),
-                    withdrawal_shares_proceeds: uint256!(0),
-                    lp_share_price: uint256!(1000000006341958396),
-                    long_exposure: uint256!(0)
-                },
-                checkpoint: Checkpoint {
-                    share_price: 1000000000000000000,
-                    exposure: 0,
                 },
                 // State Dump
                 state_dump: "0x7b22".parse()?,

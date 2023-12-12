@@ -126,9 +126,6 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         ///      as well as the share price at closing of matured longs and
         ///      shorts.
         uint128 sharePrice;
-        /// @dev If exposure is positive, then we have net long exposure, otherwise
-        ///      we have net short exposure in the checkpoint.
-        int128 exposure;
     }
 
     struct WithdrawPool {
@@ -162,9 +159,6 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         /// @dev The minimum amount of tokens that a position can be opened or
         ///      closed with.
         uint256 minimumTransactionAmount;
-        /// @dev The amount of precision expected to lose due to exponentiation
-        ///      implementation.
-        uint256 precisionThreshold;
         /// @dev The duration of a position prior to maturity.
         uint256 positionDuration;
         /// @dev The duration of a checkpoint.
@@ -231,9 +225,6 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     /// ### Hyperdrive ###
     /// ##################
     error ApprovalFailed();
-    // TODO: We should rename this so that it's clear that it pertains to
-    // solvency.
-    error BaseBufferExceedsShareReserves();
     error BelowMinimumContribution();
     error BelowMinimumShareReserves();
     error InvalidApr();
@@ -247,6 +238,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     error InvalidShareReserves();
     error InvalidFeeAmounts();
     error InvalidFeeDestination();
+    error InsufficientLiquidity();
     error NegativeInterest();
     error NegativePresentValue();
     error NoAssetsToWithdraw();

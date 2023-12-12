@@ -21,6 +21,7 @@ abstract contract HyperdriveCheckpoint is
     HyperdriveShort
 {
     using FixedPointMath for uint256;
+    using FixedPointMath for int256;
     using SafeCast for uint256;
 
     /// @dev Attempts to mint a checkpoint with the specified checkpoint time.
@@ -169,16 +170,15 @@ abstract contract HyperdriveCheckpoint is
             positionsClosed = true;
         }
 
-        // Update the checkpoint exposure and global long exposure.
+        // If we closed any positions, update the global long exposure and
+        // distribute any excess idle to the withdrawal pool.
         if (positionsClosed) {
-            uint256 maturityTime = _checkpointTime - _positionDuration;
-            int128 checkpointExposureBefore = int128(
-                _checkpoints[maturityTime].exposure
-            );
-            _checkpoints[maturityTime].exposure = 0;
+            // Update the global long exposure. Since we've closed some matured
+            // positions, we can reduce the long exposure for the matured
+            // checkpoint to zero.
             _updateLongExposure(
-                checkpointExposureBefore,
-                _checkpoints[maturityTime].exposure
+                int256(maturedLongsAmount) - int256(maturedShortsAmount),
+                0
             );
 
             // Distribute the excess idle to the withdrawal pool.

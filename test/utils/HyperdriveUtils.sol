@@ -175,11 +175,8 @@ library HyperdriveUtils {
         IHyperdrive _hyperdrive,
         uint256 _maxIterations
     ) internal view returns (uint256 baseAmount) {
-        IHyperdrive.Checkpoint memory checkpoint = _hyperdrive.getCheckpoint(
-            _hyperdrive.latestCheckpoint()
-        );
-        IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
+        IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         (baseAmount, ) = calculateMaxLong(
             MaxTradeParams({
                 shareReserves: poolInfo.shareReserves,
@@ -195,7 +192,7 @@ library HyperdriveUtils {
                 flatFee: poolConfig.fees.flat,
                 governanceFee: poolConfig.fees.governance
             }),
-            checkpoint.exposure,
+            _hyperdrive.getCheckpointExposure(_hyperdrive.latestCheckpoint()),
             _maxIterations
         );
         return baseAmount;
@@ -218,11 +215,8 @@ library HyperdriveUtils {
         IHyperdrive _hyperdrive,
         uint256 _maxIterations
     ) internal view returns (uint256) {
-        IHyperdrive.Checkpoint memory checkpoint = _hyperdrive.getCheckpoint(
-            _hyperdrive.latestCheckpoint()
-        );
-        IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
+        IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         return
             calculateMaxShort(
                 MaxTradeParams({
@@ -239,7 +233,9 @@ library HyperdriveUtils {
                     flatFee: poolConfig.fees.flat,
                     governanceFee: poolConfig.fees.governance
                 }),
-                checkpoint.exposure,
+                _hyperdrive.getCheckpointExposure(
+                    _hyperdrive.latestCheckpoint()
+                ),
                 _maxIterations
             );
     }
@@ -634,7 +630,7 @@ library HyperdriveUtils {
     ///      in the checkpoint. The pool's solvency is calculated as:
     ///
     ///      $$
-    ///      s = z - \tfrac{exposure + min(exposure_{c}, 0)}{c} - z_{min}
+    ///      s = z - \tfrac{exposure + min(exposure_{checkpoint}, 0)}{c} - z_{min}
     ///      $$
     ///
     ///      When a long is opened, the share reserves $z$ increase by:
@@ -643,32 +639,27 @@ library HyperdriveUtils {
     ///      \Delta z = \tfrac{x - g(x)}{c}
     ///      $$
     ///
-    ///      In the solidity implementation, we calculate the delta in the
-    ///      exposure as:
-    ///
-    ///      ```
-    ///      shareReservesDelta = _shareAmount - governanceCurveFee.divDown(_sharePrice)
-    ///      uint128 exposureDelta = (2 *
-    ///          _bondProceeds -
-    ///          _shareReservesDelta.mulDown(_sharePrice)).toUint128();
-    ///      ```
-    ///
-    ///      From this, we can calculate our exposure as:
+    ///      Opening the long increases the non-netted longs by the bond amount.
+    ///      From this, the change in the exposure is given by:
     ///
     ///      $$
-    ///      \Delta exposure = 2 \cdot y(x) - x + g(x)
+    ///      \Delta exposure = y(x)
     ///      $$
     ///
     ///      From this, we can calculate $S(x)$ as:
     ///
     ///      $$
     ///      S(x) = \left( z + \Delta z \right) - \left(
-    ///                 \tfrac{exposure + min(exposure_{c}, 0) + \Delta exposure}{c}
+    ///                 \tfrac{
+    ///                     exposure +
+    ///                     min(exposure_{checkpoint}, 0) +
+    ///                     \Delta exposure
+    ///                 }{c}
     ///             \right) - z_{min}
     ///      $$
     ///
     ///      It's possible that the pool is insolvent after opening a long. In
-    ///      this case, we return `false` since the fixed point library can't
+    ///      this case, we return `None` since the fixed point library can't
     ///      represent negative numbers.
     /// @param _params The max long calculation parameters.
     /// @param _checkpointExposure The exposure in the checkpoint.
@@ -694,11 +685,7 @@ library HyperdriveUtils {
         uint256 shareReserves = _params.shareReserves +
             _baseAmount.divDown(_params.sharePrice) -
             governanceFee.divDown(_params.sharePrice);
-        uint256 exposure = _params.longExposure +
-            2 *
-            _bondAmount -
-            _baseAmount +
-            governanceFee;
+        uint256 exposure = _params.longExposure + _bondAmount;
         uint256 checkpointExposure = uint256(-_checkpointExposure.min(0));
         if (
             shareReserves + checkpointExposure.divDown(_params.sharePrice) >=
@@ -723,11 +710,13 @@ library HyperdriveUtils {
     ///      base amount that the long pays is given by:
     ///
     ///      $$
-    ///      S'(x) = \tfrac{2}{c} \cdot \left(
+    ///      S'(x) = \tfrac{1}{c} \cdot \left(
     ///                  1 - y'(x) - \phi_{g} \cdot p \cdot c'(x)
     ///              \right) \\
-    ///            = \tfrac{2}{c} \cdot \left(
-    ///                  1 - y'(x) - \phi_{g} \cdot \phi_{c} \cdot \left( 1 - p \right)
+    ///            = \tfrac{1}{c} \cdot \left(
+    ///                  1 - y'(x) - \phi_{g} \cdot \phi_{c} \cdot \left(
+    ///                      1 - p
+    ///                  \right)
     ///              \right)
     ///      $$
     ///
@@ -766,7 +755,7 @@ library HyperdriveUtils {
         );
         derivative -= ONE;
 
-        return (derivative.mulDivDown(2e18, _params.sharePrice), success);
+        return (derivative.mulDivDown(1e18, _params.sharePrice), success);
     }
 
     /// @dev Gets the long amount that will be opened for a given base amount.
@@ -1189,14 +1178,14 @@ library HyperdriveUtils {
     ///      and $e(x)$ represents the pool's exposure after opening the short:
     ///
     ///      $$
-    ///      e(x) = e_0 - min(x + D(x), max(e_{c}, 0))
+    ///      e(x) = e_0 - min(x, max(e_{c}, 0))
     ///      $$
     ///
     ///      We simplify our $e(x)$ formula by noting that the max short is only
-    ///      constrained by solvency when $x + D(x) > max(e_{c}, 0)$ since
-    ///      $x + D(x)$ grows faster than
+    ///      constrained by solvency when $x > max(e_{c}, 0)$ since $x$ grows
+    ///      faster than
     ///      $P(x) - \tfrac{\phi_{c}}{c} \cdot \left( 1 - p \right) \cdot x$.
-    ///      With this in mind, $min(x + D(x), max(e_{c}, 0)) = max(e_{c}, 0)$
+    ///      With this in mind, $min(x, max(e_{c}, 0)) = max(e_{c}, 0)$
     ///      whenever solvency is actually a constraint, so we can write:
     ///
     ///      $$
@@ -1478,8 +1467,8 @@ library HyperdriveUtils {
         bytes4 _selector
     ) internal pure returns (string memory) {
         // Convert the selector to the correct error message.
-        if (_selector == IHyperdrive.BaseBufferExceedsShareReserves.selector) {
-            return "BaseBufferExceedsShareReserves";
+        if (_selector == IHyperdrive.InsufficientLiquidity.selector) {
+            return "InsufficientLiquidity";
         }
         if (_selector == IHyperdrive.BelowMinimumContribution.selector) {
             return "BelowMinimumContribution";

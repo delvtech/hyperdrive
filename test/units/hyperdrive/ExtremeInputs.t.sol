@@ -185,11 +185,8 @@ contract ExtremeInputs is HyperdriveTest {
         // Bob attempts to short exactly the maximum amount of bonds needed for
         // the share reserves to be equal to zero. This should fail because the
         // share reserves fall below the minimum share reserves.
-        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
-            hyperdrive.latestCheckpoint()
-        );
-        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         targetReserves = targetReserves.normalizeToRange(
             config.minimumTransactionAmount,
             poolConfig.minimumShareReserves - 1
@@ -209,12 +206,12 @@ contract ExtremeInputs is HyperdriveTest {
                 flatFee: poolConfig.fees.flat,
                 governanceFee: poolConfig.fees.governance
             }),
-            checkpoint.exposure,
+            hyperdrive.getCheckpointExposure(hyperdrive.latestCheckpoint()),
             7
         );
         baseToken.mint(shortAmount);
         baseToken.approve(address(hyperdrive), shortAmount);
-        vm.expectRevert(IHyperdrive.BaseBufferExceedsShareReserves.selector);
+        vm.expectRevert(IHyperdrive.InsufficientLiquidity.selector);
         hyperdrive.openShort(
             shortAmount,
             type(uint256).max,
