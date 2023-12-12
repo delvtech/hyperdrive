@@ -239,11 +239,12 @@ contract ZombieInterestTest is HyperdriveTest {
             );
         }
 
-        // This test demonstrates a case where the baseReserves > hyperdrive contract balance.
-        // This is ultimately caused by the difference in the shareProceed calculation in
-        // _applyCheckpoint() at the exact moment of maturtiy vs. when the short is finally redeemed.
-        // The problem was fixed by waiting until the end of the bondFactor calc to divide it by the
-        // current share price ( previously we divided the c0 by c1.mulUp(c) ).
+        // This test demonstrates a case where the baseReserves > hyperdrive
+        // contract balance. This is ultimately caused by the difference in the
+        // shareProceed calculation in _applyCheckpoint() at the exact moment of
+        // maturtiy vs. when the short is finally redeemed. The problem was
+        // fixed by waiting until the end of the bondFactor calc to divide it by
+        // the current share price (previously we divided the c0 by c1.mulUp(c)).
         {
             uint256 variableRateParam = 5620429975859418641699674322; //1.859418638889459335
             uint256 shortTradeSizeParam = 1310781273383530713731927; //1310781.275383530713731927
@@ -260,6 +261,26 @@ contract ZombieInterestTest is HyperdriveTest {
                 closeShortFirstParam
             );
         }
+
+        // FIXME
+        //
+        // // This edge case resulted in an arithmetic underflow.
+        // {
+        //     uint256 variableRateParam = 6924978939;
+        //     uint256 shortTradeSizeParam = 0;
+        //     uint256 delayTimeFirstTradeParam = 1861560084099383131501047849308972;
+        //     uint256 zombieTimeParam = 107109769472532495263397661882730987280282752509135183533614363784603189997220;
+        //     bool removeLiquidityBeforeMaturityParam = false;
+        //     bool closeShortFirstParam = false;
+        //     _test_zombie_interest_short_lp(
+        //         variableRateParam,
+        //         shortTradeSizeParam,
+        //         delayTimeFirstTradeParam,
+        //         zombieTimeParam,
+        //         removeLiquidityBeforeMaturityParam,
+        //         closeShortFirstParam
+        //     );
+        // }
     }
 
     function _test_zombie_interest_short_lp(
