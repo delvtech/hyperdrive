@@ -91,7 +91,6 @@ abstract contract ERC4626Base is HyperdriveBase {
         uint256 _shares,
         IHyperdrive.Options calldata _options
     ) internal override returns (uint256 amountWithdrawn) {
-
         // Just return zero in this case
         if ( _shares == 0 ) {
             return 0;

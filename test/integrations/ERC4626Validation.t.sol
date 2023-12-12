@@ -20,8 +20,6 @@ import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 
-import "forge-std/console2.sol";
-
 abstract contract ERC4626ValidationTest is HyperdriveTest {
     using FixedPointMath for *;
     using Lib for *;
@@ -471,8 +469,6 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             })
         );
 
-        console2.log("baseProceeds", baseProceeds.toString(18));
-
         // Ensure that the ERC4626 aggregates and the token balances were updated
         // correctly during the trade.
         verifyWithdrawalShares(
@@ -552,8 +548,6 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
-
-        console2.log("proceeds", proceeds.toString(18));
 
         // Ensure that the ERC4626 aggregates and the token balances were updated
         // correctly during the trade.
