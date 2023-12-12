@@ -203,7 +203,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // Distribute the excess idle to the withdrawal pool.
             _distributeExcessIdle(sharePrice_);
         } else {
-            // The user is redeeming a long that has already matured. So we
+            // The user is redeeming a short that has already matured. So we
             // collect the interest that has accrued since the last checkpoint.
             // NOTE: We only collect the interest on the position that is being closed.
             uint256 checkpointTime = _latestCheckpoint();
