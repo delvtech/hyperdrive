@@ -428,7 +428,6 @@ contract ZombieInterestTest is HyperdriveTest {
         // Alice removes liquidity.
         removeLiquidity(alice, aliceLpShares);
         baseToken.balanceOf(address(hyperdrive));
-        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
 
         // Verify that the baseToken balance is within the expected range.
         assertGe(
