@@ -785,6 +785,18 @@ contract LpWithdrawalTest is HyperdriveTest {
                 variableRate
             );
         }
+        // FIXME: What's the problem with this edge case?
+        // vm.revertTo(snapshotId);
+        // {
+        //     uint256 longBasePaid = 1411883933913917429029306960;
+        //     uint256 shortAmount = 18871739653543776647409703;
+        //     int256 variableRate = 18036;
+        //     _test_lp_withdrawal_long_short_redemption(
+        //         longBasePaid,
+        //         shortAmount,
+        //         variableRate
+        //     );
+        // }
     }
 
     function test_lp_withdrawal_long_short_redemption(
