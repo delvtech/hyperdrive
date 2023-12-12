@@ -2,22 +2,22 @@
 pragma solidity 0.8.19;
 
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { LPMath } from "contracts/src/libraries/LPMath.sol";
+import { LpMath } from "contracts/src/libraries/LpMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
-import { MockLPMath } from "contracts/test/MockLPMath.sol";
+import { MockLpMath } from "contracts/test/MockLpMath.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-contract LPMathTest is HyperdriveTest {
+contract LpMathTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for *;
     using Lib for *;
 
     function test__calculatePresentValue() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockLPMath lpMath = new MockLPMath();
+        MockLpMath lpMath = new MockLpMath();
 
         uint256 apr = 0.02e18;
         uint256 initialSharePrice = 1e18;
@@ -26,7 +26,7 @@ contract LPMathTest is HyperdriveTest {
 
         // no open positions.
         {
-            LPMath.PresentValueParams memory params = LPMath
+            LpMath.PresentValueParams memory params = LpMath
                 .PresentValueParams({
                     shareReserves: 500_000_000e18,
                     shareAdjustment: 0,
@@ -55,7 +55,7 @@ contract LPMathTest is HyperdriveTest {
 
         // all longs on the curve.
         {
-            LPMath.PresentValueParams memory params = LPMath
+            LpMath.PresentValueParams memory params = LpMath
                 .PresentValueParams({
                     shareReserves: 500_000_000e18,
                     shareAdjustment: 0,
@@ -93,7 +93,7 @@ contract LPMathTest is HyperdriveTest {
 
         // all longs on the flat.
         {
-            LPMath.PresentValueParams memory params = LPMath
+            LpMath.PresentValueParams memory params = LpMath
                 .PresentValueParams({
                     shareReserves: 500_000_000e18,
                     shareAdjustment: 0,
@@ -125,7 +125,7 @@ contract LPMathTest is HyperdriveTest {
 
         // all shorts on the curve.
         {
-            LPMath.PresentValueParams memory params = LPMath
+            LpMath.PresentValueParams memory params = LpMath
                 .PresentValueParams({
                     shareReserves: 500_000_000e18,
                     shareAdjustment: 0,
@@ -163,7 +163,7 @@ contract LPMathTest is HyperdriveTest {
 
         // all shorts on the flat.
         {
-            LPMath.PresentValueParams memory params = LPMath
+            LpMath.PresentValueParams memory params = LpMath
                 .PresentValueParams({
                     shareReserves: 500_000_000e18,
                     shareAdjustment: 0,
@@ -195,7 +195,7 @@ contract LPMathTest is HyperdriveTest {
 
         // longs and shorts completely net.
         {
-            LPMath.PresentValueParams memory params = LPMath
+            LpMath.PresentValueParams memory params = LpMath
                 .PresentValueParams({
                     shareReserves: 500_000_000e18,
                     shareAdjustment: 0,
@@ -224,7 +224,7 @@ contract LPMathTest is HyperdriveTest {
 
         // all shorts on the curve, all longs on the flat.
         {
-            LPMath.PresentValueParams memory params = LPMath
+            LpMath.PresentValueParams memory params = LpMath
                 .PresentValueParams({
                     shareReserves: 500_000_000e18,
                     shareAdjustment: 0,
@@ -267,7 +267,7 @@ contract LPMathTest is HyperdriveTest {
 
         // all longs on the curve, all shorts on the flat.
         {
-            LPMath.PresentValueParams memory params = LPMath
+            LpMath.PresentValueParams memory params = LpMath
                 .PresentValueParams({
                     shareReserves: 500_000_000e18,
                     shareAdjustment: 0,
@@ -310,7 +310,7 @@ contract LPMathTest is HyperdriveTest {
 
         // small amount of longs, large amount of shorts
         {
-            LPMath.PresentValueParams memory params = LPMath
+            LpMath.PresentValueParams memory params = LpMath
                 .PresentValueParams({
                     shareReserves: 500_000_000e18,
                     shareAdjustment: 0,
@@ -366,7 +366,7 @@ contract LPMathTest is HyperdriveTest {
 
         // large amount of longs, small amount of shorts
         {
-            LPMath.PresentValueParams memory params = LPMath
+            LpMath.PresentValueParams memory params = LpMath
                 .PresentValueParams({
                     shareReserves: 500_000_000e18,
                     shareAdjustment: 0,
@@ -425,7 +425,7 @@ contract LPMathTest is HyperdriveTest {
         // This scenario simulates all of the LPs losing their liquidity. What
         // is important is that the calculation won't fail in this scenario.
         {
-            LPMath.PresentValueParams memory params = LPMath
+            LpMath.PresentValueParams memory params = LpMath
                 .PresentValueParams({
                     shareReserves: 100_000e18,
                     shareAdjustment: 0,
@@ -492,7 +492,7 @@ contract LPMathTest is HyperdriveTest {
 
         // complicated scenario with non-trivial minimum share reserves
         {
-            LPMath.PresentValueParams memory params = LPMath
+            LpMath.PresentValueParams memory params = LpMath
                 .PresentValueParams({
                     shareReserves: 100_000e18,
                     shareAdjustment: 0,
@@ -559,7 +559,7 @@ contract LPMathTest is HyperdriveTest {
 
         // complicated scenario with non-trivial share adjustment
         {
-            LPMath.PresentValueParams memory params = LPMath
+            LpMath.PresentValueParams memory params = LpMath
                 .PresentValueParams({
                     shareReserves: 100_000e18,
                     shareAdjustment: 10_000e18,
@@ -628,7 +628,7 @@ contract LPMathTest is HyperdriveTest {
     // FIXME: DRY this up and make it a table-driven test.
     function test__calculateMaxShareReservesDelta() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockLPMath lpMath = new MockLPMath();
+        MockLpMath lpMath = new MockLpMath();
 
         uint256 apr = 0.02e18;
         uint256 initialSharePrice = 1e18;
@@ -649,7 +649,7 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
-            LPMath.PresentValueParams memory presentValueParams = LPMath
+            LpMath.PresentValueParams memory presentValueParams = LpMath
                 .PresentValueParams({
                     shareReserves: shareReserves,
                     shareAdjustment: shareAdjustment,
@@ -663,10 +663,10 @@ contract LPMathTest is HyperdriveTest {
                     shortsOutstanding: 0,
                     shortAverageTimeRemaining: 0
                 });
-            LPMath.DistributeExcessIdleParams memory params = LPMath
+            LpMath.DistributeExcessIdleParams memory params = LpMath
                 .DistributeExcessIdleParams({
                     presentValueParams: presentValueParams,
-                    startingPresentValue: LPMath.calculatePresentValue(
+                    startingPresentValue: LpMath.calculatePresentValue(
                         presentValueParams
                     ),
                     activeLpTotalSupply: 0, // unused
@@ -713,7 +713,7 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
-            LPMath.PresentValueParams memory presentValueParams = LPMath
+            LpMath.PresentValueParams memory presentValueParams = LpMath
                 .PresentValueParams({
                     shareReserves: shareReserves,
                     shareAdjustment: shareAdjustment,
@@ -727,10 +727,10 @@ contract LPMathTest is HyperdriveTest {
                     shortsOutstanding: 10_000_000e18,
                     shortAverageTimeRemaining: 0.5e18
                 });
-            LPMath.DistributeExcessIdleParams memory params = LPMath
+            LpMath.DistributeExcessIdleParams memory params = LpMath
                 .DistributeExcessIdleParams({
                     presentValueParams: presentValueParams,
-                    startingPresentValue: LPMath.calculatePresentValue(
+                    startingPresentValue: LpMath.calculatePresentValue(
                         presentValueParams
                     ),
                     activeLpTotalSupply: 0, // unused
@@ -777,7 +777,7 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
-            LPMath.PresentValueParams memory presentValueParams = LPMath
+            LpMath.PresentValueParams memory presentValueParams = LpMath
                 .PresentValueParams({
                     shareReserves: shareReserves,
                     shareAdjustment: shareAdjustment,
@@ -791,10 +791,10 @@ contract LPMathTest is HyperdriveTest {
                     shortsOutstanding: 1_000_000e18,
                     shortAverageTimeRemaining: 0.5e18
                 });
-            LPMath.DistributeExcessIdleParams memory params = LPMath
+            LpMath.DistributeExcessIdleParams memory params = LpMath
                 .DistributeExcessIdleParams({
                     presentValueParams: presentValueParams,
-                    startingPresentValue: LPMath.calculatePresentValue(
+                    startingPresentValue: LpMath.calculatePresentValue(
                         presentValueParams
                     ),
                     activeLpTotalSupply: 0, // unused
@@ -842,7 +842,7 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
-            LPMath.PresentValueParams memory presentValueParams = LPMath
+            LpMath.PresentValueParams memory presentValueParams = LpMath
                 .PresentValueParams({
                     shareReserves: shareReserves,
                     shareAdjustment: shareAdjustment,
@@ -856,10 +856,10 @@ contract LPMathTest is HyperdriveTest {
                     shortsOutstanding: 10_000_000e18,
                     shortAverageTimeRemaining: 0.5e18
                 });
-            LPMath.DistributeExcessIdleParams memory params = LPMath
+            LpMath.DistributeExcessIdleParams memory params = LpMath
                 .DistributeExcessIdleParams({
                     presentValueParams: presentValueParams,
-                    startingPresentValue: LPMath.calculatePresentValue(
+                    startingPresentValue: LpMath.calculatePresentValue(
                         presentValueParams
                     ),
                     activeLpTotalSupply: 0, // unused
@@ -907,7 +907,7 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
-            LPMath.PresentValueParams memory presentValueParams = LPMath
+            LpMath.PresentValueParams memory presentValueParams = LpMath
                 .PresentValueParams({
                     shareReserves: shareReserves,
                     shareAdjustment: shareAdjustment,
@@ -921,10 +921,10 @@ contract LPMathTest is HyperdriveTest {
                     shortsOutstanding: 50_000_000e18,
                     shortAverageTimeRemaining: 1e18
                 });
-            LPMath.DistributeExcessIdleParams memory params = LPMath
+            LpMath.DistributeExcessIdleParams memory params = LpMath
                 .DistributeExcessIdleParams({
                     presentValueParams: presentValueParams,
-                    startingPresentValue: LPMath.calculatePresentValue(
+                    startingPresentValue: LpMath.calculatePresentValue(
                         presentValueParams
                     ),
                     activeLpTotalSupply: 0, // unused
@@ -988,7 +988,7 @@ contract LPMathTest is HyperdriveTest {
     // FIXME: DRY this up and make it a table driven test.
     function test__calculateDistributeExcessIdleShareProceeds() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockLPMath lpMath = new MockLPMath();
+        MockLpMath lpMath = new MockLpMath();
 
         uint256 apr = 0.02e18;
         uint256 initialSharePrice = 1e18;
@@ -1009,7 +1009,7 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
-            LPMath.PresentValueParams memory presentValueParams = LPMath
+            LpMath.PresentValueParams memory presentValueParams = LpMath
                 .PresentValueParams({
                     shareReserves: shareReserves,
                     shareAdjustment: shareAdjustment,
@@ -1023,10 +1023,10 @@ contract LPMathTest is HyperdriveTest {
                     shortsOutstanding: 0,
                     shortAverageTimeRemaining: 0
                 });
-            LPMath.DistributeExcessIdleParams memory params = LPMath
+            LpMath.DistributeExcessIdleParams memory params = LpMath
                 .DistributeExcessIdleParams({
                     presentValueParams: presentValueParams,
-                    startingPresentValue: LPMath.calculatePresentValue(
+                    startingPresentValue: LpMath.calculatePresentValue(
                         presentValueParams
                     ),
                     activeLpTotalSupply: 1_000_000e18,
@@ -1048,7 +1048,7 @@ contract LPMathTest is HyperdriveTest {
                 });
 
             // Calculate the starting LP share price.
-            uint256 startingLPSharePrice = LPMath
+            uint256 startingLPSharePrice = LpMath
                 .calculatePresentValue(params.presentValueParams)
                 .divDown(
                     params.activeLpTotalSupply +
@@ -1072,14 +1072,14 @@ contract LPMathTest is HyperdriveTest {
                     params.presentValueParams.shareReserves,
                     params.presentValueParams.shareAdjustment,
                     params.presentValueParams.bondReserves
-                ) = LPMath.calculateUpdateLiquidity(
+                ) = LpMath.calculateUpdateLiquidity(
                     params.originalShareReserves,
                     params.originalShareAdjustment,
                     params.originalBondReserves,
                     params.presentValueParams.minimumShareReserves,
                     -int256(shareProceeds)
                 );
-                endingLPSharePrice = LPMath
+                endingLPSharePrice = LpMath
                     .calculatePresentValue(params.presentValueParams)
                     .divDown(params.activeLpTotalSupply);
             }
@@ -1103,7 +1103,7 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
-            LPMath.PresentValueParams memory presentValueParams = LPMath
+            LpMath.PresentValueParams memory presentValueParams = LpMath
                 .PresentValueParams({
                     shareReserves: shareReserves,
                     shareAdjustment: shareAdjustment,
@@ -1117,10 +1117,10 @@ contract LPMathTest is HyperdriveTest {
                     shortsOutstanding: 0,
                     shortAverageTimeRemaining: 0
                 });
-            LPMath.DistributeExcessIdleParams memory params = LPMath
+            LpMath.DistributeExcessIdleParams memory params = LpMath
                 .DistributeExcessIdleParams({
                     presentValueParams: presentValueParams,
-                    startingPresentValue: LPMath.calculatePresentValue(
+                    startingPresentValue: LpMath.calculatePresentValue(
                         presentValueParams
                     ),
                     activeLpTotalSupply: 1_000_000e18,
@@ -1142,7 +1142,7 @@ contract LPMathTest is HyperdriveTest {
                 });
 
             // Calculate the starting LP share price.
-            uint256 startingLPSharePrice = LPMath
+            uint256 startingLPSharePrice = LpMath
                 .calculatePresentValue(params.presentValueParams)
                 .divDown(
                     params.activeLpTotalSupply +
@@ -1166,14 +1166,14 @@ contract LPMathTest is HyperdriveTest {
                     params.presentValueParams.shareReserves,
                     params.presentValueParams.shareAdjustment,
                     params.presentValueParams.bondReserves
-                ) = LPMath.calculateUpdateLiquidity(
+                ) = LpMath.calculateUpdateLiquidity(
                     params.originalShareReserves,
                     params.originalShareAdjustment,
                     params.originalBondReserves,
                     params.presentValueParams.minimumShareReserves,
                     -int256(shareProceeds)
                 );
-                endingLPSharePrice = LPMath
+                endingLPSharePrice = LpMath
                     .calculatePresentValue(params.presentValueParams)
                     .divDown(params.activeLpTotalSupply);
             }
@@ -1197,7 +1197,7 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
-            LPMath.PresentValueParams memory presentValueParams = LPMath
+            LpMath.PresentValueParams memory presentValueParams = LpMath
                 .PresentValueParams({
                     shareReserves: shareReserves,
                     shareAdjustment: shareAdjustment,
@@ -1211,10 +1211,10 @@ contract LPMathTest is HyperdriveTest {
                     shortsOutstanding: 50_000_000e18,
                     shortAverageTimeRemaining: 1e18
                 });
-            LPMath.DistributeExcessIdleParams memory params = LPMath
+            LpMath.DistributeExcessIdleParams memory params = LpMath
                 .DistributeExcessIdleParams({
                     presentValueParams: presentValueParams,
-                    startingPresentValue: LPMath.calculatePresentValue(
+                    startingPresentValue: LpMath.calculatePresentValue(
                         presentValueParams
                     ),
                     activeLpTotalSupply: 1_000_000e18,
@@ -1236,7 +1236,7 @@ contract LPMathTest is HyperdriveTest {
                 });
 
             // Calculate the starting LP share price.
-            uint256 startingLPSharePrice = LPMath
+            uint256 startingLPSharePrice = LpMath
                 .calculatePresentValue(params.presentValueParams)
                 .divDown(
                     params.activeLpTotalSupply +
@@ -1260,14 +1260,14 @@ contract LPMathTest is HyperdriveTest {
                     params.presentValueParams.shareReserves,
                     params.presentValueParams.shareAdjustment,
                     params.presentValueParams.bondReserves
-                ) = LPMath.calculateUpdateLiquidity(
+                ) = LpMath.calculateUpdateLiquidity(
                     params.originalShareReserves,
                     params.originalShareAdjustment,
                     params.originalBondReserves,
                     params.presentValueParams.minimumShareReserves,
                     -int256(shareProceeds)
                 );
-                endingLPSharePrice = LPMath
+                endingLPSharePrice = LpMath
                     .calculatePresentValue(params.presentValueParams)
                     .divDown(params.activeLpTotalSupply);
             }
@@ -1282,7 +1282,7 @@ contract LPMathTest is HyperdriveTest {
         external
     {
         // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockLPMath lpMath = new MockLPMath();
+        MockLpMath lpMath = new MockLpMath();
 
         uint256 apr = 0.02e18;
         uint256 initialSharePrice = 1e18;
@@ -1303,7 +1303,7 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
-            LPMath.PresentValueParams memory presentValueParams = LPMath
+            LpMath.PresentValueParams memory presentValueParams = LpMath
                 .PresentValueParams({
                     shareReserves: shareReserves,
                     shareAdjustment: shareAdjustment,
@@ -1317,10 +1317,10 @@ contract LPMathTest is HyperdriveTest {
                     shortsOutstanding: 0,
                     shortAverageTimeRemaining: 0
                 });
-            LPMath.DistributeExcessIdleParams memory params = LPMath
+            LpMath.DistributeExcessIdleParams memory params = LpMath
                 .DistributeExcessIdleParams({
                     presentValueParams: presentValueParams,
-                    startingPresentValue: LPMath.calculatePresentValue(
+                    startingPresentValue: LpMath.calculatePresentValue(
                         presentValueParams
                     ),
                     activeLpTotalSupply: 1_000_000e18,
@@ -1342,7 +1342,7 @@ contract LPMathTest is HyperdriveTest {
                 });
 
             // Calculate the starting LP share price.
-            uint256 startingLPSharePrice = LPMath
+            uint256 startingLPSharePrice = LpMath
                 .calculatePresentValue(params.presentValueParams)
                 .divDown(
                     params.activeLpTotalSupply +
@@ -1363,14 +1363,14 @@ contract LPMathTest is HyperdriveTest {
                     params.presentValueParams.shareReserves,
                     params.presentValueParams.shareAdjustment,
                     params.presentValueParams.bondReserves
-                ) = LPMath.calculateUpdateLiquidity(
+                ) = LpMath.calculateUpdateLiquidity(
                     params.originalShareReserves,
                     params.originalShareAdjustment,
                     params.originalBondReserves,
                     params.presentValueParams.minimumShareReserves,
                     -int256(params.idle)
                 );
-                endingLPSharePrice = LPMath
+                endingLPSharePrice = LpMath
                     .calculatePresentValue(params.presentValueParams)
                     .divDown(
                         params.activeLpTotalSupply +
@@ -1401,7 +1401,7 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
-            LPMath.PresentValueParams memory presentValueParams = LPMath
+            LpMath.PresentValueParams memory presentValueParams = LpMath
                 .PresentValueParams({
                     shareReserves: shareReserves,
                     shareAdjustment: shareAdjustment,
@@ -1415,10 +1415,10 @@ contract LPMathTest is HyperdriveTest {
                     shortsOutstanding: 0,
                     shortAverageTimeRemaining: 0
                 });
-            LPMath.DistributeExcessIdleParams memory params = LPMath
+            LpMath.DistributeExcessIdleParams memory params = LpMath
                 .DistributeExcessIdleParams({
                     presentValueParams: presentValueParams,
-                    startingPresentValue: LPMath.calculatePresentValue(
+                    startingPresentValue: LpMath.calculatePresentValue(
                         presentValueParams
                     ),
                     activeLpTotalSupply: 1_000_000e18,
@@ -1440,7 +1440,7 @@ contract LPMathTest is HyperdriveTest {
                 });
 
             // Calculate the starting LP share price.
-            uint256 startingLPSharePrice = LPMath
+            uint256 startingLPSharePrice = LpMath
                 .calculatePresentValue(params.presentValueParams)
                 .divDown(
                     params.activeLpTotalSupply +
@@ -1461,14 +1461,14 @@ contract LPMathTest is HyperdriveTest {
                     params.presentValueParams.shareReserves,
                     params.presentValueParams.shareAdjustment,
                     params.presentValueParams.bondReserves
-                ) = LPMath.calculateUpdateLiquidity(
+                ) = LpMath.calculateUpdateLiquidity(
                     params.originalShareReserves,
                     params.originalShareAdjustment,
                     params.originalBondReserves,
                     params.presentValueParams.minimumShareReserves,
                     -int256(params.idle)
                 );
-                endingLPSharePrice = LPMath
+                endingLPSharePrice = LpMath
                     .calculatePresentValue(params.presentValueParams)
                     .divDown(
                         params.activeLpTotalSupply +
@@ -1496,7 +1496,7 @@ contract LPMathTest is HyperdriveTest {
                 positionDuration,
                 timeStretch
             );
-            LPMath.PresentValueParams memory presentValueParams = LPMath
+            LpMath.PresentValueParams memory presentValueParams = LpMath
                 .PresentValueParams({
                     shareReserves: shareReserves,
                     shareAdjustment: shareAdjustment,
@@ -1510,10 +1510,10 @@ contract LPMathTest is HyperdriveTest {
                     shortsOutstanding: 50_000_000e18,
                     shortAverageTimeRemaining: 1e18
                 });
-            LPMath.DistributeExcessIdleParams memory params = LPMath
+            LpMath.DistributeExcessIdleParams memory params = LpMath
                 .DistributeExcessIdleParams({
                     presentValueParams: presentValueParams,
-                    startingPresentValue: LPMath.calculatePresentValue(
+                    startingPresentValue: LpMath.calculatePresentValue(
                         presentValueParams
                     ),
                     activeLpTotalSupply: 1_000_000e18,
@@ -1535,7 +1535,7 @@ contract LPMathTest is HyperdriveTest {
                 });
 
             // Calculate the starting LP share price.
-            uint256 startingLPSharePrice = LPMath
+            uint256 startingLPSharePrice = LpMath
                 .calculatePresentValue(params.presentValueParams)
                 .divDown(
                     params.activeLpTotalSupply +
@@ -1556,14 +1556,14 @@ contract LPMathTest is HyperdriveTest {
                     params.presentValueParams.shareReserves,
                     params.presentValueParams.shareAdjustment,
                     params.presentValueParams.bondReserves
-                ) = LPMath.calculateUpdateLiquidity(
+                ) = LpMath.calculateUpdateLiquidity(
                     params.originalShareReserves,
                     params.originalShareAdjustment,
                     params.originalBondReserves,
                     params.presentValueParams.minimumShareReserves,
                     -int256(params.idle)
                 );
-                endingLPSharePrice = LPMath
+                endingLPSharePrice = LpMath
                     .calculatePresentValue(params.presentValueParams)
                     .divDown(
                         params.activeLpTotalSupply +

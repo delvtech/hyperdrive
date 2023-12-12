@@ -6,7 +6,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
-import { LPMath } from "../libraries/LPMath.sol";
+import { LpMath } from "../libraries/LpMath.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 
@@ -264,10 +264,10 @@ abstract contract HyperdriveBase is HyperdriveStorage {
     /// @return params The distribute excess idle parameters.
     function _getDistributeExcessIdleParams(
         uint256 _sharePrice
-    ) internal view returns (LPMath.DistributeExcessIdleParams memory params) {
-        LPMath.PresentValueParams
+    ) internal view returns (LpMath.DistributeExcessIdleParams memory params) {
+        LpMath.PresentValueParams
             memory presentValueParams = _getPresentValueParams(_sharePrice);
-        uint256 startingPresentValue = LPMath.calculatePresentValue(
+        uint256 startingPresentValue = LpMath.calculatePresentValue(
             presentValueParams
         );
         int256 netCurveTrade = int256(
@@ -280,7 +280,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
                     presentValueParams.shortAverageTimeRemaining
                 )
             );
-        params = LPMath.DistributeExcessIdleParams({
+        params = LpMath.DistributeExcessIdleParams({
             presentValueParams: presentValueParams,
             startingPresentValue: startingPresentValue,
             activeLpTotalSupply: _totalSupply[AssetId._LP_ASSET_ID],
@@ -300,8 +300,8 @@ abstract contract HyperdriveBase is HyperdriveStorage {
     /// @return params The present value parameters.
     function _getPresentValueParams(
         uint256 _sharePrice
-    ) internal view returns (LPMath.PresentValueParams memory params) {
-        params = LPMath.PresentValueParams({
+    ) internal view returns (LpMath.PresentValueParams memory params) {
+        params = LpMath.PresentValueParams({
             shareReserves: _marketState.shareReserves,
             shareAdjustment: _marketState.shareAdjustment,
             bondReserves: _marketState.bondReserves,

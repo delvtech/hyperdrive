@@ -5,7 +5,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
-import { LPMath } from "../libraries/LPMath.sol";
+import { LpMath } from "../libraries/LpMath.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveMultiToken } from "./HyperdriveMultiToken.sol";
@@ -165,10 +165,10 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         uint256 startingPresentValue;
         {
             // Calculate the present value before updating the reserves.
-            LPMath.PresentValueParams memory params = _getPresentValueParams(
+            LpMath.PresentValueParams memory params = _getPresentValueParams(
                 sharePrice
             );
-            startingPresentValue = LPMath.calculatePresentValue(params);
+            startingPresentValue = LpMath.calculatePresentValue(params);
 
             // Add the liquidity to the pool's reserves and calculate the new
             // present value.
@@ -176,7 +176,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
             params.shareReserves = _marketState.shareReserves;
             params.shareAdjustment = _marketState.shareAdjustment;
             params.bondReserves = _marketState.bondReserves;
-            endingPresentValue = LPMath.calculatePresentValue(params);
+            endingPresentValue = LpMath.calculatePresentValue(params);
 
             // The LP shares minted to the LP is derived by solving for the
             // change in LP shares that preserves the ratio of present value to
@@ -400,7 +400,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
     function _distributeExcessIdle(uint256 _sharePrice) internal {
         // Calculate the amount of withdrawal shares that should be redeemed
         // and their share proceeds.
-        (uint256 withdrawalSharesRedeemed, uint256 shareProceeds) = LPMath
+        (uint256 withdrawalSharesRedeemed, uint256 shareProceeds) = LpMath
             .calculateDistributeExcessIdle(
                 _getDistributeExcessIdleParams(_sharePrice)
             );

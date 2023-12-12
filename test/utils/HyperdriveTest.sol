@@ -8,7 +8,7 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { LPMath } from "contracts/src/libraries/LPMath.sol";
+import { LpMath } from "contracts/src/libraries/LpMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
@@ -883,11 +883,11 @@ contract HyperdriveTest is BaseTest {
     ) internal view returns (uint256 baseProceeds, uint256 withdrawalShares) {
         // Apply the LP shares that will be removed to the withdrawal shares
         // outstanding and calculate the results of distributing excess idle.
-        LPMath.DistributeExcessIdleParams memory params = hyperdrive
+        LpMath.DistributeExcessIdleParams memory params = hyperdrive
             .getDistributeExcessIdleParams();
         params.activeLpTotalSupply -= _lpShares;
         params.withdrawalSharesTotalSupply += _lpShares;
-        (uint256 withdrawalSharesRedeemed, uint256 shareProceeds) = LPMath
+        (uint256 withdrawalSharesRedeemed, uint256 shareProceeds) = LpMath
             .calculateDistributeExcessIdle(params);
         return (
             shareProceeds.mulDown(hyperdrive.getPoolInfo().sharePrice),

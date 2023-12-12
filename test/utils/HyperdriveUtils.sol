@@ -5,7 +5,7 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { LPMath } from "contracts/src/libraries/LPMath.sol";
+import { LpMath } from "contracts/src/libraries/LpMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 
 library HyperdriveUtils {
@@ -1373,11 +1373,11 @@ library HyperdriveUtils {
 
     function getPresentValueParams(
         IHyperdrive hyperdrive
-    ) internal view returns (LPMath.PresentValueParams memory) {
+    ) internal view returns (LpMath.PresentValueParams memory) {
         IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         return
-            LPMath.PresentValueParams({
+            LpMath.PresentValueParams({
                 shareReserves: poolInfo.shareReserves,
                 shareAdjustment: poolInfo.shareAdjustment,
                 bondReserves: poolInfo.bondReserves,
@@ -1400,11 +1400,11 @@ library HyperdriveUtils {
 
     function getDistributeExcessIdleParams(
         IHyperdrive hyperdrive
-    ) internal view returns (LPMath.DistributeExcessIdleParams memory) {
+    ) internal view returns (LpMath.DistributeExcessIdleParams memory) {
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        LPMath.PresentValueParams memory presentValueParams = hyperdrive
+        LpMath.PresentValueParams memory presentValueParams = hyperdrive
             .getPresentValueParams();
-        uint256 startingPresentValue = LPMath.calculatePresentValue(
+        uint256 startingPresentValue = LpMath.calculatePresentValue(
             presentValueParams
         );
         int256 netCurveTrade = int256(
@@ -1418,7 +1418,7 @@ library HyperdriveUtils {
                 )
             );
         return
-            LPMath.DistributeExcessIdleParams({
+            LpMath.DistributeExcessIdleParams({
                 presentValueParams: presentValueParams,
                 startingPresentValue: startingPresentValue,
                 activeLpTotalSupply: hyperdrive.totalSupply(
@@ -1439,7 +1439,7 @@ library HyperdriveUtils {
         IHyperdrive hyperdrive
     ) internal view returns (uint256) {
         return
-            LPMath
+            LpMath
                 .calculatePresentValue(hyperdrive.getPresentValueParams())
                 .mulDown(hyperdrive.getPoolInfo().sharePrice);
     }

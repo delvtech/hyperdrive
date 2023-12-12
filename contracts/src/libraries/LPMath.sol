@@ -8,12 +8,12 @@ import { SafeCast } from "./SafeCast.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 
 /// @author DELV
-/// @title LPMath
+/// @title LpMath
 /// @notice Math for the Hyperdrive LP system.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-library LPMath {
+library LpMath {
     using FixedPointMath for *;
 
     /// @dev Calculates the new share reserves, share adjustment, and bond
