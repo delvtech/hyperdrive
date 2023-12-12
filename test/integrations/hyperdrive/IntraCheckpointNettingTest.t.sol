@@ -10,7 +10,6 @@ import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-//JR TODO: test_netting_extreme_negative_interest_time_elapsed will result in an EvmError when redeeming withdrawal shares
 
 contract IntraCheckpointNettingTest is HyperdriveTest {
     using FixedPointMath for uint256;
