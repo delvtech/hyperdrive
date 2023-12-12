@@ -8,14 +8,16 @@ import { SafeCast } from "./SafeCast.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 
 /// @author DELV
-/// @title LpMath
+/// @title LPMath
 /// @notice Math for the Hyperdrive LP system.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-library LpMath {
+library LPMath {
     using FixedPointMath for *;
 
+    // FIXME: Use this in `HyperdriveLP`'s
+    //
     /// @dev Calculates the new share reserves, share adjustment, and bond
     ///      reserves after liquidity is added or removed from the pool. This
     ///      update is made in such a way that the pool's spot price remains
@@ -63,7 +65,9 @@ library LpMath {
         // it ensures that if z - zeta starts as a positive value, it ends as a
         // positive value. With this in mind, we update the share adjustment as:
         //
-        // zeta_old / z_old = zeta_new / z_new => zeta_new = zeta_old * (z_new / z_old)
+        // zeta_old / z_old = zeta_new / z_new
+        //                  =>
+        // zeta_new = zeta_old * (z_new / z_old)
         if (_shareAdjustment >= 0) {
             shareAdjustment = int256(
                 uint256(shareReserves).mulDivDown(

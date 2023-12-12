@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { LpMath } from "contracts/src/libraries/LpMath.sol";
+import { LPMath } from "contracts/src/libraries/LPMath.sol";
 
-contract MockLpMath {
+contract MockLPMath {
     function calculateUpdateLiquidity(
         uint256 _shareReserves,
         int256 _shareAdjustment,
@@ -20,7 +20,7 @@ contract MockLpMath {
         )
     {
         return
-            LpMath.calculateUpdateLiquidity(
+            LPMath.calculateUpdateLiquidity(
                 _shareReserves,
                 _shareAdjustment,
                 _bondReserves,
@@ -30,39 +30,39 @@ contract MockLpMath {
     }
 
     function calculatePresentValue(
-        LpMath.PresentValueParams memory _params
+        LPMath.PresentValueParams memory _params
     ) external pure returns (uint256) {
-        return LpMath.calculatePresentValue(_params);
+        return LPMath.calculatePresentValue(_params);
     }
 
     function calculateDistributeExcessIdleWithdrawalSharesRedeemed(
-        LpMath.DistributeExcessIdleParams memory _params,
+        LPMath.DistributeExcessIdleParams memory _params,
         uint256 _shareReservesDelta
     ) external pure returns (uint256) {
         return
-            LpMath.calculateDistributeExcessIdleWithdrawalSharesRedeemed(
+            LPMath.calculateDistributeExcessIdleWithdrawalSharesRedeemed(
                 _params,
                 _shareReservesDelta
             );
     }
 
     function calculateDistributeExcessIdleShareProceeds(
-        LpMath.DistributeExcessIdleParams memory _params,
+        LPMath.DistributeExcessIdleParams memory _params,
         uint256 _originalEffectiveShareReserves
     ) external pure returns (uint256) {
         return
-            LpMath.calculateDistributeExcessIdleShareProceeds(
+            LPMath.calculateDistributeExcessIdleShareProceeds(
                 _params,
                 _originalEffectiveShareReserves
             );
     }
 
     function calculateMaxShareReservesDelta(
-        LpMath.DistributeExcessIdleParams memory _params,
+        LPMath.DistributeExcessIdleParams memory _params,
         uint256 _originalEffectiveShareReserves
     ) external pure returns (uint256) {
         return
-            LpMath.calculateMaxShareReservesDelta(
+            LPMath.calculateMaxShareReservesDelta(
                 _params,
                 _originalEffectiveShareReserves
             );

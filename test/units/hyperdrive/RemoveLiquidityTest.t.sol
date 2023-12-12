@@ -7,7 +7,7 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { LpMath } from "contracts/src/libraries/LpMath.sol";
+import { LPMath } from "contracts/src/libraries/LPMath.sol";
 import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
