@@ -313,20 +313,11 @@ impl State {
     /// \Delta z = \tfrac{x - g(x)}{c}
     /// $$
     ///
-    /// In the solidity implementation, we calculate the delta in the exposure
-    /// as:
-    ///
-    /// ```solidity
-    /// shareReservesDelta = _shareAmount - governanceCurveFee.divDown(_sharePrice);
-    /// uint128 exposureDelta = (2 *
-    ///     _bondProceeds -
-    ///     _shareReservesDelta.mulDown(_sharePrice)).toUint128();
-    /// ```
-    ///
-    /// From this, we can calculate our exposure as:
+    /// Opening the long increases the non-netted longs by the bond amount. From
+    /// this, the change in the exposure is given by:
     ///
     /// $$
-    /// \Delta exposure = 2 \cdot y(x) - x + g(x)
+    /// \Delta exposure = y(x)
     /// $$
     ///
     /// From this, we can calculate $S(x)$ as:
@@ -349,8 +340,7 @@ impl State {
         let governance_fee = self.open_long_governance_fee(base_amount);
         let share_reserves = self.share_reserves() + base_amount / self.share_price()
             - governance_fee / self.share_price();
-        let exposure =
-            self.long_exposure() + fixed!(2e18) * bond_amount - base_amount + governance_fee;
+        let exposure = self.long_exposure() + bond_amount;
         let checkpoint_exposure = FixedPoint::from(-checkpoint_exposure.min(int256!(0)));
         if share_reserves + checkpoint_exposure / self.share_price()
             >= exposure / self.share_price() + self.minimum_share_reserves()
@@ -372,8 +362,8 @@ impl State {
     /// amount that the long pays is given by:
     ///
     /// $$
-    /// S'(x) = \tfrac{2}{c} \cdot \left( 1 - y'(x) - \phi_{g} \cdot p \cdot c'(x) \right) \\
-    ///       = \tfrac{2}{c} \cdot \left(
+    /// S'(x) = \tfrac{1}{c} \cdot \left( 1 - y'(x) - \phi_{g} \cdot p \cdot c'(x) \right) \\
+    ///       = \tfrac{1}{c} \cdot \left(
     ///             1 - y'(x) - \phi_{g} \cdot \phi_{c} \cdot \left( 1 - p \right)
     ///         \right)
     /// $$
@@ -387,7 +377,7 @@ impl State {
             (derivative
                 + self.governance_fee() * self.curve_fee() * (fixed!(1e18) - self.get_spot_price())
                 - fixed!(1e18))
-            .mul_div_down(fixed!(2e18), self.share_price())
+            .mul_div_down(fixed!(1e18), self.share_price())
         })
     }
 

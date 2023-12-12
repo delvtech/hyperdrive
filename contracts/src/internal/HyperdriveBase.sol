@@ -229,6 +229,36 @@ abstract contract HyperdriveBase is HyperdriveStorage {
             );
     }
 
+    /// @dev Gets the amount of non-netted longs with a given maturity.
+    /// @param _maturityTime The maturity time of the longs.
+    /// @return The amount of non-netted longs. This is a signed value that
+    ///         can be negative. This is convenient for updating the long
+    ///         exposure when closing positions.
+    function _nonNettedLongs(
+        uint256 _maturityTime
+    ) internal view returns (int256) {
+        // The amount of non-netted longs is the difference between the amount
+        // of longs and the amount of shorts with a given maturity time. If the
+        // difference is negative, the amount of non-netted longs is zero.
+        return
+            int256(
+                _totalSupply[
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Long,
+                        _maturityTime
+                    )
+                ]
+            ) -
+            int256(
+                _totalSupply[
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Short,
+                        _maturityTime
+                    )
+                ]
+            );
+    }
+
     /// @dev Gets the distribute excess idle parameters from the current state.
     /// @param _sharePrice The current share price.
     /// @return params The distribute excess idle parameters.
@@ -326,83 +356,19 @@ abstract contract HyperdriveBase is HyperdriveStorage {
             int256(_minimumShareReserves.mulDown(_sharePrice));
     }
 
-    /// @dev Calculates the checkpoint exposure when a position is closed
-    /// @param _bondAmount The amount of bonds that the user is closing.
-    /// @param _shareCurveDelta The amount of shares the trader pays the curve.
-    /// @param _bondReservesDelta The amount of bonds that the reserves will
-    ///        change by.
-    /// @param _shareReservesDelta The amount of shares that the reserves will
-    ///        change by.
-    /// @param _maturityTime The maturity time of the position being closed.
-    /// @param _sharePrice The current share price.
-    /// @param _isLong True if the position being closed is long.
-    function _updateCheckpointExposureOnClose(
-        uint256 _bondAmount,
-        uint256 _shareCurveDelta,
-        uint256 _bondReservesDelta,
-        uint256 _shareReservesDelta,
-        uint256 _maturityTime,
-        uint256 _sharePrice,
-        bool _isLong
-    ) internal {
-        uint256 checkpointTime = _maturityTime - _positionDuration;
-        uint256 checkpointLongs = _totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime)
-        ];
-        uint256 checkpointShorts = _totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _maturityTime)
-        ];
-
-        // We can zero out exposure when there are no more open positions
-        if (checkpointLongs == 0 && checkpointShorts == 0) {
-            _checkpoints[checkpointTime].exposure = 0;
-        } else {
-            // The exposure delta is flat + curve amount + the bonds the
-            // user is closing:
-            //
-            // (dz_user*c - dz*c) + (dy - dz*c) + dy_user
-            // = dz_user*c + dy - 2*dz*c + dy_user
-            int128 delta = int128(
-                (_shareReservesDelta.mulDown(_sharePrice) +
-                    _bondReservesDelta -
-                    2 *
-                    _shareCurveDelta.mulDown(_sharePrice) +
-                    _bondAmount).toUint128()
-            );
-
-            // If the position being closed is long, then the exposure
-            // decreases by the delta. If it's short, then the exposure
-            // increases by the delta.
-            if (_isLong) {
-                _checkpoints[checkpointTime].exposure -= delta;
-            } else {
-                _checkpoints[checkpointTime].exposure += delta;
-            }
-        }
-    }
-
     /// @dev Updates the global long exposure.
     /// @param _before The long exposure before the update.
     /// @param _after The long exposure after the update.
     function _updateLongExposure(int256 _before, int256 _after) internal {
-        // LongExposure is decreasing (OpenShort/CloseLong)
-        if (_before > _after && _before >= 0) {
-            int256 delta = int256(_before - _after.max(0));
-            // Since the longExposure can't be negative, we need to make sure we
-            // don't underflow.
-            _marketState.longExposure -= uint128(
-                delta.min(int128(_marketState.longExposure)).toInt128()
-            );
-        }
-        // LongExposure is increasing (OpenLong/CloseShort)
-        else if (_after > _before) {
-            if (_before >= 0) {
-                _marketState.longExposure += uint128(
-                    _after.toInt128() - _before.toInt128()
-                );
-            } else {
-                _marketState.longExposure += uint128(_after.max(0).toInt128());
-            }
+        // The global long exposure is the sum of the non-netted longs in each
+        // checkpoint. To update this value, we subtract the current value
+        // (`_before.max(0)`) and add the new value (`_after.max(0)`).
+        int128 delta = (int256(_after.max(0)) - int256(_before.max(0)))
+            .toInt128();
+        if (delta > 0) {
+            _marketState.longExposure += uint128(delta);
+        } else if (delta < 0) {
+            _marketState.longExposure -= uint128(-delta);
         }
     }
 

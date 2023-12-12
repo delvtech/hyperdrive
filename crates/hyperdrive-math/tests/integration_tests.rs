@@ -118,10 +118,11 @@ pub async fn test_integration_get_max_short() -> Result<()> {
         let state = alice.get_state().await?;
         let Checkpoint {
             share_price: open_share_price,
-            exposure: checkpoint_exposure,
-            ..
         } = alice
             .get_checkpoint(state.to_checkpoint(alice.now().await?))
+            .await?;
+        let checkpoint_exposure = alice
+            .get_checkpoint_exposure(state.to_checkpoint(alice.now().await?))
             .await?;
         let global_max_short =
             state.get_max_short(U256::MAX, open_share_price, checkpoint_exposure, None, None);

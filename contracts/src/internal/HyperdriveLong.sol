@@ -96,7 +96,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
             bondProceeds,
             bondReservesDelta,
             sharePrice,
-            latestCheckpoint,
             maturityTime
         );
 
@@ -158,7 +157,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 bondReservesDelta,
             uint256 shareProceeds,
             uint256 shareReservesDelta,
-            uint256 shareCurveDelta,
             int256 shareAdjustmentDelta,
             uint256 totalGovernanceFee
         ) = _calculateCloseLong(_bondAmount, sharePrice, _maturityTime);
@@ -178,23 +176,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 maturityTime
             );
 
-            // Update the checkpoint exposure and global long exposure.
-            uint256 checkpointTime = maturityTime - _positionDuration;
-            int128 checkpointExposureBefore = int128(
-                _checkpoints[checkpointTime].exposure
-            );
-            _updateCheckpointExposureOnClose(
-                _bondAmount,
-                shareCurveDelta,
-                bondReservesDelta,
-                shareReservesDelta,
-                maturityTime,
-                sharePrice,
-                true
-            );
+            // Update the global long exposure. Since we're closing a long, the
+            // number of non-netted longs decreases by the bond amount.
+            int256 nonNettedLongs = _nonNettedLongs(maturityTime);
             _updateLongExposure(
-                checkpointExposureBefore,
-                _checkpoints[checkpointTime].exposure
+                nonNettedLongs + int256(_bondAmount),
+                nonNettedLongs
             );
 
             // Distribute the excess idle to the withdrawal pool.
@@ -238,14 +225,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @param _bondProceeds The amount of bonds purchased by the trader.
     /// @param _bondReservesDelta The amount of bonds sold by the curve.
     /// @param _sharePrice The share price.
-    /// @param _checkpointTime The time of the latest checkpoint.
     /// @param _maturityTime The maturity time of the long.
     function _applyOpenLong(
         uint256 _shareReservesDelta,
         uint256 _bondProceeds,
         uint256 _bondReservesDelta,
         uint256 _sharePrice,
-        uint256 _checkpointTime,
         uint256 _maturityTime
     ) internal {
         // Update the average maturity time of long positions.
@@ -268,23 +253,17 @@ abstract contract HyperdriveLong is HyperdriveLP {
         longsOutstanding_ += _bondProceeds.toUint128();
         _marketState.longsOutstanding = longsOutstanding_;
 
-        // Increase the exposure by the amount the LPs must reserve to cover the
-        // long. We are overly conservative, so this is equal to the amount of
-        // fixed interest the long is owed at maturity plus the face value of
-        // the long.
-        IHyperdrive.Checkpoint storage checkpoint = _checkpoints[
-            _checkpointTime
-        ];
-        int128 checkpointExposureBefore = int128(checkpoint.exposure);
-        uint128 exposureDelta = (2 *
-            _bondProceeds -
-            _shareReservesDelta.mulUp(_sharePrice)).toUint128();
-        checkpoint.exposure += int128(exposureDelta);
-        _updateLongExposure(checkpointExposureBefore, checkpoint.exposure);
+        // Update the global long exposure. Since we're opening a long, the
+        // number of non-netted longs increases by the bond amount.
+        int256 nonNettedLongs = _nonNettedLongs(_maturityTime);
+        _updateLongExposure(
+            nonNettedLongs,
+            nonNettedLongs + int256(_bondProceeds)
+        );
 
         // We need to check solvency because longs increase the system's exposure.
         if (!_isSolvent(_sharePrice)) {
-            revert IHyperdrive.BaseBufferExceedsShareReserves();
+            revert IHyperdrive.InsufficientLiquidity();
         }
 
         // Distribute the excess idle to the withdrawal pool.
@@ -467,8 +446,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @return bondReservesDelta The bonds added to the reserves.
     /// @return shareProceeds The proceeds in shares of selling the bonds.
     /// @return shareReservesDelta The shares removed from the reserves.
-    /// @return shareCurveDelta The curve portion of the payment that LPs need
-    ///         to make to the trader in shares.
     /// @return shareAdjustmentDelta The change in the share adjustment.
     /// @return totalGovernanceFee The governance fee in shares.
     function _calculateCloseLong(
@@ -482,7 +459,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 bondReservesDelta,
             uint256 shareProceeds,
             uint256 shareReservesDelta,
-            uint256 shareCurveDelta,
             int256 shareAdjustmentDelta,
             uint256 totalGovernanceFee
         )
@@ -490,6 +466,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Calculate the effect that closing the long should have on the pool's
         // reserves as well as the amount of shares the trader receives for
         // selling their bonds.
+        uint256 shareCurveDelta;
         {
             // Calculate the effect that closing the long should have on the
             // pool's reserves as well as the amount of shares the trader

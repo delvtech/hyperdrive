@@ -17,6 +17,8 @@ contract HyperdriveMathTest is HyperdriveTest {
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
 
+    uint256 internal constant PRECISION_THRESHOLD = 1e14;
+
     function test__calcSpotPrice() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
@@ -961,8 +963,8 @@ contract HyperdriveMathTest is HyperdriveTest {
         // indicate a bug in the max long function.
         //
         // Open the maximum long on Hyperdrive.
-        IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
+        IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
         uint256 maxIterations = 10;
         if (fixedRate > 0.15e18) {
             maxIterations += 5;
@@ -985,7 +987,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 flatFee: config.fees.flat,
                 governanceFee: config.fees.governance
             }),
-            hyperdrive.getCheckpoint(hyperdrive.latestCheckpoint()).exposure,
+            hyperdrive.getCheckpointExposure(hyperdrive.latestCheckpoint()),
             maxIterations
         );
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, maxLong);
@@ -1125,11 +1127,8 @@ contract HyperdriveMathTest is HyperdriveTest {
         openShort(bob, initialShortAmount);
 
         // Open the maximum short on Hyperdrive.
-        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
-            hyperdrive.latestCheckpoint()
-        );
-        IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
+        IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
         uint256 maxShort = HyperdriveUtils.calculateMaxShort(
             HyperdriveUtils.MaxTradeParams({
                 shareReserves: info.shareReserves,
@@ -1145,7 +1144,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 flatFee: config.fees.flat,
                 governanceFee: config.fees.governance
             }),
-            checkpoint.exposure,
+            hyperdrive.getCheckpointExposure(hyperdrive.latestCheckpoint()),
             7
         );
         (uint256 maturityTime, ) = openShort(bob, maxShort);

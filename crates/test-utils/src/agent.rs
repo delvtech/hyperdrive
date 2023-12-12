@@ -5,7 +5,7 @@ use ethers::{
     contract::ContractCall,
     prelude::EthLogDecode,
     providers::{Http, Middleware, Provider, RetryClient},
-    types::{Address, BlockId, U256},
+    types::{Address, BlockId, I256, U256},
 };
 use eyre::Result;
 use fixed_point::FixedPoint;
@@ -921,6 +921,11 @@ impl Agent<ChainClient, ChaCha8Rng> {
         Ok(self.hyperdrive.get_checkpoint(id).await?)
     }
 
+    /// Gets the checkpoint exposure.
+    pub async fn get_checkpoint_exposure(&self, id: U256) -> Result<I256> {
+        Ok(self.hyperdrive.get_checkpoint_exposure(id).await?)
+    }
+
     /// Gets the spot price.
     pub async fn get_spot_price(&self) -> Result<FixedPoint> {
         Ok(self.get_state().await?.get_spot_price())
@@ -954,11 +959,11 @@ impl Agent<ChainClient, ChaCha8Rng> {
     /// Gets the max long that can be opened in the current checkpoint.
     pub async fn get_max_long(&self, maybe_max_iterations: Option<usize>) -> Result<FixedPoint> {
         let state = self.get_state().await?;
-        let Checkpoint { exposure, .. } = self
+        let checkpoint_exposure = self
             .hyperdrive
-            .get_checkpoint(state.to_checkpoint(self.now().await?))
+            .get_checkpoint_exposure(state.to_checkpoint(self.now().await?))
             .await?;
-        Ok(state.get_max_long(self.wallet.base, exposure, maybe_max_iterations))
+        Ok(state.get_max_long(self.wallet.base, checkpoint_exposure, maybe_max_iterations))
     }
 
     /// Gets the max short that can be opened in the current checkpoint.
@@ -976,11 +981,13 @@ impl Agent<ChainClient, ChaCha8Rng> {
         let state = self.get_state().await?;
         let Checkpoint {
             share_price: open_share_price,
-            exposure: checkpoint_exposure,
-            ..
         } = self
             .hyperdrive
             .get_checkpoint(state.to_checkpoint(self.now().await?))
+            .await?;
+        let checkpoint_exposure = self
+            .hyperdrive
+            .get_checkpoint_exposure(state.to_checkpoint(self.now().await?))
             .await?;
 
         // We linearly interpolate between the current spot price and the minimum

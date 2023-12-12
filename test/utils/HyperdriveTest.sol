@@ -29,7 +29,6 @@ contract HyperdriveTest is BaseTest {
     uint256 internal constant INITIAL_SHARE_PRICE = ONE;
     uint256 internal constant MINIMUM_SHARE_RESERVES = ONE;
     uint256 internal constant MINIMUM_TRANSACTION_AMOUNT = 0.001e18;
-    uint256 internal constant PRECISION_THRESHOLD = 1e14;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
     uint256 internal constant POSITION_DURATION = 365 days;
 
@@ -114,7 +113,6 @@ contract HyperdriveTest is BaseTest {
                 initialSharePrice: ONE,
                 minimumShareReserves: MINIMUM_SHARE_RESERVES,
                 minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
-                precisionThreshold: PRECISION_THRESHOLD,
                 positionDuration: POSITION_DURATION,
                 checkpointDuration: CHECKPOINT_DURATION,
                 timeStretch: HyperdriveUtils.calculateTimeStretch(fixedRate),

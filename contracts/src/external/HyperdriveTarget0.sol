@@ -218,6 +218,17 @@ abstract contract HyperdriveTarget0 is
         _revert(abi.encode(_checkpoints[_checkpointId]));
     }
 
+    /// @notice Gets the checkpoint exposure at a specified time.
+    /// @param _checkpointTime The checkpoint time.
+    /// @return The checkpoint exposure.
+    function getCheckpointExposure(
+        uint256 _checkpointTime
+    ) external view returns (int256) {
+        _revert(
+            abi.encode(_nonNettedLongs(_checkpointTime + _positionDuration))
+        );
+    }
+
     /// @notice Gets the pool's configuration parameters.
     /// @dev These parameters are immutable, so this should only need to be
     ///      called once.
@@ -236,7 +247,6 @@ abstract contract HyperdriveTarget0 is
                     initialSharePrice: _initialSharePrice,
                     minimumShareReserves: _minimumShareReserves,
                     minimumTransactionAmount: _minimumTransactionAmount,
-                    precisionThreshold: _precisionThreshold,
                     positionDuration: _positionDuration,
                     checkpointDuration: _checkpointDuration,
                     timeStretch: _timeStretch,
