@@ -595,6 +595,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // longExposure should be 0
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         assertApproxEqAbs(poolInfo.longExposure, 0, 1);
+
         // idle should be equal to shareReserves
         uint256 expectedShareReserves = MockHyperdrive(address(hyperdrive))
             .calculateIdleShareReserves(hyperdrive.getPoolInfo().sharePrice) +
@@ -732,6 +733,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
 
         // fast forward time and accrue interest
         advanceTime(POSITION_DURATION, variableInterest);
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
 
         // open positions
         uint256[] memory longMaturityTimes = new uint256[](numTrades);
@@ -760,7 +762,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         advanceTimeWithCheckpoints(timeElapsed, variableInterest);
 
         // remove liquidity
-        removeLiquidity(alice, aliceLpShares);
+        (, uint256 withdrawalShares) = removeLiquidity(alice, aliceLpShares);
 
         // Ensure all the positions have matured before trying to close them.
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
@@ -779,6 +781,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             // close the long positions
             closeLong(bob, longMaturityTimes[i], bondAmounts[i]);
         }
+        redeemWithdrawalShares(alice, withdrawalShares);
 
         // longExposure should be 0
         poolInfo = hyperdrive.getPoolInfo();
@@ -803,11 +806,13 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         {
             uint256 apr = 0.05e18;
             deploy(alice, apr, initialSharePrice, 0, 0, 0);
+            // JR TODO: we should add this as a parameter to fuzz to ensure that we are solvent with withdrawal shares
             uint256 contribution = 500_000_000e18;
             aliceLpShares = initialize(alice, apr, contribution);
 
             // fast forward time and accrue interest
             advanceTime(POSITION_DURATION, variableInterest);
+            hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
         }
 
         // open positions
@@ -848,6 +853,13 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             // close the long positions
             closeLong(bob, longMaturityTimes[i], bondAmounts[i]);
         }
+        poolInfo = hyperdrive.getPoolInfo();
+
+        // TODO: Enable this. It fails for test_netting_extreme_negative_interest_time_elapsed
+        // (uint256 withdrawalProceeds, ) = redeemWithdrawalShares(
+        //     alice,
+        //     withdrawalShares
+        // );
 
         // longExposure should be 0
         poolInfo = hyperdrive.getPoolInfo();

@@ -184,6 +184,7 @@ mod tests {
     "raw_pool_info": {
         "shareReserves": 100000000000000000000000000,
         "shareAdjustment": 0,
+        "zombieShareReserves": 0,
         "bondReserves": 102178995195337961200000000,
         "lpTotalSupply": 99999990000000000000000000,
         "sharePrice": 1000000006341958396,
@@ -257,6 +258,7 @@ mod tests {
     "pool_info": {
         "shareReserves": "100000000.0",
         "shareAdjustment": "0.0",
+        "zombieShareReserves": "0.0",
         "bondReserves": "102178995.1953379612",
         "lpTotalSupply": "99999990.0",
         "sharePrice": "1.000000006341958396",

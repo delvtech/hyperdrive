@@ -718,19 +718,44 @@ contract HyperdriveTest is BaseTest {
 
     /// Utils ///
 
-    function advanceTime(uint256 time, int256 apr) internal virtual {
-        MockHyperdrive(address(hyperdrive)).accrue(time, apr);
+    function advanceTime(uint256 time, int256 variableRate) internal virtual {
+        MockHyperdrive(address(hyperdrive)).accrue(time, variableRate);
         vm.warp(block.timestamp + time);
     }
 
     function advanceTimeWithCheckpoints(
         uint256 time,
-        int256 apr
+        int256 variableRate
     ) internal virtual {
         uint256 startTimeElapsed = block.timestamp;
+        // Note: if time % CHECKPOINT_DURATION != 0 then it ends up
+        // advancing time to the next checkpoint.
         while (block.timestamp - startTimeElapsed < time) {
-            advanceTime(CHECKPOINT_DURATION, apr);
+            advanceTime(CHECKPOINT_DURATION, variableRate);
             hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        }
+    }
+
+    function advanceTimeWithCheckpoints2(
+        uint256 time,
+        int256 variableRate
+    ) internal virtual {
+        if (time % CHECKPOINT_DURATION == 0) {
+            advanceTimeWithCheckpoints(time, variableRate);
+        } else if (time < CHECKPOINT_DURATION) {
+            advanceTime(time, variableRate);
+        } else {
+            // time > CHECKPOINT_DURATION
+            uint256 startTimeElapsed = block.timestamp;
+            while (
+                block.timestamp - startTimeElapsed + CHECKPOINT_DURATION < time
+            ) {
+                advanceTime(CHECKPOINT_DURATION, variableRate);
+                hyperdrive.checkpoint(
+                    HyperdriveUtils.latestCheckpoint(hyperdrive)
+                );
+            }
+            advanceTime(time % CHECKPOINT_DURATION, variableRate);
         }
     }
 
