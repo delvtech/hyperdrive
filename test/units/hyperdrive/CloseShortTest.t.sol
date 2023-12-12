@@ -637,6 +637,108 @@ contract CloseShortTest is HyperdriveTest {
         assertGt(maxFlatFeeState.shareReserves, noFlatFee.shareReserves);
     }
 
+    function test_close_short_compare_late_redemptions() external {
+        int256 variableRate = 2e18;
+        uint256 shortTradeSize = 1_000_000e18;
+        uint256 shortProceeds1;
+        {
+            // Initialize the pool with capital.
+            deploy(bob, 0.035e18, 1e18, 0, 0, 0);
+            initialize(bob, 0.035e18, 2 * MINIMUM_SHARE_RESERVES);
+
+            // Alice adds liquidity.
+            uint256 initialLiquidity = 500_000_000e18;
+            addLiquidity(alice, initialLiquidity);
+
+            // Celine opens a short.
+            (uint256 maturityTime, ) = openShort(celine, shortTradeSize);
+
+            // Term passes with interest.
+            advanceTimeWithCheckpoints2(POSITION_DURATION, variableRate);
+
+            // Celina redeems her short on time.
+            shortProceeds1 = closeShort(celine, maturityTime, shortTradeSize);
+        }
+
+        uint256 shortProceeds2;
+        {
+            // Initialize the pool with capital.
+            deploy(bob, 0.035e18, 1e18, 0, 0, 0);
+            initialize(bob, 0.035e18, 2 * MINIMUM_SHARE_RESERVES);
+
+            // Alice adds liquidity.
+            uint256 initialLiquidity = 500_000_000e18;
+            addLiquidity(alice, initialLiquidity);
+
+            // Celine opens a short.
+            (uint256 maturityTime, ) = openShort(celine, shortTradeSize);
+
+            // Term passes with interest.
+            advanceTimeWithCheckpoints2(POSITION_DURATION, variableRate);
+
+            // Time passes with interest.
+            advanceTimeWithCheckpoints2(POSITION_DURATION, variableRate);
+
+            // Celina redeems her short late.
+            shortProceeds2 = closeShort(celine, maturityTime, shortTradeSize);
+        }
+
+        uint256 shortProceeds3;
+        {
+            // Initialize the pool with capital.
+            deploy(bob, 0.035e18, 1e18, 0, 0, 0);
+            initialize(bob, 0.035e18, 2 * MINIMUM_SHARE_RESERVES);
+
+            // Alice adds liquidity.
+            uint256 initialLiquidity = 500_000_000e18;
+            addLiquidity(alice, initialLiquidity);
+
+            // Celine opens a short.
+            (uint256 maturityTime, ) = openShort(celine, shortTradeSize);
+
+            // Term passes with interest.
+            advanceTimeWithCheckpoints2(POSITION_DURATION, variableRate);
+
+            // Time passes with interest.
+            advanceTimeWithCheckpoints2(POSITION_DURATION * 10, variableRate);
+
+            // Celina redeems her short late.
+            shortProceeds3 = closeShort(celine, maturityTime, shortTradeSize);
+        }
+
+        uint256 shortProceeds4;
+        {
+            // Initialize the pool with capital.
+            deploy(bob, 0.035e18, 1e18, 0, 0, 0);
+            initialize(bob, 0.035e18, 2 * MINIMUM_SHARE_RESERVES);
+
+            // Alice adds liquidity.
+            uint256 initialLiquidity = 500_000_000e18;
+            addLiquidity(alice, initialLiquidity);
+
+            // Celine opens a short.
+            (uint256 maturityTime, ) = openShort(celine, shortTradeSize);
+
+            // Term passes with interest.
+            advanceTimeWithCheckpoints2(POSITION_DURATION, variableRate);
+
+            // Time passes with interest.
+            advanceTimeWithCheckpoints2(POSITION_DURATION * 20, variableRate);
+
+            // Celina redeems her short late.
+            shortProceeds4 = closeShort(celine, maturityTime, shortTradeSize);
+        }
+
+        // Verify that the proceeds are about the same.
+        assertApproxEqAbs(shortProceeds1, shortProceeds2, 20 wei);
+        assertApproxEqAbs(shortProceeds1, shortProceeds3, 2e9);
+
+        // NOTE: This is a large tolerance, but it is only off by
+        // 0.05 which is good considering the circumstance. This is
+        // explained in issue #691.
+        assertApproxEqAbs(shortProceeds1, shortProceeds4, 6e16);
+    }
+
     struct TestCase {
         IHyperdrive.PoolInfo poolInfoBefore;
         uint256 bobBaseBalanceBefore;
