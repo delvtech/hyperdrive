@@ -20,6 +20,8 @@ import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 
+import "forge-std/console2.sol";
+
 abstract contract ERC4626ValidationTest is HyperdriveTest {
     using FixedPointMath for *;
     using Lib for *;
@@ -419,6 +421,23 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         uint256 shortAmount,
         int256 variableRate
     ) external {
+        _test_CloseShortWithUnderlying(shortAmount, variableRate);
+    }
+
+    function test_CloseShortWithUnderlying_EdgeCases() external {
+        // Test zero proceeds case
+        // Note: This only results in zero proceeds for stethERC4626 and UsdcERC4626
+        {
+            uint256 shortAmount = 0;
+            int256 variableRate = 0;
+            _test_CloseShortWithUnderlying(shortAmount, variableRate);
+        }
+    }
+
+    function _test_CloseShortWithUnderlying(
+        uint256 shortAmount,
+        int256 variableRate
+    ) internal {
         vm.startPrank(alice);
         uint256 maxShort = HyperdriveUtils.calculateMaxShort(hyperdrive);
         shortAmount = shortAmount.normalizeToRange(
@@ -428,7 +447,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         (uint256 maturityTime, ) = openShortERC4626(alice, shortAmount, true);
 
         // The term passes and interest accrues.
-        variableRate = variableRate.normalizeToRange(0.01e18, 2.5e18);
+        variableRate = variableRate.normalizeToRange(0, 2.5e18);
 
         // Accumulate yield and let the short mature
         advanceTimeWithYield(POSITION_DURATION, variableRate);
@@ -452,6 +471,8 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             })
         );
 
+        console2.log("baseProceeds", baseProceeds.toString(18));
+
         // Ensure that the ERC4626 aggregates and the token balances were updated
         // correctly during the trade.
         verifyWithdrawalShares(
@@ -471,9 +492,19 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     }
 
     function test_CloseShortWithShares_EdgeCases() external {
-        uint256 shortAmount = 8300396556459030614636;
-        int256 variableRate = 7399321782946468277;
-        _test_CloseShortWithShares(shortAmount, variableRate);
+        {
+            uint256 shortAmount = 8300396556459030614636;
+            int256 variableRate = 7399321782946468277;
+            _test_CloseShortWithShares(shortAmount, variableRate);
+        }
+
+        // Test zero proceeds case
+        // Note: This only results in zero proceeds for stethERC4626 and UsdcERC4626
+        {
+            uint256 shortAmount = 0;
+            int256 variableRate = 0;
+            _test_CloseShortWithShares(shortAmount, variableRate);
+        }
     }
 
     function _test_CloseShortWithShares(
@@ -521,6 +552,8 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
+
+        console2.log("proceeds", proceeds.toString(18));
 
         // Ensure that the ERC4626 aggregates and the token balances were updated
         // correctly during the trade.

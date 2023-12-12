@@ -200,6 +200,39 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         assertEq(amountWithdrawn, 2e18);
     }
 
+    function test_erc4626_withdraw_zero() external {
+        // First we add some shares and interest.
+        vm.startPrank(alice);
+        dai.transfer(address(pool), 5e18);
+        pool.transfer(address(mockHyperdrive), 10e18);
+        uint256 balanceBefore = dai.balanceOf(alice);
+
+        // Test an underlying withdraw of zero.
+        uint256 amountWithdrawn = mockHyperdrive.withdraw(
+            0,
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+        uint256 balanceAfter = dai.balanceOf(alice);
+        assertEq(balanceAfter, balanceBefore);
+        assertEq(amountWithdrawn, 0);
+
+        // Test a share withdraw of zero.
+        amountWithdrawn = mockHyperdrive.withdraw(
+            0,
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: false,
+                extraData: new bytes(0)
+            })
+        );
+        assertEq(pool.balanceOf(alice), 0);
+        assertEq(amountWithdrawn, 0);
+    }
+
     function test_erc4626_testDeploy() external {
         vm.startPrank(alice);
         uint256 apr = 0.01e18; // 1% apr
