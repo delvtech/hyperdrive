@@ -24,6 +24,39 @@ contract LPWithdrawalTest is HyperdriveTest {
         deploy(deployer, config);
     }
 
+    // FIXME: This test case allows us to hit the edge case where some of the
+    //        net longs can't be closed. Flesh this out and make sure that our
+    //        invariants hold.
+    // function test_example() external {
+    //     // Alice initializes the pool
+    //     uint256 apr = 0.05e18;
+    //     uint256 contribution = 500_000_000e18;
+    //     uint256 lpShares = initialize(alice, apr, contribution);
+    //
+    //     // Bob opens a max short.
+    //     openShort(
+    //         bob,
+    //         hyperdrive.calculateMaxShort()
+    //     );
+    //
+    //     // The term advances and no interest accrues.
+    //     advanceTime(POSITION_DURATION, 0);
+    //     hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+    //
+    //     // Bob opens a max long.
+    //     (, uint256 longAmount) = openLong(
+    //         bob,
+    //         hyperdrive.calculateMaxLong()
+    //     );
+    //     console.log("long amount = %s", longAmount.toString(18));
+    //
+    //     // Alice removes all of her LP shares.
+    //     removeLiquidity(alice, lpShares / 5);
+    //
+    //     // Bob adds liquidity.
+    //     addLiquidity(bob, 10e18);
+    // }
+
     // This test is designed to ensure that a single LP receives all of the
     // trading profits earned when a new long position is closed immediately
     // after the LP withdraws. A bound is placed on these profits to ensure that

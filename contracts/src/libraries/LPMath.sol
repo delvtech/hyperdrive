@@ -243,8 +243,8 @@ library LPMath {
             // Since the spot price is approximately zero after closing the
             // entire net curve position, we mark any remaining bonds to zero.
             else {
-                // FIXME: We need to test this. We currently don't have coverage
-                // for this case.
+                // FIXME: Is this always right? What about the case where the
+                // effective share reserves is greater than the share reserves?
                 return (
                     -int256(
                         effectiveShareReserves - _params.minimumShareReserves
@@ -826,18 +826,9 @@ library LPMath {
                             uint256(_params.netCurveTrade)
                         );
                 }
-                // FIXME: This needs to be revised based on the recent fix we
-                // made to `calculateMaxSellBondsIn`. Furthermore, we should
-                // just solve directly at this point.
-                //
-                // Otherwise, we calculate the derivative using the derivative
-                // of `calculateMaxSellSharesOut`.
+                // Otherwise, we can solve directly for the share proceeds.
                 else {
-                    // FIXME: If we get into this regime, we should be able to
-                    // solve directly.
-                    // derivative =
-                    //     ONE +
-                    //     calculateMaxSellSharesOutDerivative(_params);
+                    // FIXME: We need to battle-test this.
                     return
                         calculateDistributeExcessIdleShareProceedsNetLongEdgeCase(
                             _params
@@ -945,6 +936,8 @@ library LPMath {
         return shareProceeds;
     }
 
+    // FIXME: Natspec.
+    //
     // FIXME: Find a better name for this.
     //
     // FIXME: Make sure we're testing this.
@@ -978,6 +971,8 @@ library LPMath {
                 ) +
                 uint256(-netFlatTrade);
         }
+
+        // FIXME: This should only ever be needed when zeta is less than 0.
         if (_params.originalShareAdjustment > 0) {
             return
                 _params.originalShareReserves -
@@ -1000,11 +995,22 @@ library LPMath {
 
     // FIXME: Todos
     //
-    // 1. [ ] Document this body of this function.
-    // 2. [ ] Check that we're rounding in the right direction.
-    // 3. [ ] Double check this calculation.
+    // 1. [ ] Check that we're rounding in the right direction.
+    // 2. [ ] Double check this calculation.
     //
-    /// @dev Calculates the derivative of `calculateSharesOutGivenBondsIn`.
+    /// @dev Calculates the derivative of `calculateSharesOutGivenBondsIn`. This
+    ///      derivative is given by:
+    ///
+    ///      derivative = (1 - zeta / z) * (
+    ///          1 - (1 / c) * (
+    ///              c * (mu * z_e(x)) ** -t_s +
+    ///              (y / z_e) * y(x) ** -t_s  -
+    ///              (y / z_e) * (y(x) + dy) ** -t_s
+    ///          ) * (
+    ///              (mu / c) * (k(x) - (y(x) + dy) ** (1 - t_s))
+    ///          ) ** (t_s / (1 - t_s))
+    ///      )
+    ///
     /// @param _params The parameters for the calculation.
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
@@ -1020,7 +1026,6 @@ library LPMath {
                 _params.presentValueParams.shareReserves,
                 _params.presentValueParams.shareAdjustment
             );
-
         uint256 derivative = _params.presentValueParams.sharePrice.divDown(
             _params
                 .presentValueParams
@@ -1068,12 +1073,20 @@ library LPMath {
         if (ONE >= derivative) {
             derivative = ONE - derivative;
         } else {
-            // FIXME: Explain this. Is this really reasonable? If we can assume
-            // that the derivative should always be greater than or equal to 0,
-            // we can chalk this up to a numerical error, but it may be better
-            // to return the derivative as an integer.
+            // FIXME: I'm not sure I believe this. I should add a revert here
+            // and see how often it gets hit. This would also better
+            // contextualize whether or not we should make the derivative
+            // signed.
             //
-            // If the derivative calculation would underflow, we return 0.
+            // FIXME: It really should be true outside of small fluctuations
+            // considering that slippage should increase as the amount of
+            // shares removed from the reserves increases. If this is getting
+            // hit a lot, it's an indication that we could be doing something
+            // wrong.
+            //
+            // NOTE: Analytically, the derivative should always be greater than
+            // or equal to 0. If the derivative calculation would underflow, we
+            // return 0 to avoid rounding issues.
             return 0;
         }
         if (_params.originalShareAdjustment >= 0) {
@@ -1097,12 +1110,22 @@ library LPMath {
 
     // FIXME: Todos
     //
-    // 1. [ ] Document this body of this function.
-    // 2. [ ] Check that we're rounding in the right direction.
-    // 3. [ ] Double check this calculation.
-    // 4. [ ] Add ASCII math.
+    // 1. [ ] Check that we're rounding in the right direction.
+    // 2. [ ] Double check this calculation.
     //
-    /// @dev Calculates the derivative of `calculateSharesInGivenBondsOut`.
+    /// @dev Calculates the derivative of `calculateSharesInGivenBondsOut`. This
+    ///      derivative is given by:
+    ///
+    ///      derivative = (1 - zeta / z) * (
+    ///          1 - (1 / c) * (
+    ///              c * (mu * z_e(x)) ** -t_s +
+    ///              (y / z_e) * y(x) ** -t_s  -
+    ///              (y / z_e) * (y(x) - dy) ** -t_s
+    ///          ) * (
+    ///              (mu / c) * (k(x) - (y(x) - dy) ** (1 - t_s))
+    ///          ) ** (t_s / (1 - t_s))
+    ///      )
+    ///
     /// @param _params The parameters for the calculation.
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
@@ -1118,7 +1141,6 @@ library LPMath {
                 _params.presentValueParams.shareReserves,
                 _params.presentValueParams.shareAdjustment
             );
-
         uint256 k = YieldSpaceMath.kDown(
             effectiveShareReserves,
             _params.presentValueParams.bondReserves,
@@ -1167,12 +1189,20 @@ library LPMath {
         if (ONE >= derivative) {
             derivative = ONE - derivative;
         } else {
-            // FIXME: Explain this. Is this really reasonable? If we can assume
-            // that the derivative should always be greater than or equal to 0,
-            // we can chalk this up to a numerical error, but it may be better
-            // to return the derivative as an integer.
+            // FIXME: I'm not sure I believe this. I should add a revert here
+            // and see how often it gets hit. This would also better
+            // contextualize whether or not we should make the derivative
+            // signed.
             //
-            // If the derivative calculation would underflow, we return 0.
+            // FIXME: It really should be true outside of small fluctuations
+            // considering that slippage should increase as the amount of
+            // shares removed from the reserves increases. If this is getting
+            // hit a lot, it's an indication that we could be doing something
+            // wrong.
+            //
+            // NOTE: Analytically, the derivative should always be greater than
+            // or equal to 0. If the derivative calculation would underflow, we
+            // return 0 to avoid rounding issues.
             return 0;
         }
         if (_params.originalShareAdjustment >= 0) {
@@ -1200,7 +1230,11 @@ library LPMath {
     // 3. [ ] Double check this calculation.
     // 4. [ ] Add ASCII math.
     //
-    /// @dev Calculates the derivative of `calculateMaxBuyBondsOut`.
+    /// @dev Calculates the derivative of `calculateMaxBuyBondsOut`. This
+    ///      derivative is given by:
+    ///
+    ///      FIXME
+    ///
     /// @param _params The parameters for the calculation.
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
@@ -1275,33 +1309,5 @@ library LPMath {
                 )).mulDown(derivative);
         }
         return derivative;
-    }
-
-    // FIXME: Todos
-    //
-    // 1. [ ] Document this body of this function.
-    // 2. [ ] Check that we're rounding in the right direction.
-    // 3. [ ] Double check this calculation.
-    // 4. [ ] Add ASCII math.
-    //
-    /// @dev Calculates the derivative of `calculateMaxSellSharesOut`.
-    /// @param _params The parameters for the calculation.
-    /// @return The derivative.
-    function calculateMaxSellSharesOutDerivative(
-        DistributeExcessIdleParams memory _params
-    ) internal pure returns (uint256) {
-        if (_params.originalShareAdjustment >= 0) {
-            return
-                ONE -
-                uint256(_params.originalShareAdjustment).divDown(
-                    _params.originalShareReserves
-                );
-        } else {
-            return
-                ONE +
-                uint256(-_params.originalShareAdjustment).divDown(
-                    _params.originalShareReserves
-                );
-        }
     }
 }
