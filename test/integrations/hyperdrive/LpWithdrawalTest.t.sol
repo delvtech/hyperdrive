@@ -1257,6 +1257,16 @@ contract LpWithdrawalTest is HyperdriveTest {
         }
         // FIXME
         //
+        // // This edge case resulted in the LP share price increasing more than
+        // // 0.01% after distributing excess idle liquidity.
+        // vm.revertTo(snapshotId);
+        // {
+        //     uint256 longBasePaid = 469991228879638584073946043;
+        //     uint256 shortAmount = 2043170798149466600528688795244803555758742315187834115121;
+        //     _test_lp_withdrawal_three_lps(longBasePaid, shortAmount);
+        // }
+        // FIXME
+        //
         // // This edge case resulted in the LP share price decreasing after
         // // distributing excess idle liquidity.
         // vm.revertTo(snapshotId);
