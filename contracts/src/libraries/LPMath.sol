@@ -129,7 +129,6 @@ library LPMath {
         (uint256 presentValue, bool success) = calculatePresentValueSafe(
             _params
         );
-        // FIXME: This hides errors that could occur in calculateNetCurveTradeSafe
         if (!success) {
             revert IHyperdrive.NegativePresentValue();
         }
@@ -244,6 +243,8 @@ library LPMath {
             // Since the spot price is approximately zero after closing the
             // entire net curve position, we mark any remaining bonds to zero.
             else {
+                // FIXME: We need to test this. We currently don't have coverage
+                // for this case.
                 return (
                     -int256(
                         effectiveShareReserves - _params.minimumShareReserves
@@ -612,10 +613,25 @@ library LPMath {
         return maxShareReservesDelta;
     }
 
-    // FIXME: Add the ASCII math to the Natspec.
+    // FIXME: Make sure that we round consistently.
     //
     /// @dev Calculates the initial guess to use for iteratively solving for the
-    ///      maximum share reserves delta.
+    ///      maximum share reserves delta. The maximum amount of bonds that can
+    ///      be purchased as a function of the shares removed from the share
+    ///      reserves `x` is calculated as:
+    ///
+    ///      y_max(x) = y(x) - (k(x) / ((c / mu) + 1)) ** (1 / (1 - t_s))
+    ///
+    ///      Our initial guess should underestimate this value since we want
+    ///      to approach the optimal value from below. We can derive our initial
+    ///      guess by solving for `x_0` in the following equation:
+    ///
+    ///      netCurveTrade = y(x_0) - (k(0) / ((c / mu) + 1)) ** (1 / (1 - t_s))
+    ///                                =>
+    ///      x_0 = z - ((
+    ///                netCurveTrade + (k(0) / ((c / mu) + 1)) ** (1 / (1 - t_s))
+    ///            ) / ((y / z_e) * (1 - zeta / z)))
+    ///
     /// @param _params The parameters for the distribute excess idle calculation.
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
@@ -626,7 +642,6 @@ library LPMath {
         uint256 _originalEffectiveShareReserves,
         uint256 _netCurveTrade
     ) internal pure returns (uint256) {
-        // FIXME: Document this and add ASCII math.
         uint256 lhs = _netCurveTrade +
             YieldSpaceMath
                 .kDown(
@@ -663,14 +678,19 @@ library LPMath {
                 )
             );
         }
-
         return _params.originalShareReserves - lhs;
     }
 
-    // FIXME: Add the math in this comment.
-    //
     /// @dev Calculates the amount of withdrawal shares that can be redeemed
     ///      given an amount of shares to remove from the share reserves.
+    ///      Assuming that dz is the amount of shares to remove from the
+    ///      reserves and dl is the amount of LP shares to be burned, we can
+    ///      derive the calculation as follows:
+    ///
+    ///      PV(0) / l = PV(dx) / (l - dl)
+    ///                =>
+    ///      dl = l - l * (PV(dx) / PV(0))
+    ///
     /// @param _params The parameters for the present value calculation.
     /// @param _shareReservesDelta The amount of shares to remove from the
     ///        share reserves.
@@ -717,9 +737,8 @@ library LPMath {
 
     // FIXME: Todos
     //
-    // 1. [ ] Document the body of this function.
-    // 2. [ ] Ensure that we're rounding in the right direction.
-    // 3. [ ] Add a tolerance parameter or constant.
+    // 1. [ ] Ensure that we're rounding in the right direction.
+    // 2. [ ] Add a tolerance parameter or constant.
     //     - [ ] If the tolerance after all is said and done is exceeded, revert
     //           (for now -- we don't want this in prod).
     //     - [ ] If we're under the tolerance, we should return early. We may
@@ -755,7 +774,9 @@ library LPMath {
         // ratio of the share reserves delta to the withdrawal shares
         // outstanding is equal to the LP share price. In reality, the
         // withdrawal pool should receive more than this, but it's a good
-        // starting point.
+        // starting point. The calculation is:
+        //
+        // x_0 = (PV(0) / l) * w
         uint256 shareProceeds = _params.withdrawalSharesTotalSupply.mulDivDown(
             _params.startingPresentValue,
             lpTotalSupply
@@ -805,18 +826,32 @@ library LPMath {
                             uint256(_params.netCurveTrade)
                         );
                 }
-                // FIXME: If we get into this regime, we should be able to solve
-                // directly.
+                // FIXME: This needs to be revised based on the recent fix we
+                // made to `calculateMaxSellBondsIn`. Furthermore, we should
+                // just solve directly at this point.
                 //
                 // Otherwise, we calculate the derivative using the derivative
                 // of `calculateMaxSellSharesOut`.
                 else {
-                    derivative =
-                        ONE +
-                        calculateMaxSellSharesOutDerivative(_params);
+                    // FIXME: If we get into this regime, we should be able to
+                    // solve directly.
+                    // derivative =
+                    //     ONE +
+                    //     calculateMaxSellSharesOutDerivative(_params);
+                    return
+                        calculateDistributeExcessIdleShareProceedsNetLongEdgeCase(
+                            _params
+                        );
                 }
 
-                // FIXME: Document this.
+                // We calculate the updated share proceeds `x_n+1` by proceeding
+                // with Newton's method. This is given by:
+                //
+                // x_n+1 = x_n - F(x_n) / F'(x_n)
+                //
+                // where our objective function `F(x)` is:
+                //
+                // F(x) = PV(x) * l - PV(0) * (l - w)
                 uint256 presentValue = calculatePresentValue(
                     _params.presentValueParams
                 );
@@ -875,7 +910,14 @@ library LPMath {
                         uint256(-_params.netCurveTrade)
                     );
 
-                // FIXME: Document this.
+                // We calculate the updated share proceeds `x_n+1` by proceeding
+                // with Newton's method. This is given by:
+                //
+                // x_n+1 = x_n - F(x_n) / F'(x_n)
+                //
+                // where our objective function `F(x)` is:
+                //
+                // F(x) = PV(x) * l - PV(0) * (l - w)
                 int256 delta = int256(presentValue.mulDown(lpTotalSupply)) -
                     int256(
                         _params.startingPresentValue.mulDown(
@@ -901,6 +943,59 @@ library LPMath {
         }
 
         return shareProceeds;
+    }
+
+    // FIXME: Find a better name for this.
+    //
+    // FIXME: Make sure we're testing this.
+    //
+    // FIXME: This is never being called. Do we need it?
+    function calculateDistributeExcessIdleShareProceedsNetLongEdgeCase(
+        DistributeExcessIdleParams memory _params
+    ) internal pure returns (uint256) {
+        // FIXME: Document this.
+        _params.presentValueParams.shareReserves = _params
+            .originalShareReserves;
+        _params.presentValueParams.shareAdjustment = _params
+            .originalShareAdjustment;
+        _params.presentValueParams.bondReserves = _params.originalBondReserves;
+        int256 netFlatTrade = calculateNetFlatTrade(_params.presentValueParams);
+        uint256 inner;
+        if (netFlatTrade >= 0) {
+            inner =
+                _params.startingPresentValue.mulDivUp(
+                    _params.activeLpTotalSupply,
+                    _params.activeLpTotalSupply +
+                        _params.withdrawalSharesTotalSupply
+                ) -
+                uint256(netFlatTrade);
+        } else {
+            inner =
+                _params.startingPresentValue.mulDivUp(
+                    _params.activeLpTotalSupply,
+                    _params.activeLpTotalSupply +
+                        _params.withdrawalSharesTotalSupply
+                ) +
+                uint256(-netFlatTrade);
+        }
+        if (_params.originalShareAdjustment > 0) {
+            return
+                _params.originalShareReserves -
+                _params.originalShareReserves.mulDivUp(
+                    inner,
+                    uint256(_params.originalShareAdjustment)
+                );
+        } else if (_params.originalShareAdjustment < 0) {
+            return
+                _params.originalShareReserves +
+                _params.originalShareReserves.mulDivUp(
+                    inner,
+                    uint256(-_params.originalShareAdjustment)
+                );
+        }
+
+        // FIXME: Explain why we're returning 0 here.
+        return 0;
     }
 
     // FIXME: Todos
@@ -973,9 +1068,12 @@ library LPMath {
         if (ONE >= derivative) {
             derivative = ONE - derivative;
         } else {
-            // FIXME: Do we need this after updating `removeLiquidity`?
+            // FIXME: Explain this. Is this really reasonable? If we can assume
+            // that the derivative should always be greater than or equal to 0,
+            // we can chalk this up to a numerical error, but it may be better
+            // to return the derivative as an integer.
             //
-            // FIXME: Explain this decision.
+            // If the derivative calculation would underflow, we return 0.
             return 0;
         }
         if (_params.originalShareAdjustment >= 0) {
@@ -1028,7 +1126,6 @@ library LPMath {
             _params.presentValueParams.sharePrice,
             _params.presentValueParams.initialSharePrice
         );
-
         uint256 derivative = _params.presentValueParams.sharePrice.divDown(
             _params
                 .presentValueParams
@@ -1070,7 +1167,12 @@ library LPMath {
         if (ONE >= derivative) {
             derivative = ONE - derivative;
         } else {
-            // FIXME: Explain this decision.
+            // FIXME: Explain this. Is this really reasonable? If we can assume
+            // that the derivative should always be greater than or equal to 0,
+            // we can chalk this up to a numerical error, but it may be better
+            // to return the derivative as an integer.
+            //
+            // If the derivative calculation would underflow, we return 0.
             return 0;
         }
         if (_params.originalShareAdjustment >= 0) {
@@ -1088,7 +1190,6 @@ library LPMath {
                     )
             );
         }
-
         return derivative;
     }
 
@@ -1154,7 +1255,12 @@ library LPMath {
         if (derivative > delta) {
             derivative -= delta;
         } else {
-            // FIXME: Explain this.
+            // FIXME: Explain this. Is this really reasonable? If we can assume
+            // that the derivative should always be greater than or equal to 0,
+            // we can chalk this up to a numerical error, but it may be better
+            // to return the derivative as an integer.
+            //
+            // If the derivative calculation would underflow, we return 0.
             derivative = 0;
         }
         if (_params.originalShareAdjustment >= 0) {
