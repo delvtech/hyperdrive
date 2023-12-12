@@ -268,7 +268,7 @@ contract OpenLongTest is HyperdriveTest {
         baseToken.mint(longAmount);
         baseToken.approve(address(hyperdrive), longAmount);
 
-        vm.expectRevert(IHyperdrive.BaseBufferExceedsShareReserves.selector);
+        vm.expectRevert(IHyperdrive.InsufficientLiquidity.selector);
         hyperdrive.openLong(
             longAmount,
             0,
