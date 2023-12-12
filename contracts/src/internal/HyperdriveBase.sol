@@ -372,6 +372,28 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         }
     }
 
+    /// @dev Collect the interest earned by closed positions
+    ///      that haven't been redeemed.
+    /// @param _amount The amount in shares that earned the zombie interest.
+    /// @param _oldSharePrice The share price at the time of the last checkpoint.
+    /// @param _newSharePrice The current share price.
+    function _collectZombieInterest(
+        uint256 _amount,
+        uint256 _oldSharePrice,
+        uint256 _newSharePrice
+    ) internal {
+        if (_newSharePrice > _oldSharePrice && _oldSharePrice > 0) {
+            // dz * (c1 - c0)/c1
+            uint256 zombieInterest = _amount.mulDivDown(
+                _newSharePrice - _oldSharePrice,
+                _newSharePrice
+            );
+            _marketState.zombieShareReserves -= zombieInterest.toUint128();
+            _marketState.shareReserves += zombieInterest.toUint128();
+            _marketState.shareAdjustment += int128(zombieInterest.toUint128());
+        }
+    }
+
     /// @dev Calculates the number of share reserves that are not reserved by
     ///      open positions.
     /// @param _sharePrice The current share price.

@@ -101,6 +101,9 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         /// @dev The net amount of shares that have been added and removed from
         ///      the share reserves due to flat updates.
         int128 shareAdjustment;
+        /// @dev The amount shares that associated with positions that are matured,
+        ///      but not yet redeemed.
+        uint128 zombieShareReserves;
         /// @dev The global exposure of the pool due to open longs
         uint128 longExposure;
         /// @dev The amount of longs that are still open.
@@ -177,6 +180,9 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         ///      bonds. This is used to ensure that the pricing mechanism is
         ///      held invariant under flat updates for security reasons.
         int256 shareAdjustment;
+        // @dev The amount shares that associated with positions that are matured,
+        ///      but not yet redeemed.
+        uint256 zombieShareReserves;
         /// @dev The reserves of bonds held by the pool.
         uint256 bondReserves;
         /// @dev The total supply of LP shares.

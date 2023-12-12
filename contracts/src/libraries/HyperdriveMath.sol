@@ -152,14 +152,12 @@ library HyperdriveMath {
         uint256 _flatFee
     ) internal pure returns (uint256 shareProceeds) {
         // If the interest is more negative than the trading profits and margin
-        // released, than the short proceeds are marked to zero. Otherwise, we
+        // released, then the short proceeds are marked to zero. Otherwise, we
         // calculate the proceeds as the sum of the trading proceeds, the
         // interest proceeds, and the margin released.
-        uint256 bondFactor = _bondAmount.mulDivDown(
-            _closeSharePrice,
-            // We round up here do avoid overestimating the share proceeds.
-            _openSharePrice.mulUp(_sharePrice)
-        );
+        uint256 bondFactor = _bondAmount
+            .mulDivDown(_closeSharePrice, _openSharePrice)
+            .divDown(_sharePrice);
 
         // We increase the bondFactor by the flat fee amount, because the trader
         // has provided the flat fee as margin, and so it must be returned to

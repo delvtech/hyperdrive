@@ -126,26 +126,28 @@ library HyperdriveUtils {
     /// @dev Calculates principal + compounded rate of interest over a period
     ///      principal * e ^ (rate * time)
     /// @param _principal The initial amount interest will be accrued on
-    /// @param _apr Annual percentage rate
+    /// @param _rate Interest rate
     /// @param _time Number of seconds compounding will occur for
     /// @return totalAmount The total amount of capital after interest accrues.
     /// @return interest The interest that accrued.
     function calculateCompoundInterest(
         uint256 _principal,
-        int256 _apr,
+        int256 _rate,
         uint256 _time
     ) internal pure returns (uint256 totalAmount, int256 interest) {
         // Adjust time to a fraction of a year
         uint256 normalizedTime = _time.divDown(365 days);
-        uint256 rt = uint256(_apr < 0 ? -_apr : _apr).mulDown(normalizedTime);
+        uint256 rt = uint256(_rate < 0 ? -_rate : _rate).mulDown(
+            normalizedTime
+        );
 
-        if (_apr > 0) {
+        if (_rate > 0) {
             totalAmount = _principal.mulDown(
                 uint256(FixedPointMath.exp(int256(rt)))
             );
             interest = int256(totalAmount - _principal);
             return (totalAmount, interest);
-        } else if (_apr < 0) {
+        } else if (_rate < 0) {
             // NOTE: Might not be the correct calculation for negatively
             // continuously compounded interest
             totalAmount = _principal.divDown(
