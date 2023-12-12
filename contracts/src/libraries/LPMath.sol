@@ -16,8 +16,6 @@ import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 library LPMath {
     using FixedPointMath for *;
 
-    // FIXME: Use this in `HyperdriveLP`'s
-    //
     /// @dev Calculates the new share reserves, share adjustment, and bond
     ///      reserves after liquidity is added or removed from the pool. This
     ///      update is made in such a way that the pool's spot price remains

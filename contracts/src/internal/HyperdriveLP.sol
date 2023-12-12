@@ -416,79 +416,31 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
     /// @dev Updates the pool's liquidity and holds the pool's spot price constant.
     /// @param _shareReservesDelta The delta that should be applied to share reserves.
     function _updateLiquidity(int256 _shareReservesDelta) internal {
-        // If the share reserves delta is zero, we can return early since no
-        // action is needed.
-        if (_shareReservesDelta == 0) {
-            return;
-        }
-
-        // Ensure that the share reserves are greater than or equal to the
-        // minimum share reserves. This invariant should never break. If it
-        // breaks, all activity should cease.
-        uint256 shareReserves = _marketState.shareReserves;
-        if (shareReserves < _minimumShareReserves) {
-            revert IHyperdrive.InvalidShareReserves();
-        }
-
-        // Update the share reserves by applying the share reserves delta. We
-        // ensure that our minimum share reserves invariant is still maintained.
-        int256 updatedShareReserves = int256(shareReserves) +
-            _shareReservesDelta;
-        if (updatedShareReserves < int256(_minimumShareReserves)) {
-            revert IHyperdrive.InvalidShareReserves();
-        }
-        _marketState.shareReserves = uint256(updatedShareReserves).toUint128();
-
-        // Update the share adjustment by holding the ratio of share reserves
-        // to share adjustment proportional. In general, our pricing model cannot
-        // support negative values for the z coordinate, so this is important as
-        // it ensures that if z - zeta starts as a positive value, it ends as a
-        // positive value. With this in mind, we update the share adjustment as:
-        //
-        // zeta_old / z_old = zeta_new / z_new => zeta_new = zeta_old * (z_new / z_old)
-        int256 updatedShareAdjustment;
-        int256 shareAdjustment = _marketState.shareAdjustment;
-        if (shareAdjustment >= 0) {
-            updatedShareAdjustment = int256(
-                uint256(updatedShareReserves).mulDivDown(
-                    uint256(shareAdjustment),
-                    shareReserves
-                )
+        // Calculate the updated reserves.
+        uint256 shareReserves_ = _marketState.shareReserves;
+        int256 shareAdjustment_ = _marketState.shareAdjustment;
+        uint256 bondReserves_ = _marketState.bondReserves;
+        (
+            uint256 updatedShareReserves,
+            int256 updatedShareAdjustment,
+            uint256 updatedBondReserves
+        ) = LPMath.calculateUpdateLiquidity(
+                shareReserves_,
+                shareAdjustment_,
+                bondReserves_,
+                _minimumShareReserves,
+                _shareReservesDelta
             );
-        } else {
-            updatedShareAdjustment = -int256(
-                uint256(updatedShareReserves).mulDivDown(
-                    uint256(-shareAdjustment),
-                    shareReserves
-                )
-            );
-        }
-        _marketState.shareAdjustment = updatedShareAdjustment.toInt128();
 
-        // The liquidity update should hold the spot price invariant. The spot
-        // price of base in terms of bonds is given by:
-        //
-        // p = (mu * (z - zeta) / y) ** tau
-        //
-        // This formula implies that holding the ratio of share reserves to bond
-        // reserves constant will hold the spot price constant. This allows us
-        // to calculate the updated bond reserves as:
-        //
-        // (z_old - zeta_old) / y_old = (z_new - zeta_new) / y_new
-        //                          =>
-        // y_new = (z_new - zeta_new) * (y_old / (z_old - zeta_old))
-        _marketState.bondReserves = HyperdriveMath
-            .calculateEffectiveShareReserves(
-                uint256(updatedShareReserves),
-                updatedShareAdjustment
-            )
-            .mulDivDown(
-                _marketState.bondReserves,
-                HyperdriveMath.calculateEffectiveShareReserves(
-                    shareReserves,
-                    shareAdjustment
-                )
-            )
-            .toUint128();
+        // Update the market state.
+        if (updatedShareReserves != shareReserves_) {
+            _marketState.shareReserves = updatedShareReserves.toUint128();
+        }
+        if (updatedShareAdjustment != shareAdjustment_) {
+            _marketState.shareAdjustment = updatedShareAdjustment.toInt128();
+        }
+        if (updatedBondReserves != bondReserves_) {
+            _marketState.bondReserves = updatedBondReserves.toUint128();
+        }
     }
 }
