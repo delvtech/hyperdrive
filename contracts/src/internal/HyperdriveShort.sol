@@ -165,9 +165,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
         // withdrawal pool if necessary.
-        uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
         uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
         uint256 sharePrice_ = sharePrice; // Avoid stack too deep error.
+        uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
         if (block.timestamp < maturityTime) {
             // Attribute the governance fees.
             _governanceFeesAccrued += totalGovernanceFee;
@@ -202,6 +202,23 @@ abstract contract HyperdriveShort is HyperdriveLP {
 
             // Distribute the excess idle to the withdrawal pool.
             _distributeExcessIdle(sharePrice_);
+        } else {
+            // The user is redeeming a long that has already matured. So we
+            // collect the interest that has accrued since the last checkpoint.
+            // NOTE: We only collect the interest on the position that is being closed.
+            uint256 checkpointTime = _latestCheckpoint();
+            _collectZombieInterest(
+                shareProceeds,
+                _checkpoints[checkpointTime].sharePrice,
+                sharePrice
+            );
+            uint256 zombieShareReserves = _marketState.zombieShareReserves;
+            if (shareProceeds < zombieShareReserves) {
+                zombieShareReserves -= shareProceeds;
+            } else {
+                zombieShareReserves = 0;
+            }
+            _marketState.zombieShareReserves = zombieShareReserves.toUint128();
         }
 
         // Withdraw the profit to the trader. This includes the proceeds from

@@ -124,6 +124,18 @@ abstract contract HyperdriveCheckpoint is
                 int256(shareProceeds), // keep the effective share reserves constant
                 _checkpointTime
             );
+            uint256 shareReservesDelta = maturedShortsAmount.divDown(
+                _sharePrice
+            );
+            uint256 proceeds = HyperdriveMath.calculateShortProceeds(
+                maturedShortsAmount,
+                shareReservesDelta,
+                openSharePrice,
+                _sharePrice,
+                _sharePrice,
+                _flatFee
+            );
+            _marketState.zombieShareReserves += proceeds.toUint128();
             positionsClosed = true;
         }
 
@@ -197,15 +209,14 @@ abstract contract HyperdriveCheckpoint is
         return _sharePrice;
     }
 
-    /// @dev Calculates the proceeds of the long holders of a given position at
-    ///      maturity. The long holders will be the LPs if the position is a
-    ///      short.
+    /// @dev Calculates the proceeds of the holders of a given position at
+    ///      maturity.
     /// @param _bondAmount The bond amount of the position.
     /// @param _sharePrice The current share price.
     /// @param _openSharePrice The share price at the beginning of the
     ///        position's checkpoint.
     /// @param _isLong A flag indicating whether or not the position is a long.
-    /// @return shareProceeds The proceeds of the long holders in shares.
+    /// @return shareProceeds The proceeds of the holders in shares.
     /// @return governanceFee The fee paid to governance in shares.
     function _calculateMaturedProceeds(
         uint256 _bondAmount,
