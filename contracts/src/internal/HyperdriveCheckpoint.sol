@@ -127,7 +127,7 @@ abstract contract HyperdriveCheckpoint is
             uint256 shareReservesDelta = maturedShortsAmount.divDown(
                 _sharePrice
             );
-            uint256 proceeds = HyperdriveMath.calculateShortProceeds(
+            uint256 shareProceeds = HyperdriveMath.calculateShortProceeds(
                 maturedShortsAmount,
                 shareReservesDelta,
                 openSharePrice,
@@ -135,7 +135,7 @@ abstract contract HyperdriveCheckpoint is
                 _sharePrice,
                 _flatFee
             );
-            _marketState.zombieShareReserves += proceeds.toUint128();
+            _marketState.zombieShareReserves += shareProceeds.toUint128();
             positionsClosed = true;
         }
 
