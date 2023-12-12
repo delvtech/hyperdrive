@@ -3,7 +3,7 @@ use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
-use crate::{get_effective_share_reserves, State, YieldSpace};
+use crate::{get_effective_share_reserves, State};
 
 impl State {
     /// Gets the curve fee paid by the trader when they open a short.

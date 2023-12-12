@@ -5,7 +5,6 @@ use fixed_point_macros::{fixed, int256};
 use crate::{State, YieldSpace};
 
 impl State {
-
     /// Calculates the present value of LPs capital in the pool.
     pub fn calculate_present_value(&self, current_block_timestamp: U256) -> FixedPoint {
         // Calculate the average time remaining for the longs and shorts.
@@ -18,10 +17,16 @@ impl State {
             self.short_average_maturity_time().into(),
         );
 
-        let present_value: I256 =  I256::from(self.share_reserves()) 
-        + self.calculate_net_curve_trade(long_average_time_remaining, short_average_time_remaining)
-        + self.calculate_net_flat_trade(long_average_time_remaining, short_average_time_remaining)
-        -  I256::from(self.minimum_share_reserves());
+        let present_value: I256 = I256::from(self.share_reserves())
+            + self.calculate_net_curve_trade(
+                long_average_time_remaining,
+                short_average_time_remaining,
+            )
+            + self.calculate_net_flat_trade(
+                long_average_time_remaining,
+                short_average_time_remaining,
+            )
+            - I256::from(self.minimum_share_reserves());
 
         if present_value < int256!(0) {
             panic!("Negative present value!");
@@ -29,7 +34,11 @@ impl State {
         present_value.into()
     }
 
-    pub fn calculate_net_curve_trade(&self, long_average_time_remaining: FixedPoint, short_average_time_remaining: FixedPoint) -> I256{
+    pub fn calculate_net_curve_trade(
+        &self,
+        long_average_time_remaining: FixedPoint,
+        short_average_time_remaining: FixedPoint,
+    ) -> I256 {
         // The net curve position is the net of the longs and shorts that are
         // currently tradeable on the curve. Given the amount of outstanding
         // longs `y_l` and shorts `y_s` as well as the average time remaining
@@ -37,8 +46,13 @@ impl State {
         // compute the net curve position as:
         //
         // netCurveTrade = y_l * t_l - y_s * t_s.
-        let net_curve_position: I256 = I256::from(self.longs_outstanding().mul_down(long_average_time_remaining))
-        - I256::from(self.shorts_outstanding().mul_down(short_average_time_remaining));
+        let net_curve_position: I256 = I256::from(
+            self.longs_outstanding()
+                .mul_down(long_average_time_remaining),
+        ) - I256::from(
+            self.shorts_outstanding()
+                .mul_down(short_average_time_remaining),
+        );
 
         // If the net curve position is positive, then the pool is net long.
         // Closing the net curve position results in the longs being paid out
@@ -46,11 +60,14 @@ impl State {
         let result: I256 = if net_curve_position > int256!(0) {
             // Calculate the maximum amount of bonds that can be sold on
             // YieldSpace.
-            let mut max_curve_trade = self.calculate_max_sell_bonds_in(self.minimum_share_reserves());
+            let max_curve_trade =
+                self.calculate_max_sell_bonds_in(self.minimum_share_reserves());
             // If the max curve trade is greater than the net curve position,
             // then we can close the entire net curve position.
             if max_curve_trade >= net_curve_position.into() {
-                -I256::from(self.calculate_shares_out_given_bonds_in_down(net_curve_position.into()))
+                -I256::from(
+                    self.calculate_shares_out_given_bonds_in_down(net_curve_position.into()),
+                )
             } else {
                 // Otherwise, we can only close part of the net curve position.
                 // Since the spot price is approximately zero after closing the
@@ -61,14 +78,17 @@ impl State {
             let _net_curve_position: FixedPoint = FixedPoint::from(-net_curve_position);
             // Calculate the maximum amount of bonds that can be bought on
             // YieldSpace.
-            let max_curve_trade = self.calculate_max_buy_bonds_out(); 
+            let max_curve_trade = self.calculate_max_buy_bonds_out();
             if max_curve_trade >= _net_curve_position {
-                I256::from(self.calculate_shares_in_given_bonds_out_up(FixedPoint::from(_net_curve_position)))
+                I256::from(
+                    self.calculate_shares_in_given_bonds_out_up(_net_curve_position),
+                )
             } else {
                 let max_share_payment = self.calculate_max_buy_shares_in();
-                I256::from(max_share_payment + (_net_curve_position - max_curve_trade).div_down(
-                    self.share_price()
-                ))
+                I256::from(
+                    max_share_payment
+                        + (_net_curve_position - max_curve_trade).div_down(self.share_price()),
+                )
             }
         } else {
             int256!(0)
@@ -76,7 +96,11 @@ impl State {
         result
     }
 
-    pub fn calculate_net_flat_trade(&self, long_average_time_remaining: FixedPoint, short_average_time_remaining: FixedPoint) -> I256{
+    pub fn calculate_net_flat_trade(
+        &self,
+        long_average_time_remaining: FixedPoint,
+        short_average_time_remaining: FixedPoint,
+    ) -> I256 {
         // Compute the net of the longs and shorts that will be traded flat and
         // apply this net to the reserves.
         I256::from(self.shorts_outstanding().mul_div_down(
@@ -169,7 +193,10 @@ mod tests {
                 state.short_average_maturity_time().into(),
             );
             let actual = panic::catch_unwind(|| {
-                state.calculate_net_curve_trade(long_average_time_remaining, short_average_time_remaining)
+                state.calculate_net_curve_trade(
+                    long_average_time_remaining,
+                    short_average_time_remaining,
+                )
             });
             match mock
                 .calculate_net_curve_trade(PresentValueParams {
@@ -217,7 +244,10 @@ mod tests {
                 state.short_average_maturity_time().into(),
             );
             let actual = panic::catch_unwind(|| {
-                state.calculate_net_flat_trade(long_average_time_remaining, short_average_time_remaining)
+                state.calculate_net_flat_trade(
+                    long_average_time_remaining,
+                    short_average_time_remaining,
+                )
             });
             match mock
                 .calculate_net_flat_trade(PresentValueParams {

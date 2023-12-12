@@ -186,7 +186,7 @@ pub trait YieldSpace {
             optimal_z = optimal_z.pow(fixed!(1e18) / (fixed!(1e18) - self.t()));
         }
         optimal_z = optimal_z.div_down(self.mu());
-        optimal_z -  self.z()
+        optimal_z - self.z()
     }
 
     /// Calculates the maximum amount of bonds that can be purchased with the

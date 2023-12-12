@@ -3,7 +3,7 @@ use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
-use crate::{get_effective_share_reserves, State, YieldSpace};
+use crate::{State, YieldSpace};
 
 impl State {
     /// Gets the amount of base the trader will need to deposit for a short of
