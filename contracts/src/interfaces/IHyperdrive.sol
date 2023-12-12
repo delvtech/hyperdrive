@@ -232,7 +232,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     error InvalidShareReserves();
     error InvalidFeeAmounts();
     error InvalidFeeDestination();
-    error Insolvency();
+    error InsufficientLiquidity();
     error NegativeInterest();
     error NegativePresentValue();
     error NoAssetsToWithdraw();

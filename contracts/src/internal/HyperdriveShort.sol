@@ -286,7 +286,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // of capital available to back non-netted long exposure. Since both
         // quantities decrease, we need to check that the system is still solvent.
         if (!_isSolvent(_sharePrice)) {
-            revert IHyperdrive.Insolvency();
+            revert IHyperdrive.InsufficientLiquidity();
         }
 
         // Distribute the excess idle to the withdrawal pool.

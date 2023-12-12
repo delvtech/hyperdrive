@@ -1465,8 +1465,8 @@ library HyperdriveUtils {
         bytes4 _selector
     ) internal pure returns (string memory) {
         // Convert the selector to the correct error message.
-        if (_selector == IHyperdrive.Insolvency.selector) {
-            return "Insolvency";
+        if (_selector == IHyperdrive.InsufficientLiquidity.selector) {
+            return "InsufficientLiquidity";
         }
         if (_selector == IHyperdrive.BelowMinimumContribution.selector) {
             return "BelowMinimumContribution";
