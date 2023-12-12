@@ -439,7 +439,7 @@ contract ZombieInterestTest is HyperdriveTest {
         uint256 sharePrice = hyperdrive.getPoolInfo().sharePrice;
         assertGt(sharePrice, 0);
 
-        // Verify that the value represented in the share reserves is >= the actual amount in the contract.
+        // Verify that the value represented in the share reserves is <= the actual amount in the contract.
         uint256 baseReserves = hyperdrive.getPoolInfo().shareReserves.mulDown(
             sharePrice
         );
