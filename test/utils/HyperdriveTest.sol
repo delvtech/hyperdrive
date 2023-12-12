@@ -101,8 +101,8 @@ contract HyperdriveTest is BaseTest {
         uint256 fixedRate
     ) internal view returns (IHyperdrive.PoolConfig memory) {
         IHyperdrive.Fees memory fees = IHyperdrive.Fees({
-            curve: 0,
-            flat: 0,
+            curve: 0.005 ether,
+            flat: 0.005 ether,
             governance: 0
         });
         return
@@ -723,6 +723,12 @@ contract HyperdriveTest is BaseTest {
     function advanceTime(uint256 time, int256 apr) internal virtual {
         MockHyperdrive(address(hyperdrive)).accrue(time, apr);
         vm.warp(block.timestamp + time);
+    }
+
+    function advanceTimeTo(uint256 timestamp, int256 apr) internal virtual {
+        uint256 time = timestamp - block.timestamp;
+        MockHyperdrive(address(hyperdrive)).accrue(time, apr);
+        vm.warp(timestamp);
     }
 
     function advanceTimeWithCheckpoints(
