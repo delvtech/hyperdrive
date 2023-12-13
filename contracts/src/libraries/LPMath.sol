@@ -16,6 +16,9 @@ import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 library LPMath {
     using FixedPointMath for *;
 
+    uint256 internal constant SHARE_PROCEEDS_MAX_ITERATIONS = 4;
+    uint256 internal constant SHARE_PROCEEDS_MIN_TOLERANCE = 1e14;
+
     /// @dev Calculates the new share reserves, share adjustment, and bond
     ///      reserves after liquidity is added or removed from the pool. This
     ///      update is made in such a way that the pool's spot price remains
@@ -785,9 +788,9 @@ library LPMath {
 
         // If the net curve trade is positive, the pool is net long.
         if (_params.netCurveTrade > 0) {
-            // FIXME: Use a constant for the loop iterations.
-            for (uint256 i = 0; i < 4; i++) {
-                // Simulate applying the share proceeds to the reserves.
+            for (uint256 i = 0; i < SHARE_PROCEEDS_MAX_ITERATIONS; i++) {
+                // Simulate applying the share proceeds to the reserves and
+                // recalculate the present value.
                 (
                     _params.presentValueParams.shareReserves,
                     _params.presentValueParams.shareAdjustment,
@@ -799,6 +802,20 @@ library LPMath {
                     _params.presentValueParams.minimumShareReserves,
                     -int256(shareProceeds)
                 );
+                uint256 presentValue = calculatePresentValue(
+                    _params.presentValueParams
+                );
+
+                // Short-circuit if we are within the minimum tolerance.
+                if (
+                    shouldShortCircuitDistributeExcessIdleShareProceeds(
+                        _params,
+                        presentValue,
+                        lpTotalSupply
+                    )
+                ) {
+                    break;
+                }
 
                 // If the net curve trade is less than or equal to the maximum
                 // amount of bonds that can be sold with this share proceeds, we
@@ -844,9 +861,6 @@ library LPMath {
                 // where our objective function `F(x)` is:
                 //
                 // F(x) = PV(x) * l - PV(0) * (l - w)
-                uint256 presentValue = calculatePresentValue(
-                    _params.presentValueParams
-                );
                 int256 delta = int256(presentValue.mulDown(lpTotalSupply)) -
                     int256(
                         _params.startingPresentValue.mulDown(
@@ -872,8 +886,7 @@ library LPMath {
         }
         // Otherwise, the pool is net short.
         else {
-            // FIXME: Use a constant for the loop iterations.
-            for (uint256 i = 0; i < 4; i++) {
+            for (uint256 i = 0; i < SHARE_PROCEEDS_MAX_ITERATIONS; i++) {
                 // Simulate applying the share proceeds to the reserves and
                 // recalculate the present value.
                 (
@@ -890,6 +903,17 @@ library LPMath {
                 uint256 presentValue = calculatePresentValue(
                     _params.presentValueParams
                 );
+
+                // Short-circuit if we are within the minimum tolerance.
+                if (
+                    shouldShortCircuitDistributeExcessIdleShareProceeds(
+                        _params,
+                        presentValue,
+                        lpTotalSupply
+                    )
+                ) {
+                    break;
+                }
 
                 // If the net curve trade is less than or equal to the maximum
                 // amount of bonds that can be sold with this share proceeds, we
@@ -992,6 +1016,34 @@ library LPMath {
 
         // FIXME: Explain why we're returning 0 here.
         return 0;
+    }
+
+    /// @dev Checks to see if we should short-circuit the iterative calculation
+    ///     of the share proceeds when distributing excess idle liquidity. This
+    ///     verifies that the ending LP share price is greater than or equal to
+    ///     the starting LP share price and less than or equal to the starting
+    ///     LP share price plus the minimum tolerance.
+    /// @param _params The parameters for the calculation.
+    /// @param _lpTotalSupply The total supply of LP shares.
+    /// @param _presentValue The present value of the pool at this iteration of
+    ///        the calculation.
+    /// @return A flag indicating whether or not we should short-circuit the
+    ///         calculation.
+    function shouldShortCircuitDistributeExcessIdleShareProceeds(
+        DistributeExcessIdleParams memory _params,
+        uint256 _lpTotalSupply,
+        uint256 _presentValue
+    ) internal pure returns (bool) {
+        uint256 lpSharePriceBefore = _params.startingPresentValue.divDown(
+            _lpTotalSupply
+        );
+        uint256 lpSharePriceAfter = _presentValue.divDown(_lpTotalSupply);
+        uint256 tolerance = lpSharePriceBefore.mulDown(
+            SHARE_PROCEEDS_MIN_TOLERANCE
+        );
+        return
+            lpSharePriceAfter >= lpSharePriceBefore &&
+            lpSharePriceAfter <= lpSharePriceBefore + tolerance;
     }
 
     // FIXME: Todos
