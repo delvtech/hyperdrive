@@ -124,7 +124,7 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
 
     /// @notice Instantiates Hyperdrive's storage.
     /// @param _config The configuration of the Hyperdrive pool.
-    constructor(IHyperdrive.PoolDeployConfig memory _config) {
+    constructor(IHyperdrive.PoolDeployConfig memory _config, uint256 __initialSharePrice) {
         // Initialize the base token address.
         _baseToken = _config.baseToken;
 
@@ -157,7 +157,7 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
         }
         _positionDuration = _config.positionDuration;
         _timeStretch = _config.timeStretch;
-        _initialSharePrice = _pricePerShare();
+        _initialSharePrice = __initialSharePrice;
         _governance = _config.governance;
         _feeCollector = _config.feeCollector;
 

@@ -34,8 +34,9 @@ abstract contract HyperdriveTarget0 is
     /// @notice Instantiates target0.
     /// @param _config The configuration of the Hyperdrive pool.
     constructor(
-        IHyperdrive.PoolDeployConfig memory _config
-    ) HyperdriveStorage(_config) {}
+        IHyperdrive.PoolDeployConfig memory _config,
+        uint256 _initialSharePrice
+    ) HyperdriveStorage(_config, _initialSharePrice) {}
 
     /// Admin ///
 

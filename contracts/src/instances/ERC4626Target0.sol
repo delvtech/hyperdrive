@@ -20,8 +20,9 @@ contract ERC4626Target0 is HyperdriveTarget0, ERC4626Base {
     /// @param __pool The ERC4626 pool.
     constructor(
         IHyperdrive.PoolDeployConfig memory _config,
+        uint256 _initialSharePrice,
         IERC4626 __pool
-    ) HyperdriveTarget0(_config) ERC4626Base(__pool) {}
+    ) HyperdriveTarget0(_config, _initialSharePrice) ERC4626Base(__pool) {}
 
     /// Getters ///
 

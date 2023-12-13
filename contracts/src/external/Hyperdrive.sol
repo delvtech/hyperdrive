@@ -50,9 +50,10 @@ abstract contract Hyperdrive is
     /// @param _target1 The target1 address.
     constructor(
         IHyperdrive.PoolDeployConfig memory _config,
+        uint256 _initialSharePrice,
         address _target0,
         address _target1
-    ) HyperdriveStorage(_config) {
+    ) HyperdriveStorage(_config, _initialSharePrice) {
         // Initialize the target contracts.
         target0 = _target0;
         target1 = _target1;

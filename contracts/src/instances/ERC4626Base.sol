@@ -110,7 +110,14 @@ abstract contract ERC4626Base is HyperdriveBase {
     /// @return The current share price.
     /// @dev must remain consistent with the impl inside of the DataProvider
     function _pricePerShare() internal view override returns (uint256) {
-        return _pool.convertToAssets(ONE);
+        return _pricePerShare(_pool);
+    }
+
+    /// @notice Loads the share price from the yield source. Used ONLY on initialization because
+    ///         the pool immutable is not set yet.
+    /// @return The initial share price.
+    function _pricePerShare(IERC4626 __pool) internal view returns (uint256) {
+        return __pool.convertToAssets(ONE);
     }
 
     /// @dev Ensure that ether wasn't sent because ERC4626 vaults don't support
