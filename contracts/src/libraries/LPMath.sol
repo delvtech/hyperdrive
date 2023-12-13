@@ -1225,15 +1225,20 @@ library LPMath {
 
     // FIXME: Todos
     //
-    // 1. [ ] Document this body of this function.
-    // 2. [ ] Check that we're rounding in the right direction.
-    // 3. [ ] Double check this calculation.
-    // 4. [ ] Add ASCII math.
+    // 1. [ ] Check that we're rounding in the right direction.
+    // 2. [ ] Double check this calculation.
     //
     /// @dev Calculates the derivative of `calculateMaxBuyBondsOut`. This
     ///      derivative is given by:
     ///
-    ///      FIXME
+    ///      derivative = (1 - zeta / z) * (
+    ///          (
+    ///              c * (mu * z_e(x)) ** -t_s +
+    ///              (y / z_e) * y(x) ** -t_s
+    ///          ) * (
+    ///              k(x) / ((c / mu) + 1)
+    ///          ) ** (t_s / (1 - t_s)) - (y / z_e)
+    ///      )
     ///
     /// @param _params The parameters for the calculation.
     /// @param _originalEffectiveShareReserves The original effective share
@@ -1289,13 +1294,21 @@ library LPMath {
         if (derivative > delta) {
             derivative -= delta;
         } else {
-            // FIXME: Explain this. Is this really reasonable? If we can assume
-            // that the derivative should always be greater than or equal to 0,
-            // we can chalk this up to a numerical error, but it may be better
-            // to return the derivative as an integer.
+            // FIXME: I'm not sure I believe this. I should add a revert here
+            // and see how often it gets hit. This would also better
+            // contextualize whether or not we should make the derivative
+            // signed.
             //
-            // If the derivative calculation would underflow, we return 0.
-            derivative = 0;
+            // FIXME: It really should be true outside of small fluctuations
+            // considering that slippage should increase as the amount of
+            // shares removed from the reserves increases. If this is getting
+            // hit a lot, it's an indication that we could be doing something
+            // wrong.
+            //
+            // NOTE: Analytically, the derivative should always be greater than
+            // or equal to 0. If the derivative calculation would underflow, we
+            // return 0 to avoid rounding issues.
+            return 0;
         }
         if (_params.originalShareAdjustment >= 0) {
             derivative = (ONE -
