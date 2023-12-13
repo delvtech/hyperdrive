@@ -32,7 +32,6 @@ assignees: ''
 1. [Step 1]
 2. [Step 2]
 3. [Step 3]
-...
 
 
 ### Possible Solution
@@ -53,7 +52,7 @@ assignees: ''
 ### Environment
 
 - Hyperdrive Version: [Specify the release version, i.e. 0.0.4.]
-- Elf Simulations Version: [Specify the release version, i.e. 0.0.4.]
+- Agent0 Version: [Specify the release version, i.e. 0.0.4.]
 - Infra Version: [Specify the release version, i.e. 0.0.4.]
 - Cloud Environment: [If applicable, which EC2 instance and docker containers]
 - Additional Information: [Include any additional information about your environment that may be relevant, such as device type, software versions, etc.]
