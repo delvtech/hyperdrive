@@ -1,8 +1,7 @@
-use ethers::types::I256;
 use fixed_point::FixedPoint;
-use fixed_point_macros::{fixed, int256};
+use fixed_point_macros::fixed;
 
-use crate::{State, YieldSpace};
+use crate::State;
 
 impl State {
     /// Gets the curve fee paid by longs for a given base amount.
