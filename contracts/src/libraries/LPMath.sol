@@ -246,14 +246,32 @@ library LPMath {
             // Since the spot price is approximately zero after closing the
             // entire net curve position, we mark any remaining bonds to zero.
             else {
-                // FIXME: Is this always right? What about the case where the
-                // effective share reserves is greater than the share reserves?
-                return (
-                    -int256(
-                        effectiveShareReserves - _params.minimumShareReserves
-                    ),
-                    true
-                );
+                // If the share adjustment is greater than or equal to zero,
+                // then the effective share reserves are less than or equal to
+                // the share reserves. In this case, the maximum amount of
+                // shares that can be removed from the share reserves is
+                // `effectiveShareReserves - minimumShareReserves`.
+                if (_params.shareAdjustment >= 0) {
+                    return (
+                        -int256(
+                            effectiveShareReserves -
+                                _params.minimumShareReserves
+                        ),
+                        true
+                    );
+                }
+                // Otherwise, the effective share reserves are greater than the
+                // share reserves. In this case, the maximum amount of shares
+                // that can be removed from the share reserves is
+                // `shareReserves - minimumShareReserves`.
+                else {
+                    return (
+                        -int256(
+                            _params.shareReserves - _params.minimumShareReserves
+                        ),
+                        true
+                    );
+                }
             }
         }
         // If the net curve position is negative, then the pool is net short.
