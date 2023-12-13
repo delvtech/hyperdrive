@@ -22,6 +22,7 @@ const TARGETS: &[&str] = &[
     "MockERC4626",
     "MockFixedPointMath",
     "MockHyperdriveMath",
+    "MockLPMath",
     "MockYieldSpaceMath",
 ];
 

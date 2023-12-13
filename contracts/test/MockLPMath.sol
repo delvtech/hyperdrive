@@ -35,6 +35,21 @@ contract MockLPMath {
         return LPMath.calculatePresentValue(_params);
     }
 
+    function calculateNetFlatTrade(
+        LPMath.PresentValueParams memory _params
+    ) external pure returns (int256) {
+        return LPMath.calculateNetFlatTrade(_params);
+    }
+
+    function calculateNetCurveTrade(
+        LPMath.PresentValueParams memory _params
+    ) external pure returns (int256) {
+        (int256 netCurveTrade, bool success) = LPMath
+            .calculateNetCurveTradeSafe(_params);
+        require(success, "MockLPMath: calculateNetCurveTradeSafe failed");
+        return netCurveTrade;
+    }
+
     function calculateDistributeExcessIdleWithdrawalSharesRedeemed(
         LPMath.DistributeExcessIdleParams memory _params,
         uint256 _shareReservesDelta
