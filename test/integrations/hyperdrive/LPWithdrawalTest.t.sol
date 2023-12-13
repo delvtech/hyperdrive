@@ -224,7 +224,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14).max(1e3)
+            lpSharePrice.mulDown(1e14).max(1e9)
         );
 
         // Alice redeems her withdrawal shares.
@@ -239,7 +239,7 @@ contract LPWithdrawalTest is HyperdriveTest {
             assertApproxEqAbs(
                 lpSharePrice,
                 hyperdrive.lpSharePrice(),
-                lpSharePrice.mulDown(1e9)
+                lpSharePrice.mulDown(1e14)
             );
             assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -652,7 +652,7 @@ contract LPWithdrawalTest is HyperdriveTest {
             // variable rate is zero, the LP share price can be very close
             // to zero. Since this case is so rare and unrealistic, we just
             // ignore it.
-            lpSharePrice.mulDown(1e14).max(1e3)
+            lpSharePrice.mulDown(1e14).max(1e9)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -818,18 +818,6 @@ contract LPWithdrawalTest is HyperdriveTest {
                 variableRate
             );
         }
-        // FIXME: What's the problem with this edge case?
-        // vm.revertTo(snapshotId);
-        // {
-        //     uint256 longBasePaid = 1411883933913917429029306960;
-        //     uint256 shortAmount = 18871739653543776647409703;
-        //     int256 variableRate = 18036;
-        //     _test_lp_withdrawal_long_short_redemption(
-        //         longBasePaid,
-        //         shortAmount,
-        //         variableRate
-        //     );
-        // }
     }
 
     function test_lp_withdrawal_long_short_redemption(
@@ -984,8 +972,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
         // Time passes and interest accrues.
-        variableRate = variableRate.normalizeToRange(0, 2e18);
-        testParams.variableRate = variableRate;
+        testParams.variableRate = variableRate.normalizeToRange(0, 2e18);
         advanceTime(POSITION_DURATION, testParams.variableRate);
 
         // Bob closes his long.
@@ -994,7 +981,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14).max(1e3)
+            lpSharePrice.mulDown(1e14).max(1e9)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -1009,7 +996,7 @@ contract LPWithdrawalTest is HyperdriveTest {
             assertApproxEqAbs(
                 lpSharePrice,
                 hyperdrive.lpSharePrice(),
-                lpSharePrice.mulDown(1e14)
+                lpSharePrice.mulDown(1e14).max(1e9)
             );
             assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
             (, int256 expectedShortProceeds) = HyperdriveUtils

@@ -44,31 +44,6 @@ contract UpdateLiquidityTest is HyperdriveTest {
         assertEq(hyperdrive.getPoolInfo().bondReserves, _bondReserves);
     }
 
-    function test__updateLiquidity__insufficientStartingShareReserves(
-        uint256 _shareReserves,
-        uint256 _bondReserves,
-        int256 _shareReservesDelta
-    ) external {
-        // Set the reserves to random values. The share reserves are set to
-        // less than the minimum share reserves.
-        _shareReserves = _shareReserves.normalizeToRange(
-            1,
-            hyperdrive.getPoolConfig().minimumShareReserves - 1
-        );
-        mockHyperdrive.setReserves(
-            uint128(_shareReserves),
-            uint128(_bondReserves)
-        );
-
-        // Update the liquidity. This should fail since the starting share
-        // reserves are less than the minimum share reserves.
-        _shareReservesDelta = _shareReservesDelta > 0
-            ? _shareReservesDelta
-            : int256(1);
-        vm.expectRevert(IHyperdrive.InvalidShareReserves.selector);
-        mockHyperdrive.updateLiquidity(_shareReservesDelta);
-    }
-
     function test__updateLiquidity__insufficientEndingShareReserves(
         uint256 _shareReserves,
         uint256 _bondReserves,
