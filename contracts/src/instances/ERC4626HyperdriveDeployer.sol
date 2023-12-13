@@ -49,22 +49,11 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
         IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory _extraData
     ) external override returns (address) {
-        IHyperdrive.PoolConfig memory _config;
+        IHyperdrive.PoolConfig memory _config = _copyPoolConfig(_deployConfig);
 
-        // Copy struct info to PoolConfig
-        _config.baseToken = _deployConfig.baseToken;
-        _config.linkerFactory = _deployConfig.linkerFactory;
-        _config.linkerCodeHash = _deployConfig.linkerCodeHash;
-        _config.minimumShareReserves = _deployConfig.minimumShareReserves;
-        _config.minimumTransactionAmount = _deployConfig.minimumTransactionAmount;
-        _config.positionDuration = _deployConfig.positionDuration;
-        _config.checkpointDuration = _deployConfig.checkpointDuration;
-        _config.timeStretch = _deployConfig.timeStretch;
-        _config.governance = _deployConfig.governance;
-        _config.feeCollector = _deployConfig.feeCollector;
-        _config.fees = _deployConfig.fees;
 
-        (address pool,) = abi.decode(_extraData,(address, address[]));
+
+        (address pool,) = abi.decode(_extraData, (address, address[]));
 
         _config.initialSharePrice = IERC4626(pool).convertToAssets(1e18);  // ONE
 
@@ -85,5 +74,22 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
                 target0,
                 target1
             );
+    }
+
+    function _copyPoolConfig(IHyperdrive.PoolDeployConfig memory _deployConfig)
+        internal pure returns (IHyperdrive.PoolConfig memory _config)
+    {
+        // Copy struct info to PoolConfig
+        _config.baseToken = _deployConfig.baseToken;
+        _config.linkerFactory = _deployConfig.linkerFactory;
+        _config.linkerCodeHash = _deployConfig.linkerCodeHash;
+        _config.minimumShareReserves = _deployConfig.minimumShareReserves;
+        _config.minimumTransactionAmount = _deployConfig.minimumTransactionAmount;
+        _config.positionDuration = _deployConfig.positionDuration;
+        _config.checkpointDuration = _deployConfig.checkpointDuration;
+        _config.timeStretch = _deployConfig.timeStretch;
+        _config.governance = _deployConfig.governance;
+        _config.feeCollector = _deployConfig.feeCollector;
+        _config.fees = _deployConfig.fees;
     }
 }
