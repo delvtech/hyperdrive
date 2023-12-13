@@ -1,5 +1,4 @@
 use ethers::types::I256;
-
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 

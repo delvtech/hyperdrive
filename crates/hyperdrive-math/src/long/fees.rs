@@ -1,8 +1,7 @@
-
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
-use crate::{State};
+use crate::State;
 
 impl State {
     /// Gets the curve fee paid by longs for a given base amount.

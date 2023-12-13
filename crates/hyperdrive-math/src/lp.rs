@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+
 use ethers::types::{I256, U256};
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, int256};
@@ -60,7 +61,8 @@ impl State {
         // from the share reserves, so we negate the result.
         match net_curve_position.cmp(&int256!(0)) {
             Ordering::Greater => {
-                let max_curve_trade = self.calculate_max_sell_bonds_in(self.minimum_share_reserves());
+                let max_curve_trade =
+                    self.calculate_max_sell_bonds_in(self.minimum_share_reserves());
                 if max_curve_trade >= net_curve_position.into() {
                     -I256::from(
                         self.calculate_shares_out_given_bonds_in_down(net_curve_position.into()),
@@ -68,14 +70,12 @@ impl State {
                 } else {
                     -I256::from(self.effective_share_reserves() - self.minimum_share_reserves())
                 }
-            },
+            }
             Ordering::Less => {
                 let _net_curve_position: FixedPoint = FixedPoint::from(-net_curve_position);
                 let max_curve_trade = self.calculate_max_buy_bonds_out();
                 if max_curve_trade >= _net_curve_position {
-                    I256::from(
-                        self.calculate_shares_in_given_bonds_out_up(_net_curve_position),
-                    )
+                    I256::from(self.calculate_shares_in_given_bonds_out_up(_net_curve_position))
                 } else {
                     let max_share_payment = self.calculate_max_buy_shares_in();
                     I256::from(
@@ -83,7 +83,7 @@ impl State {
                             + (_net_curve_position - max_curve_trade).div_down(self.share_price()),
                     )
                 }
-            },
+            }
             Ordering::Equal => int256!(0),
         }
     }

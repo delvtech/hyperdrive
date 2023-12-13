@@ -1,4 +1,3 @@
-
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
