@@ -398,11 +398,30 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
     ///      pool while holding the LP share price constant.
     /// @param _sharePrice The current share price.
     function _distributeExcessIdle(uint256 _sharePrice) internal {
+        // If there are no withdrawal shares, then there is nothing to
+        // distribute.
+        uint256 withdrawalSharesTotalSupply = _totalSupply[
+            AssetId._WITHDRAWAL_SHARE_ASSET_ID
+        ] - _withdrawPool.readyToWithdraw;
+        if (withdrawalSharesTotalSupply == 0) {
+            return;
+        }
+
+        // If there is no excess idle, then there is nothing to distribute.
+        uint256 idle = _calculateIdleShareReserves(_sharePrice);
+        if (idle == 0) {
+            return;
+        }
+
         // Calculate the amount of withdrawal shares that should be redeemed
         // and their share proceeds.
         (uint256 withdrawalSharesRedeemed, uint256 shareProceeds) = LPMath
             .calculateDistributeExcessIdle(
-                _getDistributeExcessIdleParams(_sharePrice)
+                _getDistributeExcessIdleParams(
+                    idle,
+                    withdrawalSharesTotalSupply,
+                    _sharePrice
+                )
             );
 
         // Update the withdrawal pool's state.

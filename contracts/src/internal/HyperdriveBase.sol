@@ -263,6 +263,8 @@ abstract contract HyperdriveBase is HyperdriveStorage {
     /// @param _sharePrice The current share price.
     /// @return params The distribute excess idle parameters.
     function _getDistributeExcessIdleParams(
+        uint256 _idle,
+        uint256 _withdrawalSharesTotalSupply,
         uint256 _sharePrice
     ) internal view returns (LPMath.DistributeExcessIdleParams memory params) {
         LPMath.PresentValueParams
@@ -284,10 +286,8 @@ abstract contract HyperdriveBase is HyperdriveStorage {
             presentValueParams: presentValueParams,
             startingPresentValue: startingPresentValue,
             activeLpTotalSupply: _totalSupply[AssetId._LP_ASSET_ID],
-            withdrawalSharesTotalSupply: _totalSupply[
-                AssetId._WITHDRAWAL_SHARE_ASSET_ID
-            ] - _withdrawPool.readyToWithdraw,
-            idle: _calculateIdleShareReserves(_sharePrice),
+            withdrawalSharesTotalSupply: _withdrawalSharesTotalSupply,
+            idle: _idle,
             netCurveTrade: netCurveTrade,
             originalShareReserves: presentValueParams.shareReserves,
             originalShareAdjustment: presentValueParams.shareAdjustment,

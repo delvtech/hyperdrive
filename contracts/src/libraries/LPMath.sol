@@ -351,8 +351,6 @@ library LPMath {
         uint256 originalBondReserves;
     }
 
-    // FIXME: Benchmark this.
-    //
     /// @dev Calculates the amount of withdrawal shares that can be redeemed and
     ///      the share proceeds the withdrawal pool should receive given the
     ///      pool's current idle liquidity.
@@ -362,12 +360,6 @@ library LPMath {
     function calculateDistributeExcessIdle(
         DistributeExcessIdleParams memory _params
     ) internal pure returns (uint256, uint256) {
-        // If there are no withdrawal shares or idle liquidity, then there is
-        // nothing to do.
-        if (_params.withdrawalSharesTotalSupply == 0 || _params.idle == 0) {
-            return (0, 0);
-        }
-
         // Calculate the maximum amount the share reserves can be debited.
         uint256 originalEffectiveShareReserves = HyperdriveMath
             .calculateEffectiveShareReserves(
@@ -740,12 +732,6 @@ library LPMath {
     // FIXME: Todos
     //
     // 1. [ ] Ensure that we're rounding in the right direction.
-    // 2. [ ] Add a tolerance parameter or constant.
-    //     - [ ] If the tolerance after all is said and done is exceeded, revert
-    //           (for now -- we don't want this in prod).
-    //     - [ ] If we're under the tolerance, we should return early. We may
-    //           want a stricter tolerance for this than the acceptable
-    //           tolerance.
     //
     /// @dev Calculates the share proceeds to distribute to the withdrawal pool
     ///      assuming that all of the outstanding withdrawal shares will be
@@ -757,8 +743,6 @@ library LPMath {
     /// @return The share proceeds to distribute to the withdrawal pool.
     function calculateDistributeExcessIdleShareProceeds(
         DistributeExcessIdleParams memory _params,
-        // FIXME: If we run out of stack space, we can put this and/or the
-        // lpTotalSupply on the stack.
         uint256 _originalEffectiveShareReserves
     ) internal pure returns (uint256) {
         // Calculate the LP total supply.
