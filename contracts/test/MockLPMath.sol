@@ -59,12 +59,14 @@ contract MockLPMath {
 
     function calculateMaxShareReservesDelta(
         LPMath.DistributeExcessIdleParams memory _params,
-        uint256 _originalEffectiveShareReserves
+        uint256 _originalEffectiveShareReserves,
+        uint256 _maxIterations
     ) external pure returns (uint256) {
         return
             LPMath.calculateMaxShareReservesDelta(
                 _params,
-                _originalEffectiveShareReserves
+                _originalEffectiveShareReserves,
+                _maxIterations
             );
     }
 }

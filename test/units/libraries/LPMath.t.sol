@@ -692,7 +692,8 @@ contract LPMathTest is HyperdriveTest {
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
-                    )
+                    ),
+                    3
                 );
 
             // The max share reserves delta is just the idle.
@@ -756,7 +757,8 @@ contract LPMathTest is HyperdriveTest {
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
-                    )
+                    ),
+                    3
                 );
 
             // The max share reserves delta is just the idle.
@@ -820,7 +822,8 @@ contract LPMathTest is HyperdriveTest {
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
-                    )
+                    ),
+                    3
                 );
 
             // The max share reserves delta is just the idle.
@@ -885,7 +888,8 @@ contract LPMathTest is HyperdriveTest {
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
-                    )
+                    ),
+                    3
                 );
 
             // The max share reserves delta is just the idle.
@@ -950,7 +954,8 @@ contract LPMathTest is HyperdriveTest {
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
-                    )
+                    ),
+                    3
                 );
 
             // The max share reserves delta should have been calculated so that
@@ -1585,9 +1590,10 @@ contract LPMathTest is HyperdriveTest {
         uint256 _positionDuration,
         uint256 _timeStretch
     ) internal pure returns (uint256 bondReserves) {
-        // Solving for (1 + r * t) ** (1 / tau) here. t is the normalized time remaining which in
-        // this case is 1. Because bonds mature after the positionDuration, we need to scale the apr
-        // to the proportion of a year of the positionDuration. tau = t / time_stretch, or just
+        // Solving for (1 + r * t) ** (1 / tau) here. t is the normalized time
+        // remaining which in this case is 1. Because bonds mature after the
+        // positionDuration, we need to scale the apr to the proportion of a
+        // year of the positionDuration. tau = t / time_stretch, or just
         // 1 / time_stretch in this case.
         uint256 t = _positionDuration.divDown(365 days);
         uint256 tau = ONE.mulDown(_timeStretch);

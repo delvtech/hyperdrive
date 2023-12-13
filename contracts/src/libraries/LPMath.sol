@@ -373,7 +373,8 @@ library LPMath {
             );
         uint256 maxShareReservesDelta = calculateMaxShareReservesDelta(
             _params,
-            originalEffectiveShareReserves
+            originalEffectiveShareReserves,
+            3 // FIXME: We should pass this in. That let's us use a cheaper version during trades.
         );
 
         // Calculate the amount of withdrawal shares that can be redeemed given
@@ -414,31 +415,12 @@ library LPMath {
         return (withdrawalSharesRedeemed, shareProceeds);
     }
 
-    // FIXME: One solution to this problem that is worth exploring is to let the
-    //        user provide the answer and just verify that it's correct. This
-    //        would let us have a high level of accuracy without needing to
-    //        perform the computation on chain (or at least within the protocol).
+    // FIXME: Todos
     //
-    // FIXME: This is *really* expensive. With 3 iterations, the sad path is
-    // around 60k gas. With 4 iterations, it's around 80k gas.
-    //
-    // FIXME: How accurate does this actually need to be? One thought here is
-    //        that there are two branches here that are realistic. One is that
-    //        we can pay out all of the withdrawal shares even with an
-    //        underestimate. In that case, further iterations don't buy us
-    //        anything, and are just wasting effort. In the other case, we
-    //        can't pay out all of the withdrawal shares even with an
-    //        overestimate. In that case, further iterations would result in
-    //        more withdrawal shares being redeemed; however, these withdrawal
-    //        shares would also be redeemed in a subsequent transaction.
-    //
-    //        One good way to split the difference is to use an even simpler
-    //        approximation that is much cheaper to compute. This will be
-    //        ammortized over the course of many trades. If LPs want to be able
-    //        to withdraw faster, they can run the calculation with more
-    //        iterations when they call `redeeemWithdrawalShares` (we may want
-    //        to pass an option here to prevent users from calling this
-    //        erroneously).
+    // 1. [ ] Ensure that we're rounding in the right direction.
+    // 2. [ ] Use a smaller numbers of iterations when calculating the maximum
+    //       share reserves delta.
+    // 3. [ ] Add a configurable tolerance to short-circuit.
     //
     /// @dev Calculates the upper bound on the share proceeds of distributing
     ///      excess idle. When the pool is net long or net neutral, the upper
@@ -449,10 +431,12 @@ library LPMath {
     /// @param _params The parameters for the distribute excess idle calculation.
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
+    /// @param _maxIterations The maximum number of iterations to perform.
     /// @return maxShareReservesDelta The upper bound on the share proceeds.
     function calculateMaxShareReservesDelta(
         DistributeExcessIdleParams memory _params,
-        uint256 _originalEffectiveShareReserves
+        uint256 _originalEffectiveShareReserves,
+        uint256 _maxIterations
     ) internal pure returns (uint256 maxShareReservesDelta) {
         // If the net curve position is zero or net long, then the maximum
         // share reserves delta is equal to the pool's idle.
@@ -461,12 +445,6 @@ library LPMath {
         }
         uint256 netCurveTrade = uint256(-_params.netCurveTrade);
 
-        // FIXME: Considering the costs of this function as well as the pros and
-        // cons of really computing this accurately, it may be better to use a
-        // simple surrogate function for this (like the Newton's guess) and be
-        // done with it. Before making this call, it's worth benchmarking this
-        // check to see how much we're spending on it.
-        //
         // Check to see if the max bond amount is greater than the net curve
         // trade if all of the idle is removed from the pool. If so, then we're
         // done.
@@ -510,15 +488,10 @@ library LPMath {
                 netCurveTrade
             );
 
-        // FIXME: For now, we'll do this "the right way" and calculate things
-        // using Newton's method.
-        //
-        // FIXME: We may want to add this back for LPs to have more accuracy,
-        // but it's very expensive and it may just be better to loop over
-        // redeemWithdrawalShares and use the guess.
-        //
         // Proceed with Newton's method for a few iterations.
-        for (uint256 i = 0; i < 10; i++) {
+        for (uint256 i = 0; i < _maxIterations; i++) {
+            // Calculate the maximum amount of bonds that can be purchased after
+            // removing the maximum share reserves delta.
             (
                 _params.presentValueParams.shareReserves,
                 _params.presentValueParams.shareAdjustment,
@@ -540,7 +513,18 @@ library LPMath {
                 _params.presentValueParams.sharePrice,
                 _params.presentValueParams.initialSharePrice
             );
+
+            // If the maximum amount of bonds that can be purchased is greater
+            // than the net curve trade, then we're below the optimal point.
             if (maxBondAmount > netCurveTrade) {
+                // We calculate the updated max share reserves delta `x_n+1` by
+                // proceeding with Newton's method. This is given by:
+                //
+                // x_n+1 = x_n - F(x_n) / F'(x_n)
+                //
+                // where our objective function `F(x)` is:
+                //
+                // F(x) = calculateMaxBuyBondsOut(x) - netCurveTrade
                 maxShareReservesDelta = maybeMaxShareReservesDelta;
                 uint256 derivative = calculateMaxBuyBondsOutDerivative(
                     _params,
@@ -557,7 +541,18 @@ library LPMath {
                             _originalEffectiveShareReserves
                         )
                     );
-            } else if (maxBondAmount < netCurveTrade) {
+            }
+            // If the maximum amount of bonds that can be purchased is greater
+            // than the net curve trade, then we're above the optimal point.
+            else if (maxBondAmount < netCurveTrade) {
+                // We calculate the updated max share reserves delta `x_n+1` by
+                // proceeding with Newton's method. This is given by:
+                //
+                // x_n+1 = x_n - F(x_n) / F'(x_n)
+                //
+                // where our objective function `F(x)` is:
+                //
+                // F(x) = netCurveTrade - calculateMaxBuyBondsOut(x)
                 uint256 derivative = calculateMaxBuyBondsOutDerivative(
                     _params,
                     _originalEffectiveShareReserves
@@ -578,11 +573,15 @@ library LPMath {
             } else {
                 break;
             }
+
+            // If the max share reserves delta is greater than the idle, then
+            // we clamp back to the pool's idle.
             if (maybeMaxShareReservesDelta > _params.idle) {
                 maybeMaxShareReservesDelta = _params.idle;
             }
         }
 
+        // Check to see if we've found a better max share reserves delta.
         if (maybeMaxShareReservesDelta != maxShareReservesDelta) {
             (
                 _params.presentValueParams.shareReserves,
@@ -755,6 +754,8 @@ library LPMath {
     /// @return The share proceeds to distribute to the withdrawal pool.
     function calculateDistributeExcessIdleShareProceeds(
         DistributeExcessIdleParams memory _params,
+        // FIXME: If we run out of stack space, we can put this and/or the
+        // lpTotalSupply on the stack.
         uint256 _originalEffectiveShareReserves
     ) internal pure returns (uint256) {
         // Calculate the LP total supply.
