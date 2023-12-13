@@ -84,9 +84,8 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         );
 
         // Config changes required to support ERC4626 with the correct initial share price.
-        IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
+        IHyperdrive.PoolDeployConfig memory config = testDeployConfig(FIXED_RATE);
         config.baseToken = underlyingToken;
-        config.initialSharePrice = token.convertToAssets(ONE);
         config.minimumTransactionAmount = 1e6;
         config.minimumShareReserves = 1e6;
         uint256 contribution = 7_500e6;

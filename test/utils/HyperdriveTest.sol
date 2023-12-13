@@ -98,18 +98,37 @@ contract HyperdriveTest is BaseTest {
 
     function testConfig(
         uint256 fixedRate
-    ) internal view returns (IHyperdrive.PoolConfig memory) {
+    ) internal view returns (IHyperdrive.PoolConfig memory _config) {
+        IHyperdrive.PoolDeployConfig memory _deployConfig = testDeployConfig(fixedRate);
+
+        _config.baseToken = _deployConfig.baseToken;
+        _config.linkerFactory = _deployConfig.linkerFactory;
+        _config.linkerCodeHash = _deployConfig.linkerCodeHash;
+        _config.minimumShareReserves = _deployConfig.minimumShareReserves;
+        _config.minimumTransactionAmount = _deployConfig.minimumTransactionAmount;
+        _config.positionDuration = _deployConfig.positionDuration;
+        _config.checkpointDuration = _deployConfig.checkpointDuration;
+        _config.timeStretch = _deployConfig.timeStretch;
+        _config.governance = _deployConfig.governance;
+        _config.feeCollector = _deployConfig.feeCollector;
+        _config.fees = _deployConfig.fees;
+
+        _config.initialSharePrice = ONE;
+    }
+
+    function testDeployConfig(
+        uint256 fixedRate
+    ) internal view returns (IHyperdrive.PoolDeployConfig memory) {
         IHyperdrive.Fees memory fees = IHyperdrive.Fees({
             curve: 0,
             flat: 0,
             governance: 0
         });
         return
-            IHyperdrive.PoolConfig({
+            IHyperdrive.PoolDeployConfig({
                 baseToken: IERC20(address(baseToken)),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0),
-                initialSharePrice: ONE,
                 minimumShareReserves: MINIMUM_SHARE_RESERVES,
                 minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
                 positionDuration: POSITION_DURATION,
@@ -880,8 +899,7 @@ contract HyperdriveTest is BaseTest {
 
     event Deployed(
         uint256 indexed version,
-        address hyperdrive,
-        IHyperdrive.PoolConfig config,
+        address hyperdrive,        IHyperdrive.PoolDeployConfig config,
         bytes extraData
     );
 

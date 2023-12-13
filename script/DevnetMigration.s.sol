@@ -212,11 +212,10 @@ contract DevnetMigration is Script {
             uint256 fixedRate = config.hyperdriveFixedRate;
             baseToken.mint(msg.sender, contribution);
             baseToken.approve(address(factory), contribution);
-            IHyperdrive.PoolConfig memory poolConfig = IHyperdrive.PoolConfig({
+            IHyperdrive.PoolDeployConfig memory poolConfig = IHyperdrive.PoolDeployConfig({
                 baseToken: IERC20(address(baseToken)),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0),
-                initialSharePrice: config.hyperdriveInitialSharePrice,
                 minimumShareReserves: config.hyperdriveMinimumShareReserves,
                 minimumTransactionAmount: config
                     .hyperdriveMinimumTransactionAmount,

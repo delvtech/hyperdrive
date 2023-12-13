@@ -37,7 +37,7 @@ contract HyperdriveFactory {
     event Deployed(
         uint256 indexed version,
         address hyperdrive,
-        IHyperdrive.PoolConfig config,
+        IHyperdrive.PoolDeployConfig config,
         bytes extraData
     );
 
@@ -251,7 +251,7 @@ contract HyperdriveFactory {
     ///      to accept ether on initialization, but payability is not supported
     ///      by default.
     /// @param _hyperdriveDeployer Address of the hyperdrive deployer.
-    /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     /// @param _extraData The extra data that contains data necessary for the specific deployer.
     /// @param _contribution Base token to call init with
     /// @param _apr The apr to call init with
@@ -259,7 +259,7 @@ contract HyperdriveFactory {
     /// @return The hyperdrive address deployed.
     function deployAndInitialize(
         address _hyperdriveDeployer,
-        IHyperdrive.PoolConfig memory _config,
+        IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory _extraData,
         uint256 _contribution,
         uint256 _apr,
@@ -284,30 +284,30 @@ contract HyperdriveFactory {
         // role during deployment so that it can set up some initial values;
         // however the governance role will ultimately be transferred to the
         // hyperdrive governance address.
-        _config.linkerFactory = linkerFactory;
-        _config.linkerCodeHash = linkerCodeHash;
-        _config.feeCollector = feeCollector;
-        _config.governance = address(this);
-        _config.fees = fees;
+        _deployConfig.linkerFactory = linkerFactory;
+        _deployConfig.linkerCodeHash = linkerCodeHash;
+        _deployConfig.feeCollector = feeCollector;
+        _deployConfig.governance = address(this);
+        _deployConfig.fees = fees;
         IHyperdrive hyperdrive = IHyperdrive(
-            IHyperdriveDeployer(_hyperdriveDeployer).deploy(_config, _extraData)
+            IHyperdriveDeployer(_hyperdriveDeployer).deploy(_deployConfig, _extraData)
         );
         isOfficial[address(hyperdrive)] = versionCounter;
-        _config.governance = hyperdriveGovernance;
-        emit Deployed(versionCounter, address(hyperdrive), _config, _extraData);
+        _deployConfig.governance = hyperdriveGovernance;
+        emit Deployed(versionCounter, address(hyperdrive), _deployConfig, _extraData);
 
         // Add the newly deployed Hyperdrive instance to the registry.
         _instances.push(address(hyperdrive));
         isInstance[address(hyperdrive)] = true;
 
         // Initialize the Hyperdrive instance.
-        _config.baseToken.transferFrom(
+        _deployConfig.baseToken.transferFrom(
             msg.sender,
             address(this),
             _contribution
         );
         if (
-            !_config.baseToken.approve(address(hyperdrive), type(uint256).max)
+            !_deployConfig.baseToken.approve(address(hyperdrive), type(uint256).max)
         ) {
             revert IHyperdrive.ApprovalFailed();
         }
