@@ -1026,10 +1026,36 @@ contract HyperdriveTest is BaseTest {
                     (address, IHyperdrive.PoolDeployConfig, bytes)
                 );
             assertEq(eventHyperdrive, address(_hyperdrive));
-            // assertEq(
-            //     keccak256(abi.encode(eventConfig)),
-            //     keccak256(abi.encode(_hyperdrive.getPoolConfig()))
-            // );
+
+            IHyperdrive.PoolConfig memory poolConfig = _hyperdrive
+                .getPoolConfig();
+
+            assertEq(
+                address(eventConfig.baseToken),
+                address(poolConfig.baseToken)
+            );
+            assertEq(eventConfig.linkerFactory, poolConfig.linkerFactory);
+            assertEq(eventConfig.linkerCodeHash, poolConfig.linkerCodeHash);
+            assertEq(
+                eventConfig.minimumShareReserves,
+                poolConfig.minimumShareReserves
+            );
+            assertEq(
+                eventConfig.minimumTransactionAmount,
+                poolConfig.minimumTransactionAmount
+            );
+            assertEq(eventConfig.positionDuration, poolConfig.positionDuration);
+            assertEq(
+                eventConfig.checkpointDuration,
+                poolConfig.checkpointDuration
+            );
+            assertEq(eventConfig.timeStretch, poolConfig.timeStretch);
+            assertEq(eventConfig.governance, poolConfig.governance);
+            assertEq(eventConfig.feeCollector, poolConfig.feeCollector);
+            assertEq(eventConfig.fees.curve, poolConfig.fees.curve);
+            assertEq(eventConfig.fees.flat, poolConfig.fees.flat);
+            assertEq(eventConfig.fees.governance, poolConfig.fees.governance);
+
             assertEq(
                 keccak256(abi.encode(eventExtraData)),
                 keccak256(abi.encode(expectedExtraData))
