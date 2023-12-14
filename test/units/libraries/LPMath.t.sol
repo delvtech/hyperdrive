@@ -631,7 +631,7 @@ contract LPMathTest is HyperdriveTest {
         MockLPMath lpMath = new MockLPMath();
 
         uint256 apr = 0.02e18;
-        uint256 initialSharePrice = 1e18;
+        uint256 initialSharePrice = 0.5e18;
         uint256 positionDuration = 365 days;
         uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(apr);
 
@@ -693,7 +693,7 @@ contract LPMathTest is HyperdriveTest {
                         shareReserves,
                         shareAdjustment
                     ),
-                    3
+                    2
                 );
 
             // The max share reserves delta is just the idle.
@@ -758,7 +758,7 @@ contract LPMathTest is HyperdriveTest {
                         shareReserves,
                         shareAdjustment
                     ),
-                    3
+                    2
                 );
 
             // The max share reserves delta is just the idle.
@@ -823,7 +823,7 @@ contract LPMathTest is HyperdriveTest {
                         shareReserves,
                         shareAdjustment
                     ),
-                    3
+                    2
                 );
 
             // The max share reserves delta is just the idle.
@@ -889,7 +889,7 @@ contract LPMathTest is HyperdriveTest {
                         shareReserves,
                         shareAdjustment
                     ),
-                    3
+                    2
                 );
 
             // The max share reserves delta is just the idle.
@@ -955,7 +955,7 @@ contract LPMathTest is HyperdriveTest {
                         shareReserves,
                         shareAdjustment
                     ),
-                    3
+                    2
                 );
 
             // The max share reserves delta should have been calculated so that

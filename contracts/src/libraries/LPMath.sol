@@ -538,22 +538,24 @@ library LPMath {
                 // where our objective function `F(x)` is:
                 //
                 // F(x) = calculateMaxBuyBondsOut(x) - netCurveTrade
+                //
+                // The derivative of `calculateMaxBuyBondsOut(x)` is negative,
+                // but we use the negation of the derivative to avoid integer
+                // underflows. With this in mind, we add the delta instead of
+                // subtracting.
                 maxShareReservesDelta = maybeMaxShareReservesDelta;
                 uint256 derivative = calculateMaxBuyBondsOutDerivative(
                     _params,
                     _originalEffectiveShareReserves
                 );
                 if (derivative == 0) {
+                    // NOTE: If the derivative is zero, then we're at a local
+                    // minimum or maximum. We can't do any better, so we break.
                     break;
                 }
                 maybeMaxShareReservesDelta =
                     maybeMaxShareReservesDelta +
-                    (maxBondAmount - netCurveTrade).divDown(
-                        calculateMaxBuyBondsOutDerivative(
-                            _params,
-                            _originalEffectiveShareReserves
-                        )
-                    );
+                    (maxBondAmount - netCurveTrade).divDown(derivative);
             }
             // If the maximum amount of bonds that can be purchased is greater
             // than the net curve trade, then we're above the optimal point.
@@ -566,18 +568,22 @@ library LPMath {
                 // where our objective function `F(x)` is:
                 //
                 // F(x) = netCurveTrade - calculateMaxBuyBondsOut(x)
+                //
+                // The derivative of `calculateMaxBuyBondsOut(x)` is negative,
+                // but we use the negation of the derivative to avoid integer
+                // underflows. With this in mind, we subtract the delta instead
+                // of adding.
                 uint256 derivative = calculateMaxBuyBondsOutDerivative(
                     _params,
                     _originalEffectiveShareReserves
                 );
                 if (derivative == 0) {
+                    // NOTE: If the derivative is zero, then we're at a local
+                    // minimum or maximum. We can't do any better, so we break.
                     break;
                 }
                 uint256 delta = (netCurveTrade - maxBondAmount).divDown(
-                    calculateMaxBuyBondsOutDerivative(
-                        _params,
-                        _originalEffectiveShareReserves
-                    )
+                    derivative
                 );
                 if (delta >= maybeMaxShareReservesDelta) {
                     break;
@@ -1281,20 +1287,23 @@ library LPMath {
     // FIXME: Todos
     //
     // 1. [ ] Check that we're rounding in the right direction.
-    // 2. [ ] Double check this calculation.
     //
     /// @dev Calculates the derivative of `calculateMaxBuyBondsOut`. This
     ///      derivative is given by:
     ///
-    ///      derivative = (1 - zeta / z) * (
-    ///          (
+    ///      derivative = - (1 - zeta / z) * (
+    ///          (y / z_e) - ((
     ///              c * (mu * z_e(x)) ** -t_s +
     ///              (y / z_e) * y(x) ** -t_s
     ///          ) * (
     ///              k(x) / ((c / mu) + 1)
-    ///          ) ** (t_s / (1 - t_s)) - (y / z_e)
+    ///          ) ** (t_s / (1 - t_s))) * (
+    ///              1 / ((c / mu) + 1)
+    ///          ) ** (1 / (1 - t_s))
     ///      )
     ///
+    ///      This function actually calculates the negatation of the derivative
+    ///      to avoid integer underflows.
     /// @param _params The parameters for the calculation.
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
@@ -1331,11 +1340,6 @@ library LPMath {
                     _params.presentValueParams.sharePrice,
                     _params.presentValueParams.initialSharePrice
                 )
-                .divDown(
-                    _params.presentValueParams.sharePrice.divUp(
-                        _params.presentValueParams.initialSharePrice
-                    ) + ONE
-                )
                 .pow(
                     // TODO: Account for rounding here.
                     _params.presentValueParams.timeStretch.divDown(
@@ -1343,23 +1347,20 @@ library LPMath {
                     )
                 )
         );
+        derivative = derivative.divDown(
+            (_params.presentValueParams.sharePrice.divUp(
+                _params.presentValueParams.initialSharePrice
+            ) + ONE).pow(
+                    // TODO: Account for rounding here.
+                    ONE.divDown(ONE - _params.presentValueParams.timeStretch)
+                )
+        );
         uint256 delta = _params.originalBondReserves.divDown(
             _originalEffectiveShareReserves
         );
-        if (derivative > delta) {
-            derivative -= delta;
+        if (derivative < delta) {
+            derivative = delta - derivative;
         } else {
-            // FIXME: I'm not sure I believe this. I should add a revert here
-            // and see how often it gets hit. This would also better
-            // contextualize whether or not we should make the derivative
-            // signed.
-            //
-            // FIXME: It really should be true outside of small fluctuations
-            // considering that slippage should increase as the amount of
-            // shares removed from the reserves increases. If this is getting
-            // hit a lot, it's an indication that we could be doing something
-            // wrong.
-            //
             // NOTE: Analytically, the derivative should always be greater than
             // or equal to 0. If the derivative calculation would underflow, we
             // return 0 to avoid rounding issues.
