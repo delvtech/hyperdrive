@@ -87,10 +87,11 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         whaleTransfer(daiWhale, dai, alice);
 
         // Deploy a MockHyperdrive instance.
-        IHyperdrive.PoolDeployConfig memory config = IHyperdrive.PoolDeployConfig({
+        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
             linkerFactory: address(0),
             linkerCodeHash: bytes32(0),
+            initialSharePrice: ONE,
             minimumShareReserves: ONE,
             minimumTransactionAmount: 0.001e18,
             positionDuration: 365 days,
@@ -236,11 +237,10 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         vm.startPrank(alice);
         uint256 apr = 0.01e18; // 1% apr
         uint256 contribution = 2_500e18;
-        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
+        IHyperdrive.PoolDeployConfig memory config = IHyperdrive.PoolDeployConfig({
             baseToken: dai,
             linkerFactory: address(0),
             linkerCodeHash: bytes32(0),
-            initialSharePrice: ONE,
             minimumShareReserves: ONE,
             minimumTransactionAmount: 0.001e18,
             positionDuration: 365 days,
@@ -287,11 +287,10 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         vm.startPrank(alice);
         uint256 apr = 0.01e18; // 1% apr
         uint256 contribution = 2_500e18;
-        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
+        IHyperdrive.PoolDeployConfig memory config = IHyperdrive.PoolDeployConfig({
             baseToken: dai,
             linkerFactory: address(0),
             linkerCodeHash: bytes32(0),
-            initialSharePrice: ONE,
             minimumShareReserves: ONE,
             minimumTransactionAmount: 0.001e18,
             positionDuration: 365 days,
@@ -331,9 +330,19 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         address[] memory sweepTargets = new address[](1);
         sweepTargets[0] = address(dai);
         bytes memory extraData = abi.encode(address(pool), sweepTargets);
-        IHyperdrive.PoolConfig memory config = IHyperdrive(
-            address(mockHyperdrive)
-        ).getPoolConfig();
+        IHyperdrive.PoolDeployConfig memory config = IHyperdrive.PoolDeployConfig({
+            baseToken: dai,
+            linkerFactory: address(0),
+            linkerCodeHash: bytes32(0),
+            minimumShareReserves: ONE,
+            minimumTransactionAmount: 0.001e18,
+            positionDuration: 365 days,
+            checkpointDuration: 1 days,
+            timeStretch: HyperdriveUtils.calculateTimeStretch(0.01e18),
+            governance: alice,
+            feeCollector: bob,
+            fees: IHyperdrive.Fees(0, 0, 0)
+        });
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         factory.deployAndInitialize(
             hyperdriveDeployer,
