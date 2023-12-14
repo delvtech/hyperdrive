@@ -15,6 +15,9 @@ contract LPWithdrawalTest is HyperdriveTest {
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
 
+    // FIXME: We should be able to lower this even more.
+    uint256 internal constant DISTRIBUTE_EXCESS_IDLE_TOLERANCE = 1e10;
+
     function setUp() public override {
         super.setUp();
 
@@ -96,7 +99,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -199,7 +202,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
         assertGe(
@@ -224,7 +227,11 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14).max(1e9)
+            // NOTE: When the variable rate is low, the LP share price can drop
+            // significantly since all of the LPs (except for address zero)
+            // removed their liquidity. We lose precision in this regime, so we
+            // need to be more lenient.
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE).max(1e10)
         );
 
         // Alice redeems her withdrawal shares.
@@ -239,7 +246,7 @@ contract LPWithdrawalTest is HyperdriveTest {
             assertApproxEqAbs(
                 lpSharePrice,
                 hyperdrive.lpSharePrice(),
-                lpSharePrice.mulDown(1e14)
+                lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
             );
             assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -310,7 +317,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -360,7 +367,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -381,7 +388,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -394,7 +401,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -575,7 +582,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -597,7 +604,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
         uint256 celineSlippagePayment = testParams.contribution -
@@ -616,7 +623,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -633,7 +640,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -648,11 +655,11 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            // NOTE: In the deep edge-case where a long is opened and the
-            // variable rate is zero, the LP share price can be very close
-            // to zero. Since this case is so rare and unrealistic, we just
-            // ignore it.
-            lpSharePrice.mulDown(1e14).max(1e9)
+            // NOTE: When the variable rate is low, the LP share price can drop
+            // significantly since all of the LPs (except for address zero)
+            // removed their liquidity. We lose precision in this regime, so we
+            // need to be more lenient.
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE).max(1e10)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -670,7 +677,7 @@ contract LPWithdrawalTest is HyperdriveTest {
             assertApproxEqAbs(
                 lpSharePrice,
                 hyperdrive.lpSharePrice(),
-                lpSharePrice.mulDown(1e14)
+                lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
             );
             assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -703,7 +710,7 @@ contract LPWithdrawalTest is HyperdriveTest {
             assertApproxEqAbs(
                 lpSharePrice,
                 hyperdrive.lpSharePrice(),
-                lpSharePrice.mulDown(1e14)
+                lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
             );
             assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
         }
@@ -719,7 +726,7 @@ contract LPWithdrawalTest is HyperdriveTest {
             assertApproxEqAbs(
                 lpSharePrice,
                 hyperdrive.lpSharePrice(),
-                lpSharePrice.mulDown(1e14)
+                lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
             );
             assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
         }
@@ -888,7 +895,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -906,7 +913,7 @@ contract LPWithdrawalTest is HyperdriveTest {
             assertApproxEqAbs(
                 lpSharePrice,
                 hyperdrive.lpSharePrice(),
-                lpSharePrice.mulDown(1e14)
+                lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
             );
             assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -924,7 +931,7 @@ contract LPWithdrawalTest is HyperdriveTest {
             assertApproxEqAbs(
                 lpSharePrice,
                 hyperdrive.lpSharePrice(),
-                lpSharePrice.mulDown(1e14)
+                lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
             );
             assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -954,7 +961,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -967,7 +974,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -981,7 +988,11 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14).max(1e9)
+            // NOTE: When the variable rate is low, the LP share price can drop
+            // significantly since all of the LPs (except for address zero)
+            // removed their liquidity. We lose precision in this regime, so
+            // we need to be more lenient.
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE).max(1e10)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -996,7 +1007,11 @@ contract LPWithdrawalTest is HyperdriveTest {
             assertApproxEqAbs(
                 lpSharePrice,
                 hyperdrive.lpSharePrice(),
-                lpSharePrice.mulDown(1e14).max(1e9)
+                // NOTE: When the variable rate is low, the LP share price can
+                // drop significantly since all of the LPs (except for address
+                // zero) removed their liquidity. We lose precision in this
+                // regime, so we need to be more lenient.
+                lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE).max(1e10)
             );
             assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
             (, int256 expectedShortProceeds) = HyperdriveUtils
@@ -1028,7 +1043,7 @@ contract LPWithdrawalTest is HyperdriveTest {
             assertApproxEqAbs(
                 lpSharePrice,
                 hyperdrive.lpSharePrice(),
-                lpSharePrice.mulDown(1e14)
+                lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
             );
             assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
         }
@@ -1044,7 +1059,7 @@ contract LPWithdrawalTest is HyperdriveTest {
             assertApproxEqAbs(
                 lpSharePrice,
                 hyperdrive.lpSharePrice(),
-                lpSharePrice.mulDown(1e14)
+                lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
             );
             assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
         }
@@ -1173,7 +1188,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -1186,7 +1201,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -1212,7 +1227,7 @@ contract LPWithdrawalTest is HyperdriveTest {
             assertApproxEqAbs(
                 lpSharePrice,
                 hyperdrive.lpSharePrice(),
-                lpSharePrice.mulDown(1e14)
+                lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
             );
             assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
         }
@@ -1231,7 +1246,7 @@ contract LPWithdrawalTest is HyperdriveTest {
             assertApproxEqAbs(
                 lpSharePrice,
                 hyperdrive.lpSharePrice(),
-                lpSharePrice.mulDown(1e14)
+                lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
             );
             assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
         }
@@ -1380,7 +1395,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -1390,7 +1405,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -1404,7 +1419,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -1418,7 +1433,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -1432,7 +1447,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -1452,7 +1467,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
         lpSharePrice = hyperdrive.lpSharePrice();
@@ -1463,7 +1478,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
-            lpSharePrice.mulDown(1e14)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
     }

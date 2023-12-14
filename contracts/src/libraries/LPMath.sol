@@ -17,7 +17,9 @@ library LPMath {
     using FixedPointMath for *;
 
     uint256 internal constant SHARE_PROCEEDS_MAX_ITERATIONS = 4;
-    uint256 internal constant SHARE_PROCEEDS_MIN_TOLERANCE = 1e14;
+
+    // FIXME: Improve this tolerance significantly.
+    uint256 internal constant SHARE_PROCEEDS_MIN_TOLERANCE = 1e5;
 
     /// @dev Calculates the new share reserves, share adjustment, and bond
     ///      reserves after liquidity is added or removed from the pool. This
@@ -796,6 +798,8 @@ library LPMath {
 
         // If the net curve trade is positive, the pool is net long.
         if (_params.netCurveTrade > 0) {
+            // FIXME: This is the route that fails at the 1e6 tolerance.
+            // Investigate this further to see if we can eek out more precision.
             for (uint256 i = 0; i < SHARE_PROCEEDS_MAX_ITERATIONS; i++) {
                 // Simulate applying the share proceeds to the reserves and
                 // recalculate the present value.
@@ -845,7 +849,7 @@ library LPMath {
                 uint256 derivative;
                 if (uint256(_params.netCurveTrade) <= maxBondAmount) {
                     derivative =
-                        ONE +
+                        ONE -
                         calculateSharesOutGivenBondsInDerivative(
                             _params,
                             _originalEffectiveShareReserves,
@@ -927,7 +931,7 @@ library LPMath {
                 // amount of bonds that can be sold with this share proceeds, we
                 // can calculate the derivative using the derivative of
                 // `calculateSharesOutGivenBondsIn`.
-                uint256 derivative = ONE +
+                uint256 derivative = ONE -
                     calculateSharesInGivenBondsOutDerivative(
                         _params,
                         _originalEffectiveShareReserves,
@@ -1042,27 +1046,30 @@ library LPMath {
         uint256 _lpTotalSupply,
         uint256 _presentValue
     ) internal pure returns (bool) {
-        uint256 lpSharePriceBefore = _params.startingPresentValue.divDown(
-            _lpTotalSupply
-        );
-        uint256 lpSharePriceAfter = _presentValue.divDown(_lpTotalSupply);
-        uint256 tolerance = lpSharePriceBefore.mulDown(
-            SHARE_PROCEEDS_MIN_TOLERANCE
-        );
-        return
-            lpSharePriceAfter >= lpSharePriceBefore &&
-            lpSharePriceAfter <= lpSharePriceBefore + tolerance;
+        // FIXME: This is throwing lots of false positives. This needs to be
+        // fixed.
+        //
+        // uint256 lpSharePriceBefore = _params.startingPresentValue.divDown(
+        //     _lpTotalSupply
+        // );
+        // uint256 lpSharePriceAfter = _presentValue.divDown(_params.activeLpTotalSupply);
+        // if (lpSharePriceAfter < lpSharePriceBefore) {
+        //     return false;
+        // }
+        // return (lpSharePriceAfter - lpSharePriceBefore).divUp(lpSharePriceBefore) <=
+        //     SHARE_PROCEEDS_MIN_TOLERANCE;
+        return false;
     }
 
     // FIXME: Todos
     //
     // 1. [ ] Check that we're rounding in the right direction.
-    // 2. [ ] Double check this calculation.
+    // 2. [x] Double check this calculation.
     //
     /// @dev Calculates the derivative of `calculateSharesOutGivenBondsIn`. This
     ///      derivative is given by:
     ///
-    ///      derivative = (1 - zeta / z) * (
+    ///      derivative = - (1 - zeta / z) * (
     ///          1 - (1 / c) * (
     ///              c * (mu * z_e(x)) ** -t_s +
     ///              (y / z_e) * y(x) ** -t_s  -
@@ -1134,20 +1141,8 @@ library LPMath {
         if (ONE >= derivative) {
             derivative = ONE - derivative;
         } else {
-            // FIXME: I'm not sure I believe this. I should add a revert here
-            // and see how often it gets hit. This would also better
-            // contextualize whether or not we should make the derivative
-            // signed.
-            //
-            // FIXME: It really should be true outside of small fluctuations
-            // considering that slippage should increase as the amount of
-            // shares removed from the reserves increases. If this is getting
-            // hit a lot, it's an indication that we could be doing something
-            // wrong.
-            //
-            // NOTE: Analytically, the derivative should always be greater than
-            // or equal to 0. If the derivative calculation would underflow, we
-            // return 0 to avoid rounding issues.
+            // FIXME: We should break if this happens instead of continuing with
+            // a bad derivative.
             return 0;
         }
         if (_params.originalShareAdjustment >= 0) {
@@ -1158,9 +1153,9 @@ library LPMath {
                     )
             );
         } else {
-            derivative = derivative.mulUp(
+            derivative = derivative.mulDown(
                 ONE +
-                    uint256(-_params.originalShareAdjustment).divUp(
+                    uint256(-_params.originalShareAdjustment).divDown(
                         _params.originalShareReserves
                     )
             );
@@ -1177,14 +1172,14 @@ library LPMath {
     /// @dev Calculates the derivative of `calculateSharesInGivenBondsOut`. This
     ///      derivative is given by:
     ///
-    ///      derivative = (1 - zeta / z) * (
-    ///          1 - (1 / c) * (
+    ///      derivative = - (1 - zeta / z) * (
+    ///          (1 / c) * (
     ///              c * (mu * z_e(x)) ** -t_s +
     ///              (y / z_e) * y(x) ** -t_s  -
     ///              (y / z_e) * (y(x) - dy) ** -t_s
     ///          ) * (
     ///              (mu / c) * (k(x) - (y(x) - dy) ** (1 - t_s))
-    ///          ) ** (t_s / (1 - t_s))
+    ///          ) ** (t_s / (1 - t_s)) - 1
     ///      )
     ///
     /// @param _params The parameters for the calculation.
@@ -1250,20 +1245,8 @@ library LPMath {
         if (ONE >= derivative) {
             derivative = ONE - derivative;
         } else {
-            // FIXME: I'm not sure I believe this. I should add a revert here
-            // and see how often it gets hit. This would also better
-            // contextualize whether or not we should make the derivative
-            // signed.
-            //
-            // FIXME: It really should be true outside of small fluctuations
-            // considering that slippage should increase as the amount of
-            // shares removed from the reserves increases. If this is getting
-            // hit a lot, it's an indication that we could be doing something
-            // wrong.
-            //
-            // NOTE: Analytically, the derivative should always be greater than
-            // or equal to 0. If the derivative calculation would underflow, we
-            // return 0 to avoid rounding issues.
+            // FIXME: We should break if this happens instead of continuing with
+            // a bad derivative.
             return 0;
         }
         if (_params.originalShareAdjustment >= 0) {
@@ -1361,6 +1344,11 @@ library LPMath {
         if (derivative < delta) {
             derivative = delta - derivative;
         } else {
+            // FIXME: Just return a bad status code instead of a magic number.
+            //
+            // FIXME: We should break if this happens instead of continuing with
+            // a bad derivative.
+            //
             // NOTE: Analytically, the derivative should always be greater than
             // or equal to 0. If the derivative calculation would underflow, we
             // return 0 to avoid rounding issues.
