@@ -210,12 +210,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256 timeElapsed = 4924801;
         uint256 tradeSize = 3810533.716355891982851995e18;
         uint256 numTrades = 1;
-        open_close_long(
-            variableInterest,
-            timeElapsed,
-            tradeSize,
-            numTrades
-        );
+        open_close_long(variableInterest, timeElapsed, tradeSize, numTrades);
     }
 
     function test_netting_longs_can_close_with_no_shorts() external {
@@ -223,12 +218,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256 timeElapsed = POSITION_DURATION / 2;
         uint256 tradeSize = 369599.308648593814273788e18;
         uint256 numTrades = 2;
-        open_close_long(
-            variableInterest,
-            timeElapsed,
-            tradeSize,
-            numTrades
-        );
+        open_close_long(variableInterest, timeElapsed, tradeSize, numTrades);
     }
 
     // This test demonstrates that you can open longs and shorts indefinitely until
@@ -315,18 +305,8 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
         numTrades = tradeSize.normalizeToRange(1, 5);
         tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18 / numTrades);
-        open_close_long(
-            variableInterest,
-            timeElapsed,
-            tradeSize,
-            numTrades
-        );
-        open_close_short(
-            variableInterest,
-            timeElapsed,
-            tradeSize,
-            numTrades
-        );
+        open_close_long(variableInterest, timeElapsed, tradeSize, numTrades);
+        open_close_short(variableInterest, timeElapsed, tradeSize, numTrades);
         open_close_long_short(
             variableInterest,
             timeElapsed,

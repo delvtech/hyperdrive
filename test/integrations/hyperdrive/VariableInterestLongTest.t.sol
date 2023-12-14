@@ -73,9 +73,7 @@ contract VariableInterestLongTest is HyperdriveTest {
         }
     }
 
-    function immediate_open_close(
-        int256 variableInterest
-    ) internal {
+    function immediate_open_close(int256 variableInterest) internal {
         // Initialize the market
         uint256 apr = 0.05e18;
         deploy(alice, apr, 0, 0, 0);
@@ -109,10 +107,7 @@ contract VariableInterestLongTest is HyperdriveTest {
             0.5e18
         );
         variableInterest = variableInterest.normalizeToRange(-0.5e18, 0.5e18);
-        full_term(
-            preTradeVariableInterest,
-            variableInterest
-        );
+        full_term(preTradeVariableInterest, variableInterest);
     }
 
     function test_positive_interest_long_full_term() external {
@@ -124,10 +119,7 @@ contract VariableInterestLongTest is HyperdriveTest {
         {
             int256 preTradeVariableInterest = 0.10e18;
             int256 variableInterest = 0.05e18;
-            full_term(
-                preTradeVariableInterest,
-                variableInterest
-            );
+            full_term(preTradeVariableInterest, variableInterest);
         }
 
         // This tests the following scenario:
@@ -138,10 +130,7 @@ contract VariableInterestLongTest is HyperdriveTest {
         {
             int256 preTradeVariableInterest = 0.10e18;
             int256 variableInterest = 0.05e18;
-            full_term(
-                preTradeVariableInterest,
-                variableInterest
-            );
+            full_term(preTradeVariableInterest, variableInterest);
         }
 
         // This tests the following scenario:
@@ -152,10 +141,7 @@ contract VariableInterestLongTest is HyperdriveTest {
         {
             int256 preTradeVariableInterest = 0.10e18;
             int256 variableInterest = 0.05e18;
-            full_term(
-                preTradeVariableInterest,
-                variableInterest
-            );
+            full_term(preTradeVariableInterest, variableInterest);
         }
     }
 
@@ -168,10 +154,7 @@ contract VariableInterestLongTest is HyperdriveTest {
         {
             int256 preTradeVariableInterest = -0.10e18;
             int256 variableInterest = -0.05e18;
-            full_term(
-                preTradeVariableInterest,
-                variableInterest
-            );
+            full_term(preTradeVariableInterest, variableInterest);
         }
 
         // This tests the following scenario:
@@ -182,10 +165,7 @@ contract VariableInterestLongTest is HyperdriveTest {
         {
             int256 preTradeVariableInterest = -0.10e18;
             int256 variableInterest = -0.05e18;
-            full_term(
-                preTradeVariableInterest,
-                variableInterest
-            );
+            full_term(preTradeVariableInterest, variableInterest);
         }
 
         // This tests the following scenario:
@@ -196,10 +176,7 @@ contract VariableInterestLongTest is HyperdriveTest {
         {
             int256 preTradeVariableInterest = -0.10e18;
             int256 variableInterest = -0.05e18;
-            full_term(
-                preTradeVariableInterest,
-                variableInterest
-            );
+            full_term(preTradeVariableInterest, variableInterest);
         }
     }
 
@@ -252,10 +229,7 @@ contract VariableInterestLongTest is HyperdriveTest {
             0.5e18
         );
         variableInterest = variableInterest.normalizeToRange(-0.5e18, 0.5e18);
-        half_term(
-            preTradeVariableInterest,
-            variableInterest
-        );
+        half_term(preTradeVariableInterest, variableInterest);
     }
 
     function test_positive_interest_long_half_term() external {
@@ -267,10 +241,7 @@ contract VariableInterestLongTest is HyperdriveTest {
         {
             int256 preTradeVariableInterest = 0.10e18;
             int256 variableInterest = 0.05e18;
-            half_term(
-                preTradeVariableInterest,
-                variableInterest
-            );
+            half_term(preTradeVariableInterest, variableInterest);
         }
 
         // This tests the following scenario:
@@ -281,10 +252,7 @@ contract VariableInterestLongTest is HyperdriveTest {
         {
             int256 preTradeVariableInterest = 0.10e18;
             int256 variableInterest = 0.05e18;
-            half_term(
-                preTradeVariableInterest,
-                variableInterest
-            );
+            half_term(preTradeVariableInterest, variableInterest);
         }
 
         // This tests the following scenario:
@@ -295,10 +263,7 @@ contract VariableInterestLongTest is HyperdriveTest {
         {
             int256 preTradeVariableInterest = 0.10e18;
             int256 variableInterest = 0.05e18;
-            half_term(
-                preTradeVariableInterest,
-                variableInterest
-            );
+            half_term(preTradeVariableInterest, variableInterest);
         }
     }
 
@@ -311,10 +276,7 @@ contract VariableInterestLongTest is HyperdriveTest {
         {
             int256 preTradeVariableInterest = -0.10e18;
             int256 variableInterest = -0.05e18;
-            half_term(
-                preTradeVariableInterest,
-                variableInterest
-            );
+            half_term(preTradeVariableInterest, variableInterest);
         }
 
         // This tests the following scenario:
@@ -325,10 +287,7 @@ contract VariableInterestLongTest is HyperdriveTest {
         {
             int256 preTradeVariableInterest = -0.10e18;
             int256 variableInterest = -0.05e18;
-            half_term(
-                preTradeVariableInterest,
-                variableInterest
-            );
+            half_term(preTradeVariableInterest, variableInterest);
         }
 
         // This tests the following scenario:
@@ -339,10 +298,7 @@ contract VariableInterestLongTest is HyperdriveTest {
         {
             int256 preTradeVariableInterest = -0.10e18;
             int256 variableInterest = -0.05e18;
-            half_term(
-                preTradeVariableInterest,
-                variableInterest
-            );
+            half_term(preTradeVariableInterest, variableInterest);
         }
     }
 

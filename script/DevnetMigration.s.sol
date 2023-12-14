@@ -212,26 +212,27 @@ contract DevnetMigration is Script {
             uint256 fixedRate = config.hyperdriveFixedRate;
             baseToken.mint(msg.sender, contribution);
             baseToken.approve(address(factory), contribution);
-            IHyperdrive.PoolDeployConfig memory poolConfig = IHyperdrive.PoolDeployConfig({
-                baseToken: IERC20(address(baseToken)),
-                linkerFactory: address(0),
-                linkerCodeHash: bytes32(0),
-                minimumShareReserves: config.hyperdriveMinimumShareReserves,
-                minimumTransactionAmount: config
-                    .hyperdriveMinimumTransactionAmount,
-                positionDuration: config.hyperdrivePositionDuration,
-                checkpointDuration: config.hyperdriveCheckpointDuration,
-                timeStretch: config
-                    .hyperdriveTimeStretchApr
-                    .calculateTimeStretch(),
-                governance: config.admin,
-                feeCollector: config.admin,
-                fees: IHyperdrive.Fees({
-                    curve: config.factoryCurveFee,
-                    flat: config.factoryFlatFee,
-                    governance: config.factoryGovernanceFee
-                })
-            });
+            IHyperdrive.PoolDeployConfig memory poolConfig = IHyperdrive
+                .PoolDeployConfig({
+                    baseToken: IERC20(address(baseToken)),
+                    linkerFactory: address(0),
+                    linkerCodeHash: bytes32(0),
+                    minimumShareReserves: config.hyperdriveMinimumShareReserves,
+                    minimumTransactionAmount: config
+                        .hyperdriveMinimumTransactionAmount,
+                    positionDuration: config.hyperdrivePositionDuration,
+                    checkpointDuration: config.hyperdriveCheckpointDuration,
+                    timeStretch: config
+                        .hyperdriveTimeStretchApr
+                        .calculateTimeStretch(),
+                    governance: config.admin,
+                    feeCollector: config.admin,
+                    fees: IHyperdrive.Fees({
+                        curve: config.factoryCurveFee,
+                        flat: config.factoryFlatFee,
+                        governance: config.factoryGovernanceFee
+                    })
+                });
             address hyperdriveDeployer = address(
                 new ERC4626HyperdriveDeployer(
                     address(new ERC4626HyperdriveCoreDeployer()),

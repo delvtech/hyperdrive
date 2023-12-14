@@ -91,13 +91,7 @@ contract FeeTest is HyperdriveTest {
         // Initialize the market with 10% flat fee and 100% governance fee
         {
             uint256 apr = 0.01e18;
-            deploy(
-                alice,
-                apr,
-                curveFee,
-                flatFee,
-                governanceFee
-            );
+            deploy(alice, apr, curveFee, flatFee, governanceFee);
             uint256 contribution = 500_000_000e18;
             initialize(alice, apr, contribution);
 
@@ -196,13 +190,7 @@ contract FeeTest is HyperdriveTest {
         // Initialize the market with 10% curve fee and 100% governance fee
         {
             uint256 apr = 0.01e18;
-            deploy(
-                alice,
-                apr,
-                curveFee,
-                flatFee,
-                governanceFee
-            );
+            deploy(alice, apr, curveFee, flatFee, governanceFee);
             uint256 contribution = 500_000_000e18;
             initialize(alice, apr, contribution);
 

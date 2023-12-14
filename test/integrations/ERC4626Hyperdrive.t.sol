@@ -87,22 +87,27 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         whaleTransfer(daiWhale, dai, alice);
 
         // Deploy a MockHyperdrive instance.
-        IHyperdrive.PoolDeployConfig memory config = IHyperdrive.PoolDeployConfig({
-            baseToken: dai,
-            linkerFactory: address(0),
-            linkerCodeHash: bytes32(0),
-            minimumShareReserves: ONE,
-            minimumTransactionAmount: 0.001e18,
-            positionDuration: 365 days,
-            checkpointDuration: 1 days,
-            timeStretch: ONE.divDown(22.186877016851916266e18),
-            governance: alice,
-            feeCollector: bob,
-            fees: IHyperdrive.Fees(0, 0, 0)
-        });
+        IHyperdrive.PoolDeployConfig memory config = IHyperdrive
+            .PoolDeployConfig({
+                baseToken: dai,
+                linkerFactory: address(0),
+                linkerCodeHash: bytes32(0),
+                minimumShareReserves: ONE,
+                minimumTransactionAmount: 0.001e18,
+                positionDuration: 365 days,
+                checkpointDuration: 1 days,
+                timeStretch: ONE.divDown(22.186877016851916266e18),
+                governance: alice,
+                feeCollector: bob,
+                fees: IHyperdrive.Fees(0, 0, 0)
+            });
         uint256 initialSharePrice = 1e18;
-        address target0 = address(new ERC4626Target0(config, initialSharePrice, pool));
-        address target1 = address(new ERC4626Target1(config, initialSharePrice, pool));
+        address target0 = address(
+            new ERC4626Target0(config, initialSharePrice, pool)
+        );
+        address target1 = address(
+            new ERC4626Target1(config, initialSharePrice, pool)
+        );
         mockHyperdrive = new MockERC4626Hyperdrive(
             config,
             initialSharePrice,
@@ -238,19 +243,20 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         vm.startPrank(alice);
         uint256 apr = 0.01e18; // 1% apr
         uint256 contribution = 2_500e18;
-        IHyperdrive.PoolDeployConfig memory config = IHyperdrive.PoolDeployConfig({
-            baseToken: dai,
-            linkerFactory: address(0),
-            linkerCodeHash: bytes32(0),
-            minimumShareReserves: ONE,
-            minimumTransactionAmount: 0.001e18,
-            positionDuration: 365 days,
-            checkpointDuration: 1 days,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
-            governance: alice,
-            feeCollector: bob,
-            fees: IHyperdrive.Fees(0, 0, 0)
-        });
+        IHyperdrive.PoolDeployConfig memory config = IHyperdrive
+            .PoolDeployConfig({
+                baseToken: dai,
+                linkerFactory: address(0),
+                linkerCodeHash: bytes32(0),
+                minimumShareReserves: ONE,
+                minimumTransactionAmount: 0.001e18,
+                positionDuration: 365 days,
+                checkpointDuration: 1 days,
+                timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
+                governance: alice,
+                feeCollector: bob,
+                fees: IHyperdrive.Fees(0, 0, 0)
+            });
         dai.approve(address(factory), type(uint256).max);
         hyperdrive = factory.deployAndInitialize(
             hyperdriveDeployer,
@@ -288,19 +294,20 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         vm.startPrank(alice);
         uint256 apr = 0.01e18; // 1% apr
         uint256 contribution = 2_500e18;
-        IHyperdrive.PoolDeployConfig memory config = IHyperdrive.PoolDeployConfig({
-            baseToken: dai,
-            linkerFactory: address(0),
-            linkerCodeHash: bytes32(0),
-            minimumShareReserves: ONE,
-            minimumTransactionAmount: 0.001e18,
-            positionDuration: 365 days,
-            checkpointDuration: 1 days,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
-            governance: alice,
-            feeCollector: bob,
-            fees: IHyperdrive.Fees(0, 0, 0)
-        });
+        IHyperdrive.PoolDeployConfig memory config = IHyperdrive
+            .PoolDeployConfig({
+                baseToken: dai,
+                linkerFactory: address(0),
+                linkerCodeHash: bytes32(0),
+                minimumShareReserves: ONE,
+                minimumTransactionAmount: 0.001e18,
+                positionDuration: 365 days,
+                checkpointDuration: 1 days,
+                timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
+                governance: alice,
+                feeCollector: bob,
+                fees: IHyperdrive.Fees(0, 0, 0)
+            });
         dai.approve(address(factory), type(uint256).max);
         hyperdrive = factory.deployAndInitialize(
             hyperdriveDeployer,

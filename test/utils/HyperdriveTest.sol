@@ -68,7 +68,9 @@ contract HyperdriveTest is BaseTest {
     ) internal {
         vm.stopPrank();
         vm.startPrank(deployer);
-        hyperdrive = IHyperdrive(address(new MockHyperdrive(_config, initialSharePrice)));
+        hyperdrive = IHyperdrive(
+            address(new MockHyperdrive(_config, initialSharePrice))
+        );
     }
 
     function deploy(
@@ -993,21 +995,34 @@ contract HyperdriveTest is BaseTest {
                 );
             assertEq(eventHyperdrive, address(_hyperdrive));
 
-            IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
+            IHyperdrive.PoolConfig memory poolConfig = _hyperdrive
+                .getPoolConfig();
 
-            assertEq(address(eventConfig.baseToken), address(poolConfig.baseToken));
+            assertEq(
+                address(eventConfig.baseToken),
+                address(poolConfig.baseToken)
+            );
             assertEq(eventConfig.linkerFactory, poolConfig.linkerFactory);
             assertEq(eventConfig.linkerCodeHash, poolConfig.linkerCodeHash);
-            assertEq(eventConfig.minimumShareReserves, poolConfig.minimumShareReserves);
-            assertEq(eventConfig.minimumTransactionAmount, poolConfig.minimumTransactionAmount);
+            assertEq(
+                eventConfig.minimumShareReserves,
+                poolConfig.minimumShareReserves
+            );
+            assertEq(
+                eventConfig.minimumTransactionAmount,
+                poolConfig.minimumTransactionAmount
+            );
             assertEq(eventConfig.positionDuration, poolConfig.positionDuration);
-            assertEq(eventConfig.checkpointDuration, poolConfig.checkpointDuration);
+            assertEq(
+                eventConfig.checkpointDuration,
+                poolConfig.checkpointDuration
+            );
             assertEq(eventConfig.timeStretch, poolConfig.timeStretch);
             assertEq(eventConfig.governance, poolConfig.governance);
             assertEq(eventConfig.feeCollector, poolConfig.feeCollector);
             assertEq(eventConfig.fees.curve, poolConfig.fees.curve);
             assertEq(eventConfig.fees.flat, poolConfig.fees.flat);
-            assertEq(eventConfig.fees.governance,poolConfig.fees.governance);
+            assertEq(eventConfig.fees.governance, poolConfig.fees.governance);
 
             assertEq(
                 keccak256(abi.encode(eventExtraData)),

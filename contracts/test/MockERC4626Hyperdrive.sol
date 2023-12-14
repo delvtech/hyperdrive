@@ -13,7 +13,16 @@ contract MockERC4626Hyperdrive is ERC4626Hyperdrive {
         address _target1,
         IERC4626 _pool,
         address[] memory _sweepTargets
-    ) ERC4626Hyperdrive(_config, initialSharePrice, _target0, _target1, _pool, _sweepTargets) {}
+    )
+        ERC4626Hyperdrive(
+            _config,
+            initialSharePrice,
+            _target0,
+            _target1,
+            _pool,
+            _sweepTargets
+        )
+    {}
 
     function deposit(
         uint256 _amount,

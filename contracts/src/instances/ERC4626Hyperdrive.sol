@@ -37,7 +37,10 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
         address _target1,
         IERC4626 __pool,
         address[] memory _targets
-    ) Hyperdrive(_config, initialSharePrice, _target0, _target1) ERC4626Base(__pool) {
+    )
+        Hyperdrive(_config, initialSharePrice, _target0, _target1)
+        ERC4626Base(__pool)
+    {
         // Ensure that the Hyperdrive pool was configured properly.
         // WARN: 4626 implementations should be checked that if they use an
         // asset with decimals less than 18 that the preview deposit is scale

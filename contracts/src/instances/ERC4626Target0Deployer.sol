@@ -27,6 +27,10 @@ contract ERC4626Target0Deployer is IHyperdriveTargetDeployer {
     ) external override returns (address) {
         (address pool, ) = abi.decode(_extraData, (address, address[]));
         // Deploy the ERC4626Target0 instance.
-        return (address(new ERC4626Target0(_config, initialSharePrice, IERC4626(pool))));
+        return (
+            address(
+                new ERC4626Target0(_config, initialSharePrice, IERC4626(pool))
+            )
+        );
     }
 }
