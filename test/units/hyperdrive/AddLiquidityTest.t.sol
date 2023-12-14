@@ -192,6 +192,40 @@ contract AddLiquidityTest is HyperdriveTest {
         );
     }
 
+    function test_add_liquidity_failure_zero_present_value() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        uint256 lpShares = initialize(alice, apr, contribution);
+
+        // A max long is opened.
+        openLong(bob, hyperdrive.calculateMaxLong());
+
+        // Alice removes her liquidity.
+        removeLiquidity(alice, lpShares);
+
+        // The term passes and zero interest accrues.
+        advanceTime(POSITION_DURATION, 0);
+
+        // Alice attempts to add liquidity again.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        baseToken.mint(contribution);
+        baseToken.approve(address(hyperdrive), contribution);
+        vm.expectRevert();
+        hyperdrive.addLiquidity(
+            contribution,
+            0,
+            0.04e18,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
     function test_add_liquidity_identical_lp_shares() external {
         uint256 apr = 0.05e18;
 
