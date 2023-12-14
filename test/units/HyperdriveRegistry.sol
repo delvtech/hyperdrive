@@ -8,7 +8,6 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { HyperdriveRegistry } from "contracts/src/factory/HyperdriveRegistry.sol";
 
 contract HyperdriveRegistryTests is Test {
-
     HyperdriveRegistry registry;
 
     function setUp() external {
