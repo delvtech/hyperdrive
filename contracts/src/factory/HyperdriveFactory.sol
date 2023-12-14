@@ -290,11 +290,19 @@ contract HyperdriveFactory {
         _deployConfig.governance = address(this);
         _deployConfig.fees = fees;
         IHyperdrive hyperdrive = IHyperdrive(
-            IHyperdriveDeployer(_hyperdriveDeployer).deploy(_deployConfig, _extraData)
+            IHyperdriveDeployer(_hyperdriveDeployer).deploy(
+                _deployConfig,
+                _extraData
+            )
         );
         isOfficial[address(hyperdrive)] = versionCounter;
         _deployConfig.governance = hyperdriveGovernance;
-        emit Deployed(versionCounter, address(hyperdrive), _deployConfig, _extraData);
+        emit Deployed(
+            versionCounter,
+            address(hyperdrive),
+            _deployConfig,
+            _extraData
+        );
 
         // Add the newly deployed Hyperdrive instance to the registry.
         _instances.push(address(hyperdrive));
@@ -307,7 +315,10 @@ contract HyperdriveFactory {
             _contribution
         );
         if (
-            !_deployConfig.baseToken.approve(address(hyperdrive), type(uint256).max)
+            !_deployConfig.baseToken.approve(
+                address(hyperdrive),
+                type(uint256).max
+            )
         ) {
             revert IHyperdrive.ApprovalFailed();
         }

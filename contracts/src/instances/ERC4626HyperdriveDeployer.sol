@@ -51,9 +51,9 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
     ) external override returns (address) {
         IHyperdrive.PoolConfig memory _config = _copyPoolConfig(_deployConfig);
 
-        (address pool,) = abi.decode(_extraData, (address, address[]));
+        (address pool, ) = abi.decode(_extraData, (address, address[]));
 
-        _config.initialSharePrice = IERC4626(pool).convertToAssets(1e18);  // ONE
+        _config.initialSharePrice = IERC4626(pool).convertToAssets(1e18); // ONE
 
         address target0 = IHyperdriveTargetDeployer(target0Deployer).deploy(
             _config,
@@ -74,15 +74,16 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
             );
     }
 
-    function _copyPoolConfig(IHyperdrive.PoolDeployConfig memory _deployConfig)
-        internal pure returns (IHyperdrive.PoolConfig memory _config)
-    {
+    function _copyPoolConfig(
+        IHyperdrive.PoolDeployConfig memory _deployConfig
+    ) internal pure returns (IHyperdrive.PoolConfig memory _config) {
         // Copy struct info to PoolConfig
         _config.baseToken = _deployConfig.baseToken;
         _config.linkerFactory = _deployConfig.linkerFactory;
         _config.linkerCodeHash = _deployConfig.linkerCodeHash;
         _config.minimumShareReserves = _deployConfig.minimumShareReserves;
-        _config.minimumTransactionAmount = _deployConfig.minimumTransactionAmount;
+        _config.minimumTransactionAmount = _deployConfig
+            .minimumTransactionAmount;
         _config.positionDuration = _deployConfig.positionDuration;
         _config.checkpointDuration = _deployConfig.checkpointDuration;
         _config.timeStretch = _deployConfig.timeStretch;

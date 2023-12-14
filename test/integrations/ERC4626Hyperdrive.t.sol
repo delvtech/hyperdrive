@@ -237,19 +237,20 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         vm.startPrank(alice);
         uint256 apr = 0.01e18; // 1% apr
         uint256 contribution = 2_500e18;
-        IHyperdrive.PoolDeployConfig memory config = IHyperdrive.PoolDeployConfig({
-            baseToken: dai,
-            linkerFactory: address(0),
-            linkerCodeHash: bytes32(0),
-            minimumShareReserves: ONE,
-            minimumTransactionAmount: 0.001e18,
-            positionDuration: 365 days,
-            checkpointDuration: 1 days,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
-            governance: alice,
-            feeCollector: bob,
-            fees: IHyperdrive.Fees(0, 0, 0)
-        });
+        IHyperdrive.PoolDeployConfig memory config = IHyperdrive
+            .PoolDeployConfig({
+                baseToken: dai,
+                linkerFactory: address(0),
+                linkerCodeHash: bytes32(0),
+                minimumShareReserves: ONE,
+                minimumTransactionAmount: 0.001e18,
+                positionDuration: 365 days,
+                checkpointDuration: 1 days,
+                timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
+                governance: alice,
+                feeCollector: bob,
+                fees: IHyperdrive.Fees(0, 0, 0)
+            });
         dai.approve(address(factory), type(uint256).max);
         hyperdrive = factory.deployAndInitialize(
             hyperdriveDeployer,
@@ -287,19 +288,20 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         vm.startPrank(alice);
         uint256 apr = 0.01e18; // 1% apr
         uint256 contribution = 2_500e18;
-        IHyperdrive.PoolDeployConfig memory config = IHyperdrive.PoolDeployConfig({
-            baseToken: dai,
-            linkerFactory: address(0),
-            linkerCodeHash: bytes32(0),
-            minimumShareReserves: ONE,
-            minimumTransactionAmount: 0.001e18,
-            positionDuration: 365 days,
-            checkpointDuration: 1 days,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
-            governance: alice,
-            feeCollector: bob,
-            fees: IHyperdrive.Fees(0, 0, 0)
-        });
+        IHyperdrive.PoolDeployConfig memory config = IHyperdrive
+            .PoolDeployConfig({
+                baseToken: dai,
+                linkerFactory: address(0),
+                linkerCodeHash: bytes32(0),
+                minimumShareReserves: ONE,
+                minimumTransactionAmount: 0.001e18,
+                positionDuration: 365 days,
+                checkpointDuration: 1 days,
+                timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
+                governance: alice,
+                feeCollector: bob,
+                fees: IHyperdrive.Fees(0, 0, 0)
+            });
         dai.approve(address(factory), type(uint256).max);
         hyperdrive = factory.deployAndInitialize(
             hyperdriveDeployer,
@@ -330,19 +332,20 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         address[] memory sweepTargets = new address[](1);
         sweepTargets[0] = address(dai);
         bytes memory extraData = abi.encode(address(pool), sweepTargets);
-        IHyperdrive.PoolDeployConfig memory config = IHyperdrive.PoolDeployConfig({
-            baseToken: dai,
-            linkerFactory: address(0),
-            linkerCodeHash: bytes32(0),
-            minimumShareReserves: ONE,
-            minimumTransactionAmount: 0.001e18,
-            positionDuration: 365 days,
-            checkpointDuration: 1 days,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(0.01e18),
-            governance: alice,
-            feeCollector: bob,
-            fees: IHyperdrive.Fees(0, 0, 0)
-        });
+        IHyperdrive.PoolDeployConfig memory config = IHyperdrive
+            .PoolDeployConfig({
+                baseToken: dai,
+                linkerFactory: address(0),
+                linkerCodeHash: bytes32(0),
+                minimumShareReserves: ONE,
+                minimumTransactionAmount: 0.001e18,
+                positionDuration: 365 days,
+                checkpointDuration: 1 days,
+                timeStretch: HyperdriveUtils.calculateTimeStretch(0.01e18),
+                governance: alice,
+                feeCollector: bob,
+                fees: IHyperdrive.Fees(0, 0, 0)
+            });
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         factory.deployAndInitialize(
             hyperdriveDeployer,

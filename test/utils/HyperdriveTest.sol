@@ -99,13 +99,16 @@ contract HyperdriveTest is BaseTest {
     function testConfig(
         uint256 fixedRate
     ) internal view returns (IHyperdrive.PoolConfig memory _config) {
-        IHyperdrive.PoolDeployConfig memory _deployConfig = testDeployConfig(fixedRate);
+        IHyperdrive.PoolDeployConfig memory _deployConfig = testDeployConfig(
+            fixedRate
+        );
 
         _config.baseToken = _deployConfig.baseToken;
         _config.linkerFactory = _deployConfig.linkerFactory;
         _config.linkerCodeHash = _deployConfig.linkerCodeHash;
         _config.minimumShareReserves = _deployConfig.minimumShareReserves;
-        _config.minimumTransactionAmount = _deployConfig.minimumTransactionAmount;
+        _config.minimumTransactionAmount = _deployConfig
+            .minimumTransactionAmount;
         _config.positionDuration = _deployConfig.positionDuration;
         _config.checkpointDuration = _deployConfig.checkpointDuration;
         _config.timeStretch = _deployConfig.timeStretch;
@@ -899,7 +902,8 @@ contract HyperdriveTest is BaseTest {
 
     event Deployed(
         uint256 indexed version,
-        address hyperdrive,        IHyperdrive.PoolDeployConfig config,
+        address hyperdrive,
+        IHyperdrive.PoolDeployConfig config,
         bytes extraData
     );
 
