@@ -16,10 +16,12 @@ import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 library LPMath {
     using FixedPointMath for *;
 
+    /// @dev The maximum number of iterations for the share proceeds calculation.
     uint256 internal constant SHARE_PROCEEDS_MAX_ITERATIONS = 4;
 
-    // FIXME: Improve this tolerance significantly.
-    uint256 internal constant SHARE_PROCEEDS_MIN_TOLERANCE = 1e5;
+    /// @dev The minimum tolerance for the share proceeds calculation to
+    ///      short-circuit.
+    uint256 internal constant SHARE_PROCEEDS_MIN_TOLERANCE = 1e9;
 
     /// @dev Calculates the new share reserves, share adjustment, and bond
     ///      reserves after liquidity is added or removed from the pool. This
@@ -430,277 +432,6 @@ library LPMath {
         return (withdrawalSharesRedeemed, shareProceeds);
     }
 
-    // FIXME: Todos
-    //
-    // 1. [ ] Ensure that we're rounding in the right direction.
-    // 2. [ ] Use a smaller numbers of iterations when calculating the maximum
-    //       share reserves delta.
-    // 3. [ ] Add a configurable tolerance to short-circuit.
-    //
-    /// @dev Calculates the upper bound on the share proceeds of distributing
-    ///      excess idle. When the pool is net long or net neutral, the upper
-    ///      bound is the amount of idle liquidity. When the pool is net short,
-    ///      the upper bound is the share reserves delta that results in the
-    ///      maximum amount of bonds that can be purchased being equal to the
-    ///      net short position.
-    /// @param _params The parameters for the distribute excess idle calculation.
-    /// @param _originalEffectiveShareReserves The original effective share
-    ///        reserves.
-    /// @param _maxIterations The maximum number of iterations to perform.
-    /// @return maxShareReservesDelta The upper bound on the share proceeds.
-    function calculateMaxShareReservesDelta(
-        DistributeExcessIdleParams memory _params,
-        uint256 _originalEffectiveShareReserves,
-        uint256 _maxIterations
-    ) internal pure returns (uint256 maxShareReservesDelta) {
-        // If the net curve position is zero or net long, then the maximum
-        // share reserves delta is equal to the pool's idle.
-        if (_params.netCurveTrade >= 0) {
-            return _params.idle;
-        }
-        uint256 netCurveTrade = uint256(-_params.netCurveTrade);
-
-        // Check to see if the max bond amount is greater than the net curve
-        // trade if all of the idle is removed from the pool. If so, then we're
-        // done.
-        {
-            // Calculate the maximum amount of bonds that can be purchased after
-            // removing all of the idle liquidity.
-            (
-                _params.presentValueParams.shareReserves,
-                _params.presentValueParams.shareAdjustment,
-                _params.presentValueParams.bondReserves
-            ) = calculateUpdateLiquidity(
-                _params.originalShareReserves,
-                _params.originalShareAdjustment,
-                _params.originalBondReserves,
-                _params.presentValueParams.minimumShareReserves,
-                -int256(_params.idle)
-            );
-            uint256 maxBondAmount = YieldSpaceMath.calculateMaxBuyBondsOut(
-                HyperdriveMath.calculateEffectiveShareReserves(
-                    _params.presentValueParams.shareReserves,
-                    _params.presentValueParams.shareAdjustment
-                ),
-                _params.presentValueParams.bondReserves,
-                ONE - _params.presentValueParams.timeStretch,
-                _params.presentValueParams.sharePrice,
-                _params.presentValueParams.initialSharePrice
-            );
-
-            // If the maximum amount of bonds that can be purchased is greater
-            // than the net curve trade, then the max share delta is equal to
-            // pool's idle capital.
-            if (maxBondAmount >= netCurveTrade) {
-                return _params.idle;
-            }
-        }
-
-        // Calculate an initial guess for the max share delta.
-        uint256 maybeMaxShareReservesDelta = calculateMaxShareReservesDeltaInitialGuess(
-                _params,
-                _originalEffectiveShareReserves,
-                netCurveTrade
-            );
-
-        // Proceed with Newton's method for a few iterations.
-        for (uint256 i = 0; i < _maxIterations; i++) {
-            // Calculate the maximum amount of bonds that can be purchased after
-            // removing the maximum share reserves delta.
-            (
-                _params.presentValueParams.shareReserves,
-                _params.presentValueParams.shareAdjustment,
-                _params.presentValueParams.bondReserves
-            ) = calculateUpdateLiquidity(
-                _params.originalShareReserves,
-                _params.originalShareAdjustment,
-                _params.originalBondReserves,
-                _params.presentValueParams.minimumShareReserves,
-                -int256(maybeMaxShareReservesDelta)
-            );
-            uint256 maxBondAmount = YieldSpaceMath.calculateMaxBuyBondsOut(
-                HyperdriveMath.calculateEffectiveShareReserves(
-                    _params.presentValueParams.shareReserves,
-                    _params.presentValueParams.shareAdjustment
-                ),
-                _params.presentValueParams.bondReserves,
-                ONE - _params.presentValueParams.timeStretch,
-                _params.presentValueParams.sharePrice,
-                _params.presentValueParams.initialSharePrice
-            );
-
-            // If the maximum amount of bonds that can be purchased is greater
-            // than the net curve trade, then we're below the optimal point.
-            if (maxBondAmount > netCurveTrade) {
-                // We calculate the updated max share reserves delta `x_n+1` by
-                // proceeding with Newton's method. This is given by:
-                //
-                // x_n+1 = x_n - F(x_n) / F'(x_n)
-                //
-                // where our objective function `F(x)` is:
-                //
-                // F(x) = calculateMaxBuyBondsOut(x) - netCurveTrade
-                //
-                // The derivative of `calculateMaxBuyBondsOut(x)` is negative,
-                // but we use the negation of the derivative to avoid integer
-                // underflows. With this in mind, we add the delta instead of
-                // subtracting.
-                maxShareReservesDelta = maybeMaxShareReservesDelta;
-                uint256 derivative = calculateMaxBuyBondsOutDerivative(
-                    _params,
-                    _originalEffectiveShareReserves
-                );
-                if (derivative == 0) {
-                    // NOTE: If the derivative is zero, then we're at a local
-                    // minimum or maximum. We can't do any better, so we break.
-                    break;
-                }
-                maybeMaxShareReservesDelta =
-                    maybeMaxShareReservesDelta +
-                    (maxBondAmount - netCurveTrade).divDown(derivative);
-            }
-            // If the maximum amount of bonds that can be purchased is greater
-            // than the net curve trade, then we're above the optimal point.
-            else if (maxBondAmount < netCurveTrade) {
-                // We calculate the updated max share reserves delta `x_n+1` by
-                // proceeding with Newton's method. This is given by:
-                //
-                // x_n+1 = x_n - F(x_n) / F'(x_n)
-                //
-                // where our objective function `F(x)` is:
-                //
-                // F(x) = netCurveTrade - calculateMaxBuyBondsOut(x)
-                //
-                // The derivative of `calculateMaxBuyBondsOut(x)` is negative,
-                // but we use the negation of the derivative to avoid integer
-                // underflows. With this in mind, we subtract the delta instead
-                // of adding.
-                uint256 derivative = calculateMaxBuyBondsOutDerivative(
-                    _params,
-                    _originalEffectiveShareReserves
-                );
-                if (derivative == 0) {
-                    // NOTE: If the derivative is zero, then we're at a local
-                    // minimum or maximum. We can't do any better, so we break.
-                    break;
-                }
-                uint256 delta = (netCurveTrade - maxBondAmount).divDown(
-                    derivative
-                );
-                if (delta >= maybeMaxShareReservesDelta) {
-                    break;
-                }
-                maybeMaxShareReservesDelta = maybeMaxShareReservesDelta - delta;
-            } else {
-                break;
-            }
-
-            // If the max share reserves delta is greater than the idle, then
-            // we clamp back to the pool's idle.
-            if (maybeMaxShareReservesDelta > _params.idle) {
-                maybeMaxShareReservesDelta = _params.idle;
-            }
-        }
-
-        // Check to see if we've found a better max share reserves delta.
-        if (maybeMaxShareReservesDelta != maxShareReservesDelta) {
-            (
-                _params.presentValueParams.shareReserves,
-                _params.presentValueParams.shareAdjustment,
-                _params.presentValueParams.bondReserves
-            ) = calculateUpdateLiquidity(
-                _params.originalShareReserves,
-                _params.originalShareAdjustment,
-                _params.originalBondReserves,
-                _params.presentValueParams.minimumShareReserves,
-                -int256(maybeMaxShareReservesDelta)
-            );
-            uint256 maxBondAmount = YieldSpaceMath.calculateMaxBuyBondsOut(
-                HyperdriveMath.calculateEffectiveShareReserves(
-                    _params.presentValueParams.shareReserves,
-                    _params.presentValueParams.shareAdjustment
-                ),
-                _params.presentValueParams.bondReserves,
-                ONE - _params.presentValueParams.timeStretch,
-                _params.presentValueParams.sharePrice,
-                _params.presentValueParams.initialSharePrice
-            );
-            if (maxBondAmount >= netCurveTrade) {
-                maxShareReservesDelta = maybeMaxShareReservesDelta;
-            }
-        }
-
-        return maxShareReservesDelta;
-    }
-
-    // FIXME: Make sure that we round consistently.
-    //
-    /// @dev Calculates the initial guess to use for iteratively solving for the
-    ///      maximum share reserves delta. The maximum amount of bonds that can
-    ///      be purchased as a function of the shares removed from the share
-    ///      reserves `x` is calculated as:
-    ///
-    ///      y_max(x) = y(x) - (k(x) / ((c / mu) + 1)) ** (1 / (1 - t_s))
-    ///
-    ///      Our initial guess should underestimate this value since we want
-    ///      to approach the optimal value from below. We can derive our initial
-    ///      guess by solving for `x_0` in the following equation:
-    ///
-    ///      netCurveTrade = y(x_0) - (k(0) / ((c / mu) + 1)) ** (1 / (1 - t_s))
-    ///                                =>
-    ///      x_0 = z - ((
-    ///                netCurveTrade + (k(0) / ((c / mu) + 1)) ** (1 / (1 - t_s))
-    ///            ) / ((y / z_e) * (1 - zeta / z)))
-    ///
-    /// @param _params The parameters for the distribute excess idle calculation.
-    /// @param _originalEffectiveShareReserves The original effective share
-    ///        reserves.
-    /// @param _netCurveTrade The net curve trade.
-    /// @return The initial guess for the maximum share reserves delta.
-    function calculateMaxShareReservesDeltaInitialGuess(
-        DistributeExcessIdleParams memory _params,
-        uint256 _originalEffectiveShareReserves,
-        uint256 _netCurveTrade
-    ) internal pure returns (uint256) {
-        uint256 lhs = _netCurveTrade +
-            YieldSpaceMath
-                .kDown(
-                    _originalEffectiveShareReserves,
-                    _params.originalBondReserves,
-                    ONE - _params.presentValueParams.timeStretch,
-                    _params.presentValueParams.sharePrice,
-                    _params.presentValueParams.initialSharePrice
-                )
-                .divDown(
-                    _params.presentValueParams.sharePrice.divUp(
-                        _params.presentValueParams.initialSharePrice
-                    ) + ONE
-                )
-                .pow(ONE.divDown(ONE - _params.presentValueParams.timeStretch));
-        if (_params.originalShareAdjustment >= 0) {
-            lhs = lhs.divDown(
-                _params.originalBondReserves.mulDivUp(
-                    ONE -
-                        uint256(_params.originalShareAdjustment).divUp(
-                            _params.originalShareReserves
-                        ),
-                    _originalEffectiveShareReserves
-                )
-            );
-        } else {
-            lhs = lhs.divDown(
-                _params.originalBondReserves.mulDivUp(
-                    ONE +
-                        uint256(-_params.originalShareAdjustment).divUp(
-                            _params.originalShareReserves
-                        ),
-                    _originalEffectiveShareReserves
-                )
-            );
-        }
-        return _params.originalShareReserves - lhs;
-    }
-
     /// @dev Calculates the amount of withdrawal shares that can be redeemed
     ///      given an amount of shares to remove from the share reserves.
     ///      Assuming that dz is the amount of shares to remove from the
@@ -1046,19 +777,285 @@ library LPMath {
         uint256 _lpTotalSupply,
         uint256 _presentValue
     ) internal pure returns (bool) {
-        // FIXME: This is throwing lots of false positives. This needs to be
-        // fixed.
-        //
-        // uint256 lpSharePriceBefore = _params.startingPresentValue.divDown(
-        //     _lpTotalSupply
-        // );
-        // uint256 lpSharePriceAfter = _presentValue.divDown(_params.activeLpTotalSupply);
-        // if (lpSharePriceAfter < lpSharePriceBefore) {
-        //     return false;
-        // }
-        // return (lpSharePriceAfter - lpSharePriceBefore).divUp(lpSharePriceBefore) <=
-        //     SHARE_PROCEEDS_MIN_TOLERANCE;
-        return false;
+        uint256 lpSharePriceBefore = _params.startingPresentValue.divDown(
+            _lpTotalSupply
+        );
+        uint256 lpSharePriceAfter = _presentValue.divDown(
+            _params.activeLpTotalSupply
+        );
+        if (lpSharePriceAfter < lpSharePriceBefore) {
+            return false;
+        }
+        return
+            lpSharePriceAfter >= lpSharePriceBefore &&
+            lpSharePriceAfter <=
+            lpSharePriceBefore.mulDown(ONE + SHARE_PROCEEDS_MIN_TOLERANCE);
+    }
+
+    // FIXME: Todos
+    //
+    // 1. [ ] Ensure that we're rounding in the right direction.
+    // 2. [ ] Use a smaller numbers of iterations when calculating the maximum
+    //       share reserves delta.
+    // 3. [ ] Add a configurable tolerance to short-circuit.
+    //
+    /// @dev Calculates the upper bound on the share proceeds of distributing
+    ///      excess idle. When the pool is net long or net neutral, the upper
+    ///      bound is the amount of idle liquidity. When the pool is net short,
+    ///      the upper bound is the share reserves delta that results in the
+    ///      maximum amount of bonds that can be purchased being equal to the
+    ///      net short position.
+    /// @param _params The parameters for the distribute excess idle calculation.
+    /// @param _originalEffectiveShareReserves The original effective share
+    ///        reserves.
+    /// @param _maxIterations The maximum number of iterations to perform.
+    /// @return maxShareReservesDelta The upper bound on the share proceeds.
+    function calculateMaxShareReservesDelta(
+        DistributeExcessIdleParams memory _params,
+        uint256 _originalEffectiveShareReserves,
+        uint256 _maxIterations
+    ) internal pure returns (uint256 maxShareReservesDelta) {
+        // If the net curve position is zero or net long, then the maximum
+        // share reserves delta is equal to the pool's idle.
+        if (_params.netCurveTrade >= 0) {
+            return _params.idle;
+        }
+        uint256 netCurveTrade = uint256(-_params.netCurveTrade);
+
+        // Check to see if the max bond amount is greater than the net curve
+        // trade if all of the idle is removed from the pool. If so, then we're
+        // done.
+        {
+            // Calculate the maximum amount of bonds that can be purchased after
+            // removing all of the idle liquidity.
+            (
+                _params.presentValueParams.shareReserves,
+                _params.presentValueParams.shareAdjustment,
+                _params.presentValueParams.bondReserves
+            ) = calculateUpdateLiquidity(
+                _params.originalShareReserves,
+                _params.originalShareAdjustment,
+                _params.originalBondReserves,
+                _params.presentValueParams.minimumShareReserves,
+                -int256(_params.idle)
+            );
+            uint256 maxBondAmount = YieldSpaceMath.calculateMaxBuyBondsOut(
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    _params.presentValueParams.shareReserves,
+                    _params.presentValueParams.shareAdjustment
+                ),
+                _params.presentValueParams.bondReserves,
+                ONE - _params.presentValueParams.timeStretch,
+                _params.presentValueParams.sharePrice,
+                _params.presentValueParams.initialSharePrice
+            );
+
+            // If the maximum amount of bonds that can be purchased is greater
+            // than the net curve trade, then the max share delta is equal to
+            // pool's idle capital.
+            if (maxBondAmount >= netCurveTrade) {
+                return _params.idle;
+            }
+        }
+
+        // Calculate an initial guess for the max share delta.
+        uint256 maybeMaxShareReservesDelta = calculateMaxShareReservesDeltaInitialGuess(
+                _params,
+                _originalEffectiveShareReserves,
+                netCurveTrade
+            );
+
+        // Proceed with Newton's method for a few iterations.
+        for (uint256 i = 0; i < _maxIterations; i++) {
+            // Calculate the maximum amount of bonds that can be purchased after
+            // removing the maximum share reserves delta.
+            (
+                _params.presentValueParams.shareReserves,
+                _params.presentValueParams.shareAdjustment,
+                _params.presentValueParams.bondReserves
+            ) = calculateUpdateLiquidity(
+                _params.originalShareReserves,
+                _params.originalShareAdjustment,
+                _params.originalBondReserves,
+                _params.presentValueParams.minimumShareReserves,
+                -int256(maybeMaxShareReservesDelta)
+            );
+            uint256 maxBondAmount = YieldSpaceMath.calculateMaxBuyBondsOut(
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    _params.presentValueParams.shareReserves,
+                    _params.presentValueParams.shareAdjustment
+                ),
+                _params.presentValueParams.bondReserves,
+                ONE - _params.presentValueParams.timeStretch,
+                _params.presentValueParams.sharePrice,
+                _params.presentValueParams.initialSharePrice
+            );
+
+            // Calculate the derivative of `calculateMaxBuyBondsOut(x)` at the
+            // current guess. We break if the derivative can't be computed.
+            (
+                uint256 derivative,
+                bool success
+            ) = calculateMaxBuyBondsOutDerivativeSafe(
+                    _params,
+                    _originalEffectiveShareReserves
+                );
+            if (!success) {
+                break;
+            }
+
+            // If the maximum amount of bonds that can be purchased is greater
+            // than the net curve trade, then we're below the optimal point.
+            if (maxBondAmount > netCurveTrade) {
+                // We calculate the updated max share reserves delta `x_n+1` by
+                // proceeding with Newton's method. This is given by:
+                //
+                // x_n+1 = x_n - F(x_n) / F'(x_n)
+                //
+                // where our objective function `F(x)` is:
+                //
+                // F(x) = calculateMaxBuyBondsOut(x) - netCurveTrade
+                //
+                // The derivative of `calculateMaxBuyBondsOut(x)` is negative,
+                // but we use the negation of the derivative to avoid integer
+                // underflows. With this in mind, we add the delta instead of
+                // subtracting.
+                maxShareReservesDelta = maybeMaxShareReservesDelta;
+                maybeMaxShareReservesDelta =
+                    maybeMaxShareReservesDelta +
+                    (maxBondAmount - netCurveTrade).divDown(derivative);
+            }
+            // If the maximum amount of bonds that can be purchased is greater
+            // than the net curve trade, then we're above the optimal point.
+            else if (maxBondAmount < netCurveTrade) {
+                // We calculate the updated max share reserves delta `x_n+1` by
+                // proceeding with Newton's method. This is given by:
+                //
+                // x_n+1 = x_n - F(x_n) / F'(x_n)
+                //
+                // where our objective function `F(x)` is:
+                //
+                // F(x) = netCurveTrade - calculateMaxBuyBondsOut(x)
+                //
+                // The derivative of `calculateMaxBuyBondsOut(x)` is negative,
+                // but we use the negation of the derivative to avoid integer
+                // underflows. With this in mind, we subtract the delta instead
+                // of adding.
+                uint256 delta = (netCurveTrade - maxBondAmount).divDown(
+                    derivative
+                );
+                if (delta >= maybeMaxShareReservesDelta) {
+                    break;
+                }
+                maybeMaxShareReservesDelta = maybeMaxShareReservesDelta - delta;
+            } else {
+                break;
+            }
+
+            // If the max share reserves delta is greater than the idle, then
+            // we clamp back to the pool's idle.
+            if (maybeMaxShareReservesDelta > _params.idle) {
+                maybeMaxShareReservesDelta = _params.idle;
+            }
+        }
+
+        // Check to see if we've found a better max share reserves delta.
+        if (maybeMaxShareReservesDelta != maxShareReservesDelta) {
+            (
+                _params.presentValueParams.shareReserves,
+                _params.presentValueParams.shareAdjustment,
+                _params.presentValueParams.bondReserves
+            ) = calculateUpdateLiquidity(
+                _params.originalShareReserves,
+                _params.originalShareAdjustment,
+                _params.originalBondReserves,
+                _params.presentValueParams.minimumShareReserves,
+                -int256(maybeMaxShareReservesDelta)
+            );
+            uint256 maxBondAmount = YieldSpaceMath.calculateMaxBuyBondsOut(
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    _params.presentValueParams.shareReserves,
+                    _params.presentValueParams.shareAdjustment
+                ),
+                _params.presentValueParams.bondReserves,
+                ONE - _params.presentValueParams.timeStretch,
+                _params.presentValueParams.sharePrice,
+                _params.presentValueParams.initialSharePrice
+            );
+            if (maxBondAmount >= netCurveTrade) {
+                maxShareReservesDelta = maybeMaxShareReservesDelta;
+            }
+        }
+
+        return maxShareReservesDelta;
+    }
+
+    // FIXME: Make sure that we round consistently.
+    //
+    /// @dev Calculates the initial guess to use for iteratively solving for the
+    ///      maximum share reserves delta. The maximum amount of bonds that can
+    ///      be purchased as a function of the shares removed from the share
+    ///      reserves `x` is calculated as:
+    ///
+    ///      y_max(x) = y(x) - (k(x) / ((c / mu) + 1)) ** (1 / (1 - t_s))
+    ///
+    ///      Our initial guess should underestimate this value since we want
+    ///      to approach the optimal value from below. We can derive our initial
+    ///      guess by solving for `x_0` in the following equation:
+    ///
+    ///      netCurveTrade = y(x_0) - (k(0) / ((c / mu) + 1)) ** (1 / (1 - t_s))
+    ///                                =>
+    ///      x_0 = z - ((
+    ///                netCurveTrade + (k(0) / ((c / mu) + 1)) ** (1 / (1 - t_s))
+    ///            ) / ((y / z_e) * (1 - zeta / z)))
+    ///
+    /// @param _params The parameters for the distribute excess idle calculation.
+    /// @param _originalEffectiveShareReserves The original effective share
+    ///        reserves.
+    /// @param _netCurveTrade The net curve trade.
+    /// @return The initial guess for the maximum share reserves delta.
+    function calculateMaxShareReservesDeltaInitialGuess(
+        DistributeExcessIdleParams memory _params,
+        uint256 _originalEffectiveShareReserves,
+        uint256 _netCurveTrade
+    ) internal pure returns (uint256) {
+        uint256 lhs = _netCurveTrade +
+            YieldSpaceMath
+                .kDown(
+                    _originalEffectiveShareReserves,
+                    _params.originalBondReserves,
+                    ONE - _params.presentValueParams.timeStretch,
+                    _params.presentValueParams.sharePrice,
+                    _params.presentValueParams.initialSharePrice
+                )
+                .divDown(
+                    _params.presentValueParams.sharePrice.divUp(
+                        _params.presentValueParams.initialSharePrice
+                    ) + ONE
+                )
+                .pow(ONE.divDown(ONE - _params.presentValueParams.timeStretch));
+        if (_params.originalShareAdjustment >= 0) {
+            lhs = lhs.divDown(
+                _params.originalBondReserves.mulDivUp(
+                    ONE -
+                        uint256(_params.originalShareAdjustment).divUp(
+                            _params.originalShareReserves
+                        ),
+                    _originalEffectiveShareReserves
+                )
+            );
+        } else {
+            lhs = lhs.divDown(
+                _params.originalBondReserves.mulDivUp(
+                    ONE +
+                        uint256(-_params.originalShareAdjustment).divUp(
+                            _params.originalShareReserves
+                        ),
+                    _originalEffectiveShareReserves
+                )
+            );
+        }
+        return _params.originalShareReserves - lhs;
     }
 
     // FIXME: Todos
@@ -1094,6 +1091,13 @@ library LPMath {
                 _params.presentValueParams.shareReserves,
                 _params.presentValueParams.shareAdjustment
             );
+        uint256 k = YieldSpaceMath.kDown(
+            effectiveShareReserves,
+            _params.presentValueParams.bondReserves,
+            ONE - _params.presentValueParams.timeStretch,
+            _params.presentValueParams.sharePrice,
+            _params.presentValueParams.initialSharePrice
+        );
         uint256 derivative = _params.presentValueParams.sharePrice.divDown(
             _params
                 .presentValueParams
@@ -1120,13 +1124,7 @@ library LPMath {
                 .presentValueParams
                 .initialSharePrice
                 .mulDivDown(
-                    YieldSpaceMath.kDown(
-                        effectiveShareReserves,
-                        _params.presentValueParams.bondReserves,
-                        ONE - _params.presentValueParams.timeStretch,
-                        _params.presentValueParams.sharePrice,
-                        _params.presentValueParams.initialSharePrice
-                    ) -
+                    k -
                         (_params.presentValueParams.bondReserves + _bondAmount)
                             .pow(ONE - _params.presentValueParams.timeStretch),
                     _params.presentValueParams.sharePrice
@@ -1141,8 +1139,9 @@ library LPMath {
         if (ONE >= derivative) {
             derivative = ONE - derivative;
         } else {
-            // FIXME: We should break if this happens instead of continuing with
-            // a bad derivative.
+            // NOTE: Small rounding errors can result in the derivative being
+            // slightly (on the order of a few wei) greater than 1. In this case,
+            // we return 0 since we should proceed with Newton's method.
             return 0;
         }
         if (_params.originalShareAdjustment >= 0) {
@@ -1245,8 +1244,9 @@ library LPMath {
         if (ONE >= derivative) {
             derivative = ONE - derivative;
         } else {
-            // FIXME: We should break if this happens instead of continuing with
-            // a bad derivative.
+            // NOTE: Small rounding errors can result in the derivative being
+            // slightly (on the order of a few wei) greater than 1. In this case,
+            // we return 0 since we should proceed with Newton's method.
             return 0;
         }
         if (_params.originalShareAdjustment >= 0) {
@@ -1291,10 +1291,11 @@ library LPMath {
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
     /// @return The derivative.
-    function calculateMaxBuyBondsOutDerivative(
+    /// @return A flag indicating when the derivative couldn't be computed.
+    function calculateMaxBuyBondsOutDerivativeSafe(
         DistributeExcessIdleParams memory _params,
         uint256 _originalEffectiveShareReserves
-    ) internal pure returns (uint256) {
+    ) internal pure returns (uint256, bool) {
         uint256 effectiveShareReserves = HyperdriveMath
             .calculateEffectiveShareReserves(
                 _params.presentValueParams.shareReserves,
@@ -1341,18 +1342,12 @@ library LPMath {
         uint256 delta = _params.originalBondReserves.divDown(
             _originalEffectiveShareReserves
         );
-        if (derivative < delta) {
+        if (derivative <= delta) {
             derivative = delta - derivative;
         } else {
-            // FIXME: Just return a bad status code instead of a magic number.
-            //
-            // FIXME: We should break if this happens instead of continuing with
-            // a bad derivative.
-            //
-            // NOTE: Analytically, the derivative should always be greater than
-            // or equal to 0. If the derivative calculation would underflow, we
-            // return 0 to avoid rounding issues.
-            return 0;
+            // Since the calculation would underflow, we return 0 and a flag
+            // indicating that the derivative couldn't be computed.
+            return (0, false);
         }
         if (_params.originalShareAdjustment >= 0) {
             derivative = (ONE -
@@ -1365,6 +1360,6 @@ library LPMath {
                     _params.originalShareReserves
                 )).mulDown(derivative);
         }
-        return derivative;
+        return (derivative, true);
     }
 }

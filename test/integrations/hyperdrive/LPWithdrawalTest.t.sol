@@ -15,14 +15,14 @@ contract LPWithdrawalTest is HyperdriveTest {
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
 
-    // FIXME: We should be able to lower this even more.
+    // This is the maximum tolerance that we allow for the LP share price
+    // increasing.
     uint256 internal constant DISTRIBUTE_EXCESS_IDLE_TOLERANCE = 1e10;
 
     function setUp() public override {
         super.setUp();
 
-        // Deploy Hyperdrive with a small minimum share reserves so that it is
-        // negligible relative to our error tolerances.
+        // Deploy a Hyperdrive pool with the standard config and a 5% APR.
         IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
         deploy(deployer, config);
     }
@@ -231,7 +231,9 @@ contract LPWithdrawalTest is HyperdriveTest {
             // significantly since all of the LPs (except for address zero)
             // removed their liquidity. We lose precision in this regime, so we
             // need to be more lenient.
-            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE).max(1e10)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE).max(
+                DISTRIBUTE_EXCESS_IDLE_TOLERANCE
+            )
         );
 
         // Alice redeems her withdrawal shares.
@@ -659,7 +661,9 @@ contract LPWithdrawalTest is HyperdriveTest {
             // significantly since all of the LPs (except for address zero)
             // removed their liquidity. We lose precision in this regime, so we
             // need to be more lenient.
-            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE).max(1e10)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE).max(
+                DISTRIBUTE_EXCESS_IDLE_TOLERANCE
+            )
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -992,7 +996,9 @@ contract LPWithdrawalTest is HyperdriveTest {
             // significantly since all of the LPs (except for address zero)
             // removed their liquidity. We lose precision in this regime, so
             // we need to be more lenient.
-            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE).max(1e10)
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE).max(
+                DISTRIBUTE_EXCESS_IDLE_TOLERANCE
+            )
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
@@ -1011,7 +1017,9 @@ contract LPWithdrawalTest is HyperdriveTest {
                 // drop significantly since all of the LPs (except for address
                 // zero) removed their liquidity. We lose precision in this
                 // regime, so we need to be more lenient.
-                lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE).max(1e10)
+                lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE).max(
+                    DISTRIBUTE_EXCESS_IDLE_TOLERANCE
+                )
             );
             assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
             (, int256 expectedShortProceeds) = HyperdriveUtils
