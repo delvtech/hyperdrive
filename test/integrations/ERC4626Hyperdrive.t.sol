@@ -100,10 +100,12 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             feeCollector: bob,
             fees: IHyperdrive.Fees(0, 0, 0)
         });
-        address target0 = address(new ERC4626Target0(config, pool));
-        address target1 = address(new ERC4626Target1(config, pool));
+        uint256 initialSharePrice = 1e18;
+        address target0 = address(new ERC4626Target0(config, initialSharePrice, pool));
+        address target1 = address(new ERC4626Target1(config, initialSharePrice, pool));
         mockHyperdrive = new MockERC4626Hyperdrive(
             config,
+            initialSharePrice,
             target0,
             target1,
             pool,

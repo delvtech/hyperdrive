@@ -60,7 +60,8 @@ contract MockMultiToken is HyperdriveMultiToken, MockHyperdriveBase {
                 governance: address(0),
                 feeCollector: address(0),
                 fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 })
-            })
+            }),
+            1e18
         )
     {
         // Deploy the target0 contract.
@@ -78,7 +79,8 @@ contract MockMultiToken is HyperdriveMultiToken, MockHyperdriveBase {
                     governance: address(0),
                     feeCollector: address(0),
                     fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 })
-                })
+                }),
+                1e18
             )
         );
 

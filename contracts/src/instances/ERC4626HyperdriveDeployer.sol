@@ -49,12 +49,18 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
         IHyperdrive.PoolDeployConfig memory _config,
         bytes memory _extraData
     ) external override returns (address) {
+        (address pool, ) = abi.decode(_extraData, (address, address[]));
+
+        uint256 initialSharePrice = IERC4626(pool).convertToAssets(1e18);
+
         address target0 = IHyperdriveTargetDeployer(target0Deployer).deploy(
             _config,
+            initialSharePrice,
             _extraData
         );
         address target1 = IHyperdriveTargetDeployer(target1Deployer).deploy(
             _config,
+            initialSharePrice,
             _extraData
         );
 
@@ -62,6 +68,7 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
         return
             IERC4626HyperdriveDeployer(hyperdriveCoreDeployer).deploy(
                 _config,
+                initialSharePrice,
                 _extraData,
                 target0,
                 target1

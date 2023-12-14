@@ -23,6 +23,7 @@ contract ERC4626HyperdriveCoreDeployer is IERC4626HyperdriveDeployer {
     /// @return The address of the newly deployed ERC4626Hyperdrive Instance
     function deploy(
         IHyperdrive.PoolDeployConfig memory _config,
+        uint256 initialSharePrice,
         bytes memory _extraData,
         address target0,
         address target1
@@ -37,6 +38,7 @@ contract ERC4626HyperdriveCoreDeployer is IERC4626HyperdriveDeployer {
             address(
                 new ERC4626Hyperdrive(
                     _config,
+                    initialSharePrice,
                     target0,
                     target1,
                     IERC4626(pool),

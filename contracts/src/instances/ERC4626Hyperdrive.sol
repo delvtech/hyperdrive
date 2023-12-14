@@ -32,11 +32,12 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
     ///        to access the pool or base tokens.
     constructor(
         IHyperdrive.PoolDeployConfig memory _config,
+        uint256 initialSharePrice,
         address _target0,
         address _target1,
         IERC4626 __pool,
         address[] memory _targets
-    ) Hyperdrive(_config, _target0, _target1) ERC4626Base(__pool) {
+    ) Hyperdrive(_config, initialSharePrice, _target0, _target1) ERC4626Base(__pool) {
         // Ensure that the Hyperdrive pool was configured properly.
         // WARN: 4626 implementations should be checked that if they use an
         // asset with decimals less than 18 that the preview deposit is scale
@@ -44,6 +45,9 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
         // price for USDC if the price per share changes based on size of
         // deposit then this line will read an incorrect and possibly dangerous
         // price.
+        if (initialSharePrice != _pricePerShare()) {
+            revert IHyperdrive.InvalidInitialSharePrice();
+        }
         if (address(_config.baseToken) != IERC4626(_pool).asset()) {
             revert IHyperdrive.InvalidBaseToken();
         }

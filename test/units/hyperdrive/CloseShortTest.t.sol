@@ -643,7 +643,7 @@ contract CloseShortTest is HyperdriveTest {
         uint256 shortProceeds1;
         {
             // Initialize the pool with capital.
-            deploy(bob, 0.035e18, 1e18, 0, 0, 0);
+            deploy(bob, 0.035e18, 0, 0, 0);
             initialize(bob, 0.035e18, 2 * MINIMUM_SHARE_RESERVES);
 
             // Alice adds liquidity.
@@ -663,7 +663,7 @@ contract CloseShortTest is HyperdriveTest {
         uint256 shortProceeds2;
         {
             // Initialize the pool with capital.
-            deploy(bob, 0.035e18, 1e18, 0, 0, 0);
+            deploy(bob, 0.035e18, 0, 0, 0);
             initialize(bob, 0.035e18, 2 * MINIMUM_SHARE_RESERVES);
 
             // Alice adds liquidity.
@@ -686,7 +686,7 @@ contract CloseShortTest is HyperdriveTest {
         uint256 shortProceeds3;
         {
             // Initialize the pool with capital.
-            deploy(bob, 0.035e18, 1e18, 0, 0, 0);
+            deploy(bob, 0.035e18, 0, 0, 0);
             initialize(bob, 0.035e18, 2 * MINIMUM_SHARE_RESERVES);
 
             // Alice adds liquidity.
@@ -709,7 +709,7 @@ contract CloseShortTest is HyperdriveTest {
         uint256 shortProceeds4;
         {
             // Initialize the pool with capital.
-            deploy(bob, 0.035e18, 1e18, 0, 0, 0);
+            deploy(bob, 0.035e18, 0, 0, 0);
             initialize(bob, 0.035e18, 2 * MINIMUM_SHARE_RESERVES);
 
             // Alice adds liquidity.
