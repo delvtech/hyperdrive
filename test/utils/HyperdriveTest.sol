@@ -825,59 +825,6 @@ contract HyperdriveTest is BaseTest {
         }
     }
 
-    // FIXME: Remove this.
-    function calculateBaseLpProceeds(
-        uint256 _shares
-    ) internal returns (uint256) {
-        uint256 snapshotId = vm.snapshot();
-        // We need to explicitly checkpoint here because removeLiquidity will call
-        // _applyCheckpoint() in removeLiquidity and this will update the state if
-        // any positions have matured.
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
-        uint256 startingPresentValue = hyperdrive.presentValue();
-        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        uint256 shareProceeds = MockHyperdrive(address(hyperdrive))
-            .calculateIdleShareReserves(poolInfo.sharePrice);
-        shareProceeds = shareProceeds.mulDivDown(
-            _shares,
-            hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
-        );
-
-        // This logic is here to determine if backtracking needed to calculate the lp proceeds
-        MockHyperdrive(address(hyperdrive)).updateLiquidity(
-            -int256(shareProceeds)
-        );
-        uint256 endingPresentValue = hyperdrive.presentValue();
-        uint256 totalActiveLpSupply = hyperdrive.totalSupply(
-            AssetId._LP_ASSET_ID
-        );
-        uint256 withdrawalSharesOutstanding = hyperdrive.totalSupply(
-            AssetId._WITHDRAWAL_SHARE_ASSET_ID
-        ) - hyperdrive.getWithdrawPool().readyToWithdraw;
-        uint256 totalLpSupply = totalActiveLpSupply +
-            withdrawalSharesOutstanding;
-        int256 withdrawalShares;
-        if (startingPresentValue > 0 && endingPresentValue > 0) {
-            withdrawalShares = int256(
-                totalLpSupply.mulDivDown(
-                    endingPresentValue,
-                    startingPresentValue
-                )
-            );
-            withdrawalShares -= int256(totalLpSupply) - int256(_shares);
-        }
-        if (withdrawalShares < 0) {
-            uint256 overestimatedProceeds = startingPresentValue.mulDivDown(
-                uint256(-withdrawalShares),
-                totalLpSupply
-            );
-            shareProceeds -= overestimatedProceeds;
-        }
-        vm.revertTo(snapshotId);
-
-        return shareProceeds.mulDown(poolInfo.sharePrice);
-    }
-
     function calculateExpectedRemoveLiquidityProceeds(
         uint256 _lpShares
     ) internal view returns (uint256 baseProceeds, uint256 withdrawalShares) {

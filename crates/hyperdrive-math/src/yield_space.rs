@@ -1,24 +1,40 @@
+use ethers::types::I256;
 use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
+use crate::get_effective_share_reserves;
+
 pub trait YieldSpace {
     /// Info ///
 
+    /// The effective share reserves.
+    fn ze(&self) -> FixedPoint {
+        get_effective_share_reserves(self.z(), self.zeta())
+    }
+
+    /// The share reserves.
     fn z(&self) -> FixedPoint;
 
+    /// The share adjustment.
+    fn zeta(&self) -> I256;
+
+    /// The bond reserves.
     fn y(&self) -> FixedPoint;
 
+    /// The share price.
     fn c(&self) -> FixedPoint;
 
+    /// The initial share price.
     fn mu(&self) -> FixedPoint;
 
+    /// The YieldSpace time parameter.
     fn t(&self) -> FixedPoint;
 
     /// Core ///
 
     fn get_spot_price(&self) -> FixedPoint {
-        ((self.mu() * self.z()) / self.y()).pow(self.t())
+        ((self.mu() * self.ze()) / self.y()).pow(self.t())
     }
 
     /// Calculates the amount of bonds a user will receive from the pool by
@@ -27,20 +43,20 @@ pub trait YieldSpace {
     fn calculate_bonds_out_given_shares_in_down(&self, dz: FixedPoint) -> FixedPoint {
         // NOTE: We round k up to make the rhs of the equation larger.
         //
-        // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+        // k = (c / µ) * (µ * ze)^(1 - t) + y^(1 - t)
         let k = self.k_up();
 
         // NOTE: We round z down to make the rhs of the equation larger.
         //
-        // (µ * (z + dz))^(1 - t)
-        let mut z = (self.mu() * (self.z() + dz)).pow(fixed!(1e18) - self.t());
-        // (c / µ) * (µ * (z + dz))^(1 - t)
-        z = self.c().mul_div_down(z, self.mu());
+        // (µ * (ze + dz))^(1 - t)
+        let mut ze = (self.mu() * (self.ze() + dz)).pow(fixed!(1e18) - self.t());
+        // (c / µ) * (µ * (ze + dz))^(1 - t)
+        ze = self.c().mul_div_down(ze, self.mu());
 
         // NOTE: We round _y up to make the rhs of the equation larger.
         //
-        // k - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
-        let mut y = k - z;
+        // k - (c / µ) * (µ * (ze + dz))^(1 - t))^(1 / (1 - t)))
+        let mut y = k - ze;
         if y >= fixed!(1e18) {
             // Rounding up the exponent results in a larger result.
             y = y.pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
@@ -67,19 +83,19 @@ pub trait YieldSpace {
         // NOTE: We round _z up to make the lhs of the equation larger.
         //
         // ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))
-        let mut z = (k - y).mul_div_up(self.mu(), self.c());
-        if z >= fixed!(1e18) {
+        let mut ze = (k - y).mul_div_up(self.mu(), self.c());
+        if ze >= fixed!(1e18) {
             // Rounding up the exponent results in a larger result.
-            z = z.pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
+            ze = ze.pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
         } else {
             // Rounding down the exponent results in a larger result.
-            z = z.pow(fixed!(1e18) / (fixed!(1e18) - self.t()));
+            ze = ze.pow(fixed!(1e18) / (fixed!(1e18) - self.t()));
         }
         // ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
-        z = z.div_up(self.mu());
+        ze = ze.div_up(self.mu());
 
-        // Δz = (((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ - z
-        z - self.z()
+        // Δz = (((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ - ze
+        ze - self.ze()
     }
 
     /// Calculates the amount of shares a user must provide the pool to receive
@@ -87,28 +103,28 @@ pub trait YieldSpace {
     fn calculate_shares_in_given_bonds_out_down(&self, dy: FixedPoint) -> FixedPoint {
         // NOTE: We round k down to make the lhs of the equation smaller.
         //
-        // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+        // k = (c / µ) * (µ * ze)^(1 - t) + y^(1 - t)
         let k = self.k_down();
 
         // (y - dy)^(1 - t)
         let y = (self.y() - dy).pow(fixed!(1e18) - self.t());
 
-        // NOTE: We round _z down to make the lhs of the equation smaller.
+        // NOTE: We round _ze down to make the lhs of the equation smaller.
         //
         // ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))
-        let mut z = (k - y).mul_div_down(self.mu(), self.c());
-        if z >= fixed!(1e18) {
+        let mut ze = (k - y).mul_div_down(self.mu(), self.c());
+        if ze >= fixed!(1e18) {
             // Rounding down the exponent results in a smaller result.
-            z = z.pow(fixed!(1e18) / (fixed!(1e18) - self.t()));
+            ze = ze.pow(fixed!(1e18) / (fixed!(1e18) - self.t()));
         } else {
             // Rounding up the exponent results in a smaller result.
-            z = z.pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
+            ze = ze.pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
         }
         // ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
-        z /= self.mu();
+        ze /= self.mu();
 
-        // Δz = (((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ - z
-        z - self.z()
+        // Δz = (((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ - ze
+        ze - self.ze()
     }
 
     /// Calculates the amount of shares a user will receive from the pool by
@@ -126,7 +142,7 @@ pub trait YieldSpace {
     fn calculate_shares_out_given_bonds_in_down_safe(&self, dy: FixedPoint) -> Result<FixedPoint> {
         // NOTE: We round k up to make the rhs of the equation larger.
         //
-        // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+        // k = (c / µ) * (µ * ze)^(1 - t) + y^(1 - t)
         let k = self.k_up();
 
         // (y + dy)^(1 - t)
@@ -141,23 +157,23 @@ pub trait YieldSpace {
             ));
         }
 
-        // NOTE: We round _z up to make the rhs of the equation larger.
+        // NOTE: We round _ze up to make the rhs of the equation larger.
         //
         // ((k - (y + dy)^(1 - t)) / (c / µ))^(1 / (1 - t)))
-        let mut z = (k - y).mul_div_up(self.mu(), self.c());
-        if z >= fixed!(1e18) {
+        let mut ze = (k - y).mul_div_up(self.mu(), self.c());
+        if ze >= fixed!(1e18) {
             // Rounding the exponent up results in a larger outcome.
-            z = z.pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
+            ze = ze.pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
         } else {
             // Rounding the exponent down results in a larger outcome.
-            z = z.pow(fixed!(1e18) / (fixed!(1e18) - self.t()));
+            ze = ze.pow(fixed!(1e18) / (fixed!(1e18) - self.t()));
         }
         // ((k - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
-        z = z.div_up(self.mu());
+        ze = ze.div_up(self.mu());
 
-        // Δz = z - ((k - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t)) / µ
-        if self.z() > z {
-            Ok(self.z() - z)
+        // Δz = ze - ((k - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t)) / µ
+        if self.ze() > ze {
+            Ok(self.ze() - ze)
         } else {
             Ok(fixed!(0))
         }
@@ -168,25 +184,25 @@ pub trait YieldSpace {
     fn calculate_max_buy_shares_in(&self) -> FixedPoint {
         // We solve for the maximum buy using the constraint that the pool's
         // spot price can never exceed 1. We do this by noting that a spot price
-        // of 1, ((mu * z) / y) ** tau = 1, implies that mu * z = y. This
+        // of 1, ((mu * ze) / y) ** tau = 1, implies that mu * ze = y. This
         // simplifies YieldSpace to:
         //
-        // k = ((c / mu) + 1) * (mu * z') ** (1 - tau),
+        // k = ((c / mu) + 1) * (mu * ze') ** (1 - tau),
         //
         // This gives us the maximum share reserves of:
         //
-        // z' = (1 / mu) * (k / ((c / mu) + 1)) ** (1 / (1 - tau)).
+        // ze' = (1 / mu) * (k / ((c / mu) + 1)) ** (1 / (1 - tau)).
         let k = self.k_down();
-        let mut optimal_z = k.div_down(self.c().div_up(self.mu()) + fixed!(1e18));
-        if optimal_z >= fixed!(1e18) {
+        let mut optimal_ze = k.div_down(self.c().div_up(self.mu()) + fixed!(1e18));
+        if optimal_ze >= fixed!(1e18) {
             // Rounding the exponent up results in a larger outcome.
-            optimal_z = optimal_z.pow(fixed!(1e18).div_down(fixed!(1e18) - self.t()));
+            optimal_ze = optimal_ze.pow(fixed!(1e18).div_down(fixed!(1e18) - self.t()));
         } else {
             // Rounding the exponent down results in a larger outcome.
-            optimal_z = optimal_z.pow(fixed!(1e18) / (fixed!(1e18) - self.t()));
+            optimal_ze = optimal_ze.pow(fixed!(1e18) / (fixed!(1e18) - self.t()));
         }
-        optimal_z = optimal_z.div_down(self.mu());
-        optimal_z - self.z()
+        optimal_ze = optimal_ze.div_down(self.mu());
+        optimal_ze - self.ze()
     }
 
     /// Calculates the maximum amount of bonds that can be purchased with the
@@ -195,11 +211,11 @@ pub trait YieldSpace {
     fn calculate_max_buy_bonds_out(&self) -> FixedPoint {
         // We solve for the maximum buy using the constraint that the pool's
         // spot price can never exceed 1. We do this by noting that a spot price
-        // of 1, (mu * z) / y ** tau = 1, implies that mu * z = y. This
+        // of 1, (mu * ze) / y ** tau = 1, implies that mu * ze = y. This
         // simplifies YieldSpace to k = ((c / mu) + 1) * y' ** (1 - tau), and
         // gives us the maximum bond reserves of
         // y' = (k / ((c / mu) + 1)) ** (1 / (1 - tau)) and the maximum share
-        // reserves of z' = y/mu.
+        // reserves of ze' = y/mu.
         let k = self.k_up();
         let mut optimal_y = k.div_up(self.c() / self.mu() + fixed!(1e18));
         if optimal_y >= fixed!(1e18) {
@@ -217,7 +233,15 @@ pub trait YieldSpace {
     /// Calculates the maximum amount of bonds that can be sold with the
     /// specified reserves. We round so that the max sell amount is
     /// underestimated.
-    fn calculate_max_sell_bonds_in(&self, z_min: FixedPoint) -> FixedPoint {
+    fn calculate_max_sell_bonds_in(&self, mut z_min: FixedPoint) -> FixedPoint {
+        // If the share adjustment is negative, the minimum share reserves is
+        // given by `z_min - zeta`, which ensures that the share reserves never
+        // fall below the minimum share reserves. Otherwise, the minimum share
+        // reserves is just zMin.
+        if self.zeta() < I256::zero() {
+            z_min = z_min + FixedPoint::from(-self.zeta());
+        }
+
         // We solve for the maximum sell using the constraint that the pool's
         // share reserves can never fall below the minimum share reserves zMin.
         // Substituting z = zMin simplifies YieldSpace to
@@ -243,24 +267,24 @@ pub trait YieldSpace {
 
     /// Calculates the YieldSpace invariant k. This invariant is given by:
     ///
-    /// k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+    /// k = (c / µ) * (µ * ze)^(1 - t) + y^(1 - t)
     ///
     /// This variant of the calculation overestimates the result.
     fn k_up(&self) -> FixedPoint {
         self.c().mul_div_up(
-            (self.mu().mul_up(self.z())).pow(fixed!(1e18) - self.t()),
+            (self.mu().mul_up(self.ze())).pow(fixed!(1e18) - self.t()),
             self.mu(),
         ) + self.y().pow(fixed!(1e18) - self.t())
     }
 
     /// Calculates the YieldSpace invariant k. This invariant is given by:
     ///
-    /// k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+    /// k = (c / µ) * (µ * ze)^(1 - t) + y^(1 - t)
     ///
     /// This variant of the calculation underestimates the result.
     fn k_down(&self) -> FixedPoint {
         self.c().mul_div_down(
-            (self.mu() * self.z()).pow(fixed!(1e18) - self.t()),
+            (self.mu() * self.ze()).pow(fixed!(1e18) - self.t()),
             self.mu(),
         ) + self.y().pow(fixed!(1e18) - self.t())
     }
@@ -291,7 +315,7 @@ mod tests {
                 panic::catch_unwind(|| state.calculate_bonds_out_given_shares_in_down(in_));
             match mock
                 .calculate_bonds_out_given_shares_in_down(
-                    state.z().into(),
+                    state.ze().into(),
                     state.y().into(),
                     in_.into(),
                     (fixed!(1e18) - state.t()).into(),
@@ -322,7 +346,7 @@ mod tests {
             let actual = panic::catch_unwind(|| state.calculate_shares_in_given_bonds_out_up(in_));
             match mock
                 .calculate_shares_in_given_bonds_out_up(
-                    state.z().into(),
+                    state.ze().into(),
                     state.y().into(),
                     in_.into(),
                     (fixed!(1e18) - state.t()).into(),
@@ -356,7 +380,7 @@ mod tests {
                 panic::catch_unwind(|| state.calculate_shares_in_given_bonds_out_down(out));
             match mock
                 .calculate_shares_in_given_bonds_out_down(
-                    state.z().into(),
+                    state.ze().into(),
                     state.y().into(),
                     out.into(),
                     (fixed!(1e18) - state.t()).into(),
@@ -390,7 +414,7 @@ mod tests {
                 panic::catch_unwind(|| state.calculate_shares_out_given_bonds_in_down(in_));
             match mock
                 .calculate_shares_out_given_bonds_in_down(
-                    state.z().into(),
+                    state.ze().into(),
                     state.y().into(),
                     in_.into(),
                     (fixed!(1e18) - state.t()).into(),
@@ -424,7 +448,7 @@ mod tests {
                 panic::catch_unwind(|| state.calculate_shares_out_given_bonds_in_down_safe(in_));
             match mock
                 .calculate_shares_out_given_bonds_in_down_safe(
-                    state.z().into(),
+                    state.ze().into(),
                     state.y().into(),
                     in_.into(),
                     (fixed!(1e18) - state.t()).into(),
@@ -458,7 +482,7 @@ mod tests {
             let actual = panic::catch_unwind(|| state.calculate_max_buy_shares_in());
             match mock
                 .calculate_max_buy_shares_in(
-                    state.z().into(),
+                    state.ze().into(),
                     state.y().into(),
                     (fixed!(1e18) - state.t()).into(),
                     state.c().into(),
@@ -489,7 +513,7 @@ mod tests {
             let actual = panic::catch_unwind(|| state.calculate_max_buy_bonds_out());
             match mock
                 .calculate_max_buy_bonds_out(
-                    state.z().into(),
+                    state.ze().into(),
                     state.y().into(),
                     (fixed!(1e18) - state.t()).into(),
                     state.c().into(),
@@ -508,41 +532,39 @@ mod tests {
         Ok(())
     }
 
-    // FIXME: Putting this off until the end of the PR, but this needs to be
-    // fixed.
-    //
-    // #[tokio::test]
-    // async fn fuzz_calculate_max_sell_bonds_in() -> Result<()> {
-    //     let chain = TestChainWithMocks::new(1).await?;
-    //     let mock = chain.mock_yield_space_math();
-    //
-    //     // Fuzz the rust and solidity implementations against each other.
-    //     let mut rng = thread_rng();
-    //     for _ in 0..*FAST_FUZZ_RUNS {
-    //         let state = rng.gen::<State>();
-    //         let z_min = rng.gen::<FixedPoint>();
-    //         let actual = panic::catch_unwind(|| state.calculate_max_sell_bonds_in(z_min));
-    //         match mock
-    //             .calculate_max_sell_bonds_in(
-    //                 state.z().into(),
-    //                 state.y().into(),
-    //                 z_min.into(),
-    //                 (fixed!(1e18) - state.t()).into(),
-    //                 state.c().into(),
-    //                 state.mu().into(),
-    //             )
-    //             .call()
-    //             .await
-    //         {
-    //             Ok(expected) => {
-    //                 assert_eq!(actual.unwrap(), FixedPoint::from(expected));
-    //             }
-    //             Err(_) => assert!(actual.is_err()),
-    //         }
-    //     }
-    //
-    //     Ok(())
-    // }
+    #[tokio::test]
+    async fn fuzz_calculate_max_sell_bonds_in() -> Result<()> {
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_yield_space_math();
+
+        // Fuzz the rust and solidity implementations against each other.
+        let mut rng = thread_rng();
+        for _ in 0..*FAST_FUZZ_RUNS {
+            let state = rng.gen::<State>();
+            let z_min = rng.gen::<FixedPoint>();
+            let actual = panic::catch_unwind(|| state.calculate_max_sell_bonds_in(z_min));
+            match mock
+                .calculate_max_sell_bonds_in(
+                    state.z().into(),
+                    state.zeta().into(),
+                    state.y().into(),
+                    z_min.into(),
+                    (fixed!(1e18) - state.t()).into(),
+                    state.c().into(),
+                    state.mu().into(),
+                )
+                .call()
+                .await
+            {
+                Ok(expected) => {
+                    assert_eq!(actual.unwrap(), FixedPoint::from(expected));
+                }
+                Err(_) => assert!(actual.is_err()),
+            }
+        }
+
+        Ok(())
+    }
 
     #[tokio::test]
     async fn fuzz_k_down() -> Result<()> {
@@ -556,7 +578,7 @@ mod tests {
             let actual = panic::catch_unwind(|| state.k_down());
             match mock
                 .k_down(
-                    state.z().into(),
+                    state.ze().into(),
                     state.y().into(),
                     (fixed!(1e18) - state.t()).into(),
                     state.c().into(),
@@ -585,7 +607,7 @@ mod tests {
             let actual = panic::catch_unwind(|| state.k_up());
             match mock
                 .k_up(
-                    state.z().into(),
+                    state.ze().into(),
                     state.y().into(),
                     (fixed!(1e18) - state.t()).into(),
                     state.c().into(),
