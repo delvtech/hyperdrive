@@ -5,7 +5,7 @@ import { YieldSpaceMath } from "../src/libraries/YieldSpaceMath.sol";
 
 contract MockYieldSpaceMath {
     function calculateBondsOutGivenSharesInDown(
-        uint256 z_e,
+        uint256 ze,
         uint256 y,
         uint256 dz,
         uint256 t,
@@ -13,7 +13,7 @@ contract MockYieldSpaceMath {
         uint256 mu
     ) external pure returns (uint256) {
         uint256 result = YieldSpaceMath.calculateBondsOutGivenSharesInDown(
-            z_e,
+            ze,
             y,
             dz,
             t,
@@ -24,7 +24,7 @@ contract MockYieldSpaceMath {
     }
 
     function calculateSharesInGivenBondsOutUp(
-        uint256 z_e,
+        uint256 ze,
         uint256 y,
         uint256 dy,
         uint256 t,
@@ -32,7 +32,7 @@ contract MockYieldSpaceMath {
         uint256 mu
     ) external pure returns (uint256) {
         uint256 result = YieldSpaceMath.calculateSharesInGivenBondsOutUp(
-            z_e,
+            ze,
             y,
             dy,
             t,
@@ -43,7 +43,7 @@ contract MockYieldSpaceMath {
     }
 
     function calculateSharesInGivenBondsOutDown(
-        uint256 z_e,
+        uint256 ze,
         uint256 y,
         uint256 dy,
         uint256 t,
@@ -51,7 +51,7 @@ contract MockYieldSpaceMath {
         uint256 mu
     ) external pure returns (uint256) {
         uint256 result = YieldSpaceMath.calculateSharesInGivenBondsOutDown(
-            z_e,
+            ze,
             y,
             dy,
             t,
@@ -62,7 +62,7 @@ contract MockYieldSpaceMath {
     }
 
     function calculateSharesOutGivenBondsInDown(
-        uint256 z_e,
+        uint256 ze,
         uint256 y,
         uint256 dy,
         uint256 t,
@@ -70,7 +70,7 @@ contract MockYieldSpaceMath {
         uint256 mu
     ) external pure returns (uint256) {
         uint256 result = YieldSpaceMath.calculateSharesOutGivenBondsInDown(
-            z_e,
+            ze,
             y,
             dy,
             t,
@@ -81,7 +81,7 @@ contract MockYieldSpaceMath {
     }
 
     function calculateSharesOutGivenBondsInDownSafe(
-        uint256 z_e,
+        uint256 ze,
         uint256 y,
         uint256 dy,
         uint256 t,
@@ -89,19 +89,19 @@ contract MockYieldSpaceMath {
         uint256 mu
     ) external pure returns (uint256, bool) {
         (uint256 result1, bool result2) = YieldSpaceMath
-            .calculateSharesOutGivenBondsInDownSafe(z_e, y, dy, t, c, mu);
+            .calculateSharesOutGivenBondsInDownSafe(ze, y, dy, t, c, mu);
         return (result1, result2);
     }
 
     function calculateMaxBuySharesIn(
-        uint256 z_e,
+        uint256 ze,
         uint256 y,
         uint256 t,
         uint256 c,
         uint256 mu
     ) external pure returns (uint256) {
         uint256 result1 = YieldSpaceMath.calculateMaxBuySharesIn(
-            z_e,
+            ze,
             y,
             t,
             c,
@@ -111,14 +111,14 @@ contract MockYieldSpaceMath {
     }
 
     function calculateMaxBuyBondsOut(
-        uint256 z_e,
+        uint256 ze,
         uint256 y,
         uint256 t,
         uint256 c,
         uint256 mu
     ) external pure returns (uint256) {
         uint256 result1 = YieldSpaceMath.calculateMaxBuyBondsOut(
-            z_e,
+            ze,
             y,
             t,
             c,
@@ -143,24 +143,24 @@ contract MockYieldSpaceMath {
     }
 
     function kUp(
-        uint256 z_e,
+        uint256 ze,
         uint256 y,
         uint256 t,
         uint256 c,
         uint256 mu
     ) external pure returns (uint256) {
-        uint256 result = YieldSpaceMath.kUp(z_e, y, t, c, mu);
+        uint256 result = YieldSpaceMath.kUp(ze, y, t, c, mu);
         return result;
     }
 
     function kDown(
-        uint256 z_e,
+        uint256 ze,
         uint256 y,
         uint256 t,
         uint256 c,
         uint256 mu
     ) external pure returns (uint256) {
-        uint256 result = YieldSpaceMath.kDown(z_e, y, t, c, mu);
+        uint256 result = YieldSpaceMath.kDown(ze, y, t, c, mu);
         return result;
     }
 }
