@@ -1459,6 +1459,13 @@ library HyperdriveUtils {
             hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw;
     }
 
+    function idle(IHyperdrive hyperdrive) internal view returns (uint256) {
+        return
+            uint256(hyperdrive.solvency().max(0)).mulDown(
+                hyperdrive.getPoolInfo().sharePrice
+            );
+    }
+
     function solvency(IHyperdrive hyperdrive) internal view returns (int256) {
         IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();

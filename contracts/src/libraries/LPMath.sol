@@ -423,11 +423,15 @@ library LPMath {
         }
 
         // Solve for the share proceeds that hold the LP share price invariant
-        // after all of the withdrawal shares are redeemed.
+        // after all of the withdrawal shares are redeemed. If the calculation
+        // returns a share proceeds of zero, we can't pay out anything.
         uint256 shareProceeds = calculateDistributeExcessIdleShareProceeds(
             _params,
             originalEffectiveShareReserves
         );
+        if (shareProceeds == 0) {
+            return (0, 0);
+        }
 
         return (withdrawalSharesRedeemed, shareProceeds);
     }
@@ -529,8 +533,6 @@ library LPMath {
 
         // If the net curve trade is positive, the pool is net long.
         if (_params.netCurveTrade > 0) {
-            // FIXME: This is the route that fails at the 1e6 tolerance.
-            // Investigate this further to see if we can eek out more precision.
             for (uint256 i = 0; i < SHARE_PROCEEDS_MAX_ITERATIONS; i++) {
                 // Simulate applying the share proceeds to the reserves and
                 // recalculate the present value.
@@ -589,11 +591,16 @@ library LPMath {
                 }
                 // Otherwise, we can solve directly for the share proceeds.
                 else {
-                    // FIXME: We need to battle-test this.
-                    return
-                        calculateDistributeExcessIdleShareProceedsNetLongEdgeCase(
-                            _params
-                        );
+                    (
+                        shareProceeds,
+                        success
+                    ) = calculateDistributeExcessIdleShareProceedsNetLongEdgeCaseSafe(
+                        _params
+                    );
+                    if (!success) {
+                        return 0;
+                    }
+                    return shareProceeds;
                 }
 
                 // We calculate the updated share proceeds `x_n+1` by proceeding
@@ -704,17 +711,28 @@ library LPMath {
         return shareProceeds;
     }
 
-    // FIXME: Natspec.
-    //
-    // FIXME: Find a better name for this.
-    //
-    // FIXME: Make sure we're testing this.
-    //
-    // FIXME: This is never being called. Do we need it?
-    function calculateDistributeExcessIdleShareProceedsNetLongEdgeCase(
+    /// @dev When the pool is net long and we have begun to mark longs to zero,
+    ///      we can solve directly for the share proceeds as:
+    ///
+    ///      shareProceeds = z - ((PV(0) / l) * (l - w) - net_f) / (zeta / z)
+    ///
+    ///      This formula assumes that the share adjustment is positive.
+    ///      Otherwise, the calculation is undefined, and we return a failure
+    ///      flag.
+    /// @param _params The parameters for the calculation.
+    /// @return The share proceeds.
+    /// @return A flag indicating whether the calculation was successful.
+    function calculateDistributeExcessIdleShareProceedsNetLongEdgeCaseSafe(
         DistributeExcessIdleParams memory _params
-    ) internal pure returns (uint256) {
-        // FIXME: Document this.
+    ) internal pure returns (uint256, bool) {
+        // If the original share adjustment is zero or negative, we cannot
+        // calculate the share proceeds. This should never happen, but for
+        // safety we return a failure flag and break the loop at this point.
+        if (_params.originalShareAdjustment <= 0) {
+            return (0, false);
+        }
+
+        // Calculate the share proceeds directly using the edge case formula.
         _params.presentValueParams.shareReserves = _params
             .originalShareReserves;
         _params.presentValueParams.shareAdjustment = _params
@@ -739,26 +757,14 @@ library LPMath {
                 ) +
                 uint256(-netFlatTrade);
         }
-
-        // FIXME: This should only ever be needed when zeta is less than 0.
-        if (_params.originalShareAdjustment > 0) {
-            return
-                _params.originalShareReserves -
+        return (
+            _params.originalShareReserves -
                 _params.originalShareReserves.mulDivUp(
                     inner,
                     uint256(_params.originalShareAdjustment)
-                );
-        } else if (_params.originalShareAdjustment < 0) {
-            return
-                _params.originalShareReserves +
-                _params.originalShareReserves.mulDivUp(
-                    inner,
-                    uint256(-_params.originalShareAdjustment)
-                );
-        }
-
-        // FIXME: Explain why we're returning 0 here.
-        return 0;
+                ),
+            true
+        );
     }
 
     /// @dev Checks to see if we should short-circuit the iterative calculation
@@ -1061,7 +1067,6 @@ library LPMath {
     // FIXME: Todos
     //
     // 1. [ ] Check that we're rounding in the right direction.
-    // 2. [x] Double check this calculation.
     //
     /// @dev Calculates the derivative of `calculateSharesOutGivenBondsIn`. This
     ///      derivative is given by:
@@ -1166,7 +1171,6 @@ library LPMath {
     // FIXME: Todos
     //
     // 1. [ ] Check that we're rounding in the right direction.
-    // 2. [ ] Double check this calculation.
     //
     /// @dev Calculates the derivative of `calculateSharesInGivenBondsOut`. This
     ///      derivative is given by:

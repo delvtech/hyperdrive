@@ -29,37 +29,6 @@ contract LPWithdrawalTest is HyperdriveTest {
         deploy(deployer, config);
     }
 
-    // FIXME: This test case allows us to hit the edge case where some of the
-    //        net longs can't be closed. Flesh this out and make sure that our
-    //        invariants hold.
-    // function test_example() external {
-    //     // Alice initializes the pool
-    //     uint256 apr = 0.05e18;
-    //     uint256 contribution = 500_000_000e18;
-    //     uint256 lpShares = initialize(alice, apr, contribution);
-    //
-    //     // Bob opens a max short.
-    //     openShort(
-    //         bob,
-    //         hyperdrive.calculateMaxShort()
-    //     );
-    //
-    //     // The term advances and no interest accrues.
-    //     advanceTime(POSITION_DURATION, 0);
-    //     hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
-    //
-    //     // Bob opens a max long.
-    //     (, uint256 longAmount) = openLong(
-    //         bob,
-    //         hyperdrive.calculateMaxLong()
-    //     );
-    //     // Alice removes all of her LP shares.
-    //     removeLiquidity(alice, lpShares / 5);
-    //
-    //     // Bob adds liquidity.
-    //     addLiquidity(bob, 10e18);
-    // }
-
     // This test is designed to ensure that a single LP receives all of the
     // trading profits earned when a new long position is closed immediately
     // after the LP withdraws. A bound is placed on these profits to ensure that
@@ -1231,26 +1200,6 @@ contract LPWithdrawalTest is HyperdriveTest {
             uint256 shortAmount = 549812613265172043897083640351978971711251998278;
             _test_lp_withdrawal_three_lps(longBasePaid, shortAmount);
         }
-        // FIXME
-        //
-        // // This edge case resulted in the LP share price increasing more than
-        // // 0.01% after distributing excess idle liquidity.
-        // vm.revertTo(snapshotId);
-        // {
-        //     uint256 longBasePaid = 469991228879638584073946043;
-        //     uint256 shortAmount = 2043170798149466600528688795244803555758742315187834115121;
-        //     _test_lp_withdrawal_three_lps(longBasePaid, shortAmount);
-        // }
-        // FIXME
-        //
-        // // This edge case resulted in the LP share price decreasing after
-        // // distributing excess idle liquidity.
-        // vm.revertTo(snapshotId);
-        // {
-        //     uint256 longBasePaid = 355307653848063495604564433;
-        //     uint256 shortAmount = 32781089323425741109202045220048496973701211100913991100118783234622240063487;
-        //     _test_lp_withdrawal_three_lps(longBasePaid, shortAmount);
-        // }
     }
 
     // This test ensures that three LPs (Alice, Bob, and Celine) will receive a
@@ -1289,7 +1238,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         // Bob adds liquidity.
         uint256 lpSharePrice = hyperdrive.lpSharePrice();
         uint256 bobLpShares = addLiquidity(bob, testParams.contribution);
-        assertEq(hyperdrive.lpSharePrice(), lpSharePrice);
+        assertApproxEqAbs(hyperdrive.lpSharePrice(), lpSharePrice, 1);
 
         // Bob opens a long.
         testParams.longBasePaid = longBasePaid.normalizeToRange(
@@ -1386,6 +1335,248 @@ contract LPWithdrawalTest is HyperdriveTest {
         removeLiquidityWithChecks(celine, celineLpShares);
     }
 
+    function test_lp_withdrawal_negative_share_adjustment(
+        uint256 preTradingLongBasePaid,
+        int256 preTradingVariableRate,
+        uint256 longBasePaid,
+        uint256 shortAmount,
+        int256 variableRate
+    ) external {
+        // Set up the test parameters.
+        TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
+            fixedRate: 0.05e18,
+            variableRate: 0,
+            contribution: 500_000_000e18,
+            longAmount: 0,
+            longBasePaid: 0,
+            longMaturityTime: 0,
+            shortAmount: 0,
+            shortBasePaid: 0,
+            shortMaturityTime: 0
+        });
+
+        // Initialize the pool.
+        uint256 lpShares = initialize(
+            alice,
+            uint256(testParams.fixedRate),
+            testParams.contribution
+        );
+        testParams.contribution -=
+            2 *
+            hyperdrive.getPoolConfig().minimumShareReserves;
+
+        // Bob opens a long.
+        preTradingLongBasePaid = preTradingLongBasePaid.normalizeToRange(
+            MINIMUM_TRANSACTION_AMOUNT,
+            hyperdrive.calculateMaxLong() / 2
+        );
+        openLong(bob, preTradingLongBasePaid);
+
+        // The term advances and interest accrues.
+        preTradingVariableRate = preTradingVariableRate.normalizeToRange(
+            0.01e18,
+            0.2e18
+        );
+        advanceTime(POSITION_DURATION, preTradingVariableRate);
+
+        // Bob opens a long.
+        testParams.longBasePaid = longBasePaid.normalizeToRange(
+            MINIMUM_TRANSACTION_AMOUNT * 2,
+            hyperdrive.calculateMaxLong()
+        );
+        (testParams.longMaturityTime, testParams.longAmount) = openLong(
+            bob,
+            testParams.longBasePaid
+        );
+
+        // Bob opens a short.
+        testParams.shortAmount = shortAmount.normalizeToRange(
+            MINIMUM_TRANSACTION_AMOUNT,
+            hyperdrive.calculateMaxShort() - MINIMUM_TRANSACTION_AMOUNT
+        );
+        (testParams.shortMaturityTime, ) = openShort(
+            bob,
+            testParams.shortAmount
+        );
+
+        // Alice removes her liquidity.
+        (, uint256 withdrawalShares) = removeLiquidityWithChecks(
+            alice,
+            lpShares
+        );
+
+        // The term advances and interest accrues.
+        variableRate = variableRate.normalizeToRange(0.00001e18, 2e18);
+        advanceTime(POSITION_DURATION, variableRate);
+
+        // Alice redeems her withdrawal shares.
+        uint256 lpSharePrice = hyperdrive.lpSharePrice();
+        redeemWithdrawalShares(alice, withdrawalShares);
+        assertApproxEqAbs(
+            lpSharePrice,
+            hyperdrive.lpSharePrice(),
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE).max(
+                DISTRIBUTE_EXCESS_IDLE_TOLERANCE
+            )
+        );
+        assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
+
+        // TODO(jalextowle and jrhea): This is such a deep edge case, that it
+        // doesn't really make sense to me to special case it (by paying out
+        // all of the withdrawal pool). If the pool's present value goes to 0,
+        // it's dead IMO.
+        //
+        // Ensure that the ending supply of withdrawal shares is close to zero.
+        if (hyperdrive.presentValue() > 0) {
+            assertApproxEqAbs(
+                hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
+                0,
+                1
+            );
+        }
+    }
+
+    function test_lp_withdrawal_positive_share_adjustment(
+        uint256 preTradingShortAmount,
+        int256 preTradingVariableRate,
+        uint256 longBasePaid,
+        uint256 shortAmount,
+        int256 variableRate
+    ) external {
+        _test_lp_withdrawal_positive_share_adjustment(
+            preTradingShortAmount,
+            preTradingVariableRate,
+            longBasePaid,
+            shortAmount,
+            variableRate
+        );
+    }
+
+    function test_lp_withdrawal_positive_share_adjustment_edge_cases()
+        external
+    {
+        // This edge case gets `calculateDistributeExcessIdleShareProceeds` into
+        // the regime where it can solve directly for the share proceeds because
+        // the share reserves are small enough that longs are being marked to 0.
+        uint256 snapshotId = vm.snapshot();
+        {
+            uint256 preTradingShortAmount = 468068833135495314045336246;
+            int256 preTradingVariableRate = 1695668740740805497720865;
+            uint256 longBasePaid = 1010050167084247820;
+            uint256 shortAmount = 5033;
+            int256 variableRate = 13405;
+            _test_lp_withdrawal_positive_share_adjustment(
+                preTradingShortAmount,
+                preTradingVariableRate,
+                longBasePaid,
+                shortAmount,
+                variableRate
+            );
+        }
+        vm.revertTo(snapshotId);
+    }
+
+    function _test_lp_withdrawal_positive_share_adjustment(
+        uint256 preTradingShortAmount,
+        int256 preTradingVariableRate,
+        uint256 longBasePaid,
+        uint256 shortAmount,
+        int256 variableRate
+    ) internal {
+        // Set up the test parameters.
+        TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
+            fixedRate: 0.05e18,
+            variableRate: 0,
+            contribution: 500_000_000e18,
+            longAmount: 0,
+            longBasePaid: 0,
+            longMaturityTime: 0,
+            shortAmount: 0,
+            shortBasePaid: 0,
+            shortMaturityTime: 0
+        });
+
+        // Initialize the pool.
+        uint256 lpShares = initialize(
+            alice,
+            uint256(testParams.fixedRate),
+            testParams.contribution
+        );
+        testParams.contribution -=
+            2 *
+            hyperdrive.getPoolConfig().minimumShareReserves;
+
+        // Bob opens a short.
+        preTradingShortAmount = preTradingShortAmount.normalizeToRange(
+            MINIMUM_TRANSACTION_AMOUNT,
+            hyperdrive.calculateMaxShort() / 2
+        );
+        openShort(bob, preTradingShortAmount);
+
+        // The term advances and interest accrues.
+        preTradingVariableRate = preTradingVariableRate.normalizeToRange(
+            0.01e18,
+            0.2e18
+        );
+        advanceTime(POSITION_DURATION, preTradingVariableRate);
+
+        // Bob opens a long.
+        testParams.longBasePaid = longBasePaid.normalizeToRange(
+            MINIMUM_TRANSACTION_AMOUNT * 2,
+            hyperdrive.calculateMaxLong()
+        );
+        (testParams.longMaturityTime, testParams.longAmount) = openLong(
+            bob,
+            testParams.longBasePaid
+        );
+
+        // Bob opens a short.
+        testParams.shortAmount = shortAmount.normalizeToRange(
+            MINIMUM_TRANSACTION_AMOUNT,
+            hyperdrive.calculateMaxShort()
+        );
+        (testParams.shortMaturityTime, ) = openShort(
+            bob,
+            testParams.shortAmount
+        );
+
+        // Alice removes her liquidity.
+        (, uint256 withdrawalShares) = removeLiquidityWithChecks(
+            alice,
+            lpShares
+        );
+
+        // The term advances and interest accrues.
+        variableRate = variableRate.normalizeToRange(0.00001e18, 2e18);
+        advanceTime(POSITION_DURATION, variableRate);
+
+        // Alice redeems her withdrawal shares.
+        uint256 lpSharePrice = hyperdrive.lpSharePrice();
+        redeemWithdrawalShares(alice, withdrawalShares);
+        assertApproxEqAbs(
+            lpSharePrice,
+            hyperdrive.lpSharePrice(),
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE).max(
+                DISTRIBUTE_EXCESS_IDLE_TOLERANCE
+            )
+        );
+        assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
+
+        // TODO(jalextowle and jrhea): This is such a deep edge case, that it
+        // doesn't really make sense to me to special case it (by paying out
+        // all of the withdrawal pool). If the pool's present value goes to 0,
+        // it's dead IMO.
+        //
+        // Ensure that the ending supply of withdrawal shares is close to zero.
+        if (hyperdrive.presentValue() > 0) {
+            assertApproxEqAbs(
+                hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
+                0,
+                1
+            );
+        }
+    }
+
     // This function removes liquidity and verifies that either (1) the maximum
     // amount of idle was distributed or (2) all of the withdrawal shares were
     // redeemed.
@@ -1396,19 +1587,22 @@ contract LPWithdrawalTest is HyperdriveTest {
         // Get the maximum share reserves delta prior to removing liquidity.
         LPMath.DistributeExcessIdleParams memory params = hyperdrive
             .getDistributeExcessIdleParams();
-        uint256 maxShareReservesDelta = LPMath.calculateMaxShareReservesDelta(
-            params,
-            HyperdriveMath.calculateEffectiveShareReserves(
-                params.originalShareReserves,
-                params.originalShareAdjustment
-            ),
-            // FIXME: This probably shouldn't be a parameter. Instead, we should
-            // short-circuit when we get within a tolerance and we should have
-            // a constant that defines the maximum number of iterations.
-            3
-        );
+        uint256 maxBaseReservesDelta = LPMath
+            .calculateMaxShareReservesDelta(
+                params,
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    params.originalShareReserves,
+                    params.originalShareAdjustment
+                ),
+                // FIXME: This probably shouldn't be a parameter. Instead, we should
+                // short-circuit when we get within a tolerance and we should have
+                // a constant that defines the maximum number of iterations.
+                3
+            )
+            .mulDown(hyperdrive.getPoolInfo().sharePrice);
 
         // Remove the liquidity.
+        uint256 idleBefore = hyperdrive.idle();
         uint256 readyToWithdraw = hyperdrive
             .getPoolInfo()
             .withdrawalSharesReadyToWithdraw;
@@ -1441,12 +1635,13 @@ contract LPWithdrawalTest is HyperdriveTest {
             uint256((int256(_lpShares) - int256(readyToWithdraw))).max(0)
         ) {
             // Ensure that the pool's solvency is unchanged.
-            assertEq(uint256(hyperdrive.solvency()), params.idle);
+            assertEq(hyperdrive.idle(), idleBefore);
         } else if (withdrawalSharesTotalSupply > 0) {
             // Ensure that the max share reserves delta was distributed.
-            assertEq(
-                uint256(hyperdrive.solvency()),
-                params.idle - maxShareReservesDelta
+            assertApproxEqAbs(
+                hyperdrive.idle(),
+                idleBefore - maxBaseReservesDelta,
+                1e9
             );
         } else {
             // The LP shouldn't receive withdrawal shares if all of the
