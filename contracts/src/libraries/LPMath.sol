@@ -29,7 +29,7 @@ library LPMath {
 
     /// @dev The minimum tolerance for the max share reserves delta calculation
     ///      to short-circuit.
-    uint256 internal constant MAX_SHARE_RESERVES_DELTA_MIN_TOLERANCE = 1e9;
+    uint256 internal constant MAX_SHARE_RESERVES_DELTA_MIN_TOLERANCE = 1e6;
 
     /// @dev Calculates the new share reserves, share adjustment, and bond
     ///      reserves after liquidity is added or removed from the pool. This

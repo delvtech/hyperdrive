@@ -108,13 +108,11 @@ contract LPWithdrawalTest is HyperdriveTest {
             1e9
         );
 
-        // TODO(jalextowle and jrhea): This is such a deep edge case, that it
-        // doesn't really make sense to me to special case it (by paying out
-        // all of the withdrawal pool). If the pool's present value goes to 0,
-        // it's dead IMO.
-        //
-        // Ensure that the ending supply of withdrawal shares is close to zero.
-        if (hyperdrive.presentValue() > 0) {
+        // Ensure that the ending supply of withdrawal shares is zero if the
+        // present value is above a small threshold. If the present value is
+        // really tiny, withdrawal shares won't be distributed because the
+        // share proceeds will be 0.
+        if (hyperdrive.presentValue() > 1e3) {
             assertApproxEqAbs(
                 hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
                 0,
@@ -123,14 +121,6 @@ contract LPWithdrawalTest is HyperdriveTest {
         }
     }
 
-    // TODO: Accrue interest before the test starts as this results in weirder
-    // scenarios.
-    //
-    // TODO: Accrue interest after the test ends as this results in weirder
-    // scenarios.
-    //
-    // TODO: We should also test that the withdrawal shares receive interest
-    // if the long isn't closed immediately.
     function test_lp_withdrawal_long_redemption(
         uint256 basePaid,
         int256 variableRate
@@ -147,9 +137,6 @@ contract LPWithdrawalTest is HyperdriveTest {
         );
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
 
-        // FIXME: It would be good to make sure that she receives all of the
-        // pool's idle capital.
-        //
         // Alice removes all of her LP shares. The LP share price should be
         // approximately equal before and after the transaction, and the value
         // of her overall portfolio should be greater than or equal to her
@@ -172,7 +159,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         // equal before and after the transaction.
         uint256 lpSharePrice = hyperdrive.lpSharePrice();
         uint256 longProceeds = closeLong(bob, maturityTime, longAmount);
-        assertApproxEqAbs(longProceeds, longAmount, 10); // TODO: Investigate this bound.
+        assertApproxEqAbs(longProceeds, longAmount, 10);
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
@@ -220,13 +207,11 @@ contract LPWithdrawalTest is HyperdriveTest {
             1e9
         );
 
-        // TODO(jalextowle and jrhea): This is such a deep edge case, that it
-        // doesn't really make sense to me to special case it (by paying out
-        // all of the withdrawal pool). If the pool's present value goes to 0,
-        // it's dead IMO.
-        //
-        // Ensure that the ending supply of withdrawal shares is close to zero.
-        if (hyperdrive.presentValue() > 0) {
+        // Ensure that the ending supply of withdrawal shares is zero if the
+        // present value is above a small threshold. If the present value is
+        // really tiny, withdrawal shares won't be distributed because the
+        // share proceeds will be 0.
+        if (hyperdrive.presentValue() > 1e3) {
             assertApproxEqAbs(
                 hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
                 0,
@@ -268,14 +253,6 @@ contract LPWithdrawalTest is HyperdriveTest {
         closeShort(bob, maturityTime, shortAmount);
     }
 
-    // TODO: Accrue interest before the test starts as this results in weirder
-    // scenarios.
-    //
-    // TODO: Accrue interest after the test ends as this results in weirder
-    // scenarios.
-    //
-    // TODO: We should also test that the withdrawal shares receive interest
-    // if the long isn't closed immediately.
     function test_lp_withdrawal_short_redemption(
         uint256 shortAmount,
         int256 variableRate
@@ -348,13 +325,11 @@ contract LPWithdrawalTest is HyperdriveTest {
             1e9
         );
 
-        // TODO(jalextowle and jrhea): This is such a deep edge case, that it
-        // doesn't really make sense to me to special case it (by paying out
-        // all of the withdrawal pool). If the pool's present value goes to 0,
-        // it's dead IMO.
-        //
-        // Ensure that the ending supply of withdrawal shares is close to zero.
-        if (hyperdrive.presentValue() > 0) {
+        // Ensure that the ending supply of withdrawal shares is zero if the
+        // present value is above a small threshold. If the present value is
+        // really tiny, withdrawal shares won't be distributed because the
+        // share proceeds will be 0.
+        if (hyperdrive.presentValue() > 1e3) {
             assertApproxEqAbs(
                 hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
                 0,
@@ -679,13 +654,11 @@ contract LPWithdrawalTest is HyperdriveTest {
             1e9
         );
 
-        // TODO(jalextowle and jrhea): This is such a deep edge case, that it
-        // doesn't really make sense to me to special case it (by paying out
-        // all of the withdrawal pool). If the pool's present value goes to 0,
-        // it's dead IMO.
-        //
-        // Ensure that the ending supply of withdrawal shares is close to zero.
-        if (hyperdrive.presentValue() > 0) {
+        // Ensure that the ending supply of withdrawal shares is zero if the
+        // present value is above a small threshold. If the present value is
+        // really tiny, withdrawal shares won't be distributed because the
+        // share proceeds will be 0.
+        if (hyperdrive.presentValue() > 1e3) {
             assertApproxEqAbs(
                 hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
                 0,
@@ -754,11 +727,6 @@ contract LPWithdrawalTest is HyperdriveTest {
         );
     }
 
-    // FIXME: Take another pass through this test.
-    //
-    // FIXME: Throughout this test make sure that either all the idle was
-    // distributed or all of the withdrawal shares were distributed.
-    //
     // This test ensures that two LPs (Alice and Celine) will receive a fair
     // share of the withdrawal pool's profits if Alice has entirely long
     // exposure, Celine has entirely short exposure, Alice redeems immediately
@@ -807,54 +775,45 @@ contract LPWithdrawalTest is HyperdriveTest {
             uint256 aliceWithdrawalShares
         ) = removeLiquidityWithChecks(alice, aliceLpShares);
 
-        // FIXME: Clean up this block
-        uint256 celineLpShares;
-        uint256 aliceRedeemProceeds;
-        uint256 celineSlippagePayment;
+        // Celine adds liquidity.
         uint256 lpSharePrice = hyperdrive.lpSharePrice();
-        {
-            // Celine adds liquidity.
-            celineLpShares = addLiquidity(celine, testParams.contribution);
-            celineSlippagePayment =
-                testParams.contribution -
-                celineLpShares.mulDown(hyperdrive.lpSharePrice());
-            assertApproxEqAbs(
-                lpSharePrice,
-                hyperdrive.lpSharePrice(),
-                lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
-            );
-            assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
+        uint256 celineLpShares = addLiquidity(celine, testParams.contribution);
+        assertApproxEqAbs(
+            lpSharePrice,
+            hyperdrive.lpSharePrice(),
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
+        );
+        assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
-            // Redeem Alice's withdrawal shares. Alice should receive the margin
-            // released from Bob's long as well as a payment for the additional
-            // slippage incurred by Celine adding liquidity. She should be left with
-            // no withdrawal shares.
-            lpSharePrice = hyperdrive.lpSharePrice();
-            uint256 sharesRedeemed;
-            (aliceRedeemProceeds, sharesRedeemed) = redeemWithdrawalShares(
-                alice,
-                aliceWithdrawalShares
-            );
-            aliceWithdrawalShares -= sharesRedeemed;
-            assertApproxEqAbs(
-                lpSharePrice,
-                hyperdrive.lpSharePrice(),
-                lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
-            );
-            assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
+        // Redeem Alice's withdrawal shares. Alice should receive the margin
+        // released from Bob's long as well as a payment for the additional
+        // slippage incurred by Celine adding liquidity. She should be left with
+        // no withdrawal shares.
+        lpSharePrice = hyperdrive.lpSharePrice();
+        (
+            uint256 aliceRedeemProceeds,
+            uint256 sharesRedeemed
+        ) = redeemWithdrawalShares(alice, aliceWithdrawalShares);
+        aliceWithdrawalShares -= sharesRedeemed;
+        assertApproxEqAbs(
+            lpSharePrice,
+            hyperdrive.lpSharePrice(),
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
+        );
+        assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
-            // Record the value of Alice's withdrawal shares after Celine adds
-            // liquidity and Alice redeems some of her withdrawal shares.
-            uint256 aliceWithdrawalSharesValueAfter = aliceWithdrawalShares
-                .mulDown(hyperdrive.lpSharePrice()) + aliceRedeemProceeds;
+        // Record the value of Alice's withdrawal shares after Celine adds
+        // liquidity and Alice redeems some of her withdrawal shares.
+        uint256 aliceWithdrawalSharesValueAfter = aliceWithdrawalShares.mulDown(
+            hyperdrive.lpSharePrice()
+        ) + aliceRedeemProceeds;
 
-            // Ensure that the user expects to make at least as much money as
-            // they put in.
-            assertGe(
-                aliceBaseProceeds + aliceWithdrawalSharesValueAfter,
-                testParams.contribution
-            );
-        }
+        // Ensure that the user expects to make at least as much money as
+        // they put in.
+        assertGe(
+            aliceBaseProceeds + aliceWithdrawalSharesValueAfter,
+            testParams.contribution
+        );
 
         // Bob opens a short.
         testParams.shortAmount = shortAmount.normalizeToRange(
@@ -932,45 +891,26 @@ contract LPWithdrawalTest is HyperdriveTest {
             );
         }
 
-        // FIXME: Check to see that Celine got the correct base proceeds.
-        //
-        // Redeem the withdrawal shares. Alice and Celine will split the face
-        // value of the short in the proportion of their withdrawal shares.
-        uint256 aliceRemainingRedeemProceeds;
-        {
-            uint256 sharesRedeemed;
-            lpSharePrice = hyperdrive.lpSharePrice();
-            (
-                aliceRemainingRedeemProceeds,
-                sharesRedeemed
-            ) = redeemWithdrawalShares(alice, aliceWithdrawalShares);
-            aliceWithdrawalShares -= sharesRedeemed;
-            assertApproxEqAbs(
-                lpSharePrice,
-                hyperdrive.lpSharePrice(),
-                lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
-            );
-            assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
-        }
-        // FIXME: Check to see that Celine got the correct base proceeds.
-        uint256 celineRedeemProceeds;
-        {
-            uint256 sharesRedeemed;
-            lpSharePrice = hyperdrive.lpSharePrice();
-            (celineRedeemProceeds, sharesRedeemed) = redeemWithdrawalShares(
-                celine,
-                celineWithdrawalShares
-            );
-            assertApproxEqAbs(
-                lpSharePrice,
-                hyperdrive.lpSharePrice(),
-                lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
-            );
-            assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
-        }
+        // Alice redeems her withdrawal shares.
+        lpSharePrice = hyperdrive.lpSharePrice();
+        redeemWithdrawalShares(alice, aliceWithdrawalShares);
+        assertApproxEqAbs(
+            lpSharePrice,
+            hyperdrive.lpSharePrice(),
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
+        );
+        assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
-        // FIXME: Use this check everywhere.
-        //
+        // Celine redeems her withdrawal shares.
+        lpSharePrice = hyperdrive.lpSharePrice();
+        redeemWithdrawalShares(celine, celineWithdrawalShares);
+        assertApproxEqAbs(
+            lpSharePrice,
+            hyperdrive.lpSharePrice(),
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_TOLERANCE)
+        );
+        assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
+
         // Ensure that the ending base balance of Hyperdrive only consists of
         // the minimum share reserves and address zero's LP shares.
         assertApproxEqAbs(
@@ -981,13 +921,11 @@ contract LPWithdrawalTest is HyperdriveTest {
             1e9
         );
 
-        // TODO(jalextowle and jrhea): This is such a deep edge case, that it
-        // doesn't really make sense to me to special case it (by paying out
-        // all of the withdrawal pool). If the pool's present value goes to 0,
-        // it's dead IMO.
-        //
-        // Ensure that the ending supply of withdrawal shares is close to zero.
-        if (hyperdrive.presentValue() > 0) {
+        // Ensure that the ending supply of withdrawal shares is zero if the
+        // present value is above a small threshold. If the present value is
+        // really tiny, withdrawal shares won't be distributed because the
+        // share proceeds will be 0.
+        if (hyperdrive.presentValue() > 1e3) {
             assertApproxEqAbs(
                 hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
                 0,
@@ -1017,9 +955,6 @@ contract LPWithdrawalTest is HyperdriveTest {
         );
     }
 
-    // FIXME: Make sure all of the idle is paid out or one of the other
-    // invariants was hit.
-    //
     // This test is designed to find cases where the longs are insolvent after
     // the LP removes funds and the short is closed. This will only pass if the
     // long exposure is calculated to account for the cases where the shorts
@@ -1159,13 +1094,11 @@ contract LPWithdrawalTest is HyperdriveTest {
             1e9
         );
 
-        // TODO(jalextowle and jrhea): This is such a deep edge case, that it
-        // doesn't really make sense to me to special case it (by paying out
-        // all of the withdrawal pool). If the pool's present value goes to 0,
-        // it's dead IMO.
-        //
-        // Ensure that the ending supply of withdrawal shares is close to zero.
-        if (hyperdrive.presentValue() > 0) {
+        // Ensure that the ending supply of withdrawal shares is zero if the
+        // present value is above a small threshold. If the present value is
+        // really tiny, withdrawal shares won't be distributed because the
+        // share proceeds will be 0.
+        if (hyperdrive.presentValue() > 1e3) {
             assertApproxEqAbs(
                 hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
                 0,
@@ -1421,13 +1354,11 @@ contract LPWithdrawalTest is HyperdriveTest {
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
-        // TODO(jalextowle and jrhea): This is such a deep edge case, that it
-        // doesn't really make sense to me to special case it (by paying out
-        // all of the withdrawal pool). If the pool's present value goes to 0,
-        // it's dead IMO.
-        //
-        // Ensure that the ending supply of withdrawal shares is close to zero.
-        if (hyperdrive.presentValue() > 0) {
+        // Ensure that the ending supply of withdrawal shares is zero if the
+        // present value is above a small threshold. If the present value is
+        // really tiny, withdrawal shares won't be distributed because the
+        // share proceeds will be 0.
+        if (hyperdrive.presentValue() > 1e3) {
             assertApproxEqAbs(
                 hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
                 0,
@@ -1562,13 +1493,11 @@ contract LPWithdrawalTest is HyperdriveTest {
         );
         assertLe(lpSharePrice, hyperdrive.lpSharePrice() + 100);
 
-        // TODO(jalextowle and jrhea): This is such a deep edge case, that it
-        // doesn't really make sense to me to special case it (by paying out
-        // all of the withdrawal pool). If the pool's present value goes to 0,
-        // it's dead IMO.
-        //
-        // Ensure that the ending supply of withdrawal shares is close to zero.
-        if (hyperdrive.presentValue() > 0) {
+        // Ensure that the ending supply of withdrawal shares is zero if the
+        // present value is above a small threshold. If the present value is
+        // really tiny, withdrawal shares won't be distributed because the
+        // share proceeds will be 0.
+        if (hyperdrive.presentValue() > 1e3) {
             assertApproxEqAbs(
                 hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
                 0,
