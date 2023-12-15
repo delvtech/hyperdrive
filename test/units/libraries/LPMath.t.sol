@@ -692,8 +692,7 @@ contract LPMathTest is HyperdriveTest {
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
-                    ),
-                    2
+                    )
                 );
 
             // The max share reserves delta is just the idle.
@@ -757,8 +756,7 @@ contract LPMathTest is HyperdriveTest {
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
-                    ),
-                    2
+                    )
                 );
 
             // The max share reserves delta is just the idle.
@@ -822,8 +820,7 @@ contract LPMathTest is HyperdriveTest {
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
-                    ),
-                    2
+                    )
                 );
 
             // The max share reserves delta is just the idle.
@@ -888,8 +885,7 @@ contract LPMathTest is HyperdriveTest {
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
-                    ),
-                    2
+                    )
                 );
 
             // The max share reserves delta is just the idle.
@@ -954,8 +950,7 @@ contract LPMathTest is HyperdriveTest {
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
-                    ),
-                    2
+                    )
                 );
 
             // The max share reserves delta should have been calculated so that

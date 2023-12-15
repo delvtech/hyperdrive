@@ -1593,11 +1593,7 @@ contract LPWithdrawalTest is HyperdriveTest {
                 HyperdriveMath.calculateEffectiveShareReserves(
                     params.originalShareReserves,
                     params.originalShareAdjustment
-                ),
-                // FIXME: This probably shouldn't be a parameter. Instead, we should
-                // short-circuit when we get within a tolerance and we should have
-                // a constant that defines the maximum number of iterations.
-                3
+                )
             )
             .mulDown(hyperdrive.getPoolInfo().sharePrice);
 

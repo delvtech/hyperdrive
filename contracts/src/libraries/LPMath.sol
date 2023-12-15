@@ -23,6 +23,14 @@ library LPMath {
     ///      short-circuit.
     uint256 internal constant SHARE_PROCEEDS_MIN_TOLERANCE = 1e9;
 
+    /// @dev The maximum number of iterations for the max share reserves delta
+    ///      calculation.
+    uint256 internal constant MAX_SHARE_RESERVES_DELTA_MAX_ITERATIONS = 3;
+
+    /// @dev The minimum tolerance for the max share reserves delta calculation
+    ///      to short-circuit.
+    uint256 internal constant MAX_SHARE_RESERVES_DELTA_MIN_TOLERANCE = 1e9;
+
     /// @dev Calculates the new share reserves, share adjustment, and bond
     ///      reserves after liquidity is added or removed from the pool. This
     ///      update is made in such a way that the pool's spot price remains
@@ -390,8 +398,7 @@ library LPMath {
             );
         uint256 maxShareReservesDelta = calculateMaxShareReservesDelta(
             _params,
-            originalEffectiveShareReserves,
-            3 // FIXME: We should pass this in. That let's us use a cheaper version during trades.
+            originalEffectiveShareReserves
         );
 
         // Calculate the amount of withdrawal shares that can be redeemed given
@@ -801,9 +808,6 @@ library LPMath {
     // FIXME: Todos
     //
     // 1. [ ] Ensure that we're rounding in the right direction.
-    // 2. [ ] Use a smaller numbers of iterations when calculating the maximum
-    //       share reserves delta.
-    // 3. [ ] Add a configurable tolerance to short-circuit.
     //
     /// @dev Calculates the upper bound on the share proceeds of distributing
     ///      excess idle. When the pool is net long or net neutral, the upper
@@ -814,12 +818,10 @@ library LPMath {
     /// @param _params The parameters for the distribute excess idle calculation.
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
-    /// @param _maxIterations The maximum number of iterations to perform.
     /// @return maxShareReservesDelta The upper bound on the share proceeds.
     function calculateMaxShareReservesDelta(
         DistributeExcessIdleParams memory _params,
-        uint256 _originalEffectiveShareReserves,
-        uint256 _maxIterations
+        uint256 _originalEffectiveShareReserves
     ) internal pure returns (uint256 maxShareReservesDelta) {
         // If the net curve position is zero or net long, then the maximum
         // share reserves delta is equal to the pool's idle.
@@ -872,7 +874,7 @@ library LPMath {
             );
 
         // Proceed with Newton's method for a few iterations.
-        for (uint256 i = 0; i < _maxIterations; i++) {
+        for (uint256 i = 0; i < MAX_SHARE_RESERVES_DELTA_MAX_ITERATIONS; i++) {
             // Calculate the maximum amount of bonds that can be purchased after
             // removing the maximum share reserves delta.
             (
@@ -913,6 +915,21 @@ library LPMath {
             // If the maximum amount of bonds that can be purchased is greater
             // than the net curve trade, then we're below the optimal point.
             if (maxBondAmount > netCurveTrade) {
+                // Since the max bond amount is greater than the net curve
+                // trade, we set the max share reserves delta to the current
+                // guess.
+                maxShareReservesDelta = maybeMaxShareReservesDelta;
+
+                // If we are within the minimum tolerance, short-circuit.
+                if (
+                    maxBondAmount <=
+                    netCurveTrade.mulUp(
+                        ONE + MAX_SHARE_RESERVES_DELTA_MIN_TOLERANCE
+                    )
+                ) {
+                    return maxShareReservesDelta;
+                }
+
                 // We calculate the updated max share reserves delta `x_n+1` by
                 // proceeding with Newton's method. This is given by:
                 //
@@ -926,7 +943,6 @@ library LPMath {
                 // but we use the negation of the derivative to avoid integer
                 // underflows. With this in mind, we add the delta instead of
                 // subtracting.
-                maxShareReservesDelta = maybeMaxShareReservesDelta;
                 maybeMaxShareReservesDelta =
                     maybeMaxShareReservesDelta +
                     (maxBondAmount - netCurveTrade).divDown(derivative);
@@ -955,7 +971,9 @@ library LPMath {
                 }
                 maybeMaxShareReservesDelta = maybeMaxShareReservesDelta - delta;
             } else {
-                break;
+                // If the max bond amount is equal to the net curve trade, then
+                // we've found the optimal point.
+                return maybeMaxShareReservesDelta;
             }
 
             // If the max share reserves delta is greater than the idle, then
