@@ -188,23 +188,12 @@ abstract contract HyperdriveCheckpoint is
 
         // Emit an event about the checkpoint creation that includes the LP
         // share price.
-        uint256 presentValue = _sharePrice > 0
-            ? LPMath
-                .calculatePresentValue(_getPresentValueParams(_sharePrice))
-                .mulDown(_sharePrice)
-            : 0;
-        uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
-            _totalSupply[AssetId._WITHDRAWAL_SHARE_ASSET_ID] -
-            _withdrawPool.readyToWithdraw;
-        uint256 lpSharePrice = lpTotalSupply == 0
-            ? 0
-            : presentValue.divDown(lpTotalSupply);
         emit CreateCheckpoint(
             _checkpointTime,
             _sharePrice,
             maturedShortsAmount,
             maturedLongsAmount,
-            lpSharePrice
+            _calculateLPSharePrice(_sharePrice)
         );
 
         return _sharePrice;

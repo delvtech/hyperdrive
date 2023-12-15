@@ -397,6 +397,8 @@ abstract contract HyperdriveBase is HyperdriveStorage {
     /// @dev Calculates the number of share reserves that are not reserved by
     ///      open positions.
     /// @param _sharePrice The current share price.
+    /// @return idleShares The amount of shares that are available for LPs to
+    ///         withdraw.
     function _calculateIdleShareReserves(
         uint256 _sharePrice
     ) internal view returns (uint256 idleShares) {
@@ -410,6 +412,26 @@ abstract contract HyperdriveBase is HyperdriveStorage {
                 _minimumShareReserves;
         }
         return idleShares;
+    }
+
+    /// @dev Calculates the LP share price.
+    /// @param _sharePrice The current share price.
+    /// @return lpSharePrice The LP share price.
+    function _calculateLPSharePrice(
+        uint256 _sharePrice
+    ) internal view returns (uint256 lpSharePrice) {
+        uint256 presentValue = _sharePrice > 0
+            ? LPMath
+                .calculatePresentValue(_getPresentValueParams(_sharePrice))
+                .mulDown(_sharePrice)
+            : 0;
+        uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
+            _totalSupply[AssetId._WITHDRAWAL_SHARE_ASSET_ID] -
+            _withdrawPool.readyToWithdraw;
+        lpSharePrice = lpTotalSupply == 0
+            ? 0
+            : presentValue.divDown(lpTotalSupply);
+        return lpSharePrice;
     }
 
     /// @dev Calculates the fees that go to the LPs and governance.
@@ -529,7 +551,8 @@ abstract contract HyperdriveBase is HyperdriveStorage {
             flatFee.mulDown(_governanceFee);
     }
 
-    /// @dev Converts input to base if necessary according to what is specified in options.
+    /// @dev Converts input to base if necessary according to what is specified
+    ///      in options.
     /// @param _amount The amount to convert.
     /// @param _sharePrice The current share price.
     /// @param _options The options that configure the conversion.

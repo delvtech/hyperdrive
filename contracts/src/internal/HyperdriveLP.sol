@@ -219,14 +219,10 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         );
     }
 
-    // FIXME: Update the comment for `_minOutputPerShare`.
-    //
     /// @dev Allows an LP to burn shares and withdraw from the pool.
     /// @param _lpShares The LP shares to burn.
-    /// @param _minOutputPerShare The minium amount of the base token to receive.
-    ///        NOTE: This value is likely to be less than the amount LP shares
-    ///        are worth. The remainder is in short and long withdraw shares
-    ///        which are hard to game the value of.
+    /// @param _minOutputPerShare The minimum amount of base per LP share that
+    ///        was redeemed.
     /// @param _options The options that configure how the operation is settled.
     /// @return proceeds The amount the LP removing liquidity receives. The
     ///         LP receives a proportional amount of the pool's idle capital
@@ -280,14 +276,13 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
             sharePrice,
             _options
         );
-        uint256 lpSharePrice = 0; // FIXME: Calculate the LP share price.
         emit RemoveLiquidity(
             _options.destination,
             _lpShares,
             baseProceeds,
             sharePrice, // vault share price
             uint256(withdrawalShares),
-            lpSharePrice
+            _calculateLPSharePrice(sharePrice) // lp share price
         );
 
         return (proceeds, withdrawalShares);
@@ -344,7 +339,17 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         return (proceeds, withdrawalSharesRedeemed);
     }
 
-    // FIXME
+    /// @dev Redeems withdrawal shares by giving the LP a pro-rata amount of the
+    ///      withdrawal pool's proceeds. This function redeems the maximum
+    ///      amount of the specified withdrawal shares given the amount of
+    ///      withdrawal shares ready to withdraw.
+    /// @param _withdrawalShares The withdrawal shares to redeem.
+    /// @param _minOutputPerShare The minimum amount of base the LP expects to
+    ///        receive for each withdrawal share that is burned.
+    /// @param _options The options that configure how the operation is settled.
+    /// @return proceeds The amount the LP received.
+    /// @return withdrawalSharesRedeemed The amount of withdrawal shares that
+    ///         were redeemed.
     function _redeemWithdrawalSharesInternal(
         uint256 _withdrawalShares,
         uint256 _minOutputPerShare,
@@ -391,9 +396,6 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         return (proceeds, withdrawalSharesRedeemed);
     }
 
-    // FIXME: We need better short-circuiting here to prevent a lot of state
-    // usage.
-    //
     /// @dev Distribute as much of the excess idle as possible to the withdrawal
     ///      pool while holding the LP share price constant.
     /// @param _sharePrice The current share price.
