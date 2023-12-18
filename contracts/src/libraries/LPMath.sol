@@ -752,8 +752,6 @@ library LPMath {
         return shareProceeds;
     }
 
-    // FIXME: Make the rounding more consistent.
-    //
     /// @dev When the pool is net long and we have begun to mark longs to zero,
     ///      we can solve directly for the share proceeds as:
     ///
@@ -761,7 +759,8 @@ library LPMath {
     ///
     ///      This formula assumes that the share adjustment is positive.
     ///      Otherwise, the calculation is undefined, and we return a failure
-    ///      flag.
+    ///      flag. We round down to err on the side of the withdrawal pool
+    ///      receiving slightly less shares.
     /// @param _params The parameters for the calculation.
     /// @return The share proceeds.
     /// @return A flag indicating whether the calculation was successful.
@@ -775,16 +774,24 @@ library LPMath {
             return (0, false);
         }
 
-        // Calculate the share proceeds directly using the edge case formula.
+        // TODO: Double-check how the flat trade is used in the context of
+        // rounding once we do a rounding path through the present value
+        // calculation.
+        //
+        // Calculate the net flat trade using the original reserves.
         _params.presentValueParams.shareReserves = _params
             .originalShareReserves;
         _params.presentValueParams.shareAdjustment = _params
             .originalShareAdjustment;
         _params.presentValueParams.bondReserves = _params.originalBondReserves;
         int256 netFlatTrade = calculateNetFlatTrade(_params.presentValueParams);
-        uint256 inner;
+
+        // NOTE: Round up since this is the rhs of the final subtraction.
+        //
+        // rhs = (PV(0) / l) * (l - w) - net_f
+        uint256 rhs;
         if (netFlatTrade >= 0) {
-            inner =
+            rhs =
                 _params.startingPresentValue.mulDivUp(
                     _params.activeLpTotalSupply,
                     _params.activeLpTotalSupply +
@@ -792,7 +799,7 @@ library LPMath {
                 ) -
                 uint256(netFlatTrade);
         } else {
-            inner =
+            rhs =
                 _params.startingPresentValue.mulDivUp(
                     _params.activeLpTotalSupply,
                     _params.activeLpTotalSupply +
@@ -800,14 +807,17 @@ library LPMath {
                 ) +
                 uint256(-netFlatTrade);
         }
-        return (
-            _params.originalShareReserves -
-                _params.originalShareReserves.mulDivUp(
-                    inner,
-                    uint256(_params.originalShareAdjustment)
-                ),
-            true
+
+        // NOTE: Round up since this is the rhs of the final subtraction.
+        //
+        // rhs = ((PV(0) / l) * (l - w) - net_f) / (zeta / z)
+        rhs = _params.originalShareReserves.mulDivUp(
+            rhs,
+            uint256(_params.originalShareAdjustment)
         );
+
+        // share proceeds = z - rhs
+        return (_params.originalShareReserves - rhs, true);
     }
 
     /// @dev Checks to see if we should short-circuit the iterative calculation
@@ -842,10 +852,6 @@ library LPMath {
             lpSharePriceBefore.mulDown(ONE + SHARE_PROCEEDS_MIN_TOLERANCE);
     }
 
-    // FIXME: Todos
-    //
-    // 1. [ ] Ensure that we're rounding in the right direction.
-    //
     /// @dev Calculates the upper bound on the share proceeds of distributing
     ///      excess idle. When the pool is net long or net neutral, the upper
     ///      bound is the amount of idle liquidity. When the pool is net short,
