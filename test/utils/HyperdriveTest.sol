@@ -68,7 +68,8 @@ contract HyperdriveTest is BaseTest {
         uint256 apr,
         uint256 curveFee,
         uint256 flatFee,
-        uint256 governanceFee
+        uint256 governanceLPFee,
+        uint256 governanceZombieFee
     ) internal {
         deploy(
             deployer,
@@ -76,7 +77,8 @@ contract HyperdriveTest is BaseTest {
             INITIAL_SHARE_PRICE,
             curveFee,
             flatFee,
-            governanceFee
+            governanceLPFee,
+            governanceZombieFee
         );
     }
 
@@ -86,13 +88,15 @@ contract HyperdriveTest is BaseTest {
         uint256 initialSharePrice,
         uint256 curveFee,
         uint256 flatFee,
-        uint256 governanceFee
+        uint256 governanceLPFee,
+        uint256 governanceZombieFee
     ) internal {
         IHyperdrive.PoolConfig memory config = testConfig(apr);
         config.initialSharePrice = initialSharePrice;
         config.fees.curve = curveFee;
         config.fees.flat = flatFee;
-        config.fees.governance = governanceFee;
+        config.fees.governanceLP = governanceLPFee;
+        config.fees.governanceZombie = governanceZombieFee;
         deploy(deployer, config);
     }
 
@@ -102,7 +106,8 @@ contract HyperdriveTest is BaseTest {
         IHyperdrive.Fees memory fees = IHyperdrive.Fees({
             curve: 0,
             flat: 0,
-            governance: 0
+            governanceLP: 0,
+            governanceZombie: 0
         });
         return
             IHyperdrive.PoolConfig({

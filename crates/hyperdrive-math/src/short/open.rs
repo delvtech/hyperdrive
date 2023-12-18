@@ -142,7 +142,7 @@ mod tests {
                         minimum_share_reserves: state.config.minimum_share_reserves,
                         curve_fee: state.config.fees.curve,
                         flat_fee: state.config.fees.flat,
-                        governance_fee: state.config.fees.governance,
+                        governance_lp_fee: state.config.fees.governance_lp,
                     },
                     checkpoint_exposure,
                     max_iterations.into(),

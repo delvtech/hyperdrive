@@ -503,7 +503,8 @@ contract CloseShortTest is HyperdriveTest {
         config.fees = IHyperdrive.Fees({
             curve: 0,
             flat: 1e18,
-            governance: 1e18
+            governanceLP: 1e18,
+            governanceZombie: 1e18
         });
         deploy(address(deployer), config);
         initialize(alice, fixedRate, contribution);
@@ -534,7 +535,12 @@ contract CloseShortTest is HyperdriveTest {
 
         // 7. deploy a pool with 100% curve fees and 0% gov fees
         config = testConfig(fixedRate);
-        config.fees = IHyperdrive.Fees({ curve: 0, flat: 1e18, governance: 0 });
+        config.fees = IHyperdrive.Fees({
+            curve: 0,
+            flat: 1e18,
+            governanceLP: 0,
+            governanceZombie: 0
+        });
         // Deploy and initialize the new pool
         deploy(address(deployer), config);
         initialize(alice, fixedRate, contribution);
@@ -574,7 +580,12 @@ contract CloseShortTest is HyperdriveTest {
 
         // Initialize a pool with no flat fee as a baseline
         IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
-        config.fees = IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 });
+        config.fees = IHyperdrive.Fees({
+            curve: 0,
+            flat: 0,
+            governanceLP: 0,
+            governanceZombie: 0
+        });
         deploy(address(deployer), config);
         initialize(alice, fixedRate, contribution);
 
@@ -603,7 +614,12 @@ contract CloseShortTest is HyperdriveTest {
 
         // Configure a pool with a 100% flatFee
         config = testConfig(fixedRate);
-        config.fees = IHyperdrive.Fees({ curve: 0, flat: 1e18, governance: 0 });
+        config.fees = IHyperdrive.Fees({
+            curve: 0,
+            flat: 1e18,
+            governanceLP: 0,
+            governanceZombie: 0
+        });
         // Deploy and initialize the new pool
         deploy(address(deployer), config);
         initialize(alice, fixedRate, contribution);
@@ -643,7 +659,7 @@ contract CloseShortTest is HyperdriveTest {
         uint256 shortProceeds1;
         {
             // Initialize the pool with capital.
-            deploy(bob, 0.035e18, 1e18, 0, 0, 0);
+            deploy(bob, 0.035e18, 1e18, 0, 0, 0, 0);
             initialize(bob, 0.035e18, 2 * MINIMUM_SHARE_RESERVES);
 
             // Alice adds liquidity.
@@ -663,7 +679,7 @@ contract CloseShortTest is HyperdriveTest {
         uint256 shortProceeds2;
         {
             // Initialize the pool with capital.
-            deploy(bob, 0.035e18, 1e18, 0, 0, 0);
+            deploy(bob, 0.035e18, 1e18, 0, 0, 0, 0);
             initialize(bob, 0.035e18, 2 * MINIMUM_SHARE_RESERVES);
 
             // Alice adds liquidity.
@@ -686,7 +702,7 @@ contract CloseShortTest is HyperdriveTest {
         uint256 shortProceeds3;
         {
             // Initialize the pool with capital.
-            deploy(bob, 0.035e18, 1e18, 0, 0, 0);
+            deploy(bob, 0.035e18, 1e18, 0, 0, 0, 0);
             initialize(bob, 0.035e18, 2 * MINIMUM_SHARE_RESERVES);
 
             // Alice adds liquidity.
@@ -709,7 +725,7 @@ contract CloseShortTest is HyperdriveTest {
         uint256 shortProceeds4;
         {
             // Initialize the pool with capital.
-            deploy(bob, 0.035e18, 1e18, 0, 0, 0);
+            deploy(bob, 0.035e18, 1e18, 0, 0, 0, 0);
             initialize(bob, 0.035e18, 2 * MINIMUM_SHARE_RESERVES);
 
             // Alice adds liquidity.

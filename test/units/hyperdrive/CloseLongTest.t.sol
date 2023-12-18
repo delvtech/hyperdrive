@@ -705,7 +705,8 @@ contract CloseLongTest is HyperdriveTest {
         config.fees = IHyperdrive.Fees({
             curve: 0,
             flat: 0.01e18,
-            governance: 1e18
+            governanceLP: 1e18,
+            governanceZombie: 1e18
         });
         deploy(address(deployer), config);
         initialize(alice, fixedRate, contribution);
@@ -728,7 +729,8 @@ contract CloseLongTest is HyperdriveTest {
         config.fees = IHyperdrive.Fees({
             curve: 0,
             flat: 0.01e18,
-            governance: 0
+            governanceLP: 0,
+            governanceZombie: 0
         });
         // Deploy and initialize the new pool
         deploy(address(deployer), config);

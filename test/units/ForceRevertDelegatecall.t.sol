@@ -39,7 +39,12 @@ contract DummyHyperdrive is Hyperdrive, MockHyperdriveBase {
                 timeStretch: HyperdriveUtils.calculateTimeStretch(0.05e18),
                 governance: address(0),
                 feeCollector: address(0),
-                fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 })
+                fees: IHyperdrive.Fees({
+                    curve: 0,
+                    flat: 0,
+                    governanceLP: 0,
+                    governanceZombie: 0
+                })
             }),
             address(new DummyProvider()),
             address(0)
