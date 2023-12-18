@@ -54,7 +54,7 @@ async fn preamble(
         time_remaining -= U256::from(delta);
         alice
             .advance_time(
-                fixed!(0), // FIXME: Use a real rate.
+                fixed!(0), // TODO: Use a real rate.
                 delta,
             )
             .await?;

@@ -625,7 +625,6 @@ contract LPMathTest is HyperdriveTest {
         }
     }
 
-    // FIXME: DRY this up and make it a table-driven test.
     function test__calculateMaxShareReservesDelta() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockLPMath lpMath = new MockLPMath();
@@ -985,7 +984,6 @@ contract LPMathTest is HyperdriveTest {
         }
     }
 
-    // FIXME: DRY this up and make it a table driven test.
     function test__calculateDistributeExcessIdleShareProceeds() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockLPMath lpMath = new MockLPMath();
@@ -1384,9 +1382,6 @@ contract LPMathTest is HyperdriveTest {
             assertApproxEqAbs(startingLPSharePrice, endingLPSharePrice, 100);
         }
 
-        // FIXME: We need a case that hits the condition where we can't close
-        // the net long position on the curve.
-        //
         // The pool is net long.
         {
             uint256 shareReserves = 100_000_000e18;
