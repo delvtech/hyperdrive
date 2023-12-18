@@ -529,14 +529,11 @@ library LPMath {
             );
     }
 
-    // FIXME: Todos
-    //
-    // 1. [ ] Ensure that we're rounding in the right direction.
-    //
     /// @dev Calculates the share proceeds to distribute to the withdrawal pool
     ///      assuming that all of the outstanding withdrawal shares will be
     ///      redeemed. The share proceeds are calculated such that the LP share
-    ///      price is conserved.
+    ///      price is conserved. When we need to round, we round down to err on
+    ///      the side of slightly too few shares being paid out.
     /// @param _params The parameters for the distribute excess idle calculation.
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
@@ -551,6 +548,7 @@ library LPMath {
 
         // If the pool is net neutral, we can solve directly.
         if (_params.netCurveTrade == 0) {
+            // NOTE: Round down since this is the final result.
             return
                 _params.startingPresentValue.mulDivDown(
                     _params.withdrawalSharesTotalSupply,
@@ -558,6 +556,8 @@ library LPMath {
                 );
         }
 
+        // NOTE: Round the initial guess down to avoid overshooting.
+        //
         // We make an initial guess for Newton's method by assuming that the
         // ratio of the share reserves delta to the withdrawal shares
         // outstanding is equal to the LP share price. In reality, the
@@ -642,6 +642,8 @@ library LPMath {
                     return shareProceeds;
                 }
 
+                // NOTE: Round the delta down to avoid overshooting.
+                //
                 // We calculate the updated share proceeds `x_n+1` by proceeding
                 // with Newton's method. This is given by:
                 //
@@ -652,21 +654,21 @@ library LPMath {
                 // F(x) = PV(x) * l - PV(0) * (l - w)
                 int256 delta = int256(presentValue.mulDown(lpTotalSupply)) -
                     int256(
-                        _params.startingPresentValue.mulDown(
+                        _params.startingPresentValue.mulUp(
                             _params.activeLpTotalSupply
                         )
                     );
                 if (delta > 0) {
+                    // NOTE: Round the quotient down to avoid overshooting.
                     shareProceeds =
                         shareProceeds +
-                        uint256(delta).divDown(
-                            derivative.mulDown(lpTotalSupply)
-                        );
+                        uint256(delta).divDown(derivative.mulUp(lpTotalSupply));
                 } else if (delta < 0) {
+                    // NOTE: Round the quotient down to avoid overshooting.
                     shareProceeds =
                         shareProceeds -
                         uint256(-delta).divDown(
-                            derivative.mulDown(lpTotalSupply)
+                            derivative.mulUp(lpTotalSupply)
                         );
                 } else {
                     break;
@@ -720,6 +722,8 @@ library LPMath {
                         uint256(-_params.netCurveTrade)
                     );
 
+                // NOTE: Round the delta down to avoid overshooting.
+                //
                 // We calculate the updated share proceeds `x_n+1` by proceeding
                 // with Newton's method. This is given by:
                 //
@@ -730,21 +734,21 @@ library LPMath {
                 // F(x) = PV(x) * l - PV(0) * (l - w)
                 int256 delta = int256(presentValue.mulDown(lpTotalSupply)) -
                     int256(
-                        _params.startingPresentValue.mulDown(
+                        _params.startingPresentValue.mulUp(
                             _params.activeLpTotalSupply
                         )
                     );
                 if (delta > 0) {
+                    // NOTE: Round the quotient down to avoid overshooting.
                     shareProceeds =
                         shareProceeds +
-                        uint256(delta).divDown(
-                            derivative.mulDown(lpTotalSupply)
-                        );
+                        uint256(delta).divDown(derivative.mulUp(lpTotalSupply));
                 } else if (delta < 0) {
+                    // NOTE: Round the quotient down to avoid overshooting.
                     shareProceeds =
                         shareProceeds -
                         uint256(-delta).divDown(
-                            derivative.mulDown(lpTotalSupply)
+                            derivative.mulUp(lpTotalSupply)
                         );
                 } else {
                     break;
