@@ -2,9 +2,13 @@
 pragma solidity 0.8.19;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IHyperdriveGovernedRegistry } from "../interfaces/IHyperdriveGovernedRegistry.sol";
 import { IHyperdriveRegistry } from "../interfaces/IHyperdriveRegistry.sol";
 
-contract HyperdriveRegistry is IHyperdriveRegistry {
+contract HyperdriveRegistry is
+    IHyperdriveRegistry,
+    IHyperdriveGovernedRegistry
+{
     address public governance;
 
     mapping(address hyperdrive => uint256 data) _hyperdriveInfo;
@@ -18,7 +22,7 @@ contract HyperdriveRegistry is IHyperdriveRegistry {
         _;
     }
 
-    /// @inheritdoc IHyperdriveRegistry
+    /// @inheritdoc IHyperdriveGovernedRegistry
     function updateGovernance(
         address _governance
     ) external override onlyGovernance {
@@ -26,7 +30,7 @@ contract HyperdriveRegistry is IHyperdriveRegistry {
         emit GovernanceUpdated(_governance);
     }
 
-    /// @inheritdoc IHyperdriveRegistry
+    /// @inheritdoc IHyperdriveGovernedRegistry
     function setHyperdriveInfo(
         address _hyperdriveInstance,
         uint256 _data
