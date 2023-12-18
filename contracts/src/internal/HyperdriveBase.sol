@@ -361,8 +361,10 @@ abstract contract HyperdriveBase is HyperdriveStorage {
             _governanceFeesAccrued += governanceZombieFeeCollected;
             _marketState.zombieShareReserves -= zombieInterest.toUint128();
 
-            // Ensure that any zombie interest collected by governance
-            // doesn't go into the share reserves.
+            // The zombie interest that was collected (minus the fees paid to 
+            // governance), are reinvested in the share reserves. The share 
+            // adjustment is updated in lock-step to avoid changing the curve's
+            // k invariant. 
             zombieInterest -= governanceZombieFeeCollected;
             _marketState.shareReserves += zombieInterest.toUint128();
             _marketState.shareAdjustment += int128(zombieInterest.toUint128());
