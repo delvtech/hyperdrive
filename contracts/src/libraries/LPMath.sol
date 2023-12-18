@@ -31,6 +31,8 @@ library LPMath {
     ///      to short-circuit.
     uint256 internal constant MAX_SHARE_RESERVES_DELTA_MIN_TOLERANCE = 1e6;
 
+    // TODO: Evaluate the rounding.
+    //
     /// @dev Calculates the new share reserves, share adjustment, and bond
     ///      reserves after liquidity is added or removed from the pool. This
     ///      update is made in such a way that the pool's spot price remains
@@ -134,6 +136,8 @@ library LPMath {
         uint256 shortAverageTimeRemaining;
     }
 
+    // TODO: Evaluate the rounding.
+    //
     /// @dev Calculates the present value LPs capital in the pool and reverts
     ///      if the value is negative.
     /// @param _params The parameters for the present value calculation.
@@ -150,6 +154,8 @@ library LPMath {
         return presentValue;
     }
 
+    // TODO: Evaluate the rounding.
+    //
     /// @dev Calculates the present value LPs capital in the pool and returns
     ///      a flag indicating whether the calculation succeeded or failed.
     /// @param _params The parameters for the present value calculation.
@@ -188,6 +194,8 @@ library LPMath {
         return (uint256(presentValue), true);
     }
 
+    // TODO: Evaluate the rounding.
+    //
     /// @dev Calculates the result of closing the net curve position.
     /// @param _params The parameters for the present value calculation.
     /// @return The impact of closing the net curve position on the share
@@ -341,6 +349,8 @@ library LPMath {
         return (0, true);
     }
 
+    // TODO: Evaluate the rounding.
+    //
     /// @dev Calculates the result of closing the net flat position.
     /// @param _params The parameters for the present value calculation.
     /// @return The impact of closing the net flat position on the share
@@ -381,8 +391,6 @@ library LPMath {
         uint256 originalBondReserves;
     }
 
-    // FIXME: Make the rounding more consistent.
-    //
     /// @dev Calculates the amount of withdrawal shares that can be redeemed and
     ///      the share proceeds the withdrawal pool should receive given the
     ///      pool's current idle liquidity. We use the following algorith to
@@ -465,8 +473,6 @@ library LPMath {
         return (withdrawalSharesRedeemed, shareProceeds);
     }
 
-    // FIXME: Make the rounding more consistent.
-    //
     /// @dev Calculates the amount of withdrawal shares that can be redeemed
     ///      given an amount of shares to remove from the share reserves.
     ///      Assuming that dz is the amount of shares to remove from the
@@ -477,6 +483,8 @@ library LPMath {
     ///                =>
     ///      dl = l - l * (PV(dx) / PV(0))
     ///
+    ///      We round this calculation up to err on the side of slightly too
+    ///      many withdrawal shares being redeemed.
     /// @param _params The parameters for the present value calculation.
     /// @param _shareReservesDelta The amount of shares to remove from the
     ///        share reserves.
@@ -515,7 +523,7 @@ library LPMath {
             _params.withdrawalSharesTotalSupply;
         return
             lpTotalSupply -
-            lpTotalSupply.mulDivUp(
+            lpTotalSupply.mulDivDown(
                 endingPresentValue,
                 _params.startingPresentValue
             );
