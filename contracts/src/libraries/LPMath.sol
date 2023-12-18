@@ -394,10 +394,10 @@ library LPMath {
     ///      2. Solve `y_max_out(dz_max) = y_s * t_s - y_l * t_l` for `dz_max`
     ///         using Newton's method.
     ///      3. Set `dw = (1 - PV(dz_max) / PV(0)) * l`. If `dw <= w`, then
-    ///         proceed to step (5). Otherwise, continue to step (4).
-    ///      4. Set `dw = w` and solve `PV(0) / l = PV(dz) / (l - dw)` for
-    ///         `dz` using Newton's method if `y_l * t_l != y_s * t_s` or
-    ///         directly otherwise.
+    ///         proceed to step (5). Otherwise, set `dw = w` and continue to
+    ///         step (4).
+    ///      4. Solve `PV(0) / l = PV(dz) / (l - dw)` for `dz` using Newton's
+    ///         method if `y_l * t_l != y_s * t_s` or directly otherwise.
     ///      5. Return `dw` and `dz`.
     /// @param _params The parameters for the distribute excess idle.
     /// @return The amount of withdrawal shares that can be redeemed.
@@ -439,7 +439,7 @@ library LPMath {
         ) {
             return (withdrawalSharesRedeemed, maxShareReservesDelta);
         }
-        // Step 4: Otherwise, all of the withdrawal shares are redeemed, and we
+        // Step 3: Otherwise, all of the withdrawal shares are redeemed, and we
         // need to calculate the amount of shares the withdrawal pool should
         // receive.
         else {
@@ -458,6 +458,8 @@ library LPMath {
             return (0, 0);
         }
 
+        // Step 5: Return the amount of withdrawal shares redeemed and the
+        // share proceeds.
         return (withdrawalSharesRedeemed, shareProceeds);
     }
 
