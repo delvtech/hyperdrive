@@ -219,7 +219,7 @@ abstract contract HyperdriveCheckpoint is
         // bond amount divided by the share price.
         shareProceeds = _bondAmount.divDown(_sharePrice);
         uint256 flatFee = shareProceeds.mulDown(_flatFee);
-        governanceFee = flatFee.mulDown(_governanceFee);
+        governanceFee = flatFee.mulDown(_governanceLPFee);
 
         // If the position is a long, the share proceeds are removed from the
         // share reserves. The proceeds are decreased by the flat fee because

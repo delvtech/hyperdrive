@@ -224,7 +224,8 @@ contract OpenShortTest is HyperdriveTest {
         config.fees = IHyperdrive.Fees({
             curve: 1e18,
             flat: 1e18,
-            governance: 1e18
+            governanceLP: 1e18,
+            governanceZombie: 1e18
         });
         deploy(address(deployer), config);
         initialize(alice, apr, contribution);
@@ -255,7 +256,12 @@ contract OpenShortTest is HyperdriveTest {
 
         // 7. deploy a pool with 100% curve fees and 0% gov fees
         config = testConfig(apr);
-        config.fees = IHyperdrive.Fees({ curve: 1e18, flat: 0, governance: 0 });
+        config.fees = IHyperdrive.Fees({
+            curve: 1e18,
+            flat: 0,
+            governanceLP: 0,
+            governanceZombie: 0
+        });
         // Deploy and initialize the new pool
         deploy(address(deployer), config);
         initialize(alice, apr, contribution);
@@ -283,7 +289,8 @@ contract OpenShortTest is HyperdriveTest {
         // governance fees of 0%.
         IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
         config.fees.curve = 1e18;
-        config.fees.governance = 0;
+        config.fees.governanceLP = 0;
+        config.fees.governanceZombie = 0;
         deploy(address(deployer), config);
         initialize(alice, fixedRate, contribution);
 
@@ -295,7 +302,8 @@ contract OpenShortTest is HyperdriveTest {
         // governance fees of 100%.
         config = testConfig(fixedRate);
         config.fees.curve = 1e18;
-        config.fees.governance = 1e18;
+        config.fees.governanceLP = 1e18;
+        config.fees.governanceZombie = 1e18;
         deploy(address(deployer), config);
         initialize(alice, fixedRate, contribution);
 

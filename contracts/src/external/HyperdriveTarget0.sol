@@ -252,7 +252,12 @@ abstract contract HyperdriveTarget0 is
                     timeStretch: _timeStretch,
                     governance: _governance,
                     feeCollector: _feeCollector,
-                    fees: IHyperdrive.Fees(_curveFee, _flatFee, _governanceFee)
+                    fees: IHyperdrive.Fees(
+                        _curveFee,
+                        _flatFee,
+                        _governanceLPFee,
+                        _governanceZombieFee
+                    )
                 })
             )
         );

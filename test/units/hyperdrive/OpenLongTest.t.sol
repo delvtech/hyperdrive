@@ -369,7 +369,7 @@ contract OpenLongTest is HyperdriveTest {
         // Deploy and initialize a new pool with fees.
         // Curve fee is set to 10%.
         // Flat fee is set to 1%.
-        deploy(alice, apr, 0.1e18, 0.01e18, 0);
+        deploy(alice, apr, 0.1e18, 0.01e18, 0, 0);
         initialize(alice, apr, contribution);
 
         // Open a long with fees.

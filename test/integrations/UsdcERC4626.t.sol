@@ -76,8 +76,8 @@ contract UsdcERC4626 is ERC4626ValidationTest {
                 hyperdriveGovernance: bob,
                 defaultPausers: defaults,
                 feeCollector: bob,
-                fees: IHyperdrive.Fees(0, 0, 0),
-                maxFees: IHyperdrive.Fees(1e18, 1e18, 1e18),
+                fees: IHyperdrive.Fees(0, 0, 0, 0),
+                maxFees: IHyperdrive.Fees(1e18, 1e18, 1e18, 1e18),
                 linkerFactory: address(forwarderFactory),
                 linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
             })

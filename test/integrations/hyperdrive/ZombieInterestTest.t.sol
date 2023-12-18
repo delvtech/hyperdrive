@@ -83,7 +83,7 @@ contract ZombieInterestTest is HyperdriveTest {
     ) internal {
         // Initialize the pool with capital.
         uint256 fixedRate = 0.035e18;
-        deploy(bob, fixedRate, 1e18, 0, 0, 0);
+        deploy(bob, fixedRate, 1e18, 0, 0, 0, 0);
         initialize(bob, fixedRate, 2 * MINIMUM_SHARE_RESERVES);
 
         // Alice adds liquidity.
@@ -310,7 +310,7 @@ contract ZombieInterestTest is HyperdriveTest {
     ) internal {
         // Initialize the pool with capital.
         uint256 fixedRate = 0.035e18;
-        deploy(bob, fixedRate, 1e18, 0, 0, 0);
+        deploy(bob, fixedRate, 1e18, 0, 0, 0, 0);
         initialize(bob, fixedRate, 2 * MINIMUM_SHARE_RESERVES);
 
         // Alice adds liquidity.
@@ -432,7 +432,7 @@ contract ZombieInterestTest is HyperdriveTest {
     // This test just demonstrates that shorts redeemed late do not receive zombie interest.
     function test_zombie_short() external {
         // Initialize the pool with capital.
-        deploy(bob, 0.035e18, 1e18, 0, 0, 0);
+        deploy(bob, 0.035e18, 1e18, 0, 0, 0, 0);
         initialize(bob, 0.035e18, 2 * MINIMUM_SHARE_RESERVES);
 
         // Alice adds liquidity.
@@ -505,7 +505,7 @@ contract ZombieInterestTest is HyperdriveTest {
         uint256 shareReserves1;
         {
             // Initialize the pool with capital.
-            deploy(bob, fixedRate, 1e18, 0, 0, 0);
+            deploy(bob, fixedRate, 1e18, 0, 0, 0, 0);
             initialize(bob, fixedRate, 2 * MINIMUM_SHARE_RESERVES);
 
             // Alice adds liquidity.
@@ -550,7 +550,7 @@ contract ZombieInterestTest is HyperdriveTest {
         uint256 shareReserves2;
         {
             // Initialize the pool with capital.
-            deploy(bob, fixedRate, 1e18, 0, 0, 0);
+            deploy(bob, fixedRate, 1e18, 0, 0, 0, 0);
             assertEq(baseToken.balanceOf(address(hyperdrive)), 0);
             initialize(bob, fixedRate, 2 * MINIMUM_SHARE_RESERVES);
 

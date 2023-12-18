@@ -29,8 +29,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: bob,
                 defaultPausers: defaults,
-                fees: IHyperdrive.Fees(0, 0, 0),
-                maxFees: IHyperdrive.Fees(0, 0, 0),
+                fees: IHyperdrive.Fees(0, 0, 0, 0),
+                maxFees: IHyperdrive.Fees(0, 0, 0, 0),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
             })
@@ -41,15 +41,19 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
         // Curve fee can not exceed maximum curve fee.
         vm.expectRevert(IHyperdrive.FeeTooHigh.selector);
-        factory.updateFees(IHyperdrive.Fees(2e18, 0, 0));
+        factory.updateFees(IHyperdrive.Fees(2e18, 0, 0, 0));
 
         // Flat fee can not exceed maximum flat fee.
         vm.expectRevert(IHyperdrive.FeeTooHigh.selector);
-        factory.updateFees(IHyperdrive.Fees(0, 2e18, 0));
+        factory.updateFees(IHyperdrive.Fees(0, 2e18, 0, 0));
 
-        // Governance fee can not exceed maximum governance fee.
+        // Governance LP fee can not exceed maximum governance LP fee.
         vm.expectRevert(IHyperdrive.FeeTooHigh.selector);
-        factory.updateFees(IHyperdrive.Fees(0, 0, 2e18));
+        factory.updateFees(IHyperdrive.Fees(0, 0, 2e18, 0));
+
+        // Governance Zombie fee can not exceed maximum governance zombie fee.
+        vm.expectRevert(IHyperdrive.FeeTooHigh.selector);
+        factory.updateFees(IHyperdrive.Fees(0, 0, 0, 2e18));
     }
 
     // Ensure that the maximum curve fee can not exceed 100%.
@@ -62,8 +66,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: bob,
                 defaultPausers: defaults,
-                fees: IHyperdrive.Fees(0, 0, 0),
-                maxFees: IHyperdrive.Fees(0, 0, 0),
+                fees: IHyperdrive.Fees(0, 0, 0, 0),
+                maxFees: IHyperdrive.Fees(0, 0, 0, 0),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
             });
@@ -80,11 +84,17 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         new HyperdriveFactory(config);
         config.maxFees.flat = 0;
 
-        // Ensure that the maximum governance fee can not exceed 100%.
+        // Ensure that the maximum governance LP fee can not exceed 100%.
         vm.expectRevert(IHyperdrive.MaxFeeTooHigh.selector);
-        config.maxFees.governance = 2e18;
+        config.maxFees.governanceLP = 2e18;
         new HyperdriveFactory(config);
-        config.maxFees.governance = 0;
+        config.maxFees.governanceLP = 0;
+
+        // Ensure that the maximum governance zombie fee can not exceed 100%.
+        vm.expectRevert(IHyperdrive.MaxFeeTooHigh.selector);
+        config.maxFees.governanceZombie = 2e18;
+        new HyperdriveFactory(config);
+        config.maxFees.governanceZombie = 0;
     }
 }
 
@@ -136,8 +146,8 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
                 governance: alice,
                 hyperdriveGovernance: bob,
                 feeCollector: bob,
-                fees: IHyperdrive.Fees(0, 0, 0),
-                maxFees: IHyperdrive.Fees(0, 0, 0),
+                fees: IHyperdrive.Fees(0, 0, 0, 0),
+                maxFees: IHyperdrive.Fees(0, 0, 0, 0),
                 defaultPausers: defaults,
                 linkerFactory: address(forwarderFactory),
                 linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
@@ -155,7 +165,7 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             timeStretch: HyperdriveUtils.calculateTimeStretch(APR),
             governance: alice,
             feeCollector: bob,
-            fees: IHyperdrive.Fees(0, 0, 0),
+            fees: IHyperdrive.Fees(0, 0, 0, 0),
             linkerFactory: address(forwarderFactory),
             linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
         });
@@ -479,8 +489,8 @@ contract HyperdriveDeployerGetterTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: bob,
                 defaultPausers: defaults,
-                fees: IHyperdrive.Fees(0, 0, 0),
-                maxFees: IHyperdrive.Fees(0, 0, 0),
+                fees: IHyperdrive.Fees(0, 0, 0, 0),
+                maxFees: IHyperdrive.Fees(0, 0, 0, 0),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
             })
@@ -623,8 +633,8 @@ contract HyperdriveFactoryAddHyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: bob,
                 defaultPausers: defaults,
-                fees: IHyperdrive.Fees(0, 0, 0),
-                maxFees: IHyperdrive.Fees(0, 0, 0),
+                fees: IHyperdrive.Fees(0, 0, 0, 0),
+                maxFees: IHyperdrive.Fees(0, 0, 0, 0),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
             })
@@ -697,8 +707,8 @@ contract HyperdriveFactoryRemoveInstanceTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: bob,
                 defaultPausers: defaults,
-                fees: IHyperdrive.Fees(0, 0, 0),
-                maxFees: IHyperdrive.Fees(0, 0, 0),
+                fees: IHyperdrive.Fees(0, 0, 0, 0),
+                maxFees: IHyperdrive.Fees(0, 0, 0, 0),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
             })

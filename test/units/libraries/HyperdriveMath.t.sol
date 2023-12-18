@@ -829,7 +829,7 @@ contract HyperdriveMathTest is HyperdriveTest {
     ) external {
         // Deploy Hyperdrive.
         fixedRate = fixedRate.normalizeToRange(0.001e18, 0.5e18);
-        deploy(alice, fixedRate, 0, 0, 0);
+        deploy(alice, fixedRate, 0, 0, 0, 0);
 
         // Initialize the Hyperdrive pool.
         contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
@@ -863,7 +863,7 @@ contract HyperdriveMathTest is HyperdriveTest {
     ) external {
         // Deploy Hyperdrive.
         fixedRate = fixedRate.normalizeToRange(0.001e18, 0.5e18);
-        deploy(alice, fixedRate, 0, 0, 0);
+        deploy(alice, fixedRate, 0, 0, 0, 0);
 
         // Initialize the Hyperdrive pool.
         contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
@@ -925,7 +925,7 @@ contract HyperdriveMathTest is HyperdriveTest {
     ) internal {
         // Deploy Hyperdrive.
         fixedRate = fixedRate.normalizeToRange(0.001e18, 0.5e18);
-        deploy(alice, fixedRate, 0, 0, 0);
+        deploy(alice, fixedRate, 0, 0, 0, 0);
 
         // Initialize the Hyperdrive pool.
         contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
@@ -985,7 +985,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 minimumShareReserves: config.minimumShareReserves,
                 curveFee: config.fees.curve,
                 flatFee: config.fees.flat,
-                governanceFee: config.fees.governance
+                governanceLPFee: config.fees.governanceLP
             }),
             hyperdrive.getCheckpointExposure(hyperdrive.latestCheckpoint()),
             maxIterations
@@ -1142,7 +1142,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 minimumShareReserves: config.minimumShareReserves,
                 curveFee: config.fees.curve,
                 flatFee: config.fees.flat,
-                governanceFee: config.fees.governance
+                governanceLPFee: config.fees.governanceLP
             }),
             hyperdrive.getCheckpointExposure(hyperdrive.latestCheckpoint()),
             7
