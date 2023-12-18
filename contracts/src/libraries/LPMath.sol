@@ -1324,10 +1324,6 @@ library LPMath {
         return derivative;
     }
 
-    // FIXME: Todos
-    //
-    // 1. [ ] Check that we're rounding in the right direction.
-    //
     /// @dev Calculates the derivative of `calculateMaxBuyBondsOut`. This
     ///      derivative is given by:
     ///
@@ -1343,7 +1339,8 @@ library LPMath {
     ///      )
     ///
     ///      This function actually calculates the negatation of the derivative
-    ///      to avoid integer underflows.
+    ///      to avoid integer underflows. We round up to avoid overshooting
+    ///      the optimal solution in Newton's method.
     /// @param _params The parameters for the calculation.
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
@@ -1353,6 +1350,9 @@ library LPMath {
         DistributeExcessIdleParams memory _params,
         uint256 _originalEffectiveShareReserves
     ) internal pure returns (uint256, bool) {
+        // NOTE: Round down since this is on the rhs of the final subtraction.
+        //
+        // derivative = c * (mu * z_e(x)) ** -t_s + (y / z_e) * (y(x)) ** -t_s
         uint256 effectiveShareReserves = HyperdriveMath
             .calculateEffectiveShareReserves(
                 _params.presentValueParams.shareReserves,
@@ -1372,33 +1372,60 @@ library LPMath {
                     )
                 )
             );
-        derivative = derivative.mulDown(
-            YieldSpaceMath
-                .kDown(
-                    effectiveShareReserves,
-                    _params.presentValueParams.bondReserves,
-                    ONE - _params.presentValueParams.timeStretch,
-                    _params.presentValueParams.sharePrice,
-                    _params.presentValueParams.initialSharePrice
-                )
-                .pow(
-                    // TODO: Account for rounding here.
+
+        // NOTE: Round down since this is on the rhs of the final subtraction.
+        //
+        // derivative = derivative * (k(x) ** (t_s / (1 - t_s)))
+        uint256 k = YieldSpaceMath.kDown(
+            effectiveShareReserves,
+            _params.presentValueParams.bondReserves,
+            ONE - _params.presentValueParams.timeStretch,
+            _params.presentValueParams.sharePrice,
+            _params.presentValueParams.initialSharePrice
+        );
+        if (k >= ONE) {
+            // NOTE: Round the exponent down since this rounds the result down.
+            derivative = derivative.mulDown(
+                k.pow(
                     _params.presentValueParams.timeStretch.divDown(
                         ONE - _params.presentValueParams.timeStretch
                     )
                 )
-        );
+            );
+        } else {
+            // NOTE: Round the exponent up since this rounds the result down.
+            derivative = derivative.mulDown(
+                k.pow(
+                    _params.presentValueParams.timeStretch.divUp(
+                        ONE - _params.presentValueParams.timeStretch
+                    )
+                )
+            );
+        }
+
+        // NOTE: Round down since this is on the rhs of the final subtraction.
+        //
+        // derivative = derivative / ((c / mu) + 1) ** (1 / (1 - t_s))
         derivative = derivative.divDown(
-            (_params.presentValueParams.sharePrice.divUp(
+            (// NOTE: Round up the divisor since this rounds the quotient
+            // down.
+            _params.presentValueParams.sharePrice.divUp(
                 _params.presentValueParams.initialSharePrice
             ) + ONE).pow(
-                    // TODO: Account for rounding here.
-                    ONE.divDown(ONE - _params.presentValueParams.timeStretch)
+                    // NOTE: Round up the exponent since the base is greater than 1
+                    //       and rounding the divisor up rounds the quotient down.
+                    ONE.divUp(ONE - _params.presentValueParams.timeStretch)
                 )
         );
-        uint256 delta = _params.originalBondReserves.divDown(
+
+        // NOTE: Round up since this is on the lhs of the final subtraction.
+        //
+        // delta = y / z_e
+        uint256 delta = _params.originalBondReserves.divUp(
             _originalEffectiveShareReserves
         );
+
+        // derivative = delta - derivative
         if (derivative <= delta) {
             derivative = delta - derivative;
         } else {
@@ -1406,17 +1433,22 @@ library LPMath {
             // indicating that the derivative couldn't be computed.
             return (0, false);
         }
+
+        // NOTE: Round up to round the final result up.
+        //
+        // derivative = derivative * (1 - (zeta / z))
         if (_params.originalShareAdjustment >= 0) {
             derivative = (ONE -
                 uint256(_params.originalShareAdjustment).divDown(
                     _params.originalShareReserves
-                )).mulDown(derivative);
+                )).mulUp(derivative);
         } else {
             derivative = (ONE +
-                uint256(-_params.originalShareAdjustment).divDown(
+                uint256(-_params.originalShareAdjustment).divUp(
                     _params.originalShareReserves
-                )).mulDown(derivative);
+                )).mulUp(derivative);
         }
+
         return (derivative, true);
     }
 }
