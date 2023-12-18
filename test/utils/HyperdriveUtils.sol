@@ -190,7 +190,7 @@ library HyperdriveUtils {
                 minimumShareReserves: poolConfig.minimumShareReserves,
                 curveFee: poolConfig.fees.curve,
                 flatFee: poolConfig.fees.flat,
-                governanceFee: poolConfig.fees.governance
+                governanceLPFee: poolConfig.fees.governanceLP
             }),
             _hyperdrive.getCheckpointExposure(_hyperdrive.latestCheckpoint()),
             _maxIterations
@@ -231,7 +231,7 @@ library HyperdriveUtils {
                     minimumShareReserves: poolConfig.minimumShareReserves,
                     curveFee: poolConfig.fees.curve,
                     flatFee: poolConfig.fees.flat,
-                    governanceFee: poolConfig.fees.governance
+                    governanceLPFee: poolConfig.fees.governanceLP
                 }),
                 _hyperdrive.getCheckpointExposure(
                     _hyperdrive.latestCheckpoint()
@@ -261,7 +261,7 @@ library HyperdriveUtils {
         uint256 minimumShareReserves;
         uint256 curveFee;
         uint256 flatFee;
-        uint256 governanceFee;
+        uint256 governanceLPFee;
     }
 
     /// @dev Gets the max long that can be opened given a budget.
@@ -613,7 +613,7 @@ library HyperdriveUtils {
             _params.minimumShareReserves).mulDivDown(_params.sharePrice, 2e18);
         estimate = estimate.divDown(
             ONE.divDown(_estimatePrice) +
-                _params.governanceFee.mulDown(_params.curveFee).mulDown(
+                _params.governanceLPFee.mulDown(_params.curveFee).mulDown(
                     ONE - _spotPrice
                 ) -
                 ONE -
@@ -680,7 +680,7 @@ library HyperdriveUtils {
             _baseAmount,
             _spotPrice,
             _params.curveFee,
-            _params.governanceFee
+            _params.governanceLPFee
         );
         uint256 shareReserves = _params.shareReserves +
             _baseAmount.divDown(_params.sharePrice) -
@@ -750,7 +750,7 @@ library HyperdriveUtils {
         }
 
         // Finish computing the derivative.
-        derivative += _params.governanceFee.mulDown(_params.curveFee).mulDown(
+        derivative += _params.governanceLPFee.mulDown(_params.curveFee).mulDown(
             ONE - _spotPrice
         );
         derivative -= ONE;
@@ -910,15 +910,15 @@ library HyperdriveUtils {
     /// @param _baseAmount The base amount, $x$.
     /// @param _spotPrice The spot price, $p$.
     /// @param _curveFee The curve fee, $\phi_{c}$.
-    /// @param _governanceFee The governance fee, $\phi_{g}$.
+    /// @param _governanceLPFee The governance fee, $\phi_{g}$.
     function calculateLongGovernanceFee(
         uint256 _baseAmount,
         uint256 _spotPrice,
         uint256 _curveFee,
-        uint256 _governanceFee
+        uint256 _governanceLPFee
     ) internal pure returns (uint256) {
         return
-            _governanceFee.mulDown(_spotPrice).mulDown(
+            _governanceLPFee.mulDown(_spotPrice).mulDown(
                 calculateLongCurveFee(_baseAmount, _spotPrice, _curveFee)
             );
     }
@@ -1151,7 +1151,7 @@ library HyperdriveUtils {
             guess.divDown(
                 estimatePrice -
                     _params.curveFee.mulDown(ONE - _spotPrice) +
-                    _params.governanceFee.mulDown(_params.curveFee).mulDown(
+                    _params.governanceLPFee.mulDown(_params.curveFee).mulDown(
                         ONE - _spotPrice
                     )
             );
@@ -1237,7 +1237,7 @@ library HyperdriveUtils {
                         _shortAmount,
                         _spotPrice,
                         _params.curveFee,
-                        _params.governanceFee
+                        _params.governanceLPFee
                     )).divDown(_params.sharePrice));
         uint256 exposure = (_params.longExposure -
             uint256(_checkpointExposure.max(0))).divDown(_params.sharePrice);
@@ -1284,7 +1284,7 @@ library HyperdriveUtils {
         uint256 rhs = _params
             .curveFee
             .mulDown(ONE - _spotPrice)
-            .mulDown(ONE - _params.governanceFee)
+            .mulDown(ONE - _params.governanceLPFee)
             .divDown(_params.sharePrice);
         if (lhs >= rhs) {
             return (lhs - rhs, true);
@@ -1354,16 +1354,16 @@ library HyperdriveUtils {
     /// @param _bondAmount The bond amount.
     /// @param _spotPrice The spot price.
     /// @param _curveFee The curve fee parameter.
-    /// @param _governanceFee The governance fee parameter.
+    /// @param _governanceLPFee The governance fee parameter.
     /// @return The governance fee.
     function calculateShortGovernanceFee(
         uint256 _bondAmount,
         uint256 _spotPrice,
         uint256 _curveFee,
-        uint256 _governanceFee
+        uint256 _governanceLPFee
     ) internal pure returns (uint256) {
         return
-            _governanceFee.mulDown(
+            _governanceLPFee.mulDown(
                 calculateShortCurveFee(_bondAmount, _spotPrice, _curveFee)
             );
     }

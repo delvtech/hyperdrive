@@ -47,10 +47,12 @@ contract DevnetMigration is Script {
         // factory configuration
         uint256 factoryCurveFee;
         uint256 factoryFlatFee;
-        uint256 factoryGovernanceFee;
+        uint256 factoryGovernanceLPFee;
+        uint256 factoryGovernanceZombieFee;
         uint256 factoryMaxCurveFee;
         uint256 factoryMaxFlatFee;
-        uint256 factoryMaxGovernanceFee;
+        uint256 factoryMaxGovernanceLPFee;
+        uint256 factoryMaxGovernanceZombieFee;
         // hyperdrive configuration
         uint256 hyperdriveContribution;
         uint256 hyperdriveFixedRate;
@@ -89,9 +91,13 @@ contract DevnetMigration is Script {
             ),
             factoryCurveFee: vm.envOr("FACTORY_CURVE_FEE", uint256(0.1e18)),
             factoryFlatFee: vm.envOr("FACTORY_FLAT_FEE", uint256(0.0005e18)),
-            factoryGovernanceFee: vm.envOr(
-                "FACTORY_GOVERNANCE_FEE",
-                uint256(0.15e18)
+            factoryGovernanceLPFee: vm.envOr(
+                "FACTORY_GOVERNANCE_LP_FEE",
+                uint256(0.01e18)
+            ),
+            factoryGovernanceZombieFee: vm.envOr(
+                "FACTORY_GOVERNANCE_ZOMBIE_FEE",
+                uint256(0.1e18)
             ),
             factoryMaxCurveFee: vm.envOr(
                 "FACTORY_MAX_CURVE_FEE",
@@ -101,8 +107,12 @@ contract DevnetMigration is Script {
                 "FACTORY_MAX_FLAT_FEE",
                 uint256(0.0015e18)
             ),
-            factoryMaxGovernanceFee: vm.envOr(
-                "FACTORY_MAX_GOVERNANCE_FEE",
+            factoryMaxGovernanceLPFee: vm.envOr(
+                "FACTORY_MAX_GOVERNANCE_LP_FEE",
+                uint256(0.3e18)
+            ),
+            factoryMaxGovernanceZombieFee: vm.envOr(
+                "FACTORY_MAX_GOVERNANCE_ZOMBIE_FEE",
                 uint256(0.3e18)
             ),
             hyperdriveContribution: vm.envOr(
@@ -191,12 +201,14 @@ contract DevnetMigration is Script {
                     fees: IHyperdrive.Fees({
                         curve: config.factoryCurveFee,
                         flat: config.factoryFlatFee,
-                        governance: config.factoryGovernanceFee
+                        governanceLP: config.factoryGovernanceLPFee,
+                        governanceZombie: config.factoryGovernanceZombieFee
                     }),
                     maxFees: IHyperdrive.Fees({
                         curve: config.factoryMaxCurveFee,
                         flat: config.factoryMaxFlatFee,
-                        governance: config.factoryMaxGovernanceFee
+                        governanceLP: config.factoryMaxGovernanceLPFee,
+                        governanceZombie: config.factoryMaxGovernanceZombieFee
                     }),
                     defaultPausers: defaultPausers,
                     linkerFactory: address(forwarderFactory),
@@ -230,7 +242,8 @@ contract DevnetMigration is Script {
                     fees: IHyperdrive.Fees({
                         curve: config.factoryCurveFee,
                         flat: config.factoryFlatFee,
-                        governance: config.factoryGovernanceFee
+                        governanceLP: config.factoryGovernanceLPFee,
+                        governanceZombie: config.factoryGovernanceZombieFee
                     })
                 });
             address hyperdriveDeployer = address(

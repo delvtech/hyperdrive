@@ -72,8 +72,11 @@ contract HyperdriveFactory {
     /// @dev The maximum flat fee that can be used as a factory default.
     uint256 internal immutable maxFlatFee;
 
-    /// @dev The maximum governance fee that can be used as a factory default.
-    uint256 internal immutable maxGovernanceFee;
+    /// @dev The maximum governance LP fee that can be used as a factory default.
+    uint256 internal immutable maxGovernanceLPFee;
+
+    /// @dev The maximum governance zombie fee that can be used as a factory default.
+    uint256 internal immutable maxGovernanceZombieFee;
 
     /// @dev The defaultPausers used when new instances are deployed.
     address[] internal _defaultPausers;
@@ -118,14 +121,21 @@ contract HyperdriveFactory {
         // constraint.
         maxCurveFee = _factoryConfig.maxFees.curve;
         maxFlatFee = _factoryConfig.maxFees.flat;
-        maxGovernanceFee = _factoryConfig.maxFees.governance;
-        if (maxCurveFee > ONE || maxFlatFee > ONE || maxGovernanceFee > ONE) {
+        maxGovernanceLPFee = _factoryConfig.maxFees.governanceLP;
+        maxGovernanceZombieFee = _factoryConfig.maxFees.governanceZombie;
+        if (
+            maxCurveFee > ONE ||
+            maxFlatFee > ONE ||
+            maxGovernanceLPFee > ONE ||
+            maxGovernanceZombieFee > ONE
+        ) {
             revert IHyperdrive.MaxFeeTooHigh();
         }
         if (
             _factoryConfig.fees.curve > maxCurveFee ||
             _factoryConfig.fees.flat > maxFlatFee ||
-            _factoryConfig.fees.governance > maxGovernanceFee
+            _factoryConfig.fees.governanceLP > maxGovernanceLPFee ||
+            _factoryConfig.fees.governanceZombie > maxGovernanceZombieFee
         ) {
             revert IHyperdrive.FeeTooHigh();
         }
@@ -198,7 +208,8 @@ contract HyperdriveFactory {
         if (
             _fees.curve > maxCurveFee ||
             _fees.flat > maxFlatFee ||
-            _fees.governance > maxGovernanceFee
+            _fees.governanceLP > maxGovernanceLPFee ||
+            _fees.governanceZombie > maxGovernanceZombieFee
         ) {
             revert IHyperdrive.FeeTooHigh();
         }

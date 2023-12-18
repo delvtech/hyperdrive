@@ -65,8 +65,8 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: bob,
                 defaultPausers: defaults,
-                fees: IHyperdrive.Fees(0, 0, 0),
-                maxFees: IHyperdrive.Fees(1e18, 1e18, 1e18),
+                fees: IHyperdrive.Fees(0, 0, 0, 0),
+                maxFees: IHyperdrive.Fees(1e18, 1e18, 1e18, 1e18),
                 linkerFactory: address(forwarderFactory),
                 linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
             })

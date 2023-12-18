@@ -141,7 +141,9 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         /// @dev The LP fee applied to the flat portion of a trade.
         uint256 flat;
         /// @dev The portion of the LP fee that goes to governance.
-        uint256 governance;
+        uint256 governanceLP;
+        /// @dev The portion of the zombie interest that goes to governance.
+        uint256 governanceZombie;
     }
 
     struct PoolDeployConfig {

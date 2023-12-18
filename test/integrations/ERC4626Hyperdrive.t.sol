@@ -75,8 +75,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: bob,
                 defaultPausers: defaults,
-                fees: IHyperdrive.Fees(0, 0, 0),
-                maxFees: IHyperdrive.Fees(0, 0, 0),
+                fees: IHyperdrive.Fees(0, 0, 0, 0),
+                maxFees: IHyperdrive.Fees(0, 0, 0, 0),
                 linkerFactory: address(forwarderFactory),
                 linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
             })
@@ -99,7 +99,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             timeStretch: ONE.divDown(22.186877016851916266e18),
             governance: alice,
             feeCollector: bob,
-            fees: IHyperdrive.Fees(0, 0, 0)
+            fees: IHyperdrive.Fees(0, 0, 0, 0)
         });
         address target0 = address(new ERC4626Target0(config, pool));
         address target1 = address(new ERC4626Target1(config, pool));
@@ -249,7 +249,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
                 governance: alice,
                 feeCollector: bob,
-                fees: IHyperdrive.Fees(0, 0, 0)
+                fees: IHyperdrive.Fees(0, 0, 0, 0)
             });
         dai.approve(address(factory), type(uint256).max);
         hyperdrive = factory.deployAndInitialize(
@@ -300,7 +300,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
                 governance: alice,
                 feeCollector: bob,
-                fees: IHyperdrive.Fees(0, 0, 0)
+                fees: IHyperdrive.Fees(0, 0, 0, 0)
             });
         dai.approve(address(factory), type(uint256).max);
         hyperdrive = factory.deployAndInitialize(
@@ -344,7 +344,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 timeStretch: HyperdriveUtils.calculateTimeStretch(0.01e18),
                 governance: alice,
                 feeCollector: bob,
-                fees: IHyperdrive.Fees(0, 0, 0)
+                fees: IHyperdrive.Fees(0, 0, 0, 0)
             });
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         factory.deployAndInitialize(

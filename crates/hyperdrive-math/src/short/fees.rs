@@ -19,7 +19,7 @@ impl State {
         short_amount: FixedPoint,
         spot_price: FixedPoint,
     ) -> FixedPoint {
-        self.governance_fee() * self.open_short_curve_fee(short_amount, spot_price)
+        self.governance_lp_fee() * self.open_short_curve_fee(short_amount, spot_price)
     }
 
     /// Gets the curve fee paid by shorts for a given bond amount.

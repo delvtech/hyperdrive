@@ -274,7 +274,8 @@ impl TestChain {
             fees: Fees {
                 curve: uint256!(0.05e18),
                 flat: uint256!(0.0005e18),
-                governance: uint256!(0.15e18),
+                governance_lp: uint256!(0.15e18),
+                governance_zombie: uint256!(0.15e18),
             },
         };
         let target0 = ERC4626Target0::deploy(client.clone(), (config.clone(), pool.address()))?
@@ -613,7 +614,8 @@ mod tests {
             Fees {
                 curve: uint256!(0.05e18),
                 flat: uint256!(0.0005e18),
-                governance: uint256!(0.15e18),
+                governance_lp: uint256!(0.15e18),
+                governance_zombie: uint256!(0.15e18),
             }
         );
 

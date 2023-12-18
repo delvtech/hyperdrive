@@ -350,12 +350,27 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         uint256 _newSharePrice
     ) internal {
         if (_newSharePrice > _oldSharePrice && _oldSharePrice > 0) {
+            // Calculate the zombie interest to be collected in shares.
             // dz * (c1 - c0)/c1
             uint256 zombieInterest = _amount.mulDivDown(
                 _newSharePrice - _oldSharePrice,
                 _newSharePrice
             );
             _marketState.zombieShareReserves -= zombieInterest.toUint128();
+
+            // Calculate and collect the governance fee.
+            // The fee is calculated in terms of shares and paid to
+            // governance.
+            uint256 governanceZombieFeeCollected = zombieInterest.mulDown(
+                _governanceZombieFee
+            );
+            _governanceFeesAccrued += governanceZombieFeeCollected;
+
+            // The zombie interest that was collected (minus the fees paid to
+            // governance), are reinvested in the share reserves. The share
+            // adjustment is updated in lock-step to avoid changing the curve's
+            // k invariant.
+            zombieInterest -= governanceZombieFeeCollected;
             _marketState.shareReserves += zombieInterest.toUint128();
             _marketState.shareAdjustment += int128(zombieInterest.toUint128());
         }
@@ -420,7 +435,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         // We leave the governance fee in terms of bonds:
         // governanceCurveFee = curve_fee * p * phi_gov
         //                    = bonds * phi_gov
-        governanceCurveFee = curveFee.mulDown(_governanceFee);
+        governanceCurveFee = curveFee.mulDown(_governanceLPFee);
     }
 
     /// @dev Calculates the fees that go to the LPs and governance.
@@ -469,7 +484,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         //
         // governanceCurveFee = curve_fee * phi_gov
         //                    = shares * phi_gov
-        governanceCurveFee = curveFee.mulDown(_governanceFee);
+        governanceCurveFee = curveFee.mulDown(_governanceLPFee);
 
         // The flat portion of the fee is taken from the matured bonds.
         // Since a matured bond is worth 1 base, it is appropriate to consider
@@ -493,7 +508,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         // The totalGovernanceFee is the sum of the curve and flat governance fees.
         totalGovernanceFee =
             governanceCurveFee +
-            flatFee.mulDown(_governanceFee);
+            flatFee.mulDown(_governanceLPFee);
     }
 
     /// @dev Converts input to base if necessary according to what is specified in options.
