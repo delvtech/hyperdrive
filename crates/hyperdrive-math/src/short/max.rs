@@ -450,9 +450,10 @@ impl State {
         spot_price: FixedPoint,
     ) -> Option<FixedPoint> {
         let lhs = self.short_principal_derivative(short_amount);
-        let rhs =
-            self.curve_fee() * (fixed!(1e18) - spot_price) * (fixed!(1e18) - self.governance_lp_fee())
-                / self.share_price();
+        let rhs = self.curve_fee()
+            * (fixed!(1e18) - spot_price)
+            * (fixed!(1e18) - self.governance_lp_fee())
+            / self.share_price();
         if lhs >= rhs {
             Some(lhs - rhs)
         } else {

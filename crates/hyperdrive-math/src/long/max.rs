@@ -375,7 +375,9 @@ impl State {
         let maybe_derivative = self.long_amount_derivative(base_amount);
         maybe_derivative.map(|derivative| {
             (derivative
-                + self.governance_lp_fee() * self.curve_fee() * (fixed!(1e18) - self.get_spot_price())
+                + self.governance_lp_fee()
+                    * self.curve_fee()
+                    * (fixed!(1e18) - self.get_spot_price())
                 - fixed!(1e18))
             .mul_div_down(fixed!(1e18), self.share_price())
         })
