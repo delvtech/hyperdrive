@@ -381,6 +381,8 @@ library LPMath {
         uint256 originalBondReserves;
     }
 
+    // FIXME: Make the rounding more consistent.
+    //
     /// @dev Calculates the amount of withdrawal shares that can be redeemed and
     ///      the share proceeds the withdrawal pool should receive given the
     ///      pool's current idle liquidity. We use the following algorith to
@@ -463,6 +465,8 @@ library LPMath {
         return (withdrawalSharesRedeemed, shareProceeds);
     }
 
+    // FIXME: Make the rounding more consistent.
+    //
     /// @dev Calculates the amount of withdrawal shares that can be redeemed
     ///      given an amount of shares to remove from the share reserves.
     ///      Assuming that dz is the amount of shares to remove from the
@@ -748,6 +752,8 @@ library LPMath {
         return shareProceeds;
     }
 
+    // FIXME: Make the rounding more consistent.
+    //
     /// @dev When the pool is net long and we have begun to mark longs to zero,
     ///      we can solve directly for the share proceeds as:
     ///
@@ -832,6 +838,7 @@ library LPMath {
         return
             lpSharePriceAfter >= lpSharePriceBefore &&
             lpSharePriceAfter <=
+            // NOTE: Round down to make the check stricter.
             lpSharePriceBefore.mulDown(ONE + SHARE_PROCEEDS_MIN_TOLERANCE);
     }
 
@@ -950,16 +957,20 @@ library LPMath {
                 // guess.
                 maxShareReservesDelta = maybeMaxShareReservesDelta;
 
+                // NOTE: Round down to make the check stricter.
+                //
                 // If we are within the minimum tolerance, short-circuit.
                 if (
                     maxBondAmount <=
-                    netCurveTrade.mulUp(
+                    netCurveTrade.mulDown(
                         ONE + MAX_SHARE_RESERVES_DELTA_MIN_TOLERANCE
                     )
                 ) {
                     return maxShareReservesDelta;
                 }
 
+                // NOTE: Round down to avoid overshooting.
+                //
                 // We calculate the updated max share reserves delta `x_n+1` by
                 // proceeding with Newton's method. This is given by:
                 //
@@ -980,6 +991,8 @@ library LPMath {
             // If the maximum amount of bonds that can be purchased is greater
             // than the net curve trade, then we're above the optimal point.
             else if (maxBondAmount < netCurveTrade) {
+                // NOTE: Round down to avoid overshooting.
+                //
                 // We calculate the updated max share reserves delta `x_n+1` by
                 // proceeding with Newton's method. This is given by:
                 //
@@ -1049,8 +1062,6 @@ library LPMath {
         return maxShareReservesDelta;
     }
 
-    // FIXME: Make sure that we round consistently.
-    //
     /// @dev Calculates the initial guess to use for iteratively solving for the
     ///      maximum share reserves delta. The maximum amount of bonds that can
     ///      be purchased as a function of the shares removed from the share
@@ -1068,6 +1079,7 @@ library LPMath {
     ///                netCurveTrade + (k(0) / ((c / mu) + 1)) ** (1 / (1 - t_s))
     ///            ) / ((y / z_e) * (1 - zeta / z)))
     ///
+    ///      We round this initial guess down to avoid overshooting.
     /// @param _params The parameters for the distribute excess idle calculation.
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
@@ -1078,24 +1090,44 @@ library LPMath {
         uint256 _originalEffectiveShareReserves,
         uint256 _netCurveTrade
     ) internal pure returns (uint256) {
-        uint256 lhs = _netCurveTrade +
-            YieldSpaceMath
-                .kDown(
-                    _originalEffectiveShareReserves,
-                    _params.originalBondReserves,
-                    ONE - _params.presentValueParams.timeStretch,
-                    _params.presentValueParams.sharePrice,
+        // NOTE: Round up since this is on the rhs of the final subtraction.
+        //
+        // rhs = (k(0) / ((c / mu) + 1)) ** (1 / (1 - t_s))
+        uint256 rhs = YieldSpaceMath
+            .kUp(
+                _originalEffectiveShareReserves,
+                _params.originalBondReserves,
+                ONE - _params.presentValueParams.timeStretch,
+                _params.presentValueParams.sharePrice,
+                _params.presentValueParams.initialSharePrice
+            )
+            .divUp(
+                _params.presentValueParams.sharePrice.divDown(
                     _params.presentValueParams.initialSharePrice
-                )
-                .divDown(
-                    _params.presentValueParams.sharePrice.divUp(
-                        _params.presentValueParams.initialSharePrice
-                    ) + ONE
-                )
-                .pow(ONE.divDown(ONE - _params.presentValueParams.timeStretch));
+                ) + ONE
+            );
+        if (rhs >= ONE) {
+            // NOTE: Round the exponent up since this rounds the result up.
+            rhs = rhs.pow(
+                ONE.divUp(ONE - _params.presentValueParams.timeStretch)
+            );
+        } else {
+            // NOTE: Round the exponent down since this rounds the result up.
+            rhs = rhs.pow(
+                ONE.divDown(ONE - _params.presentValueParams.timeStretch)
+            );
+        }
+
+        // rhs rhs + netCurveTrade
+        rhs = rhs + _netCurveTrade;
+
+        // NOTE: Round up since this is on the rhs of the final subtraction.
+        //
+        // rhs = rhs / ((y / z_e) * (1 - zeta / z))
         if (_params.originalShareAdjustment >= 0) {
-            lhs = lhs.divDown(
-                _params.originalBondReserves.mulDivUp(
+            rhs = rhs.divUp(
+                // NOTE: Round down since this will round the quotient up.
+                _params.originalBondReserves.mulDivDown(
                     ONE -
                         uint256(_params.originalShareAdjustment).divUp(
                             _params.originalShareReserves
@@ -1104,17 +1136,20 @@ library LPMath {
                 )
             );
         } else {
-            lhs = lhs.divDown(
-                _params.originalBondReserves.mulDivUp(
+            rhs = rhs.divUp(
+                // NOTE: Round down since this will round the quotient up.
+                _params.originalBondReserves.mulDivDown(
                     ONE +
-                        uint256(-_params.originalShareAdjustment).divUp(
+                        uint256(-_params.originalShareAdjustment).divDown(
                             _params.originalShareReserves
                         ),
                     _originalEffectiveShareReserves
                 )
             );
         }
-        return _params.originalShareReserves - lhs;
+
+        // initial_guess = z - rhs
+        return _params.originalShareReserves - rhs;
     }
 
     /// @dev Calculates the derivative of `calculateSharesOutGivenBondsIn`. This
@@ -1333,7 +1368,7 @@ library LPMath {
         } else {
             // NOTE: Round the exponent up since this rounds the result down.
             inner = inner.pow(
-                _params.presentValueParams.timeStretch.divDown(
+                _params.presentValueParams.timeStretch.divUp(
                     ONE - _params.presentValueParams.timeStretch
                 )
             );
@@ -1473,8 +1508,9 @@ library LPMath {
             _params.presentValueParams.sharePrice.divUp(
                 _params.presentValueParams.initialSharePrice
             ) + ONE).pow(
-                    // NOTE: Round up the exponent since the base is greater than 1
-                    //       and rounding the divisor up rounds the quotient down.
+                    // NOTE: Round up the exponent since the base is greater
+                    //       than 1 and rounding the divisor up rounds the
+                    //       quotient down.
                     ONE.divUp(ONE - _params.presentValueParams.timeStretch)
                 )
         );
