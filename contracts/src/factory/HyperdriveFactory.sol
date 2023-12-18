@@ -123,7 +123,8 @@ contract HyperdriveFactory {
         maxFlatFee = _factoryConfig.maxFees.flat;
         maxGovernanceLPFee = _factoryConfig.maxFees.governanceLP;
         maxGovernanceZombieFee = _factoryConfig.maxFees.governanceZombie;
-        if (maxCurveFee > ONE || maxFlatFee > ONE || maxGovernanceLPFee > ONE || maxGovernanceZombieFee > ONE) {
+        if (maxCurveFee > ONE || maxFlatFee > ONE || maxGovernanceLPFee > ONE 
+            || maxGovernanceZombieFee > ONE) {
             revert IHyperdrive.MaxFeeTooHigh();
         }
         if (

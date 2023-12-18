@@ -290,7 +290,7 @@ impl State {
         let mut estimate = self.get_solvency() + checkpoint_exposure / self.share_price();
         estimate = estimate.mul_div_down(self.share_price(), fixed!(2e18));
         estimate /= fixed!(1e18) / estimate_price
-            + self.governance_fee() * self.curve_fee() * (fixed!(1e18) - spot_price)
+            + self.governance_lp_fee() * self.curve_fee() * (fixed!(1e18) - spot_price)
             - fixed!(1e18)
             - self.curve_fee() * (fixed!(1e18) / spot_price - fixed!(1e18));
         estimate
@@ -375,7 +375,7 @@ impl State {
         let maybe_derivative = self.long_amount_derivative(base_amount);
         maybe_derivative.map(|derivative| {
             (derivative
-                + self.governance_fee() * self.curve_fee() * (fixed!(1e18) - self.get_spot_price())
+                + self.governance_lp_fee() * self.curve_fee() * (fixed!(1e18) - self.get_spot_price())
                 - fixed!(1e18))
             .mul_div_down(fixed!(1e18), self.share_price())
         })
@@ -480,7 +480,7 @@ mod tests {
                         minimum_share_reserves: state.config.minimum_share_reserves,
                         curve_fee: state.config.fees.curve,
                         flat_fee: state.config.fees.flat,
-                        governance_fee: state.config.fees.governance,
+                        governance_lp_fee: state.config.fees.governance_lp,
                     },
                     get_effective_share_reserves(
                         state.info.share_reserves.into(),
@@ -544,7 +544,7 @@ mod tests {
                         minimum_share_reserves: state.config.minimum_share_reserves,
                         curve_fee: state.config.fees.curve,
                         flat_fee: state.config.fees.flat,
-                        governance_fee: state.config.fees.governance,
+                        governance_lp_fee: state.config.fees.governance_lp,
                     },
                     checkpoint_exposure,
                     uint256!(7),
