@@ -350,21 +350,26 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         uint256 _newSharePrice
     ) internal {
         if (_newSharePrice > _oldSharePrice && _oldSharePrice > 0) {
+            // Calculate the zombie interest to be collected in shares.
             // dz * (c1 - c0)/c1
             uint256 zombieInterest = _amount.mulDivDown(
                 _newSharePrice - _oldSharePrice,
                 _newSharePrice
             );
+            _marketState.zombieShareReserves -= zombieInterest.toUint128();
+
+            // Calculate and collect the governance fee.
+            // The fee is calculated in terms of shares and paid to
+            // governance.
             uint256 governanceZombieFeeCollected = zombieInterest.mulDown(
                 _governanceZombieFee
             );
             _governanceFeesAccrued += governanceZombieFeeCollected;
-            _marketState.zombieShareReserves -= zombieInterest.toUint128();
 
-            // The zombie interest that was collected (minus the fees paid to 
-            // governance), are reinvested in the share reserves. The share 
+            // The zombie interest that was collected (minus the fees paid to
+            // governance), are reinvested in the share reserves. The share
             // adjustment is updated in lock-step to avoid changing the curve's
-            // k invariant. 
+            // k invariant.
             zombieInterest -= governanceZombieFeeCollected;
             _marketState.shareReserves += zombieInterest.toUint128();
             _marketState.shareAdjustment += int128(zombieInterest.toUint128());
