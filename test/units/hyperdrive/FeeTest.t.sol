@@ -101,7 +101,7 @@ contract FeeTest is HyperdriveTest {
         uint256 governanceZombieFee = 1e18;
         deploy(alice, apr, initialSharePrice, 0, 0, 0, governanceZombieFee);
         uint256 contribution = 100e18;
-        uint256 aliceLpShares = initialize(alice, apr, contribution);
+        initialize(alice, apr, contribution);
 
         // Open a long.
         uint256 basePaidLong = 10e18;
