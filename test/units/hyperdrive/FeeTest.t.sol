@@ -15,13 +15,21 @@ contract FeeTest is HyperdriveTest {
     using Lib for *;
     uint256 deployCurveFee = 0.1e18; // 10%
     uint256 deployFlatFee = 0.01e18; // 0.1%
-    uint256 deployGovernanceFee = 0.5e18; // 50%
+    uint256 deployGovernanceLPFee = 0.5e18; // 50%
+    uint256 deployGovernanceZombieFee = 0.5e18; // 50%
 
     function test_governanceFeeAccrual_invalidFeeDestination_failure() public {
         // Deploy and initialize a new pool with fees.
         uint256 apr = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        deploy(alice, apr, deployCurveFee, deployFlatFee, deployGovernanceFee);
+        deploy(
+            alice,
+            apr,
+            deployCurveFee,
+            deployFlatFee,
+            deployGovernanceLPFee,
+            deployGovernanceZombieFee
+        );
         initialize(alice, apr, contribution);
 
         // Open a long and ensure that the governance fees accrued are non-zero.
@@ -48,7 +56,14 @@ contract FeeTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
 
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, deployCurveFee, deployFlatFee, deployGovernanceFee);
+        deploy(
+            alice,
+            apr,
+            deployCurveFee,
+            deployFlatFee,
+            deployGovernanceLPFee,
+            deployGovernanceZombieFee
+        );
         initialize(alice, apr, contribution);
 
         // Open a long, record the accrued fees x share price
@@ -77,13 +92,74 @@ contract FeeTest is HyperdriveTest {
         assertGt(governanceBalanceAfter, governanceFeesAfterOpenLong);
     }
 
+    function test_zombie_interest_governance_fee() external {
+        uint256 initialSharePrice = 1e18;
+
+        // Initialize the market
+        uint256 apr = 0.05e18;
+        // Set zombie fee to 100% to verify it works.
+        uint256 governanceZombieFee = 1e18;
+        deploy(alice, apr, initialSharePrice, 0, 0, 0, governanceZombieFee);
+        uint256 contribution = 100e18;
+        uint256 aliceLpShares = initialize(alice, apr, contribution);
+
+        // Open a long.
+        uint256 basePaidLong = 10e18;
+        (uint256 maturityTimeLong, uint256 bondAmountLong) = openLong(
+            alice,
+            basePaidLong
+        );
+
+        // Wait two term lengths.
+        advanceTimeWithCheckpoints(POSITION_DURATION * 2, int256(apr));
+
+        // Close the long 1 term too late.
+        closeLong(alice, maturityTimeLong, bondAmountLong);
+
+        // Verify that the value represented in the share reserves is <= the actual amount in the contract.
+        uint256 sharePrice = hyperdrive.getPoolInfo().sharePrice;
+        uint256 governanceFeesAccrued = IMockHyperdrive(address(hyperdrive))
+            .getGovernanceFeesAccrued();
+        uint256 baseReserves = hyperdrive.getPoolInfo().shareReserves.mulDown(
+            sharePrice
+        );
+        uint256 zombieShareReserves = hyperdrive
+            .getPoolInfo()
+            .zombieShareReserves;
+        uint256 expectedBalance = baseReserves +
+            governanceFeesAccrued.mulDown(sharePrice) +
+            zombieShareReserves.mulDown(sharePrice);
+        assertApproxEqAbs(
+            baseToken.balanceOf(address(hyperdrive)),
+            expectedBalance,
+            2 wei
+        );
+
+        // Verify that the governance fees accrued as expected.
+        (, int256 expectedGovernanceFeesAccrued) = HyperdriveUtils
+            .calculateCompoundInterest(
+                bondAmountLong,
+                int256(apr),
+                POSITION_DURATION
+            );
+        assertApproxEqAbs(
+            governanceFeesAccrued.mulDown(sharePrice),
+            uint256(expectedGovernanceFeesAccrued),
+            1e4
+        );
+
+        // Governance zombie fees should be greater than 0.
+        assertGt(governanceFeesAccrued, 0);
+    }
+
     // This test demonstrates that the governance fees from flat fee are NOT included in the shareReserves.
     function test_flat_gov_fee_close_long() public {
         uint256 initialSharePrice = 1e18;
         int256 variableInterest = 0.0e18;
         uint256 curveFee = 0e18; // 0%
         uint256 flatFee = 0.001e18; // 0.1%
-        uint256 governanceFee = 1e18; // 100%
+        uint256 governanceLPFee = 1e18; // 100%
+        uint256 governanceZombieFee = 0; // 0%
         uint256 timeElapsed = 73 days;
 
         uint256 governanceFees = 0;
@@ -98,7 +174,8 @@ contract FeeTest is HyperdriveTest {
                 initialSharePrice,
                 curveFee,
                 flatFee,
-                governanceFee
+                governanceLPFee,
+                governanceZombieFee
             );
             uint256 contribution = 500_000_000e18;
             initialize(alice, apr, contribution);
@@ -124,7 +201,8 @@ contract FeeTest is HyperdriveTest {
             ).getGovernanceFeesAccrued();
 
             // 1/2 term matures and accrues interest
-            advanceTime(timeElapsed, variableInterest);
+            int256 _variableInterest = variableInterest; // Stack too deep error
+            advanceTime(timeElapsed, _variableInterest);
 
             // Close the long.
             closeLong(bob, maturityTime, bondAmount);
@@ -141,7 +219,7 @@ contract FeeTest is HyperdriveTest {
         uint256 shareReservesFlatFee = 0;
         {
             uint256 apr = 0.01e18;
-            deploy(alice, apr, initialSharePrice, curveFee, flatFee, 0);
+            deploy(alice, apr, initialSharePrice, curveFee, flatFee, 0, 0);
             uint256 contribution = 500_000_000e18;
             initialize(alice, apr, contribution);
 
@@ -161,7 +239,8 @@ contract FeeTest is HyperdriveTest {
             );
 
             // 1/2 term matures and accrues interest
-            advanceTime(timeElapsed, variableInterest);
+            int256 _variableInterest = variableInterest; // Stack too deep error
+            advanceTime(timeElapsed, _variableInterest);
 
             // Close the long.
             closeLong(bob, maturityTime, bondAmount);
@@ -187,8 +266,9 @@ contract FeeTest is HyperdriveTest {
     function test_curve_gov_fee_close_long() public {
         uint256 initialSharePrice = 1e18;
         uint256 curveFee = 0.1e18; // 10%
-        uint256 flatFee = 0e18; // 0%
-        uint256 governanceFee = 1e18; // 100%
+        uint256 flatFee = 0; // 0%
+        uint256 governanceLPFee = 1e18; // 100%
+        uint256 governanceZombieFee = 0; // 0%
         uint256 timeElapsed = 73 days;
 
         uint256 governanceFeesFromCloseLong = 0;
@@ -205,7 +285,8 @@ contract FeeTest is HyperdriveTest {
                 initialSharePrice,
                 curveFee,
                 flatFee,
-                governanceFee
+                governanceLPFee,
+                governanceZombieFee
             );
             uint256 contribution = 500_000_000e18;
             initialize(alice, apr, contribution);
@@ -252,8 +333,9 @@ contract FeeTest is HyperdriveTest {
 
             // Calculate curve fee
             uint256 expectedFeeSubtractedFromShareReserves = ONE - spotPrice;
+            uint256 _curveFee = curveFee;
             expectedFeeSubtractedFromShareReserves = expectedFeeSubtractedFromShareReserves
-                .mulDown(curveFee)
+                .mulDown(_curveFee)
                 .mulDown(bondsPurchased)
                 .mulDown(normalizedTimeRemaining);
 
@@ -268,7 +350,7 @@ contract FeeTest is HyperdriveTest {
         uint256 shareReservesCurveFee = 0;
         {
             uint256 apr = 0.01e18;
-            deploy(alice, apr, initialSharePrice, curveFee, flatFee, 0);
+            deploy(alice, apr, initialSharePrice, curveFee, flatFee, 0, 0);
             uint256 contribution = 500_000_000e18;
             initialize(alice, apr, contribution);
 
@@ -332,7 +414,14 @@ contract FeeTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
 
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, deployCurveFee, deployFlatFee, deployGovernanceFee);
+        deploy(
+            alice,
+            apr,
+            deployCurveFee,
+            deployFlatFee,
+            deployGovernanceLPFee,
+            deployGovernanceZombieFee
+        );
         initialize(alice, apr, contribution);
 
         // Ensure that the governance initially has zero balance
@@ -395,7 +484,14 @@ contract FeeTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
 
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, deployCurveFee, deployFlatFee, deployGovernanceFee);
+        deploy(
+            alice,
+            apr,
+            deployCurveFee,
+            deployFlatFee,
+            deployGovernanceLPFee,
+            deployGovernanceZombieFee
+        );
         initialize(alice, apr, contribution);
 
         // Ensure that the governance initially has zero balance
@@ -465,7 +561,14 @@ contract FeeTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, deployCurveFee, deployFlatFee, deployGovernanceFee);
+        deploy(
+            alice,
+            apr,
+            deployCurveFee,
+            deployFlatFee,
+            deployGovernanceLPFee,
+            deployGovernanceZombieFee
+        );
         initialize(alice, apr, contribution);
 
         (uint256 curveFee, uint256 governanceCurveFee) = MockHyperdrive(
@@ -488,7 +591,14 @@ contract FeeTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, deployCurveFee, 0.1e18, deployGovernanceFee);
+        deploy(
+            alice,
+            apr,
+            deployCurveFee,
+            0.1e18,
+            deployGovernanceLPFee,
+            deployGovernanceZombieFee
+        );
         initialize(alice, apr, contribution);
         (
             uint256 curveFee,
@@ -527,7 +637,14 @@ contract FeeTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, deployCurveFee, 0.1e18, deployGovernanceFee);
+        deploy(
+            alice,
+            apr,
+            deployCurveFee,
+            0.1e18,
+            deployGovernanceLPFee,
+            deployGovernanceZombieFee
+        );
         initialize(alice, apr, contribution);
         (
             uint256 curveFee,

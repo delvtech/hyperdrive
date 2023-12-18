@@ -135,7 +135,7 @@ contract RoundTripTest is HyperdriveTest {
         // Deploy the pool and initialize the market
         {
             uint256 timeStretchApr = 0.05e18;
-            deploy(alice, timeStretchApr, 0, 0, 0);
+            deploy(alice, timeStretchApr, 0, 0, 0, 0);
         }
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
@@ -228,7 +228,7 @@ contract RoundTripTest is HyperdriveTest {
         // Deploy the pool and initialize the market
         uint256 curveFee = 0.05e18; // 5% of APR
         uint256 flatFee = 0.0005e18; // 5 bps
-        deploy(alice, timeStretchApr, curveFee, flatFee, .015e18);
+        deploy(alice, timeStretchApr, curveFee, flatFee, 0.015e18, 0.015e18);
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 

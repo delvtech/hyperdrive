@@ -355,7 +355,15 @@ abstract contract HyperdriveBase is HyperdriveStorage {
                 _newSharePrice - _oldSharePrice,
                 _newSharePrice
             );
+            uint256 governanceZombieFeeCollected = zombieInterest.mulDown(
+                _governanceZombieFee
+            );
+            _governanceFeesAccrued += governanceZombieFeeCollected;
             _marketState.zombieShareReserves -= zombieInterest.toUint128();
+
+            // Ensure that any zombie interest collected by governance
+            // doesn't go into the share reserves.
+            zombieInterest -= governanceZombieFeeCollected;
             _marketState.shareReserves += zombieInterest.toUint128();
             _marketState.shareAdjustment += int128(zombieInterest.toUint128());
         }
@@ -420,7 +428,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         // We leave the governance fee in terms of bonds:
         // governanceCurveFee = curve_fee * p * phi_gov
         //                    = bonds * phi_gov
-        governanceCurveFee = curveFee.mulDown(_governanceFee);
+        governanceCurveFee = curveFee.mulDown(_governanceLPFee);
     }
 
     /// @dev Calculates the fees that go to the LPs and governance.
@@ -469,7 +477,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         //
         // governanceCurveFee = curve_fee * phi_gov
         //                    = shares * phi_gov
-        governanceCurveFee = curveFee.mulDown(_governanceFee);
+        governanceCurveFee = curveFee.mulDown(_governanceLPFee);
 
         // The flat portion of the fee is taken from the matured bonds.
         // Since a matured bond is worth 1 base, it is appropriate to consider
@@ -493,7 +501,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         // The totalGovernanceFee is the sum of the curve and flat governance fees.
         totalGovernanceFee =
             governanceCurveFee +
-            flatFee.mulDown(_governanceFee);
+            flatFee.mulDown(_governanceLPFee);
     }
 
     /// @dev Converts input to base if necessary according to what is specified in options.

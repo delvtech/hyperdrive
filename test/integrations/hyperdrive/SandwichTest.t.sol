@@ -20,7 +20,7 @@ contract SandwichTest is HyperdriveTest {
         // Deploy the pool and initialize the market
         {
             uint256 timeStretchApr = 0.02e18;
-            deploy(alice, timeStretchApr, 0, 0, 0);
+            deploy(alice, timeStretchApr, 0, 0, 0, 0);
         }
         uint256 contribution = 500_000_000e18;
         uint256 lpShares = initialize(alice, apr, contribution);
@@ -69,7 +69,7 @@ contract SandwichTest is HyperdriveTest {
         // Deploy the pool and initialize the market
         {
             uint256 timeStretchApr = 0.05e18;
-            deploy(alice, timeStretchApr, 0, 0, 0);
+            deploy(alice, timeStretchApr, 0, 0, 0, 0);
         }
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
@@ -106,7 +106,7 @@ contract SandwichTest is HyperdriveTest {
         // Deploy the pool and initialize the market
         {
             uint256 timeStretchApr = 0.05e18;
-            deploy(alice, timeStretchApr, 0, 0, 0);
+            deploy(alice, timeStretchApr, 0, 0, 0, 0);
         }
         initialize(alice, apr, contribution);
 
@@ -190,7 +190,7 @@ contract SandwichTest is HyperdriveTest {
         {
             uint256 timeStretchApr = 0.02e18;
             uint256 curveFee = 0.001e18;
-            deploy(alice, timeStretchApr, curveFee, 0, 0);
+            deploy(alice, timeStretchApr, curveFee, 0, 0, 0);
         }
 
         // Initialize the market.
