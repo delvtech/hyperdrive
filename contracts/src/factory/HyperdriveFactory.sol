@@ -72,7 +72,7 @@ contract HyperdriveFactory {
     /// @dev The maximum flat fee that can be used as a factory default.
     uint256 internal immutable maxFlatFee;
 
-    /// @dev The maximum governance fee that can be used as a factory default.
+    /// @dev The maximum governance LP fee that can be used as a factory default.
     uint256 internal immutable maxGovernanceLPFee;
 
     /// @dev The maximum governance zombie fee that can be used as a factory default.
