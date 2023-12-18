@@ -540,7 +540,7 @@ library LPMath {
 
         // If the net curve trade is positive, the pool is net long.
         if (_params.netCurveTrade > 0) {
-            for (uint256 i = 0; i < SHARE_PROCEEDS_MAX_ITERATIONS; i++) {
+            for (uint256 i = 0; i < SHARE_PROCEEDS_MAX_ITERATIONS; ) {
                 // Simulate applying the share proceeds to the reserves and
                 // recalculate the present value.
                 (
@@ -639,11 +639,16 @@ library LPMath {
                 } else {
                     break;
                 }
+
+                // Increment the loop counter.
+                unchecked {
+                    ++i;
+                }
             }
         }
         // Otherwise, the pool is net short.
         else {
-            for (uint256 i = 0; i < SHARE_PROCEEDS_MAX_ITERATIONS; i++) {
+            for (uint256 i = 0; i < SHARE_PROCEEDS_MAX_ITERATIONS; ) {
                 // Simulate applying the share proceeds to the reserves and
                 // recalculate the present value.
                 (
@@ -711,6 +716,11 @@ library LPMath {
                         );
                 } else {
                     break;
+                }
+
+                // Increment the loop counter.
+                unchecked {
+                    ++i;
                 }
             }
         }
@@ -874,7 +884,7 @@ library LPMath {
             );
 
         // Proceed with Newton's method for a few iterations.
-        for (uint256 i = 0; i < MAX_SHARE_RESERVES_DELTA_MAX_ITERATIONS; i++) {
+        for (uint256 i = 0; i < MAX_SHARE_RESERVES_DELTA_MAX_ITERATIONS; ) {
             // Calculate the maximum amount of bonds that can be purchased after
             // removing the maximum share reserves delta.
             (
@@ -980,6 +990,11 @@ library LPMath {
             // we clamp back to the pool's idle.
             if (maybeMaxShareReservesDelta > _params.idle) {
                 maybeMaxShareReservesDelta = _params.idle;
+            }
+
+            // Increment the loop counter.
+            unchecked {
+                ++i;
             }
         }
 

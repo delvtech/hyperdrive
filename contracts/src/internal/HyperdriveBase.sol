@@ -415,8 +415,8 @@ abstract contract HyperdriveBase is HyperdriveStorage {
     }
 
     /// @dev Calculates the LP share price.
-    /// @param _sharePrice The current share price.
-    /// @return lpSharePrice The LP share price.
+    /// @param _sharePrice The current vault share price.
+    /// @return lpSharePrice The LP share price in units of (base / lp shares).
     function _calculateLPSharePrice(
         uint256 _sharePrice
     ) internal view returns (uint256 lpSharePrice) {

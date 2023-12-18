@@ -112,7 +112,6 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         );
     }
 
-    // FIXME: It would be good to test the LP share price.
     function test_redeem_withdrawal_shares_clamping() external {
         // Initialize the pool.
         uint256 lpShares = initialize(alice, 0.02e18, 500_000_000e18);
