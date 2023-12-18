@@ -3,8 +3,8 @@ pragma solidity 0.8.19;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath, ONE } from "./FixedPointMath.sol";
-import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 import { SafeCast } from "./SafeCast.sol";
+import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 
 /// @author DELV
 /// @title Hyperdrive
@@ -70,6 +70,25 @@ library HyperdriveMath {
             );
     }
 
+    /// @dev Calculates the effective share reserves. The effective share
+    ///      reserves are the share reserves minus the share adjustment or
+    ///      z - zeta. We use the effective share reserves as the z-parameter
+    ///      to the YieldSpace pricing model. The share adjustment is used to
+    ///      hold the pricing mechanism invariant under the flat component of
+    ///      flat+curve trades.
+    /// @param _shareReserves The pool's share reserves.
+    /// @param _shareAdjustment The pool's share adjustment.
+    /// @return The effective share reserves.
+    function calculateEffectiveShareReserves(
+        uint256 _shareReserves,
+        int256 _shareAdjustment
+    ) internal pure returns (uint256) {
+        int256 effectiveShareReserves = int256(_shareReserves) -
+            _shareAdjustment;
+        require(effectiveShareReserves >= 0);
+        return uint256(effectiveShareReserves);
+    }
+
     /// @dev Calculates the initial bond reserves assuming that the initial LP
     ///      receives LP shares amounting to c * z + y. Throughout the rest of
     ///      the codebase, the bond reserves used include the LP share
@@ -100,6 +119,56 @@ library HyperdriveMath {
             _initialSharePrice.mulDown(_effectiveShareReserves).mulDown(
                 (ONE + _apr.mulDown(t)).pow(ONE.divUp(_timeStretch))
             );
+    }
+
+    /// @dev Calculates the proceeds in shares of closing a short position. This
+    ///      takes into account the trading profits, the interest that was
+    ///      earned by the short, the flat fee the short pays, and the amount of
+    ///      margin that was released by closing the short. The math for the
+    ///      short's proceeds in base is given by:
+    ///
+    ///      proceeds = (1 + flat_fee) * dy - c * dz + (c1 - c0) * (dy / c0)
+    ///               = (1 + flat_fee) * dy - c * dz + (c1 / c0) * dy - dy
+    ///               = (c1 / c0 + flat_fee) * dy - c * dz
+    ///
+    ///      We convert the proceeds to shares by dividing by the current share
+    ///      price. In the event that the interest is negative and outweighs the
+    ///      trading profits and margin released, the short's proceeds are
+    ///      marked to zero.
+    /// @param _bondAmount The amount of bonds underlying the closed short.
+    /// @param _shareAmount The amount of shares that it costs to close the
+    ///                     short.
+    /// @param _openSharePrice The share price at the short's open.
+    /// @param _closeSharePrice The share price at the short's close.
+    /// @param _sharePrice The current share price.
+    /// @param _flatFee The flat fee currently within the pool
+    /// @return shareProceeds The short proceeds in shares.
+    function calculateShortProceeds(
+        uint256 _bondAmount,
+        uint256 _shareAmount,
+        uint256 _openSharePrice,
+        uint256 _closeSharePrice,
+        uint256 _sharePrice,
+        uint256 _flatFee
+    ) internal pure returns (uint256 shareProceeds) {
+        // If the interest is more negative than the trading profits and margin
+        // released, then the short proceeds are marked to zero. Otherwise, we
+        // calculate the proceeds as the sum of the trading proceeds, the
+        // interest proceeds, and the margin released.
+        uint256 bondFactor = _bondAmount
+            .mulDivDown(_closeSharePrice, _openSharePrice)
+            .divDown(_sharePrice);
+
+        // We increase the bondFactor by the flat fee amount, because the trader
+        // has provided the flat fee as margin, and so it must be returned to
+        // them if it's not charged.
+        bondFactor += _bondAmount.mulDivDown(_flatFee, _sharePrice);
+
+        if (bondFactor > _shareAmount) {
+            // proceeds = (c1 / c0 * c) * dy - dz
+            shareProceeds = bondFactor - _shareAmount;
+        }
+        return shareProceeds;
     }
 
     /// @dev Since traders pay a curve fee when they open longs on Hyperdrive,
@@ -438,262 +507,5 @@ library HyperdriveMath {
             shareAdjustmentDelta,
             _totalGovernanceFee
         );
-    }
-
-    struct PresentValueParams {
-        uint256 shareReserves;
-        int256 shareAdjustment;
-        uint256 bondReserves;
-        uint256 sharePrice;
-        uint256 initialSharePrice;
-        uint256 minimumShareReserves;
-        uint256 timeStretch;
-        uint256 longsOutstanding;
-        uint256 longAverageTimeRemaining;
-        uint256 shortsOutstanding;
-        uint256 shortAverageTimeRemaining;
-    }
-
-    /// @dev Calculates the present value LPs capital in the pool.
-    /// @param _params The parameters for the present value calculation.
-    /// @return The present value of the pool.
-    function calculatePresentValue(
-        PresentValueParams memory _params
-    ) internal pure returns (uint256) {
-        // We calculate the LP present value by simulating the closing of all
-        // of the outstanding long and short positions and applying this impact
-        // on the share reserves. The present value is the share reserves after
-        // the impact of the trades minus the minimum share reserves:
-        //
-        // PV = z + net_c + net_f - z_min
-        int256 presentValue = int256(_params.shareReserves) +
-            calculateNetCurveTrade(_params) +
-            calculateNetFlatTrade(_params) -
-            int256(_params.minimumShareReserves);
-
-        // If the present value is negative, we revert.
-        if (presentValue < 0) {
-            revert IHyperdrive.NegativePresentValue();
-        }
-
-        return uint256(presentValue);
-    }
-
-    /// @dev Calculates the result of closing the net curve position.
-    /// @param _params The parameters for the present value calculation.
-    /// @return The impact of closing the net curve position on the share
-    ///         reserves.
-    function calculateNetCurveTrade(
-        PresentValueParams memory _params
-    ) internal pure returns (int256) {
-        // The net curve position is the net of the longs and shorts that are
-        // currently tradeable on the curve. Given the amount of outstanding
-        // longs `y_l` and shorts `y_s` as well as the average time remaining
-        // of outstanding longs `t_l` and shorts `t_s`, we can
-        // compute the net curve position as:
-        //
-        // netCurveTrade = y_l * t_l - y_s * t_s.
-        int256 netCurvePosition = int256(
-            _params.longsOutstanding.mulDown(_params.longAverageTimeRemaining)
-        ) -
-            int256(
-                _params.shortsOutstanding.mulDown(
-                    _params.shortAverageTimeRemaining
-                )
-            );
-        uint256 effectiveShareReserves = calculateEffectiveShareReserves(
-            _params.shareReserves,
-            _params.shareAdjustment
-        );
-
-        // If the net curve position is positive, then the pool is net long.
-        // Closing the net curve position results in the longs being paid out
-        // from the share reserves, so we negate the result.
-        if (netCurvePosition > 0) {
-            uint256 netCurvePosition_ = uint256(netCurvePosition);
-
-            // Calculate the maximum amount of bonds that can be sold on
-            // YieldSpace.
-            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxSellBondsIn(
-                effectiveShareReserves,
-                _params.bondReserves,
-                _params.minimumShareReserves,
-                ONE - _params.timeStretch,
-                _params.sharePrice,
-                _params.initialSharePrice
-            );
-
-            // If the max curve trade is greater than the net curve position,
-            // then we can close the entire net curve position.
-            if (maxCurveTrade >= netCurvePosition_) {
-                uint256 netCurveTrade = YieldSpaceMath
-                    .calculateSharesOutGivenBondsInDown(
-                        effectiveShareReserves,
-                        _params.bondReserves,
-                        netCurvePosition_,
-                        ONE - _params.timeStretch,
-                        _params.sharePrice,
-                        _params.initialSharePrice
-                    );
-                return -int256(netCurveTrade);
-            }
-            // Otherwise, we can only close part of the net curve position.
-            // Since the spot price is approximately zero after closing the
-            // entire net curve position, we mark any remaining bonds to zero.
-            else {
-                return
-                    -int256(
-                        effectiveShareReserves - _params.minimumShareReserves
-                    );
-            }
-        }
-        // If the net curve position is negative, then the pool is net short.
-        else if (netCurvePosition < 0) {
-            uint256 netCurvePosition_ = uint256(-netCurvePosition);
-
-            // Calculate the maximum amount of bonds that can be bought on
-            // YieldSpace.
-            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxBuyBondsOut(
-                effectiveShareReserves,
-                _params.bondReserves,
-                ONE - _params.timeStretch,
-                _params.sharePrice,
-                _params.initialSharePrice
-            );
-
-            // If the max curve trade is greater than the net curve position,
-            // then we can close the entire net curve position.
-            if (maxCurveTrade >= netCurvePosition_) {
-                uint256 netCurveTrade = YieldSpaceMath
-                    .calculateSharesInGivenBondsOutUp(
-                        effectiveShareReserves,
-                        _params.bondReserves,
-                        netCurvePosition_,
-                        ONE - _params.timeStretch,
-                        _params.sharePrice,
-                        _params.initialSharePrice
-                    );
-                return int256(netCurveTrade);
-            }
-            // Otherwise, we can only close part of the net curve position.
-            // Since the spot price is equal to one after closing the entire net
-            // curve position, we mark any remaining bonds to one.
-            else {
-                uint256 maxSharePayment = YieldSpaceMath
-                    .calculateMaxBuySharesIn(
-                        effectiveShareReserves,
-                        _params.bondReserves,
-                        ONE - _params.timeStretch,
-                        _params.sharePrice,
-                        _params.initialSharePrice
-                    );
-                return
-                    int256(
-                        maxSharePayment +
-                            (netCurvePosition_ - maxCurveTrade).divDown(
-                                _params.sharePrice
-                            )
-                    );
-            }
-        }
-
-        return 0;
-    }
-
-    /// @dev Calculates the result of closing the net flat position.
-    /// @param _params The parameters for the present value calculation.
-    /// @return The impact of closing the net flat position on the share
-    ///         reserves.
-    function calculateNetFlatTrade(
-        PresentValueParams memory _params
-    ) internal pure returns (int256) {
-        // The net curve position is the net of the component of longs and
-        // shorts that have matured. Given the amount of outstanding longs `y_l`
-        // and shorts `y_s` as well as the average time remaining of outstanding
-        // longs `t_l` and shorts `t_s`, we can compute the net flat trade as:
-        //
-        // netFlatTrade = y_s * (1 - t_s) - y_l * (1 - t_l).
-        return
-            int256(
-                _params.shortsOutstanding.mulDivDown(
-                    ONE - _params.shortAverageTimeRemaining,
-                    _params.sharePrice
-                )
-            ) -
-            int256(
-                _params.longsOutstanding.mulDivDown(
-                    ONE - _params.longAverageTimeRemaining,
-                    _params.sharePrice
-                )
-            );
-    }
-
-    /// @dev Calculates the proceeds in shares of closing a short position. This
-    ///      takes into account the trading profits, the interest that was
-    ///      earned by the short, the flat fee the short pays, and the amount of
-    ///      margin that was released by closing the short. The math for the
-    ///      short's proceeds in base is given by:
-    ///
-    ///      proceeds = (1 + flat_fee) * dy - c * dz + (c1 - c0) * (dy / c0)
-    ///               = (1 + flat_fee) * dy - c * dz + (c1 / c0) * dy - dy
-    ///               = (c1 / c0 + flat_fee) * dy - c * dz
-    ///
-    ///      We convert the proceeds to shares by dividing by the current share
-    ///      price. In the event that the interest is negative and outweighs the
-    ///      trading profits and margin released, the short's proceeds are
-    ///      marked to zero.
-    /// @param _bondAmount The amount of bonds underlying the closed short.
-    /// @param _shareAmount The amount of shares that it costs to close the
-    ///                     short.
-    /// @param _openSharePrice The share price at the short's open.
-    /// @param _closeSharePrice The share price at the short's close.
-    /// @param _sharePrice The current share price.
-    /// @param _flatFee The flat fee currently within the pool
-    /// @return shareProceeds The short proceeds in shares.
-    function calculateShortProceeds(
-        uint256 _bondAmount,
-        uint256 _shareAmount,
-        uint256 _openSharePrice,
-        uint256 _closeSharePrice,
-        uint256 _sharePrice,
-        uint256 _flatFee
-    ) internal pure returns (uint256 shareProceeds) {
-        // If the interest is more negative than the trading profits and margin
-        // released, then the short proceeds are marked to zero. Otherwise, we
-        // calculate the proceeds as the sum of the trading proceeds, the
-        // interest proceeds, and the margin released.
-        uint256 bondFactor = _bondAmount
-            .mulDivDown(_closeSharePrice, _openSharePrice)
-            .divDown(_sharePrice);
-
-        // We increase the bondFactor by the flat fee amount, because the trader
-        // has provided the flat fee as margin, and so it must be returned to
-        // them if it's not charged.
-        bondFactor += _bondAmount.mulDivDown(_flatFee, _sharePrice);
-
-        if (bondFactor > _shareAmount) {
-            // proceeds = (c1 / c0 * c) * dy - dz
-            shareProceeds = bondFactor - _shareAmount;
-        }
-        return shareProceeds;
-    }
-
-    /// @dev Calculates the effective share reserves. The effective share
-    ///      reserves are the share reserves minus the share adjustment or
-    ///      z - zeta. We use the effective share reserves as the z-parameter
-    ///      to the YieldSpace pricing model. The share adjustment is used to
-    ///      hold the pricing mechanism invariant under the flat component of
-    ///      flat+curve trades.
-    /// @param _shareReserves The pool's share reserves.
-    /// @param _shareAdjustment The pool's share adjustment.
-    /// @return The effective share reserves.
-    function calculateEffectiveShareReserves(
-        uint256 _shareReserves,
-        int256 _shareAdjustment
-    ) internal pure returns (uint256) {
-        int256 effectiveShareReserves = int256(_shareReserves) -
-            _shareAdjustment;
-        require(effectiveShareReserves >= 0);
-        return uint256(effectiveShareReserves);
     }
 }

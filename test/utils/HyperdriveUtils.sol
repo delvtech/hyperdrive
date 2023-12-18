@@ -5,6 +5,7 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { LPMath } from "contracts/src/libraries/LPMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 
 library HyperdriveUtils {
@@ -1370,39 +1371,77 @@ library HyperdriveUtils {
 
     /// LP Utils ///
 
-    function presentValue(
+    function getPresentValueParams(
         IHyperdrive hyperdrive
-    ) internal view returns (uint256) {
+    ) internal view returns (LPMath.PresentValueParams memory) {
         IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         return
-            HyperdriveMath
-                .calculatePresentValue(
-                    HyperdriveMath.PresentValueParams({
-                        shareReserves: poolInfo.shareReserves,
-                        shareAdjustment: poolInfo.shareAdjustment,
-                        bondReserves: poolInfo.bondReserves,
-                        sharePrice: poolInfo.sharePrice,
-                        initialSharePrice: poolConfig.initialSharePrice,
-                        minimumShareReserves: poolConfig.minimumShareReserves,
-                        timeStretch: poolConfig.timeStretch,
-                        longsOutstanding: poolInfo.longsOutstanding,
-                        longAverageTimeRemaining: calculateTimeRemaining(
-                            hyperdrive,
-                            uint256(poolInfo.longAverageMaturityTime).divUp(
-                                1e36
-                            )
-                        ),
-                        shortsOutstanding: poolInfo.shortsOutstanding,
-                        shortAverageTimeRemaining: calculateTimeRemaining(
-                            hyperdrive,
-                            uint256(poolInfo.shortAverageMaturityTime).divUp(
-                                1e36
-                            )
-                        )
-                    })
+            LPMath.PresentValueParams({
+                shareReserves: poolInfo.shareReserves,
+                shareAdjustment: poolInfo.shareAdjustment,
+                bondReserves: poolInfo.bondReserves,
+                sharePrice: poolInfo.sharePrice,
+                initialSharePrice: poolConfig.initialSharePrice,
+                minimumShareReserves: poolConfig.minimumShareReserves,
+                timeStretch: poolConfig.timeStretch,
+                longsOutstanding: poolInfo.longsOutstanding,
+                longAverageTimeRemaining: calculateTimeRemaining(
+                    hyperdrive,
+                    uint256(poolInfo.longAverageMaturityTime).divUp(1e36)
+                ),
+                shortsOutstanding: poolInfo.shortsOutstanding,
+                shortAverageTimeRemaining: calculateTimeRemaining(
+                    hyperdrive,
+                    uint256(poolInfo.shortAverageMaturityTime).divUp(1e36)
                 )
-                .mulDown(poolInfo.sharePrice);
+            });
+    }
+
+    function getDistributeExcessIdleParams(
+        IHyperdrive hyperdrive
+    ) internal view returns (LPMath.DistributeExcessIdleParams memory) {
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        LPMath.PresentValueParams memory presentValueParams = hyperdrive
+            .getPresentValueParams();
+        uint256 startingPresentValue = LPMath.calculatePresentValue(
+            presentValueParams
+        );
+        int256 netCurveTrade = int256(
+            presentValueParams.longsOutstanding.mulDown(
+                presentValueParams.longAverageTimeRemaining
+            )
+        ) -
+            int256(
+                presentValueParams.shortsOutstanding.mulDown(
+                    presentValueParams.shortAverageTimeRemaining
+                )
+            );
+        return
+            LPMath.DistributeExcessIdleParams({
+                presentValueParams: presentValueParams,
+                startingPresentValue: startingPresentValue,
+                activeLpTotalSupply: hyperdrive.totalSupply(
+                    AssetId._LP_ASSET_ID
+                ),
+                withdrawalSharesTotalSupply: hyperdrive.totalSupply(
+                    AssetId._WITHDRAWAL_SHARE_ASSET_ID
+                ) - poolInfo.withdrawalSharesReadyToWithdraw,
+                idle: uint256(hyperdrive.solvency()),
+                netCurveTrade: netCurveTrade,
+                originalShareReserves: presentValueParams.shareReserves,
+                originalShareAdjustment: presentValueParams.shareAdjustment,
+                originalBondReserves: presentValueParams.bondReserves
+            });
+    }
+
+    function presentValue(
+        IHyperdrive hyperdrive
+    ) internal view returns (uint256) {
+        return
+            LPMath
+                .calculatePresentValue(hyperdrive.getPresentValueParams())
+                .mulDown(hyperdrive.getPoolInfo().sharePrice);
     }
 
     function lpSharePrice(
@@ -1418,6 +1457,13 @@ library HyperdriveUtils {
             hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
             hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
             hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw;
+    }
+
+    function idle(IHyperdrive hyperdrive) internal view returns (uint256) {
+        return
+            uint256(hyperdrive.solvency().max(0)).mulDown(
+                hyperdrive.getPoolInfo().sharePrice
+            );
     }
 
     function solvency(IHyperdrive hyperdrive) internal view returns (int256) {

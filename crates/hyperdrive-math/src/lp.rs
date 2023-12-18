@@ -110,7 +110,7 @@ mod tests {
     use std::panic;
 
     use eyre::Result;
-    use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::PresentValueParams;
+    use hyperdrive_wrappers::wrappers::mock_lp_math::PresentValueParams;
     use rand::{thread_rng, Rng};
     use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};
 
@@ -119,7 +119,7 @@ mod tests {
     #[tokio::test]
     async fn fuzz_calculate_present_value() -> Result<()> {
         let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_hyperdrive_math();
+        let mock = chain.mock_lp_math();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -169,7 +169,7 @@ mod tests {
     #[tokio::test]
     async fn fuzz_calculate_net_curve_trade() -> Result<()> {
         let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_hyperdrive_math();
+        let mock = chain.mock_lp_math();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -220,7 +220,7 @@ mod tests {
     #[tokio::test]
     async fn fuzz_calculate_net_flat_trade() -> Result<()> {
         let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_hyperdrive_math();
+        let mock = chain.mock_lp_math();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
