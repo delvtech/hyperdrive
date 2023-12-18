@@ -383,14 +383,30 @@ library LPMath {
 
     /// @dev Calculates the amount of withdrawal shares that can be redeemed and
     ///      the share proceeds the withdrawal pool should receive given the
-    ///      pool's current idle liquidity.
+    ///      pool's current idle liquidity. We use the following algorith to
+    ///      ensure that the withdrawal pool receives the correct amount of
+    ///      shares to (1) preserve the LP share price and (2) pay out as much
+    ///      of the idle liquidity as possible to the withdrawal pool:
+    ///
+    ///      1. If `y_s * t_s <= y_l * t_l` or
+    ///         `y_max_out(I) >= y_s * t_s - y_l * t_l`, set `dz_max = I` and
+    ///         proceed to step (3). Otherwise, proceed to step (2).
+    ///      2. Solve `y_max_out(dz_max) = y_s * t_s - y_l * t_l` for `dz_max`
+    ///         using Newton's method.
+    ///      3. Set `dw = (1 - PV(dz_max) / PV(0)) * l`. If `dw <= w`, then
+    ///         proceed to step (5). Otherwise, continue to step (4).
+    ///      4. Set `dw = w` and solve `PV(0) / l = PV(dz) / (l - dw)` for
+    ///         `dz` using Newton's method if `y_l * t_l != y_s * t_s` or
+    ///         directly otherwise.
+    ///      5. Return `dw` and `dz`.
     /// @param _params The parameters for the distribute excess idle.
     /// @return The amount of withdrawal shares that can be redeemed.
     /// @return The share proceeds the withdrawal pool should receive.
     function calculateDistributeExcessIdle(
         DistributeExcessIdleParams memory _params
     ) internal pure returns (uint256, uint256) {
-        // Calculate the maximum amount the share reserves can be debited.
+        // Steps 1 and 2: Calculate the maximum amount the share reserves can be
+        // debited.
         uint256 originalEffectiveShareReserves = HyperdriveMath
             .calculateEffectiveShareReserves(
                 _params.originalShareReserves,
@@ -401,8 +417,8 @@ library LPMath {
             originalEffectiveShareReserves
         );
 
-        // Calculate the amount of withdrawal shares that can be redeemed given
-        // the maximum share reserves delta.  Otherwise, we
+        // Step 3: Calculate the amount of withdrawal shares that can be
+        // redeemed given the maximum share reserves delta.  Otherwise, we
         // proceed to calculating the amount of shares that should be paid out
         // to redeem all of the withdrawal shares.
         uint256 withdrawalSharesRedeemed = calculateDistributeExcessIdleWithdrawalSharesRedeemed(
@@ -410,28 +426,30 @@ library LPMath {
                 maxShareReservesDelta
             );
 
-        // If none of the withdrawal shares could be redeemed, then we're done
-        // and we pay out nothing.
+        // Step 3: If none of the withdrawal shares could be redeemed, then
+        // we're done and we pay out nothing.
         if (withdrawalSharesRedeemed == 0) {
             return (0, 0);
         }
-        // Otherwise if this amount is less than or equal to the amount of
-        // withdrawal shares outstanding, then we're done and we pay out the
+        // Step 3: Otherwise if this amount is less than or equal to the amount
+        // of withdrawal shares outstanding, then we're done and we pay out the
         // full maximum share reserves delta.
         else if (
             withdrawalSharesRedeemed <= _params.withdrawalSharesTotalSupply
         ) {
             return (withdrawalSharesRedeemed, maxShareReservesDelta);
         }
-        // Otherwise, all of the withdrawal shares are redeemed and we need to
-        // calculate the amount of shares the withdrawal pool should receive.
+        // Step 4: Otherwise, all of the withdrawal shares are redeemed, and we
+        // need to calculate the amount of shares the withdrawal pool should
+        // receive.
         else {
             withdrawalSharesRedeemed = _params.withdrawalSharesTotalSupply;
         }
 
-        // Solve for the share proceeds that hold the LP share price invariant
-        // after all of the withdrawal shares are redeemed. If the calculation
-        // returns a share proceeds of zero, we can't pay out anything.
+        // Step 4: Solve for the share proceeds that hold the LP share price
+        // invariant after all of the withdrawal shares are redeemed. If the
+        // calculation returns a share proceeds of zero, we can't pay out
+        // anything.
         uint256 shareProceeds = calculateDistributeExcessIdleShareProceeds(
             _params,
             originalEffectiveShareReserves
