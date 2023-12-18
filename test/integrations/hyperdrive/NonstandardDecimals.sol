@@ -468,7 +468,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         assertGe(
             aliceBaseProceeds +
                 aliceWithdrawalShares.mulDown(hyperdrive.lpSharePrice()) +
-                10,
+                1500,
             testParams.contribution
         );
 

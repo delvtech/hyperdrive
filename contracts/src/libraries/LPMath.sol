@@ -742,13 +742,15 @@ library LPMath {
                     // NOTE: Round the quotient down to avoid overshooting.
                     shareProceeds =
                         shareProceeds +
-                        uint256(delta).divDown(derivative.mulUp(lpTotalSupply));
+                        uint256(delta).divDown(derivative).divDown(
+                            lpTotalSupply
+                        );
                 } else if (delta < 0) {
                     // NOTE: Round the quotient down to avoid overshooting.
                     shareProceeds =
                         shareProceeds -
-                        uint256(-delta).divDown(
-                            derivative.mulUp(lpTotalSupply)
+                        uint256(-delta).divDown(derivative).divDown(
+                            lpTotalSupply
                         );
                 } else {
                     break;
@@ -1183,8 +1185,9 @@ library LPMath {
     ///          ) ** (t_s / (1 - t_s))
     ///      )
     ///
-    ///      We round up to avoid overshooting the optimal solution in Newton's
-    ///      method.
+    ///      We round down to avoid overshooting the optimal solution in Newton's
+    ///      method (the derivative we use is 1 minus this derivative so this
+    ///      rounds the derivative up).
     /// @param _params The parameters for the calculation.
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
@@ -1195,7 +1198,7 @@ library LPMath {
         uint256 _originalEffectiveShareReserves,
         uint256 _bondAmount
     ) internal pure returns (uint256) {
-        // NOTE: Round down since this is on the rhs of the final subtraction.
+        // NOTE: Round up since this is on the rhs of the final subtraction.
         //
         // derivative = c * (mu * z_e(x)) ** -t_s +
         //              (y / z_e) * (y(x)) ** -t_s -
@@ -1205,20 +1208,21 @@ library LPMath {
                 _params.presentValueParams.shareReserves,
                 _params.presentValueParams.shareAdjustment
             );
-        uint256 derivative = _params.presentValueParams.sharePrice.divDown(
+        uint256 derivative = _params.presentValueParams.sharePrice.divUp(
             _params
                 .presentValueParams
                 .initialSharePrice
-                .mulUp(effectiveShareReserves)
+                .mulDown(effectiveShareReserves)
                 .pow(_params.presentValueParams.timeStretch)
         ) +
-            _params.originalBondReserves.divDown(
-                _originalEffectiveShareReserves.mulUp(
+            _params.originalBondReserves.divUp(
+                _originalEffectiveShareReserves.mulDown(
                     _params.presentValueParams.bondReserves.pow(
                         _params.presentValueParams.timeStretch
                     )
                 )
             ) -
+            // NOTE: Round down to round the subtraction up.
             _params.originalBondReserves.divDown(
                 _originalEffectiveShareReserves.mulUp(
                     (_params.presentValueParams.bondReserves + _bondAmount).pow(
@@ -1227,19 +1231,19 @@ library LPMath {
                 )
             );
 
-        // NOTE: Round down since this is on the rhs of the final subtraction.
+        // NOTE: Round up since this is on the rhs of the final subtraction.
         //
         // inner = (
         //             (mu / c) * (k(x) - (y(x) + dy) ** (1 - t_s))
         //         ) ** (t_s / (1 - t_s))
-        uint256 k = YieldSpaceMath.kDown(
+        uint256 k = YieldSpaceMath.kUp(
             effectiveShareReserves,
             _params.presentValueParams.bondReserves,
             ONE - _params.presentValueParams.timeStretch,
             _params.presentValueParams.sharePrice,
             _params.presentValueParams.initialSharePrice
         );
-        uint256 inner = _params.presentValueParams.initialSharePrice.mulDivDown(
+        uint256 inner = _params.presentValueParams.initialSharePrice.mulDivUp(
             k -
                 (_params.presentValueParams.bondReserves + _bondAmount).pow(
                     ONE - _params.presentValueParams.timeStretch
@@ -1247,23 +1251,23 @@ library LPMath {
             _params.presentValueParams.sharePrice
         );
         if (inner >= ONE) {
-            // NOTE: Round the exponent down since this rounds the result down.
-            inner = inner.pow(
-                _params.presentValueParams.timeStretch.divDown(
-                    ONE - _params.presentValueParams.timeStretch
-                )
-            );
-        } else {
-            // NOTE: Round the exponent up since this rounds the result down.
+            // NOTE: Round the exponent up since this rounds the result up.
             inner = inner.pow(
                 _params.presentValueParams.timeStretch.divUp(
                     ONE - _params.presentValueParams.timeStretch
                 )
             );
+        } else {
+            // NOTE: Round the exponent down since this rounds the result up.
+            inner = inner.pow(
+                _params.presentValueParams.timeStretch.divDown(
+                    ONE - _params.presentValueParams.timeStretch
+                )
+            );
         }
 
-        // NOTE: Round down since this is on the rhs of the final subtraction.
-        derivative = derivative.mulDivDown(
+        // NOTE: Round up since this is on the rhs of the final subtraction.
+        derivative = derivative.mulDivUp(
             inner,
             _params.presentValueParams.sharePrice
         );
@@ -1278,20 +1282,20 @@ library LPMath {
             return 0;
         }
 
-        // NOTE: Round up to round the final result up.
+        // NOTE: Round down to round the final result down.
         //
         // derivative = derivative * (1 - (zeta / z))
         if (_params.originalShareAdjustment >= 0) {
-            derivative = derivative.mulUp(
+            derivative = derivative.mulDown(
                 ONE -
-                    uint256(_params.originalShareAdjustment).divDown(
+                    uint256(_params.originalShareAdjustment).divUp(
                         _params.originalShareReserves
                     )
             );
         } else {
-            derivative = derivative.mulUp(
+            derivative = derivative.mulDown(
                 ONE +
-                    uint256(-_params.originalShareAdjustment).divUp(
+                    uint256(-_params.originalShareAdjustment).divDown(
                         _params.originalShareReserves
                     )
             );
@@ -1313,8 +1317,9 @@ library LPMath {
     ///          ) ** (t_s / (1 - t_s)) - 1
     ///      )
     ///
-    ///      We round up to avoid overshooting the optimal solution in Newton's
-    ///      method.
+    ///      We round down to avoid overshooting the optimal solution in
+    ///      Newton's method (the derivative we use is 1 minus this derivative
+    ///      so this rounds the derivative up).
     /// @param _params The parameters for the calculation.
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
@@ -1325,7 +1330,7 @@ library LPMath {
         uint256 _originalEffectiveShareReserves,
         uint256 _bondAmount
     ) internal pure returns (uint256) {
-        // NOTE: Round down since this is on the rhs of the final subtraction.
+        // NOTE: Round up since this is on the rhs of the final subtraction.
         //
         // derivative = c * (mu * z_e(x)) ** -t_s +
         //              (y / z_e) * (y(x)) ** -t_s -
@@ -1335,20 +1340,21 @@ library LPMath {
                 _params.presentValueParams.shareReserves,
                 _params.presentValueParams.shareAdjustment
             );
-        uint256 derivative = _params.presentValueParams.sharePrice.divDown(
+        uint256 derivative = _params.presentValueParams.sharePrice.divUp(
             _params
                 .presentValueParams
                 .initialSharePrice
-                .mulUp(effectiveShareReserves)
+                .mulDown(effectiveShareReserves)
                 .pow(_params.presentValueParams.timeStretch)
         ) +
-            _params.originalBondReserves.divDown(
-                _originalEffectiveShareReserves.mulUp(
+            _params.originalBondReserves.divUp(
+                _originalEffectiveShareReserves.mulDown(
                     _params.presentValueParams.bondReserves.pow(
                         _params.presentValueParams.timeStretch
                     )
                 )
             ) -
+            // NOTE: Round down this rounds the subtraction up.
             _params.originalBondReserves.divDown(
                 _originalEffectiveShareReserves.mulUp(
                     (_params.presentValueParams.bondReserves - _bondAmount).pow(
@@ -1357,19 +1363,19 @@ library LPMath {
                 )
             );
 
-        // NOTE: Round down since this is on the rhs of the final subtraction.
+        // NOTE: Round up since this is on the rhs of the final subtraction.
         //
         // inner = (
         //             (mu / c) * (k(x) - (y(x) - dy) ** (1 - t_s))
         //         ) ** (t_s / (1 - t_s))
-        uint256 k = YieldSpaceMath.kDown(
+        uint256 k = YieldSpaceMath.kUp(
             effectiveShareReserves,
             _params.presentValueParams.bondReserves,
             ONE - _params.presentValueParams.timeStretch,
             _params.presentValueParams.sharePrice,
             _params.presentValueParams.initialSharePrice
         );
-        uint256 inner = _params.presentValueParams.initialSharePrice.mulDivDown(
+        uint256 inner = _params.presentValueParams.initialSharePrice.mulDivUp(
             k -
                 (_params.presentValueParams.bondReserves - _bondAmount).pow(
                     ONE - _params.presentValueParams.timeStretch
@@ -1377,22 +1383,22 @@ library LPMath {
             _params.presentValueParams.sharePrice
         );
         if (inner >= 0) {
-            // NOTE: Round the exponent down since this rounds the result down.
-            inner = inner.pow(
-                _params.presentValueParams.timeStretch.divDown(
-                    ONE - _params.presentValueParams.timeStretch
-                )
-            );
-        } else {
-            // NOTE: Round the exponent up since this rounds the result down.
+            // NOTE: Round the exponent up since this rounds the result up.
             inner = inner.pow(
                 _params.presentValueParams.timeStretch.divUp(
                     ONE - _params.presentValueParams.timeStretch
                 )
             );
+        } else {
+            // NOTE: Round the exponent down since this rounds the result up.
+            inner = inner.pow(
+                _params.presentValueParams.timeStretch.divDown(
+                    ONE - _params.presentValueParams.timeStretch
+                )
+            );
         }
 
-        // NOTE: Round down since this is on the rhs of the final subtraction.
+        // NOTE: Round up since this is on the rhs of the final subtraction.
         //
         // derivative = (1 / c) * (
         //                  c * (mu * z_e(x)) ** -t_s +
@@ -1401,7 +1407,7 @@ library LPMath {
         //              ) * (
         //                  (mu / c) * (k(x) - (y(x) - dy) ** (1 - t_s))
         //              ) ** (t_s / (1 - t_s))
-        derivative = derivative.mulDivDown(
+        derivative = derivative.mulDivUp(
             inner,
             _params.presentValueParams.sharePrice
         );
@@ -1416,20 +1422,20 @@ library LPMath {
             return 0;
         }
 
-        // NOTE: Round up to round the final result up.
+        // NOTE: Round down to round the final result down.
         //
         // derivative = derivative * (1 - (zeta / z))
         if (_params.originalShareAdjustment >= 0) {
-            derivative = derivative.mulUp(
+            derivative = derivative.mulDown(
                 ONE -
-                    uint256(_params.originalShareAdjustment).divDown(
+                    uint256(_params.originalShareAdjustment).divUp(
                         _params.originalShareReserves
                     )
             );
         } else {
-            derivative = derivative.mulUp(
+            derivative = derivative.mulDown(
                 ONE +
-                    uint256(-_params.originalShareAdjustment).divUp(
+                    uint256(-_params.originalShareAdjustment).divDown(
                         _params.originalShareReserves
                     )
             );
