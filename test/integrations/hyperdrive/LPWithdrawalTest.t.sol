@@ -375,6 +375,7 @@ contract LPWithdrawalTest is HyperdriveTest {
             );
         }
         vm.revertTo(snapshotId);
+        snapshotId = vm.snapshot();
         {
             uint256 longBasePaid = 952379451834619; // 0.001952379451834619
             uint256 shortAmount = 1049989096786962; // 0.002049989096786962
@@ -389,6 +390,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         // It results in the short receiving a higher fixed rate than the long,
         // which causes more idle to be removed than is safe.
         vm.revertTo(snapshotId);
+        snapshotId = vm.snapshot();
         {
             uint256 longBasePaid = 340282366920938463427525853467631535298;
             uint256 shortAmount = 466484623342087836179459133;
@@ -401,6 +403,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         }
         // This edge case resulted in a negative present value.
         vm.revertTo(snapshotId);
+        snapshotId = vm.snapshot();
         {
             uint256 longBasePaid = 489677686070469885716015664;
             uint256 shortAmount = 499999997999962236523722993;
@@ -415,6 +418,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         // because the variable rate is close to zero and the net position is
         // entirely long.
         vm.revertTo(snapshotId);
+        snapshotId = vm.snapshot();
         {
             uint256 longBasePaid = 11709480438780642194;
             uint256 shortAmount = 0;
