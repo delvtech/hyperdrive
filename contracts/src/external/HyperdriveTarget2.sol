@@ -40,7 +40,7 @@ abstract contract HyperdriveTarget2 is
     ///        a checkpoint where negative interest has accrued.
     /// @param _options The options that configure how the trade is settled.
     /// @return maturityTime The maturity time of the bonds.
-    /// @return bondProceeds The amount of bonds the user received
+    /// @return bondProceeds The amount of bonds the user received.
     function openLong(
         uint256 _baseAmount,
         uint256 _minOutput,
