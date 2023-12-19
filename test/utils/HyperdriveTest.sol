@@ -103,7 +103,30 @@ contract HyperdriveTest is BaseTest {
 
     function testConfig(
         uint256 fixedRate
-    ) internal view returns (IHyperdrive.PoolConfig memory) {
+    ) internal view returns (IHyperdrive.PoolConfig memory _config) {
+        IHyperdrive.PoolDeployConfig memory _deployConfig = testDeployConfig(
+            fixedRate
+        );
+
+        _config.baseToken = _deployConfig.baseToken;
+        _config.linkerFactory = _deployConfig.linkerFactory;
+        _config.linkerCodeHash = _deployConfig.linkerCodeHash;
+        _config.minimumShareReserves = _deployConfig.minimumShareReserves;
+        _config.minimumTransactionAmount = _deployConfig
+            .minimumTransactionAmount;
+        _config.positionDuration = _deployConfig.positionDuration;
+        _config.checkpointDuration = _deployConfig.checkpointDuration;
+        _config.timeStretch = _deployConfig.timeStretch;
+        _config.governance = _deployConfig.governance;
+        _config.feeCollector = _deployConfig.feeCollector;
+        _config.fees = _deployConfig.fees;
+
+        _config.initialSharePrice = ONE;
+    }
+
+    function testDeployConfig(
+        uint256 fixedRate
+    ) internal view returns (IHyperdrive.PoolDeployConfig memory) {
         IHyperdrive.Fees memory fees = IHyperdrive.Fees({
             curve: 0,
             flat: 0,
@@ -111,11 +134,10 @@ contract HyperdriveTest is BaseTest {
             governanceZombie: 0
         });
         return
-            IHyperdrive.PoolConfig({
+            IHyperdrive.PoolDeployConfig({
                 baseToken: IERC20(address(baseToken)),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0),
-                initialSharePrice: ONE,
                 minimumShareReserves: MINIMUM_SHARE_RESERVES,
                 minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
                 positionDuration: POSITION_DURATION,
@@ -852,7 +874,7 @@ contract HyperdriveTest is BaseTest {
     event Deployed(
         uint256 indexed version,
         address hyperdrive,
-        IHyperdrive.PoolConfig config,
+        IHyperdrive.PoolDeployConfig config,
         bytes extraData
     );
 
@@ -968,17 +990,50 @@ contract HyperdriveTest is BaseTest {
             // Verify the event data.
             (
                 address eventHyperdrive,
-                IHyperdrive.PoolConfig memory eventConfig,
+                IHyperdrive.PoolDeployConfig memory eventConfig,
                 bytes memory eventExtraData
             ) = abi.decode(
                     filteredLogs[0].data,
-                    (address, IHyperdrive.PoolConfig, bytes)
+                    (address, IHyperdrive.PoolDeployConfig, bytes)
                 );
             assertEq(eventHyperdrive, address(_hyperdrive));
+
+            IHyperdrive.PoolConfig memory poolConfig = _hyperdrive
+                .getPoolConfig();
+
             assertEq(
-                keccak256(abi.encode(eventConfig)),
-                keccak256(abi.encode(_hyperdrive.getPoolConfig()))
+                address(eventConfig.baseToken),
+                address(poolConfig.baseToken)
             );
+            assertEq(eventConfig.linkerFactory, poolConfig.linkerFactory);
+            assertEq(eventConfig.linkerCodeHash, poolConfig.linkerCodeHash);
+            assertEq(
+                eventConfig.minimumShareReserves,
+                poolConfig.minimumShareReserves
+            );
+            assertEq(
+                eventConfig.minimumTransactionAmount,
+                poolConfig.minimumTransactionAmount
+            );
+            assertEq(eventConfig.positionDuration, poolConfig.positionDuration);
+            assertEq(
+                eventConfig.checkpointDuration,
+                poolConfig.checkpointDuration
+            );
+            assertEq(eventConfig.timeStretch, poolConfig.timeStretch);
+            assertEq(eventConfig.governance, poolConfig.governance);
+            assertEq(eventConfig.feeCollector, poolConfig.feeCollector);
+            assertEq(eventConfig.fees.curve, poolConfig.fees.curve);
+            assertEq(eventConfig.fees.flat, poolConfig.fees.flat);
+            assertEq(
+                eventConfig.fees.governanceLP,
+                poolConfig.fees.governanceLP
+            );
+            assertEq(
+                eventConfig.fees.governanceZombie,
+                poolConfig.fees.governanceZombie
+            );
+
             assertEq(
                 keccak256(abi.encode(eventExtraData)),
                 keccak256(abi.encode(expectedExtraData))

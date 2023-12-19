@@ -27,6 +27,9 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
     /// @notice The contract used to deploy new instances of Hyperdrive target1.
     address public immutable target1Deployer;
 
+    /// @notice The constant used to represent 1e18.
+    uint256 constant ONE = 1e18;
+
     /// @notice Initializes the contract with the given parameters.
     /// @param _hyperdriveCoreDeployer The contract used to deploy new instances of Hyperdrive.
     /// @param _target0Deployer The contract used to deploy new instances of Hyperdrive target0.
@@ -42,13 +45,21 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
     }
 
     /// @notice Deploys a Hyperdrive instance with the given parameters.
-    /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     /// @param _extraData The extra data that contains the pool and sweep targets.
     /// @return The address of the newly deployed ERC4626Hyperdrive Instance.
     function deploy(
-        IHyperdrive.PoolConfig memory _config,
+        IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory _extraData
     ) external override returns (address) {
+        // Decode the extra data to extract the pool address.
+        (address pool, ) = abi.decode(_extraData, (address, address[]));
+
+        // Convert the deploy config into the pool config and set the initial share price.
+        IHyperdrive.PoolConfig memory _config = _copyPoolConfig(_deployConfig);
+        _config.initialSharePrice = IERC4626(pool).convertToAssets(ONE);
+
+        // Deploy the target0 contract.
         address target0 = IHyperdriveTargetDeployer(target0Deployer).deploy(
             _config,
             _extraData
@@ -66,5 +77,26 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
                 target0,
                 target1
             );
+    }
+
+    /// @notice Copies the deploy config into a pool config.
+    /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
+    /// @return _config The pool configuration of the Hyperdrive pool.
+    function _copyPoolConfig(
+        IHyperdrive.PoolDeployConfig memory _deployConfig
+    ) internal pure returns (IHyperdrive.PoolConfig memory _config) {
+        // Copy the `PoolDeployConfig` into a `PoolConfig` struct.
+        _config.baseToken = _deployConfig.baseToken;
+        _config.linkerFactory = _deployConfig.linkerFactory;
+        _config.linkerCodeHash = _deployConfig.linkerCodeHash;
+        _config.minimumShareReserves = _deployConfig.minimumShareReserves;
+        _config.minimumTransactionAmount = _deployConfig
+            .minimumTransactionAmount;
+        _config.positionDuration = _deployConfig.positionDuration;
+        _config.checkpointDuration = _deployConfig.checkpointDuration;
+        _config.timeStretch = _deployConfig.timeStretch;
+        _config.governance = _deployConfig.governance;
+        _config.feeCollector = _deployConfig.feeCollector;
+        _config.fees = _deployConfig.fees;
     }
 }
