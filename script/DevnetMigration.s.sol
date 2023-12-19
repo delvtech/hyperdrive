@@ -219,6 +219,18 @@ contract DevnetMigration is Script {
             factory = new HyperdriveFactory(factoryConfig);
         }
 
+        // Deploy the Hyperdrive deployers and add them to the factory.
+        address hyperdriveDeployer = address(
+            new ERC4626HyperdriveDeployer(
+                address(new ERC4626HyperdriveCoreDeployer()),
+                address(new ERC4626Target0Deployer()),
+                address(new ERC4626Target1Deployer()),
+                address(new ERC4626Target2Deployer()),
+                address(new ERC4626Target3Deployer())
+            )
+        );
+        factory.addHyperdriveDeployer(hyperdriveDeployer);
+
         // Deploy and initialize an initial Hyperdrive instance for the devnet.
         IHyperdrive hyperdrive;
         {
@@ -248,15 +260,6 @@ contract DevnetMigration is Script {
                         governanceZombie: config.factoryGovernanceZombieFee
                     })
                 });
-            address hyperdriveDeployer = address(
-                new ERC4626HyperdriveDeployer(
-                    address(new ERC4626HyperdriveCoreDeployer()),
-                    address(new ERC4626Target0Deployer()),
-                    address(new ERC4626Target1Deployer()),
-                    address(new ERC4626Target2Deployer()),
-                    address(new ERC4626Target3Deployer())
-                )
-            );
             hyperdrive = factory.deployAndInitialize(
                 hyperdriveDeployer,
                 poolConfig,
