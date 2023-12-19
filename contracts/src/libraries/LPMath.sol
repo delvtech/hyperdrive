@@ -518,6 +518,9 @@ library LPMath {
             return 0;
         }
 
+        // NOTE: This subtraction is safe since the ending present value is less
+        // than the starting present value and the rhs is rounded down.
+        //
         // Calculate the amount of withdrawal shares that can be redeemed.
         uint256 lpTotalSupply = _params.activeLpTotalSupply +
             _params.withdrawalSharesTotalSupply;
@@ -620,13 +623,17 @@ library LPMath {
                 }
                 uint256 derivative;
                 if (uint256(_params.netCurveTrade) <= maxBondAmount) {
-                    derivative =
-                        ONE -
-                        calculateSharesOutGivenBondsInDerivative(
-                            _params,
-                            _originalEffectiveShareReserves,
-                            uint256(_params.netCurveTrade)
-                        );
+                    derivative = calculateSharesOutGivenBondsInDerivative(
+                        _params,
+                        _originalEffectiveShareReserves,
+                        uint256(_params.netCurveTrade)
+                    );
+                    if (derivative >= ONE) {
+                        // NOTE: Return 0 to indicate that the share proceeds
+                        // couldn't be calculated.
+                        return 0;
+                    }
+                    derivative = ONE - derivative;
                 }
                 // Otherwise, we can solve directly for the share proceeds.
                 else {
@@ -637,6 +644,8 @@ library LPMath {
                         _params
                     );
                     if (!success) {
+                        // NOTE: Return 0 to indicate that the share proceeds
+                        // couldn't be calculated.
                         return 0;
                     }
                     return shareProceeds;
@@ -665,11 +674,16 @@ library LPMath {
                         uint256(delta).divDown(derivative.mulUp(lpTotalSupply));
                 } else if (delta < 0) {
                     // NOTE: Round the quotient down to avoid overshooting.
-                    shareProceeds =
-                        shareProceeds -
-                        uint256(-delta).divDown(
-                            derivative.mulUp(lpTotalSupply)
-                        );
+                    uint256 delta_ = uint256(-delta).divDown(
+                        derivative.mulUp(lpTotalSupply)
+                    );
+                    if (delta_ < shareProceeds) {
+                        shareProceeds = shareProceeds - delta_;
+                    } else {
+                        // NOTE: Returning 0 to indicate that the share proceeds
+                        // couldn't be calculated.
+                        return 0;
+                    }
                 } else {
                     break;
                 }
@@ -715,12 +729,17 @@ library LPMath {
                 // amount of bonds that can be sold with this share proceeds, we
                 // can calculate the derivative using the derivative of
                 // `calculateSharesOutGivenBondsIn`.
-                uint256 derivative = ONE -
-                    calculateSharesInGivenBondsOutDerivative(
-                        _params,
-                        _originalEffectiveShareReserves,
-                        uint256(-_params.netCurveTrade)
-                    );
+                uint256 derivative = calculateSharesInGivenBondsOutDerivative(
+                    _params,
+                    _originalEffectiveShareReserves,
+                    uint256(-_params.netCurveTrade)
+                );
+                if (derivative >= ONE) {
+                    // NOTE: Return 0 to indicate that the share proceeds
+                    // couldn't be calculated.
+                    return 0;
+                }
+                derivative = ONE - derivative;
 
                 // NOTE: Round the delta down to avoid overshooting.
                 //
@@ -747,11 +766,16 @@ library LPMath {
                         );
                 } else if (delta < 0) {
                     // NOTE: Round the quotient down to avoid overshooting.
-                    shareProceeds =
-                        shareProceeds -
-                        uint256(-delta).divDown(derivative).divDown(
-                            lpTotalSupply
-                        );
+                    uint256 delta_ = uint256(-delta)
+                        .divDown(derivative)
+                        .divDown(lpTotalSupply);
+                    if (delta_ < shareProceeds) {
+                        shareProceeds = shareProceeds - delta_;
+                    } else {
+                        // NOTE: Returning 0 to indicate that the share proceeds
+                        // couldn't be calculated.
+                        return 0;
+                    }
                 } else {
                     break;
                 }
@@ -1168,7 +1192,12 @@ library LPMath {
             );
         }
 
+        // NOTE: Return 0 in the case that the subtraction would underflow.
+        //
         // initial_guess = z - rhs
+        if (rhs >= _params.originalShareReserves) {
+            return 0;
+        }
         return _params.originalShareReserves - rhs;
     }
 
