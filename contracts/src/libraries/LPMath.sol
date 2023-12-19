@@ -518,6 +518,9 @@ library LPMath {
             return 0;
         }
 
+        // NOTE: This subtraction is safe since the ending present value is less
+        // than the starting present value and the rhs is rounded down.
+        //
         // Calculate the amount of withdrawal shares that can be redeemed.
         uint256 lpTotalSupply = _params.activeLpTotalSupply +
             _params.withdrawalSharesTotalSupply;
@@ -620,13 +623,20 @@ library LPMath {
                 }
                 uint256 derivative;
                 if (uint256(_params.netCurveTrade) <= maxBondAmount) {
-                    derivative =
-                        ONE -
-                        calculateSharesOutGivenBondsInDerivative(
-                            _params,
-                            _originalEffectiveShareReserves,
-                            uint256(_params.netCurveTrade)
-                        );
+                    (
+                        derivative,
+                        success
+                    ) = calculateSharesOutGivenBondsInDerivativeSafe(
+                        _params,
+                        _originalEffectiveShareReserves,
+                        uint256(_params.netCurveTrade)
+                    );
+                    if (!success || derivative >= ONE) {
+                        // NOTE: Return 0 to indicate that the share proceeds
+                        // couldn't be calculated.
+                        return 0;
+                    }
+                    derivative = ONE - derivative;
                 }
                 // Otherwise, we can solve directly for the share proceeds.
                 else {
@@ -637,6 +647,8 @@ library LPMath {
                         _params
                     );
                     if (!success) {
+                        // NOTE: Return 0 to indicate that the share proceeds
+                        // couldn't be calculated.
                         return 0;
                     }
                     return shareProceeds;
@@ -665,11 +677,16 @@ library LPMath {
                         uint256(delta).divDown(derivative.mulUp(lpTotalSupply));
                 } else if (delta < 0) {
                     // NOTE: Round the quotient down to avoid overshooting.
-                    shareProceeds =
-                        shareProceeds -
-                        uint256(-delta).divDown(
-                            derivative.mulUp(lpTotalSupply)
-                        );
+                    uint256 delta_ = uint256(-delta).divDown(
+                        derivative.mulUp(lpTotalSupply)
+                    );
+                    if (delta_ < shareProceeds) {
+                        shareProceeds = shareProceeds - delta_;
+                    } else {
+                        // NOTE: Returning 0 to indicate that the share proceeds
+                        // couldn't be calculated.
+                        return 0;
+                    }
                 } else {
                     break;
                 }
@@ -715,12 +732,20 @@ library LPMath {
                 // amount of bonds that can be sold with this share proceeds, we
                 // can calculate the derivative using the derivative of
                 // `calculateSharesOutGivenBondsIn`.
-                uint256 derivative = ONE -
-                    calculateSharesInGivenBondsOutDerivative(
+                (
+                    uint256 derivative,
+                    bool success
+                ) = calculateSharesInGivenBondsOutDerivativeSafe(
                         _params,
                         _originalEffectiveShareReserves,
                         uint256(-_params.netCurveTrade)
                     );
+                if (!success || derivative >= ONE) {
+                    // NOTE: Return 0 to indicate that the share proceeds
+                    // couldn't be calculated.
+                    return 0;
+                }
+                derivative = ONE - derivative;
 
                 // NOTE: Round the delta down to avoid overshooting.
                 //
@@ -747,11 +772,16 @@ library LPMath {
                         );
                 } else if (delta < 0) {
                     // NOTE: Round the quotient down to avoid overshooting.
-                    shareProceeds =
-                        shareProceeds -
-                        uint256(-delta).divDown(derivative).divDown(
-                            lpTotalSupply
-                        );
+                    uint256 delta_ = uint256(-delta)
+                        .divDown(derivative)
+                        .divDown(lpTotalSupply);
+                    if (delta_ < shareProceeds) {
+                        shareProceeds = shareProceeds - delta_;
+                    } else {
+                        // NOTE: Returning 0 to indicate that the share proceeds
+                        // couldn't be calculated.
+                        return 0;
+                    }
                 } else {
                     break;
                 }
@@ -1168,7 +1198,12 @@ library LPMath {
             );
         }
 
+        // NOTE: Return 0 in the case that the subtraction would underflow.
+        //
         // initial_guess = z - rhs
+        if (rhs >= _params.originalShareReserves) {
+            return 0;
+        }
         return _params.originalShareReserves - rhs;
     }
 
@@ -1193,11 +1228,12 @@ library LPMath {
     ///        reserves.
     /// @param _bondAmount The amount of bonds to sell.
     /// @return The derivative.
-    function calculateSharesOutGivenBondsInDerivative(
+    /// @return A flag indicating whether the derivative could be computed.
+    function calculateSharesOutGivenBondsInDerivativeSafe(
         DistributeExcessIdleParams memory _params,
         uint256 _originalEffectiveShareReserves,
         uint256 _bondAmount
-    ) internal pure returns (uint256) {
+    ) internal pure returns (uint256, bool) {
         // NOTE: Round up since this is on the rhs of the final subtraction.
         //
         // derivative = c * (mu * z_e(x)) ** -t_s +
@@ -1243,11 +1279,15 @@ library LPMath {
             _params.presentValueParams.sharePrice,
             _params.presentValueParams.initialSharePrice
         );
-        uint256 inner = _params.presentValueParams.initialSharePrice.mulDivUp(
-            k -
-                (_params.presentValueParams.bondReserves + _bondAmount).pow(
-                    ONE - _params.presentValueParams.timeStretch
-                ),
+        uint256 inner = (_params.presentValueParams.bondReserves + _bondAmount)
+            .pow(ONE - _params.presentValueParams.timeStretch);
+        if (k < inner) {
+            // NOTE: In this case, we shouldn't proceed with distributing excess
+            // idle since the derivative couldn't be computed.
+            return (0, false);
+        }
+        inner = _params.presentValueParams.initialSharePrice.mulDivUp(
+            k - inner,
             _params.presentValueParams.sharePrice
         );
         if (inner >= ONE) {
@@ -1279,7 +1319,7 @@ library LPMath {
             // NOTE: Small rounding errors can result in the derivative being
             // slightly (on the order of a few wei) greater than 1. In this case,
             // we return 0 since we should proceed with Newton's method.
-            return 0;
+            return (0, true);
         }
 
         // NOTE: Round down to round the final result down.
@@ -1301,7 +1341,7 @@ library LPMath {
             );
         }
 
-        return derivative;
+        return (derivative, true);
     }
 
     /// @dev Calculates the derivative of `calculateSharesInGivenBondsOut`. This
@@ -1325,11 +1365,12 @@ library LPMath {
     ///        reserves.
     /// @param _bondAmount The amount of bonds to sell.
     /// @return The derivative.
-    function calculateSharesInGivenBondsOutDerivative(
+    /// @return A flag indicating whether the derivative could be computed.
+    function calculateSharesInGivenBondsOutDerivativeSafe(
         DistributeExcessIdleParams memory _params,
         uint256 _originalEffectiveShareReserves,
         uint256 _bondAmount
-    ) internal pure returns (uint256) {
+    ) internal pure returns (uint256, bool) {
         // NOTE: Round up since this is on the rhs of the final subtraction.
         //
         // derivative = c * (mu * z_e(x)) ** -t_s +
@@ -1375,11 +1416,15 @@ library LPMath {
             _params.presentValueParams.sharePrice,
             _params.presentValueParams.initialSharePrice
         );
-        uint256 inner = _params.presentValueParams.initialSharePrice.mulDivUp(
-            k -
-                (_params.presentValueParams.bondReserves - _bondAmount).pow(
-                    ONE - _params.presentValueParams.timeStretch
-                ),
+        uint256 inner = (_params.presentValueParams.bondReserves - _bondAmount)
+            .pow(ONE - _params.presentValueParams.timeStretch);
+        if (k < inner) {
+            // NOTE: In this case, we shouldn't proceed with distributing excess
+            // idle since the derivative couldn't be computed.
+            return (0, false);
+        }
+        inner = _params.presentValueParams.initialSharePrice.mulDivUp(
+            k - inner,
             _params.presentValueParams.sharePrice
         );
         if (inner >= 0) {
@@ -1419,7 +1464,7 @@ library LPMath {
             // NOTE: Small rounding errors can result in the derivative being
             // slightly (on the order of a few wei) greater than 1. In this case,
             // we return 0 since we should proceed with Newton's method.
-            return 0;
+            return (0, true);
         }
 
         // NOTE: Round down to round the final result down.
@@ -1441,7 +1486,7 @@ library LPMath {
             );
         }
 
-        return derivative;
+        return (derivative, true);
     }
 
     /// @dev Calculates the derivative of `calculateMaxBuyBondsOut`. This
