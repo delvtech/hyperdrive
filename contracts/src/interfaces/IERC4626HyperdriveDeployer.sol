@@ -8,6 +8,8 @@ interface IERC4626HyperdriveDeployer {
         IHyperdrive.PoolConfig memory _config,
         bytes memory _extraData,
         address target0,
-        address target1
+        address target1,
+        address target2,
+        address target3
     ) external returns (address);
 }

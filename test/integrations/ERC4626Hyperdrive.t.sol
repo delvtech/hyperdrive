@@ -4,6 +4,8 @@ pragma solidity 0.8.19;
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { ERC4626Target0 } from "contracts/src/instances/ERC4626Target0.sol";
 import { ERC4626Target1 } from "contracts/src/instances/ERC4626Target1.sol";
+import { ERC4626Target2 } from "contracts/src/instances/ERC4626Target2.sol";
+import { ERC4626Target3 } from "contracts/src/instances/ERC4626Target3.sol";
 import { ERC4626HyperdriveCoreDeployer } from "contracts/src/instances/ERC4626HyperdriveCoreDeployer.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
@@ -13,6 +15,8 @@ import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeploye
 import { ERC4626HyperdriveDeployer } from "contracts/src/instances/ERC4626HyperdriveDeployer.sol";
 import { ERC4626Target0Deployer } from "contracts/src/instances/ERC4626Target0Deployer.sol";
 import { ERC4626Target1Deployer } from "contracts/src/instances/ERC4626Target1Deployer.sol";
+import { ERC4626Target2Deployer } from "contracts/src/instances/ERC4626Target2Deployer.sol";
+import { ERC4626Target3Deployer } from "contracts/src/instances/ERC4626Target3Deployer.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
@@ -31,6 +35,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
     address hyperdriveCoreDeployer;
     address target0Deployer;
     address target1Deployer;
+    address target2Deployer;
+    address target3Deployer;
 
     IERC20 dai = IERC20(address(0x6B175474E89094C44Da98b954EedeAC495271d0F));
     IERC4626 pool;
@@ -59,11 +65,15 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         hyperdriveCoreDeployer = address(new ERC4626HyperdriveCoreDeployer());
         target0Deployer = address(new ERC4626Target0Deployer());
         target1Deployer = address(new ERC4626Target1Deployer());
+        target2Deployer = address(new ERC4626Target2Deployer());
+        target3Deployer = address(new ERC4626Target3Deployer());
         hyperdriveDeployer = address(
             new ERC4626HyperdriveDeployer(
                 hyperdriveCoreDeployer,
                 target0Deployer,
-                target1Deployer
+                target1Deployer,
+                target2Deployer,
+                target3Deployer
             )
         );
         address[] memory defaults = new address[](1);
@@ -103,10 +113,14 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         });
         address target0 = address(new ERC4626Target0(config, pool));
         address target1 = address(new ERC4626Target1(config, pool));
+        address target2 = address(new ERC4626Target2(config, pool));
+        address target3 = address(new ERC4626Target3(config, pool));
         mockHyperdrive = new MockERC4626Hyperdrive(
             config,
             target0,
             target1,
+            target2,
+            target3,
             pool,
             new address[](0)
         );

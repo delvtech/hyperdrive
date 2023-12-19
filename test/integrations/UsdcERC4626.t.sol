@@ -11,6 +11,8 @@ import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { ERC4626HyperdriveDeployer } from "contracts/src/instances/ERC4626HyperdriveDeployer.sol";
 import { ERC4626Target0Deployer } from "contracts/src/instances/ERC4626Target0Deployer.sol";
 import { ERC4626Target1Deployer } from "contracts/src/instances/ERC4626Target1Deployer.sol";
+import { ERC4626Target2Deployer } from "contracts/src/instances/ERC4626Target2Deployer.sol";
+import { ERC4626Target3Deployer } from "contracts/src/instances/ERC4626Target3Deployer.sol";
 import { ERC4626HyperdriveCoreDeployer } from "contracts/src/instances/ERC4626HyperdriveCoreDeployer.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
@@ -57,11 +59,15 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         hyperdriveCoreDeployer = address(new ERC4626HyperdriveCoreDeployer());
         target0Deployer = address(new ERC4626Target0Deployer());
         target1Deployer = address(new ERC4626Target1Deployer());
+        target2Deployer = address(new ERC4626Target2Deployer());
+        target3Deployer = address(new ERC4626Target3Deployer());
         hyperdriveDeployer = address(
             new ERC4626HyperdriveDeployer(
                 hyperdriveCoreDeployer,
                 target0Deployer,
-                target1Deployer
+                target1Deployer,
+                target2Deployer,
+                target3Deployer
             )
         );
 

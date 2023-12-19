@@ -15,6 +15,8 @@ const TARGETS: &[&str] = &[
     "ERC4626Hyperdrive",
     "ERC4626Target0",
     "ERC4626Target1",
+    "ERC4626Target2",
+    "ERC4626Target3",
     "ERC4626HyperdriveFactory",
     // Test Contracts
     "ERC20Mintable",

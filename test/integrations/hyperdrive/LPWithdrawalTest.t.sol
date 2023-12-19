@@ -120,17 +120,20 @@ contract LPWithdrawalTest is HyperdriveTest {
             1e9
         );
 
-        // Ensure that the ending supply of withdrawal shares is zero if the
-        // present value is above a small threshold. If the present value is
-        // really tiny, withdrawal shares won't be distributed because the
-        // share proceeds will be 0.
-        if (hyperdrive.presentValue() > 1e3) {
-            assertApproxEqAbs(
-                hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
-                0,
-                1
-            );
-        }
+        // Ensure that no withdrawal shares are ready for withdrawal and that
+        // the present value of the outstanding withdrawal shares is zero. Most
+        // of the time, all of the withdrawal shares will be completely paid out.
+        // In some edge cases, the ending LP share price is small enough that
+        // the present value of the withdrawal shares is zero, and they won't be
+        // paid out.
+        assertEq(hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw, 0);
+        assertApproxEqAbs(
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID).mulDown(
+                hyperdrive.lpSharePrice()
+            ),
+            0,
+            1
+        );
     }
 
     function test_lp_withdrawal_long_redemption(
@@ -223,17 +226,20 @@ contract LPWithdrawalTest is HyperdriveTest {
             1e9
         );
 
-        // Ensure that the ending supply of withdrawal shares is zero if the
-        // present value is above a small threshold. If the present value is
-        // really tiny, withdrawal shares won't be distributed because the
-        // share proceeds will be 0.
-        if (hyperdrive.presentValue() > 1e3) {
-            assertApproxEqAbs(
-                hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
-                0,
-                1
-            );
-        }
+        // Ensure that no withdrawal shares are ready for withdrawal and that
+        // the present value of the outstanding withdrawal shares is zero. Most
+        // of the time, all of the withdrawal shares will be completely paid out.
+        // In some edge cases, the ending LP share price is small enough that
+        // the present value of the withdrawal shares is zero, and they won't be
+        // paid out.
+        assertEq(hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw, 0);
+        assertApproxEqAbs(
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID).mulDown(
+                hyperdrive.lpSharePrice()
+            ),
+            0,
+            1
+        );
     }
 
     function test_lp_withdrawal_short_immediate_close(
@@ -349,17 +355,20 @@ contract LPWithdrawalTest is HyperdriveTest {
             1e9
         );
 
-        // Ensure that the ending supply of withdrawal shares is zero if the
-        // present value is above a small threshold. If the present value is
-        // really tiny, withdrawal shares won't be distributed because the
-        // share proceeds will be 0.
-        if (hyperdrive.presentValue() > 1e3) {
-            assertApproxEqAbs(
-                hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
-                0,
-                1
-            );
-        }
+        // Ensure that no withdrawal shares are ready for withdrawal and that
+        // the present value of the outstanding withdrawal shares is zero. Most
+        // of the time, all of the withdrawal shares will be completely paid out.
+        // In some edge cases, the ending LP share price is small enough that
+        // the present value of the withdrawal shares is zero, and they won't be
+        // paid out.
+        assertEq(hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw, 0);
+        assertApproxEqAbs(
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID).mulDown(
+                hyperdrive.lpSharePrice()
+            ),
+            0,
+            1
+        );
     }
 
     struct TestLpWithdrawalParams {
@@ -438,7 +447,7 @@ contract LPWithdrawalTest is HyperdriveTest {
                 variableRate
             );
         }
-        // This edge csaes results in the LP share price approaching zero
+        // This edge case results in the LP share price approaching zero
         // because the variable rate is close to zero and the net position is
         // entirely long.
         vm.revertTo(snapshotId);
@@ -447,6 +456,21 @@ contract LPWithdrawalTest is HyperdriveTest {
             uint256 longBasePaid = 11709480438780642194;
             uint256 shortAmount = 0;
             int256 variableRate = 2;
+            _test_lp_withdrawal_long_and_short_maturity(
+                longBasePaid,
+                shortAmount,
+                variableRate
+            );
+        }
+        // This edge case results in some of the withdrawal shares not being
+        // paid out because the ending LP share price is small enough that the
+        // present value of the withdrawal shares is zero.
+        vm.revertTo(snapshotId);
+        snapshotId = vm.snapshot();
+        {
+            uint256 longBasePaid = 11709480438780642195;
+            uint256 shortAmount = 7116;
+            int256 variableRate = 1334;
             _test_lp_withdrawal_long_and_short_maturity(
                 longBasePaid,
                 shortAmount,
@@ -706,17 +730,20 @@ contract LPWithdrawalTest is HyperdriveTest {
             1e9
         );
 
-        // Ensure that the ending supply of withdrawal shares is zero if the
-        // present value is above a small threshold. If the present value is
-        // really tiny, withdrawal shares won't be distributed because the
-        // share proceeds will be 0.
-        if (hyperdrive.presentValue() > 1e3) {
-            assertApproxEqAbs(
-                hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
-                0,
-                1
-            );
-        }
+        // Ensure that no withdrawal shares are ready for withdrawal and that
+        // the present value of the outstanding withdrawal shares is zero. Most
+        // of the time, all of the withdrawal shares will be completely paid out.
+        // In some edge cases, the ending LP share price is small enough that
+        // the present value of the withdrawal shares is zero, and they won't be
+        // paid out.
+        assertEq(hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw, 0);
+        assertApproxEqAbs(
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID).mulDown(
+                hyperdrive.lpSharePrice()
+            ),
+            0,
+            1
+        );
     }
 
     function test_lp_withdrawal_long_short_redemption_edge_case() external {
@@ -1001,17 +1028,20 @@ contract LPWithdrawalTest is HyperdriveTest {
             1e9
         );
 
-        // Ensure that the ending supply of withdrawal shares is zero if the
-        // present value is above a small threshold. If the present value is
-        // really tiny, withdrawal shares won't be distributed because the
-        // share proceeds will be 0.
-        if (hyperdrive.presentValue() > 1e3) {
-            assertApproxEqAbs(
-                hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
-                0,
-                1
-            );
-        }
+        // Ensure that no withdrawal shares are ready for withdrawal and that
+        // the present value of the outstanding withdrawal shares is zero. Most
+        // of the time, all of the withdrawal shares will be completely paid out.
+        // In some edge cases, the ending LP share price is small enough that
+        // the present value of the withdrawal shares is zero, and they won't be
+        // paid out.
+        assertEq(hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw, 0);
+        assertApproxEqAbs(
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID).mulDown(
+                hyperdrive.lpSharePrice()
+            ),
+            0,
+            1
+        );
     }
 
     function test_single_lp_withdrawal_long_short_redemption_edge_case()
@@ -1186,17 +1216,20 @@ contract LPWithdrawalTest is HyperdriveTest {
             1e9
         );
 
-        // Ensure that the ending supply of withdrawal shares is zero if the
-        // present value is above a small threshold. If the present value is
-        // really tiny, withdrawal shares won't be distributed because the
-        // share proceeds will be 0.
-        if (hyperdrive.presentValue() > 1e3) {
-            assertApproxEqAbs(
-                hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
-                0,
-                1
-            );
-        }
+        // Ensure that no withdrawal shares are ready for withdrawal and that
+        // the present value of the outstanding withdrawal shares is zero. Most
+        // of the time, all of the withdrawal shares will be completely paid out.
+        // In some edge cases, the ending LP share price is small enough that
+        // the present value of the withdrawal shares is zero, and they won't be
+        // paid out.
+        assertEq(hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw, 0);
+        assertApproxEqAbs(
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID).mulDown(
+                hyperdrive.lpSharePrice()
+            ),
+            0,
+            1
+        );
     }
 
     function test_lp_withdrawal_three_lps(
@@ -1475,17 +1508,20 @@ contract LPWithdrawalTest is HyperdriveTest {
                 DISTRIBUTE_EXCESS_IDLE_DECREASE_TOLERANCE
         );
 
-        // Ensure that the ending supply of withdrawal shares is zero if the
-        // present value is above a small threshold. If the present value is
-        // really tiny, withdrawal shares won't be distributed because the
-        // share proceeds will be 0.
-        if (hyperdrive.presentValue() > 1e3) {
-            assertApproxEqAbs(
-                hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
-                0,
-                1
-            );
-        }
+        // Ensure that no withdrawal shares are ready for withdrawal and that
+        // the present value of the outstanding withdrawal shares is zero. Most
+        // of the time, all of the withdrawal shares will be completely paid out.
+        // In some edge cases, the ending LP share price is small enough that
+        // the present value of the withdrawal shares is zero, and they won't be
+        // paid out.
+        assertEq(hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw, 0);
+        assertApproxEqAbs(
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID).mulDown(
+                hyperdrive.lpSharePrice()
+            ),
+            0,
+            1
+        );
     }
 
     function test_lp_withdrawal_positive_share_adjustment(
@@ -1637,17 +1673,20 @@ contract LPWithdrawalTest is HyperdriveTest {
                 DISTRIBUTE_EXCESS_IDLE_DECREASE_TOLERANCE
         );
 
-        // Ensure that the ending supply of withdrawal shares is zero if the
-        // present value is above a small threshold. If the present value is
-        // really tiny, withdrawal shares won't be distributed because the
-        // share proceeds will be 0.
-        if (hyperdrive.presentValue() > 1e3) {
-            assertApproxEqAbs(
-                hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
-                0,
-                1
-            );
-        }
+        // Ensure that no withdrawal shares are ready for withdrawal and that
+        // the present value of the outstanding withdrawal shares is zero. Most
+        // of the time, all of the withdrawal shares will be completely paid out.
+        // In some edge cases, the ending LP share price is small enough that
+        // the present value of the withdrawal shares is zero, and they won't be
+        // paid out.
+        assertEq(hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw, 0);
+        assertApproxEqAbs(
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID).mulDown(
+                hyperdrive.lpSharePrice()
+            ),
+            0,
+            1
+        );
     }
 
     // This function removes liquidity and verifies that either (1) the maximum

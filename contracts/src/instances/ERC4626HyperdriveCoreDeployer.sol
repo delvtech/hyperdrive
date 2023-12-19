@@ -18,14 +18,18 @@ contract ERC4626HyperdriveCoreDeployer is IERC4626HyperdriveDeployer {
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _extraData The extra data that contains the sweep targets.
-    /// @param target0 The address of the first target contract.
-    /// @param target1 The address of the second target contract.
-    /// @return The address of the newly deployed ERC4626Hyperdrive Instance
+    /// @param target0 The target0 address.
+    /// @param target1 The target1 address.
+    /// @param target2 The target2 address.
+    /// @param target3 The target3 address.
+    /// @return The address of the newly deployed ERC4626Hyperdrive Instance.
     function deploy(
         IHyperdrive.PoolConfig memory _config,
         bytes memory _extraData,
         address target0,
-        address target1
+        address target1,
+        address target2,
+        address target3
     ) external override returns (address) {
         (address pool, address[] memory sweepTargets) = abi.decode(
             _extraData,
@@ -39,6 +43,8 @@ contract ERC4626HyperdriveCoreDeployer is IERC4626HyperdriveDeployer {
                     _config,
                     target0,
                     target1,
+                    target2,
+                    target3,
                     IERC4626(pool),
                     sweepTargets
                 )

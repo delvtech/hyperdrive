@@ -11,6 +11,8 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ERC4626HyperdriveDeployer } from "contracts/src/instances/ERC4626HyperdriveDeployer.sol";
 import { ERC4626Target0Deployer } from "contracts/src/instances/ERC4626Target0Deployer.sol";
 import { ERC4626Target1Deployer } from "contracts/src/instances/ERC4626Target1Deployer.sol";
+import { ERC4626Target2Deployer } from "contracts/src/instances/ERC4626Target2Deployer.sol";
+import { ERC4626Target3Deployer } from "contracts/src/instances/ERC4626Target3Deployer.sol";
 import { ERC4626HyperdriveCoreDeployer } from "contracts/src/instances/ERC4626HyperdriveCoreDeployer.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
@@ -250,7 +252,9 @@ contract DevnetMigration is Script {
                 new ERC4626HyperdriveDeployer(
                     address(new ERC4626HyperdriveCoreDeployer()),
                     address(new ERC4626Target0Deployer()),
-                    address(new ERC4626Target1Deployer())
+                    address(new ERC4626Target1Deployer()),
+                    address(new ERC4626Target2Deployer()),
+                    address(new ERC4626Target3Deployer())
                 )
             );
             hyperdrive = factory.deployAndInitialize(

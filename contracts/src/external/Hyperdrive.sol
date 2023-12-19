@@ -35,6 +35,14 @@ abstract contract Hyperdrive is
     ///         some stateful functions.
     address public immutable target1;
 
+    /// @notice The target2 address. This is a logic contract that contains all
+    ///         some stateful functions.
+    address public immutable target2;
+
+    /// @notice The target3 address. This is a logic contract that contains all
+    ///         some stateful functions.
+    address public immutable target3;
+
     /// @notice The typehash used to calculate the EIP712 hash for `permitForAll`.
     bytes32 public constant PERMIT_TYPEHASH =
         keccak256(
@@ -48,14 +56,20 @@ abstract contract Hyperdrive is
     /// @param _config The configuration of the pool.
     /// @param _target0 The target0 address.
     /// @param _target1 The target1 address.
+    /// @param _target2 The target2 address.
+    /// @param _target3 The target3 address.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         address _target0,
-        address _target1
+        address _target1,
+        address _target2,
+        address _target3
     ) HyperdriveStorage(_config) {
         // Initialize the target contracts.
         target0 = _target0;
         target1 = _target1;
+        target2 = _target2;
+        target3 = _target3;
 
         // NOTE: It's convenient to keep this in the `Hyperdrive.sol`
         //       entry-point to avoiding issues with initializing the domain
@@ -107,21 +121,13 @@ abstract contract Hyperdrive is
     /// Longs ///
 
     /// @notice Opens a long position.
-    /// @param _baseAmount The amount of base to use when trading.
-    /// @param _minOutput The minium number of bonds to receive.
-    /// @param _minSharePrice The minium share price at which to open the long.
-    ///        This allows traders to protect themselves from opening a long in
-    ///        a checkpoint where negative interest has accrued.
-    /// @param _options The options that configure how the trade is settled.
-    /// @return maturityTime The maturity time of the bonds.
-    /// @return bondProceeds The amount of bonds the user received
     function openLong(
-        uint256 _baseAmount,
-        uint256 _minOutput,
-        uint256 _minSharePrice,
-        IHyperdrive.Options calldata _options
-    ) external payable returns (uint256 maturityTime, uint256 bondProceeds) {
-        return _openLong(_baseAmount, _minOutput, _minSharePrice, _options);
+        uint256,
+        uint256,
+        uint256,
+        IHyperdrive.Options calldata
+    ) external payable returns (uint256, uint256) {
+        _delegate(target2);
     }
 
     /// @notice Closes a long position with a specified maturity time.
@@ -131,27 +137,19 @@ abstract contract Hyperdrive is
         uint256,
         IHyperdrive.Options calldata
     ) external returns (uint256) {
-        _delegate(target1);
+        _delegate(target3);
     }
 
     /// Shorts ///
 
     /// @notice Opens a short position.
-    /// @param _bondAmount The amount of bonds to short.
-    /// @param _maxDeposit The most the user expects to deposit for this trade
-    /// @param _minSharePrice The minium share price at which to open the long.
-    ///        This allows traders to protect themselves from opening a long in
-    ///        a checkpoint where negative interest has accrued.
-    /// @param _options The options that configure how the trade is settled.
-    /// @return maturityTime The maturity time of the short.
-    /// @return traderDeposit The amount the user deposited for this trade.
     function openShort(
-        uint256 _bondAmount,
-        uint256 _maxDeposit,
-        uint256 _minSharePrice,
-        IHyperdrive.Options calldata _options
-    ) external payable returns (uint256 maturityTime, uint256 traderDeposit) {
-        return _openShort(_bondAmount, _maxDeposit, _minSharePrice, _options);
+        uint256,
+        uint256,
+        uint256,
+        IHyperdrive.Options calldata
+    ) external payable returns (uint256, uint256) {
+        _delegate(target2);
     }
 
     /// @notice Closes a short position with a specified maturity time.
@@ -161,7 +159,7 @@ abstract contract Hyperdrive is
         uint256,
         IHyperdrive.Options calldata
     ) external returns (uint256) {
-        _delegate(target1);
+        _delegate(target3);
     }
 
     /// LPs ///
@@ -210,7 +208,7 @@ abstract contract Hyperdrive is
 
     /// @notice Allows anyone to mint a new checkpoint.
     function checkpoint(uint256) external {
-        _delegate(target1);
+        _delegate(target2);
     }
 
     /// Admin ///

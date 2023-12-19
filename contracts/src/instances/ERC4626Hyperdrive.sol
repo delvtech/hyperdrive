@@ -25,6 +25,8 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _target0 The target0 address.
     /// @param _target1 The target1 address.
+    /// @param _target2 The target2 address.
+    /// @param _target3 The target3 address.
     /// @param __pool The ERC4626 compatible yield source.
     /// @param _targets The addresses that can be swept by governance. This
     ///        allows governance to collect rewards derived from incentive
@@ -34,9 +36,14 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
         IHyperdrive.PoolConfig memory _config,
         address _target0,
         address _target1,
+        address _target2,
+        address _target3,
         IERC4626 __pool,
         address[] memory _targets
-    ) Hyperdrive(_config, _target0, _target1) ERC4626Base(__pool) {
+    )
+        Hyperdrive(_config, _target0, _target1, _target2, _target3)
+        ERC4626Base(__pool)
+    {
         // Ensure that the Hyperdrive pool was configured properly.
         // WARN: 4626 implementations should be checked that if they use an
         // asset with decimals less than 18 that the preview deposit is scale
@@ -79,6 +86,6 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
     ///      with 'transferFrom'. Any integrating contracts should be checked
     ///      for that, as it may result in an unexpected call from this address.
     function sweep(IERC20) external {
-        _delegate(target1);
+        _delegate(target0);
     }
 }

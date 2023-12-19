@@ -4,6 +4,8 @@ pragma solidity 0.8.19;
 import { Hyperdrive } from "contracts/src/external/Hyperdrive.sol";
 import { HyperdriveTarget0 } from "contracts/src/external/HyperdriveTarget0.sol";
 import { HyperdriveTarget1 } from "contracts/src/external/HyperdriveTarget1.sol";
+import { HyperdriveTarget2 } from "contracts/src/external/HyperdriveTarget2.sol";
+import { HyperdriveTarget3 } from "contracts/src/external/HyperdriveTarget3.sol";
 import { HyperdriveBase } from "contracts/src/internal/HyperdriveBase.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -165,7 +167,9 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
         Hyperdrive(
             _config,
             address(new MockHyperdriveTarget0(_config)),
-            address(new MockHyperdriveTarget1(_config))
+            address(new MockHyperdriveTarget1(_config)),
+            address(new MockHyperdriveTarget2(_config)),
+            address(new MockHyperdriveTarget3(_config))
         )
     {}
 
@@ -323,4 +327,16 @@ contract MockHyperdriveTarget1 is HyperdriveTarget1, MockHyperdriveBase {
     constructor(
         IHyperdrive.PoolConfig memory _config
     ) HyperdriveTarget1(_config) {}
+}
+
+contract MockHyperdriveTarget2 is HyperdriveTarget2, MockHyperdriveBase {
+    constructor(
+        IHyperdrive.PoolConfig memory _config
+    ) HyperdriveTarget2(_config) {}
+}
+
+contract MockHyperdriveTarget3 is HyperdriveTarget3, MockHyperdriveBase {
+    constructor(
+        IHyperdrive.PoolConfig memory _config
+    ) HyperdriveTarget3(_config) {}
 }
