@@ -136,9 +136,6 @@ contract SandwichTest is HyperdriveTest {
     ) external {
         IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
         deploy(alice, config);
-        // FIXME: We can calculate the max rate that a given instantiation of
-        // YieldSpace can support. We should use this in tests like this as it
-        // would allow us to fuzz over the entire range.
         fixedRate = fixedRate.normalizeToRange(0.001e18, 1e18);
         contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
         uint256 lpShares = initialize(alice, fixedRate, contribution);

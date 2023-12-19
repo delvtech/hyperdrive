@@ -88,9 +88,9 @@ contract ReentrancyTest is HyperdriveTest {
     ReentrancyTester tester;
 
     uint256 internal constant CONTRIBUTION = 1_000e18;
-    uint256 internal constant FIXED_RATE = 0.02e18;
-    uint256 internal constant BASE_PAID = 10e18;
-    uint256 internal constant BOND_AMOUNT = 10e18;
+    uint256 internal constant FIXED_RATE = 0.05e18;
+    uint256 internal constant BASE_PAID = 50e18;
+    uint256 internal constant BOND_AMOUNT = 50e18;
 
     /// Test ///
 

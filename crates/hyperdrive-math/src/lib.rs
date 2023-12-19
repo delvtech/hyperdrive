@@ -217,7 +217,11 @@ impl State {
 
 impl YieldSpace for State {
     fn z(&self) -> FixedPoint {
-        self.effective_share_reserves()
+        self.share_reserves()
+    }
+
+    fn zeta(&self) -> I256 {
+        self.share_adjustment()
     }
 
     fn y(&self) -> FixedPoint {

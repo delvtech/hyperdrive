@@ -6,6 +6,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
+import { LPMath } from "../libraries/LPMath.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 
@@ -258,17 +259,49 @@ abstract contract HyperdriveBase is HyperdriveStorage {
             );
     }
 
+    /// @dev Gets the distribute excess idle parameters from the current state.
+    /// @param _sharePrice The current share price.
+    /// @return params The distribute excess idle parameters.
+    function _getDistributeExcessIdleParams(
+        uint256 _idle,
+        uint256 _withdrawalSharesTotalSupply,
+        uint256 _sharePrice
+    ) internal view returns (LPMath.DistributeExcessIdleParams memory params) {
+        LPMath.PresentValueParams
+            memory presentValueParams = _getPresentValueParams(_sharePrice);
+        uint256 startingPresentValue = LPMath.calculatePresentValue(
+            presentValueParams
+        );
+        int256 netCurveTrade = int256(
+            presentValueParams.longsOutstanding.mulDown(
+                presentValueParams.longAverageTimeRemaining
+            )
+        ) -
+            int256(
+                presentValueParams.shortsOutstanding.mulDown(
+                    presentValueParams.shortAverageTimeRemaining
+                )
+            );
+        params = LPMath.DistributeExcessIdleParams({
+            presentValueParams: presentValueParams,
+            startingPresentValue: startingPresentValue,
+            activeLpTotalSupply: _totalSupply[AssetId._LP_ASSET_ID],
+            withdrawalSharesTotalSupply: _withdrawalSharesTotalSupply,
+            idle: _idle,
+            netCurveTrade: netCurveTrade,
+            originalShareReserves: presentValueParams.shareReserves,
+            originalShareAdjustment: presentValueParams.shareAdjustment,
+            originalBondReserves: presentValueParams.bondReserves
+        });
+    }
+
     /// @dev Gets the present value parameters from the current state.
     /// @param _sharePrice The current share price.
-    /// @return presentValue The present value parameters.
+    /// @return params The present value parameters.
     function _getPresentValueParams(
         uint256 _sharePrice
-    )
-        internal
-        view
-        returns (HyperdriveMath.PresentValueParams memory presentValue)
-    {
-        presentValue = HyperdriveMath.PresentValueParams({
+    ) internal view returns (LPMath.PresentValueParams memory params) {
+        params = LPMath.PresentValueParams({
             shareReserves: _marketState.shareReserves,
             shareAdjustment: _marketState.shareAdjustment,
             bondReserves: _marketState.bondReserves,
@@ -379,6 +412,8 @@ abstract contract HyperdriveBase is HyperdriveStorage {
     /// @dev Calculates the number of share reserves that are not reserved by
     ///      open positions.
     /// @param _sharePrice The current share price.
+    /// @return idleShares The amount of shares that are available for LPs to
+    ///         withdraw.
     function _calculateIdleShareReserves(
         uint256 _sharePrice
     ) internal view returns (uint256 idleShares) {
@@ -392,6 +427,26 @@ abstract contract HyperdriveBase is HyperdriveStorage {
                 _minimumShareReserves;
         }
         return idleShares;
+    }
+
+    /// @dev Calculates the LP share price.
+    /// @param _sharePrice The current vault share price.
+    /// @return lpSharePrice The LP share price in units of (base / lp shares).
+    function _calculateLPSharePrice(
+        uint256 _sharePrice
+    ) internal view returns (uint256 lpSharePrice) {
+        uint256 presentValue = _sharePrice > 0
+            ? LPMath
+                .calculatePresentValue(_getPresentValueParams(_sharePrice))
+                .mulDown(_sharePrice)
+            : 0;
+        uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
+            _totalSupply[AssetId._WITHDRAWAL_SHARE_ASSET_ID] -
+            _withdrawPool.readyToWithdraw;
+        lpSharePrice = lpTotalSupply == 0
+            ? 0
+            : presentValue.divDown(lpTotalSupply);
+        return lpSharePrice;
     }
 
     /// @dev Calculates the fees that go to the LPs and governance.
@@ -511,7 +566,8 @@ abstract contract HyperdriveBase is HyperdriveStorage {
             flatFee.mulDown(_governanceLPFee);
     }
 
-    /// @dev Converts input to base if necessary according to what is specified in options.
+    /// @dev Converts input to base if necessary according to what is specified
+    ///      in options.
     /// @param _amount The amount to convert.
     /// @param _sharePrice The current share price.
     /// @param _options The options that configure the conversion.

@@ -5,6 +5,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
+import { LPMath } from "../libraries/LPMath.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveMultiToken } from "./HyperdriveMultiToken.sol";
@@ -164,9 +165,10 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         uint256 startingPresentValue;
         {
             // Calculate the present value before updating the reserves.
-            HyperdriveMath.PresentValueParams
-                memory params = _getPresentValueParams(sharePrice);
-            startingPresentValue = HyperdriveMath.calculatePresentValue(params);
+            LPMath.PresentValueParams memory params = _getPresentValueParams(
+                sharePrice
+            );
+            startingPresentValue = LPMath.calculatePresentValue(params);
 
             // Add the liquidity to the pool's reserves and calculate the new
             // present value.
@@ -174,7 +176,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
             params.shareReserves = _marketState.shareReserves;
             params.shareAdjustment = _marketState.shareAdjustment;
             params.bondReserves = _marketState.bondReserves;
-            endingPresentValue = HyperdriveMath.calculatePresentValue(params);
+            endingPresentValue = LPMath.calculatePresentValue(params);
 
             // The LP shares minted to the LP is derived by solving for the
             // change in LP shares that preserves the ratio of present value to
@@ -219,10 +221,8 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
 
     /// @dev Allows an LP to burn shares and withdraw from the pool.
     /// @param _lpShares The LP shares to burn.
-    /// @param _minOutput The minium amount of the base token to receive.
-    ///        NOTE: This value is likely to be less than the amount LP shares
-    ///        are worth. The remainder is in short and long withdraw shares
-    ///        which are hard to game the value of.
+    /// @param _minOutputPerShare The minimum amount of base per LP share that
+    ///        was redeemed.
     /// @param _options The options that configure how the operation is settled.
     /// @return proceeds The amount the LP removing liquidity receives. The
     ///         LP receives a proportional amount of the pool's idle capital
@@ -233,7 +233,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
     ///         becomes available, the pool will buy back these shares.
     function _removeLiquidity(
         uint256 _lpShares,
-        uint256 _minOutput,
+        uint256 _minOutputPerShare,
         IHyperdrive.Options calldata _options
     )
         internal
@@ -248,66 +248,41 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
-        // Distribute the excess idle to the withdrawal pool prior to removing
-        // liquidity from the pool. This prevents us from needing to backtrack
-        // from the backend of the calculation.
-        _distributeExcessIdle(sharePrice);
-
-        // Burn the LP shares.
-        uint256 totalActiveLpSupply = _totalSupply[AssetId._LP_ASSET_ID];
-        uint256 withdrawalSharesOutstanding = _totalSupply[
-            AssetId._WITHDRAWAL_SHARE_ASSET_ID
-        ] - _withdrawPool.readyToWithdraw;
-        uint256 totalLpSupply = totalActiveLpSupply +
-            withdrawalSharesOutstanding;
+        // Burn the LP's shares.
         _burn(AssetId._LP_ASSET_ID, msg.sender, _lpShares);
 
-        // Remove the liquidity from the pool.
-        uint256 shareProceeds;
-        uint256 startingPresentValue;
-        (
-            shareProceeds,
-            withdrawalShares,
-            startingPresentValue
-        ) = _applyRemoveLiquidity(
-            _lpShares,
-            sharePrice,
-            totalLpSupply,
-            totalActiveLpSupply,
-            withdrawalSharesOutstanding
+        // Mint an equivalent amount of withdrawal shares.
+        _mint(
+            AssetId._WITHDRAWAL_SHARE_ASSET_ID,
+            _options.destination,
+            _lpShares
         );
 
-        // Mint the withdrawal shares to the LP.
-        if (withdrawalShares > 0) {
-            _mint(
-                AssetId._WITHDRAWAL_SHARE_ASSET_ID,
-                _options.destination,
-                withdrawalShares
-            );
-        }
+        // Distribute excess idle to the withdrawal pool.
+        _distributeExcessIdle(sharePrice);
 
-        // Withdraw the shares from the yield source.
-        proceeds = _withdraw(shareProceeds, _options);
+        // Redeem as many of the withdrawal shares as possible.
+        uint256 withdrawalSharesRedeemed;
+        (proceeds, withdrawalSharesRedeemed) = _redeemWithdrawalSharesInternal(
+            _lpShares,
+            _minOutputPerShare,
+            _options
+        );
+        withdrawalShares = _lpShares - withdrawalSharesRedeemed;
 
-        // Enforce min user outputs
+        // Emit a RemoveLiquidity event.
         uint256 baseProceeds = _convertToBaseFromOption(
             proceeds,
             sharePrice,
             _options
         );
-        if (_minOutput > proceeds) revert IHyperdrive.OutputLimit();
-
-        // Emit a RemoveLiquidity event.
-        uint256 lpSharePrice = totalLpSupply == 0
-            ? 0
-            : startingPresentValue.divDown(totalLpSupply);
         emit RemoveLiquidity(
             _options.destination,
             _lpShares,
             baseProceeds,
             sharePrice, // vault share price
             uint256(withdrawalShares),
-            lpSharePrice
+            _calculateLPSharePrice(sharePrice) // lp share price
         );
 
         return (proceeds, withdrawalShares);
@@ -341,6 +316,45 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         // the withdrawal shares.
         _distributeExcessIdle(sharePrice);
 
+        // Redeem as many of the withdrawal shares as possible.
+        (proceeds, withdrawalSharesRedeemed) = _redeemWithdrawalSharesInternal(
+            _withdrawalShares,
+            _minOutputPerShare,
+            _options
+        );
+
+        // Emit a RedeemWithdrawalShares event.
+        uint256 baseProceeds = _convertToBaseFromOption(
+            proceeds,
+            sharePrice,
+            _options
+        );
+        emit RedeemWithdrawalShares(
+            _options.destination,
+            withdrawalSharesRedeemed, // withdrawal shares
+            baseProceeds,
+            sharePrice // vault share price
+        );
+
+        return (proceeds, withdrawalSharesRedeemed);
+    }
+
+    /// @dev Redeems withdrawal shares by giving the LP a pro-rata amount of the
+    ///      withdrawal pool's proceeds. This function redeems the maximum
+    ///      amount of the specified withdrawal shares given the amount of
+    ///      withdrawal shares ready to withdraw.
+    /// @param _withdrawalShares The withdrawal shares to redeem.
+    /// @param _minOutputPerShare The minimum amount of base the LP expects to
+    ///        receive for each withdrawal share that is burned.
+    /// @param _options The options that configure how the operation is settled.
+    /// @return proceeds The amount the LP received.
+    /// @return withdrawalSharesRedeemed The amount of withdrawal shares that
+    ///         were redeemed.
+    function _redeemWithdrawalSharesInternal(
+        uint256 _withdrawalShares,
+        uint256 _minOutputPerShare,
+        IHyperdrive.Options calldata _options
+    ) internal returns (uint256 proceeds, uint256 withdrawalSharesRedeemed) {
         // Clamp the shares to the total amount of shares ready for withdrawal
         // to avoid unnecessary reverts. We exit early if the user has no shares
         // available to redeem.
@@ -351,7 +365,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         }
         if (withdrawalSharesRedeemed == 0) return (0, 0);
 
-        // We burn the shares from the user
+        // We burn the shares from the user.
         _burn(
             AssetId._WITHDRAWAL_SHARE_ASSET_ID,
             msg.sender,
@@ -371,7 +385,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
             withdrawalSharesRedeemed.toUint128();
         _withdrawPool.proceeds -= shareProceeds.toUint128();
 
-        // Withdraw for the user
+        // Withdraw the share proceeds to the user.
         proceeds = _withdraw(shareProceeds, _options);
 
         // Enforce the minimum user output per share.
@@ -379,272 +393,75 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
             revert IHyperdrive.OutputLimit();
         }
 
-        // Emit a RedeemWithdrawalShares event.
-        emit RedeemWithdrawalShares(
-            _options.destination,
-            withdrawalSharesRedeemed, // withdrawal shares
-            shareProceeds.mulDown(sharePrice),
-            sharePrice // vault share price
-        );
-
         return (proceeds, withdrawalSharesRedeemed);
+    }
+
+    /// @dev Distribute as much of the excess idle as possible to the withdrawal
+    ///      pool while holding the LP share price constant.
+    /// @param _sharePrice The current share price.
+    function _distributeExcessIdle(uint256 _sharePrice) internal {
+        // If there are no withdrawal shares, then there is nothing to
+        // distribute.
+        uint256 withdrawalSharesTotalSupply = _totalSupply[
+            AssetId._WITHDRAWAL_SHARE_ASSET_ID
+        ] - _withdrawPool.readyToWithdraw;
+        if (withdrawalSharesTotalSupply == 0) {
+            return;
+        }
+
+        // If there is no excess idle, then there is nothing to distribute.
+        uint256 idle = _calculateIdleShareReserves(_sharePrice);
+        if (idle == 0) {
+            return;
+        }
+
+        // Calculate the amount of withdrawal shares that should be redeemed
+        // and their share proceeds.
+        (uint256 withdrawalSharesRedeemed, uint256 shareProceeds) = LPMath
+            .calculateDistributeExcessIdle(
+                _getDistributeExcessIdleParams(
+                    idle,
+                    withdrawalSharesTotalSupply,
+                    _sharePrice
+                )
+            );
+
+        // Update the withdrawal pool's state.
+        _withdrawPool.readyToWithdraw += withdrawalSharesRedeemed.toUint128();
+        _withdrawPool.proceeds += shareProceeds.toUint128();
+
+        // Remove the withdrawal pool proceeds from the reserves.
+        _updateLiquidity(-int256(shareProceeds));
     }
 
     /// @dev Updates the pool's liquidity and holds the pool's spot price constant.
     /// @param _shareReservesDelta The delta that should be applied to share reserves.
     function _updateLiquidity(int256 _shareReservesDelta) internal {
-        // If the share reserves delta is zero, we can return early since no
-        // action is needed.
-        if (_shareReservesDelta == 0) {
-            return;
-        }
-
-        // Ensure that the share reserves are greater than or equal to the
-        // minimum share reserves. This invariant should never break. If it
-        // breaks, all activity should cease.
-        uint256 shareReserves = _marketState.shareReserves;
-        if (shareReserves < _minimumShareReserves) {
-            revert IHyperdrive.InvalidShareReserves();
-        }
-
-        // Update the share reserves by applying the share reserves delta. We
-        // ensure that our minimum share reserves invariant is still maintained.
-        int256 updatedShareReserves = int256(shareReserves) +
-            _shareReservesDelta;
-        if (updatedShareReserves < int256(_minimumShareReserves)) {
-            revert IHyperdrive.InvalidShareReserves();
-        }
-        _marketState.shareReserves = uint256(updatedShareReserves).toUint128();
-
-        // Update the share adjustment by holding the ratio of share reserves
-        // to share adjustment proportional. In general, our pricing model cannot
-        // support negative values for the z coordinate, so this is important as
-        // it ensures that if z - zeta starts as a positive value, it ends as a
-        // positive value. With this in mind, we update the share adjustment as:
-        //
-        // zeta_old / z_old = zeta_new / z_new => zeta_new = zeta_old * (z_new / z_old)
-        int256 updatedShareAdjustment;
-        int256 shareAdjustment = _marketState.shareAdjustment;
-        if (shareAdjustment >= 0) {
-            updatedShareAdjustment = int256(
-                uint256(updatedShareReserves).mulDivDown(
-                    uint256(shareAdjustment),
-                    shareReserves
-                )
+        // Calculate the updated reserves.
+        uint256 shareReserves_ = _marketState.shareReserves;
+        int256 shareAdjustment_ = _marketState.shareAdjustment;
+        uint256 bondReserves_ = _marketState.bondReserves;
+        (
+            uint256 updatedShareReserves,
+            int256 updatedShareAdjustment,
+            uint256 updatedBondReserves
+        ) = LPMath.calculateUpdateLiquidity(
+                shareReserves_,
+                shareAdjustment_,
+                bondReserves_,
+                _minimumShareReserves,
+                _shareReservesDelta
             );
-        } else {
-            updatedShareAdjustment = -int256(
-                uint256(updatedShareReserves).mulDivDown(
-                    uint256(-shareAdjustment),
-                    shareReserves
-                )
-            );
+
+        // Update the market state.
+        if (updatedShareReserves != shareReserves_) {
+            _marketState.shareReserves = updatedShareReserves.toUint128();
         }
-        _marketState.shareAdjustment = updatedShareAdjustment.toInt128();
-
-        // The liquidity update should hold the spot price invariant. The spot
-        // price of base in terms of bonds is given by:
-        //
-        // p = (mu * (z - zeta) / y) ** tau
-        //
-        // This formula implies that holding the ratio of share reserves to bond
-        // reserves constant will hold the spot price constant. This allows us
-        // to calculate the updated bond reserves as:
-        //
-        // (z_old - zeta_old) / y_old = (z_new - zeta_new) / y_new
-        //                          =>
-        // y_new = (z_new - zeta_new) * (y_old / (z_old - zeta_old))
-        _marketState.bondReserves = HyperdriveMath
-            .calculateEffectiveShareReserves(
-                uint256(updatedShareReserves),
-                updatedShareAdjustment
-            )
-            .mulDivDown(
-                _marketState.bondReserves,
-                HyperdriveMath.calculateEffectiveShareReserves(
-                    shareReserves,
-                    shareAdjustment
-                )
-            )
-            .toUint128();
-    }
-
-    /// @dev Removes liquidity from the pool and calculates the amount of
-    ///      withdrawal shares that should be minted.
-    /// @param _shares The amount of shares to remove.
-    /// @param _sharePrice The current price of a share.
-    /// @param _totalLpSupply The total amount of LP shares.
-    /// @param _totalActiveLpSupply The total amount of active LP shares.
-    /// @param _withdrawalSharesOutstanding The total amount of withdrawal
-    ///        shares outstanding.
-    /// @return shareProceeds The share proceeds that will be paid to the LP.
-    /// @return The amount of withdrawal shares that should be minted.
-    /// @return The present value of the pool before the liquidity was removed.
-    function _applyRemoveLiquidity(
-        uint256 _shares,
-        uint256 _sharePrice,
-        uint256 _totalLpSupply,
-        uint256 _totalActiveLpSupply,
-        uint256 _withdrawalSharesOutstanding
-    ) internal returns (uint256 shareProceeds, uint256, uint256) {
-        // The LP is given their share of the idle capital in the pool. Since we
-        // distributed the excess idle to the withdrawal pool, we assume that
-        // the active LPs are the only LPs entitled to the pool's
-        // idle capital. The LP's proceeds are calculated as:
-        //
-        // proceeds = idle * (dl / l_a)
-        HyperdriveMath.PresentValueParams
-            memory params = _getPresentValueParams(_sharePrice);
-        uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(
-            params
-        );
-        shareProceeds = _calculateIdleShareReserves(_pricePerShare());
-        shareProceeds = shareProceeds.mulDivDown(_shares, _totalActiveLpSupply);
-        _updateLiquidity(-int256(shareProceeds));
-        params.shareReserves = _marketState.shareReserves;
-        params.shareAdjustment = _marketState.shareAdjustment;
-        params.bondReserves = _marketState.bondReserves;
-        uint256 endingPresentValue = HyperdriveMath.calculatePresentValue(
-            params
-        );
-
-        // Calculate the amount of withdrawal shares that should be minted. We
-        // solve for this value by solving the present value equation as
-        // follows:
-        //
-        // PV0 / l0 = PV1 / (l0 - dl + dw) => dw = (PV1 / PV0) * l0 - (l0 - dl)
-        int256 withdrawalShares = int256(
-            _totalLpSupply.mulDivDown(endingPresentValue, startingPresentValue)
-        );
-        withdrawalShares -= int256(_totalLpSupply) - int256(_shares);
-        if (withdrawalShares < 0) {
-            // We backtrack by calculating the amount of the idle that should
-            // be returned to the pool using the original present value ratio.
-            uint256 overestimatedProceeds = startingPresentValue.mulDivDown(
-                uint256(-withdrawalShares),
-                _totalLpSupply
-            );
-            shareProceeds -= overestimatedProceeds;
-            _updateLiquidity(int256(overestimatedProceeds));
-            _applyWithdrawalProceeds(
-                overestimatedProceeds,
-                _withdrawalSharesOutstanding,
-                _sharePrice
-            );
-            delete withdrawalShares;
+        if (updatedShareAdjustment != shareAdjustment_) {
+            _marketState.shareAdjustment = updatedShareAdjustment.toInt128();
         }
-
-        return (shareProceeds, uint256(withdrawalShares), startingPresentValue);
-    }
-
-    /// @dev If the idle capital in the pool is worth more than the active LP
-    ///      supply, then we pay out the withdrawal pool with the excess idle.
-    /// @param _sharePrice The current share price.
-    function _distributeExcessIdle(uint256 _sharePrice) internal {
-        // Calculate the value of the active LP shares as:
-        //
-        // activeLpValue = l_a * (PV / l).
-        uint256 activeLpSupply = _totalSupply[AssetId._LP_ASSET_ID];
-        uint256 withdrawalSharesOutstanding = _totalSupply[
-            AssetId._WITHDRAWAL_SHARE_ASSET_ID
-        ] - _withdrawPool.readyToWithdraw;
-        uint256 totalLpSupply = activeLpSupply + withdrawalSharesOutstanding;
-        uint256 presentValue = HyperdriveMath.calculatePresentValue(
-            _getPresentValueParams(_sharePrice)
-        );
-        uint256 activeLpValue = activeLpSupply.mulDivDown(
-            presentValue,
-            totalLpSupply
-        );
-
-        // If the value of the active LP shares is less than the idle capital,
-        // then all of the active LPs could be paid out in base with liquidity
-        // to spare. We pay out this excess idle to the withdrawal pool. In
-        // the case that the pool's present value is zero, all of the
-        // withdrawal shares are paid out.
-        uint256 withdrawalProceeds = 0;
-        uint256 idle = _calculateIdleShareReserves(_sharePrice);
-        if (idle > activeLpValue) {
-            withdrawalProceeds = idle - activeLpValue;
+        if (updatedBondReserves != bondReserves_) {
+            _marketState.bondReserves = updatedBondReserves.toUint128();
         }
-        if (withdrawalProceeds > 0 || presentValue == 0) {
-            _compensateWithdrawalPool(
-                withdrawalProceeds,
-                presentValue,
-                totalLpSupply,
-                withdrawalSharesOutstanding
-            );
-        }
-    }
-
-    /// @dev Pays out the maximum amount of withdrawal shares given a specified
-    ///      amount of withdrawal proceeds.
-    /// @param _withdrawalProceeds The amount of withdrawal proceeds to pay out.
-    /// @param _withdrawalSharesOutstanding The amount of withdrawal shares
-    ///        that haven't been paid out.
-    /// @param _sharePrice The current share price.
-    function _applyWithdrawalProceeds(
-        uint256 _withdrawalProceeds,
-        uint256 _withdrawalSharesOutstanding,
-        uint256 _sharePrice
-    ) internal {
-        uint256 presentValue = HyperdriveMath.calculatePresentValue(
-            _getPresentValueParams(_sharePrice)
-        );
-        uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
-            _withdrawalSharesOutstanding;
-        _compensateWithdrawalPool(
-            _withdrawalProceeds,
-            presentValue,
-            lpTotalSupply,
-            _withdrawalSharesOutstanding
-        );
-    }
-
-    /// @dev Pays out a specified amount of withdrawal proceeds to the
-    ///      withdrawal pool. This function is useful for circumstances in which
-    ///      core calculations have already been performed to avoid reloading
-    ///      state.
-    /// @param _withdrawalProceeds The amount of withdrawal proceeds to pay out.
-    /// @param _presentValue The present value of the pool.
-    /// @param _lpTotalSupply The total supply of LP shares.
-    /// @param _withdrawalSharesOutstanding The outstanding withdrawal shares.
-    function _compensateWithdrawalPool(
-        uint256 _withdrawalProceeds,
-        uint256 _presentValue,
-        uint256 _lpTotalSupply,
-        uint256 _withdrawalSharesOutstanding
-    ) internal {
-        // Calculate the maximum amount of LP shares that could be paid out by
-        // the withdrawal proceeds. The calculation uses the ratio of present
-        // value to LP total supply as follows:
-        //
-        // maxSharesReleased = withdrawalProceeds * (l / PV)
-        //
-        // In the event that all of the LPs have removed their liquidity and the
-        // remaining positions hit maturity, all of the withdrawal shares are
-        // marked as ready to withdraw.
-        uint256 maxSharesReleased = _presentValue > 0
-            ? _lpTotalSupply.mulDivDown(_withdrawalProceeds, _presentValue)
-            : _lpTotalSupply;
-        if (maxSharesReleased == 0) return;
-
-        // Calculate the amount of withdrawal shares that will be released and
-        // the amount of capital that will be used to pay out the withdrawal
-        // pool.
-        uint256 sharesReleased = maxSharesReleased;
-        uint256 withdrawalPoolProceeds = _withdrawalProceeds;
-        if (maxSharesReleased > _withdrawalSharesOutstanding) {
-            sharesReleased = _withdrawalSharesOutstanding;
-            withdrawalPoolProceeds = _withdrawalProceeds.mulDivDown(
-                sharesReleased,
-                maxSharesReleased
-            );
-        }
-        _withdrawPool.readyToWithdraw += sharesReleased.toUint128();
-        _withdrawPool.proceeds += withdrawalPoolProceeds.toUint128();
-
-        // Remove the withdrawal pool proceeds from the reserves.
-        _updateLiquidity(-int256(withdrawalPoolProceeds));
     }
 }

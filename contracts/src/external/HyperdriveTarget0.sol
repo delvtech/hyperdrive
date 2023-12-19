@@ -12,7 +12,7 @@ import { HyperdriveShort } from "../internal/HyperdriveShort.sol";
 import { HyperdriveStorage } from "../internal/HyperdriveStorage.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
+import { LPMath } from "../libraries/LPMath.sol";
 
 /// @author DELV
 /// @title HyperdriveTarget0
@@ -272,7 +272,7 @@ abstract contract HyperdriveTarget0 is
             _totalSupply[AssetId._WITHDRAWAL_SHARE_ASSET_ID] -
             _withdrawPool.readyToWithdraw;
         uint256 presentValue = sharePrice > 0
-            ? HyperdriveMath
+            ? LPMath
                 .calculatePresentValue(_getPresentValueParams(sharePrice))
                 .mulDown(sharePrice)
             : 0;

@@ -2,10 +2,13 @@
 pragma solidity 0.8.19;
 
 import { console2 as console } from "forge-std/console2.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { IHyperdrive, HyperdriveTest, HyperdriveUtils } from "test/utils/HyperdriveTest.sol";
+import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
 contract PresentValueTest is HyperdriveTest {
@@ -857,6 +860,52 @@ contract PresentValueTest is HyperdriveTest {
             executeTrade(closeTrades[i]);
             assertApproxEqAbs(hyperdrive.k(), k, tolerance);
             k = hyperdrive.k();
+        }
+    }
+
+    // TODO: It would be good to generalize this to more types of positions and
+    // verify that the present value is monotonic when `_distributeExcessIdle`
+    // is used to pay out withdrawal shares.
+    //
+    // This test verifies that the present value is monotonicly decreasing as
+    // liquidity is removed from the reserves when the pool is net long.
+    function test_present_value_monotonicity_long_trade(
+        uint256 longBasePaid
+    ) external {
+        // Alice initializes the pool.
+        initialize(alice, 0.02e18, 100_000_000e18);
+
+        // Bob opens a long.
+        longBasePaid = longBasePaid.normalizeToRange(
+            MINIMUM_TRANSACTION_AMOUNT,
+            hyperdrive.calculateMaxLong()
+        );
+        openLong(bob, longBasePaid);
+
+        // Get the idle liquidity. This is the maximum amount that can be
+        // removed from the reserves.
+        uint256 idle = uint256(hyperdrive.solvency());
+
+        uint256 lastValue;
+        uint256 iterations = 10;
+        for (uint256 i = 0; i < iterations; i++) {
+            uint256 snapshotId = vm.snapshot();
+
+            // Update the liquidity to simulate idle being removed from the reserves.
+            int256 delta = -int256(
+                1_000e18.mulDivDown(iterations - i, iterations) +
+                    idle.mulDivDown(i, iterations)
+            );
+            MockHyperdrive(address(hyperdrive)).updateLiquidity(delta);
+
+            // Ensure that the present value decreased.
+            require(
+                lastValue == 0 || hyperdrive.presentValue() < lastValue,
+                "present value should decrease"
+            );
+            lastValue = hyperdrive.presentValue();
+
+            vm.revertTo(snapshotId);
         }
     }
 
