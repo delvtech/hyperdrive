@@ -623,12 +623,15 @@ library LPMath {
                 }
                 uint256 derivative;
                 if (uint256(_params.netCurveTrade) <= maxBondAmount) {
-                    derivative = calculateSharesOutGivenBondsInDerivative(
+                    (
+                        derivative,
+                        success
+                    ) = calculateSharesOutGivenBondsInDerivativeSafe(
                         _params,
                         _originalEffectiveShareReserves,
                         uint256(_params.netCurveTrade)
                     );
-                    if (derivative >= ONE) {
+                    if (!success || derivative >= ONE) {
                         // NOTE: Return 0 to indicate that the share proceeds
                         // couldn't be calculated.
                         return 0;
@@ -729,12 +732,15 @@ library LPMath {
                 // amount of bonds that can be sold with this share proceeds, we
                 // can calculate the derivative using the derivative of
                 // `calculateSharesOutGivenBondsIn`.
-                uint256 derivative = calculateSharesInGivenBondsOutDerivative(
-                    _params,
-                    _originalEffectiveShareReserves,
-                    uint256(-_params.netCurveTrade)
-                );
-                if (derivative >= ONE) {
+                (
+                    uint256 derivative,
+                    bool success
+                ) = calculateSharesInGivenBondsOutDerivativeSafe(
+                        _params,
+                        _originalEffectiveShareReserves,
+                        uint256(-_params.netCurveTrade)
+                    );
+                if (!success || derivative >= ONE) {
                     // NOTE: Return 0 to indicate that the share proceeds
                     // couldn't be calculated.
                     return 0;
@@ -1222,11 +1228,12 @@ library LPMath {
     ///        reserves.
     /// @param _bondAmount The amount of bonds to sell.
     /// @return The derivative.
-    function calculateSharesOutGivenBondsInDerivative(
+    /// @return A flag indicating whether the derivative could be computed.
+    function calculateSharesOutGivenBondsInDerivativeSafe(
         DistributeExcessIdleParams memory _params,
         uint256 _originalEffectiveShareReserves,
         uint256 _bondAmount
-    ) internal pure returns (uint256) {
+    ) internal pure returns (uint256, bool) {
         // NOTE: Round up since this is on the rhs of the final subtraction.
         //
         // derivative = c * (mu * z_e(x)) ** -t_s +
@@ -1272,11 +1279,15 @@ library LPMath {
             _params.presentValueParams.sharePrice,
             _params.presentValueParams.initialSharePrice
         );
-        uint256 inner = _params.presentValueParams.initialSharePrice.mulDivUp(
-            k -
-                (_params.presentValueParams.bondReserves + _bondAmount).pow(
-                    ONE - _params.presentValueParams.timeStretch
-                ),
+        uint256 inner = (_params.presentValueParams.bondReserves + _bondAmount)
+            .pow(ONE - _params.presentValueParams.timeStretch);
+        if (k < inner) {
+            // NOTE: In this case, we shouldn't proceed with distributing excess
+            // idle since the derivative couldn't be computed.
+            return (0, false);
+        }
+        inner = _params.presentValueParams.initialSharePrice.mulDivUp(
+            k - inner,
             _params.presentValueParams.sharePrice
         );
         if (inner >= ONE) {
@@ -1308,7 +1319,7 @@ library LPMath {
             // NOTE: Small rounding errors can result in the derivative being
             // slightly (on the order of a few wei) greater than 1. In this case,
             // we return 0 since we should proceed with Newton's method.
-            return 0;
+            return (0, true);
         }
 
         // NOTE: Round down to round the final result down.
@@ -1330,7 +1341,7 @@ library LPMath {
             );
         }
 
-        return derivative;
+        return (derivative, true);
     }
 
     /// @dev Calculates the derivative of `calculateSharesInGivenBondsOut`. This
@@ -1354,11 +1365,12 @@ library LPMath {
     ///        reserves.
     /// @param _bondAmount The amount of bonds to sell.
     /// @return The derivative.
-    function calculateSharesInGivenBondsOutDerivative(
+    /// @return A flag indicating whether the derivative could be computed.
+    function calculateSharesInGivenBondsOutDerivativeSafe(
         DistributeExcessIdleParams memory _params,
         uint256 _originalEffectiveShareReserves,
         uint256 _bondAmount
-    ) internal pure returns (uint256) {
+    ) internal pure returns (uint256, bool) {
         // NOTE: Round up since this is on the rhs of the final subtraction.
         //
         // derivative = c * (mu * z_e(x)) ** -t_s +
@@ -1404,11 +1416,15 @@ library LPMath {
             _params.presentValueParams.sharePrice,
             _params.presentValueParams.initialSharePrice
         );
-        uint256 inner = _params.presentValueParams.initialSharePrice.mulDivUp(
-            k -
-                (_params.presentValueParams.bondReserves - _bondAmount).pow(
-                    ONE - _params.presentValueParams.timeStretch
-                ),
+        uint256 inner = (_params.presentValueParams.bondReserves - _bondAmount)
+            .pow(ONE - _params.presentValueParams.timeStretch);
+        if (k < inner) {
+            // NOTE: In this case, we shouldn't proceed with distributing excess
+            // idle since the derivative couldn't be computed.
+            return (0, false);
+        }
+        inner = _params.presentValueParams.initialSharePrice.mulDivUp(
+            k - inner,
             _params.presentValueParams.sharePrice
         );
         if (inner >= 0) {
@@ -1448,7 +1464,7 @@ library LPMath {
             // NOTE: Small rounding errors can result in the derivative being
             // slightly (on the order of a few wei) greater than 1. In this case,
             // we return 0 since we should proceed with Newton's method.
-            return 0;
+            return (0, true);
         }
 
         // NOTE: Round down to round the final result down.
@@ -1470,7 +1486,7 @@ library LPMath {
             );
         }
 
-        return derivative;
+        return (derivative, true);
     }
 
     /// @dev Calculates the derivative of `calculateMaxBuyBondsOut`. This
