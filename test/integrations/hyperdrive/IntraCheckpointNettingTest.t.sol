@@ -20,7 +20,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
 
         // Initialize the market
         uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, 0, 0, 0);
+        deploy(alice, apr, initialSharePrice, 0, 0, 0, 0);
         uint256 contribution = 100e18;
         uint256 aliceLpShares = initialize(alice, apr, contribution);
 
@@ -80,7 +80,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256 aliceLpShares = 0;
         {
             uint256 apr = 0.05e18;
-            deploy(alice, apr, initialSharePrice, 0, 0, 0);
+            deploy(alice, apr, initialSharePrice, 0, 0, 0, 0);
             uint256 contribution = 500_000_000e18;
             aliceLpShares = initialize(alice, apr, contribution);
 
@@ -157,7 +157,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256 aliceLpShares = 0;
         {
             uint256 apr = 0.05e18;
-            deploy(alice, apr, initialSharePrice, 0, 0, 0);
+            deploy(alice, apr, initialSharePrice, 0, 0, 0, 0);
             uint256 contribution = 500_000_000e18;
             aliceLpShares = initialize(alice, apr, contribution);
 
@@ -434,7 +434,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
     ) internal {
         // Initialize the market
         uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, 0, 0, 0);
+        deploy(alice, apr, initialSharePrice, 0, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
         uint256 aliceLpShares = initialize(alice, apr, contribution);
 
@@ -570,7 +570,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
     ) internal {
         // Initialize the market
         uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, 0, 0, 0);
+        deploy(alice, apr, initialSharePrice, 0, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
@@ -727,7 +727,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
     ) internal {
         // initialize the market
         uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, 0, 0, 0);
+        deploy(alice, apr, initialSharePrice, 0, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
         uint256 aliceLpShares = initialize(alice, apr, contribution);
 
@@ -805,7 +805,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256 aliceLpShares = 0;
         {
             uint256 apr = 0.05e18;
-            deploy(alice, apr, initialSharePrice, 0, 0, 0);
+            deploy(alice, apr, initialSharePrice, 0, 0, 0, 0);
             // JR TODO: we should add this as a parameter to fuzz to ensure that we are solvent with withdrawal shares
             uint256 contribution = 500_000_000e18;
             aliceLpShares = initialize(alice, apr, contribution);

@@ -24,6 +24,7 @@ use hyperdrive_wrappers::wrappers::{
     mock_erc4626::MockERC4626,
     mock_fixed_point_math::MockFixedPointMath,
     mock_hyperdrive_math::MockHyperdriveMath,
+    mock_lp_math::MockLPMath,
     mock_yield_space_math::MockYieldSpaceMath,
 };
 
@@ -274,7 +275,8 @@ impl TestChain {
             fees: Fees {
                 curve: uint256!(0.05e18),
                 flat: uint256!(0.0005e18),
-                governance: uint256!(0.15e18),
+                governance_lp: uint256!(0.15e18),
+                governance_zombie: uint256!(0.15e18),
             },
         };
         let target0 = ERC4626Target0::deploy(client.clone(), (config.clone(), pool.address()))?
@@ -526,6 +528,7 @@ pub struct TestChainWithMocks {
     chain: TestChain,
     mock_fixed_point_math: MockFixedPointMath<ChainClient>,
     mock_hyperdrive_math: MockHyperdriveMath<ChainClient>,
+    mock_lp_math: MockLPMath<ChainClient>,
     mock_yield_space_math: MockYieldSpaceMath<ChainClient>,
 }
 
@@ -543,6 +546,10 @@ impl TestChainWithMocks {
             .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
+        let mock_lp_math = MockLPMath::deploy(client.clone(), ())?
+            .gas_price(DEFAULT_GAS_PRICE)
+            .send()
+            .await?;
         let mock_yield_space_math = MockYieldSpaceMath::deploy(client.clone(), ())?
             .gas_price(DEFAULT_GAS_PRICE)
             .send()
@@ -552,6 +559,7 @@ impl TestChainWithMocks {
             chain,
             mock_fixed_point_math,
             mock_hyperdrive_math,
+            mock_lp_math,
             mock_yield_space_math,
         })
     }
@@ -566,6 +574,10 @@ impl TestChainWithMocks {
 
     pub fn mock_hyperdrive_math(&self) -> MockHyperdriveMath<ChainClient> {
         self.mock_hyperdrive_math.clone()
+    }
+
+    pub fn mock_lp_math(&self) -> MockLPMath<ChainClient> {
+        self.mock_lp_math.clone()
     }
 
     pub fn mock_yield_space_math(&self) -> MockYieldSpaceMath<ChainClient> {
@@ -613,7 +625,8 @@ mod tests {
             Fees {
                 curve: uint256!(0.05e18),
                 flat: uint256!(0.0005e18),
-                governance: uint256!(0.15e18),
+                governance_lp: uint256!(0.15e18),
+                governance_zombie: uint256!(0.15e18),
             }
         );
 

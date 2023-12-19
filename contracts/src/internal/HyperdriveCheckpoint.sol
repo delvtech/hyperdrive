@@ -5,6 +5,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
+import { LPMath } from "../libraries/LPMath.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveLong } from "./HyperdriveLong.sol";
@@ -187,23 +188,12 @@ abstract contract HyperdriveCheckpoint is
 
         // Emit an event about the checkpoint creation that includes the LP
         // share price.
-        uint256 presentValue = _sharePrice > 0
-            ? HyperdriveMath
-                .calculatePresentValue(_getPresentValueParams(_sharePrice))
-                .mulDown(_sharePrice)
-            : 0;
-        uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
-            _totalSupply[AssetId._WITHDRAWAL_SHARE_ASSET_ID] -
-            _withdrawPool.readyToWithdraw;
-        uint256 lpSharePrice = lpTotalSupply == 0
-            ? 0
-            : presentValue.divDown(lpTotalSupply);
         emit CreateCheckpoint(
             _checkpointTime,
             _sharePrice,
             maturedShortsAmount,
             maturedLongsAmount,
-            lpSharePrice
+            _calculateLPSharePrice(_sharePrice)
         );
 
         return _sharePrice;
@@ -229,7 +219,7 @@ abstract contract HyperdriveCheckpoint is
         // bond amount divided by the share price.
         shareProceeds = _bondAmount.divDown(_sharePrice);
         uint256 flatFee = shareProceeds.mulDown(_flatFee);
-        governanceFee = flatFee.mulDown(_governanceFee);
+        governanceFee = flatFee.mulDown(_governanceLPFee);
 
         // If the position is a long, the share proceeds are removed from the
         // share reserves. The proceeds are decreased by the flat fee because

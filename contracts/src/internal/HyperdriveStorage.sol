@@ -41,7 +41,10 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
     uint256 internal immutable _flatFee;
 
     /// @dev The portion of the LP fee that goes to governance.
-    uint256 internal immutable _governanceFee;
+    uint256 internal immutable _governanceLPFee;
+
+    /// @dev The portion of the zombie interest that goes to governance.
+    uint256 internal immutable _governanceZombieFee;
 
     /// Market State ///
 
@@ -164,13 +167,14 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
         if (
             _config.fees.curve > 1e18 ||
             _config.fees.flat > 1e18 ||
-            _config.fees.governance > 1e18
+            _config.fees.governanceLP > 1e18
         ) {
             revert IHyperdrive.InvalidFeeAmounts();
         }
         _curveFee = _config.fees.curve;
         _flatFee = _config.fees.flat;
-        _governanceFee = _config.fees.governance;
+        _governanceLPFee = _config.fees.governanceLP;
+        _governanceZombieFee = _config.fees.governanceZombie;
 
         // Initialize the MultiToken immutables.
         _linkerFactory = _config.linkerFactory;

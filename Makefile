@@ -30,8 +30,9 @@ test-rust:
 lint:
 	make lint-sol && make lint-rust
 
+# FIXME: Add the code-size-check back once we've created a target2 contract.
 lint-sol:
-	make solhint && make style-check && make spell-check && make warnings-check && make code-size-check
+	make solhint && make style-check && make spell-check && make warnings-check
 
 code-size-check:
 	FOUNDRY_PROFILE=production forge build && python3 python/contract_size.py out
@@ -46,7 +47,7 @@ style-check:
 	npx prettier --check .
 
 warnings-check:
-	FOUNDRY_PROFILE=production forge build --deny-warnings --force --skip test
+	FOUNDRY_PROFILE=production forge build --deny-warnings --force
 
 lint-rust:
 	cargo check && cargo clippy && cargo fmt --check

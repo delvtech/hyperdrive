@@ -38,8 +38,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 defaultPausers: defaults,
                 feeCollector: bob,
-                fees: IHyperdrive.Fees(0, 0, 0),
-                maxFees: IHyperdrive.Fees(1e18, 1e18, 1e18),
+                fees: IHyperdrive.Fees(0, 0, 0, 0),
+                maxFees: IHyperdrive.Fees(1e18, 1e18, 1e18, 1e18),
                 linkerFactory: address(forwarderFactory),
                 linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
             })
@@ -63,7 +63,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
         factory.updateFeeCollector(bob);
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
-        factory.updateFees(IHyperdrive.Fees(1, 2, 4));
+        factory.updateFees(IHyperdrive.Fees(1, 2, 4, 5));
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
         factory.updateDefaultPausers(defaults);
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
@@ -86,11 +86,17 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         assertEq(factory.linkerFactory(), address(uint160(0xdeadbeef)));
         factory.updateLinkerCodeHash(bytes32(uint256(0xdeadbeef)));
         assertEq(factory.linkerCodeHash(), bytes32(uint256(0xdeadbeef)));
-        factory.updateFees(IHyperdrive.Fees(1, 2, 3));
-        (uint256 curve, uint256 flat, uint256 govFee) = factory.fees();
+        factory.updateFees(IHyperdrive.Fees(1, 2, 3, 4));
+        (
+            uint256 curve,
+            uint256 flat,
+            uint256 govLPFee,
+            uint256 govZombieFee
+        ) = factory.fees();
         assertEq(curve, 1);
         assertEq(flat, 2);
-        assertEq(govFee, 3);
+        assertEq(govLPFee, 3);
+        assertEq(govZombieFee, 4);
         defaults[0] = alice;
         factory.updateDefaultPausers(defaults);
         address[] memory updateDefaultPausers = factory.getDefaultPausers();

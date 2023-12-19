@@ -337,7 +337,7 @@ impl State {
             FixedPoint::from(checkpoint_exposure.max(I256::zero())) / self.share_price();
         (self.share_price() * (self.get_solvency() + checkpoint_exposure))
             / (estimate_price - self.curve_fee() * (fixed!(1e18) - spot_price)
-                + self.governance_fee() * self.curve_fee() * (fixed!(1e18) - spot_price))
+                + self.governance_lp_fee() * self.curve_fee() * (fixed!(1e18) - spot_price))
     }
 
     /// Gets the derivative of the short deposit function with respect to the
@@ -450,9 +450,10 @@ impl State {
         spot_price: FixedPoint,
     ) -> Option<FixedPoint> {
         let lhs = self.short_principal_derivative(short_amount);
-        let rhs =
-            self.curve_fee() * (fixed!(1e18) - spot_price) * (fixed!(1e18) - self.governance_fee())
-                / self.share_price();
+        let rhs = self.curve_fee()
+            * (fixed!(1e18) - spot_price)
+            * (fixed!(1e18) - self.governance_lp_fee())
+            / self.share_price();
         if lhs >= rhs {
             Some(lhs - rhs)
         } else {
@@ -567,7 +568,7 @@ mod tests {
                         minimum_share_reserves: state.config.minimum_share_reserves,
                         curve_fee: state.config.fees.curve,
                         flat_fee: state.config.fees.flat,
-                        governance_fee: state.config.fees.governance,
+                        governance_lp_fee: state.config.fees.governance_lp,
                     },
                     checkpoint_exposure,
                     max_iterations.into(),

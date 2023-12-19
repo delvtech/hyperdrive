@@ -26,7 +26,7 @@ impl State {
     /// g(x) = \phi_{g} \cdot p \cdot c(x)
     /// $$
     pub fn open_long_governance_fee(&self, base_amount: FixedPoint) -> FixedPoint {
-        self.governance_fee() * self.get_spot_price() * self.open_long_curve_fees(base_amount)
+        self.governance_lp_fee() * self.get_spot_price() * self.open_long_curve_fees(base_amount)
     }
 
     /// Gets the curve fee paid by longs for a given bond amount.

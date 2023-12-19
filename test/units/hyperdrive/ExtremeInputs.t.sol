@@ -204,7 +204,7 @@ contract ExtremeInputs is HyperdriveTest {
                 minimumShareReserves: targetReserves,
                 curveFee: poolConfig.fees.curve,
                 flatFee: poolConfig.fees.flat,
-                governanceFee: poolConfig.fees.governance
+                governanceLPFee: poolConfig.fees.governanceLP
             }),
             hyperdrive.getCheckpointExposure(hyperdrive.latestCheckpoint()),
             7

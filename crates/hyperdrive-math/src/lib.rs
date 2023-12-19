@@ -36,7 +36,8 @@ impl Distribution<State> for Standard {
             fees: Fees {
                 curve: rng.gen_range(fixed!(0.0001e18)..=fixed!(0.2e18)).into(),
                 flat: rng.gen_range(fixed!(0.0001e18)..=fixed!(0.2e18)).into(),
-                governance: rng.gen_range(fixed!(0.0001e18)..=fixed!(0.2e18)).into(),
+                governance_lp: rng.gen_range(fixed!(0.0001e18)..=fixed!(0.2e18)).into(),
+                governance_zombie: rng.gen_range(fixed!(0.0001e18)..=fixed!(0.2e18)).into(),
             },
             initial_share_price: rng.gen_range(fixed!(0.5e18)..=fixed!(2.5e18)).into(),
             minimum_share_reserves: rng.gen_range(fixed!(0.1e18)..=fixed!(1e18)).into(),
@@ -167,8 +168,8 @@ impl State {
         self.config.fees.flat.into()
     }
 
-    fn governance_fee(&self) -> FixedPoint {
-        self.config.fees.governance.into()
+    fn governance_lp_fee(&self) -> FixedPoint {
+        self.config.fees.governance_lp.into()
     }
 
     /// Info ///
@@ -216,7 +217,11 @@ impl State {
 
 impl YieldSpace for State {
     fn z(&self) -> FixedPoint {
-        self.effective_share_reserves()
+        self.share_reserves()
+    }
+
+    fn zeta(&self) -> I256 {
+        self.share_adjustment()
     }
 
     fn y(&self) -> FixedPoint {

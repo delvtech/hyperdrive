@@ -412,6 +412,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             uint256(testParams.fixedRate),
             testParams.contribution
         );
+        testParams.contribution -= 2 * config.minimumShareReserves;
 
         // Bob adds liquidity.
         uint256 bobLpShares = addLiquidity(bob, testParams.contribution);
@@ -455,16 +456,21 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         }
 
         // Alice removes her liquidity.
-        uint256 estimatedBaseProceeds = calculateBaseLpProceeds(aliceLpShares);
+        (
+            uint256 expectedBaseProceeds,
+
+        ) = calculateExpectedRemoveLiquidityProceeds(aliceLpShares);
         (
             uint256 aliceBaseProceeds,
             uint256 aliceWithdrawalShares
         ) = removeLiquidity(alice, aliceLpShares);
-        uint256 lpMargin = uint256(
-            (int256(testParams.longAmount - testParams.longBasePaid) -
-                int256(testParams.shortBasePaid)).max(0)
+        assertEq(aliceBaseProceeds, expectedBaseProceeds);
+        assertGe(
+            aliceBaseProceeds +
+                aliceWithdrawalShares.mulDown(hyperdrive.lpSharePrice()) +
+                1500,
+            testParams.contribution
         );
-        assertEq(aliceBaseProceeds, estimatedBaseProceeds);
 
         // Celine adds liquidity.
         // Note that fuzzing will occasionally create long and short trades so large
@@ -512,20 +518,6 @@ contract NonstandardDecimalsTest is HyperdriveTest {
                     testParams.shortMaturityTime,
                     testParams.shortAmount
                 );
-            }
-
-            // Redeem Alice's withdrawal shares. Alice gets at least the margin released
-            // from Bob's long.
-            (uint256 aliceRedeemProceeds, ) = redeemWithdrawalShares(
-                alice,
-                aliceWithdrawalShares
-            );
-            {
-                uint256 estimatedRedeemProceeds = lpMargin.mulDivDown(
-                    aliceLpShares,
-                    aliceLpShares + bobLpShares
-                );
-                assertGe(aliceRedeemProceeds + 10, estimatedRedeemProceeds);
             }
 
             // Bob and Celine remove their liquidity. Bob should receive more base
