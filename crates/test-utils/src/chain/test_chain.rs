@@ -18,6 +18,8 @@ use hyperdrive_wrappers::wrappers::{
     erc4626_hyperdrive::ERC4626Hyperdrive,
     erc4626_target0::ERC4626Target0,
     erc4626_target1::ERC4626Target1,
+    erc4626_target2::ERC4626Target2,
+    erc4626_target3::ERC4626Target3,
     etching_vault::EtchingVault,
     i_hyperdrive::{Fees, PoolConfig},
     ierc4626_hyperdrive::IERC4626Hyperdrive,
@@ -287,12 +289,22 @@ impl TestChain {
             .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
+        let target2 = ERC4626Target2::deploy(client.clone(), (config.clone(), pool.address()))?
+            .gas_price(DEFAULT_GAS_PRICE)
+            .send()
+            .await?;
+        let target3 = ERC4626Target3::deploy(client.clone(), (config.clone(), pool.address()))?
+            .gas_price(DEFAULT_GAS_PRICE)
+            .send()
+            .await?;
         let erc4626_hyperdrive = ERC4626Hyperdrive::deploy(
             client.clone(),
             (
                 config,
                 target0.address(),
                 target1.address(),
+                target2.address(),
+                target3.address(),
                 pool.address(),
                 Vec::<U256>::new(),
             ),
