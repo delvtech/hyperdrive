@@ -7,6 +7,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IERC4626HyperdriveDeployer } from "../interfaces/IERC4626HyperdriveDeployer.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 import { IHyperdriveTargetDeployer } from "../interfaces/IHyperdriveTargetDeployer.sol";
+import { ONE } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title ERC4626HyperdriveDeployer
@@ -27,21 +28,35 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
     /// @notice The contract used to deploy new instances of Hyperdrive target1.
     address public immutable target1Deployer;
 
-    /// @notice The constant used to represent 1e18.
-    uint256 constant ONE = 1e18;
+    /// @notice The contract used to deploy new instances of Hyperdrive target2.
+    address public immutable target2Deployer;
+
+    /// @notice The contract used to deploy new instances of Hyperdrive target3.
+    address public immutable target3Deployer;
 
     /// @notice Initializes the contract with the given parameters.
-    /// @param _hyperdriveCoreDeployer The contract used to deploy new instances of Hyperdrive.
-    /// @param _target0Deployer The contract used to deploy new instances of Hyperdrive target0.
-    /// @param _target1Deployer The contract used to deploy new instances of Hyperdrive target1.
+    /// @param _hyperdriveCoreDeployer The contract used to deploy new instances
+    ///        of Hyperdrive.
+    /// @param _target0Deployer The contract used to deploy new instances of
+    ///        Hyperdrive target0.
+    /// @param _target1Deployer The contract used to deploy new instances of
+    ///        Hyperdrive target1.
+    /// @param _target2Deployer The contract used to deploy new instances of
+    ///        Hyperdrive target2.
+    /// @param _target3Deployer The contract used to deploy new instances of
+    ///        Hyperdrive target3.
     constructor(
         address _hyperdriveCoreDeployer,
         address _target0Deployer,
-        address _target1Deployer
+        address _target1Deployer,
+        address _target2Deployer,
+        address _target3Deployer
     ) {
         hyperdriveCoreDeployer = _hyperdriveCoreDeployer;
         target0Deployer = _target0Deployer;
         target1Deployer = _target1Deployer;
+        target2Deployer = _target2Deployer;
+        target3Deployer = _target3Deployer;
     }
 
     /// @notice Deploys a Hyperdrive instance with the given parameters.
@@ -68,6 +83,14 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
             _config,
             _extraData
         );
+        address target2 = IHyperdriveTargetDeployer(target2Deployer).deploy(
+            _config,
+            _extraData
+        );
+        address target3 = IHyperdriveTargetDeployer(target3Deployer).deploy(
+            _config,
+            _extraData
+        );
 
         // Deploy the ERC4626Hyperdrive instance.
         return
@@ -75,7 +98,9 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
                 _config,
                 _extraData,
                 target0,
-                target1
+                target1,
+                target2,
+                target3
             );
     }
 

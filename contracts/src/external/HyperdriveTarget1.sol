@@ -30,40 +30,6 @@ abstract contract HyperdriveTarget1 is
         IHyperdrive.PoolConfig memory _config
     ) HyperdriveStorage(_config) {}
 
-    /// Longs ///
-
-    /// @notice Closes a long position with a specified maturity time.
-    /// @param _maturityTime The maturity time of the short.
-    /// @param _bondAmount The amount of longs to close.
-    /// @param _minOutput The minimum amount of base the trader will accept.
-    /// @param _options The options that configure how the trade is settled.
-    /// @return The amount of underlying the user receives.
-    function closeLong(
-        uint256 _maturityTime,
-        uint256 _bondAmount,
-        uint256 _minOutput,
-        IHyperdrive.Options calldata _options
-    ) external returns (uint256) {
-        return _closeLong(_maturityTime, _bondAmount, _minOutput, _options);
-    }
-
-    /// Shorts ///
-
-    /// @notice Closes a short position with a specified maturity time.
-    /// @param _maturityTime The maturity time of the short.
-    /// @param _bondAmount The amount of shorts to close.
-    /// @param _minOutput The minimum output of this trade.
-    /// @param _options The options that configure how the trade is settled.
-    /// @return The amount of base tokens produced by closing this short.
-    function closeShort(
-        uint256 _maturityTime,
-        uint256 _bondAmount,
-        uint256 _minOutput,
-        IHyperdrive.Options calldata _options
-    ) external returns (uint256) {
-        return _closeShort(_maturityTime, _bondAmount, _minOutput, _options);
-    }
-
     /// LPs ///
 
     /// @notice Allows the first LP to initialize the market with a target APR.
@@ -137,13 +103,5 @@ abstract contract HyperdriveTarget1 is
                 _minOutputPerShare,
                 _options
             );
-    }
-
-    /// Checkpoints ///
-
-    /// @notice Allows anyone to mint a new checkpoint.
-    /// @param _checkpointTime The time of the checkpoint to create.
-    function checkpoint(uint256 _checkpointTime) external {
-        _checkpoint(_checkpointTime);
     }
 }
