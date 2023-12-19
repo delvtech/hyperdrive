@@ -37,14 +37,10 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
     /// @notice Initializes the contract with the given parameters.
     /// @param _hyperdriveCoreDeployer The contract used to deploy new instances
     ///        of Hyperdrive.
-    /// @param _target0Deployer The contract used to deploy new instances of
-    ///        Hyperdrive target0.
-    /// @param _target1Deployer The contract used to deploy new instances of
-    ///        Hyperdrive target1.
-    /// @param _target2Deployer The contract used to deploy new instances of
-    ///        Hyperdrive target2.
-    /// @param _target3Deployer The contract used to deploy new instances of
-    ///        Hyperdrive target3.
+    /// @param _target0Deployer The target0 deployer.
+    /// @param _target1Deployer The target1 deployer.
+    /// @param _target2Deployer The target2 deployer.
+    /// @param _target3Deployer The target3 deployer.
     constructor(
         address _hyperdriveCoreDeployer,
         address _target0Deployer,
@@ -70,7 +66,8 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
         // Decode the extra data to extract the pool address.
         (address pool, ) = abi.decode(_extraData, (address, address[]));
 
-        // Convert the deploy config into the pool config and set the initial share price.
+        // Convert the deploy config into the pool config and set the initial
+        // share price.
         IHyperdrive.PoolConfig memory _config = _copyPoolConfig(_deployConfig);
         _config.initialSharePrice = IERC4626(pool).convertToAssets(ONE);
 

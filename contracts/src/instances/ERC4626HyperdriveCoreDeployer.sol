@@ -22,7 +22,7 @@ contract ERC4626HyperdriveCoreDeployer is IERC4626HyperdriveDeployer {
     /// @param target1 The target1 address.
     /// @param target2 The target2 address.
     /// @param target3 The target3 address.
-    /// @return The address of the newly deployed ERC4626Hyperdrive Instance
+    /// @return The address of the newly deployed ERC4626Hyperdrive Instance.
     function deploy(
         IHyperdrive.PoolConfig memory _config,
         bytes memory _extraData,
