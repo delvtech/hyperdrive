@@ -197,7 +197,7 @@ contract DevnetMigration is Script {
             ForwarderFactory forwarderFactory = new ForwarderFactory();
             HyperdriveFactory.FactoryConfig
                 memory factoryConfig = HyperdriveFactory.FactoryConfig({
-                    governance: config.admin,
+                    governance: msg.sender,
                     hyperdriveGovernance: config.admin,
                     feeCollector: config.admin,
                     fees: IHyperdrive.Fees({
@@ -273,9 +273,11 @@ contract DevnetMigration is Script {
         // Deploy the MockHyperdriveMath contract.
         MockHyperdriveMath mockHyperdriveMath = new MockHyperdriveMath();
 
-        // Transfer ownership of the base token and vault to the admin address
-        // now that we're done minting tokens.
+        // Transfer ownership of the base token, factory, and vault to the admin
+        // address now that we're done minting tokens and updating the
+        // configuration.
         baseToken.transferOwnership(config.admin);
+        factory.updateGovernance(config.admin);
         pool.transferOwnership(config.admin);
 
         vm.stopBroadcast();
