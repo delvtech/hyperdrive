@@ -22,7 +22,10 @@ contract LPMathTest is HyperdriveTest {
         uint256 apr = 0.02e18;
         uint256 initialSharePrice = 1e18;
         uint256 positionDuration = 365 days;
-        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(apr);
+        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(
+            apr,
+            positionDuration
+        );
 
         // no open positions.
         {
@@ -632,7 +635,10 @@ contract LPMathTest is HyperdriveTest {
         uint256 apr = 0.02e18;
         uint256 initialSharePrice = 0.5e18;
         uint256 positionDuration = 365 days;
-        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(apr);
+        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(
+            apr,
+            positionDuration
+        );
 
         // The pool is net neutral with no open positions.
         {
@@ -991,7 +997,10 @@ contract LPMathTest is HyperdriveTest {
         uint256 apr = 0.02e18;
         uint256 initialSharePrice = 1e18;
         uint256 positionDuration = 365 days;
-        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(apr);
+        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(
+            apr,
+            positionDuration
+        );
 
         // The pool is net neutral.
         {
@@ -1285,7 +1294,10 @@ contract LPMathTest is HyperdriveTest {
         uint256 apr = 0.02e18;
         uint256 initialSharePrice = 1e18;
         uint256 positionDuration = 365 days;
-        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(apr);
+        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(
+            apr,
+            positionDuration
+        );
 
         // The pool is net neutral.
         {

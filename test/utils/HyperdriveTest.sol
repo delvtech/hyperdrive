@@ -40,7 +40,10 @@ contract HyperdriveTest is BaseTest {
         baseToken = new ERC20Mintable("Base", "BASE", 18, address(0), false);
 
         // Instantiate Hyperdrive.
-        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        IHyperdrive.PoolConfig memory config = testConfig(
+            0.05e18,
+            POSITION_DURATION
+        );
         deploy(alice, config);
         vm.stopPrank();
         vm.startPrank(governance);
@@ -92,7 +95,10 @@ contract HyperdriveTest is BaseTest {
         uint256 governanceLPFee,
         uint256 governanceZombieFee
     ) internal {
-        IHyperdrive.PoolConfig memory config = testConfig(apr);
+        IHyperdrive.PoolConfig memory config = testConfig(
+            apr,
+            POSITION_DURATION
+        );
         config.initialSharePrice = initialSharePrice;
         config.fees.curve = curveFee;
         config.fees.flat = flatFee;
@@ -102,10 +108,12 @@ contract HyperdriveTest is BaseTest {
     }
 
     function testConfig(
-        uint256 fixedRate
+        uint256 fixedRate,
+        uint256 positionDuration
     ) internal view returns (IHyperdrive.PoolConfig memory _config) {
         IHyperdrive.PoolDeployConfig memory _deployConfig = testDeployConfig(
-            fixedRate
+            fixedRate,
+            positionDuration
         );
 
         _config.baseToken = _deployConfig.baseToken;
@@ -125,7 +133,8 @@ contract HyperdriveTest is BaseTest {
     }
 
     function testDeployConfig(
-        uint256 fixedRate
+        uint256 fixedRate,
+        uint256 positionDuration
     ) internal view returns (IHyperdrive.PoolDeployConfig memory) {
         IHyperdrive.Fees memory fees = IHyperdrive.Fees({
             curve: 0,
@@ -140,9 +149,12 @@ contract HyperdriveTest is BaseTest {
                 linkerCodeHash: bytes32(0),
                 minimumShareReserves: MINIMUM_SHARE_RESERVES,
                 minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
-                positionDuration: POSITION_DURATION,
+                positionDuration: positionDuration,
                 checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: HyperdriveUtils.calculateTimeStretch(fixedRate),
+                timeStretch: HyperdriveUtils.calculateTimeStretch(
+                    fixedRate,
+                    positionDuration
+                ),
                 governance: governance,
                 feeCollector: feeCollector,
                 fees: fees

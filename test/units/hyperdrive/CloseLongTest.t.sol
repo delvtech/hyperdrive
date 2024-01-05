@@ -684,7 +684,10 @@ contract CloseLongTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
 
         // 1. Deploy a pool with zero fees
-        IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+        IHyperdrive.PoolConfig memory config = testConfig(
+            fixedRate,
+            POSITION_DURATION
+        );
         deploy(address(deployer), config);
         // Initialize the pool with a large amount of capital.
         initialize(alice, fixedRate, contribution);
@@ -701,7 +704,7 @@ contract CloseLongTest is HyperdriveTest {
         // 4. deploy a pool with 100% curve fees and 100% gov fees (this is nice bc
         // it ensures that all the fees are credited to governance and thus subtracted
         // from the shareReserves
-        config = testConfig(fixedRate);
+        config = testConfig(fixedRate, POSITION_DURATION);
         config.fees = IHyperdrive.Fees({
             curve: 0,
             flat: 0.01e18,
@@ -725,7 +728,7 @@ contract CloseLongTest is HyperdriveTest {
         assert(govFees > 1e5);
 
         // 7. deploy a pool with 100% curve fees and 0% gov fees
-        config = testConfig(fixedRate);
+        config = testConfig(fixedRate, POSITION_DURATION);
         config.fees = IHyperdrive.Fees({
             curve: 0,
             flat: 0.01e18,

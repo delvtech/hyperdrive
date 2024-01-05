@@ -204,7 +204,10 @@ contract OpenShortTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
 
         // 1. Deploy a pool with zero fees
-        IHyperdrive.PoolConfig memory config = testConfig(apr);
+        IHyperdrive.PoolConfig memory config = testConfig(
+            apr,
+            POSITION_DURATION
+        );
         deploy(address(deployer), config);
         // Initialize the pool with a large amount of capital.
         initialize(alice, apr, contribution);
@@ -220,7 +223,7 @@ contract OpenShortTest is HyperdriveTest {
         // 4. deploy a pool with 100% curve fees and 100% gov fees (this is nice bc
         // it ensures that all the fees are credited to governance and thus subtracted
         // from the shareReserves
-        config = testConfig(apr);
+        config = testConfig(apr, POSITION_DURATION);
         config.fees = IHyperdrive.Fees({
             curve: 1e18,
             flat: 1e18,
@@ -255,7 +258,7 @@ contract OpenShortTest is HyperdriveTest {
         assert(govFees > 1e5);
 
         // 7. deploy a pool with 100% curve fees and 0% gov fees
-        config = testConfig(apr);
+        config = testConfig(apr, POSITION_DURATION);
         config.fees = IHyperdrive.Fees({
             curve: 1e18,
             flat: 0,
@@ -287,7 +290,10 @@ contract OpenShortTest is HyperdriveTest {
 
         // Alice initializes the pool. The pool has a curve fee of 100% and
         // governance fees of 0%.
-        IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+        IHyperdrive.PoolConfig memory config = testConfig(
+            fixedRate,
+            POSITION_DURATION
+        );
         config.fees.curve = 1e18;
         config.fees.governanceLP = 0;
         config.fees.governanceZombie = 0;
@@ -300,7 +306,7 @@ contract OpenShortTest is HyperdriveTest {
 
         // Alice initializes the pool. The pool has a curve fee of 100% and
         // governance fees of 100%.
-        config = testConfig(fixedRate);
+        config = testConfig(fixedRate, POSITION_DURATION);
         config.fees.curve = 1e18;
         config.fees.governanceLP = 1e18;
         config.fees.governanceZombie = 1e18;
