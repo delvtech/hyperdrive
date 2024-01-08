@@ -58,7 +58,6 @@ contract DevnetMigration is Script {
         // hyperdrive configuration
         uint256 hyperdriveContribution;
         uint256 hyperdriveFixedRate;
-        uint256 hyperdriveInitialSharePrice;
         uint256 hyperdriveMinimumShareReserves;
         uint256 hyperdriveMinimumTransactionAmount;
         uint256 hyperdrivePositionDuration;
@@ -124,10 +123,6 @@ contract DevnetMigration is Script {
             hyperdriveFixedRate: vm.envOr(
                 "HYPERDRIVE_FIXED_RATE",
                 uint256(0.05e18)
-            ),
-            hyperdriveInitialSharePrice: vm.envOr(
-                "HYPERDRIVE_INITIAL_SHARE_PRICE",
-                uint256(1e18)
             ),
             hyperdriveMinimumShareReserves: vm.envOr(
                 "HYPERDRIVE_MINIMUM_SHARE_RESERVES",
