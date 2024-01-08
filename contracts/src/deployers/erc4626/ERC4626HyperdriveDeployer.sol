@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { ERC4626Hyperdrive } from "../instances/ERC4626Hyperdrive.sol";
-import { IERC4626 } from "../interfaces/IERC4626.sol";
-import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import { IERC4626HyperdriveDeployer } from "../interfaces/IERC4626HyperdriveDeployer.sol";
-import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
-import { IHyperdriveTargetDeployer } from "../interfaces/IHyperdriveTargetDeployer.sol";
-import { ONE } from "../libraries/FixedPointMath.sol";
+import { ERC4626Hyperdrive } from "../../instances/erc4626/ERC4626Hyperdrive.sol";
+import { IERC4626 } from "../../interfaces/IERC4626.sol";
+import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IERC4626HyperdriveDeployer } from "../../interfaces/IERC4626HyperdriveDeployer.sol";
+import { IHyperdriveDeployer } from "../../interfaces/IHyperdriveDeployer.sol";
+import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDeployer.sol";
+import { ONE } from "../../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title ERC4626HyperdriveDeployer

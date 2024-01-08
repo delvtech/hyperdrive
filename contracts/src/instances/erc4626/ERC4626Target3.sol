@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { HyperdriveTarget3 } from "../external/HyperdriveTarget3.sol";
-import { IERC4626 } from "../interfaces/IERC4626.sol";
-import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { HyperdriveTarget3 } from "../../external/HyperdriveTarget3.sol";
+import { IERC4626 } from "../../interfaces/IERC4626.sol";
+import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { ERC4626Base } from "./ERC4626Base.sol";
 
 /// @author DELV

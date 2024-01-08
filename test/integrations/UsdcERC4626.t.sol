@@ -1,19 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { ERC4626HyperdriveDeployer } from "contracts/src/instances/ERC4626HyperdriveDeployer.sol";
+import { ERC4626HyperdriveDeployer } from "contracts/src/deployers/erc4626/ERC4626HyperdriveDeployer.sol";
+import { ERC4626Target0Deployer } from "contracts/src/deployers/erc4626/ERC4626Target0Deployer.sol";
+import { ERC4626Target1Deployer } from "contracts/src/deployers/erc4626/ERC4626Target1Deployer.sol";
+import { ERC4626Target2Deployer } from "contracts/src/deployers/erc4626/ERC4626Target2Deployer.sol";
+import { ERC4626Target3Deployer } from "contracts/src/deployers/erc4626/ERC4626Target3Deployer.sol";
+import { ERC4626HyperdriveCoreDeployer } from "contracts/src/deployers/erc4626/ERC4626HyperdriveCoreDeployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
-import { ERC4626HyperdriveDeployer } from "contracts/src/instances/ERC4626HyperdriveDeployer.sol";
-import { ERC4626Target0Deployer } from "contracts/src/instances/ERC4626Target0Deployer.sol";
-import { ERC4626Target1Deployer } from "contracts/src/instances/ERC4626Target1Deployer.sol";
-import { ERC4626Target2Deployer } from "contracts/src/instances/ERC4626Target2Deployer.sol";
-import { ERC4626Target3Deployer } from "contracts/src/instances/ERC4626Target3Deployer.sol";
-import { ERC4626HyperdriveCoreDeployer } from "contracts/src/instances/ERC4626HyperdriveCoreDeployer.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
@@ -25,7 +24,6 @@ import { MockERC4626 } from "contracts/test/MockERC4626.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 import { ERC4626ValidationTest } from "./ERC4626Validation.t.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 
 contract UsdcERC4626 is ERC4626ValidationTest {
     using FixedPointMath for *;

@@ -3,11 +3,11 @@ pragma solidity 0.8.19;
 
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
-import { IERC4626 } from "../interfaces/IERC4626.sol";
-import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import { IERC4626Hyperdrive } from "../interfaces/IERC4626Hyperdrive.sol";
-import { HyperdriveBase } from "../internal/HyperdriveBase.sol";
-import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
+import { IERC4626 } from "../../interfaces/IERC4626.sol";
+import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IERC4626Hyperdrive } from "../../interfaces/IERC4626Hyperdrive.sol";
+import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
+import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title ERC4626Base
