@@ -1,0 +1,130 @@
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity 0.8.19;
+
+import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { ILido } from "../../interfaces/ILido.sol";
+import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
+import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
+
+/// @author DELV
+/// @title StethHyperdrive
+/// @notice The base contract for the stETH Hyperdrive implementation.
+/// @dev Lido has it's own notion of shares to account for the accrual of
+///      interest on the ether pooled in the Lido protocol. Instead of
+///      maintaining a balance of shares, this integration can simply use Lido
+///      shares directly.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
+abstract contract StETHBase is HyperdriveBase {
+    using FixedPointMath for uint256;
+
+    /// @dev The Lido contract.
+    ILido internal immutable lido;
+
+    /// @notice Instantiates the stETH Hyperdrive base contract.
+    /// @param _lido The Lido contract.
+    constructor(ILido _lido) {
+        lido = _lido;
+
+        // Ensure that the minimum share reserves are equal to 1e15. This value
+        // has been tested to prevent arithmetic overflows in the
+        // `_updateLiquidity` function when the share reserves are as high as
+        // 200 million.
+        if (_minimumShareReserves != 1e15) {
+            revert IHyperdrive.InvalidMinimumShareReserves();
+        }
+    }
+
+    /// Yield Source ///
+
+    /// @dev Accepts a transfer from the user in base or the yield source token.
+    /// @param _amount The amount of token to transfer. It will be in either
+    ///          base or shares depending on the `asBase` option.
+    /// @param _options The options that configure the deposit. The only option
+    ///        used in this implementation is "asBase" which determines if
+    ///        the deposit is settled in ETH or stETH shares.
+    /// @return shares The amount of shares that represents the amount deposited.
+    /// @return sharePrice The current share price.
+    function _deposit(
+        uint256 _amount,
+        IHyperdrive.Options calldata _options
+    ) internal override returns (uint256 shares, uint256 sharePrice) {
+        if (_options.asBase) {
+            // Ensure that sufficient ether was provided and refund any excess.
+            if (msg.value < _amount) {
+                revert IHyperdrive.TransferFailed();
+            }
+            if (msg.value > _amount) {
+                // Return excess ether to the user.
+                (bool success, ) = payable(msg.sender).call{
+                    value: msg.value - _amount
+                }("");
+                if (!success) {
+                    revert IHyperdrive.TransferFailed();
+                }
+            }
+
+            // Submit the provided ether to Lido to be deposited. The fee
+            // collector address is passed as the referral address; however,
+            // users can specify whatever referrer they'd like by depositing
+            // stETH instead of WETH.
+            shares = lido.submit{ value: _amount }(_feeCollector);
+
+            // Calculate the share price.
+            sharePrice = _pricePerShare();
+        } else {
+            // Ensure that the user didn't send ether to the contract.
+            if (msg.value > 0) {
+                revert IHyperdrive.NotPayable();
+            }
+
+            // Transfer stETH shares into the contract.
+            lido.transferSharesFrom(msg.sender, address(this), _amount);
+
+            // Calculate the share price.
+            shares = _amount;
+            sharePrice = _pricePerShare();
+        }
+
+        return (shares, sharePrice);
+    }
+
+    /// @notice Processes a trader's withdrawal. This yield source only supports
+    ///         withdrawals in stETH shares.
+    /// @param _shares The amount of shares to withdraw from Hyperdrive.
+    /// @param _options The options that configure the withdrawal. The options
+    ///        used in this implementation are "destination" which specifies the
+    ///        recipient of the withdrawal and "asBase" which determines
+    ///        if the withdrawal is settled in base or vault shares. The "asBase"
+    ///        option must be false since stETH withdrawals aren't processed
+    ///        instantaneously. Users that want to withdraw can manage their
+    ///        withdrawal separately.
+    /// @return The amount of shares withdrawn from the yield source.
+    function _withdraw(
+        uint256 _shares,
+        IHyperdrive.Options calldata _options
+    ) internal override returns (uint256) {
+        // stETH withdrawals aren't necessarily instantaneous. Users that want
+        // to withdraw can manage their withdrawal separately.
+        if (_options.asBase) {
+            revert IHyperdrive.UnsupportedToken();
+        }
+
+        // Transfer the stETH shares to the destination.
+        lido.transferShares(_options.destination, _shares);
+
+        return _shares;
+    }
+
+    /// @dev Returns the current share price. We simply use Lido's share price.
+    /// @return price The current share price.
+    /// @dev must remain consistent with the impl inside of the DataProvider
+    function _pricePerShare() internal view override returns (uint256 price) {
+        return lido.getTotalPooledEther().divDown(lido.getTotalShares());
+    }
+
+    /// @dev We override the message value check since this integration is
+    ///      payable.
+    function _checkMessageValue() internal pure override {}
+}
