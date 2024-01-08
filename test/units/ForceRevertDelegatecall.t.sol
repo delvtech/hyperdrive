@@ -36,7 +36,10 @@ contract DummyHyperdrive is Hyperdrive, MockHyperdriveBase {
                 minimumTransactionAmount: 1e15,
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
-                timeStretch: HyperdriveUtils.calculateTimeStretch(0.05e18),
+                timeStretch: HyperdriveUtils.calculateTimeStretch(
+                    0.05e18,
+                    365 days
+                ),
                 governance: address(0),
                 feeCollector: address(0),
                 fees: IHyperdrive.Fees({

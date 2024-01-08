@@ -441,7 +441,10 @@ contract HyperdriveMathTest is HyperdriveTest {
         fixedRate = fixedRate.normalizeToRange(0.005e18, 1e18);
         uint256 initialShareReserves = 500_000_000e18;
         uint256 initialSharePrice = INITIAL_SHARE_PRICE;
-        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(fixedRate);
+        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(
+            fixedRate,
+            POSITION_DURATION
+        );
         uint256 normalizedTimeRemaining = 1e18;
         uint256 initialBondReserves = hyperdriveMath
             .calculateInitialBondReserves(
@@ -509,7 +512,10 @@ contract HyperdriveMathTest is HyperdriveTest {
         fixedRate = fixedRate.normalizeToRange(0.005e18, 1e18);
         uint256 initialShareReserves = 500_000_000e18;
         uint256 initialSharePrice = INITIAL_SHARE_PRICE;
-        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(fixedRate);
+        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(
+            fixedRate,
+            POSITION_DURATION
+        );
         uint256 initialBondReserves = hyperdriveMath
             .calculateInitialBondReserves(
                 initialShareReserves,

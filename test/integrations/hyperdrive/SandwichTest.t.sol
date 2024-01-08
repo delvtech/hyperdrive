@@ -134,7 +134,10 @@ contract SandwichTest is HyperdriveTest {
         uint256 tradeAmount,
         uint256 sandwichAmount
     ) external {
-        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        IHyperdrive.PoolConfig memory config = testConfig(
+            0.05e18,
+            POSITION_DURATION
+        );
         deploy(alice, config);
         fixedRate = fixedRate.normalizeToRange(0.001e18, 1e18);
         contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);

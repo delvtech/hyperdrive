@@ -20,7 +20,10 @@ contract UpdateLiquidityTest is HyperdriveTest {
     function setUp() public override {
         super.setUp();
 
-        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        IHyperdrive.PoolConfig memory config = testConfig(
+            0.05e18,
+            POSITION_DURATION
+        );
         config.baseToken = IERC20(
             address(new ERC20Mintable("Base", "BASE", 18, address(0), false))
         );

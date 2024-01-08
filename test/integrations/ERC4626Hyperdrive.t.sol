@@ -260,7 +260,10 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 minimumTransactionAmount: 0.001e18,
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
-                timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
+                timeStretch: HyperdriveUtils.calculateTimeStretch(
+                    apr,
+                    365 days
+                ),
                 governance: alice,
                 feeCollector: bob,
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
@@ -311,7 +314,10 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 minimumTransactionAmount: 0.001e18,
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
-                timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
+                timeStretch: HyperdriveUtils.calculateTimeStretch(
+                    apr,
+                    365 days
+                ),
                 governance: alice,
                 feeCollector: bob,
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
@@ -355,7 +361,10 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 minimumTransactionAmount: 0.001e18,
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
-                timeStretch: HyperdriveUtils.calculateTimeStretch(0.01e18),
+                timeStretch: HyperdriveUtils.calculateTimeStretch(
+                    0.01e18,
+                    365 days
+                ),
                 governance: alice,
                 feeCollector: bob,
                 fees: IHyperdrive.Fees(0, 0, 0, 0)

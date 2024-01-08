@@ -169,7 +169,7 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             minimumTransactionAmount: 1e15,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(APR),
+            timeStretch: HyperdriveUtils.calculateTimeStretch(APR, 365 days),
             governance: alice,
             feeCollector: bob,
             fees: IHyperdrive.Fees(0, 0, 0, 0),

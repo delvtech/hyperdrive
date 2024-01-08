@@ -85,10 +85,12 @@ contract InitializeTest is HyperdriveTest {
         contribution = contribution.normalizeToRange(1_000e18, 100_000_000e18);
 
         // Deploy a Hyperdrive pool with the given parameters.
-        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        IHyperdrive.PoolConfig memory config = testConfig(
+            0.05e18,
+            checkpointDuration * checkpointsPerTerm
+        );
         config.initialSharePrice = initialSharePrice;
         config.checkpointDuration = checkpointDuration;
-        config.positionDuration = checkpointDuration * checkpointsPerTerm;
         deploy(alice, config);
 
         // Initialize the pool with Alice.
