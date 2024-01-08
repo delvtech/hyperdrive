@@ -8,7 +8,7 @@ interface IHyperdriveRead is IMultiTokenRead {
     function baseToken() external view returns (address);
 
     function getCheckpoint(
-        uint256 _checkpointId
+        uint256 _checkpointTime
     ) external view returns (IHyperdrive.Checkpoint memory);
 
     function getCheckpointExposure(

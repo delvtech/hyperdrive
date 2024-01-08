@@ -210,12 +210,12 @@ abstract contract HyperdriveTarget0 is
     }
 
     /// @notice Gets a specified checkpoint.
-    /// @param _checkpointId The checkpoint ID.
+    /// @param _checkpointTime The checkpoint time.
     /// @return The checkpoint.
     function getCheckpoint(
-        uint256 _checkpointId
+        uint256 _checkpointTime
     ) external view returns (IHyperdrive.Checkpoint memory) {
-        _revert(abi.encode(_checkpoints[_checkpointId]));
+        _revert(abi.encode(_checkpoints[_checkpointTime]));
     }
 
     /// @notice Gets the checkpoint exposure at a specified time.
