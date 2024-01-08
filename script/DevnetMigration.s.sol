@@ -245,7 +245,9 @@ contract DevnetMigration is Script {
                     checkpointDuration: config.hyperdriveCheckpointDuration,
                     timeStretch: config
                         .hyperdriveTimeStretchApr
-                        .calculateTimeStretch(),
+                        .calculateTimeStretch(
+                            config.hyperdrivePositionDuration
+                        ),
                     governance: config.admin,
                     feeCollector: config.admin,
                     fees: IHyperdrive.Fees({

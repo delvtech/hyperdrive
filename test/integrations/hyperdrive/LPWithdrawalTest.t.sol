@@ -29,7 +29,10 @@ contract LPWithdrawalTest is HyperdriveTest {
         super.setUp();
 
         // Deploy a Hyperdrive pool with the standard config and a 5% APR.
-        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        IHyperdrive.PoolConfig memory config = testConfig(
+            0.05e18,
+            POSITION_DURATION
+        );
         deploy(deployer, config);
     }
 

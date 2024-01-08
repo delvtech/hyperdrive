@@ -159,11 +159,57 @@ library HyperdriveUtils {
         return (_principal, 0);
     }
 
-    function calculateTimeStretch(uint256 apr) internal pure returns (uint256) {
+    function calculateTimeStretch(
+        uint256 apr,
+        uint256 positionDuration
+    ) internal pure returns (uint256) {
+        // Calculate the benchmark time stretch. This time stretch is tuned for
+        // a position duration of 1 year.
         uint256 timeStretch = uint256(5.24592e18).divDown(
             uint256(0.04665e18).mulDown(apr * 100)
         );
-        return ONE.divDown(timeStretch);
+        timeStretch = ONE.divDown(timeStretch);
+
+        // If the position duration is 1 year, we can return the benchmark.
+        if (positionDuration == 365 days) {
+            return timeStretch;
+        }
+
+        // Otherwise, we need to adjust the time stretch to account for the
+        // position duration. We do this by holding the reserve ratio constant
+        // and solving for the new time stretch directly.
+        //
+        // We can calculate the spot price at the target apr and position
+        // duration as:
+        //
+        // p = 1 / (1 + apr * (positionDuration / 365 days))
+        //
+        // We then calculate the benchmark reserve ratio, `ratio`, implied by
+        // the benchmark time stretch using the `calculateInitialBondReserves`
+        // function.
+        //
+        // We can then derive the adjusted time stretch using the spot price
+        // calculation:
+        //
+        // p = ratio ** timeStretch
+        //          =>
+        // timeStretch = ln(p) / ln(ratio)
+        uint256 targetSpotPrice = ONE.divDown(
+            ONE + apr.mulDivDown(positionDuration, 365 days)
+        );
+        uint256 benchmarkReserveRatio = ONE.divDown(
+            HyperdriveMath.calculateInitialBondReserves(
+                ONE,
+                ONE,
+                apr,
+                365 days,
+                timeStretch
+            )
+        );
+        return
+            uint256(-int256(targetSpotPrice).ln()).divDown(
+                uint256(-int256(benchmarkReserveRatio).ln())
+            );
     }
 
     /// Trade Utils ///

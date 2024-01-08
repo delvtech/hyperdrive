@@ -482,7 +482,10 @@ contract CloseShortTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
 
         // 1. Deploy a pool with zero fees
-        IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+        IHyperdrive.PoolConfig memory config = testConfig(
+            fixedRate,
+            POSITION_DURATION
+        );
         deploy(address(deployer), config);
         // Initialize the pool with a large amount of capital.
         initialize(alice, fixedRate, contribution);
@@ -499,7 +502,7 @@ contract CloseShortTest is HyperdriveTest {
         // 4. deploy a pool with 100% curve fees and 100% gov fees (this is nice bc
         // it ensures that all the fees are credited to governance and thus subtracted
         // from the shareReserves
-        config = testConfig(fixedRate);
+        config = testConfig(fixedRate, POSITION_DURATION);
         config.fees = IHyperdrive.Fees({
             curve: 0,
             flat: 1e18,
@@ -534,7 +537,7 @@ contract CloseShortTest is HyperdriveTest {
         assert(govFees > 1e5);
 
         // 7. deploy a pool with 100% curve fees and 0% gov fees
-        config = testConfig(fixedRate);
+        config = testConfig(fixedRate, POSITION_DURATION);
         config.fees = IHyperdrive.Fees({
             curve: 0,
             flat: 1e18,
@@ -579,7 +582,10 @@ contract CloseShortTest is HyperdriveTest {
         uint256 maturityTime;
 
         // Initialize a pool with no flat fee as a baseline
-        IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+        IHyperdrive.PoolConfig memory config = testConfig(
+            fixedRate,
+            POSITION_DURATION
+        );
         config.fees = IHyperdrive.Fees({
             curve: 0,
             flat: 0,
@@ -613,7 +619,7 @@ contract CloseShortTest is HyperdriveTest {
         IHyperdrive.MarketState memory noFlatFee = hyperdrive.getMarketState();
 
         // Configure a pool with a 100% flatFee
-        config = testConfig(fixedRate);
+        config = testConfig(fixedRate, POSITION_DURATION);
         config.fees = IHyperdrive.Fees({
             curve: 0,
             flat: 1e18,
