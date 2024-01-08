@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import { ERC4626HyperdriveCoreDeployer } from "contracts/src/deployers/erc4626/ERC4626HyperdriveCoreDeployer.sol";
-import { ERC4626HyperdriveDeployer } from "contracts/src/deployers/erc4626/ERC4626HyperdriveDeployer.sol";
+import { ERC4626HyperdriveDeployerCoordinator } from "contracts/src/deployers/erc4626/ERC4626HyperdriveDeployerCoordinator.sol";
 import { ERC4626Target0Deployer } from "contracts/src/deployers/erc4626/ERC4626Target0Deployer.sol";
 import { ERC4626Target1Deployer } from "contracts/src/deployers/erc4626/ERC4626Target1Deployer.sol";
 import { ERC4626Target2Deployer } from "contracts/src/deployers/erc4626/ERC4626Target2Deployer.sol";
@@ -25,12 +25,12 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     using FixedPointMath for *;
     using Lib for *;
 
-    address hyperdriveDeployer;
+    address deployerCoordinator;
+    address coreDeployer;
     address target0Deployer;
     address target1Deployer;
     address target2Deployer;
     address target3Deployer;
-    address hyperdriveCoreDeployer;
 
     HyperdriveFactory internal factory;
     IERC20 internal underlyingToken;
@@ -45,15 +45,15 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         vm.startPrank(deployer);
 
         // Deploy the ERC4626Hyperdrive factory and deployer.
-        hyperdriveCoreDeployer = address(new ERC4626HyperdriveCoreDeployer());
+        coreDeployer = address(new ERC4626HyperdriveCoreDeployer());
         target0Deployer = address(new ERC4626Target0Deployer());
         target1Deployer = address(new ERC4626Target1Deployer());
         target2Deployer = address(new ERC4626Target2Deployer());
         target3Deployer = address(new ERC4626Target3Deployer());
 
-        hyperdriveDeployer = address(
-            new ERC4626HyperdriveDeployer(
-                hyperdriveCoreDeployer,
+        deployerCoordinator = address(
+            new ERC4626HyperdriveDeployerCoordinator(
+                coreDeployer,
                 target0Deployer,
                 target1Deployer,
                 target2Deployer,
@@ -89,14 +89,14 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(alice);
 
-        factory.addHyperdriveDeployer(hyperdriveDeployer);
+        factory.addHyperdriveDeployer(deployerCoordinator);
 
         // Set approval to allow initial contribution to factory
         underlyingToken.approve(address(factory), type(uint256).max);
 
         // Deploy and set hyperdrive instance
         hyperdrive = factory.deployAndInitialize(
-            hyperdriveDeployer,
+            deployerCoordinator,
             config,
             abi.encode(address(token), new address[](0)),
             contribution,
@@ -140,7 +140,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
         // Deploy a new hyperdrive instance
         hyperdrive = factory.deployAndInitialize(
-            hyperdriveDeployer,
+            deployerCoordinator,
             config,
             abi.encode(address(token), new address[](0)),
             contribution,

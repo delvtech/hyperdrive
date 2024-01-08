@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import { IHyperdrive } from "./IHyperdrive.sol";
 
-interface IERC4626HyperdriveDeployer {
+interface IHyperdriveCoreDeployer {
     function deploy(
         IHyperdrive.PoolConfig memory _config,
         bytes memory _extraData,

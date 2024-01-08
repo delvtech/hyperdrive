@@ -8,10 +8,7 @@ import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDep
 
 /// @author DELV
 /// @title ERC4626Target2Deployer
-/// @notice This is a minimal factory which contains only the logic to deploy
-///         the target2 contract and is called by a more complex factory which
-///         initializes the Hyperdrive instances and acts as a registry.
-/// @dev We use two contracts to avoid any code size limit issues with Hyperdrive.
+/// @notice The target2 deployer for the ERC4626Hyperdrive implementation.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
@@ -24,8 +21,8 @@ contract ERC4626Target2Deployer is IHyperdriveTargetDeployer {
         IHyperdrive.PoolConfig memory _config,
         bytes memory _extraData
     ) external override returns (address) {
-        (address pool, ) = abi.decode(_extraData, (address, address[]));
         // Deploy the ERC4626Target2 instance.
+        (address pool, ) = abi.decode(_extraData, (address, address[]));
         return address(new ERC4626Target2(_config, IERC4626(pool)));
     }
 }
