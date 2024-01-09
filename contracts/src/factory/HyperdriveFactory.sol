@@ -280,13 +280,6 @@ contract HyperdriveFactory {
         uint256 _apr,
         bytes memory _initializeExtraData
     ) public payable virtual returns (IHyperdrive) {
-        // FIXME: Address this.
-        //
-        // TODO: Should we do some input validation on the config like making
-        // sure that the linker factory and linker code hash are set to zero?
-        // This kind of check makes it clear that the deployer knows the values
-        // will be overridden.
-
         // Ensure that the target deployer has been registered.
         if (!isHyperdriveDeployer[_hyperdriveDeployer]) {
             revert IHyperdrive.InvalidDeployer();

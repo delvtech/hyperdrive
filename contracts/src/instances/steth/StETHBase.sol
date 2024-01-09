@@ -19,9 +19,6 @@ import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
 abstract contract StETHBase is HyperdriveBase {
     using FixedPointMath for uint256;
 
-    // FIXME: I should add a getter for this. When doing this, go ahead and add
-    //        getters for the new targets and update the etching logic.
-    //
     /// @dev The Lido contract.
     ILido internal immutable _lido;
 
