@@ -13,9 +13,17 @@ import { StETHHyperdrive } from "../../instances/steth/StETHHyperdrive.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract StETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
+    /// @notice The Lido contract.
+    ILido public immutable lido;
+
+    /// @notice Instanstiates the core deployer.
+    /// @param _lido The Lido contract.
+    constructor(ILido _lido) {
+        lido = _lido;
+    }
+
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _extraData The extra data that contains the sweep targets.
     /// @param target0 The target0 address.
     /// @param target1 The target1 address.
     /// @param target2 The target2 address.
@@ -23,14 +31,12 @@ contract StETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     /// @return The address of the newly deployed StETHHyperdrive Instance.
     function deploy(
         IHyperdrive.PoolConfig memory _config,
-        bytes memory _extraData,
+        bytes memory, // unused extra data
         address target0,
         address target1,
         address target2,
         address target3
     ) external override returns (address) {
-        // Deploy the StETHHyperdrive instance.
-        address lido = abi.decode(_extraData, (address));
         return (
             address(
                 new StETHHyperdrive(

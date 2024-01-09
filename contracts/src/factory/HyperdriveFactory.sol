@@ -263,7 +263,8 @@ contract HyperdriveFactory {
     ///      by default.
     /// @param _hyperdriveDeployer Address of the hyperdrive deployer.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
-    /// @param _extraData The extra data that contains data necessary for the specific deployer.
+    /// @param _extraData The extra data that contains data necessary for the
+    ///        specific deployer.
     /// @param _contribution Base token to call init with
     /// @param _apr The apr to call init with
     /// @param _initializeExtraData The extra data for the `initialize` call.
@@ -276,15 +277,14 @@ contract HyperdriveFactory {
         uint256 _apr,
         bytes memory _initializeExtraData
     ) public payable virtual returns (IHyperdrive) {
-        if (msg.value > 0) {
-            revert IHyperdrive.NonPayableInitialization();
-        }
-
+        // FIXME: Address this.
+        //
         // TODO: Should we do some input validation on the config like making
         // sure that the linker factory and linker code hash are set to zero?
         // This kind of check makes it clear that the deployer knows the values
         // will be overridden.
 
+        // Ensure that the target deployer has been registered.
         if (!isHyperdriveDeployer[_hyperdriveDeployer]) {
             revert IHyperdrive.InvalidDeployer();
         }
@@ -319,6 +319,13 @@ contract HyperdriveFactory {
         _instances.push(address(hyperdrive));
         isInstance[address(hyperdrive)] = true;
 
+        // FIXME: Handle ETH contributions. We will also need to handle refunds
+        // and cases where the ETH contribution isn't sufficient to cover the
+        // base token contribution.
+        //
+        // FIXME: Why don't we just allow them to specify the options
+        //        struct? This initialization flow isn't very flexible.
+        //
         // Initialize the Hyperdrive instance.
         _deployConfig.baseToken.transferFrom(
             msg.sender,
@@ -333,7 +340,7 @@ contract HyperdriveFactory {
         ) {
             revert IHyperdrive.ApprovalFailed();
         }
-        hyperdrive.initialize(
+        hyperdrive.initialize{ value: msg.value }(
             _contribution,
             _apr,
             IHyperdrive.Options({

@@ -13,16 +13,23 @@ import { ILido } from "../../interfaces/ILido.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract StETHTarget1Deployer is IHyperdriveTargetDeployer {
+    /// @notice The Lido contract.
+    ILido public immutable lido;
+
+    /// @notice Instanstiates the target1 deployer.
+    /// @param _lido The Lido contract.
+    constructor(ILido _lido) {
+        lido = _lido;
+    }
+
     /// @notice Deploys a target1 instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _extraData The extra data that contains the pool and sweep targets.
     /// @return The address of the newly deployed StETHTarget1 Instance.
     function deploy(
         IHyperdrive.PoolConfig memory _config,
-        bytes memory _extraData
+        bytes memory // unused extra data
     ) external override returns (address) {
         // Deploy the StETHTarget1 instance.
-        ILido lido = ILido(abi.decode(_extraData, (address)));
         return address(new StETHTarget1(_config, lido));
     }
 }
