@@ -336,6 +336,8 @@ impl TestChain {
         // Get the contract addresses of the vault and the targets.
         let target0_address = hyperdrive.target_0().call().await?;
         let target1_address = hyperdrive.target_1().call().await?;
+        let target2_address = hyperdrive.target_2().call().await?;
+        let target3_address = hyperdrive.target_3().call().await?;
         let vault_address = hyperdrive.pool().call().await?;
 
         // Deploy templates for each of the contracts that should be etched and
@@ -394,11 +396,27 @@ impl TestChain {
 
             // Deploy the target1 template.
             let target1_template =
-                ERC4626Target0::deploy(client.clone(), (config.clone(), vault_address))?
+                ERC4626Target1::deploy(client.clone(), (config.clone(), vault_address))?
                     .gas_price(DEFAULT_GAS_PRICE)
                     .send()
                     .await?;
             pairs.push((target1_address, target1_template.address()));
+
+            // Deploy the target2 template.
+            let target2_template =
+                ERC4626Target2::deploy(client.clone(), (config.clone(), vault_address))?
+                    .gas_price(DEFAULT_GAS_PRICE)
+                    .send()
+                    .await?;
+            pairs.push((target2_address, target2_template.address()));
+
+            // Deploy the target3 template.
+            let target3_template =
+                ERC4626Target3::deploy(client.clone(), (config.clone(), vault_address))?
+                    .gas_price(DEFAULT_GAS_PRICE)
+                    .send()
+                    .await?;
+            pairs.push((target3_address, target3_template.address()));
 
             // Etch the "etching vault" onto the current vault contract. The
             // etching vault implements `convertToAssets` to return the immutable
@@ -424,6 +442,8 @@ impl TestChain {
                     config,
                     target0_address,
                     target1_address,
+                    target2_address,
+                    target3_address,
                     vault_address,
                     Vec::<Address>::new(),
                 ),

@@ -22,4 +22,10 @@ contract StETHTarget0 is HyperdriveTarget0, StETHBase {
         IHyperdrive.PoolConfig memory _config,
         ILido _lido
     ) HyperdriveTarget0(_config) StETHBase(_lido) {}
+
+    /// @notice Returns the Lido contract.
+    /// @return lido The Lido contract.
+    function lido() external view returns (ILido) {
+        _revert(abi.encode(_lido));
+    }
 }

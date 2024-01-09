@@ -23,12 +23,12 @@ abstract contract StETHBase is HyperdriveBase {
     //        getters for the new targets and update the etching logic.
     //
     /// @dev The Lido contract.
-    ILido internal immutable lido;
+    ILido internal immutable _lido;
 
     /// @notice Instantiates the stETH Hyperdrive base contract.
-    /// @param _lido The Lido contract.
-    constructor(ILido _lido) {
-        lido = _lido;
+    /// @param __lido The Lido contract.
+    constructor(ILido __lido) {
+        _lido = __lido;
 
         // Ensure that the minimum share reserves are equal to 1e15. This value
         // has been tested to prevent arithmetic overflows in the
@@ -72,7 +72,7 @@ abstract contract StETHBase is HyperdriveBase {
             // collector address is passed as the referral address; however,
             // users can specify whatever referrer they'd like by depositing
             // stETH instead of WETH.
-            shares = lido.submit{ value: _amount }(_feeCollector);
+            shares = _lido.submit{ value: _amount }(_feeCollector);
 
             // Calculate the share price.
             sharePrice = _pricePerShare();
@@ -83,7 +83,7 @@ abstract contract StETHBase is HyperdriveBase {
             }
 
             // Transfer stETH shares into the contract.
-            lido.transferSharesFrom(msg.sender, address(this), _amount);
+            _lido.transferSharesFrom(msg.sender, address(this), _amount);
 
             // Calculate the share price.
             shares = _amount;
@@ -120,7 +120,7 @@ abstract contract StETHBase is HyperdriveBase {
         }
 
         // Transfer the stETH shares to the destination.
-        lido.transferShares(_options.destination, _shares);
+        _lido.transferShares(_options.destination, _shares);
 
         return _shares;
     }
@@ -129,7 +129,7 @@ abstract contract StETHBase is HyperdriveBase {
     /// @return price The current share price.
     /// @dev must remain consistent with the impl inside of the DataProvider
     function _pricePerShare() internal view override returns (uint256 price) {
-        return lido.getTotalPooledEther().divDown(lido.getTotalShares());
+        return _lido.getTotalPooledEther().divDown(_lido.getTotalShares());
     }
 
     /// @dev We override the message value check since this integration is
