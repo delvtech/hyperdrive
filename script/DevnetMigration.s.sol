@@ -10,14 +10,23 @@ import { ERC4626Target0Deployer } from "contracts/src/deployers/erc4626/ERC4626T
 import { ERC4626Target1Deployer } from "contracts/src/deployers/erc4626/ERC4626Target1Deployer.sol";
 import { ERC4626Target2Deployer } from "contracts/src/deployers/erc4626/ERC4626Target2Deployer.sol";
 import { ERC4626Target3Deployer } from "contracts/src/deployers/erc4626/ERC4626Target3Deployer.sol";
+import { StETHHyperdriveCoreDeployer } from "contracts/src/deployers/steth/StETHHyperdriveCoreDeployer.sol";
+import { StETHHyperdriveDeployerCoordinator } from "contracts/src/deployers/steth/StETHHyperdriveDeployerCoordinator.sol";
+import { StETHTarget0Deployer } from "contracts/src/deployers/steth/StETHTarget0Deployer.sol";
+import { StETHTarget1Deployer } from "contracts/src/deployers/steth/StETHTarget1Deployer.sol";
+import { StETHTarget2Deployer } from "contracts/src/deployers/steth/StETHTarget2Deployer.sol";
+import { StETHTarget3Deployer } from "contracts/src/deployers/steth/StETHTarget3Deployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockERC4626 } from "contracts/test/MockERC4626.sol";
 import { MockHyperdriveMath } from "contracts/test/MockHyperdriveMath.sol";
+import { MockLido } from "contracts/test/MockLido.sol";
+import { ETH } from "test/utils/Constants.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
 /// @author DELV
@@ -46,6 +55,8 @@ contract DevnetMigration is Script {
         string vaultName;
         string vaultSymbol;
         uint256 vaultStartingRate;
+        // lido configuration
+        uint256 lidoStartingRate;
         // factory configuration
         uint256 factoryCurveFee;
         uint256 factoryFlatFee;
@@ -55,16 +66,22 @@ contract DevnetMigration is Script {
         uint256 factoryMaxFlatFee;
         uint256 factoryMaxGovernanceLPFee;
         uint256 factoryMaxGovernanceZombieFee;
-        // hyperdrive configuration
-        uint256 hyperdriveContribution;
-        uint256 hyperdriveFixedRate;
-        uint256 hyperdriveMinimumShareReserves;
-        uint256 hyperdriveMinimumTransactionAmount;
-        uint256 hyperdrivePositionDuration;
-        uint256 hyperdriveCheckpointDuration;
-        uint256 hyperdriveTimeStretchApr;
-        uint256 hyperdriveOracleSize;
-        uint256 hyperdriveUpdateGap;
+        // erc4626 hyperdrive configuration
+        uint256 erc4626HyperdriveContribution;
+        uint256 erc4626HyperdriveFixedRate;
+        uint256 erc4626HyperdriveMinimumShareReserves;
+        uint256 erc4626HyperdriveMinimumTransactionAmount;
+        uint256 erc4626HyperdrivePositionDuration;
+        uint256 erc4626HyperdriveCheckpointDuration;
+        uint256 erc4626HyperdriveTimeStretchApr;
+        // steth hyperdrive configuration
+        uint256 stethHyperdriveContribution;
+        uint256 stethHyperdriveFixedRate;
+        uint256 stethHyperdriveMinimumShareReserves;
+        uint256 stethHyperdriveMinimumTransactionAmount;
+        uint256 stethHyperdrivePositionDuration;
+        uint256 stethHyperdriveCheckpointDuration;
+        uint256 stethHyperdriveTimeStretchApr;
     }
 
     function run() external {
@@ -79,17 +96,23 @@ contract DevnetMigration is Script {
             revert("BASE_TOKEN_DECIMALS exceeds uint8");
         }
         Config memory config = Config({
+            // admin configuration
             admin: vm.envOr("ADMIN", msg.sender),
             isCompetitionMode: vm.envOr("IS_COMPETITION_MODE", false),
+            // base token configuration
             baseTokenName: vm.envOr("BASE_TOKEN_NAME", string("Base")),
             baseTokenSymbol: vm.envOr("BASE_TOKEN_SYMBOL", string("BASE")),
             baseTokenDecimals: uint8(baseTokenDecimals),
+            // vault configuration
             vaultName: vm.envOr("VAULT_NAME", string("Delvnet Yield Source")),
             vaultSymbol: vm.envOr("VAULT_SYMBOL", string("DELV")),
             vaultStartingRate: vm.envOr(
                 "VAULT_STARTING_RATE",
                 uint256(0.05e18)
             ),
+            // lido configuration
+            lidoStartingRate: vm.envOr("LIDO_STARTING_RATE", uint256(0.035e18)),
+            // factory configuration
             factoryCurveFee: vm.envOr("FACTORY_CURVE_FEE", uint256(0.1e18)),
             factoryFlatFee: vm.envOr("FACTORY_FLAT_FEE", uint256(0.0005e18)),
             factoryGovernanceLPFee: vm.envOr(
@@ -116,41 +139,63 @@ contract DevnetMigration is Script {
                 "FACTORY_MAX_GOVERNANCE_ZOMBIE_FEE",
                 uint256(0.3e18)
             ),
-            hyperdriveContribution: vm.envOr(
-                "HYPERDRIVE_CONTRIBUTION",
+            // erc4626 hyperdrive configuration
+            erc4626HyperdriveContribution: vm.envOr(
+                "ERC4626_HYPERDRIVE_CONTRIBUTION",
                 uint256(100_000_000e18)
             ),
-            hyperdriveFixedRate: vm.envOr(
-                "HYPERDRIVE_FIXED_RATE",
+            erc4626HyperdriveFixedRate: vm.envOr(
+                "ERC4626_HYPERDRIVE_FIXED_RATE",
                 uint256(0.05e18)
             ),
-            hyperdriveMinimumShareReserves: vm.envOr(
-                "HYPERDRIVE_MINIMUM_SHARE_RESERVES",
+            erc4626HyperdriveMinimumShareReserves: vm.envOr(
+                "ERC4626_HYPERDRIVE_MINIMUM_SHARE_RESERVES",
                 uint256(10e18)
             ),
-            hyperdriveMinimumTransactionAmount: vm.envOr(
-                "HYPERDRIVE_MINIMUM_TRANSACTION_AMOUNT",
+            erc4626HyperdriveMinimumTransactionAmount: vm.envOr(
+                "ERC4626_HYPERDRIVE_MINIMUM_TRANSACTION_AMOUNT",
                 uint256(0.001e18)
             ),
-            hyperdrivePositionDuration: vm.envOr(
-                "HYPERDRIVE_POSITION_DURATION",
+            erc4626HyperdrivePositionDuration: vm.envOr(
+                "ERC4626_HYPERDRIVE_POSITION_DURATION",
                 uint256(1 weeks)
             ),
-            hyperdriveCheckpointDuration: vm.envOr(
-                "HYPERDRIVE_CHECKPOINT_DURATION",
+            erc4626HyperdriveCheckpointDuration: vm.envOr(
+                "ERC4626_HYPERDRIVE_CHECKPOINT_DURATION",
                 uint256(1 hours)
             ),
-            hyperdriveTimeStretchApr: vm.envOr(
-                "HYPERDRIVE_TIME_STRETCH_APR",
+            erc4626HyperdriveTimeStretchApr: vm.envOr(
+                "ERC4626_HYPERDRIVE_TIME_STRETCH_APR",
                 uint256(0.05e18)
             ),
-            hyperdriveOracleSize: vm.envOr(
-                "HYPERDRIVE_ORACLE_SIZE",
-                uint256(10)
+            // steth hyperdrive configuration
+            stethHyperdriveContribution: vm.envOr(
+                "STETH_HYPERDRIVE_CONTRIBUTION",
+                uint256(50_000e18)
             ),
-            hyperdriveUpdateGap: vm.envOr(
-                "HYPERDRIVE_UPDATE_GAP",
+            stethHyperdriveFixedRate: vm.envOr(
+                "STETH_HYPERDRIVE_FIXED_RATE",
+                uint256(0.035e18)
+            ),
+            stethHyperdriveMinimumShareReserves: vm.envOr(
+                "STETH_HYPERDRIVE_MINIMUM_SHARE_RESERVES",
+                uint256(1e15)
+            ),
+            stethHyperdriveMinimumTransactionAmount: vm.envOr(
+                "STETH_HYPERDRIVE_MINIMUM_TRANSACTION_AMOUNT",
+                uint256(0.001e18)
+            ),
+            stethHyperdrivePositionDuration: vm.envOr(
+                "STETH_HYPERDRIVE_POSITION_DURATION",
+                uint256(1 weeks)
+            ),
+            stethHyperdriveCheckpointDuration: vm.envOr(
+                "STETH_HYPERDRIVE_CHECKPOINT_DURATION",
                 uint256(1 hours)
+            ),
+            stethHyperdriveTimeStretchApr: vm.envOr(
+                "STETH_HYPERDRIVE_TIME_STRETCH_APR",
+                uint256(0.035e18)
             )
         });
 
@@ -184,6 +229,16 @@ contract DevnetMigration is Script {
             );
         }
 
+        // Deploy the mock Lido system. We fund Lido with 1 eth to start to
+        // avoid reverts when we initialize the pool.
+        MockLido lido = new MockLido(
+            config.lidoStartingRate,
+            msg.sender,
+            config.isCompetitionMode
+        );
+        vm.deal(msg.sender, 1 ether);
+        lido.submit{ value: 1 ether }(address(0));
+
         // Deploy the Hyperdrive factory.
         HyperdriveFactory factory;
         {
@@ -214,8 +269,8 @@ contract DevnetMigration is Script {
             factory = new HyperdriveFactory(factoryConfig);
         }
 
-        // Deploy the Hyperdrive deployers and add them to the factory.
-        address hyperdriveDeployer = address(
+        // Deploy the ERC4626Hyperdrive deployers and add them to the factory.
+        address erc4626DeployerCoordinator = address(
             new ERC4626HyperdriveDeployerCoordinator(
                 address(new ERC4626HyperdriveCoreDeployer()),
                 address(new ERC4626Target0Deployer()),
@@ -224,13 +279,13 @@ contract DevnetMigration is Script {
                 address(new ERC4626Target3Deployer())
             )
         );
-        factory.addHyperdriveDeployer(hyperdriveDeployer);
+        factory.addHyperdriveDeployer(erc4626DeployerCoordinator);
 
-        // Deploy and initialize an initial Hyperdrive instance for the devnet.
-        IHyperdrive hyperdrive;
+        // Deploy and initialize an initial ERC4626Hyperdrive instance.
+        IHyperdrive erc4626Hyperdrive;
         {
-            uint256 contribution = config.hyperdriveContribution;
-            uint256 fixedRate = config.hyperdriveFixedRate;
+            uint256 contribution = config.erc4626HyperdriveContribution;
+            uint256 fixedRate = config.erc4626HyperdriveFixedRate;
             baseToken.mint(msg.sender, contribution);
             baseToken.approve(address(factory), contribution);
             IHyperdrive.PoolDeployConfig memory poolConfig = IHyperdrive
@@ -238,15 +293,17 @@ contract DevnetMigration is Script {
                     baseToken: IERC20(address(baseToken)),
                     linkerFactory: address(0),
                     linkerCodeHash: bytes32(0),
-                    minimumShareReserves: config.hyperdriveMinimumShareReserves,
+                    minimumShareReserves: config
+                        .erc4626HyperdriveMinimumShareReserves,
                     minimumTransactionAmount: config
-                        .hyperdriveMinimumTransactionAmount,
-                    positionDuration: config.hyperdrivePositionDuration,
-                    checkpointDuration: config.hyperdriveCheckpointDuration,
+                        .erc4626HyperdriveMinimumTransactionAmount,
+                    positionDuration: config.erc4626HyperdrivePositionDuration,
+                    checkpointDuration: config
+                        .erc4626HyperdriveCheckpointDuration,
                     timeStretch: config
-                        .hyperdriveTimeStretchApr
+                        .erc4626HyperdriveTimeStretchApr
                         .calculateTimeStretch(
-                            config.hyperdrivePositionDuration
+                            config.erc4626HyperdrivePositionDuration
                         ),
                     governance: config.admin,
                     feeCollector: config.admin,
@@ -257,8 +314,65 @@ contract DevnetMigration is Script {
                         governanceZombie: config.factoryGovernanceZombieFee
                     })
                 });
-            hyperdrive = factory.deployAndInitialize(
-                hyperdriveDeployer,
+            erc4626Hyperdrive = factory.deployAndInitialize(
+                erc4626DeployerCoordinator,
+                poolConfig,
+                abi.encode(address(pool), new address[](0)),
+                contribution,
+                fixedRate,
+                new bytes(0)
+            );
+        }
+
+        // Deploy the StETHHyperdrive deployers and add them to the factory.
+        address stethDeployerCoordinator = address(
+            new StETHHyperdriveDeployerCoordinator(
+                address(new StETHHyperdriveCoreDeployer(ILido(address(lido)))),
+                address(new StETHTarget0Deployer(ILido(address(lido)))),
+                address(new StETHTarget1Deployer(ILido(address(lido)))),
+                address(new StETHTarget2Deployer(ILido(address(lido)))),
+                address(new StETHTarget3Deployer(ILido(address(lido)))),
+                ILido(address(lido))
+            )
+        );
+        factory.addHyperdriveDeployer(stethDeployerCoordinator);
+
+        // Deploy and initialize an initial StETHHyperdrive instance.
+        IHyperdrive stethHyperdrive;
+        {
+            uint256 contribution = config.stethHyperdriveContribution;
+            uint256 fixedRate = config.stethHyperdriveFixedRate;
+            vm.deal(msg.sender, contribution);
+            IHyperdrive.PoolDeployConfig memory poolConfig = IHyperdrive
+                .PoolDeployConfig({
+                    baseToken: IERC20(address(ETH)),
+                    linkerFactory: address(0),
+                    linkerCodeHash: bytes32(0),
+                    minimumShareReserves: config
+                        .stethHyperdriveMinimumShareReserves,
+                    minimumTransactionAmount: config
+                        .stethHyperdriveMinimumTransactionAmount,
+                    positionDuration: config.stethHyperdrivePositionDuration,
+                    checkpointDuration: config
+                        .stethHyperdriveCheckpointDuration,
+                    timeStretch: config
+                        .stethHyperdriveTimeStretchApr
+                        .calculateTimeStretch(
+                            config.stethHyperdrivePositionDuration
+                        ),
+                    governance: config.admin,
+                    feeCollector: config.admin,
+                    fees: IHyperdrive.Fees({
+                        curve: config.factoryCurveFee,
+                        flat: config.factoryFlatFee,
+                        governanceLP: config.factoryGovernanceLPFee,
+                        governanceZombie: config.factoryGovernanceZombieFee
+                    })
+                });
+            stethHyperdrive = factory.deployAndInitialize{
+                value: contribution
+            }(
+                stethDeployerCoordinator,
                 poolConfig,
                 abi.encode(address(pool), new address[](0)),
                 contribution,
@@ -270,12 +384,13 @@ contract DevnetMigration is Script {
         // Deploy the MockHyperdriveMath contract.
         MockHyperdriveMath mockHyperdriveMath = new MockHyperdriveMath();
 
-        // Transfer ownership of the base token, factory, and vault to the admin
-        // address now that we're done minting tokens and updating the
+        // Transfer ownership of the base token, factory, vault, and lido to the
+        // admin address now that we're done minting tokens and updating the
         // configuration.
         baseToken.transferOwnership(config.admin);
         factory.updateGovernance(config.admin);
         pool.transferOwnership(config.admin);
+        lido.transferOwnership(config.admin);
 
         vm.stopBroadcast();
 
@@ -283,8 +398,16 @@ contract DevnetMigration is Script {
         string memory result = "result";
         vm.serializeAddress(result, "baseToken", address(baseToken));
         vm.serializeAddress(result, "hyperdriveFactory", address(factory));
-        // TODO: This is deprecated and should be removed by 0.0.11.
-        vm.serializeAddress(result, "mockHyperdrive", address(hyperdrive));
+        vm.serializeAddress(
+            result,
+            "erc4626Hyperdrive",
+            address(erc4626Hyperdrive)
+        );
+        vm.serializeAddress(
+            result,
+            "stethHyperdrive",
+            address(stethHyperdrive)
+        );
         result = vm.serializeAddress(
             result,
             "mockHyperdriveMath",
