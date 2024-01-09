@@ -13,6 +13,8 @@ import { StETHBase } from "./StETHBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract StETHHyperdrive is Hyperdrive, StETHBase {
+    address constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
     /// @notice Instantiates Hyperdrive with StETH as the yield source.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _target0 The target0 address.
@@ -31,6 +33,11 @@ contract StETHHyperdrive is Hyperdrive, StETHBase {
         Hyperdrive(_config, _target0, _target1, _target2, _target3)
         StETHBase(_lido)
     {
+        // Ensure that the base token address is properly configured.
+        if (address(_config.baseToken) != ETH) {
+            revert IHyperdrive.InvalidBaseToken();
+        }
+
         // Ensure that the initial share price is properly configured.
         if (_config.initialSharePrice != _pricePerShare()) {
             revert IHyperdrive.InvalidInitialSharePrice();

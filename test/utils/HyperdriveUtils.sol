@@ -1625,9 +1625,6 @@ library HyperdriveUtils {
         if (_selector == IHyperdrive.UnsupportedToken.selector) {
             return "UnsupportedToken";
         }
-        if (_selector == IHyperdrive.ApprovalFailed.selector) {
-            return "ApprovalFailed";
-        }
         if (_selector == IHyperdrive.MinimumTransactionAmount.selector) {
             return "MinimumTransactionAmount";
         }

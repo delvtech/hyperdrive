@@ -253,7 +253,6 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     /// ##################
     /// ### Hyperdrive ###
     /// ##################
-    error ApprovalFailed();
     error BelowMinimumContribution();
     error BelowMinimumShareReserves();
     error InvalidApr();

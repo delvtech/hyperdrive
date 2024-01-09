@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { ERC20 } from "solmate/tokens/ERC20.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
@@ -14,6 +16,7 @@ import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 ///                    particular legal or regulatory significance.
 contract HyperdriveFactory {
     using FixedPointMath for uint256;
+    using SafeTransferLib for ERC20;
 
     /// @notice Emitted when governance is transferred.
     event GovernanceUpdated(address indexed governance);
@@ -319,36 +322,55 @@ contract HyperdriveFactory {
         _instances.push(address(hyperdrive));
         isInstance[address(hyperdrive)] = true;
 
-        // FIXME: Handle ETH contributions. We will also need to handle refunds
-        // and cases where the ETH contribution isn't sufficient to cover the
-        // base token contribution.
-        //
-        // FIXME: Why don't we just allow them to specify the options
-        //        struct? This initialization flow isn't very flexible.
-        //
         // Initialize the Hyperdrive instance.
-        _deployConfig.baseToken.transferFrom(
-            msg.sender,
-            address(this),
-            _contribution
-        );
-        if (
-            !_deployConfig.baseToken.approve(
+        uint256 refund;
+        if (msg.value >= _contribution) {
+            // Only the contribution amount of ether will be passed to
+            // Hyperdrive.
+            refund = msg.value - _contribution;
+
+            // Initialize the Hyperdrive instance.
+            hyperdrive.initialize{ value: _contribution }(
+                _contribution,
+                _apr,
+                IHyperdrive.Options({
+                    destination: msg.sender,
+                    asBase: true,
+                    extraData: _initializeExtraData
+                })
+            );
+        } else {
+            // None of the provided ether is used for the contribution.
+            refund = msg.value;
+
+            // Transfer the contribution to this contract and set an approval
+            // on Hyperdrive to prepare for initialization.
+            ERC20(address(_deployConfig.baseToken)).safeTransferFrom(
+                msg.sender,
+                address(this),
+                _contribution
+            );
+            ERC20(address(_deployConfig.baseToken)).safeApprove(
                 address(hyperdrive),
-                type(uint256).max
-            )
-        ) {
-            revert IHyperdrive.ApprovalFailed();
+                _contribution
+            );
+
+            // Initialize the Hyperdrive instance.
+            hyperdrive.initialize(
+                _contribution,
+                _apr,
+                IHyperdrive.Options({
+                    destination: msg.sender,
+                    asBase: true,
+                    extraData: _initializeExtraData
+                })
+            );
         }
-        hyperdrive.initialize{ value: msg.value }(
-            _contribution,
-            _apr,
-            IHyperdrive.Options({
-                destination: msg.sender,
-                asBase: true,
-                extraData: _initializeExtraData
-            })
-        );
+
+        // Refund any excess ether that was sent to this contract.
+        if (refund > 0) {
+            payable(msg.sender).transfer(refund);
+        }
 
         // Set the default pausers and transfer the governance status to the
         // hyperdrive governance address.
