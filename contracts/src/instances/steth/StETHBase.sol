@@ -111,6 +111,11 @@ abstract contract StETHBase is HyperdriveBase {
             revert IHyperdrive.UnsupportedToken();
         }
 
+        // If we're withdrawing zero shares, short circuit and return 0.
+        if (_shares == 0) {
+            return 0;
+        }
+
         // Transfer the stETH shares to the destination.
         lido.transferShares(_options.destination, _shares);
 

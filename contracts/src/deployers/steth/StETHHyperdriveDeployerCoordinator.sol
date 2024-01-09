@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IERC4626 } from "../../interfaces/IERC4626.sol";
-import { ONE } from "../../libraries/FixedPointMath.sol";
+import { ILido } from "../../interfaces/ILido.sol";
+import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
 /// @author DELV
-/// @title ERC4626HyperdriveDeployerCoordinator
-/// @notice The deployer coordinator for the ERC4626Hyperdrive implementation.
+/// @title StETHHyperdriveDeployerCoordinator
+/// @notice The deployer coordinator for the StETHHyperdrive implementation.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+    using FixedPointMath for uint256;
+
     /// @notice Instantiates the deployer coordinator.
     /// @param _coreDeployer The core deployer.
     /// @param _target0Deployer The target0 deployer.
@@ -40,8 +42,8 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     function _getInitialSharePrice(
         bytes memory _extraData
     ) internal view override returns (uint256) {
-        // Return the vault's current share price.
-        IERC4626 pool = IERC4626(abi.decode(_extraData, (address)));
-        return pool.convertToAssets(ONE);
+        // Return the stETH's current share price.
+        ILido lido = ILido(abi.decode(_extraData, (address)));
+        return lido.getTotalPooledEther().divDown(lido.getTotalShares());
     }
 }
