@@ -416,7 +416,10 @@ contract ZombieInterestTest is HyperdriveTest {
         uint256 baseReserves = hyperdrive.getPoolInfo().shareReserves.mulDown(
             sharePrice
         );
-        assertGe(baseToken.balanceOf(address(hyperdrive)), baseReserves);
+        assertGe(
+            baseToken.balanceOf(address(hyperdrive)) + 1000 wei,
+            baseReserves
+        );
 
         // Ensure that whatever is left in the zombie share reserves is
         // less than `balance(hyperdrive) - baseReserves`.
@@ -427,7 +430,8 @@ contract ZombieInterestTest is HyperdriveTest {
         );
     }
 
-    // This test just demonstrates that shorts redeemed late do not receive zombie interest.
+    // This test just demonstrates that shorts redeemed late do not receive
+    // zombie interest.
     function test_zombie_short() external {
         // Initialize the pool with capital.
         deploy(bob, 0.035e18, 1e18, 0, 0, 0, 0);

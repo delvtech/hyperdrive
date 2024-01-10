@@ -443,18 +443,16 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         if (zombieBaseReserves > zombieBaseProceeds) {
             // The interest collected on the zombie position is simply the
             // difference between the base reserves and the base proceeds.
-            uint256 zombieInterest = zombieBaseReserves - zombieBaseProceeds;
+            uint256 zombieInterest = (zombieBaseReserves - zombieBaseProceeds)
+                .divDown(_sharePrice);
 
             // Remove the zombie interest from the zombie share reserves.
-            _marketState.zombieShareReserves -= zombieInterest
-                .divUp(_sharePrice)
-                .toUint128();
+            _marketState.zombieShareReserves -= zombieInterest.toUint128();
 
             // Calculate and collect the governance fee.
             // The fee is calculated in terms of shares and paid to
             // governance.
-            uint256 zombieInterestShares = zombieInterest.divDown(_sharePrice);
-            uint256 governanceZombieFeeCollected = zombieInterestShares.mulDown(
+            uint256 governanceZombieFeeCollected = zombieInterest.mulDown(
                 _governanceZombieFee
             );
             _governanceFeesAccrued += governanceZombieFeeCollected;
@@ -463,11 +461,9 @@ abstract contract HyperdriveBase is HyperdriveStorage {
             // governance), are reinvested in the share reserves. The share
             // adjustment is updated in lock-step to avoid changing the curve's
             // k invariant.
-            zombieInterestShares -= governanceZombieFeeCollected;
-            _marketState.shareReserves += zombieInterestShares.toUint128();
-            _marketState.shareAdjustment += int128(
-                zombieInterestShares.toUint128()
-            );
+            zombieInterest -= governanceZombieFeeCollected;
+            _marketState.shareReserves += zombieInterest.toUint128();
+            _marketState.shareAdjustment += int128(zombieInterest.toUint128());
 
             // After collecting the interest, the zombie base reserves are
             // equal to the zombie base proceeds.
