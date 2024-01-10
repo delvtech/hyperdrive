@@ -573,6 +573,7 @@ contract CloseLongTest is HyperdriveTest {
 
         // Another term passes and a large amount of positive interest accrues.
         advanceTime(POSITION_DURATION, 0.7e18);
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
 
         // Get the reserves and base balances before closing the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
