@@ -57,6 +57,7 @@ impl Distribution<State> for Standard {
         let share_reserves = rng.gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18));
         let info = PoolInfo {
             share_reserves: share_reserves.into(),
+            zombie_base_proceeds: fixed!(0).into(),
             zombie_share_reserves: fixed!(0).into(),
             bond_reserves: rng
                 .gen_range(
