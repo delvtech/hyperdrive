@@ -306,7 +306,6 @@ impl TestChain {
                 target2.address(),
                 target3.address(),
                 pool.address(),
-                Vec::<U256>::new(),
             ),
         )?
         .gas_price(DEFAULT_GAS_PRICE)

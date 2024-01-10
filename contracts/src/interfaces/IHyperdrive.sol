@@ -256,18 +256,23 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     error ApprovalFailed();
     error BelowMinimumContribution();
     error BelowMinimumShareReserves();
+    error EndIndexTooLarge();
     error InvalidApr();
     error InvalidBaseToken();
     error InvalidCheckpointTime();
     error InvalidCheckpointDuration();
+    error InvalidDeployer();
+    error InvalidFeeAmounts();
+    error InvalidFeeDestination();
+    error InvalidIndexes();
     error InvalidInitialSharePrice();
     error InvalidMaturityTime();
     error InvalidMinimumShareReserves();
     error InvalidPositionDuration();
     error InvalidShareReserves();
-    error InvalidFeeAmounts();
-    error InvalidFeeDestination();
     error InsufficientLiquidity();
+    error MinimumSharePrice();
+    error MinimumTransactionAmount();
     error NegativeInterest();
     error NegativePresentValue();
     error NoAssetsToWithdraw();
@@ -276,16 +281,12 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     error Paused();
     error PoolAlreadyInitialized();
     error ShareReservesDeltaExceedsBondReservesDelta();
+    error SweepFailed();
     error TransferFailed();
     error UnexpectedAssetId();
     error UnexpectedSender();
     error UnsupportedToken();
-    error MinimumSharePrice();
-    error MinimumTransactionAmount();
     error ZeroLpTotalSupply();
-    error InvalidIndexes();
-    error EndIndexTooLarge();
-    error InvalidDeployer();
 
     /// ############
     /// ### TWAP ###

@@ -22,10 +22,6 @@ abstract contract ERC4626Base is HyperdriveBase {
     /// @dev The yield source contract for this hyperdrive.
     IERC4626 internal immutable _pool;
 
-    /// @dev A mapping from addresses to their status as a sweep target. This
-    ///      mapping does not change after construction.
-    mapping(address target => bool canSweep) internal _isSweepable;
-
     /// @notice Instantiates the ERC4626 Hyperdrive base contract.
     /// @param __pool The ERC4626 compatible yield source.
     constructor(IERC4626 __pool) {
