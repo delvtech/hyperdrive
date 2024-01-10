@@ -6,6 +6,4 @@ import { IHyperdriveRead } from "./IHyperdriveRead.sol";
 
 interface IERC4626HyperdriveRead is IHyperdriveRead {
     function pool() external view returns (IERC4626);
-
-    function isSweepable(address _target) external view returns (bool);
 }
