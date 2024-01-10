@@ -553,7 +553,7 @@ contract CloseLongTest is HyperdriveTest {
 
     // This test ensures that waiting to close your longs won't avoid negative
     // interest that occurred while the long was open.
-    function test_close_long_negative_interest_at_close() external {
+    function test_close_long_negative_interest_before_maturity() external {
         // Initialize the pool with a large amount of capital.
         uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
@@ -596,6 +596,72 @@ contract CloseLongTest is HyperdriveTest {
         (uint256 bondFaceValue, ) = HyperdriveUtils.calculateCompoundInterest(
             bondAmount,
             apr,
+            POSITION_DURATION
+        );
+
+        assertApproxEqAbs(baseProceeds, bondValue, 6);
+        assertApproxEqAbs(bondValue, bondFaceValue, 5);
+
+        // Verify that the close long updates were correct.
+        verifyCloseLong(
+            TestCase({
+                poolInfoBefore: poolInfoBefore,
+                traderBaseBalanceBefore: bobBaseBalanceBefore,
+                hyperdriveBaseBalanceBefore: hyperdriveBaseBalanceBefore,
+                baseProceeds: baseProceeds,
+                bondAmount: bondAmount,
+                maturityTime: maturityTime,
+                wasCheckpointed: true
+            })
+        );
+    }
+
+    // This test ensures that waiting to close your longs won't avoid negative
+    // interest that occurred after the long was open while it was a zombie.
+    function test_close_long_negative_interest_after_maturity() external {
+        // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, fixedRate, contribution);
+
+        // Open a long position.
+        uint256 basePaid = 10e18;
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
+
+        // The term passes and the pool accrues negative interest.
+        int256 apr = 0.5e18;
+        advanceTime(POSITION_DURATION, apr);
+
+        // A checkpoint is created to lock in the close price.
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        uint256 closeSharePrice = hyperdrive.getPoolInfo().sharePrice;
+
+        // Another term passes and a large amount of negative interest accrues.
+        int256 negativeApr = -0.2e18;
+        advanceTime(POSITION_DURATION, negativeApr);
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+
+        // Get the reserves and base balances before closing the long.
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+        uint256 bobBaseBalanceBefore = baseToken.balanceOf(bob);
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
+
+        // Bob redeems the bonds. Ensure that the return value matches the
+        // amount of base transferred to Bob.
+        uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
+
+        // Bond holders take a proportional haircut on any negative interest
+        // that accrues.
+        uint256 bondValue = bondAmount.divDown(closeSharePrice).mulDown(
+            hyperdrive.getPoolInfo().sharePrice
+        );
+
+        // Calculate the value of the bonds compounded at the negative APR.
+        (uint256 bondFaceValue, ) = HyperdriveUtils.calculateCompoundInterest(
+            bondAmount,
+            negativeApr,
             POSITION_DURATION
         );
 

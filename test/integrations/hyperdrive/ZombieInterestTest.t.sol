@@ -531,18 +531,14 @@ contract ZombieInterestTest is HyperdriveTest {
             advanceTime(POSITION_DURATION, variableRate);
             hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
 
-            // Checkpoint is missed.
+            // A checkpoints is missed.
             advanceTime(CHECKPOINT_DURATION, variableRate);
-            uint256 skippedCheckpointTime = block.timestamp;
 
             // Several checkpoints are minted.
             advanceTimeWithCheckpoints2(3 * CHECKPOINT_DURATION, variableRate);
 
             // Advance time halfway to the next checkpoint.
             advanceTime(CHECKPOINT_DURATION / 2, variableRate);
-
-            // Mint the skipped checkpoint.
-            hyperdrive.checkpoint(skippedCheckpointTime);
 
             zombieShareReserves1 = hyperdrive.getPoolInfo().zombieShareReserves;
             shareReserves1 = hyperdrive.getPoolInfo().shareReserves;
