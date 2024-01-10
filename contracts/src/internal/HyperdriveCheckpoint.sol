@@ -87,11 +87,7 @@ abstract contract HyperdriveCheckpoint is
         checkpoint_.sharePrice = _sharePrice.toUint128();
 
         // Collect the interest that has accrued since the last checkpoint.
-        _collectZombieInterest(
-            _marketState.zombieShareReserves,
-            _checkpoints[_checkpointTime - _checkpointDuration].sharePrice,
-            _sharePrice
-        );
+        _collectZombieInterest(_sharePrice);
 
         // Close out all of the short positions that matured at the beginning of
         // this checkpoint. This ensures that shorts don't continue to collect
@@ -137,6 +133,9 @@ abstract contract HyperdriveCheckpoint is
                 _sharePrice,
                 _flatFee
             );
+            _marketState.zombieBaseProceeds += shareProceeds
+                .mulDown(_sharePrice)
+                .toUint112();
             _marketState.zombieShareReserves += shareProceeds.toUint128();
             positionsClosed = true;
         }
@@ -167,6 +166,9 @@ abstract contract HyperdriveCheckpoint is
                 int256(shareProceeds), // keep the effective share reserves constant
                 checkpointTime
             );
+            _marketState.zombieBaseProceeds += shareProceeds
+                .mulDown(_sharePrice)
+                .toUint112();
             _marketState.zombieShareReserves += shareProceeds.toUint128();
             positionsClosed = true;
         }

@@ -7,6 +7,16 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 /// @author Inspired by Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/SafeCastLib.sol)
 /// @author Inspired by OpenZeppelin (https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeCast.sol)
 library SafeCast {
+    /// @notice This function safely casts a uint256 to a uint112.
+    /// @param x The uint256 to cast to uint112.
+    /// @return y The uint112 casted from x.
+    function toUint112(uint256 x) internal pure returns (uint112 y) {
+        if (!(x < 1 << 112)) {
+            revert IHyperdrive.UnsafeCastToUint112();
+        }
+        y = uint112(x);
+    }
+
     /// @notice This function safely casts a uint256 to a uint128.
     /// @param x The uint256 to cast to uint128.
     /// @return y The uint128 casted from x.

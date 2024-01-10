@@ -1494,6 +1494,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         // The term advances and interest accrues.
         variableRate = variableRate.normalizeToRange(0.00001e18, 2e18);
         advanceTime(POSITION_DURATION, variableRate);
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
 
         // Alice redeems her withdrawal shares.
         uint256 lpSharePrice = hyperdrive.lpSharePrice();
@@ -1659,6 +1660,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         // The term advances and interest accrues.
         variableRate = variableRate.normalizeToRange(0.00001e18, 2e18);
         advanceTime(POSITION_DURATION, variableRate);
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
 
         // Alice redeems her withdrawal shares.
         uint256 lpSharePrice = hyperdrive.lpSharePrice();

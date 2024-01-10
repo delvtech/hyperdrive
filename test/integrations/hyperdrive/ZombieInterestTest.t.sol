@@ -416,12 +416,10 @@ contract ZombieInterestTest is HyperdriveTest {
         uint256 baseReserves = hyperdrive.getPoolInfo().shareReserves.mulDown(
             sharePrice
         );
-        assertGe(
-            baseToken.balanceOf(address(hyperdrive)) + 1 wei,
-            baseReserves
-        );
+        assertGe(baseToken.balanceOf(address(hyperdrive)), baseReserves);
 
-        // Ensure that whatever is left in the zombie share reserves is <= hyperdrive contract - baseReserves.
+        // Ensure that whatever is left in the zombie share reserves is
+        // less than `balance(hyperdrive) - baseReserves`.
         // This is an important check bc it implies ongoing solvency.
         assertLe(
             hyperdrive.getPoolInfo().zombieShareReserves.mulDown(sharePrice),

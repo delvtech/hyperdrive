@@ -279,6 +279,7 @@ abstract contract HyperdriveTarget0 is
         IHyperdrive.PoolInfo memory poolInfo = IHyperdrive.PoolInfo({
             shareReserves: _marketState.shareReserves,
             shareAdjustment: _marketState.shareAdjustment,
+            zombieBaseProceeds: _marketState.zombieBaseProceeds,
             zombieShareReserves: _marketState.zombieShareReserves,
             bondReserves: _marketState.bondReserves,
             sharePrice: sharePrice,
