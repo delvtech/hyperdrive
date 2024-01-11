@@ -8,7 +8,7 @@ import { ERC4626Base } from "./ERC4626Base.sol";
 
 /// @author DELV
 /// @title ERC4626Target2
-/// @notice ERC4626Hyperdrive's target 2 logic contract. This contract contains
+/// @notice ERC4626Hyperdrive's target2 logic contract. This contract contains
 ///         several stateful functions that couldn't fit into the Hyperdrive
 ///         contract.
 /// @custom:disclaimer The language used in this code is for coding convenience

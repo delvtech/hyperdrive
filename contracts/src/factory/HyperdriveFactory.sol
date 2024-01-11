@@ -362,7 +362,10 @@ contract HyperdriveFactory {
 
         // Refund any excess ether that was sent to this contract.
         if (refund > 0) {
-            payable(msg.sender).transfer(refund);
+            (bool success, ) = payable(msg.sender).call{ value: refund }("");
+            if (!success) {
+                revert IHyperdrive.TransferFailed();
+            }
         }
 
         // Set the default pausers and transfer the governance status to the

@@ -8,7 +8,7 @@ import { StETHBase } from "./StETHBase.sol";
 
 /// @author DELV
 /// @title StETHTarget0
-/// @notice StETHHyperdrive's target 0 logic contract. This contract contains
+/// @notice StETHHyperdrive's target0 logic contract. This contract contains
 ///         all of the getters for Hyperdrive as well as some stateful
 ///         functions.
 /// @custom:disclaimer The language used in this code is for coding convenience

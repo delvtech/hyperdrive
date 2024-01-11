@@ -50,20 +50,16 @@ abstract contract StETHBase is HyperdriveBase {
         uint256 _amount,
         IHyperdrive.Options calldata _options
     ) internal override returns (uint256 shares, uint256 sharePrice) {
+        uint256 refund;
         if (_options.asBase) {
-            // Ensure that sufficient ether was provided and refund any excess.
+            // Ensure that sufficient ether was provided.
             if (msg.value < _amount) {
                 revert IHyperdrive.TransferFailed();
             }
-            if (msg.value > _amount) {
-                // Return excess ether to the user.
-                (bool success, ) = payable(msg.sender).call{
-                    value: msg.value - _amount
-                }("");
-                if (!success) {
-                    revert IHyperdrive.TransferFailed();
-                }
-            }
+
+            // If the user sent more ether than the amount specified, refund the
+            // excess ether.
+            refund = msg.value - _amount;
 
             // Submit the provided ether to Lido to be deposited. The fee
             // collector address is passed as the referral address; however,
@@ -74,10 +70,8 @@ abstract contract StETHBase is HyperdriveBase {
             // Calculate the share price.
             sharePrice = _pricePerShare();
         } else {
-            // Ensure that the user didn't send ether to the contract.
-            if (msg.value > 0) {
-                revert IHyperdrive.NotPayable();
-            }
+            // Refund any ether that was sent to the contract.
+            refund = msg.value;
 
             // Transfer stETH shares into the contract.
             _lido.transferSharesFrom(msg.sender, address(this), _amount);
@@ -85,6 +79,14 @@ abstract contract StETHBase is HyperdriveBase {
             // Calculate the share price.
             shares = _amount;
             sharePrice = _pricePerShare();
+        }
+
+        // Return excess ether that was sent to the contract.
+        if (refund > 0) {
+            (bool success, ) = payable(msg.sender).call{ value: refund }("");
+            if (!success) {
+                revert IHyperdrive.TransferFailed();
+            }
         }
 
         return (shares, sharePrice);

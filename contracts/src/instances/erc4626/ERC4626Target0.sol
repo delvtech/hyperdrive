@@ -11,7 +11,7 @@ import { ERC4626Base } from "./ERC4626Base.sol";
 
 /// @author DELV
 /// @title ERC4626Target0
-/// @notice ERC4626Hyperdrive's target 0 logic contract. This contract contains
+/// @notice ERC4626Hyperdrive's target0 logic contract. This contract contains
 ///         all of the getters for Hyperdrive as well as some stateful
 ///         functions.
 /// @custom:disclaimer The language used in this code is for coding convenience

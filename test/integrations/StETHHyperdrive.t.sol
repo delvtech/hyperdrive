@@ -274,11 +274,13 @@ contract StETHHyperdriveTest is HyperdriveTest {
         );
     }
 
-    function test_open_long_failures() external {
-        // Ensure the transaction reverts it the ETH amount is lower than the
-        // amount specified.
-        vm.expectRevert(IHyperdrive.TransferFailed.selector);
-        hyperdrive.openLong{ value: 1e18 - 1 }(
+    function test_open_long_refunds() external {
+        vm.startPrank(bob);
+
+        // Ensure that Bob receives a refund on the excess ETH that he sent
+        // when opening a long with "asBase" set to true.
+        uint256 ethBalanceBefore = address(bob).balance;
+        hyperdrive.openLong{ value: 2e18 }(
             1e18,
             0,
             0,
@@ -288,10 +290,12 @@ contract StETHHyperdriveTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
+        assertEq(address(bob).balance, ethBalanceBefore - 1e18);
 
-        // Ensure the transaction reverts if ETH is sent when "asBase" is false.
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openLong{ value: 1 }(
+        // Ensure that Bob receives a  refund when he opens a long with "asBase"
+        // set to false and sends ether to the contract.
+        ethBalanceBefore = address(bob).balance;
+        hyperdrive.openLong{ value: 0.5e18 }(
             1e18,
             0,
             0,
@@ -301,6 +305,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
+        assertEq(address(bob).balance, ethBalanceBefore);
     }
 
     function test_open_long_with_steth(uint256 basePaid) external {
@@ -479,6 +484,40 @@ contract StETHHyperdriveTest is HyperdriveTest {
             bobBalancesBefore,
             hyperdriveBalancesBefore
         );
+    }
+
+    function test_open_short_refunds() external {
+        vm.startPrank(bob);
+
+        // Ensure that Bob receives a refund on the excess ETH that he sent
+        // when opening a long with "asBase" set to true.
+        uint256 ethBalanceBefore = address(bob).balance;
+        (, uint256 basePaid) = hyperdrive.openShort{ value: 2e18 }(
+            1e18,
+            1e18,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+        assertEq(address(bob).balance, ethBalanceBefore - basePaid);
+
+        // Ensure that Bob receives a  refund when he opens a long with "asBase"
+        // set to false and sends ether to the contract.
+        ethBalanceBefore = address(bob).balance;
+        hyperdrive.openShort{ value: 0.5e18 }(
+            1e18,
+            1e18,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: false,
+                extraData: new bytes(0)
+            })
+        );
+        assertEq(address(bob).balance, ethBalanceBefore);
     }
 
     function test_close_short_with_eth(

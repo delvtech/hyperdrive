@@ -8,7 +8,7 @@ import { StETHBase } from "./StETHBase.sol";
 
 /// @author DELV
 /// @title StETHTarget3
-/// @notice StETHHyperdrive's target 3 logic contract.
+/// @notice StETHHyperdrive's target3 logic contract.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
