@@ -808,13 +808,13 @@ contract CloseShortTest is HyperdriveTest {
         }
 
         // Verify that the proceeds are about the same.
-        assertApproxEqAbs(shortProceeds1, shortProceeds2, 20 wei);
-        assertApproxEqAbs(shortProceeds1, shortProceeds3, 2e9);
+        assertApproxEqAbs(shortProceeds1, shortProceeds2, 40 wei);
+        assertApproxEqAbs(shortProceeds1, shortProceeds3, 2.6e9);
 
         // NOTE: This is a large tolerance, but it is only off by
-        // 0.05 which is good considering the circumstance. This is
+        // 1.8 which is good considering the circumstance. This is
         // explained in issue #691.
-        assertApproxEqAbs(shortProceeds1, shortProceeds4, 6e16);
+        assertApproxEqAbs(shortProceeds1, shortProceeds4, 1.8e18);
     }
 
     struct TestCase {

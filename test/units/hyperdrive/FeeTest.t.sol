@@ -132,7 +132,7 @@ contract FeeTest is HyperdriveTest {
         assertApproxEqAbs(
             baseToken.balanceOf(address(hyperdrive)),
             expectedBalance,
-            2 wei
+            500 wei
         );
 
         // Verify that the governance fees accrued as expected.

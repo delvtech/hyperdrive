@@ -187,8 +187,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // Distribute the excess idle to the withdrawal pool.
             _distributeExcessIdle(sharePrice);
         } else {
-            // Apply the zombie close to the state and adjust the share
-            // proceeds to account for negative interest that accrued to the
+            // Apply the zombie close to the state and adjust the share proceeds
+            // to account for negative interest that might have accrued to the
             // zombie share reserves.
             shareProceeds = _applyZombieClose(shareProceeds, sharePrice);
         }
