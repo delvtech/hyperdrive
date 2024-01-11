@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IERC20 } from "../../interfaces/IERC20.sol";
 import { ILido } from "../../interfaces/ILido.sol";
 import { StETHBase } from "./StETHBase.sol";
 
@@ -42,5 +43,15 @@ contract StETHHyperdrive is Hyperdrive, StETHBase {
         if (_config.initialSharePrice != _pricePerShare()) {
             revert IHyperdrive.InvalidInitialSharePrice();
         }
+    }
+
+    /// @notice Some yield sources [eg Morpho] pay rewards directly to this
+    ///         contract but we can't handle distributing them internally so we
+    ///         sweep to the fee collector address to then redistribute to users.
+    /// @dev WARN: It is unlikely but possible that there is a selector overlap
+    ///      with 'transferFrom'. Any integrating contracts should be checked
+    ///      for that, as it may result in an unexpected call from this address.
+    function sweep(IERC20) external {
+        _delegate(target0);
     }
 }
