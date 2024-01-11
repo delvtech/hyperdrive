@@ -4,23 +4,9 @@ pragma solidity 0.8.19;
 import { AaveV3ERC4626Factory, IPool, IRewardsController, ERC20 } from "yield-daddy/src/aave-v3/AaveV3ERC4626Factory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
-import { ERC4626HyperdriveDeployer } from "contracts/src/instances/ERC4626HyperdriveDeployer.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
-import { MockERC4626Hyperdrive } from "contracts/test/MockERC4626Hyperdrive.sol";
-import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
-import { Lib } from "test/utils/Lib.sol";
 import { ERC4626ValidationTest } from "./ERC4626Validation.t.sol";
 
-import { AaveV3ERC4626Factory, IPool, IRewardsController, ERC20 } from "yield-daddy/src/aave-v3/AaveV3ERC4626Factory.sol";
-
 contract AaveV3ERC4626Test is ERC4626ValidationTest {
-    using FixedPointMath for uint256;
-
     function setUp() public override __mainnet_fork(17_318_972) {
         super.setUp();
 

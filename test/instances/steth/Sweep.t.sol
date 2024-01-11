@@ -1,27 +1,27 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { ERC4626Hyperdrive } from "contracts/src/instances/erc4626/ERC4626Hyperdrive.sol";
-import { ERC4626Target0 } from "contracts/src/instances/erc4626/ERC4626Target0.sol";
-import { ERC4626Target1 } from "contracts/src/instances/erc4626/ERC4626Target1.sol";
-import { ERC4626Target2 } from "contracts/src/instances/erc4626/ERC4626Target2.sol";
-import { ERC4626Target3 } from "contracts/src/instances/erc4626/ERC4626Target3.sol";
+import { StETHHyperdrive } from "contracts/src/instances/steth/StETHHyperdrive.sol";
+import { StETHTarget0 } from "contracts/src/instances/steth/StETHTarget0.sol";
+import { StETHTarget1 } from "contracts/src/instances/steth/StETHTarget1.sol";
+import { StETHTarget2 } from "contracts/src/instances/steth/StETHTarget2.sol";
+import { StETHTarget3 } from "contracts/src/instances/steth/StETHTarget3.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
-import { IERC4626Hyperdrive } from "contracts/src/interfaces/IERC4626Hyperdrive.sol";
+import { ILido } from "contracts/src/interfaces/ILido.sol";
+import { IStETHHyperdrive } from "contracts/src/interfaces/IStETHHyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { MockERC4626 } from "contracts/test/MockERC4626.sol";
+import { MockLido } from "contracts/test/MockLido.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { ETH } from "test/utils/Constants.sol";
 
 contract SweepTest is BaseTest {
-    ForwardingToken baseForwarder;
-    ForwardingToken vaultForwarder;
+    ForwardingToken lidoForwarder;
     ERC20Mintable sweepable;
 
-    IERC4626Hyperdrive hyperdrive;
+    IStETHHyperdrive hyperdrive;
 
     function setUp() public override {
         super.setUp();
@@ -38,21 +38,21 @@ contract SweepTest is BaseTest {
             false
         );
 
-        // Deploy the leaky vault with the leaky ERC20 as the asset. Then deploy
-        // forwarding tokens for each of the targets.
-        LeakyERC20 leakyBase = new LeakyERC20();
-        LeakyVault leakyVault = new LeakyVault(leakyBase);
-        baseForwarder = new ForwardingToken(address(leakyBase));
-        vaultForwarder = new ForwardingToken(address(leakyVault));
+        // Deploy the leaky lido instance. Then deploy forwarding tokens for
+        // each of the targets. Add some ETH to the leaky lido instance to
+        // ensure that it has a well-defined share price.
+        LeakyLido leakyLido = new LeakyLido();
+        lidoForwarder = new ForwardingToken(address(leakyLido));
+        leakyLido.submit{ value: 1e18 }(address(0));
 
-        // Deploy Hyperdrive with the leaky vault as the backing vault.
+        // Deploy Hyperdrive with the leaky lido.
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
-            baseToken: IERC20(address(leakyBase)),
+            baseToken: IERC20(address(ETH)),
             linkerFactory: address(0),
             linkerCodeHash: bytes32(0),
             initialSharePrice: ONE,
-            minimumShareReserves: ONE,
-            minimumTransactionAmount: 0.001e18,
+            minimumShareReserves: 1e15,
+            minimumTransactionAmount: 1e12,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: HyperdriveUtils.calculateTimeStretch(
@@ -64,44 +64,30 @@ contract SweepTest is BaseTest {
             fees: IHyperdrive.Fees(0, 0, 0, 0)
         });
         vm.warp(3 * config.positionDuration);
-        hyperdrive = IERC4626Hyperdrive(
+        hyperdrive = IStETHHyperdrive(
             address(
-                new ERC4626Hyperdrive(
+                new StETHHyperdrive(
                     config,
                     address(
-                        new ERC4626Target0(
-                            config,
-                            IERC4626(address(leakyVault))
-                        )
+                        new StETHTarget0(config, ILido(address(leakyLido)))
                     ),
                     address(
-                        new ERC4626Target1(
-                            config,
-                            IERC4626(address(leakyVault))
-                        )
+                        new StETHTarget1(config, ILido(address(leakyLido)))
                     ),
                     address(
-                        new ERC4626Target2(
-                            config,
-                            IERC4626(address(leakyVault))
-                        )
+                        new StETHTarget2(config, ILido(address(leakyLido)))
                     ),
                     address(
-                        new ERC4626Target3(
-                            config,
-                            IERC4626(address(leakyVault))
-                        )
+                        new StETHTarget3(config, ILido(address(leakyLido)))
                     ),
-                    IERC4626(address(leakyVault))
+                    ILido(address(leakyLido))
                 )
             )
         );
 
         // Initialize Hyperdrive. This ensures that Hyperdrive has vault tokens
         // to sweep.
-        leakyBase.mint(alice, 100e18);
-        leakyBase.approve(address(hyperdrive), 100e18);
-        hyperdrive.initialize(
+        hyperdrive.initialize{ value: 100e18 }(
             100e18,
             0.05e18,
             IHyperdrive.Options({
@@ -110,10 +96,6 @@ contract SweepTest is BaseTest {
                 extraData: new bytes(0)
             })
         );
-
-        // Mint some base tokens to Hyperdrive so that there is
-        // something to sweep.
-        leakyBase.mint(address(hyperdrive), 100e18);
 
         // Mint some of the sweepable tokens to Hyperdrive.
         sweepable.mint(address(hyperdrive), 100e18);
@@ -133,28 +115,19 @@ contract SweepTest is BaseTest {
         vm.stopPrank();
         vm.startPrank(bob);
 
-        // Trying to sweep the base token should fail.
-        address baseToken = address(hyperdrive.baseToken());
+        // Trying to sweep the stETH token should fail.
+        address lido = address(hyperdrive.lido());
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-        hyperdrive.sweep(IERC20(baseToken));
-
-        // Trying to sweep the vault token should fail.
-        address vaultToken = address(hyperdrive.pool());
-        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-        hyperdrive.sweep(IERC20(vaultToken));
+        hyperdrive.sweep(IERC20(lido));
     }
 
     function test_sweep_failure_indirect_sweeps() external {
         vm.stopPrank();
         vm.startPrank(bob);
 
-        // Trying to sweep the base token via the forwarding token should fail.
+        // Trying to sweep the stETH via the forwarding token should fail.
         vm.expectRevert(IHyperdrive.SweepFailed.selector);
-        hyperdrive.sweep(IERC20(address(baseForwarder)));
-
-        // Trying to sweep the vault token via the forwarding token should fail.
-        vm.expectRevert(IHyperdrive.SweepFailed.selector);
-        hyperdrive.sweep(IERC20(address(vaultForwarder)));
+        hyperdrive.sweep(IERC20(address(lidoForwarder)));
     }
 
     function test_sweep_success_feeCollector() external {
@@ -177,36 +150,8 @@ contract SweepTest is BaseTest {
     }
 }
 
-contract LeakyVault is MockERC4626 {
-    constructor(
-        ERC20Mintable _asset
-    ) MockERC4626(_asset, "Leaky Vault", "LEAK", 0, address(0), false) {}
-
-    // This function allows other addresses to transfer tokens from a spender.
-    // This is obviously insecure, but it's an easy way to expose a forwarding
-    // token that can abuse this leaky transfer function. This gives us a way
-    // to test the `sweep` function.
-    function leakyTransferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) external returns (bool) {
-        balanceOf[from] -= amount;
-
-        // Cannot overflow because the sum of all user
-        // balances can't exceed the max uint256 value.
-        unchecked {
-            balanceOf[to] += amount;
-        }
-
-        emit Transfer(from, to, amount);
-
-        return true;
-    }
-}
-
-contract LeakyERC20 is ERC20Mintable {
-    constructor() ERC20Mintable("Leaky ERC20", "LEAK", 0, address(0), false) {}
+contract LeakyLido is MockLido {
+    constructor() MockLido(0, address(0), false) {}
 
     // This function allows other addresses to transfer tokens from a spender.
     // This is obviously insecure, but it's an easy way to expose a forwarding
@@ -239,10 +184,10 @@ contract ForwardingToken {
     }
 
     function balanceOf(address account) external view returns (uint256) {
-        return LeakyERC20(target).balanceOf(account);
+        return LeakyLido(target).balanceOf(account);
     }
 
     function transfer(address to, uint256 amount) external returns (bool) {
-        return LeakyERC20(target).leakyTransferFrom(msg.sender, to, amount);
+        return LeakyLido(target).leakyTransferFrom(msg.sender, to, amount);
     }
 }

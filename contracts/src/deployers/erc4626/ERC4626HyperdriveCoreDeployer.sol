@@ -1,20 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IERC4626 } from "../interfaces/IERC4626.sol";
-import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import { IERC4626HyperdriveDeployer } from "../interfaces/IERC4626HyperdriveDeployer.sol";
-import { ERC4626Hyperdrive } from "../instances/ERC4626Hyperdrive.sol";
+import { IERC4626 } from "../../interfaces/IERC4626.sol";
+import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IHyperdriveCoreDeployer } from "../../interfaces/IHyperdriveCoreDeployer.sol";
+import { ERC4626Hyperdrive } from "../../instances/erc4626/ERC4626Hyperdrive.sol";
 
 /// @author DELV
 /// @title ERC4626HyperdriveCoreDeployer
-/// @notice This is a minimal factory which contains only the logic to deploy
-///         the hyperdrive contract and is called by a more complex factory which
-///         initializes the Hyperdrive instances and acts as a registry.
+/// @notice The core deployer for the ERC4626Hyperdrive implementation.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract ERC4626HyperdriveCoreDeployer is IERC4626HyperdriveDeployer {
+contract ERC4626HyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _extraData The extra data that contains the ERC4626 vault.
@@ -31,9 +29,8 @@ contract ERC4626HyperdriveCoreDeployer is IERC4626HyperdriveDeployer {
         address target2,
         address target3
     ) external override returns (address) {
-        address pool = abi.decode(_extraData, (address));
-
         // Deploy the ERC4626Hyperdrive instance.
+        address pool = abi.decode(_extraData, (address));
         return (
             address(
                 new ERC4626Hyperdrive(

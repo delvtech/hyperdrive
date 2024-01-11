@@ -3,30 +3,30 @@ pragma solidity 0.8.19;
 
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
-import { HyperdriveTarget0 } from "../external/HyperdriveTarget0.sol";
-import { IERC20 } from "../interfaces/IERC20.sol";
-import { IERC4626 } from "../interfaces/IERC4626.sol";
-import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import { ERC4626Base } from "./ERC4626Base.sol";
+import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
+import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IERC20 } from "../../interfaces/IERC20.sol";
+import { ILido } from "../../interfaces/ILido.sol";
+import { StETHBase } from "./StETHBase.sol";
 
 /// @author DELV
-/// @title ERC4626Target0
-/// @notice ERC4626Hyperdrive's target 0 logic contract. This contract contains
+/// @title StETHTarget0
+/// @notice StETHHyperdrive's target0 logic contract. This contract contains
 ///         all of the getters for Hyperdrive as well as some stateful
 ///         functions.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract ERC4626Target0 is HyperdriveTarget0, ERC4626Base {
+contract StETHTarget0 is HyperdriveTarget0, StETHBase {
     using SafeTransferLib for ERC20;
 
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param __pool The ERC4626 pool.
+    /// @param _lido The Lido contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        IERC4626 __pool
-    ) HyperdriveTarget0(_config) ERC4626Base(__pool) {}
+        ILido _lido
+    ) HyperdriveTarget0(_config) StETHBase(_lido) {}
 
     /// Extras ///
 
@@ -43,37 +43,29 @@ contract ERC4626Target0 is HyperdriveTarget0, ERC4626Base {
             revert IHyperdrive.Unauthorized();
         }
 
-        // Ensure that thet target isn't the base or vault token
-        if (
-            address(_target) == address(_baseToken) ||
-            address(_target) == address(_pool)
-        ) {
+        // Ensure that thet target isn't the stETH token.
+        if (address(_target) == address(_lido)) {
             revert IHyperdrive.UnsupportedToken();
         }
 
-        // Get Hyperdrive's balance of the base and pool tokens prior to
-        // sweeping.
-        uint256 baseBalance = _baseToken.balanceOf(address(this));
-        uint256 poolBalance = _pool.balanceOf(address(this));
+        // Get Hyperdrive's balance of stETH tokens prior to sweeping.
+        uint256 stETHBalance = _lido.balanceOf(address(this));
 
         // Transfer the entire balance of the sweep target to the fee collector.
         uint256 balance = _target.balanceOf(address(this));
         ERC20(address(_target)).safeTransfer(_feeCollector, balance);
 
-        // Ensure that the base and pool balances haven't changed.
-        if (
-            _baseToken.balanceOf(address(this)) != baseBalance ||
-            _pool.balanceOf(address(this)) != poolBalance
-        ) {
+        // Ensure that the stETH balance hasn't changed.
+        if (_lido.balanceOf(address(this)) != stETHBalance) {
             revert IHyperdrive.SweepFailed();
         }
     }
 
     /// Getters ///
 
-    /// @notice Gets the 4626 pool.
-    /// @return The 4626 pool.
-    function pool() external view returns (IERC4626) {
-        _revert(abi.encode(_pool));
+    /// @notice Returns the Lido contract.
+    /// @return lido The Lido contract.
+    function lido() external view returns (ILido) {
+        _revert(abi.encode(_lido));
     }
 }

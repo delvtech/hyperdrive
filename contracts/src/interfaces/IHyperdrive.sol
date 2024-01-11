@@ -253,7 +253,6 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     /// ##################
     /// ### Hyperdrive ###
     /// ##################
-    error ApprovalFailed();
     error BelowMinimumContribution();
     error BelowMinimumShareReserves();
     error EndIndexTooLarge();
@@ -367,4 +366,8 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     function target0() external view returns (address);
 
     function target1() external view returns (address);
+
+    function target2() external view returns (address);
+
+    function target3() external view returns (address);
 }

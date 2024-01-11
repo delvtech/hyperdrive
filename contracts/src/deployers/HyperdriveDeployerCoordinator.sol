@@ -1,54 +1,49 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { ERC4626Hyperdrive } from "../instances/ERC4626Hyperdrive.sol";
-import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import { IERC4626HyperdriveDeployer } from "../interfaces/IERC4626HyperdriveDeployer.sol";
+import { IHyperdriveCoreDeployer } from "../interfaces/IHyperdriveCoreDeployer.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 import { IHyperdriveTargetDeployer } from "../interfaces/IHyperdriveTargetDeployer.sol";
-import { ONE } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
-/// @title ERC4626HyperdriveDeployer
-/// @notice This is a minimal factory which contains only the logic to deploy
-///         Hyperdrive and is called by a more complex factory which
-///         initializes the Hyperdrive instances and acts as a registry.
-/// @dev We use two contracts to avoid any code size limit issues with Hyperdrive.
+/// @title HyperdriveDeployerCoordinator
+/// @notice This Hyperdrive deployer coordinates the process of deploying the
+///         Hyperdrive system utilizing several child deployers.
+/// @dev We use multiple deployers to avoid the maximum code size.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
+abstract contract HyperdriveDeployerCoordinator is IHyperdriveDeployer {
     /// @notice The contract used to deploy new instances of Hyperdrive.
-    address public immutable hyperdriveCoreDeployer;
+    address public immutable coreDeployer;
 
-    /// @notice The contract used to deploy new instances of Hyperdrive target0.
+    /// @notice The contract used to deploy new instances of HyperdriveTarget0.
     address public immutable target0Deployer;
 
-    /// @notice The contract used to deploy new instances of Hyperdrive target1.
+    /// @notice The contract used to deploy new instances of HyperdriveTarget1.
     address public immutable target1Deployer;
 
-    /// @notice The contract used to deploy new instances of Hyperdrive target2.
+    /// @notice The contract used to deploy new instances of HyperdriveTarget2.
     address public immutable target2Deployer;
 
-    /// @notice The contract used to deploy new instances of Hyperdrive target3.
+    /// @notice The contract used to deploy new instances of HyperdriveTarget3.
     address public immutable target3Deployer;
 
-    /// @notice Initializes the contract with the given parameters.
-    /// @param _hyperdriveCoreDeployer The contract used to deploy new instances
-    ///        of Hyperdrive.
+    /// @notice Instantiates the deployer coordinator.
+    /// @param _coreDeployer The core deployer.
     /// @param _target0Deployer The target0 deployer.
     /// @param _target1Deployer The target1 deployer.
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
     constructor(
-        address _hyperdriveCoreDeployer,
+        address _coreDeployer,
         address _target0Deployer,
         address _target1Deployer,
         address _target2Deployer,
         address _target3Deployer
     ) {
-        hyperdriveCoreDeployer = _hyperdriveCoreDeployer;
+        coreDeployer = _coreDeployer;
         target0Deployer = _target0Deployer;
         target1Deployer = _target1Deployer;
         target2Deployer = _target2Deployer;
@@ -63,13 +58,10 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
         IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory _extraData
     ) external override returns (address) {
-        // Decode the extra data to extract the pool address.
-        (address pool, ) = abi.decode(_extraData, (address, address[]));
-
         // Convert the deploy config into the pool config and set the initial
         // share price.
         IHyperdrive.PoolConfig memory _config = _copyPoolConfig(_deployConfig);
-        _config.initialSharePrice = IERC4626(pool).convertToAssets(ONE);
+        _config.initialSharePrice = _getInitialSharePrice(_extraData);
 
         // Deploy the target0 contract.
         address target0 = IHyperdriveTargetDeployer(target0Deployer).deploy(
@@ -89,9 +81,9 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
             _extraData
         );
 
-        // Deploy the ERC4626Hyperdrive instance.
+        // Deploy the Hyperdrive instance.
         return
-            IERC4626HyperdriveDeployer(hyperdriveCoreDeployer).deploy(
+            IHyperdriveCoreDeployer(coreDeployer).deploy(
                 _config,
                 _extraData,
                 target0,
@@ -100,6 +92,13 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
                 target3
             );
     }
+
+    /// @dev Gets the initial share price of the Hyperdrive pool.
+    /// @param _extraData The extra data passed to the child deployers.
+    /// @return The initial share price of the Hyperdrive pool.
+    function _getInitialSharePrice(
+        bytes memory _extraData
+    ) internal view virtual returns (uint256);
 
     /// @notice Copies the deploy config into a pool config.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.

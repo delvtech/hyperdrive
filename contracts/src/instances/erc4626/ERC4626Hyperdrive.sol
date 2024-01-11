@@ -3,12 +3,12 @@ pragma solidity 0.8.19;
 
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
-import { Hyperdrive } from "../external/Hyperdrive.sol";
-import { IERC20 } from "../interfaces/IERC20.sol";
-import { IERC4626 } from "../interfaces/IERC4626.sol";
-import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import { IERC4626Hyperdrive } from "../interfaces/IERC4626Hyperdrive.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
+import { Hyperdrive } from "../../external/Hyperdrive.sol";
+import { IERC20 } from "../../interfaces/IERC20.sol";
+import { IERC4626 } from "../../interfaces/IERC4626.sol";
+import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IERC4626Hyperdrive } from "../../interfaces/IERC4626Hyperdrive.sol";
+import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
 import { ERC4626Base } from "./ERC4626Base.sol";
 
 /// @author DELV
@@ -39,8 +39,9 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
         Hyperdrive(_config, _target0, _target1, _target2, _target3)
         ERC4626Base(__pool)
     {
-        // Ensure that the Hyperdrive pool was configured properly.
-        // WARN: 4626 implementations should be checked that if they use an
+        // Ensure that the initial share price is properly configured.
+        //
+        // WARN: ERC4626 implementations should be checked that if they use an
         // asset with decimals less than 18 that the preview deposit is scale
         // invariant. EG - because this line uses a very large query to load
         // price for USDC if the price per share changes based on size of
@@ -49,6 +50,9 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
         if (_config.initialSharePrice != _pricePerShare()) {
             revert IHyperdrive.InvalidInitialSharePrice();
         }
+
+        // Ensure that the base token is the same as the vault's underlying
+        // asset.
         if (address(_config.baseToken) != IERC4626(_pool).asset()) {
             revert IHyperdrive.InvalidBaseToken();
         }

@@ -1,19 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { ERC4626HyperdriveDeployer } from "contracts/src/instances/ERC4626HyperdriveDeployer.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
-import { ERC4626HyperdriveDeployer } from "contracts/src/instances/ERC4626HyperdriveDeployer.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
-import { MockERC4626Hyperdrive } from "contracts/test/MockERC4626Hyperdrive.sol";
-import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
-import { Lib } from "test/utils/Lib.sol";
 import { ERC4626ValidationTest } from "./ERC4626Validation.t.sol";
 
 // Interface for the `Pot` of the underlying DSR
@@ -26,8 +15,6 @@ interface PotLike {
 }
 
 contract sDaiTest is ERC4626ValidationTest {
-    using FixedPointMath for *;
-
     function setUp() public override __mainnet_fork(17_318_972) {
         super.setUp();
 

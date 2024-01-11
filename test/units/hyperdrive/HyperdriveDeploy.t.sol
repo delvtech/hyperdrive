@@ -2,21 +2,9 @@
 pragma solidity 0.8.19;
 
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
-import { ERC4626HyperdriveDeployer } from "contracts/src/instances/ERC4626HyperdriveDeployer.sol";
-import { ERC4626Target0Deployer } from "contracts/src/instances/ERC4626Target0Deployer.sol";
-import { ERC4626Target1Deployer } from "contracts/src/instances/ERC4626Target1Deployer.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { MockERC4626, ERC20 } from "contracts/test/MockERC4626.sol";
-import { MockERC4626Hyperdrive } from "contracts/test/MockERC4626Hyperdrive.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
 contract HyperdriveFactoryTest is HyperdriveTest {
     function test_hyperdrive_factory_admin_functions()
