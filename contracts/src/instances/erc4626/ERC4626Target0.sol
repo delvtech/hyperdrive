@@ -33,9 +33,6 @@ contract ERC4626Target0 is HyperdriveTarget0, ERC4626Base {
     /// @notice Some yield sources [eg Morpho] pay rewards directly to this
     ///         contract but we can't handle distributing them internally so we
     ///         sweep to the fee collector address to then redistribute to users.
-    /// @dev WARN: The entire balance of any of the sweep targets can be swept
-    ///      by governance. If these sweep targets provide access to the base or
-    ///      pool token, then governance has the ability to rug the pool.
     /// @dev WARN: It is unlikely but possible that there is a selector overlap
     ///      with 'transferFrom'. Any integrating contracts should be checked
     ///      for that, as it may result in an unexpected call from this address.
@@ -46,14 +43,30 @@ contract ERC4626Target0 is HyperdriveTarget0, ERC4626Base {
             revert IHyperdrive.Unauthorized();
         }
 
-        // Ensure that thet target can be swept by governance.
-        if (!_isSweepable[address(_target)]) {
+        // Ensure that thet target isn't the base or vault token
+        if (
+            address(_target) == address(_baseToken) ||
+            address(_target) == address(_pool)
+        ) {
             revert IHyperdrive.UnsupportedToken();
         }
+
+        // Get Hyperdrive's balance of the base and pool tokens prior to
+        // sweeping.
+        uint256 baseBalance = _baseToken.balanceOf(address(this));
+        uint256 poolBalance = _pool.balanceOf(address(this));
 
         // Transfer the entire balance of the sweep target to the fee collector.
         uint256 balance = _target.balanceOf(address(this));
         ERC20(address(_target)).safeTransfer(_feeCollector, balance);
+
+        // Ensure that the base and pool balances haven't changed.
+        if (
+            _baseToken.balanceOf(address(this)) != baseBalance ||
+            _pool.balanceOf(address(this)) != poolBalance
+        ) {
+            revert IHyperdrive.SweepFailed();
+        }
     }
 
     /// Getters ///
@@ -62,11 +75,5 @@ contract ERC4626Target0 is HyperdriveTarget0, ERC4626Base {
     /// @return The 4626 pool.
     function pool() external view returns (IERC4626) {
         _revert(abi.encode(_pool));
-    }
-
-    /// @notice Gets the sweepable status of a target.
-    /// @param _target The target address.
-    function isSweepable(address _target) external view returns (bool) {
-        _revert(abi.encode(_isSweepable[_target]));
     }
 }
