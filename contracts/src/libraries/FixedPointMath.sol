@@ -303,12 +303,38 @@ library FixedPointMath {
         uint256 _deltaWeight,
         bool _isAdding
     ) internal pure returns (uint256 average) {
+        // If the delta weight should be added to the total weight, we compute
+        // the weighted average as:
+        //
+        // average = (totalWeight * average + deltaWeight * delta) /
+        //           (totalWeight + deltaWeight)
         if (_isAdding) {
             average = (_totalWeight.mulDown(_average) +
                 _deltaWeight.mulDown(_delta)).divUp(
                     _totalWeight + _deltaWeight
                 );
-        } else {
+
+            // An important property that should always hold when we are adding
+            // to the average is:
+            //
+            // min(_delta, _average) <= average <= max(_delta, _average)
+            //
+            // To ensure that this is always the case, we clamp the weighted
+            // average to this range.
+            uint256 minAverage = _delta.min(_average);
+            uint256 maxAverage = _delta.max(_average);
+            if (average < minAverage) {
+                average = minAverage;
+            } else if (average > maxAverage) {
+                average = maxAverage;
+            }
+        }
+        // If the delta weight should be subtracted from the total weight, we
+        // compute the weighted average as:
+        //
+        // average = (totalWeight * average - deltaWeight * delta) /
+        //           (totalWeight - deltaWeight)
+        else {
             if (_totalWeight == _deltaWeight) return 0;
             average = (_totalWeight.mulDown(_average) -
                 _deltaWeight.mulDown(_delta)).divUp(

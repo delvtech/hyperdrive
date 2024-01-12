@@ -3,12 +3,14 @@ pragma solidity 0.8.19;
 
 import { stdError, Test } from "forge-std/Test.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { MockFixedPointMath } from "contracts/test/MockFixedPointMath.sol";
 import { LogExpMath } from "test/3rdPartyLibs/LogExpMath.sol";
 import { BalancerErrors } from "test/3rdPartyLibs/BalancerErrors.sol";
 import { Lib } from "test/utils/Lib.sol";
 
 contract FixedPointMathTest is Test {
+    using FixedPointMath for uint256;
     using Lib for *;
 
     function test_mulDown() public {
@@ -236,6 +238,48 @@ contract FixedPointMathTest is Test {
             ),
             1e18
         );
+    }
+
+    // This test verifies that update weighted average always performs as a
+    // a weighted average with the expected inputs. This just means that if
+    // the current average is A, the current weight is W, and the new value is
+    // a, and the new weight is w, then the new average satisfies the property:
+    //
+    // min(a, A) <= (A * W + a * w) / (W + w) <= max(a, A)
+    //
+    // This property is true for the weighted average when computed with perfect
+    // precision, but it needs to be verified for the fixed point math
+    // implementation. This property isn't held when `isAdding = false` since
+    // removing a large value from the average can reveal points in the data
+    // that were previously less influential.
+    function test_updateWeightedAverage_fuzz(
+        uint256 average,
+        uint256 totalWeight,
+        uint256 delta,
+        uint256 deltaWeight
+    ) public {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
+
+        // Normalize the inputs to a reasonable range for the uses of the
+        // weighted average in the codebase.
+        average = average.normalizeToRange(1e9, 100_000_000e18);
+        totalWeight = totalWeight.normalizeToRange(1e9, 100_000_000e18);
+        delta = delta.normalizeToRange(1e9, 100_000_000e18);
+        deltaWeight = deltaWeight.normalizeToRange(1e9, 100_000_000e18);
+
+        // Calculate the weighted average.
+        uint256 updatedAverage = mockFixedPointMath.updateWeightedAverage(
+            average,
+            totalWeight,
+            delta,
+            deltaWeight,
+            true
+        );
+
+        // Ensure that the weighted average is actually an average.
+        assertGe(updatedAverage, average.min(delta));
+        assertLe(updatedAverage, average.max(delta));
     }
 
     function test_differential_fuzz_pow(uint256 x, uint256 y) public {
