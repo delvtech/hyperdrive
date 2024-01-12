@@ -372,29 +372,89 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         }
     }
 
-    /// @dev Collect the interest earned by closed positions
-    ///      that haven't been redeemed.
-    /// @param _amount The amount in shares that earned the zombie interest.
-    /// @param _oldSharePrice The share price at the time of the last checkpoint.
-    /// @param _newSharePrice The current share price.
-    function _collectZombieInterest(
-        uint256 _amount,
-        uint256 _oldSharePrice,
-        uint256 _newSharePrice
-    ) internal {
-        if (_newSharePrice > _oldSharePrice && _oldSharePrice > 0) {
-            // Calculate the zombie interest to be collected in shares.
-            // dz * (c1 - c0)/c1
-            uint256 zombieInterest = _amount.mulDivDown(
-                _newSharePrice - _oldSharePrice,
-                _newSharePrice
+    /// @dev Apply the updates to the market state as a result of closing a
+    ///      position after maturity. This function also adjusts the proceeds
+    ///      to account for any negative interest that has accrued in the
+    ///      zombie reserves.
+    /// @param _shareProceeds The share proceeds.
+    /// @param _sharePrice The share price.
+    /// @return The adjusted share proceeds.
+    function _applyZombieClose(
+        uint256 _shareProceeds,
+        uint256 _sharePrice
+    ) internal returns (uint256) {
+        // Collect any zombie interest that has accrued since the last
+        // collection.
+        (
+            uint256 zombieBaseProceeds,
+            uint256 zombieBaseReserves
+        ) = _collectZombieInterest(_sharePrice);
+
+        // If negative interest has accrued in the zombie reserves, we
+        // discount the share proceeds in proportion to the amount of
+        // negative interest that has accrued.
+        uint256 baseProceeds = _shareProceeds.mulDown(_sharePrice);
+        if (zombieBaseProceeds > zombieBaseReserves) {
+            _shareProceeds = _shareProceeds.mulDivDown(
+                zombieBaseReserves,
+                zombieBaseProceeds
             );
-            _marketState.zombieShareReserves -= zombieInterest.toUint128();
+        }
+
+        // Apply the updates to the zombie base proceeds and share reserves.
+        if (baseProceeds < zombieBaseProceeds) {
+            zombieBaseProceeds -= baseProceeds;
+        } else {
+            zombieBaseProceeds = 0;
+        }
+        _marketState.zombieBaseProceeds = zombieBaseProceeds.toUint112();
+        uint256 zombieShareReserves = _marketState.zombieShareReserves;
+        if (_shareProceeds < zombieShareReserves) {
+            zombieShareReserves -= _shareProceeds;
+        } else {
+            zombieShareReserves = 0;
+        }
+        _marketState.zombieShareReserves = zombieShareReserves.toUint128();
+
+        return _shareProceeds;
+    }
+
+    /// @dev Collect the interest earned on unredeemed matured positions. This
+    ///      interest is split between the LPs and governance.
+    /// @param _sharePrice The current share price.
+    /// @return zombieBaseProceeds The base proceeds reserved for zombie
+    ///         positions.
+    /// @return zombieBaseReserves The updated base reserves reserved for zombie
+    ///         positions.
+    function _collectZombieInterest(
+        uint256 _sharePrice
+    )
+        internal
+        returns (uint256 zombieBaseProceeds, uint256 zombieBaseReserves)
+    {
+        // Get the zombie base proceeds and reserves.
+        zombieBaseReserves = _sharePrice.mulDown(
+            _marketState.zombieShareReserves
+        );
+        zombieBaseProceeds = _marketState.zombieBaseProceeds;
+
+        // If the zombie base reserves are greater than the zombie base
+        // proceeds, then there is interest to collect.
+        if (zombieBaseReserves > zombieBaseProceeds) {
+            // The interest collected on the zombie position is simply the
+            // difference between the base reserves and the base proceeds.
+            uint256 zombieInterest = zombieBaseReserves - zombieBaseProceeds;
+
+            // Remove the zombie interest from the zombie share reserves.
+            _marketState.zombieShareReserves -= zombieInterest
+                .divUp(_sharePrice)
+                .toUint128();
 
             // Calculate and collect the governance fee.
             // The fee is calculated in terms of shares and paid to
             // governance.
-            uint256 governanceZombieFeeCollected = zombieInterest.mulDown(
+            uint256 zombieInterestShares = zombieInterest.divDown(_sharePrice);
+            uint256 governanceZombieFeeCollected = zombieInterestShares.mulDown(
                 _governanceZombieFee
             );
             _governanceFeesAccrued += governanceZombieFeeCollected;
@@ -403,9 +463,15 @@ abstract contract HyperdriveBase is HyperdriveStorage {
             // governance), are reinvested in the share reserves. The share
             // adjustment is updated in lock-step to avoid changing the curve's
             // k invariant.
-            zombieInterest -= governanceZombieFeeCollected;
-            _marketState.shareReserves += zombieInterest.toUint128();
-            _marketState.shareAdjustment += int128(zombieInterest.toUint128());
+            zombieInterestShares -= governanceZombieFeeCollected;
+            _marketState.shareReserves += zombieInterestShares.toUint128();
+            _marketState.shareAdjustment += int128(
+                zombieInterestShares.toUint128()
+            );
+
+            // After collecting the interest, the zombie base reserves are
+            // equal to the zombie base proceeds.
+            zombieBaseReserves = zombieBaseProceeds;
         }
     }
 

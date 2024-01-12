@@ -416,20 +416,19 @@ contract ZombieInterestTest is HyperdriveTest {
         uint256 baseReserves = hyperdrive.getPoolInfo().shareReserves.mulDown(
             sharePrice
         );
-        assertGe(
-            baseToken.balanceOf(address(hyperdrive)) + 1 wei,
-            baseReserves
-        );
+        assertGe(baseToken.balanceOf(address(hyperdrive)) + 1, baseReserves);
 
-        // Ensure that whatever is left in the zombie share reserves is <= hyperdrive contract - baseReserves.
+        // Ensure that whatever is left in the zombie share reserves is
+        // less than `balance(hyperdrive) - baseReserves`.
         // This is an important check bc it implies ongoing solvency.
         assertLe(
             hyperdrive.getPoolInfo().zombieShareReserves.mulDown(sharePrice),
-            baseToken.balanceOf(address(hyperdrive)) + 1000 wei - baseReserves
+            baseToken.balanceOf(address(hyperdrive)) + 10 wei - baseReserves
         );
     }
 
-    // This test just demonstrates that shorts redeemed late do not receive zombie interest.
+    // This test just demonstrates that shorts redeemed late do not receive
+    // zombie interest.
     function test_zombie_short() external {
         // Initialize the pool with capital.
         deploy(bob, 0.035e18, 1e18, 0, 0, 0, 0);
@@ -529,18 +528,14 @@ contract ZombieInterestTest is HyperdriveTest {
             advanceTime(POSITION_DURATION, variableRate);
             hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
 
-            // Checkpoint is missed.
+            // A checkpoints is missed.
             advanceTime(CHECKPOINT_DURATION, variableRate);
-            uint256 skippedCheckpointTime = block.timestamp;
 
             // Several checkpoints are minted.
             advanceTimeWithCheckpoints2(3 * CHECKPOINT_DURATION, variableRate);
 
             // Advance time halfway to the next checkpoint.
             advanceTime(CHECKPOINT_DURATION / 2, variableRate);
-
-            // Mint the skipped checkpoint.
-            hyperdrive.checkpoint(skippedCheckpointTime);
 
             zombieShareReserves1 = hyperdrive.getPoolInfo().zombieShareReserves;
             shareReserves1 = hyperdrive.getPoolInfo().shareReserves;

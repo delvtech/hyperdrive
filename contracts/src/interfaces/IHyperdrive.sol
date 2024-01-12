@@ -98,16 +98,13 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         uint128 shareReserves;
         /// @dev The pool's bond reserves.
         uint128 bondReserves;
-        /// @dev The net amount of shares that have been added and removed from
-        ///      the share reserves due to flat updates.
-        int128 shareAdjustment;
-        /// @dev The amount shares that associated with positions that are matured,
-        ///      but not yet redeemed.
-        uint128 zombieShareReserves;
         /// @dev The global exposure of the pool due to open longs
         uint128 longExposure;
         /// @dev The amount of longs that are still open.
         uint128 longsOutstanding;
+        /// @dev The net amount of shares that have been added and removed from
+        ///      the share reserves due to flat updates.
+        int128 shareAdjustment;
         /// @dev The amount of shorts that are still open.
         uint128 shortsOutstanding;
         /// @dev The average maturity time of outstanding long positions.
@@ -118,6 +115,10 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         bool isInitialized;
         /// @dev A flag indicating whether or not the pool is paused.
         bool isPaused;
+        /// @dev The proceeds in base of the unredeemed matured positions.
+        uint112 zombieBaseProceeds;
+        /// @dev The shares reserved for unredeemed matured positions.
+        uint128 zombieShareReserves;
     }
 
     struct Checkpoint {
@@ -209,8 +210,9 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         ///      bonds. This is used to ensure that the pricing mechanism is
         ///      held invariant under flat updates for security reasons.
         int256 shareAdjustment;
-        // @dev The amount shares that associated with positions that are matured,
-        ///      but not yet redeemed.
+        /// @dev The proceeds in base of the unredeemed matured positions.
+        uint256 zombieBaseProceeds;
+        /// @dev The shares reserved for unredeemed matured positions.
         uint256 zombieShareReserves;
         /// @dev The reserves of bonds held by the pool.
         uint256 bondReserves;
@@ -358,6 +360,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     /// ################
     /// ### SafeCast ###
     /// ################
+    error UnsafeCastToUint112();
     error UnsafeCastToUint128();
     error UnsafeCastToInt128();
 
