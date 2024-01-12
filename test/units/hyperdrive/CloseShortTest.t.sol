@@ -815,6 +815,7 @@ contract CloseShortTest is HyperdriveTest {
         // 1.8 which is good considering the circumstance. This is
         // explained in issue #691.
         assertApproxEqAbs(shortProceeds1, shortProceeds4, 1.8e18);
+        assertGe(shortProceeds1, shortProceeds4);
     }
 
     struct TestCase {
