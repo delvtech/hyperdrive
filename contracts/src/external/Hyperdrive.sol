@@ -208,7 +208,7 @@ abstract contract Hyperdrive is
 
     /// @notice Allows anyone to mint a new checkpoint.
     function checkpoint(uint256) external {
-        _delegate(target2);
+        _delegate(target3);
     }
 
     /// Admin ///

@@ -69,12 +69,4 @@ abstract contract HyperdriveTarget2 is
     ) external payable returns (uint256 maturityTime, uint256 traderDeposit) {
         return _openShort(_bondAmount, _maxDeposit, _minSharePrice, _options);
     }
-
-    /// Checkpoints ///
-
-    /// @notice Allows anyone to mint a new checkpoint.
-    /// @param _checkpointTime The time of the checkpoint to create.
-    function checkpoint(uint256 _checkpointTime) external {
-        _checkpoint(_checkpointTime);
-    }
 }
