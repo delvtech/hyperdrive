@@ -163,6 +163,18 @@ contract MockHyperdriveMath {
         );
     }
 
+    function calculateTimeStretch(
+        uint256 apr,
+        uint256 positionDuration
+    ) internal pure returns (uint256) {
+        uint256 result = HyperdriveUtils.calculateTimeStretch(
+            apr,
+            positionDuration
+        );
+        return result;
+    }
+
+
     function calculateMaxLong(
         HyperdriveUtils.MaxTradeParams memory _params,
         int256 _checkpointExposure,
