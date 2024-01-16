@@ -239,30 +239,41 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         );
     }
 
-    function test_CloseLongWithUnderlying(uint256 basePaid) external {
-        vm.startPrank(alice);
+    function test_CloseLongWithUnderlying(
+        uint256 basePaid,
+        int256 variableRate
+    ) external {
+        // Advance time with positive interest for a term to ensure that the
+        // share price isn't equal to one.
+        advanceTimeWithYield(POSITION_DURATION, 0.05e18);
+
         // Alice opens a long.
+        vm.startPrank(alice);
         uint256 maxLong = HyperdriveUtils.calculateMaxLong(hyperdrive);
         basePaid = basePaid.normalizeToRange(
             hyperdrive.getPoolConfig().minimumTransactionAmount * 2,
             maxLong.min(underlyingToken.balanceOf(alice))
         );
 
-        // Open a long
+        // Open a long.
         (uint256 maturityTime, uint256 longAmount) = openLongERC4626(
             alice,
             basePaid,
             true
         );
 
-        // Establish a baseline of balances before closing long
+        // The term passes and interest accrues.
+        variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        advanceTimeWithYield(POSITION_DURATION, variableRate);
+
+        // Establish a baseline of balances before closing long.
         uint256 totalPooledAssetsBefore = token.totalAssets();
         AccountBalances memory aliceBalancesBefore = getAccountBalances(alice);
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
         );
 
-        // Close long with underlying assets
+        // Close long with underlying assets.
         uint256 baseProceeds = hyperdrive.closeLong(
             maturityTime,
             longAmount,
@@ -273,6 +284,12 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
+
+        // Ensure that the long received the correct amount of base and wasn't
+        // overcompensated.
+        uint256 expectedBaseProceeds = longAmount;
+        assertLe(baseProceeds, expectedBaseProceeds + 10);
+        assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 100);
 
         // Ensure that the ERC4626 aggregates and the token balances were updated
         // correctly during the trade.
@@ -447,6 +464,11 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         uint256 shortAmount,
         int256 variableRate
     ) internal {
+        // Advance time with positive interest for a term to ensure that the
+        // share price isn't equal to one.
+        advanceTimeWithYield(POSITION_DURATION, 0.05e18);
+
+        // Open a short.
         vm.startPrank(alice);
         uint256 maxShort = HyperdriveUtils.calculateMaxShort(hyperdrive);
         shortAmount = shortAmount.normalizeToRange(
@@ -456,9 +478,8 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         (uint256 maturityTime, ) = openShortERC4626(alice, shortAmount, true);
 
         // The term passes and interest accrues.
+        uint256 startingSharePrice = hyperdrive.getPoolInfo().sharePrice;
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
-
-        // Accumulate yield and let the short mature
         advanceTimeWithYield(POSITION_DURATION, variableRate);
 
         // Establish a baseline before closing the short
@@ -468,7 +489,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             address(hyperdrive)
         );
 
-        // Close the short
+        // Close the short.
         uint256 baseProceeds = hyperdrive.closeShort(
             maturityTime,
             shortAmount,
@@ -479,6 +500,15 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
+
+        // Ensure that the short received the correct amount of base and wasn't
+        // overcompensated.
+        uint256 expectedBaseProceeds = shortAmount.mulDivDown(
+            hyperdrive.getPoolInfo().sharePrice - startingSharePrice,
+            startingSharePrice
+        );
+        assertLe(baseProceeds, expectedBaseProceeds + 10);
+        assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 100);
 
         // Ensure that the ERC4626 aggregates and the token balances were updated
         // correctly during the trade.

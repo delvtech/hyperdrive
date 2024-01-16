@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { ILido } from "../../interfaces/ILido.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
-import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title StethHyperdrive
@@ -113,6 +113,15 @@ abstract contract StETHBase is HyperdriveBase {
             revert IHyperdrive.UnsupportedToken();
         }
 
+        // FIXME: The way that I'm currently doing this is inefficient.
+        //
+        // Correct for any error that crept into the calculation of the share
+        // amount by converting the shares to base and then back to shares
+        // using the vault's share conversion logic.
+        uint256 sharePrice = _pricePerShare();
+        uint256 baseAmount = _shares.mulDown(sharePrice);
+        _shares = _lido.getSharesByPooledEth(baseAmount);
+
         // If we're withdrawing zero shares, short circuit and return 0.
         if (_shares == 0) {
             return 0;
@@ -128,7 +137,7 @@ abstract contract StETHBase is HyperdriveBase {
     /// @return price The current share price.
     /// @dev must remain consistent with the impl inside of the DataProvider
     function _pricePerShare() internal view override returns (uint256 price) {
-        return _lido.getTotalPooledEther().divDown(_lido.getTotalShares());
+        return _lido.getPooledEthByShares(ONE);
     }
 
     /// @dev We override the message value check since this integration is

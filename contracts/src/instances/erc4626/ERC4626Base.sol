@@ -87,11 +87,22 @@ abstract contract ERC4626Base is HyperdriveBase {
         uint256 _shares,
         IHyperdrive.Options calldata _options
     ) internal override returns (uint256 amountWithdrawn) {
+        // FIXME: The way that I'm currently doing this is inefficient.
+        //
+        // Correct for any error that crept into the calculation of the share
+        // amount by converting the shares to base and then back to shares
+        // using the vault's share conversion logic.
+        uint256 sharePrice = _pricePerShare();
+        uint256 baseAmount = _shares.mulDown(sharePrice);
+        _shares = _pool.convertToShares(baseAmount);
+
         // If we're withdrawing zero shares, short circuit and return 0.
         if (_shares == 0) {
             return 0;
         }
 
+        // If we're withdrawing in base, we redeem the shares from the yield
+        // source, and we transfer base to the destination.
         if (_options.asBase) {
             // Redeem from the yield source and transfer the
             // resulting base to the destination address.
@@ -100,7 +111,10 @@ abstract contract ERC4626Base is HyperdriveBase {
                 _options.destination,
                 address(this)
             );
-        } else {
+        }
+        // Otherwise, we're withdrawing in vault shares, and we transfer vault
+        // shares to the destination.
+        else {
             // Transfer vault shares to the destination.
             ERC20(address(_pool)).safeTransfer(_options.destination, _shares);
             amountWithdrawn = _shares;

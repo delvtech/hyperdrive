@@ -17,6 +17,14 @@ interface ILido is IERC20 {
         uint256 _sharesAmount
     ) external returns (uint256);
 
+    function getSharesByPooledEth(
+        uint256 _ethAmount
+    ) external view returns (uint256);
+
+    function getPooledEthByShares(
+        uint256 _sharesAmount
+    ) external view returns (uint256);
+
     function getBufferedEther() external view returns (uint256);
 
     function getTotalPooledEther() external view returns (uint256);
