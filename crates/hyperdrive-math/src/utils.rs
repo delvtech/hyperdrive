@@ -1,4 +1,7 @@
-use ethers::types::{I256, U256};
+use ethers::{
+    core::k256::elliptic_curve::consts::U2,
+    types::{I256, U256},
+};
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
 
@@ -42,8 +45,15 @@ pub fn get_time_stretch(mut rate: FixedPoint, position_duration: FixedPoint) -> 
             time_stretch,
         );
     let target_spot_price = fixed!(1e18) / (fixed!(1e18) * annualized_time);
-    return FixedPoint::from(-FixedPoint::ln(I256::from(target_spot_price)))
-        / FixedPoint::from(-FixedPoint::ln(I256::from(benchmark_reserve_ratio)));
+    // target spot price and benchmark reserve ratio will have negative ln,
+    // but since we are dividing them we can cast to positive before converting types
+    // TODO: implement FixedPoint `neg` pub fn to support "-"
+    let new_time_stretch = U256::from(FixedPoint::from(-FixedPoint::ln(I256::from(
+        target_spot_price,
+    )))) / U256::from(FixedPoint::from(-FixedPoint::ln(I256::from(
+        benchmark_reserve_ratio,
+    ))));
+    return new_time_stretch.into();
 }
 
 pub fn get_effective_share_reserves(
