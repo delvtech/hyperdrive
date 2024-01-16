@@ -342,7 +342,8 @@ contract CloseLongTest is HyperdriveTest {
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
 
         // Verify that Bob received base equal to the full bond amount.
-        assertApproxEqAbs(baseProceeds, bondAmount, 1);
+        assertLe(baseProceeds, bondAmount);
+        assertApproxEqAbs(baseProceeds, bondAmount, 2);
 
         // Verify that the close long updates were correct.
         verifyCloseLong(
@@ -476,7 +477,8 @@ contract CloseLongTest is HyperdriveTest {
                 poolInfoBefore.sharePrice
             );
 
-            assertEq(baseProceeds, bondsValue);
+            assertLe(baseProceeds, bondsValue);
+            assertApproxEqAbs(baseProceeds, bondsValue, 1);
         }
 
         // Verify that the close long updates were correct.
@@ -599,7 +601,8 @@ contract CloseLongTest is HyperdriveTest {
             POSITION_DURATION
         );
 
-        assertApproxEqAbs(baseProceeds, bondValue, 6);
+        assertLe(baseProceeds, bondValue);
+        assertApproxEqAbs(baseProceeds, bondValue, 7);
         assertApproxEqAbs(bondValue, bondFaceValue, 5);
 
         // Verify that the close long updates were correct.

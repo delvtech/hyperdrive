@@ -265,6 +265,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         uint256 withdrawalSharesRedeemed;
         (proceeds, withdrawalSharesRedeemed) = _redeemWithdrawalSharesInternal(
             _lpShares,
+            sharePrice,
             _minOutputPerShare,
             _options
         );
@@ -319,6 +320,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         // Redeem as many of the withdrawal shares as possible.
         (proceeds, withdrawalSharesRedeemed) = _redeemWithdrawalSharesInternal(
             _withdrawalShares,
+            sharePrice,
             _minOutputPerShare,
             _options
         );
@@ -344,6 +346,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
     ///      amount of the specified withdrawal shares given the amount of
     ///      withdrawal shares ready to withdraw.
     /// @param _withdrawalShares The withdrawal shares to redeem.
+    /// @param _sharePrice The share price.
     /// @param _minOutputPerShare The minimum amount of base the LP expects to
     ///        receive for each withdrawal share that is burned.
     /// @param _options The options that configure how the operation is settled.
@@ -352,6 +355,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
     ///         were redeemed.
     function _redeemWithdrawalSharesInternal(
         uint256 _withdrawalShares,
+        uint256 _sharePrice,
         uint256 _minOutputPerShare,
         IHyperdrive.Options calldata _options
     ) internal returns (uint256 proceeds, uint256 withdrawalSharesRedeemed) {
@@ -386,7 +390,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         _withdrawPool.proceeds -= shareProceeds.toUint128();
 
         // Withdraw the share proceeds to the user.
-        proceeds = _withdraw(shareProceeds, _options);
+        proceeds = _withdraw(shareProceeds, _sharePrice, _options);
 
         // Enforce the minimum user output per share.
         if (_minOutputPerShare.mulDown(withdrawalSharesRedeemed) > proceeds) {

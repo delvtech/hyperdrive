@@ -190,6 +190,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // test an underlying withdraw
         uint256 amountWithdrawn = mockHyperdrive.withdraw(
             2e18,
+            mockHyperdrive.pricePerShare(),
             IHyperdrive.Options({
                 destination: alice,
                 asBase: true,
@@ -203,6 +204,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // Test a share withdraw
         amountWithdrawn = mockHyperdrive.withdraw(
             2e18,
+            mockHyperdrive.pricePerShare(),
             IHyperdrive.Options({
                 destination: alice,
                 asBase: false,
@@ -223,6 +225,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // Test an underlying withdraw of zero.
         uint256 amountWithdrawn = mockHyperdrive.withdraw(
             0,
+            mockHyperdrive.pricePerShare(),
             IHyperdrive.Options({
                 destination: alice,
                 asBase: true,
@@ -236,6 +239,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // Test a share withdraw of zero.
         amountWithdrawn = mockHyperdrive.withdraw(
             0,
+            mockHyperdrive.pricePerShare(),
             IHyperdrive.Options({
                 destination: alice,
                 asBase: false,

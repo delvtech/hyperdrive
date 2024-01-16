@@ -95,6 +95,7 @@ abstract contract StETHBase is HyperdriveBase {
     /// @notice Processes a trader's withdrawal. This yield source only supports
     ///         withdrawals in stETH shares.
     /// @param _shares The amount of shares to withdraw from Hyperdrive.
+    /// @param _sharePrice The share price.
     /// @param _options The options that configure the withdrawal. The options
     ///        used in this implementation are "destination" which specifies the
     ///        recipient of the withdrawal and "asBase" which determines
@@ -105,6 +106,7 @@ abstract contract StETHBase is HyperdriveBase {
     /// @return The amount of shares withdrawn from the yield source.
     function _withdraw(
         uint256 _shares,
+        uint256 _sharePrice,
         IHyperdrive.Options calldata _options
     ) internal override returns (uint256) {
         // stETH withdrawals aren't necessarily instantaneous. Users that want
@@ -113,13 +115,10 @@ abstract contract StETHBase is HyperdriveBase {
             revert IHyperdrive.UnsupportedToken();
         }
 
-        // FIXME: The way that I'm currently doing this is inefficient.
-        //
         // Correct for any error that crept into the calculation of the share
         // amount by converting the shares to base and then back to shares
         // using the vault's share conversion logic.
-        uint256 sharePrice = _pricePerShare();
-        uint256 baseAmount = _shares.mulDown(sharePrice);
+        uint256 baseAmount = _shares.mulDown(_sharePrice);
         _shares = _lido.getSharesByPooledEth(baseAmount);
 
         // If we're withdrawing zero shares, short circuit and return 0.
