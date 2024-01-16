@@ -115,6 +115,33 @@ mod tests {
     use crate::State;
 
     #[tokio::test]
+    async fn fuzz_get_time_stretch() -> Result<()> {
+        // Spin up a fake chain & deploy mock hyperdrive math.
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_hyperdrive_math();
+
+        // Fuzz the rust and solidity implementations against each other.
+        let apr = fixed!(5e16); // 5%
+        let seconds_in_a_year = U256::from(60 * 60 * 24 * 365);
+        let mut rng = thread_rng();
+        for _ in 0..*FAST_FUZZ_RUNS {
+            // Get the current state of the mock contract
+            let state = rng.gen::<State>();
+            let actual = get_time_stretch(apr, fixed!(seconds_in_a_year));
+            match mock
+                .calculateTimeStretch(apr.into(), seconds_in_a_year)
+                .call()
+                .await
+            {
+                Ok(expected_t) => {
+                    assert_eq!(actual, FixedPoint::from(expected_t));
+                }
+                Err(_) => panic!("Test failed."),
+            }
+        }
+    }
+
+    #[tokio::test]
     async fn fuzz_calculate_bonds_given_shares_and_rate() -> Result<()> {
         // Spin up a fake chain & deploy mock hyperdrive math.
         let chain = TestChainWithMocks::new(1).await?;
