@@ -31,7 +31,7 @@ contract DummyHyperdrive is Hyperdrive, MockHyperdriveBase {
                 baseToken: IERC20(address(0)),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0),
-                initialSharePrice: 1e18,
+                initialVaultSharePrice: 1e18,
                 minimumShareReserves: 1e18,
                 minimumTransactionAmount: 1e15,
                 positionDuration: 365 days,

@@ -266,7 +266,7 @@ impl TestChain {
             base_token: base.address(),
             linker_factory: Address::from_low_u64_be(1),
             linker_code_hash: [1; 32],
-            initial_share_price: uint256!(1e18),
+            initial_vault_share_price: uint256!(1e18),
             minimum_share_reserves: uint256!(10e18),
             minimum_transaction_amount: uint256!(0.001e18),
             position_duration: U256::from(60 * 60 * 24 * 365), // 1 year
@@ -420,10 +420,10 @@ impl TestChain {
             // Etch the "etching vault" onto the current vault contract. The
             // etching vault implements `convertToAssets` to return the immutable
             // that was passed on deployment. This is necessary because the
-            // ERC4626Hyperdrive instance verifies that the initial share price
-            // is equal to the `_pricePerShare`.
+            // ERC4626Hyperdrive instance verifies that the initial vault share price
+            // is equal to the `_pricePerVaultShare`.
             let etching_vault_template =
-                EtchingVault::deploy(client.clone(), (addresses.base, config.initial_share_price))?
+                EtchingVault::deploy(client.clone(), (addresses.base, config.initial_vault_share_price))?
                     .gas_price(DEFAULT_GAS_PRICE)
                     .send()
                     .await?;
@@ -641,7 +641,7 @@ mod tests {
         assert_eq!(config.base_token, chain.addresses.base);
         assert_eq!(config.linker_factory, Address::from_low_u64_be(1));
         assert_eq!(config.linker_code_hash, [1; 32]);
-        assert_eq!(config.initial_share_price, uint256!(1e18));
+        assert_eq!(config.initial_vault_share_price, uint256!(1e18));
         assert_eq!(config.minimum_share_reserves, uint256!(10e18));
         assert_eq!(config.position_duration, U256::from(60 * 60 * 24 * 365));
         assert_eq!(config.checkpoint_duration, U256::from(60 * 60 * 24));

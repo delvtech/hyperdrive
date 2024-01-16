@@ -13,7 +13,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 apr
     );
 
@@ -21,7 +21,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 lpSharePrice
     );
 
@@ -29,7 +29,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 withdrawalShareAmount,
         uint256 lpSharePrice
     );
@@ -38,7 +38,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         address indexed provider,
         uint256 withdrawalShareAmount,
         uint256 baseAmount,
-        uint256 sharePrice
+        uint256 vaultSharePrice
     );
 
     event OpenLong(
@@ -46,7 +46,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 bondAmount
     );
 
@@ -55,7 +55,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 bondAmount
     );
 
@@ -64,7 +64,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 bondAmount
     );
 
@@ -73,13 +73,13 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 bondAmount
     );
 
     event CreateCheckpoint(
         uint256 indexed checkpointTime,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 maturedShorts,
         uint256 maturedLongs,
         uint256 lpSharePrice
@@ -88,7 +88,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     event CollectGovernanceFee(
         address indexed collector,
         uint256 baseFees,
-        uint256 sharePrice
+        uint256 vaultSharePrice
     );
 
     /// Structs ///
@@ -122,11 +122,11 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     }
 
     struct Checkpoint {
-        /// @dev The share price of the first transaction in the checkpoint.
-        ///      This is used to track the amount of interest accrued by shorts
-        ///      as well as the share price at closing of matured longs and
-        ///      shorts.
-        uint128 sharePrice;
+        /// @dev The vault share price during the first transaction in the
+        ///      checkpoint. This is used to track the amount of interest
+        ///      accrued by shorts as well as the vault share price at closing
+        //       of matured longs and shorts.
+        uint128 vaultSharePrice;
     }
 
     struct WithdrawPool {
@@ -182,8 +182,8 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         /// @dev The hash of the ERC20 linker's code. This is used to derive the
         ///      create2 addresses of the ERC20 linkers used by this instance.
         bytes32 linkerCodeHash;
-        /// @dev The initial share price.
-        uint256 initialSharePrice;
+        /// @dev The initial vault share price.
+        uint256 initialVaultSharePrice;
         /// @dev The minimum share reserves.
         uint256 minimumShareReserves;
         /// @dev The minimum amount of tokens that a position can be opened or
@@ -218,8 +218,8 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         uint256 bondReserves;
         /// @dev The total supply of LP shares.
         uint256 lpTotalSupply;
-        /// @dev The current share price.
-        uint256 sharePrice;
+        /// @dev The current vault share price.
+        uint256 vaultSharePrice;
         /// @dev An amount of bonds representing outstanding unmatured longs.
         uint256 longsOutstanding;
         /// @dev The average maturity time of the outstanding longs.

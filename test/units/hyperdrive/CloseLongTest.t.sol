@@ -395,8 +395,8 @@ contract CloseLongTest is HyperdriveTest {
         // amount of shares, the base value of those shares are negative
         // relative to what they were at the start of the term.
         uint256 matureBondsValue = bondAmount
-            .divDown(hyperdrive.getPoolConfig().initialSharePrice)
-            .mulDown(poolInfoBefore.sharePrice);
+            .divDown(hyperdrive.getPoolConfig().initialVaultSharePrice)
+            .mulDown(poolInfoBefore.vaultSharePrice);
 
         // Verify that Bob received base equal to the full bond amount.
         assertApproxEqAbs(baseProceeds, bondFaceValue, 10);
@@ -442,9 +442,9 @@ contract CloseLongTest is HyperdriveTest {
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
 
         // Initial share price
-        uint256 initialSharePrice = hyperdrive
+        uint256 initialVaultSharePrice = hyperdrive
             .getPoolConfig()
-            .initialSharePrice;
+            .initialVaultSharePrice;
 
         // Ensure that the base proceeds are correct.
         {
@@ -467,13 +467,13 @@ contract CloseLongTest is HyperdriveTest {
                     poolInfoBefore.bondReserves,
                     immatureBonds,
                     ONE - hyperdrive.getPoolConfig().timeStretch,
-                    poolInfoBefore.sharePrice,
-                    initialSharePrice
+                    poolInfoBefore.vaultSharePrice,
+                    initialVaultSharePrice
                 )
-                .mulDown(poolInfoBefore.sharePrice);
+                .mulDown(poolInfoBefore.vaultSharePrice);
 
-            bondsValue = bondsValue.divDown(initialSharePrice).mulDown(
-                poolInfoBefore.sharePrice
+            bondsValue = bondsValue.divDown(initialVaultSharePrice).mulDown(
+                poolInfoBefore.vaultSharePrice
             );
 
             assertEq(baseProceeds, bondsValue);
@@ -519,13 +519,13 @@ contract CloseLongTest is HyperdriveTest {
         // Bob redeems the bonds. Ensure that the return value matches the
         // amount of base transferred to Bob.
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
-        uint256 closeSharePrice = hyperdrive.getPoolInfo().sharePrice;
+        uint256 closeVaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
 
         // Bond holders take a proportional haircut on any negative interest
         // that accrues.
         uint256 bondValue = bondAmount
-            .divDown(hyperdrive.getPoolConfig().initialSharePrice)
-            .mulDown(closeSharePrice);
+            .divDown(hyperdrive.getPoolConfig().initialVaultSharePrice)
+            .mulDown(closeVaultSharePrice);
 
         // Calculate the value of the bonds compounded at the negative APR.
         (uint256 bondFaceValue, ) = HyperdriveUtils.calculateCompoundInterest(
@@ -569,7 +569,7 @@ contract CloseLongTest is HyperdriveTest {
 
         // A checkpoint is created to lock in the close price.
         hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
-        uint256 closeSharePrice = hyperdrive.getPoolInfo().sharePrice;
+        uint256 closeVaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
 
         // Another term passes and a large amount of positive interest accrues.
         advanceTime(POSITION_DURATION, 0.7e18);
@@ -589,8 +589,8 @@ contract CloseLongTest is HyperdriveTest {
         // Bond holders take a proportional haircut on any negative interest
         // that accrues.
         uint256 bondValue = bondAmount
-            .divDown(hyperdrive.getPoolConfig().initialSharePrice)
-            .mulDown(closeSharePrice);
+            .divDown(hyperdrive.getPoolConfig().initialVaultSharePrice)
+            .mulDown(closeVaultSharePrice);
 
         // Calculate the value of the bonds compounded at the negative APR.
         (uint256 bondFaceValue, ) = HyperdriveUtils.calculateCompoundInterest(
@@ -634,7 +634,7 @@ contract CloseLongTest is HyperdriveTest {
 
         // A checkpoint is created to lock in the close price.
         hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
-        uint256 closeSharePrice = hyperdrive.getPoolInfo().sharePrice;
+        uint256 closeVaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
 
         // Another term passes and a large amount of negative interest accrues.
         int256 negativeApr = -0.2e18;
@@ -654,8 +654,8 @@ contract CloseLongTest is HyperdriveTest {
 
         // Bond holders take a proportional haircut on any negative interest
         // that accrues.
-        uint256 bondValue = bondAmount.divDown(closeSharePrice).mulDown(
-            hyperdrive.getPoolInfo().sharePrice
+        uint256 bondValue = bondAmount.divDown(closeVaultSharePrice).mulDown(
+            hyperdrive.getPoolInfo().vaultSharePrice
         );
 
         // Calculate the value of the bonds compounded at the negative APR.
@@ -856,7 +856,7 @@ contract CloseLongTest is HyperdriveTest {
             ) = abi.decode(log.data, (uint256, uint256, uint256, uint256));
             assertEq(eventMaturityTime, testCase.maturityTime);
             assertEq(eventBaseAmount, testCase.baseProceeds);
-            assertEq(eventSharePrice, hyperdrive.getPoolInfo().sharePrice);
+            assertEq(eventSharePrice, hyperdrive.getPoolInfo().vaultSharePrice);
             assertEq(eventBondAmount, testCase.bondAmount);
         }
 
@@ -902,7 +902,7 @@ contract CloseLongTest is HyperdriveTest {
                 poolInfoAfter.shareReserves,
                 testCase.poolInfoBefore.shareReserves -
                     testCase.baseProceeds.divDown(
-                        testCase.poolInfoBefore.sharePrice
+                        testCase.poolInfoBefore.vaultSharePrice
                     ),
                 10
             );
@@ -916,19 +916,19 @@ contract CloseLongTest is HyperdriveTest {
             // Without re-doing the calculation here, we can check that the
             // share adjustment delta is greater than or equal to the flat update
             // and verify that k remained invariant.
-            uint256 initialSharePrice = hyperdrive
+            uint256 initialVaultSharePrice = hyperdrive
                 .getPoolConfig()
-                .initialSharePrice;
+                .initialVaultSharePrice;
             uint256 timeElapsed = ONE -
                 hyperdrive.calculateTimeRemaining(testCase.maturityTime);
             uint256 shareAdjustmentDelta = testCase.bondAmount.mulDivDown(
                 timeElapsed,
-                poolInfoAfter.sharePrice
+                poolInfoAfter.vaultSharePrice
             );
-            if (poolInfoAfter.sharePrice < initialSharePrice) {
+            if (poolInfoAfter.vaultSharePrice < initialVaultSharePrice) {
                 shareAdjustmentDelta = shareAdjustmentDelta.mulDivDown(
-                    poolInfoAfter.sharePrice,
-                    initialSharePrice
+                    poolInfoAfter.vaultSharePrice,
+                    initialVaultSharePrice
                 );
             }
             assertGe(
@@ -944,8 +944,8 @@ contract CloseLongTest is HyperdriveTest {
                     ),
                     poolInfoAfter.bondReserves,
                     ONE - hyperdrive.getPoolConfig().timeStretch,
-                    poolInfoAfter.sharePrice,
-                    initialSharePrice
+                    poolInfoAfter.vaultSharePrice,
+                    initialVaultSharePrice
                 ),
                 YieldSpaceMath.kDown(
                     HyperdriveMath.calculateEffectiveShareReserves(
@@ -954,13 +954,16 @@ contract CloseLongTest is HyperdriveTest {
                     ),
                     testCase.poolInfoBefore.bondReserves,
                     ONE - hyperdrive.getPoolConfig().timeStretch,
-                    testCase.poolInfoBefore.sharePrice,
-                    initialSharePrice
+                    testCase.poolInfoBefore.vaultSharePrice,
+                    initialVaultSharePrice
                 ),
                 1e10
             );
         }
-        assertEq(poolInfoAfter.sharePrice, testCase.poolInfoBefore.sharePrice);
+        assertEq(
+            poolInfoAfter.vaultSharePrice,
+            testCase.poolInfoBefore.vaultSharePrice
+        );
         assertEq(
             poolInfoAfter.lpTotalSupply,
             testCase.poolInfoBefore.lpTotalSupply

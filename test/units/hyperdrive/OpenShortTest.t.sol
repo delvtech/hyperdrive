@@ -121,7 +121,7 @@ contract OpenShortTest is HyperdriveTest {
         );
     }
 
-    function test_open_short_failure_minimum_share_price() external {
+    function test_open_short_failure_minimum_vault_share_price() external {
         uint256 apr = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
@@ -135,12 +135,13 @@ contract OpenShortTest is HyperdriveTest {
         uint256 bondAmount = 10e18;
         baseToken.mint(bondAmount);
         baseToken.approve(address(hyperdrive), bondAmount);
-        uint256 minSharePrice = 2 * hyperdrive.getPoolInfo().sharePrice;
+        uint256 minVaultSharePrice = 2 *
+            hyperdrive.getPoolInfo().vaultSharePrice;
         vm.expectRevert(IHyperdrive.MinimumSharePrice.selector);
         hyperdrive.openShort(
             bondAmount,
             type(uint256).max,
-            minSharePrice,
+            minVaultSharePrice,
             IHyperdrive.Options({
                 destination: bob,
                 asBase: true,
@@ -238,7 +239,7 @@ contract OpenShortTest is HyperdriveTest {
         DepositOverrides memory depositOverrides = DepositOverrides({
             asBase: false,
             depositAmount: bondAmount * 2,
-            minSharePrice: 0,
+            minVaultSharePrice: 0,
             minSlippage: 0,
             maxSlippage: type(uint128).max,
             extraData: new bytes(0)
@@ -391,7 +392,7 @@ contract OpenShortTest is HyperdriveTest {
             ) = abi.decode(log.data, (uint256, uint256, uint256, uint256));
             assertEq(eventMaturityTime, maturityTime);
             assertEq(eventBaseAmount, basePaid);
-            assertEq(eventSharePrice, hyperdrive.getPoolInfo().sharePrice);
+            assertEq(eventSharePrice, hyperdrive.getPoolInfo().vaultSharePrice);
             assertEq(eventBondAmount, shortAmount);
         }
 
@@ -431,9 +432,12 @@ contract OpenShortTest is HyperdriveTest {
             assertEq(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.shareReserves -
-                    baseProceeds.divDown(poolInfoBefore.sharePrice)
+                    baseProceeds.divDown(poolInfoBefore.vaultSharePrice)
             );
-            assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
+            assertEq(
+                poolInfoAfter.vaultSharePrice,
+                poolInfoBefore.vaultSharePrice
+            );
             assertEq(
                 poolInfoAfter.shareAdjustment,
                 poolInfoBefore.shareAdjustment

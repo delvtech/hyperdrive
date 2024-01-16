@@ -244,7 +244,7 @@ abstract contract HyperdriveTarget0 is
                     baseToken: _baseToken,
                     linkerFactory: _linkerFactory,
                     linkerCodeHash: _linkerCodeHash,
-                    initialSharePrice: _initialSharePrice,
+                    initialVaultSharePrice: _initialVaultSharePrice,
                     minimumShareReserves: _minimumShareReserves,
                     minimumTransactionAmount: _minimumTransactionAmount,
                     positionDuration: _positionDuration,
@@ -267,14 +267,14 @@ abstract contract HyperdriveTarget0 is
     ///         important to evaluate potential trades.
     /// @return The PoolInfo struct.
     function getPoolInfo() external view returns (IHyperdrive.PoolInfo memory) {
-        uint256 sharePrice = _pricePerShare();
+        uint256 vaultSharePrice = _pricePerVaultShare();
         uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
             _totalSupply[AssetId._WITHDRAWAL_SHARE_ASSET_ID] -
             _withdrawPool.readyToWithdraw;
-        uint256 presentValue = sharePrice > 0
+        uint256 presentValue = vaultSharePrice > 0
             ? LPMath
-                .calculatePresentValue(_getPresentValueParams(sharePrice))
-                .mulDown(sharePrice)
+                .calculatePresentValue(_getPresentValueParams(vaultSharePrice))
+                .mulDown(vaultSharePrice)
             : 0;
         IHyperdrive.PoolInfo memory poolInfo = IHyperdrive.PoolInfo({
             shareReserves: _marketState.shareReserves,
@@ -282,7 +282,7 @@ abstract contract HyperdriveTarget0 is
             zombieBaseProceeds: _marketState.zombieBaseProceeds,
             zombieShareReserves: _marketState.zombieShareReserves,
             bondReserves: _marketState.bondReserves,
-            sharePrice: sharePrice,
+            vaultSharePrice: vaultSharePrice,
             longsOutstanding: _marketState.longsOutstanding,
             longAverageMaturityTime: _marketState.longAverageMaturityTime,
             shortsOutstanding: _marketState.shortsOutstanding,

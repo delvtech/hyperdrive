@@ -118,7 +118,8 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             baseToken.balanceOf(address(hyperdrive)),
             hyperdrive.getPoolConfig().minimumShareReserves.mulDown(
-                hyperdrive.getPoolInfo().sharePrice + hyperdrive.lpSharePrice()
+                hyperdrive.getPoolInfo().vaultSharePrice +
+                    hyperdrive.lpSharePrice()
             ),
             1e9
         );
@@ -224,7 +225,8 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             baseToken.balanceOf(address(hyperdrive)),
             hyperdrive.getPoolConfig().minimumShareReserves.mulDown(
-                hyperdrive.getPoolInfo().sharePrice + hyperdrive.lpSharePrice()
+                hyperdrive.getPoolInfo().vaultSharePrice +
+                    hyperdrive.lpSharePrice()
             ),
             1e9
         );
@@ -353,7 +355,8 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             baseToken.balanceOf(address(hyperdrive)),
             hyperdrive.getPoolConfig().minimumShareReserves.mulDown(
-                hyperdrive.getPoolInfo().sharePrice + hyperdrive.lpSharePrice()
+                hyperdrive.getPoolInfo().vaultSharePrice +
+                    hyperdrive.lpSharePrice()
             ),
             1e9
         );
@@ -728,7 +731,8 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             baseToken.balanceOf(address(hyperdrive)),
             hyperdrive.getPoolConfig().minimumShareReserves.mulDown(
-                hyperdrive.getPoolInfo().sharePrice + hyperdrive.lpSharePrice()
+                hyperdrive.getPoolInfo().vaultSharePrice +
+                    hyperdrive.lpSharePrice()
             ),
             1e9
         );
@@ -1026,7 +1030,8 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             baseToken.balanceOf(address(hyperdrive)),
             hyperdrive.getPoolConfig().minimumShareReserves.mulDown(
-                hyperdrive.getPoolInfo().sharePrice + hyperdrive.lpSharePrice()
+                hyperdrive.getPoolInfo().vaultSharePrice +
+                    hyperdrive.lpSharePrice()
             ),
             1e9
         );
@@ -1214,7 +1219,8 @@ contract LPWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             baseToken.balanceOf(address(hyperdrive)),
             hyperdrive.getPoolConfig().minimumShareReserves.mulDown(
-                hyperdrive.getPoolInfo().sharePrice + hyperdrive.lpSharePrice()
+                hyperdrive.getPoolInfo().vaultSharePrice +
+                    hyperdrive.lpSharePrice()
             ),
             1e9
         );
@@ -1712,7 +1718,7 @@ contract LPWithdrawalTest is HyperdriveTest {
                     params.originalShareAdjustment
                 )
             )
-            .mulDown(hyperdrive.getPoolInfo().sharePrice);
+            .mulDown(hyperdrive.getPoolInfo().vaultSharePrice);
 
         // Remove the liquidity.
         uint256 idleBefore = hyperdrive.idle();

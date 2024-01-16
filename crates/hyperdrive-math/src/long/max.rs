@@ -26,7 +26,7 @@ impl State {
     /// Gets the pool's solvency.
     pub fn get_solvency(&self) -> FixedPoint {
         self.share_reserves()
-            - self.long_exposure() / self.share_price()
+            - self.long_exposure() / self.vault_share_price()
             - self.minimum_share_reserves()
     }
 
@@ -173,7 +173,7 @@ impl State {
         //           )
         //       ) ** (1 / (1 - t_s))
         let inner = (self.k_down()
-            / (self.share_price().div_up(self.initial_share_price())
+            / (self.vault_share_price().div_up(self.initial_vault_share_price())
                 + ((fixed!(1e18)
                     + self
                         .curve_fee()
@@ -182,7 +182,7 @@ impl State {
                 .div_up(fixed!(1e18) - self.flat_fee()))
                 .pow((fixed!(1e18) - self.time_stretch()) / (self.time_stretch()))))
         .pow(fixed!(1e18) / (fixed!(1e18) - self.time_stretch()));
-        let target_share_reserves = inner / self.initial_share_price();
+        let target_share_reserves = inner / self.initial_vault_share_price();
 
         // Now that we have the target share reserves, we can calculate the
         // target bond reserves using the formula:
@@ -204,7 +204,7 @@ impl State {
         //
         // absoluteMaxBaseAmount = c * (z_t - z)
         let absolute_max_base_amount =
-            (target_share_reserves - self.effective_share_reserves()) * self.share_price();
+            (target_share_reserves - self.effective_share_reserves()) * self.vault_share_price();
 
         // The absolute max bond amount is given by:
         //
@@ -287,8 +287,8 @@ impl State {
         checkpoint_exposure: I256,
     ) -> FixedPoint {
         let checkpoint_exposure = FixedPoint::from(-checkpoint_exposure.min(int256!(0)));
-        let mut estimate = self.get_solvency() + checkpoint_exposure / self.share_price();
-        estimate = estimate.mul_div_down(self.share_price(), fixed!(2e18));
+        let mut estimate = self.get_solvency() + checkpoint_exposure / self.vault_share_price();
+        estimate = estimate.mul_div_down(self.vault_share_price(), fixed!(2e18));
         estimate /= fixed!(1e18) / estimate_price
             + self.governance_lp_fee() * self.curve_fee() * (fixed!(1e18) - spot_price)
             - fixed!(1e18)
@@ -338,16 +338,16 @@ impl State {
         checkpoint_exposure: I256,
     ) -> Option<FixedPoint> {
         let governance_fee = self.open_long_governance_fee(base_amount);
-        let share_reserves = self.share_reserves() + base_amount / self.share_price()
-            - governance_fee / self.share_price();
+        let share_reserves = self.share_reserves() + base_amount / self.vault_share_price()
+            - governance_fee / self.vault_share_price();
         let exposure = self.long_exposure() + bond_amount;
         let checkpoint_exposure = FixedPoint::from(-checkpoint_exposure.min(int256!(0)));
-        if share_reserves + checkpoint_exposure / self.share_price()
-            >= exposure / self.share_price() + self.minimum_share_reserves()
+        if share_reserves + checkpoint_exposure / self.vault_share_price()
+            >= exposure / self.vault_share_price() + self.minimum_share_reserves()
         {
             Some(
-                share_reserves + checkpoint_exposure / self.share_price()
-                    - exposure / self.share_price()
+                share_reserves + checkpoint_exposure / self.vault_share_price()
+                    - exposure / self.vault_share_price()
                     - self.minimum_share_reserves(),
             )
         } else {
@@ -379,7 +379,7 @@ impl State {
                     * self.curve_fee()
                     * (fixed!(1e18) - self.get_spot_price())
                 - fixed!(1e18))
-            .mul_div_down(fixed!(1e18), self.share_price())
+            .mul_div_down(fixed!(1e18), self.vault_share_price())
         })
     }
 
@@ -411,8 +411,8 @@ impl State {
     /// c'(x) = \phi_{c} \cdot \left( \tfrac{1}{p} - 1 \right)
     /// $$
     fn long_amount_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
-        let share_amount = base_amount / self.share_price();
-        let inner = self.initial_share_price() * (self.effective_share_reserves() + share_amount);
+        let share_amount = base_amount / self.vault_share_price();
+        let inner = self.initial_vault_share_price() * (self.effective_share_reserves() + share_amount);
         let mut derivative = fixed!(1e18) / (inner).pow(self.time_stretch());
 
         // It's possible that k is slightly larger than the rhs in the inner
@@ -420,8 +420,8 @@ impl State {
         // circuit.
         let k = self.k_down();
         let rhs = self
-            .share_price()
-            .mul_div_down(inner.pow(self.time_stretch()), self.initial_share_price());
+            .vault_share_price()
+            .mul_div_down(inner.pow(self.time_stretch()), self.initial_vault_share_price());
         if k < rhs {
             return None;
         }
@@ -477,8 +477,8 @@ mod tests {
                         long_exposure: state.info.long_exposure,
                         share_adjustment: state.info.share_adjustment,
                         time_stretch: state.config.time_stretch,
-                        share_price: state.info.share_price,
-                        initial_share_price: state.config.initial_share_price,
+                        vault_share_price: state.info.vault_share_price,
+                        initial_vault_share_price: state.config.initial_vault_share_price,
                         minimum_share_reserves: state.config.minimum_share_reserves,
                         curve_fee: state.config.fees.curve,
                         flat_fee: state.config.fees.flat,
@@ -541,8 +541,8 @@ mod tests {
                         long_exposure: state.info.long_exposure,
                         share_adjustment: state.info.share_adjustment,
                         time_stretch: state.config.time_stretch,
-                        share_price: state.info.share_price,
-                        initial_share_price: state.config.initial_share_price,
+                        vault_share_price: state.info.vault_share_price,
+                        initial_vault_share_price: state.config.initial_vault_share_price,
                         minimum_share_reserves: state.config.minimum_share_reserves,
                         curve_fee: state.config.fees.curve,
                         flat_fee: state.config.fees.flat,

@@ -40,11 +40,15 @@ abstract contract ERC4626Base is HyperdriveBase {
     ///        used in this implementation is "asBase" which determines if
     ///        the deposit is settled in base or vault shares.
     /// @return sharesMinted The shares this deposit creates.
-    /// @return sharePrice The share price at time of deposit.
+    /// @return vaultSharePrice The vault share price at time of deposit.
     function _deposit(
         uint256 _amount,
         IHyperdrive.Options calldata _options
-    ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
+    )
+        internal
+        override
+        returns (uint256 sharesMinted, uint256 vaultSharePrice)
+    {
         if (_options.asBase) {
             // Take custody of the deposit in base.
             ERC20(address(_baseToken)).safeTransferFrom(
@@ -69,7 +73,7 @@ abstract contract ERC4626Base is HyperdriveBase {
                 sharesMinted
             );
         }
-        sharePrice = _pricePerShare();
+        vaultSharePrice = _pricePerVaultShare();
     }
 
     /// @notice Processes a trader's withdrawal in either base or vault shares.
@@ -110,7 +114,7 @@ abstract contract ERC4626Base is HyperdriveBase {
     /// @notice Loads the share price from the yield source.
     /// @return The current share price.
     /// @dev must remain consistent with the impl inside of the DataProvider
-    function _pricePerShare() internal view override returns (uint256) {
+    function _pricePerVaultShare() internal view override returns (uint256) {
         return _vault.convertToAssets(ONE);
     }
 

@@ -89,7 +89,7 @@ contract HyperdriveTest is BaseTest {
     function deploy(
         address deployer,
         uint256 apr,
-        uint256 initialSharePrice,
+        uint256 initialVaultSharePrice,
         uint256 curveFee,
         uint256 flatFee,
         uint256 governanceLPFee,
@@ -99,7 +99,7 @@ contract HyperdriveTest is BaseTest {
             apr,
             POSITION_DURATION
         );
-        config.initialSharePrice = initialSharePrice;
+        config.initialVaultSharePrice = initialVaultSharePrice;
         config.fees.curve = curveFee;
         config.fees.flat = flatFee;
         config.fees.governanceLP = governanceLPFee;
@@ -129,7 +129,7 @@ contract HyperdriveTest is BaseTest {
         _config.feeCollector = _deployConfig.feeCollector;
         _config.fees = _deployConfig.fees;
 
-        _config.initialSharePrice = ONE;
+        _config.initialVaultSharePrice = ONE;
     }
 
     function testDeployConfig(
@@ -176,7 +176,7 @@ contract HyperdriveTest is BaseTest {
         uint256 depositAmount;
         // The minimum share price that will be accepted. It may not be used by
         // some actions.
-        uint256 minSharePrice;
+        uint256 minVaultSharePrice;
         // This is the slippage parameter that defines a lower bound on the
         // quantity being measured. It may not be used by some actions.
         uint256 minSlippage;
@@ -251,7 +251,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asBase: true,
                     depositAmount: contribution,
-                    minSharePrice: 0, // unused
+                    minVaultSharePrice: 0, // unused
                     minSlippage: 0, // unused
                     maxSlippage: type(uint256).max, // unused
                     extraData: new bytes(0) // unused
@@ -273,7 +273,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asBase: asBase,
                     depositAmount: contribution,
-                    minSharePrice: 0, // unused
+                    minVaultSharePrice: 0, // unused
                     minSlippage: 0, // unused
                     maxSlippage: type(uint256).max, // unused
                     extraData: new bytes(0) // unused
@@ -333,7 +333,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asBase: true,
                     depositAmount: contribution,
-                    minSharePrice: 0, // unused
+                    minVaultSharePrice: 0, // unused
                     minSlippage: 0, // min spot rate of 0
                     maxSlippage: type(uint256).max, // max spot rate of uint256 max
                     extraData: new bytes(0) // unused
@@ -353,7 +353,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asBase: asBase,
                     depositAmount: contribution,
-                    minSharePrice: 0, // unused
+                    minVaultSharePrice: 0, // unused
                     minSlippage: 0, // min spot rate of 0
                     maxSlippage: type(uint256).max, // max spot rate of uint256 max
                     extraData: new bytes(0) // unused
@@ -487,7 +487,7 @@ contract HyperdriveTest is BaseTest {
                 hyperdrive.openLong{ value: overrides.depositAmount }(
                     baseAmount,
                     overrides.minSlippage, // min bond proceeds
-                    overrides.minSharePrice,
+                    overrides.minVaultSharePrice,
                     IHyperdrive.Options({
                         destination: trader,
                         asBase: overrides.asBase,
@@ -501,7 +501,7 @@ contract HyperdriveTest is BaseTest {
                 hyperdrive.openLong(
                     baseAmount,
                     overrides.minSlippage, // min bond proceeds
-                    overrides.minSharePrice,
+                    overrides.minVaultSharePrice,
                     IHyperdrive.Options({
                         destination: trader,
                         asBase: overrides.asBase,
@@ -522,7 +522,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asBase: true,
                     depositAmount: baseAmount,
-                    minSharePrice: 0, // min share price of 0
+                    minVaultSharePrice: 0, // min share price of 0
                     minSlippage: baseAmount, // min bond proceeds of baseAmount
                     maxSlippage: type(uint256).max, // unused
                     extraData: new bytes(0) // unused
@@ -542,7 +542,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asBase: asBase,
                     depositAmount: baseAmount,
-                    minSharePrice: 0, // min share price of 0
+                    minVaultSharePrice: 0, // min share price of 0
                     minSlippage: baseAmount, // min bond proceeds of baseAmount
                     maxSlippage: type(uint256).max, // unused
                     extraData: new bytes(0) // unused
@@ -631,7 +631,7 @@ contract HyperdriveTest is BaseTest {
             }(
                 bondAmount,
                 overrides.maxSlippage, // max base payment
-                overrides.minSharePrice,
+                overrides.minVaultSharePrice,
                 IHyperdrive.Options({
                     destination: trader,
                     asBase: overrides.asBase,
@@ -644,7 +644,7 @@ contract HyperdriveTest is BaseTest {
             (maturityTime, baseAmount) = hyperdrive.openShort(
                 bondAmount,
                 overrides.maxSlippage, // max base payment
-                overrides.minSharePrice,
+                overrides.minVaultSharePrice,
                 IHyperdrive.Options({
                     destination: trader,
                     asBase: overrides.asBase,
@@ -668,7 +668,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asBase: true,
                     depositAmount: bondAmount,
-                    minSharePrice: 0, // min share price of 0
+                    minVaultSharePrice: 0, // min share price of 0
                     minSlippage: 0, // unused
                     maxSlippage: bondAmount, // max base payment of bondAmount
                     extraData: new bytes(0) // unused
@@ -688,7 +688,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asBase: asBase,
                     depositAmount: bondAmount,
-                    minSharePrice: 0, // min share price of 0
+                    minVaultSharePrice: 0, // min share price of 0
                     minSlippage: 0, // unused
                     maxSlippage: bondAmount, // max base payment of bondAmount
                     extraData: new bytes(0) // unused
@@ -808,8 +808,8 @@ contract HyperdriveTest is BaseTest {
     function estimateLongProceeds(
         uint256 bondAmount,
         uint256 normalizedTimeRemaining,
-        uint256 openSharePrice,
-        uint256 closeSharePrice
+        uint256 openVaultSharePrice,
+        uint256 closeVaultSharePrice
     ) internal view returns (uint256) {
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
@@ -819,16 +819,16 @@ contract HyperdriveTest is BaseTest {
             bondAmount,
             normalizedTimeRemaining,
             poolConfig.timeStretch,
-            poolInfo.sharePrice,
-            poolConfig.initialSharePrice
+            poolInfo.vaultSharePrice,
+            poolConfig.initialVaultSharePrice
         );
-        if (closeSharePrice < openSharePrice) {
+        if (closeVaultSharePrice < openVaultSharePrice) {
             shareProceeds = shareProceeds.mulDivDown(
-                closeSharePrice,
-                openSharePrice
+                closeVaultSharePrice,
+                openVaultSharePrice
             );
         }
-        return shareProceeds.mulDivDown(poolInfo.sharePrice, 1e18);
+        return shareProceeds.mulDivDown(poolInfo.vaultSharePrice, 1e18);
     }
 
     function estimateShortProceeds(
@@ -846,8 +846,8 @@ contract HyperdriveTest is BaseTest {
             shortAmount,
             normalizedTimeRemaining,
             poolConfig.timeStretch,
-            poolInfo.sharePrice,
-            poolConfig.initialSharePrice
+            poolInfo.vaultSharePrice,
+            poolConfig.initialVaultSharePrice
         );
         (, int256 expectedInterest) = HyperdriveUtils.calculateCompoundInterest(
             shortAmount,
@@ -855,7 +855,7 @@ contract HyperdriveTest is BaseTest {
             timeElapsed
         );
         int256 delta = int256(
-            shortAmount - poolInfo.sharePrice.mulDown(expectedSharePayment)
+            shortAmount - poolInfo.vaultSharePrice.mulDown(expectedSharePayment)
         );
         if (delta + expectedInterest > 0) {
             return uint256(delta + expectedInterest);
@@ -876,7 +876,7 @@ contract HyperdriveTest is BaseTest {
         (uint256 withdrawalSharesRedeemed, uint256 shareProceeds) = LPMath
             .calculateDistributeExcessIdle(params);
         return (
-            shareProceeds.mulDown(hyperdrive.getPoolInfo().sharePrice),
+            shareProceeds.mulDown(hyperdrive.getPoolInfo().vaultSharePrice),
             _lpShares - withdrawalSharesRedeemed
         );
     }
@@ -894,7 +894,7 @@ contract HyperdriveTest is BaseTest {
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 apr
     );
 
@@ -902,7 +902,7 @@ contract HyperdriveTest is BaseTest {
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 lpSharePrice
     );
 
@@ -910,7 +910,7 @@ contract HyperdriveTest is BaseTest {
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 withdrawalShareAmount,
         uint256 lpSharePrice
     );
@@ -919,7 +919,7 @@ contract HyperdriveTest is BaseTest {
         address indexed provider,
         uint256 withdrawalShareAmount,
         uint256 baseAmount,
-        uint256 sharePrice
+        uint256 vaultSharePrice
     );
 
     event OpenLong(
@@ -927,7 +927,7 @@ contract HyperdriveTest is BaseTest {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 bondAmount
     );
 
@@ -936,7 +936,7 @@ contract HyperdriveTest is BaseTest {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 bondAmount
     );
 
@@ -945,7 +945,7 @@ contract HyperdriveTest is BaseTest {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 bondAmount
     );
 
@@ -954,13 +954,13 @@ contract HyperdriveTest is BaseTest {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 bondAmount
     );
 
     event CreateCheckpoint(
         uint256 indexed checkpointTime,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 maturedShorts,
         uint256 maturedLongs,
         uint256 lpSharePrice
@@ -969,7 +969,7 @@ contract HyperdriveTest is BaseTest {
     event CollectGovernanceFee(
         address indexed collector,
         uint256 baseFees,
-        uint256 sharePrice
+        uint256 vaultSharePrice
     );
 
     function verifyFactoryEvents(
@@ -1082,12 +1082,15 @@ contract HyperdriveTest is BaseTest {
             assertApproxEqAbs(
                 eventLpAmount,
                 contribution_.divDown(
-                    hyperdrive_.getPoolConfig().initialSharePrice
+                    hyperdrive_.getPoolConfig().initialVaultSharePrice
                 ) - 2 * minimumShareReserves,
                 tolerance
             );
             assertEq(eventBaseAmount, contribution_);
-            assertEq(eventSharePrice, hyperdrive_.getPoolInfo().sharePrice);
+            assertEq(
+                eventSharePrice,
+                hyperdrive_.getPoolInfo().vaultSharePrice
+            );
             assertEq(eventApr, apr);
         }
     }

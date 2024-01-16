@@ -50,7 +50,7 @@ contract SweepTest is BaseTest {
             baseToken: IERC20(address(leakyBase)),
             linkerFactory: address(0),
             linkerCodeHash: bytes32(0),
-            initialSharePrice: ONE,
+            initialVaultSharePrice: ONE,
             minimumShareReserves: ONE,
             minimumTransactionAmount: 0.001e18,
             positionDuration: 365 days,

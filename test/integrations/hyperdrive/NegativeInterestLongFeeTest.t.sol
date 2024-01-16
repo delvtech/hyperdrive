@@ -14,19 +14,22 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
     using Lib for *;
 
     function test_negative_interest_long_immediate_open_close_fees_fuzz(
-        uint256 initialSharePrice,
+        uint256 initialVaultSharePrice,
         int256 variableInterest
     ) external {
         // Fuzz inputs
-        // initialSharePrice [0.5,10]
+        // initialVaultSharePrice [0.5,10]
         // variableInterest [-50,0]
-        initialSharePrice = initialSharePrice.normalizeToRange(.5e18, 10e18);
+        initialVaultSharePrice = initialVaultSharePrice.normalizeToRange(
+            .5e18,
+            10e18
+        );
         variableInterest = -variableInterest.normalizeToRange(0, .5e18);
         uint256 curveFee = 0.1e18;
         uint256 flatFee = 0.000e18;
         uint256 governanceFee = 1e18;
         test_negative_interest_long_immediate_open_close_fees(
-            initialSharePrice,
+            initialVaultSharePrice,
             variableInterest,
             curveFee,
             flatFee,
@@ -36,19 +39,19 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
 
     function test_negative_interest_long_immediate_open_close_fees() external {
         // This tests the following scenario:
-        // - initial_share_price > 1
+        // - initial_vault_share_price > 1
         // - negative interest causes the share price to go down
         // - a long is opened and immediately closed
         // - set the curve fee to 10% and the governance fee to 100% to make the
         //   test easier to verify
         {
-            uint256 initialSharePrice = 1.5e18;
+            uint256 initialVaultSharePrice = 1.5e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0.1e18;
             uint256 flatFee = 0;
             uint256 governanceFee = 1e18;
             test_negative_interest_long_immediate_open_close_fees(
-                initialSharePrice,
+                initialVaultSharePrice,
                 variableInterest,
                 curveFee,
                 flatFee,
@@ -57,19 +60,19 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         }
 
         // This tests the following scenario:
-        // - initial_share_price = 1
+        // - initial_vault_share_price = 1
         // - negative interest causes the share price to go down
         // - a long is opened and immediately closed
         // - set the curve fee to 10% and the governance fee to 100% to make the
         //   test easier to verify
         {
-            uint256 initialSharePrice = 1e18;
+            uint256 initialVaultSharePrice = 1e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0.1e18;
             uint256 flatFee = 0;
             uint256 governanceFee = 1e18;
             test_negative_interest_long_immediate_open_close_fees(
-                initialSharePrice,
+                initialVaultSharePrice,
                 variableInterest,
                 curveFee,
                 flatFee,
@@ -78,19 +81,19 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         }
 
         // This tests the following scenario:
-        // - initial_share_price < 1
+        // - initial_vault_share_price < 1
         // - negative interest causes the share price to go down
         // - a long is opened and immediately closed
         // - set the curve fee to 10% and the governance fee to 100% to make the
         //   test easier to verify
         {
-            uint256 initialSharePrice = 0.95e18;
+            uint256 initialVaultSharePrice = 0.95e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0.1e18;
             uint256 flatFee = 0;
             uint256 governanceFee = 1e18;
             test_negative_interest_long_immediate_open_close_fees(
-                initialSharePrice,
+                initialVaultSharePrice,
                 variableInterest,
                 curveFee,
                 flatFee,
@@ -100,7 +103,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
     }
 
     function test_negative_interest_long_immediate_open_close_fees(
-        uint256 initialSharePrice,
+        uint256 initialVaultSharePrice,
         int256 variableInterest,
         uint256 curveFee,
         uint256 flatFee,
@@ -111,7 +114,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         deploy(
             alice,
             apr,
-            initialSharePrice,
+            initialVaultSharePrice,
             curveFee,
             flatFee,
             governanceFee,
@@ -123,9 +126,9 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         // fast forward time and accrue interest
         advanceTime(POSITION_DURATION, variableInterest);
 
-        // Record the sharePrice after interest accrual.
-        (uint256 sharePrice, ) = HyperdriveUtils.calculateCompoundInterest(
-            initialSharePrice,
+        // Record the vaultSharePrice after interest accrual.
+        (uint256 vaultSharePrice, ) = HyperdriveUtils.calculateCompoundInterest(
+            initialVaultSharePrice,
             variableInterest,
             POSITION_DURATION
         );
@@ -150,7 +153,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             DepositOverrides({
                 asBase: true,
                 depositAmount: basePaid,
-                minSharePrice: 0,
+                minVaultSharePrice: 0,
                 minSlippage: 0, // TODO: This should never go below the base amount. Investigate this.
                 maxSlippage: type(uint256).max,
                 extraData: new bytes(0)
@@ -170,7 +173,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         uint256 expectedGovernanceFees = curveFee_
             .mulDown(ONE.divDown(calculatedSpotPrice) - ONE)
             .mulDown(basePaid)
-            .mulDivDown(calculatedSpotPrice, sharePrice);
+            .mulDivDown(calculatedSpotPrice, vaultSharePrice);
         assertApproxEqAbs(
             governanceFeesAfterOpenLong,
             expectedGovernanceFees,
@@ -188,7 +191,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         // Calculate the expected fees from closing the long
         expectedGovernanceFees = curveFee_
             .mulDown(ONE - calculatedSpotPrice)
-            .mulDivDown(bondAmount, sharePrice);
+            .mulDivDown(bondAmount, vaultSharePrice);
         assertApproxEqAbs(
             governanceFeesAfterCloseLong,
             expectedGovernanceFees,
@@ -197,14 +200,17 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
     }
 
     function test_negative_interest_long_full_term_fees_fuzz(
-        uint256 initialSharePrice,
+        uint256 initialVaultSharePrice,
         int256 preTradeVariableInterest,
         int256 variableInterest
     ) external {
         // Fuzz inputs
-        // initialSharePrice [0.5,10]
+        // initialVaultSharePrice [0.5,10]
         // variableInterest [-50,0]
-        initialSharePrice = initialSharePrice.normalizeToRange(.5e18, 10e18);
+        initialVaultSharePrice = initialVaultSharePrice.normalizeToRange(
+            .5e18,
+            10e18
+        );
         preTradeVariableInterest = -preTradeVariableInterest.normalizeToRange(
             0,
             .5e18
@@ -214,7 +220,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         uint256 flatFee = 0.01e18;
         uint256 governanceFee = 1e18;
         test_negative_interest_long_full_term_fees(
-            initialSharePrice,
+            initialVaultSharePrice,
             preTradeVariableInterest,
             variableInterest,
             curveFee,
@@ -225,21 +231,21 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
 
     function test_negative_interest_long_full_term_fees() external {
         // This tests the following scenario:
-        // - initial_share_price > 1
+        // - initial_vault_share_price > 1
         // - negative interest causes the share price to go down
         // - a long is opened
         // - negative interest accrues over the full term
         // - long is closed
         // - set the flat fee to 10% and governance fee to 100% to make the test easier to verify
         {
-            uint256 initialSharePrice = 1.5e18;
+            uint256 initialVaultSharePrice = 1.5e18;
             int256 preTradeVariableInterest = -0.05e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0e18;
             uint256 flatFee = 0.01e18;
             uint256 governanceFee = 1e18;
             test_negative_interest_long_full_term_fees(
-                initialSharePrice,
+                initialVaultSharePrice,
                 preTradeVariableInterest,
                 variableInterest,
                 curveFee,
@@ -249,21 +255,21 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         }
 
         // This tests the following scenario:
-        // - initial_share_price = 1
+        // - initial_vault_share_price = 1
         // - negative interest causes the share price to go down
         // - a long is opened
         // - negative interest accrues over the full term
         // - long is closed
         // - set the flat fee to 10% and governance fee to 100% to make the test easier to verify
         {
-            uint256 initialSharePrice = 1e18;
+            uint256 initialVaultSharePrice = 1e18;
             int256 preTradeVariableInterest = -0.05e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0e18;
             uint256 flatFee = 0.01e18;
             uint256 governanceFee = 1e18;
             test_negative_interest_long_full_term_fees(
-                initialSharePrice,
+                initialVaultSharePrice,
                 preTradeVariableInterest,
                 variableInterest,
                 curveFee,
@@ -273,21 +279,21 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         }
 
         // This tests the following scenario:
-        // - initial_share_price < 1
+        // - initial_vault_share_price < 1
         // - negative interest causes the share price to go down
         // - a long is opened
         // - negative interest accrues over the full term
         // - long is closed
         // - set the flat fee to 10% and governance fee to 100% to make the test easier to verify
         {
-            uint256 initialSharePrice = 0.95e18;
+            uint256 initialVaultSharePrice = 0.95e18;
             int256 preTradeVariableInterest = -0.05e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0e18;
             uint256 flatFee = 0.01e18;
             uint256 governanceFee = 1e18;
             test_negative_interest_long_full_term_fees(
-                initialSharePrice,
+                initialVaultSharePrice,
                 preTradeVariableInterest,
                 variableInterest,
                 curveFee,
@@ -298,7 +304,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
     }
 
     function test_negative_interest_long_full_term_fees(
-        uint256 initialSharePrice,
+        uint256 initialVaultSharePrice,
         int256 preTradeVariableInterest,
         int256 variableInterest,
         uint256 curveFee,
@@ -310,7 +316,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         deploy(
             alice,
             apr,
-            initialSharePrice,
+            initialVaultSharePrice,
             curveFee,
             flatFee,
             governanceFee,
@@ -322,12 +328,13 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         // fast forward time and accrue interest
         advanceTime(POSITION_DURATION, preTradeVariableInterest);
 
-        // Record the openSharePrice after interest accrual.
-        (uint256 openSharePrice, ) = HyperdriveUtils.calculateCompoundInterest(
-            initialSharePrice,
-            preTradeVariableInterest,
-            POSITION_DURATION
-        );
+        // Record the openVaultSharePrice after interest accrual.
+        (uint256 openVaultSharePrice, ) = HyperdriveUtils
+            .calculateCompoundInterest(
+                initialVaultSharePrice,
+                preTradeVariableInterest,
+                POSITION_DURATION
+            );
 
         // Ensure that the governance initially has zero balance
         uint256 governanceBalanceBefore = baseToken.balanceOf(feeCollector);
@@ -347,7 +354,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             DepositOverrides({
                 asBase: true,
                 depositAmount: basePaid,
-                minSharePrice: 0,
+                minVaultSharePrice: 0,
                 minSlippage: 0, // TODO: This should never go below the base amount. Investigate this.
                 maxSlippage: type(uint256).max,
                 extraData: new bytes(0)
@@ -381,7 +388,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             // is the share price at the beginning of the checkpoint. This gives
             // us a governance fee of `(c / c_0) * (g / c)  = g / c_0`.
             uint256 expectedGovernanceFees = (bondAmount * flatFee) /
-                openSharePrice;
+                openVaultSharePrice;
             assertApproxEqAbs(
                 governanceFeesAfterCloseLong,
                 expectedGovernanceFees,
@@ -391,14 +398,17 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
     }
 
     function test_negative_interest_long_half_term_fees_fuzz(
-        uint256 initialSharePrice,
+        uint256 initialVaultSharePrice,
         int256 preTradeVariableInterest,
         int256 variableInterest
     ) external {
         // Fuzz inputs
-        // initialSharePrice [0.5,10]
+        // initialVaultSharePrice [0.5,10]
         // variableInterest [-50,0]
-        initialSharePrice = initialSharePrice.normalizeToRange(.5e18, 10e18);
+        initialVaultSharePrice = initialVaultSharePrice.normalizeToRange(
+            .5e18,
+            10e18
+        );
         preTradeVariableInterest = -preTradeVariableInterest.normalizeToRange(
             0,
             .5e18
@@ -408,7 +418,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         uint256 flatFee = 0.01e18;
         uint256 governanceFee = 1e18;
         test_negative_interest_long_half_term_fees(
-            initialSharePrice,
+            initialVaultSharePrice,
             preTradeVariableInterest,
             variableInterest,
             curveFee,
@@ -419,7 +429,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
 
     function test_negative_interest_long_half_term_fees() external {
         // This tests the following scenario:
-        // - initial_share_price > 1
+        // - initial_vault_share_price > 1
         // - negative interest causes the share price to go down
         // - a long is opened
         // - negative interest accrues over the half the term
@@ -427,14 +437,14 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         // - set the flat fee to 10%, curve fee to 10% and governance fee to 100% to make the test easier to verify
         uint256 snapshotId = vm.snapshot();
         {
-            uint256 initialSharePrice = 1.5e18;
+            uint256 initialVaultSharePrice = 1.5e18;
             int256 preTradeVariableInterest = -0.05e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0.1e18;
             uint256 flatFee = 0.01e18;
             uint256 governanceFee = 1e18;
             test_negative_interest_long_half_term_fees(
-                initialSharePrice,
+                initialVaultSharePrice,
                 preTradeVariableInterest,
                 variableInterest,
                 curveFee,
@@ -445,7 +455,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         vm.revertTo(snapshotId);
 
         // This tests the following scenario:
-        // - initial_share_price = 1
+        // - initial_vault_share_price = 1
         // - negative interest causes the share price to go down
         // - a long is opened
         // - negative interest accrues over the half the term
@@ -453,14 +463,14 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         // - set the flat fee to 10%, curve fee to 10% and governance fee to 100% to make the test easier to verify
         snapshotId = vm.snapshot();
         {
-            uint256 initialSharePrice = 1e18;
+            uint256 initialVaultSharePrice = 1e18;
             int256 preTradeVariableInterest = -0.05e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0.1e18;
             uint256 flatFee = 0.01e18;
             uint256 governanceFee = 1e18;
             test_negative_interest_long_half_term_fees(
-                initialSharePrice,
+                initialVaultSharePrice,
                 preTradeVariableInterest,
                 variableInterest,
                 curveFee,
@@ -471,7 +481,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         vm.revertTo(snapshotId);
 
         // This tests the following scenario:
-        // - initial_share_price < 1
+        // - initial_vault_share_price < 1
         // - negative interest causes the share price to go down
         // - a long is opened
         // - negative interest accrues over the half the term
@@ -479,14 +489,14 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         // - set the flat fee to 10%, curve fee to 10% and governance fee to 100% to make the test easier to verify
         snapshotId = vm.snapshot();
         {
-            uint256 initialSharePrice = 0.95e18;
+            uint256 initialVaultSharePrice = 0.95e18;
             int256 preTradeVariableInterest = -0.05e18;
             int256 variableInterest = -0.1e18;
             uint256 curveFee = 0.1e18;
             uint256 flatFee = 0.01e18;
             uint256 governanceFee = 1e18;
             test_negative_interest_long_half_term_fees(
-                initialSharePrice,
+                initialVaultSharePrice,
                 preTradeVariableInterest,
                 variableInterest,
                 curveFee,
@@ -498,7 +508,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
     }
 
     function test_negative_interest_long_half_term_fees(
-        uint256 initialSharePrice,
+        uint256 initialVaultSharePrice,
         int256 preTradeVariableInterest,
         int256 variableInterest,
         uint256 curveFee,
@@ -510,7 +520,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         deploy(
             alice,
             apr,
-            initialSharePrice,
+            initialVaultSharePrice,
             curveFee,
             flatFee,
             governanceFee,
@@ -522,12 +532,13 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         // fast forward time and accrue interest
         advanceTime(POSITION_DURATION, preTradeVariableInterest);
 
-        // Record the openSharePrice after interest accrual.
-        (uint256 openSharePrice, ) = HyperdriveUtils.calculateCompoundInterest(
-            initialSharePrice,
-            preTradeVariableInterest,
-            POSITION_DURATION
-        );
+        // Record the openVaultSharePrice after interest accrual.
+        (uint256 openVaultSharePrice, ) = HyperdriveUtils
+            .calculateCompoundInterest(
+                initialVaultSharePrice,
+                preTradeVariableInterest,
+                POSITION_DURATION
+            );
 
         {
             // Ensure that the governance initially has zero balance
@@ -548,7 +559,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             DepositOverrides({
                 asBase: true,
                 depositAmount: basePaid,
-                minSharePrice: 0,
+                minVaultSharePrice: 0,
                 minSlippage: 0, // TODO: This should never go below the base amount. Investigate this.
                 maxSlippage: type(uint256).max,
                 extraData: new bytes(0)
@@ -568,7 +579,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             uint256 expectedGovernanceFees = (ONE.divDown(calculatedSpotPrice) -
                 ONE).mulDown(basePaid).mulDown(curveFee).mulDivDown(
                     calculatedSpotPrice,
-                    openSharePrice
+                    openVaultSharePrice
                 );
             assertApproxEqAbs(
                 governanceFeesAfterOpenLong,
@@ -594,12 +605,12 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
 
             // Calculate the flat and curve fees and compare then to the actual fees
             uint256 expectedFlat = bondAmount
-                .mulDivDown(ONE - normalizedTimeRemaining, openSharePrice)
+                .mulDivDown(ONE - normalizedTimeRemaining, openVaultSharePrice)
                 .mulDown(flatFee);
             uint256 expectedCurve = (ONE - calculatedSpotPrice)
                 .mulDown(0.1e18)
                 .mulDown(bondAmount)
-                .mulDivDown(normalizedTimeRemaining, openSharePrice);
+                .mulDivDown(normalizedTimeRemaining, openVaultSharePrice);
             assertApproxEqAbs(
                 governanceFeesAfterCloseLong,
                 (expectedFlat + expectedCurve),

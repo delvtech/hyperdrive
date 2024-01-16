@@ -36,7 +36,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             1e18,
             POSITION_DURATION
         );
-        config.initialSharePrice = 0.7348e18;
+        config.initialVaultSharePrice = 0.7348e18;
         config.minimumShareReserves = 1e6;
         config.minimumTransactionAmount = 1e6;
         deploy(deployer, config);
@@ -512,7 +512,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         DepositOverrides memory overrides = DepositOverrides({
             asBase: true,
             depositAmount: testParams.contribution,
-            minSharePrice: 0, // unused
+            minVaultSharePrice: 0, // unused
             minSlippage: spotAPRBefore - 0.015e18, // min spot rate of .5%
             maxSlippage: spotAPRBefore + 0.015e18, // max spot rate of 3.5%
             extraData: new bytes(0) // unused

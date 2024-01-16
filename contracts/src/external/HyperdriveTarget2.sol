@@ -35,7 +35,7 @@ abstract contract HyperdriveTarget2 is
     /// @notice Opens a long position.
     /// @param _baseAmount The amount of base to use when trading.
     /// @param _minOutput The minium number of bonds to receive.
-    /// @param _minSharePrice The minium share price at which to open the long.
+    /// @param _minVaultSharePrice The minium share price at which to open the long.
     ///        This allows traders to protect themselves from opening a long in
     ///        a checkpoint where negative interest has accrued.
     /// @param _options The options that configure how the trade is settled.
@@ -44,10 +44,11 @@ abstract contract HyperdriveTarget2 is
     function openLong(
         uint256 _baseAmount,
         uint256 _minOutput,
-        uint256 _minSharePrice,
+        uint256 _minVaultSharePrice,
         IHyperdrive.Options calldata _options
     ) external payable returns (uint256 maturityTime, uint256 bondProceeds) {
-        return _openLong(_baseAmount, _minOutput, _minSharePrice, _options);
+        return
+            _openLong(_baseAmount, _minOutput, _minVaultSharePrice, _options);
     }
 
     /// Shorts ///
@@ -55,7 +56,7 @@ abstract contract HyperdriveTarget2 is
     /// @notice Opens a short position.
     /// @param _bondAmount The amount of bonds to short.
     /// @param _maxDeposit The most the user expects to deposit for this trade
-    /// @param _minSharePrice The minium share price at which to open the long.
+    /// @param _minVaultSharePrice The minium share price at which to open the long.
     ///        This allows traders to protect themselves from opening a long in
     ///        a checkpoint where negative interest has accrued.
     /// @param _options The options that configure how the trade is settled.
@@ -64,9 +65,10 @@ abstract contract HyperdriveTarget2 is
     function openShort(
         uint256 _bondAmount,
         uint256 _maxDeposit,
-        uint256 _minSharePrice,
+        uint256 _minVaultSharePrice,
         IHyperdrive.Options calldata _options
     ) external payable returns (uint256 maturityTime, uint256 traderDeposit) {
-        return _openShort(_bondAmount, _maxDeposit, _minSharePrice, _options);
+        return
+            _openShort(_bondAmount, _maxDeposit, _minVaultSharePrice, _options);
     }
 }

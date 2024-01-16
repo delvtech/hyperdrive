@@ -34,9 +34,9 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         )
     {}
 
-    /// @dev Gets the initial share price of the Hyperdrive pool.
+    /// @dev Gets the initial vault share price of the Hyperdrive pool.
     /// @param _extraData The extra data passed to the child deployers.
-    /// @return The initial share price of the Hyperdrive pool.
+    /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialSharePrice(
         bytes memory _extraData
     ) internal view override returns (uint256) {

@@ -277,12 +277,12 @@ contract RemoveLiquidityTest is HyperdriveTest {
         (
             uint256 lpShares,
             uint256 baseAmount,
-            uint256 sharePrice,
+            uint256 vaultSharePrice,
             uint256 withdrawalShares
         ) = abi.decode(log.data, (uint256, uint256, uint256, uint256));
         assertEq(lpShares, expectedLpShares);
         assertEq(baseAmount, expectedBaseAmount);
-        assertEq(sharePrice, hyperdrive.getPoolInfo().sharePrice);
+        assertEq(vaultSharePrice, hyperdrive.getPoolInfo().vaultSharePrice);
         assertEq(withdrawalShares, expectedWithdrawalShares);
     }
 
@@ -296,7 +296,9 @@ contract RemoveLiquidityTest is HyperdriveTest {
     function presentValueRatio() internal view returns (uint256) {
         return
             hyperdrive.presentValue().divDown(
-                lpTotalSupply().mulDown(hyperdrive.getPoolInfo().sharePrice)
+                lpTotalSupply().mulDown(
+                    hyperdrive.getPoolInfo().vaultSharePrice
+                )
             );
     }
 }

@@ -44,7 +44,7 @@ abstract contract HyperdriveAdmin is HyperdriveBase {
         proceeds = _withdraw(governanceFeesAccrued, _options);
         emit CollectGovernanceFee(
             _feeCollector,
-            _convertToBaseFromOption(proceeds, _pricePerShare(), _options)
+            _convertToBaseFromOption(proceeds, _pricePerVaultShare(), _options)
         );
     }
 

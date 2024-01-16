@@ -119,9 +119,9 @@ contract StETHHyperdriveTest is HyperdriveTest {
         // zero address's initial LP contribution.
         assertApproxEqAbs(
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
-            contribution.divDown(hyperdrive.getPoolConfig().initialSharePrice) -
-                2 *
-                hyperdrive.getPoolConfig().minimumShareReserves,
+            contribution.divDown(
+                hyperdrive.getPoolConfig().initialVaultSharePrice
+            ) - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
             1e5
         );
 
@@ -183,9 +183,9 @@ contract StETHHyperdriveTest is HyperdriveTest {
         // zero address's initial LP contribution.
         assertApproxEqAbs(
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, bob),
-            contribution.divDown(hyperdrive.getPoolConfig().initialSharePrice) -
-                2 *
-                hyperdrive.getPoolConfig().minimumShareReserves,
+            contribution.divDown(
+                hyperdrive.getPoolConfig().initialVaultSharePrice
+            ) - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
             1e5
         );
 
@@ -219,12 +219,12 @@ contract StETHHyperdriveTest is HyperdriveTest {
 
     /// Price Per Share ///
 
-    function test__pricePerShare(uint256 basePaid) external {
+    function test__pricePerVaultShare(uint256 basePaid) external {
         // Ensure that the share price is the expected value.
         uint256 totalPooledEther = LIDO.getTotalPooledEther();
         uint256 totalShares = LIDO.getTotalShares();
-        uint256 sharePrice = hyperdrive.getPoolInfo().sharePrice;
-        assertEq(sharePrice, totalPooledEther.divDown(totalShares));
+        uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
+        assertEq(vaultSharePrice, totalPooledEther.divDown(totalShares));
 
         // Ensure that the share price accurately predicts the amount of shares
         // that will be minted for depositing a given amount of ETH. This will
@@ -238,7 +238,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
         openLong(bob, basePaid);
         assertApproxEqAbs(
             LIDO.sharesOf(address(hyperdrive)),
-            hyperdriveSharesBefore + basePaid.divDown(sharePrice),
+            hyperdriveSharesBefore + basePaid.divDown(vaultSharePrice),
             1e4
         );
     }
@@ -655,8 +655,8 @@ contract StETHHyperdriveTest is HyperdriveTest {
         // Ensure that the share price is the expected value.
         uint256 totalPooledEther = LIDO.getTotalPooledEther();
         uint256 totalShares = LIDO.getTotalShares();
-        uint256 sharePrice = hyperdrive.getPoolInfo().sharePrice;
-        assertEq(sharePrice, totalPooledEther.divDown(totalShares));
+        uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
+        assertEq(vaultSharePrice, totalPooledEther.divDown(totalShares));
 
         // Ensure that the share price accurately predicts the amount of shares
         // that will be minted for depositing a given amount of ETH. This will
@@ -671,7 +671,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
         // Bob received longAmount == ", longAmount);
         assertApproxEqAbs(
             LIDO.sharesOf(address(hyperdrive)),
-            hyperdriveSharesBefore + basePaid.divDown(sharePrice),
+            hyperdriveSharesBefore + basePaid.divDown(vaultSharePrice),
             1e4
         );
 

@@ -27,7 +27,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 apr
     );
 
@@ -35,7 +35,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 lpSharePrice
     );
 
@@ -43,7 +43,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 withdrawalShareAmount,
         uint256 lpSharePrice
     );
@@ -52,7 +52,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         address indexed provider,
         uint256 withdrawalShareAmount,
         uint256 baseAmount,
-        uint256 sharePrice
+        uint256 vaultSharePrice
     );
 
     event OpenLong(
@@ -60,7 +60,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 bondAmount
     );
 
@@ -69,7 +69,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 bondAmount
     );
 
@@ -78,7 +78,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 bondAmount
     );
 
@@ -87,13 +87,13 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 bondAmount
     );
 
     event CreateCheckpoint(
         uint256 indexed checkpointTime,
-        uint256 sharePrice,
+        uint256 vaultSharePrice,
         uint256 maturedShorts,
         uint256 maturedLongs,
         uint256 lpSharePrice
@@ -132,11 +132,11 @@ abstract contract HyperdriveBase is HyperdriveStorage {
     ///        specified here. Aside from those options, yield sources can
     ///        choose to implement additional options.
     /// @return sharesMinted The shares created by this deposit.
-    /// @return sharePrice The share price.
+    /// @return vaultSharePrice The vault share price.
     function _deposit(
         uint256 _amount,
         IHyperdrive.Options calldata _options
-    ) internal virtual returns (uint256 sharesMinted, uint256 sharePrice);
+    ) internal virtual returns (uint256 sharesMinted, uint256 vaultSharePrice);
 
     /// @dev Withdraws shares from the yield source and sends the base
     ///         released to the destination.
@@ -152,12 +152,12 @@ abstract contract HyperdriveBase is HyperdriveStorage {
     ) internal virtual returns (uint256 amountWithdrawn);
 
     /// @dev Loads the share price from the yield source.
-    /// @return sharePrice The current share price.
-    function _pricePerShare()
+    /// @return vaultSharePrice The current vault share price.
+    function _pricePerVaultShare()
         internal
         view
         virtual
-        returns (uint256 sharePrice);
+        returns (uint256 vaultSharePrice);
 
     /// Pause ///
 
@@ -171,12 +171,12 @@ abstract contract HyperdriveBase is HyperdriveStorage {
 
     /// @dev Creates a new checkpoint if necessary.
     /// @param _checkpointTime The time of the checkpoint to create.
-    /// @param _sharePrice The current share price.
-    /// @return openSharePrice The open share price of the latest checkpoint.
+    /// @param _vaultSharePrice The current vault share price.
+    /// @return openVaultSharePrice The open share price of the latest checkpoint.
     function _applyCheckpoint(
         uint256 _checkpointTime,
-        uint256 _sharePrice
-    ) internal virtual returns (uint256 openSharePrice);
+        uint256 _vaultSharePrice
+    ) internal virtual returns (uint256 openVaultSharePrice);
 
     /// Helpers ///
 
@@ -260,15 +260,17 @@ abstract contract HyperdriveBase is HyperdriveStorage {
     }
 
     /// @dev Gets the distribute excess idle parameters from the current state.
-    /// @param _sharePrice The current share price.
+    /// @param _vaultSharePrice The current vault share price.
     /// @return params The distribute excess idle parameters.
     function _getDistributeExcessIdleParams(
         uint256 _idle,
         uint256 _withdrawalSharesTotalSupply,
-        uint256 _sharePrice
+        uint256 _vaultSharePrice
     ) internal view returns (LPMath.DistributeExcessIdleParams memory params) {
         LPMath.PresentValueParams
-            memory presentValueParams = _getPresentValueParams(_sharePrice);
+            memory presentValueParams = _getPresentValueParams(
+                _vaultSharePrice
+            );
         uint256 startingPresentValue = LPMath.calculatePresentValue(
             presentValueParams
         );
@@ -296,17 +298,17 @@ abstract contract HyperdriveBase is HyperdriveStorage {
     }
 
     /// @dev Gets the present value parameters from the current state.
-    /// @param _sharePrice The current share price.
+    /// @param _vaultSharePrice The current vault share price.
     /// @return params The present value parameters.
     function _getPresentValueParams(
-        uint256 _sharePrice
+        uint256 _vaultSharePrice
     ) internal view returns (LPMath.PresentValueParams memory params) {
         params = LPMath.PresentValueParams({
             shareReserves: _marketState.shareReserves,
             shareAdjustment: _marketState.shareAdjustment,
             bondReserves: _marketState.bondReserves,
-            sharePrice: _sharePrice,
-            initialSharePrice: _initialSharePrice,
+            vaultSharePrice: _vaultSharePrice,
+            initialVaultSharePrice: _initialVaultSharePrice,
             minimumShareReserves: _minimumShareReserves,
             timeStretch: _timeStretch,
             longsOutstanding: _marketState.longsOutstanding,
@@ -338,7 +340,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         uint256 endingSpotPrice = HyperdriveMath.calculateSpotPrice(
             _effectiveShareReserves() + _shareCurveDelta,
             _marketState.bondReserves - _bondCurveDelta,
-            _initialSharePrice,
+            _initialVaultSharePrice,
             _timeStretch
         );
         return endingSpotPrice > _maxSpotPrice;
@@ -346,14 +348,16 @@ abstract contract HyperdriveBase is HyperdriveStorage {
 
     /// @dev Check solvency by verifying that the share reserves are greater
     ///      than the exposure plus the minimum share reserves.
-    /// @param _sharePrice The current share price.
+    /// @param _vaultSharePrice The current vault share price.
     /// @return True if the share reserves are greater than the exposure plus
     ///         the minimum share reserves.
-    function _isSolvent(uint256 _sharePrice) internal view returns (bool) {
+    function _isSolvent(uint256 _vaultSharePrice) internal view returns (bool) {
         return
-            int256((uint256(_marketState.shareReserves).mulDown(_sharePrice))) -
+            int256(
+                (uint256(_marketState.shareReserves).mulDown(_vaultSharePrice))
+            ) -
                 int128(_marketState.longExposure) >=
-            int256(_minimumShareReserves.mulDown(_sharePrice));
+            int256(_minimumShareReserves.mulDown(_vaultSharePrice));
     }
 
     /// @dev Updates the global long exposure.
@@ -377,23 +381,23 @@ abstract contract HyperdriveBase is HyperdriveStorage {
     ///      to account for any negative interest that has accrued in the
     ///      zombie reserves.
     /// @param _shareProceeds The share proceeds.
-    /// @param _sharePrice The share price.
+    /// @param _vaultSharePrice The current vault share price.
     /// @return The adjusted share proceeds.
     function _applyZombieClose(
         uint256 _shareProceeds,
-        uint256 _sharePrice
+        uint256 _vaultSharePrice
     ) internal returns (uint256) {
         // Collect any zombie interest that has accrued since the last
         // collection.
         (
             uint256 zombieBaseProceeds,
             uint256 zombieBaseReserves
-        ) = _collectZombieInterest(_sharePrice);
+        ) = _collectZombieInterest(_vaultSharePrice);
 
         // If negative interest has accrued in the zombie reserves, we
         // discount the share proceeds in proportion to the amount of
         // negative interest that has accrued.
-        uint256 baseProceeds = _shareProceeds.mulDown(_sharePrice);
+        uint256 baseProceeds = _shareProceeds.mulDown(_vaultSharePrice);
         if (zombieBaseProceeds > zombieBaseReserves) {
             _shareProceeds = _shareProceeds.mulDivDown(
                 zombieBaseReserves,
@@ -421,19 +425,19 @@ abstract contract HyperdriveBase is HyperdriveStorage {
 
     /// @dev Collect the interest earned on unredeemed matured positions. This
     ///      interest is split between the LPs and governance.
-    /// @param _sharePrice The current share price.
+    /// @param _vaultSharePrice The current vault share price.
     /// @return zombieBaseProceeds The base proceeds reserved for zombie
     ///         positions.
     /// @return zombieBaseReserves The updated base reserves reserved for zombie
     ///         positions.
     function _collectZombieInterest(
-        uint256 _sharePrice
+        uint256 _vaultSharePrice
     )
         internal
         returns (uint256 zombieBaseProceeds, uint256 zombieBaseReserves)
     {
         // Get the zombie base proceeds and reserves.
-        zombieBaseReserves = _sharePrice.mulDown(
+        zombieBaseReserves = _vaultSharePrice.mulDown(
             _marketState.zombieShareReserves
         );
         zombieBaseProceeds = _marketState.zombieBaseProceeds;
@@ -447,13 +451,15 @@ abstract contract HyperdriveBase is HyperdriveStorage {
 
             // Remove the zombie interest from the zombie share reserves.
             _marketState.zombieShareReserves -= zombieInterest
-                .divUp(_sharePrice)
+                .divUp(_vaultSharePrice)
                 .toUint128();
 
             // Calculate and collect the governance fee.
             // The fee is calculated in terms of shares and paid to
             // governance.
-            uint256 zombieInterestShares = zombieInterest.divDown(_sharePrice);
+            uint256 zombieInterestShares = zombieInterest.divDown(
+                _vaultSharePrice
+            );
             uint256 governanceZombieFeeCollected = zombieInterestShares.mulDown(
                 _governanceZombieFee
             );
@@ -477,14 +483,14 @@ abstract contract HyperdriveBase is HyperdriveStorage {
 
     /// @dev Calculates the number of share reserves that are not reserved by
     ///      open positions.
-    /// @param _sharePrice The current share price.
+    /// @param _vaultSharePrice The current vault share price.
     /// @return idleShares The amount of shares that are available for LPs to
     ///         withdraw.
     function _calculateIdleShareReserves(
-        uint256 _sharePrice
+        uint256 _vaultSharePrice
     ) internal view returns (uint256 idleShares) {
         uint256 longExposure = uint256(_marketState.longExposure).divDown(
-            _sharePrice
+            _vaultSharePrice
         );
         if (_marketState.shareReserves > longExposure + _minimumShareReserves) {
             idleShares =
@@ -496,15 +502,15 @@ abstract contract HyperdriveBase is HyperdriveStorage {
     }
 
     /// @dev Calculates the LP share price.
-    /// @param _sharePrice The current vault share price.
+    /// @param _vaultSharePrice The current vault share price.
     /// @return lpSharePrice The LP share price in units of (base / lp shares).
     function _calculateLPSharePrice(
-        uint256 _sharePrice
+        uint256 _vaultSharePrice
     ) internal view returns (uint256 lpSharePrice) {
-        uint256 presentValue = _sharePrice > 0
+        uint256 presentValue = _vaultSharePrice > 0
             ? LPMath
-                .calculatePresentValue(_getPresentValueParams(_sharePrice))
-                .mulDown(_sharePrice)
+                .calculatePresentValue(_getPresentValueParams(_vaultSharePrice))
+                .mulDown(_vaultSharePrice)
             : 0;
         uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
             _totalSupply[AssetId._WITHDRAWAL_SHARE_ASSET_ID] -
@@ -519,15 +525,14 @@ abstract contract HyperdriveBase is HyperdriveStorage {
     /// @param _shareAmount The amount of shares exchanged for bonds.
     /// @param _spotPrice The price without slippage of bonds in terms of base
     ///         (base/bonds).
-    /// @param _sharePrice The current price of shares in terms of base
-    ///        (base/shares).
+    /// @param _vaultSharePrice The current vault share price (base/shares).
     /// @return curveFee The curve fee. The fee is in terms of bonds.
     /// @return governanceCurveFee The curve fee that goes to governance. The
     ///         fee is in terms of bonds.
     function _calculateFeesGivenShares(
         uint256 _shareAmount,
         uint256 _spotPrice,
-        uint256 _sharePrice
+        uint256 _vaultSharePrice
     ) internal view returns (uint256 curveFee, uint256 governanceCurveFee) {
         // Fixed Rate (r) = (value at maturity - purchase price)/(purchase price)
         //                = (1-p)/p
@@ -550,7 +555,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         //           = bonds * phi_curve
         curveFee = (ONE.divDown(_spotPrice) - ONE)
             .mulDown(_curveFee)
-            .mulDown(_sharePrice)
+            .mulDown(_vaultSharePrice)
             .mulDown(_shareAmount);
 
         // We leave the governance fee in terms of bonds:
@@ -561,10 +566,11 @@ abstract contract HyperdriveBase is HyperdriveStorage {
 
     /// @dev Calculates the fees that go to the LPs and governance.
     /// @param _bondAmount The amount of bonds being exchanged for shares.
-    /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
+    /// @param _normalizedTimeRemaining The normalized amount of time until
+    ///        maturity.
     /// @param _spotPrice The price without slippage of bonds in terms of base
     ///        (base/bonds).
-    /// @param _sharePrice The current price of shares in terms of base (base/shares).
+    /// @param _vaultSharePrice The current vault share price (base/shares).
     /// @return curveFee The curve fee. The fee is in terms of shares.
     /// @return flatFee The flat fee. The fee is in terms of shares.
     /// @return governanceCurveFee The curve fee that goes to governance. The
@@ -573,7 +579,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         uint256 _bondAmount,
         uint256 _normalizedTimeRemaining,
         uint256 _spotPrice,
-        uint256 _sharePrice
+        uint256 _vaultSharePrice
     )
         internal
         view
@@ -599,7 +605,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         curveFee = _curveFee
             .mulDown(ONE - _spotPrice)
             .mulDown(_bondAmount)
-            .mulDivDown(_normalizedTimeRemaining, _sharePrice);
+            .mulDivDown(_normalizedTimeRemaining, _vaultSharePrice);
 
         // Calculate the curve portion of the governance fee:
         //
@@ -617,7 +623,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         //          = shares * (1 - t) * phi_flat
         uint256 flat = _bondAmount.mulDivDown(
             ONE - _normalizedTimeRemaining,
-            _sharePrice
+            _vaultSharePrice
         );
         flatFee = flat.mulDown(_flatFee);
 
@@ -635,35 +641,35 @@ abstract contract HyperdriveBase is HyperdriveStorage {
     /// @dev Converts input to base if necessary according to what is specified
     ///      in options.
     /// @param _amount The amount to convert.
-    /// @param _sharePrice The current share price.
+    /// @param _vaultSharePrice The current vault share price.
     /// @param _options The options that configure the conversion.
     /// @return The converted amount.
     function _convertToBaseFromOption(
         uint256 _amount,
-        uint256 _sharePrice,
+        uint256 _vaultSharePrice,
         IHyperdrive.Options calldata _options
     ) internal pure returns (uint256) {
         if (_options.asBase) {
             return _amount;
         } else {
-            return _amount.mulDown(_sharePrice);
+            return _amount.mulDown(_vaultSharePrice);
         }
     }
 
     /// @dev Converts input to what is specified in the options from base.
     /// @param _amount The amount to convert.
-    /// @param _sharePrice The current share price.
+    /// @param _vaultSharePrice The current vault share price.
     /// @param _options The options that configure the conversion.
     /// @return The converted amount.
     function _convertToOptionFromBase(
         uint256 _amount,
-        uint256 _sharePrice,
+        uint256 _vaultSharePrice,
         IHyperdrive.Options calldata _options
     ) internal pure returns (uint256) {
         if (_options.asBase) {
             return _amount;
         } else {
-            return _amount.divDown(_sharePrice);
+            return _amount.divDown(_vaultSharePrice);
         }
     }
 }

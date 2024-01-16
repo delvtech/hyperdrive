@@ -11,11 +11,11 @@ pragma solidity 0.8.19;
 ///                    particular legal or regulatory significance.
 contract EtchingVault {
     address internal immutable _baseToken;
-    uint256 internal immutable _sharePrice;
+    uint256 internal immutable _vaultSharePrice;
 
-    constructor(address _baseToken_, uint256 _sharePrice_) {
+    constructor(address _baseToken_, uint256 _vaultSharePrice_) {
         _baseToken = _baseToken_;
-        _sharePrice = _sharePrice_;
+        _vaultSharePrice = _vaultSharePrice_;
     }
 
     function asset() external view returns (address) {
@@ -23,6 +23,6 @@ contract EtchingVault {
     }
 
     function convertToAssets(uint256) external view returns (uint256) {
-        return _sharePrice;
+        return _vaultSharePrice;
     }
 }

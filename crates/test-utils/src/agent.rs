@@ -943,7 +943,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
     pub async fn calculate_open_short(&self, short_amount: FixedPoint) -> Result<FixedPoint> {
         let state = self.get_state().await?;
         let Checkpoint {
-            share_price: open_share_price,
+            vault_share_price: open_vault_share_price,
             ..
         } = self
             .hyperdrive
@@ -952,7 +952,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         state.calculate_open_short(
             short_amount,
             state.get_spot_price(),
-            open_share_price.into(),
+            open_vault_share_price.into(),
         )
     }
 
@@ -980,7 +980,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
 
         let state = self.get_state().await?;
         let Checkpoint {
-            share_price: open_share_price,
+            vault_share_price: open_vault_share_price,
         } = self
             .hyperdrive
             .get_checkpoint(state.to_checkpoint(self.now().await?))
@@ -1002,7 +1002,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
             let min_price = state.get_min_price();
 
             // Calculate the linear interpolation.
-            let base_reserves = FixedPoint::from(state.info.share_price)
+            let base_reserves = FixedPoint::from(state.info.vault_share_price)
                 * (FixedPoint::from(state.info.share_reserves));
             let weight = (min(self.wallet.base, base_reserves) / base_reserves)
                 .pow(fixed!(1e18) - FixedPoint::from(self.config.time_stretch));
@@ -1011,7 +1011,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
 
         Ok(state.get_max_short(
             budget,
-            open_share_price,
+            open_vault_share_price,
             checkpoint_exposure,
             Some(conservative_price),
             None,

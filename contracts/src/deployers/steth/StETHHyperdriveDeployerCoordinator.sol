@@ -43,12 +43,12 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         lido = _lido;
     }
 
-    /// @dev Gets the initial share price of the Hyperdrive pool.
-    /// @return The initial share price of the Hyperdrive pool.
+    /// @dev Gets the initial vault share price of the Hyperdrive pool.
+    /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialSharePrice(
         bytes memory // unused extra data
     ) internal view override returns (uint256) {
-        // Return the stETH's current share price.
+        // Return stETH's current vault share price.
         return lido.getTotalPooledEther().divDown(lido.getTotalShares());
     }
 }

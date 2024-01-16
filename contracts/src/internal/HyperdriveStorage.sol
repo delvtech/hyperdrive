@@ -48,8 +48,8 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
 
     /// Market State ///
 
-    /// @dev The share price at the time the pool was created.
-    uint256 internal immutable _initialSharePrice;
+    /// @dev The vault share price at the time the pool was created.
+    uint256 internal immutable _initialVaultSharePrice;
 
     /// @dev The minimum amount of share reserves that must be maintained at all
     ///      times. This is used to enforce practical limits on the share
@@ -159,7 +159,7 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
         }
         _positionDuration = _config.positionDuration;
         _timeStretch = _config.timeStretch;
-        _initialSharePrice = _config.initialSharePrice;
+        _initialVaultSharePrice = _config.initialVaultSharePrice;
         _governance = _config.governance;
         _feeCollector = _config.feeCollector;
 

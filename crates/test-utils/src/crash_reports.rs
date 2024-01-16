@@ -167,7 +167,7 @@ mod tests {
         "baseToken": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
         "linkerFactory": "0x33027547537D35728a741470dF1CCf65dE10b454",
         "linkerCodeHash": "0x33027547537d35728a741470df1ccf65de10b454ca0def7c5c20b257b7b8d161",
-        "initialSharePrice": 1000000000000000000,
+        "initialVaultSharePrice": 1000000000000000000,
         "minimumShareReserves": 10000000000000000000,
         "minimumTransactionAmount": 1000000000000000,
         "positionDuration": 604800,
@@ -187,7 +187,7 @@ mod tests {
         "zombieShareReserves": 0,
         "bondReserves": 102178995195337961200000000,
         "lpTotalSupply": 99999990000000000000000000,
-        "sharePrice": 1000000006341958396,
+        "vaultSharePrice": 1000000006341958396,
         "longsOutstanding": 0,
         "longAverageMaturityTime": 0,
         "shortsOutstanding": 0,
@@ -198,7 +198,7 @@ mod tests {
         "longExposure": 0
     },
     "raw_checkpoint": {
-        "sharePrice": 1000000000000000000,
+        "vaultSharePrice": 1000000000000000000,
         "exposure": 0
     },
     "anvil_dump_state": "0x7b22",
@@ -236,7 +236,7 @@ mod tests {
         "baseToken": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
         "linkerFactory": "0x33027547537D35728a741470dF1CCf65dE10b454",
         "linkerCodeHash": "0x33027547537d35728a741470df1ccf65de10b454ca0def7c5c20b257b7b8d161",
-        "initialSharePrice": "1.0",
+        "initialVaultSharePrice": "1.0",
         "minimumShareReserves": "10.0",
         "minimumTransactionAmount": "0.001",
         "positionDuration": 604800,
@@ -261,7 +261,7 @@ mod tests {
         "zombieShareReserves": "0.0",
         "bondReserves": "102178995.1953379612",
         "lpTotalSupply": "99999990.0",
-        "sharePrice": "1.000000006341958396",
+        "vaultSharePrice": "1.000000006341958396",
         "longsOutstanding": "0.0",
         "longAverageMaturityTime": "0.0",
         "shortsOutstanding": "0.0",
@@ -275,7 +275,7 @@ mod tests {
         "totalSupplyWithdrawalShares": 0
     },
     "checkpoint_info": {
-        "sharePrice": "1.0",
+        "vaultSharePrice": "1.0",
         "exposure": "0.0",
         "blockNumber": 16,
         "timestamp": "2023-10-20 14:28:34"

@@ -39,7 +39,7 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
         Hyperdrive(_config, _target0, _target1, _target2, _target3)
         ERC4626Base(__vault)
     {
-        // Ensure that the initial share price is properly configured.
+        // Ensure that the initial vault share price is properly configured.
         //
         // WARN: ERC4626 implementations should be checked that if they use an
         // asset with decimals less than 18 that the preview deposit is scale
@@ -47,7 +47,7 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
         // price for USDC if the price per share changes based on size of
         // deposit then this line will read an incorrect and possibly dangerous
         // price.
-        if (_config.initialSharePrice != _pricePerShare()) {
+        if (_config.initialVaultSharePrice != _pricePerVaultShare()) {
             revert IHyperdrive.InvalidInitialSharePrice();
         }
 

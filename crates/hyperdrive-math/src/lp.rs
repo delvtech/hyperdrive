@@ -80,7 +80,7 @@ impl State {
                     let max_share_payment = self.calculate_max_buy_shares_in();
                     I256::from(
                         max_share_payment
-                            + (_net_curve_position - max_curve_trade).div_down(self.share_price()),
+                            + (_net_curve_position - max_curve_trade).div_down(self.vault_share_price()),
                     )
                 }
             }
@@ -97,10 +97,10 @@ impl State {
         // apply this net to the reserves.
         I256::from(self.shorts_outstanding().mul_div_down(
             fixed!(1e18) - short_average_time_remaining,
-            self.share_price(),
+            self.vault_share_price(),
         )) - I256::from(self.longs_outstanding().mul_div_down(
             fixed!(1e18) - long_average_time_remaining,
-            self.share_price(),
+            self.vault_share_price(),
         ))
     }
 }
@@ -136,8 +136,8 @@ mod tests {
                     longs_outstanding: state.info.longs_outstanding,
                     share_adjustment: state.info.share_adjustment,
                     time_stretch: state.config.time_stretch,
-                    share_price: state.info.share_price,
-                    initial_share_price: state.config.initial_share_price,
+                    vault_share_price: state.info.vault_share_price,
+                    initial_vault_share_price: state.config.initial_vault_share_price,
                     minimum_share_reserves: state.config.minimum_share_reserves,
                     long_average_time_remaining: state
                         .time_remaining_scaled(
@@ -197,8 +197,8 @@ mod tests {
                     longs_outstanding: state.info.longs_outstanding,
                     share_adjustment: state.info.share_adjustment,
                     time_stretch: state.config.time_stretch,
-                    share_price: state.info.share_price,
-                    initial_share_price: state.config.initial_share_price,
+                    vault_share_price: state.info.vault_share_price,
+                    initial_vault_share_price: state.config.initial_vault_share_price,
                     minimum_share_reserves: state.config.minimum_share_reserves,
                     long_average_time_remaining: long_average_time_remaining.into(),
                     short_average_time_remaining: short_average_time_remaining.into(),
@@ -248,8 +248,8 @@ mod tests {
                     longs_outstanding: state.info.longs_outstanding,
                     share_adjustment: state.info.share_adjustment,
                     time_stretch: state.config.time_stretch,
-                    share_price: state.info.share_price,
-                    initial_share_price: state.config.initial_share_price,
+                    vault_share_price: state.info.vault_share_price,
+                    initial_vault_share_price: state.config.initial_vault_share_price,
                     minimum_share_reserves: state.config.minimum_share_reserves,
                     long_average_time_remaining: long_average_time_remaining.into(),
                     short_average_time_remaining: short_average_time_remaining.into(),

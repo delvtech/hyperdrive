@@ -126,7 +126,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             FIXED_RATE,
             POSITION_DURATION
         );
-        // Required to support ERC4626, since the test config initialSharePrice is wrong
+        // Required to support ERC4626, since the test config initialVaultSharePrice is wrong
         config.baseToken = underlyingToken;
         // Designed to ensure compatibility ../../contracts/src/instances/ERC4626Hyperdrive.sol#L122C1-L122C1
         config.minimumTransactionAmount = hyperdrive

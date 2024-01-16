@@ -27,7 +27,7 @@ contract MockHyperdriveDeployer is IHyperdriveDeployer {
         _config.feeCollector = _deployConfig.feeCollector;
         _config.fees = _deployConfig.fees;
 
-        _config.initialSharePrice = 1e18; // TODO: Make setter
+        _config.initialVaultSharePrice = 1e18; // TODO: Make setter
 
         return (address(new MockHyperdrive(_config)));
     }
