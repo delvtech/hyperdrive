@@ -50,7 +50,7 @@ pub fn get_time_stretch(mut rate: FixedPoint, position_duration: FixedPoint) -> 
     )))) / U256::from(FixedPoint::from(-FixedPoint::ln(I256::from(
         benchmark_reserve_ratio,
     ))));
-    return new_time_stretch.into();
+    new_time_stretch.into()
 }
 
 pub fn get_effective_share_reserves(
@@ -117,7 +117,7 @@ mod tests {
         let chain = TestChainWithMocks::new(1).await?;
         let mock = chain.mock_hyperdrive_math();
         // Fuzz the rust and solidity implementations against each other.
-        let apr = fixed!(5e16); // 5%
+        let apr = fixed!(0.05e18); // 5%
         let seconds_in_a_year = U256::from(60 * 60 * 24 * 365);
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
@@ -125,7 +125,7 @@ mod tests {
             let state = rng.gen::<State>();
             let actual_t = get_time_stretch(apr, seconds_in_a_year.into());
             match mock
-                .calculateTimeStretch(apr.into(), seconds_in_a_year)
+                .calculate_time_stretch(apr.into(), seconds_in_a_year)
                 .call()
                 .await
             {
@@ -140,7 +140,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn fuzz_calculate_bonds_given_shares_and_rate() -> Result<()> {
+    async fn fuzz_calculate_initial_bond_reserves() -> Result<()> {
         // Spin up a fake chain & deploy mock hyperdrive math.
         let chain = TestChainWithMocks::new(1).await?;
         let mock = chain.mock_hyperdrive_math();

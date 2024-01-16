@@ -174,7 +174,6 @@ contract MockHyperdriveMath {
         return result;
     }
 
-
     function calculateMaxLong(
         HyperdriveUtils.MaxTradeParams memory _params,
         int256 _checkpointExposure,
