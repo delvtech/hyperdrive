@@ -288,7 +288,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         // Ensure that the long received the correct amount of base and wasn't
         // overcompensated.
         uint256 expectedBaseProceeds = longAmount;
-        assertLe(baseProceeds, expectedBaseProceeds + 10);
+        assertLe(baseProceeds, expectedBaseProceeds);
         assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 100);
 
         // Ensure that the ERC4626 aggregates and the token balances were updated
