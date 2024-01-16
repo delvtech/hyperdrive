@@ -811,9 +811,7 @@ contract CloseShortTest is HyperdriveTest {
         assertApproxEqAbs(shortProceeds1, shortProceeds2, 60 wei);
         assertApproxEqAbs(shortProceeds1, shortProceeds3, 6.2e9);
 
-        // NOTE: This is a large tolerance, but it is only off by
-        // 1.8 which is good considering the circumstance. This is
-        // explained in issue #691.
+        // NOTE: This is a large tolerance, but it is explained in issue #691.
         assertApproxEqAbs(shortProceeds1, shortProceeds4, 3.6e18);
         assertGe(shortProceeds1, shortProceeds4);
     }
