@@ -2,10 +2,48 @@ use ethers::types::{I256, U256};
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
 
-pub fn get_time_stretch(mut rate: FixedPoint) -> FixedPoint {
+pub fn get_time_stretch(mut rate: FixedPoint, position_duration: FixedPoint) -> FixedPoint {
+    let seconds_in_a_year = FixedPoint::from(U256::from(60 * 60 * 24 * 365));
+    let annualized_time = position_duration / seconds_in_a_year;
     rate = (U256::from(rate) * uint256!(100)).into();
-    let time_stretch = fixed!(5.24592e18) / (fixed!(0.04665e18) * rate);
-    fixed!(1e18) / time_stretch
+    // Calculate the benchmark time stretch. This time stretch is tuned for
+    // a position duration of 1 year.
+    let time_stretch = fixed!(1e18) / (fixed!(5.24592e18) / (fixed!(0.04665e18) * rate));
+    // if the position duration is 1 year, we can return the benchmark
+    if annualized_time == fixed!(1e18) {
+        return time_stretch;
+    }
+
+    // Otherwise, we need to adjust the time stretch to account for the
+    // position duration. We do this by holding the reserve ratio constant
+    // and solving for the new time stretch directly.
+    //
+    // We can calculate the spot price at the target apr and position
+    // duration as:
+    //
+    // p = 1 / (1 + apr * (positionDuration / 365 days))
+    //
+    // We then calculate the benchmark reserve ratio, `ratio`, implied by
+    // the benchmark time stretch using the `calculateInitialBondReserves`
+    // function.
+    //
+    // We can then derive the adjusted time stretch using the spot price
+    // calculation:
+    //
+    // p = ratio ** timeStretch
+    //          =>
+    // timeStretch = ln(p) / ln(ratio)
+    let benchmark_reserve_ratio = fixed!(1e18)
+        / calculate_bonds_given_shares_and_rate(
+            fixed!(1e18),
+            fixed!(1e18),
+            rate,
+            seconds_in_a_year,
+            time_stretch,
+        );
+    let target_spot_price = fixed!(1e18) / (fixed!(1e18) * annualized_time);
+    return FixedPoint::from(-FixedPoint::ln(I256::from(target_spot_price)))
+        / FixedPoint::from(-FixedPoint::ln(I256::from(benchmark_reserve_ratio)));
 }
 
 pub fn get_effective_share_reserves(
