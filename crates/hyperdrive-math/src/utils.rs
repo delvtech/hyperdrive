@@ -34,7 +34,7 @@ pub fn get_time_stretch(mut rate: FixedPoint, position_duration: FixedPoint) -> 
     //          =>
     // timeStretch = ln(p) / ln(ratio)
     let benchmark_reserve_ratio = fixed!(1e18)
-        / calculate_bonds_given_shares_and_rate(
+        / calculate_initial_bond_reserves(
             fixed!(1e18),
             fixed!(1e18),
             rate,
@@ -77,7 +77,7 @@ pub fn get_effective_share_reserves(
 ///
 /// * bond_reserves : The bond reserves (without adjustment) that make
 /// the pool have a specified APR.
-pub fn calculate_bonds_given_shares_and_rate(
+pub fn calculate_initial_bond_reserves(
     effective_share_reserves: FixedPoint,
     initial_share_price: FixedPoint,
     apr: FixedPoint,
@@ -120,7 +120,7 @@ mod tests {
                 state.info.share_adjustment.into(),
             );
             // Calculate the bonds
-            let actual = calculate_bonds_given_shares_and_rate(
+            let actual = calculate_initial_bond_reserves(
                 effective_share_reserves,
                 state.config.initial_share_price.into(),
                 fixed!(0.01e18),
