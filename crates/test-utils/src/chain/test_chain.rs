@@ -246,7 +246,7 @@ impl TestChain {
         .gas_price(DEFAULT_GAS_PRICE)
         .send()
         .await?;
-        let pool = MockERC4626::deploy(
+        let vault = MockERC4626::deploy(
             client.clone(),
             (
                 base.address(),
@@ -281,19 +281,19 @@ impl TestChain {
                 governance_zombie: uint256!(0.15e18),
             },
         };
-        let target0 = ERC4626Target0::deploy(client.clone(), (config.clone(), pool.address()))?
+        let target0 = ERC4626Target0::deploy(client.clone(), (config.clone(), vault.address()))?
             .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
-        let target1 = ERC4626Target1::deploy(client.clone(), (config.clone(), pool.address()))?
+        let target1 = ERC4626Target1::deploy(client.clone(), (config.clone(), vault.address()))?
             .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
-        let target2 = ERC4626Target2::deploy(client.clone(), (config.clone(), pool.address()))?
+        let target2 = ERC4626Target2::deploy(client.clone(), (config.clone(), vault.address()))?
             .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
-        let target3 = ERC4626Target3::deploy(client.clone(), (config.clone(), pool.address()))?
+        let target3 = ERC4626Target3::deploy(client.clone(), (config.clone(), vault.address()))?
             .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
@@ -305,7 +305,7 @@ impl TestChain {
                 target1.address(),
                 target2.address(),
                 target3.address(),
-                pool.address(),
+                vault.address(),
             ),
         )?
         .gas_price(DEFAULT_GAS_PRICE)
@@ -337,7 +337,7 @@ impl TestChain {
         let target1_address = hyperdrive.target_1().call().await?;
         let target2_address = hyperdrive.target_2().call().await?;
         let target3_address = hyperdrive.target_3().call().await?;
-        let vault_address = hyperdrive.pool().call().await?;
+        let vault_address = hyperdrive.vault().call().await?;
 
         // Deploy templates for each of the contracts that should be etched and
         // get a list of targets and templates. In order for the contracts to

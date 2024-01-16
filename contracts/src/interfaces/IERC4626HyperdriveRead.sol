@@ -5,5 +5,5 @@ import { IERC4626 } from "./IERC4626.sol";
 import { IHyperdriveRead } from "./IHyperdriveRead.sol";
 
 interface IERC4626HyperdriveRead is IHyperdriveRead {
-    function pool() external view returns (IERC4626);
+    function vault() external view returns (IERC4626);
 }

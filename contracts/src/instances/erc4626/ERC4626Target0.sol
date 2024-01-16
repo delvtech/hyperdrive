@@ -22,11 +22,11 @@ contract ERC4626Target0 is HyperdriveTarget0, ERC4626Base {
 
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param __pool The ERC4626 pool.
+    /// @param __vault The ERC4626 compatible vault.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        IERC4626 __pool
-    ) HyperdriveTarget0(_config) ERC4626Base(__pool) {}
+        IERC4626 __vault
+    ) HyperdriveTarget0(_config) ERC4626Base(__vault) {}
 
     /// Extras ///
 
@@ -43,27 +43,27 @@ contract ERC4626Target0 is HyperdriveTarget0, ERC4626Base {
             revert IHyperdrive.Unauthorized();
         }
 
-        // Ensure that thet target isn't the base or vault token
+        // Ensure that the target isn't the base or vault token.
         if (
             address(_target) == address(_baseToken) ||
-            address(_target) == address(_pool)
+            address(_target) == address(_vault)
         ) {
             revert IHyperdrive.UnsupportedToken();
         }
 
-        // Get Hyperdrive's balance of the base and pool tokens prior to
+        // Get Hyperdrive's balance of the base and vault tokens prior to
         // sweeping.
         uint256 baseBalance = _baseToken.balanceOf(address(this));
-        uint256 poolBalance = _pool.balanceOf(address(this));
+        uint256 vaultBalance = _vault.balanceOf(address(this));
 
         // Transfer the entire balance of the sweep target to the fee collector.
         uint256 balance = _target.balanceOf(address(this));
         ERC20(address(_target)).safeTransfer(_feeCollector, balance);
 
-        // Ensure that the base and pool balances haven't changed.
+        // Ensure that the base and vault balances haven't changed.
         if (
             _baseToken.balanceOf(address(this)) != baseBalance ||
-            _pool.balanceOf(address(this)) != poolBalance
+            _vault.balanceOf(address(this)) != vaultBalance
         ) {
             revert IHyperdrive.SweepFailed();
         }
@@ -71,9 +71,9 @@ contract ERC4626Target0 is HyperdriveTarget0, ERC4626Base {
 
     /// Getters ///
 
-    /// @notice Gets the 4626 pool.
-    /// @return The 4626 pool.
-    function pool() external view returns (IERC4626) {
-        _revert(abi.encode(_pool));
+    /// @notice Gets the ERC4626 compatible vault.
+    /// @return The ERC4626 compatible vault.
+    function vault() external view returns (IERC4626) {
+        _revert(abi.encode(_vault));
     }
 }

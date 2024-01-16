@@ -19,14 +19,14 @@ abstract contract ERC4626Base is HyperdriveBase {
     using FixedPointMath for uint256;
     using SafeTransferLib for ERC20;
 
-    /// @dev The yield source contract for this hyperdrive.
-    IERC4626 internal immutable _pool;
+    /// @dev The ERC4626 vault that this pool uses as a yield source.
+    IERC4626 internal immutable _vault;
 
     /// @notice Instantiates the ERC4626 Hyperdrive base contract.
-    /// @param __pool The ERC4626 compatible yield source.
-    constructor(IERC4626 __pool) {
+    /// @param __vault The ERC4626 compatible vault.
+    constructor(IERC4626 __vault) {
         // Initialize the pool immutable.
-        _pool = __pool;
+        _vault = __vault;
     }
 
     /// Yield Source ///
@@ -54,8 +54,8 @@ abstract contract ERC4626Base is HyperdriveBase {
             );
 
             // Deposit the base into the yield source.
-            ERC20(address(_baseToken)).safeApprove(address(_pool), _amount);
-            sharesMinted = _pool.deposit(_amount, address(this));
+            ERC20(address(_baseToken)).safeApprove(address(_vault), _amount);
+            sharesMinted = _vault.deposit(_amount, address(this));
         } else {
             // WARN: This logic doesn't account for slippage in the conversion
             // from base to shares. If deposits to the yield source incur
@@ -63,7 +63,7 @@ abstract contract ERC4626Base is HyperdriveBase {
             sharesMinted = _amount;
 
             // Take custody of the deposit in vault shares.
-            ERC20(address(_pool)).safeTransferFrom(
+            ERC20(address(_vault)).safeTransferFrom(
                 msg.sender,
                 address(this),
                 sharesMinted
@@ -95,14 +95,14 @@ abstract contract ERC4626Base is HyperdriveBase {
         if (_options.asBase) {
             // Redeem from the yield source and transfer the
             // resulting base to the destination address.
-            amountWithdrawn = _pool.redeem(
+            amountWithdrawn = _vault.redeem(
                 _shares,
                 _options.destination,
                 address(this)
             );
         } else {
             // Transfer vault shares to the destination.
-            ERC20(address(_pool)).safeTransfer(_options.destination, _shares);
+            ERC20(address(_vault)).safeTransfer(_options.destination, _shares);
             amountWithdrawn = _shares;
         }
     }
@@ -111,7 +111,7 @@ abstract contract ERC4626Base is HyperdriveBase {
     /// @return The current share price.
     /// @dev must remain consistent with the impl inside of the DataProvider
     function _pricePerShare() internal view override returns (uint256) {
-        return _pool.convertToAssets(ONE);
+        return _vault.convertToAssets(ONE);
     }
 
     /// @dev Ensure that ether wasn't sent because ERC4626 vaults don't support

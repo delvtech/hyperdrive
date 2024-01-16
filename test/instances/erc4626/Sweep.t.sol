@@ -139,7 +139,7 @@ contract SweepTest is BaseTest {
         hyperdrive.sweep(IERC20(baseToken));
 
         // Trying to sweep the vault token should fail.
-        address vaultToken = address(hyperdrive.pool());
+        address vaultToken = address(hyperdrive.vault());
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         hyperdrive.sweep(IERC20(vaultToken));
     }
