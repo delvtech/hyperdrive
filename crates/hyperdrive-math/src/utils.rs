@@ -1,7 +1,4 @@
-use ethers::{
-    core::k256::elliptic_curve::consts::U2,
-    types::{I256, U256},
-};
+use ethers::types::{I256, U256};
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
 
