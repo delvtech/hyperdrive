@@ -97,7 +97,7 @@ abstract contract ERC4626Base is HyperdriveBase {
         // amount by converting the shares to base and then back to shares
         // using the vault's share conversion logic.
         uint256 baseAmount = _shares.mulDown(_sharePrice);
-        _shares = _pool.convertToShares(baseAmount);
+        _shares = _vault.convertToShares(baseAmount);
 
         // If we're withdrawing zero shares, short circuit and return 0.
         if (_shares == 0) {

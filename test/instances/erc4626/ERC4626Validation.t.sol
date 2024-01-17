@@ -478,7 +478,9 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         (uint256 maturityTime, ) = openShortERC4626(alice, shortAmount, true);
 
         // The term passes and interest accrues.
-        uint256 startingSharePrice = hyperdrive.getPoolInfo().sharePrice;
+        uint256 startingVaultSharePrice = hyperdrive
+            .getPoolInfo()
+            .vaultSharePrice;
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
         advanceTimeWithYield(POSITION_DURATION, variableRate);
 
@@ -504,8 +506,8 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         // Ensure that the short received the correct amount of base and wasn't
         // overcompensated.
         uint256 expectedBaseProceeds = shortAmount.mulDivDown(
-            hyperdrive.getPoolInfo().sharePrice - startingSharePrice,
-            startingSharePrice
+            hyperdrive.getPoolInfo().vaultSharePrice - startingVaultSharePrice,
+            startingVaultSharePrice
         );
         assertLe(baseProceeds, expectedBaseProceeds + 10);
         assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 1e5);

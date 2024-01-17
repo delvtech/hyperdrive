@@ -593,7 +593,9 @@ contract StETHHyperdriveTest is HyperdriveTest {
         vm.deal(bob, balanceBefore - basePaid);
 
         // The term passes and interest accrues.
-        uint256 startingSharePrice = hyperdrive.getPoolInfo().sharePrice;
+        uint256 startingVaultSharePrice = hyperdrive
+            .getPoolInfo()
+            .vaultSharePrice;
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
         advanceTime(POSITION_DURATION, variableRate);
 
@@ -608,8 +610,8 @@ contract StETHHyperdriveTest is HyperdriveTest {
         // Bob closes his short with stETH as the target asset. Bob's proceeds
         // should be the variable interest that accrued on the shorted bonds.
         uint256 expectedBaseProceeds = shortAmount.mulDivDown(
-            hyperdrive.getPoolInfo().sharePrice - startingSharePrice,
-            startingSharePrice
+            hyperdrive.getPoolInfo().vaultSharePrice - startingVaultSharePrice,
+            startingVaultSharePrice
         );
         uint256 shareProceeds = closeShort(
             bob,

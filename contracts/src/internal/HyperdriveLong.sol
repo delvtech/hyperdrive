@@ -195,7 +195,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         }
 
         // Withdraw the profit to the trader.
-        uint256 proceeds = _withdraw(shareProceeds, sharePrice, _options);
+        uint256 proceeds = _withdraw(shareProceeds, vaultSharePrice, _options);
 
         // Enforce min user outputs.
         // Note: We use the value that is returned from the

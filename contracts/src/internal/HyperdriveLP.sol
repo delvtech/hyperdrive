@@ -265,7 +265,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         uint256 withdrawalSharesRedeemed;
         (proceeds, withdrawalSharesRedeemed) = _redeemWithdrawalSharesInternal(
             _lpShares,
-            sharePrice,
+            vaultSharePrice,
             _minOutputPerShare,
             _options
         );
@@ -281,9 +281,9 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
             _options.destination,
             _lpShares,
             baseProceeds,
-            vaultSharePrice, // vault share price
+            vaultSharePrice,
             uint256(withdrawalShares),
-            _calculateLPSharePrice(vaultSharePrice) // lp share price
+            _calculateLPSharePrice(vaultSharePrice)
         );
 
         return (proceeds, withdrawalShares);
@@ -320,7 +320,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         // Redeem as many of the withdrawal shares as possible.
         (proceeds, withdrawalSharesRedeemed) = _redeemWithdrawalSharesInternal(
             _withdrawalShares,
-            sharePrice,
+            vaultSharePrice,
             _minOutputPerShare,
             _options
         );
@@ -333,9 +333,9 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         );
         emit RedeemWithdrawalShares(
             _options.destination,
-            withdrawalSharesRedeemed, // withdrawal shares
+            withdrawalSharesRedeemed,
             baseProceeds,
-            vaultSharePrice // vault share price
+            vaultSharePrice
         );
 
         return (proceeds, withdrawalSharesRedeemed);
