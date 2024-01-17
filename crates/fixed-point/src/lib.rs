@@ -290,7 +290,7 @@ impl FixedPoint {
         r
     }
 
-    fn ln(mut x: I256) -> I256 {
+    pub fn ln(mut x: I256) -> I256 {
         if x <= I256::zero() {
             panic!("ln of negative number or zero");
         }

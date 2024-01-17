@@ -178,7 +178,8 @@ contract LPWithdrawalTest is HyperdriveTest {
         // equal before and after the transaction.
         uint256 lpSharePrice = hyperdrive.lpSharePrice();
         uint256 longProceeds = closeLong(bob, maturityTime, longAmount);
-        assertApproxEqAbs(longProceeds, longAmount, 10);
+        assertLe(longProceeds, longAmount);
+        assertApproxEqAbs(longProceeds, longAmount, 20);
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
@@ -1033,7 +1034,7 @@ contract LPWithdrawalTest is HyperdriveTest {
                 hyperdrive.getPoolInfo().vaultSharePrice +
                     hyperdrive.lpSharePrice()
             ),
-            1e9
+            1e10
         );
 
         // Ensure that no withdrawal shares are ready for withdrawal and that

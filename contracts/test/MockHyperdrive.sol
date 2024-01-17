@@ -43,16 +43,21 @@ abstract contract MockHyperdriveBase is HyperdriveBase {
         uint256 amount,
         IHyperdrive.Options calldata options
     ) internal override returns (uint256, uint256) {
-        // deposit input is specified by options and outputs in shares
-        uint256 baseAmount = options.asBase
-            ? amount
-            : amount.mulDown(_pricePerVaultShare());
-        // Transfer the specified amount of funds from the trader. If the trader
-        // overpaid, we return the excess amount.
+        // Calculate the base amount of the deposit.
         uint256 assets;
-        bool success = true;
         if (address(_baseToken) == ETH) {
             assets = address(this).balance;
+        } else {
+            assets = _baseToken.balanceOf(address(this));
+        }
+        uint256 baseAmount = options.asBase
+            ? amount
+            : amount.mulDivDown(assets, totalShares);
+
+        // Transfer the specified amount of funds from the trader. If the trader
+        // overpaid, we return the excess amount.
+        bool success = true;
+        if (address(_baseToken) == ETH) {
             if (msg.value < baseAmount) {
                 revert IHyperdrive.TransferFailed();
             }
@@ -62,7 +67,6 @@ abstract contract MockHyperdriveBase is HyperdriveBase {
                 }("");
             }
         } else {
-            assets = _baseToken.balanceOf(address(this));
             success = _baseToken.transferFrom(
                 msg.sender,
                 address(this),
@@ -79,7 +83,7 @@ abstract contract MockHyperdriveBase is HyperdriveBase {
             totalShares = amount.divDown(_initialVaultSharePrice);
             return (totalShares, _initialVaultSharePrice);
         } else {
-            uint256 newShares = totalShares.mulDivDown(amount, assets);
+            uint256 newShares = amount.mulDivDown(totalShares, assets);
             totalShares += newShares;
             return (newShares, _pricePerVaultShare());
         }
@@ -87,15 +91,9 @@ abstract contract MockHyperdriveBase is HyperdriveBase {
 
     function _withdraw(
         uint256 shares,
+        uint256 sharePrice,
         IHyperdrive.Options calldata options
     ) internal override returns (uint256 withdrawValue) {
-        // withdraw input is always in shares, but it outputs in base if
-        // options.asBase is true
-
-        // If the shares to withdraw is greater than the total shares, we clamp
-        // to the total shares.
-        shares = shares > totalShares ? totalShares : shares;
-
         // Get the total amount of assets held in the pool.
         uint256 assets;
         if (address(_baseToken) == ETH) {
@@ -104,9 +102,19 @@ abstract contract MockHyperdriveBase is HyperdriveBase {
             assets = _baseToken.balanceOf(address(this));
         }
 
+        // Correct for any error that crept into the calculation of the share
+        // amount by converting the shares to base and then back to shares
+        // using the vault's share conversion logic.
+        uint256 baseAmount = shares.mulDown(sharePrice);
+        shares = baseAmount.mulDivDown(totalShares, assets);
+
+        // If the shares to withdraw is greater than the total shares, we clamp
+        // to the total shares.
+        shares = shares > totalShares ? totalShares : shares;
+
         // Calculate the base proceeds.
         withdrawValue = totalShares != 0
-            ? shares.mulDown(assets.divDown(totalShares))
+            ? shares.mulDivDown(assets, totalShares)
             : 0;
 
         // Transfer the base proceeds to the destination and burn the shares.

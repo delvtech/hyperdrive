@@ -113,7 +113,7 @@ contract DevnetMigration is Script {
             // lido configuration
             lidoStartingRate: vm.envOr("LIDO_STARTING_RATE", uint256(0.035e18)),
             // factory configuration
-            factoryCurveFee: vm.envOr("FACTORY_CURVE_FEE", uint256(0.1e18)),
+            factoryCurveFee: vm.envOr("FACTORY_CURVE_FEE", uint256(0.01e18)),
             factoryFlatFee: vm.envOr("FACTORY_FLAT_FEE", uint256(0.0005e18)),
             factoryGovernanceLPFee: vm.envOr(
                 "FACTORY_GOVERNANCE_LP_FEE",
@@ -125,7 +125,7 @@ contract DevnetMigration is Script {
             ),
             factoryMaxCurveFee: vm.envOr(
                 "FACTORY_MAX_CURVE_FEE",
-                uint256(0.3e18)
+                uint256(0.03e18)
             ),
             factoryMaxFlatFee: vm.envOr(
                 "FACTORY_MAX_FLAT_FEE",

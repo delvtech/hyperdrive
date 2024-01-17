@@ -49,6 +49,6 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         bytes memory // unused extra data
     ) internal view override returns (uint256) {
         // Return stETH's current vault share price.
-        return lido.getTotalPooledEther().divDown(lido.getTotalShares());
+        return lido.getPooledEthByShares(ONE);
     }
 }

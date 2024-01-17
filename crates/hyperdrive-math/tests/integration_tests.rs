@@ -2,7 +2,7 @@ use ethers::types::U256;
 use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
-use hyperdrive_math::{calculate_bonds_given_shares_and_rate, get_effective_share_reserves};
+use hyperdrive_math::{calculate_initial_bond_reserves, get_effective_share_reserves};
 use hyperdrive_wrappers::wrappers::i_hyperdrive::Checkpoint;
 use rand::{thread_rng, Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
@@ -279,7 +279,7 @@ async fn test_calculate_bonds_given_shares_and_rate() -> Result<()> {
         state.info.share_reserves.into(),
         state.info.share_adjustment.into(),
     );
-    let rust_reserves = calculate_bonds_given_shares_and_rate(
+    let rust_reserves = calculate_initial_bond_reserves(
         effective_share_reserves,
         state.config.initial_vault_share_price.into(),
         state.get_spot_rate(),

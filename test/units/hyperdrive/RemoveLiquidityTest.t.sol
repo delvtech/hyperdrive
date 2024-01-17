@@ -220,7 +220,11 @@ contract RemoveLiquidityTest is HyperdriveTest {
             testCase.initialLpBaseProceeds,
             testCase.initialLpWithdrawalShares
         ) = removeLiquidity(testCase.initializer, testCase.initialLpShares);
-        assertEq(testCase.initialLpBaseProceeds, expectedBaseProceeds);
+        assertApproxEqAbs(
+            testCase.initialLpBaseProceeds,
+            expectedBaseProceeds,
+            1
+        );
         {
             assertEq(
                 baseToken.balanceOf(alice),

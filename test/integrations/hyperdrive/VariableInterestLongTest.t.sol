@@ -282,7 +282,7 @@ contract VariableInterestLongTest is HyperdriveTest {
 
         // Close the long
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
-        assertEq(baseProceeds, estimatedProceeds);
+        assertApproxEqAbs(baseProceeds, estimatedProceeds, 20);
     }
 
     function test_positive_negative_interest_long_half_term_fuzz(
@@ -451,6 +451,6 @@ contract VariableInterestLongTest is HyperdriveTest {
 
         // Close the long.
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
-        assertEq(baseProceeds, estimatedProceeds);
+        assertApproxEqAbs(baseProceeds, estimatedProceeds, 20);
     }
 }

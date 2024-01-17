@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { ILido } from "../../interfaces/ILido.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
-import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title StethHyperdrive
@@ -95,6 +95,7 @@ abstract contract StETHBase is HyperdriveBase {
     /// @notice Processes a trader's withdrawal. This yield source only supports
     ///         withdrawals in stETH shares.
     /// @param _shares The amount of shares to withdraw from Hyperdrive.
+    /// @param _sharePrice The share price.
     /// @param _options The options that configure the withdrawal. The options
     ///        used in this implementation are "destination" which specifies the
     ///        recipient of the withdrawal and "asBase" which determines
@@ -105,6 +106,7 @@ abstract contract StETHBase is HyperdriveBase {
     /// @return The amount of shares withdrawn from the yield source.
     function _withdraw(
         uint256 _shares,
+        uint256 _sharePrice,
         IHyperdrive.Options calldata _options
     ) internal override returns (uint256) {
         // stETH withdrawals aren't necessarily instantaneous. Users that want
@@ -112,6 +114,12 @@ abstract contract StETHBase is HyperdriveBase {
         if (_options.asBase) {
             revert IHyperdrive.UnsupportedToken();
         }
+
+        // Correct for any error that crept into the calculation of the share
+        // amount by converting the shares to base and then back to shares
+        // using the vault's share conversion logic.
+        uint256 baseAmount = _shares.mulDown(_sharePrice);
+        _shares = _lido.getSharesByPooledEth(baseAmount);
 
         // If we're withdrawing zero shares, short circuit and return 0.
         if (_shares == 0) {
@@ -127,14 +135,13 @@ abstract contract StETHBase is HyperdriveBase {
     /// @dev Returns the current vault share price. We simply use Lido's
     ///      internal share price.
     /// @return price The current vault share price.
-    /// @dev must remain consistent with the impl inside of the DataProvider
     function _pricePerVaultShare()
         internal
         view
         override
         returns (uint256 price)
     {
-        return _lido.getTotalPooledEther().divDown(_lido.getTotalShares());
+        return _lido.getPooledEthByShares(ONE);
     }
 
     /// @dev We override the message value check since this integration is

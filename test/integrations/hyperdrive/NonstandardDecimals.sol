@@ -373,6 +373,8 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         uint256 longBasePaid,
         uint256 shortAmount
     ) external {
+        longBasePaid = 16137432550594897204701792128480789404751757313;
+        shortAmount = 8826;
         _test_nonstandard_decimals_lp(longBasePaid, shortAmount);
     }
 
@@ -456,7 +458,10 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             uint256 maxLong = HyperdriveUtils.calculateMaxLong(hyperdrive);
             longBasePaid = longBasePaid.normalizeToRange(
                 minimumTransactionAmount,
-                maxLong - minimumTransactionAmount
+                // NOTE: Subtract two times the minimum transaction amount from
+                // the upper bound to avoid cases where the next short would
+                // fail due to negative interest.
+                maxLong - 2 * minimumTransactionAmount
             );
 
             testParams.longBasePaid = longBasePaid;

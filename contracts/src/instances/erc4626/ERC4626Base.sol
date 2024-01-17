@@ -80,6 +80,7 @@ abstract contract ERC4626Base is HyperdriveBase {
     ///         If the withdrawal is settled in base, the base will need to be
     ///         withdrawn from the yield source.
     /// @param _shares The amount of shares to withdraw from Hyperdrive.
+    /// @param _sharePrice The share price.
     /// @param _options The options that configure the withdrawal. The options
     ///        used in this implementation are "destination" which specifies the
     ///        recipient of the withdrawal and "asBase" which determines
@@ -89,13 +90,22 @@ abstract contract ERC4626Base is HyperdriveBase {
     ///         option.
     function _withdraw(
         uint256 _shares,
+        uint256 _sharePrice,
         IHyperdrive.Options calldata _options
     ) internal override returns (uint256 amountWithdrawn) {
+        // Correct for any error that crept into the calculation of the share
+        // amount by converting the shares to base and then back to shares
+        // using the vault's share conversion logic.
+        uint256 baseAmount = _shares.mulDown(_sharePrice);
+        _shares = _pool.convertToShares(baseAmount);
+
         // If we're withdrawing zero shares, short circuit and return 0.
         if (_shares == 0) {
             return 0;
         }
 
+        // If we're withdrawing in base, we redeem the shares from the yield
+        // source, and we transfer base to the destination.
         if (_options.asBase) {
             // Redeem from the yield source and transfer the
             // resulting base to the destination address.
@@ -104,7 +114,10 @@ abstract contract ERC4626Base is HyperdriveBase {
                 _options.destination,
                 address(this)
             );
-        } else {
+        }
+        // Otherwise, we're withdrawing in vault shares, and we transfer vault
+        // shares to the destination.
+        else {
             // Transfer vault shares to the destination.
             ERC20(address(_vault)).safeTransfer(_options.destination, _shares);
             amountWithdrawn = _shares;
