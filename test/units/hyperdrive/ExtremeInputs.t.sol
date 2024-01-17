@@ -421,11 +421,11 @@ contract ExtremeInputs is HyperdriveTest {
             deploy(deployer, config);
             initialize(alice, fixedRate, contribution);
 
-            // Note: Subtracting the minimum transaction amount from the max long and short so that there is room
-            // for another trade above the minimum transaction amount threshold
+            // Note: Only using 99% of the max long amount to leave room for
+            // another trade above the minimum transaction amount threshold.
             uint256 longAmount = _longAmount.normalizeToRange(
                 minimumTransactionAmount,
-                hyperdrive.calculateMaxLong() - minimumTransactionAmount
+                hyperdrive.calculateMaxLong().mulDown(0.99e18)
             );
             uint256 shortAmount = _shortAmount.normalizeToRange(
                 minimumTransactionAmount,
@@ -476,9 +476,12 @@ contract ExtremeInputs is HyperdriveTest {
             config.minimumTransactionAmount = minimumTransactionAmount;
             deploy(deployer, config);
             initialize(alice, fixedRate, contribution);
+
+            // Note: Only using 99% of the max long amount to leave room for
+            // another trade above the minimum transaction amount threshold.
             uint256 longAmount = _longAmount.normalizeToRange(
                 minimumTransactionAmount,
-                hyperdrive.calculateMaxLong() - minimumTransactionAmount
+                hyperdrive.calculateMaxLong().mulDown(0.99e18)
             );
             uint256 shortAmount = _shortAmount.normalizeToRange(
                 minimumTransactionAmount,

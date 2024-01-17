@@ -196,7 +196,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Withdraw the profit to the trader. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
         // on the face value of the bonds.
-        uint256 proceeds = _withdraw(shareProceeds, _options);
+        uint256 proceeds = _withdraw(shareProceeds, sharePrice, _options);
 
         // Enforce the user's minimum output.
         // Note: We use the value that is returned from the

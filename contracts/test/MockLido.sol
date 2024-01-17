@@ -113,6 +113,19 @@ contract MockLido is MultiRolesAuthority, ERC20Mintable {
         return tokenAmount;
     }
 
+    function getSharesByPooledEth(
+        uint256 _ethAmount
+    ) external view returns (uint256) {
+        return _ethAmount.mulDivDown(getTotalShares(), getTotalPooledEther());
+    }
+
+    function getPooledEthByShares(
+        uint256 _sharesAmount
+    ) external view returns (uint256) {
+        return
+            _sharesAmount.mulDivDown(getTotalPooledEther(), getTotalShares());
+    }
+
     function getBufferedEther() external pure returns (uint256) {
         return 0;
     }
