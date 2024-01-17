@@ -166,7 +166,7 @@ contract MockHyperdriveMath {
     function calculateTimeStretch(
         uint256 apr,
         uint256 positionDuration
-    ) internal pure returns (uint256) {
+    ) external pure returns (uint256) {
         uint256 result = HyperdriveUtils.calculateTimeStretch(
             apr,
             positionDuration
