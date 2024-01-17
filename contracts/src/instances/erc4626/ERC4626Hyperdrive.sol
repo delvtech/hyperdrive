@@ -44,7 +44,7 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
         // WARN: ERC4626 implementations should be checked that if they use an
         // asset with decimals less than 18 that the preview deposit is scale
         // invariant. EG - because this line uses a very large query to load
-        // price for USDC if the price per share changes based on size of
+        // price for USDC if the price per vault share changes based on size of
         // deposit then this line will read an incorrect and possibly dangerous
         // price.
         if (_config.initialVaultSharePrice != _pricePerVaultShare()) {

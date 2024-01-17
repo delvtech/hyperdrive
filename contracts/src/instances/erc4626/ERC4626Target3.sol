@@ -17,9 +17,9 @@ import { ERC4626Base } from "./ERC4626Base.sol";
 contract ERC4626Target3 is HyperdriveTarget3, ERC4626Base {
     /// @notice Initializes the target3 contract.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param __pool The ERC4626 pool.
+    /// @param __vault The ERC4626 compatible vault.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        IERC4626 __pool
-    ) HyperdriveTarget3(_config) ERC4626Base(__pool) {}
+        IERC4626 __vault
+    ) HyperdriveTarget3(_config) ERC4626Base(__vault) {}
 }

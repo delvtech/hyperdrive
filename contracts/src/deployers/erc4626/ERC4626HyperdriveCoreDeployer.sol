@@ -30,7 +30,7 @@ contract ERC4626HyperdriveCoreDeployer is IHyperdriveCoreDeployer {
         address target3
     ) external override returns (address) {
         // Deploy the ERC4626Hyperdrive instance.
-        address pool = abi.decode(_extraData, (address));
+        address vault = abi.decode(_extraData, (address));
         return (
             address(
                 new ERC4626Hyperdrive(
@@ -39,7 +39,7 @@ contract ERC4626HyperdriveCoreDeployer is IHyperdriveCoreDeployer {
                     target1,
                     target2,
                     target3,
-                    IERC4626(pool)
+                    IERC4626(vault)
                 )
             )
         );

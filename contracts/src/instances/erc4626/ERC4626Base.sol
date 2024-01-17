@@ -112,7 +112,7 @@ abstract contract ERC4626Base is HyperdriveBase {
     }
 
     /// @notice Loads the vault share price from the yield source.
-    /// @return The current share price.
+    /// @return The current vault share price.
     /// @dev must remain consistent with the impl inside of the DataProvider
     function _pricePerVaultShare() internal view override returns (uint256) {
         return _vault.convertToAssets(ONE);
