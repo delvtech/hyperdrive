@@ -35,9 +35,10 @@ contract MockERC4626Hyperdrive is ERC4626Hyperdrive {
 
     function withdraw(
         uint256 _shares,
+        uint256 _sharePrice,
         IHyperdrive.Options calldata _options
     ) public returns (uint256 amountWithdrawn) {
-        return _withdraw(_shares, _options);
+        return _withdraw(_shares, _sharePrice, _options);
     }
 
     /// @notice Loads the share price from the yield source
