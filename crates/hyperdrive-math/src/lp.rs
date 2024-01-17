@@ -80,7 +80,8 @@ impl State {
                     let max_share_payment = self.calculate_max_buy_shares_in();
                     I256::from(
                         max_share_payment
-                            + (_net_curve_position - max_curve_trade).div_down(self.vault_share_price()),
+                            + (_net_curve_position - max_curve_trade)
+                                .div_down(self.vault_share_price()),
                     )
                 }
             }

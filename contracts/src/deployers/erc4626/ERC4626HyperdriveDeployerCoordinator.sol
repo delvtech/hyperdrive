@@ -37,11 +37,11 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
     /// @param _extraData The extra data passed to the child deployers.
     /// @return The initial vault share price of the Hyperdrive pool.
-    function _getInitialSharePrice(
+    function _getInitialVaultSharePrice(
         bytes memory _extraData
     ) internal view override returns (uint256) {
         // Return the vault's current share price.
-        IERC4626 pool = IERC4626(abi.decode(_extraData, (address)));
-        return pool.convertToAssets(ONE);
+        IERC4626 vault = IERC4626(abi.decode(_extraData, (address)));
+        return vault.convertToAssets(ONE);
     }
 }

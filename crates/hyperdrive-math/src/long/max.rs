@@ -173,7 +173,9 @@ impl State {
         //           )
         //       ) ** (1 / (1 - t_s))
         let inner = (self.k_down()
-            / (self.vault_share_price().div_up(self.initial_vault_share_price())
+            / (self
+                .vault_share_price()
+                .div_up(self.initial_vault_share_price())
                 + ((fixed!(1e18)
                     + self
                         .curve_fee()
@@ -412,16 +414,18 @@ impl State {
     /// $$
     fn long_amount_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
         let share_amount = base_amount / self.vault_share_price();
-        let inner = self.initial_vault_share_price() * (self.effective_share_reserves() + share_amount);
+        let inner =
+            self.initial_vault_share_price() * (self.effective_share_reserves() + share_amount);
         let mut derivative = fixed!(1e18) / (inner).pow(self.time_stretch());
 
         // It's possible that k is slightly larger than the rhs in the inner
         // calculation. If this happens, we are close to the root, and we short
         // circuit.
         let k = self.k_down();
-        let rhs = self
-            .vault_share_price()
-            .mul_div_down(inner.pow(self.time_stretch()), self.initial_vault_share_price());
+        let rhs = self.vault_share_price().mul_div_down(
+            inner.pow(self.time_stretch()),
+            self.initial_vault_share_price(),
+        );
         if k < rhs {
             return None;
         }

@@ -131,10 +131,10 @@ library HyperdriveMath {
     ///               = (1 + flat_fee) * dy - c * dz + (c1 / c0) * dy - dy
     ///               = (c1 / c0 + flat_fee) * dy - c * dz
     ///
-    ///      We convert the proceeds to shares by dividing by the current share
-    ///      price. In the event that the interest is negative and outweighs the
-    ///      trading profits and margin released, the short's proceeds are
-    ///      marked to zero.
+    ///      We convert the proceeds to shares by dividing by the current vault
+    ///      share price. In the event that the interest is negative and
+    ///      outweighs the trading profits and margin released, the short's
+    ///      proceeds are marked to zero.
     /// @param _bondAmount The amount of bonds underlying the closed short.
     /// @param _shareAmount The amount of shares that it costs to close the
     ///                     short.
@@ -225,7 +225,7 @@ library HyperdriveMath {
     /// @param _bondReserves The pool's bond reserves.
     /// @param _shareAmount The amount of shares the user is depositing.
     /// @param _timeStretch The time stretch parameter.
-    /// @param _vaultSharePrice The share price.
+    /// @param _vaultSharePrice The vault share price.
     /// @param _initialVaultSharePrice The initial vault share price.
     /// @return bondReservesDelta The bonds paid by the reserves in the trade.
     function calculateOpenLong(
@@ -262,8 +262,9 @@ library HyperdriveMath {
     /// @param _normalizedTimeRemaining The normalized time remaining of the
     ///        position.
     /// @param _timeStretch The time stretch parameter.
-    /// @param _vaultSharePrice The share price.
-    /// @param _initialVaultSharePrice The share price when the pool was deployed.
+    /// @param _vaultSharePrice The vault share price.
+    /// @param _initialVaultSharePrice The vault share price when the pool was
+    ///        deployed.
     /// @return shareCurveDelta The shares paid by the reserves in the trade.
     /// @return bondCurveDelta The bonds paid to the reserves in the trade.
     /// @return shareProceeds The shares that the user will receive.
@@ -288,7 +289,7 @@ library HyperdriveMath {
         // matured and timeRemaining * amountIn of the bonds to be newly
         // minted. The fully matured bonds are redeemed one-to-one to base
         // (our result is given in shares, so we divide the one-to-one
-        // redemption by the share price) and the newly minted bonds are
+        // redemption by the vault share price) and the newly minted bonds are
         // traded on a YieldSpace curve configured to `timeRemaining = 1`.
         shareProceeds = _amountIn.mulDivDown(
             ONE - _normalizedTimeRemaining,
@@ -323,7 +324,7 @@ library HyperdriveMath {
     /// @param _bondReserves The pool's bonds reserves.
     /// @param _amountIn The amount of bonds the user is providing.
     /// @param _timeStretch The time stretch parameter.
-    /// @param _vaultSharePrice The share price.
+    /// @param _vaultSharePrice The vault share price.
     /// @param _initialVaultSharePrice The initial vault share price.
     /// @return The shares paid by the reserves in the trade.
     function calculateOpenShort(
@@ -359,7 +360,7 @@ library HyperdriveMath {
     /// @param _normalizedTimeRemaining The amount of time remaining until
     ///        maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
-    /// @param _vaultSharePrice The share price.
+    /// @param _vaultSharePrice The vault share price.
     /// @param _initialVaultSharePrice The initial vault share price.
     /// @return shareCurveDelta The shares paid to the reserves in the trade.
     /// @return bondCurveDelta The bonds paid by the reserves in the trade.
@@ -386,7 +387,7 @@ library HyperdriveMath {
         // purchased to be fully matured and `timeRemaining * amountOut of the
         // bonds to be newly minted. The fully matured bonds are redeemed
         // one-to-one to base (our result is given in shares, so we divide
-        // the one-to-one redemption by the share price) and the newly
+        // the one-to-one redemption by the vault share price) and the newly
         // minted bonds are traded on a YieldSpace curve configured to
         // timeRemaining = 1.
         sharePayment = _amountOut.mulDivDown(

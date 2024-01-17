@@ -420,9 +420,10 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // The trader will need to deposit capital to pay for the fixed rate,
         // the curve fee, the flat fee, and any back-paid interest that will be
         // received back upon closing the trade. If negative interest has
-        // accrued during the current checkpoint, we set close share price to
-        // equal the open share price. This ensures that shorts don't benefit
-        // from negative interest that accrued during the current checkpoint.
+        // accrued during the current checkpoint, we set the close vault share
+        // price to equal the open vault share price. This ensures that shorts
+        // don't benefit from negative interest that accrued during the current
+        // checkpoint.
         baseDeposit = HyperdriveMath
             .calculateShortProceeds(
                 _bondAmount,

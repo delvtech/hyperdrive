@@ -124,8 +124,13 @@ pub async fn test_integration_get_max_short() -> Result<()> {
         let checkpoint_exposure = alice
             .get_checkpoint_exposure(state.to_checkpoint(alice.now().await?))
             .await?;
-        let global_max_short =
-            state.get_max_short(U256::MAX, open_vault_share_price, checkpoint_exposure, None, None);
+        let global_max_short = state.get_max_short(
+            U256::MAX,
+            open_vault_share_price,
+            checkpoint_exposure,
+            None,
+            None,
+        );
         let budget = bob.base();
         let slippage_tolerance = fixed!(0.001e18);
         let max_short = bob.get_max_short(Some(slippage_tolerance)).await?;

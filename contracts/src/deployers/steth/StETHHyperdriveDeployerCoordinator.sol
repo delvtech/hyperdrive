@@ -45,7 +45,7 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
     /// @return The initial vault share price of the Hyperdrive pool.
-    function _getInitialSharePrice(
+    function _getInitialVaultSharePrice(
         bytes memory // unused extra data
     ) internal view override returns (uint256) {
         // Return stETH's current vault share price.

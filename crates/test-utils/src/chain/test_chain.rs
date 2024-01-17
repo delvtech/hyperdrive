@@ -422,11 +422,13 @@ impl TestChain {
             // that was passed on deployment. This is necessary because the
             // ERC4626Hyperdrive instance verifies that the initial vault share price
             // is equal to the `_pricePerVaultShare`.
-            let etching_vault_template =
-                EtchingVault::deploy(client.clone(), (addresses.base, config.initial_vault_share_price))?
-                    .gas_price(DEFAULT_GAS_PRICE)
-                    .send()
-                    .await?;
+            let etching_vault_template = EtchingVault::deploy(
+                client.clone(),
+                (addresses.base, config.initial_vault_share_price),
+            )?
+            .gas_price(DEFAULT_GAS_PRICE)
+            .send()
+            .await?;
             let code = provider
                 .get_code(etching_vault_template.address(), None)
                 .await?;

@@ -55,12 +55,13 @@ abstract contract HyperdriveCheckpoint is
                 ;
                 time += _checkpointDuration
             ) {
-                uint256 closestSharePrice = _checkpoints[time].vaultSharePrice;
+                uint256 closestVaultSharePrice = _checkpoints[time]
+                    .vaultSharePrice;
                 if (time == latestCheckpoint) {
-                    closestSharePrice = _pricePerVaultShare();
+                    closestVaultSharePrice = _pricePerVaultShare();
                 }
-                if (closestSharePrice != 0) {
-                    _applyCheckpoint(_checkpointTime, closestSharePrice);
+                if (closestVaultSharePrice != 0) {
+                    _applyCheckpoint(_checkpointTime, closestVaultSharePrice);
                     break;
                 }
             }

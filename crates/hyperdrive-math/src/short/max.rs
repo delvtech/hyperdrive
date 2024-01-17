@@ -80,11 +80,11 @@ impl State {
         // short amount.
         let mut max_bond_amount =
             self.absolute_max_short(spot_price, checkpoint_exposure, maybe_max_iterations);
-        let deposit = match self.calculate_open_short(max_bond_amount, spot_price, open_vault_share_price)
-        {
-            Ok(d) => d,
-            Err(_) => return max_bond_amount,
-        };
+        let deposit =
+            match self.calculate_open_short(max_bond_amount, spot_price, open_vault_share_price) {
+                Ok(d) => d,
+                Err(_) => return max_bond_amount,
+            };
         if deposit <= budget {
             return max_bond_amount;
         }
@@ -116,13 +116,20 @@ impl State {
             maybe_conservative_price,
         );
         for _ in 0..maybe_max_iterations.unwrap_or(7) {
-            let deposit =
-                match self.calculate_open_short(max_bond_amount, spot_price, open_vault_share_price) {
-                    Ok(d) => d,
-                    Err(_) => return max_bond_amount,
-                };
+            let deposit = match self.calculate_open_short(
+                max_bond_amount,
+                spot_price,
+                open_vault_share_price,
+            ) {
+                Ok(d) => d,
+                Err(_) => return max_bond_amount,
+            };
             max_bond_amount += (budget - deposit)
-                / self.short_deposit_derivative(max_bond_amount, spot_price, open_vault_share_price);
+                / self.short_deposit_derivative(
+                    max_bond_amount,
+                    spot_price,
+                    open_vault_share_price,
+                );
         }
 
         // Verify that the max short satisfies the budget.
@@ -177,7 +184,9 @@ impl State {
                     + self.flat_fee()
                     + self.curve_fee() * (fixed!(1e18) - spot_price)
                     - conservative_price);
-            if let Ok(deposit) = self.calculate_open_short(guess, spot_price, open_vault_share_price) {
+            if let Ok(deposit) =
+                self.calculate_open_short(guess, spot_price, open_vault_share_price)
+            {
                 if budget >= deposit {
                     return guess;
                 }
@@ -639,8 +648,13 @@ mod tests {
             let checkpoint_exposure = alice
                 .get_checkpoint_exposure(state.to_checkpoint(alice.now().await?))
                 .await?;
-            let global_max_short =
-                state.get_max_short(U256::MAX, open_vault_share_price, checkpoint_exposure, None, None);
+            let global_max_short = state.get_max_short(
+                U256::MAX,
+                open_vault_share_price,
+                checkpoint_exposure,
+                None,
+                None,
+            );
 
             // Bob opens a max short position. We allow for a very small amount
             // of slippage to account for interest accrual between the time the

@@ -43,7 +43,9 @@ impl State {
         normalized_time_remaining: FixedPoint,
     ) -> FixedPoint {
         // flat fee = (d_y * (1 - t) * phi_flat) / c
-        bond_amount.mul_div_down(fixed!(1e18) - normalized_time_remaining, self.vault_share_price())
-            * self.flat_fee()
+        bond_amount.mul_div_down(
+            fixed!(1e18) - normalized_time_remaining,
+            self.vault_share_price(),
+        ) * self.flat_fee()
     }
 }

@@ -38,7 +38,7 @@ library YieldSpaceMath {
     /// @param y The bond reserves.
     /// @param dz The amount of shares paid to the pool.
     /// @param t The time elapsed since the term's start.
-    /// @param c The share price.
+    /// @param c The vault share price.
     /// @param mu The initial vault share price.
     /// @return The amount of bonds the trader receives.
     function calculateBondsOutGivenSharesInDown(
@@ -84,7 +84,7 @@ library YieldSpaceMath {
     /// @param y The bond reserves.
     /// @param dy The amount of bonds paid to the trader.
     /// @param t The time elapsed since the term's start.
-    /// @param c The share price.
+    /// @param c The vault share price.
     /// @param mu The initial vault share price.
     /// @return The amount of shares the trader pays.
     function calculateSharesInGivenBondsOutUp(
@@ -128,7 +128,7 @@ library YieldSpaceMath {
     /// @param y The bond reserves.
     /// @param dy The amount of bonds paid to the trader.
     /// @param t The time elapsed since the term's start.
-    /// @param c The share price.
+    /// @param c The vault share price.
     /// @param mu The initial vault share price.
     /// @return The amount of shares the user pays.
     function calculateSharesInGivenBondsOutDown(
@@ -173,7 +173,7 @@ library YieldSpaceMath {
     /// @param y The bond reserves.
     /// @param dy The amount of bonds paid to the pool.
     /// @param t The time elapsed since the term's start.
-    /// @param c The share price.
+    /// @param c The vault share price.
     /// @param mu The initial vault share price.
     /// @return result The amount of shares the user receives.
     function calculateSharesOutGivenBondsInDown(
@@ -206,7 +206,7 @@ library YieldSpaceMath {
     /// @param y The bond reserves.
     /// @param dy The amount of bonds paid to the pool.
     /// @param t The time elapsed since the term's start.
-    /// @param c The share price.
+    /// @param c The vault share price.
     /// @param mu The initial vault share price.
     /// @return result The amount of shares the user receives
     /// @return success A flag indicating if the calculation succeeded.
@@ -257,7 +257,7 @@ library YieldSpaceMath {
     /// @param ze The effective share reserves.
     /// @param y The bond reserves.
     /// @param t The time elapsed since the term's start.
-    /// @param c The share price.
+    /// @param c The vault share price.
     /// @param mu The initial vault share price.
     /// @return The share payment to purchase the maximum amount of bonds.
     function calculateMaxBuySharesIn(
@@ -298,7 +298,7 @@ library YieldSpaceMath {
     /// @param ze The effective share reserves.
     /// @param y The bond reserves.
     /// @param t The time elapsed since the term's start.
-    /// @param c The share price.
+    /// @param c The vault share price.
     /// @param mu The initial vault share price.
     /// @return The maximum amount of bonds that can be purchased.
     function calculateMaxBuyBondsOut(
@@ -334,7 +334,7 @@ library YieldSpaceMath {
     /// @param y The bond reserves.
     /// @param zMin The minimum share reserves.
     /// @param t The time elapsed since the term's start.
-    /// @param c The share price.
+    /// @param c The vault share price.
     /// @param mu The initial vault share price.
     /// @return The maximum amount of bonds that can be sold.
     /// @return A flag indicating whether or not the calculation was successful.
@@ -391,7 +391,7 @@ library YieldSpaceMath {
     /// @param ze The effective share reserves.
     /// @param y The bond reserves.
     /// @param t The time elapsed since the term's start.
-    /// @param c The share price.
+    /// @param c The vault share price.
     /// @param mu The initial vault share price.
     /// @return The YieldSpace invariant, k.
     function kUp(
@@ -413,7 +413,7 @@ library YieldSpaceMath {
     /// @param ze The effective share reserves.
     /// @param y The bond reserves.
     /// @param t The time elapsed since the term's start.
-    /// @param c The share price.
+    /// @param c The vault share price.
     /// @param mu The initial vault share price.
     /// @return The modified YieldSpace Constant.
     function kDown(

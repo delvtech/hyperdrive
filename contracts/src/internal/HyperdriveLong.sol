@@ -23,9 +23,10 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @dev Opens a long position.
     /// @param _amount The amount to open a long with.
     /// @param _minOutput The minimum number of bonds to receive.
-    /// @param _minVaultSharePrice The minimum share price at which to open the long.
-    ///        This allows traders to protect themselves from opening a long in
-    ///        a checkpoint where negative interest has accrued.
+    /// @param _minVaultSharePrice The minimum vault share price at which to
+    ///        open the long. This allows traders to protect themselves from
+    ///        opening a long in a checkpoint where negative interest has
+    ///        accrued.
     /// @param _options The options that configure how the trade is settled.
     /// @return maturityTime The maturity time of the bonds.
     /// @return bondProceeds The amount of bonds the user received
@@ -49,12 +50,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _options
         );
 
-        // Enforce min user inputs and min share price
-        // Note: We use the value that is returned from the
-        // deposit to check against the min transaction
-        // amount because in the event of slippage on the
-        // deposit, we want the inputs to the state updates
-        // to respect the min transaction amount requirements.
+        // Enforce the minimum user outputs and the mininum vault share price.
+        //
+        // NOTE: We use the value that is returned from the deposit to check
+        // against the minimum transaction amount because in the event of
+        // slippage on the deposit, we want the inputs to the state updates to
+        // respect the minimum transaction amount requirements.
         uint256 baseDeposited = sharesDeposited.mulDown(vaultSharePrice);
         if (baseDeposited < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
@@ -81,7 +82,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             totalGovernanceFee
         ) = _calculateOpenLong(sharesDeposited, vaultSharePrice);
 
-        // Enforce min user outputs
+        // Enforce the minimum user outputs.
         if (_minOutput > bondProceeds) {
             revert IHyperdrive.OutputLimit();
         }
@@ -419,10 +420,10 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // bonds = bonds + bonds
         bondReservesDelta = bondProceeds + governanceCurveFee;
 
-        // Calculate the fees owed to governance in shares. Open longs
-        // are calculated entirely on the curve so the curve fee is the
-        // total governance fee. In order to convert it to shares we need to
-        // multiply it by the spot price and divide it by the share price:
+        // Calculate the fees owed to governance in shares. Open longs are
+        // calculated entirely on the curve so the curve fee is the total
+        // governance fee. In order to convert it to shares we need to multiply
+        // it by the spot price and divide it by the vault share price:
         //
         // shares = (bonds * base/bonds) / (base/shares)
         // shares = bonds * shares/bonds
@@ -552,12 +553,13 @@ abstract contract HyperdriveLong is HyperdriveLP {
             shareReservesDelta,
             shareCurveDelta,
             totalGovernanceFee,
-            // NOTE: We use the share price from the beginning of the
-            // checkpoint as the open share price. This means that a trader
-            // that opens a long in a checkpoint that has negative interest
-            // accrued will be penalized for the negative interest when they
-            // try to close their position. The `_minVaultSharePrice` parameter
-            // allows traders to protect themselves from this edge case.
+            // NOTE: We use the vault share price from the beginning of the
+            // checkpoint as the open vault share price. This means that a
+            // trader that opens a long in a checkpoint that has negative
+            // interest accrued will be penalized for the negative interest when
+            // they try to close their position. The `_minVaultSharePrice`
+            // parameter allows traders to protect themselves from this edge
+            // case.
             _checkpoints[_maturityTime - _positionDuration].vaultSharePrice, // open vault share price
             block.timestamp < _maturityTime
                 ? _vaultSharePrice
