@@ -1701,6 +1701,43 @@ contract LPWithdrawalTest is HyperdriveTest {
         );
     }
 
+    // This test verifies that the system's liveness isn't compromised by a
+    // large LP removing liquidity and bringing the effective share reserves
+    // below the minimum share reserves.
+    function test_lp_withdrawal_liveness(
+        uint256 contribution,
+        uint256 fixedRate,
+        int256 variableRate,
+        uint256 longAmount
+    ) external {
+        // Alice initializes the pool.
+        contribution = contribution.normalizeToRange(
+            1_000e18,
+            1_000_000_000e18
+        );
+        fixedRate = fixedRate.normalizeToRange(0.01e18, 0.2e18);
+        uint256 lpShares = initialize(alice, fixedRate, contribution);
+
+        // Bob opens a max short. This will maximally decrease the effective
+        // share reserves.
+        openShort(bob, hyperdrive.calculateMaxShort());
+
+        // The term passes.
+        variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        advanceTime(POSITION_DURATION, 0);
+
+        // Alice removes his liquidity.
+        removeLiquidityWithChecks(alice, lpShares);
+
+        // Bob should be able to open a reasonably sized long despite the small
+        // effective share reserves.
+        longAmount = longAmount.normalizeToRange(
+            MINIMUM_TRANSACTION_AMOUNT,
+            hyperdrive.calculateMaxLong()
+        );
+        openLong(bob, longAmount);
+    }
+
     // This function removes liquidity and verifies that either (1) the maximum
     // amount of idle was distributed or (2) all of the withdrawal shares were
     // redeemed.

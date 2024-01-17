@@ -1120,16 +1120,10 @@ library HyperdriveUtils {
         uint256 _effectiveShareReserves
     ) internal pure returns (uint256) {
         // We have the twin constraints that $z \geq z_{min}$ and
-        // $z - \zeta \geq 0$. Combining these together, we can calculate the
-        // optimal share reserves as $z_{optimal} = max(z_{min}, \zeta)$. We
-        // run into problems when we get too close to $z - \zeta = 0$, so we
-        // add a small adjustment to the optimal share reserves to ensure that
-        // we don't run into any issues.
-        uint256 optimalShareReserves = uint256(
-            int256(_params.minimumShareReserves).max(
-                _params.shareAdjustment + int256(_params.minimumShareReserves)
-            )
-        );
+        // $z - \zeta \geq z_{min}$. Combining these together, we calculate the
+        // optimal share reserves as $z_{optimal} = z_{min} + max(0, \zeta)$.
+        uint256 optimalShareReserves = _params.minimumShareReserves +
+            uint256(_params.shareAdjustment.max(0));
 
         // We calculate the optimal bond reserves by solving for the bond
         // reserves that is implied by the optimal share reserves. We can do
@@ -1146,18 +1140,29 @@ library HyperdriveUtils {
             _params.initialVaultSharePrice
         );
         uint256 optimalBondReserves = (k_ -
-            (_params.vaultSharePrice.divDown(_params.initialVaultSharePrice))
-                .mulDown(
+            (_params.vaultSharePrice.divUp(_params.initialVaultSharePrice))
+                .mulUp(
                     _params
                         .initialVaultSharePrice
-                        .mulDown(
+                        .mulUp(
                             HyperdriveMath.calculateEffectiveShareReserves(
                                 optimalShareReserves,
                                 _params.shareAdjustment
                             )
                         )
                         .pow(ONE - _params.timeStretch)
-                )).pow(ONE.divUp(ONE - _params.timeStretch));
+                ));
+        if (optimalBondReserves >= ONE) {
+            // Rounding the exponent down results in a smaller outcome.
+            optimalBondReserves = optimalBondReserves.pow(
+                ONE.divDown(ONE - _params.timeStretch)
+            );
+        } else {
+            // Rounding the exponent up results in a smaller outcome.
+            optimalBondReserves = optimalBondReserves.pow(
+                ONE.divUp(ONE - _params.timeStretch)
+            );
+        }
 
         return optimalBondReserves - _params.bondReserves;
     }

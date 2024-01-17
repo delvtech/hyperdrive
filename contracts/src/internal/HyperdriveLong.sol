@@ -322,19 +322,28 @@ abstract contract HyperdriveLong is HyperdriveLP {
         _marketState.shareAdjustment -= _shareAdjustmentDelta.toInt128();
         _marketState.bondReserves += _bondReservesDelta.toUint128();
 
-        // TODO: We're not sure what causes the z >= zeta check to fail.
-        // It may be unnecessary, but that needs to be proven before we can
-        // remove it.
-        //
         // The share reserves are decreased in this operation, so we need to
-        // verify that our invariants that z >= z_min and z >= zeta
-        // are satisfied.
-        if (
-            uint256(_marketState.shareReserves) < _minimumShareReserves ||
-            int256(uint256(_marketState.shareReserves)) <
-            _marketState.shareAdjustment
-        ) {
+        // verify the invariant that z >= z_min is satisfied.
+        if (uint256(_marketState.shareReserves) < _minimumShareReserves) {
             revert IHyperdrive.InvalidShareReserves();
+        }
+
+        // If the effective share reserves are decreasing, then we need to
+        // verify that z - zeta >= z_min is satisfied.
+        //
+        // NOTE: Avoiding this check when the effective share reserves aren't
+        // decreasing is important since `removeLiquidity` can result in an
+        // effective share reserves less than the minimum share reserves, and
+        // it's important that this doesn't result in failed checkpoints.
+        if (
+            int256(_shareReservesDelta) > _shareAdjustmentDelta &&
+            HyperdriveMath.calculateEffectiveShareReserves(
+                _marketState.shareReserves,
+                _marketState.shareAdjustment
+            ) <
+            _minimumShareReserves
+        ) {
+            revert IHyperdrive.InvalidEffectiveShareReserves();
         }
     }
 

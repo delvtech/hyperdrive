@@ -263,6 +263,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     error InvalidCheckpointTime();
     error InvalidCheckpointDuration();
     error InvalidDeployer();
+    error InvalidEffectiveShareReserves();
     error InvalidFeeAmounts();
     error InvalidFeeDestination();
     error InvalidIndexes();
