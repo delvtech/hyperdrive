@@ -1139,19 +1139,18 @@ library HyperdriveUtils {
             _params.vaultSharePrice,
             _params.initialVaultSharePrice
         );
-        uint256 optimalBondReserves = (k_ -
-            (_params.vaultSharePrice.divUp(_params.initialVaultSharePrice))
-                .mulUp(
-                    _params
-                        .initialVaultSharePrice
-                        .mulUp(
-                            HyperdriveMath.calculateEffectiveShareReserves(
-                                optimalShareReserves,
-                                _params.shareAdjustment
-                            )
+        uint256 optimalBondReserves = k_ -
+            _params.vaultSharePrice.divUp(_params.initialVaultSharePrice).mulUp(
+                _params
+                    .initialVaultSharePrice
+                    .mulUp(
+                        HyperdriveMath.calculateEffectiveShareReserves(
+                            optimalShareReserves,
+                            _params.shareAdjustment
                         )
-                        .pow(ONE - _params.timeStretch)
-                ));
+                    )
+                    .pow(ONE - _params.timeStretch)
+            );
         if (optimalBondReserves >= ONE) {
             // Rounding the exponent down results in a smaller outcome.
             optimalBondReserves = optimalBondReserves.pow(
