@@ -246,7 +246,7 @@ impl TestChain {
         .gas_price(DEFAULT_GAS_PRICE)
         .send()
         .await?;
-        let pool = MockERC4626::deploy(
+        let vault = MockERC4626::deploy(
             client.clone(),
             (
                 base.address(),
@@ -266,7 +266,7 @@ impl TestChain {
             base_token: base.address(),
             linker_factory: Address::from_low_u64_be(1),
             linker_code_hash: [1; 32],
-            initial_share_price: uint256!(1e18),
+            initial_vault_share_price: uint256!(1e18),
             minimum_share_reserves: uint256!(10e18),
             minimum_transaction_amount: uint256!(0.001e18),
             position_duration: U256::from(60 * 60 * 24 * 365), // 1 year
@@ -282,19 +282,19 @@ impl TestChain {
                 governance_zombie: uint256!(0.15e18),
             },
         };
-        let target0 = ERC4626Target0::deploy(client.clone(), (config.clone(), pool.address()))?
+        let target0 = ERC4626Target0::deploy(client.clone(), (config.clone(), vault.address()))?
             .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
-        let target1 = ERC4626Target1::deploy(client.clone(), (config.clone(), pool.address()))?
+        let target1 = ERC4626Target1::deploy(client.clone(), (config.clone(), vault.address()))?
             .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
-        let target2 = ERC4626Target2::deploy(client.clone(), (config.clone(), pool.address()))?
+        let target2 = ERC4626Target2::deploy(client.clone(), (config.clone(), vault.address()))?
             .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
-        let target3 = ERC4626Target3::deploy(client.clone(), (config.clone(), pool.address()))?
+        let target3 = ERC4626Target3::deploy(client.clone(), (config.clone(), vault.address()))?
             .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
@@ -306,7 +306,7 @@ impl TestChain {
                 target1.address(),
                 target2.address(),
                 target3.address(),
-                pool.address(),
+                vault.address(),
             ),
         )?
         .gas_price(DEFAULT_GAS_PRICE)
@@ -338,7 +338,7 @@ impl TestChain {
         let target1_address = hyperdrive.target_1().call().await?;
         let target2_address = hyperdrive.target_2().call().await?;
         let target3_address = hyperdrive.target_3().call().await?;
-        let vault_address = hyperdrive.pool().call().await?;
+        let vault_address = hyperdrive.vault().call().await?;
 
         // Deploy templates for each of the contracts that should be etched and
         // get a list of targets and templates. In order for the contracts to
@@ -421,13 +421,15 @@ impl TestChain {
             // Etch the "etching vault" onto the current vault contract. The
             // etching vault implements `convertToAssets` to return the immutable
             // that was passed on deployment. This is necessary because the
-            // ERC4626Hyperdrive instance verifies that the initial share price
-            // is equal to the `_pricePerShare`.
-            let etching_vault_template =
-                EtchingVault::deploy(client.clone(), (addresses.base, config.initial_share_price))?
-                    .gas_price(DEFAULT_GAS_PRICE)
-                    .send()
-                    .await?;
+            // ERC4626Hyperdrive instance verifies that the initial vault share price
+            // is equal to the `_pricePerVaultShare`.
+            let etching_vault_template = EtchingVault::deploy(
+                client.clone(),
+                (addresses.base, config.initial_vault_share_price),
+            )?
+            .gas_price(DEFAULT_GAS_PRICE)
+            .send()
+            .await?;
             let code = provider
                 .get_code(etching_vault_template.address(), None)
                 .await?;
@@ -642,7 +644,7 @@ mod tests {
         assert_eq!(config.base_token, chain.addresses.base);
         assert_eq!(config.linker_factory, Address::from_low_u64_be(1));
         assert_eq!(config.linker_code_hash, [1; 32]);
-        assert_eq!(config.initial_share_price, uint256!(1e18));
+        assert_eq!(config.initial_vault_share_price, uint256!(1e18));
         assert_eq!(config.minimum_share_reserves, uint256!(10e18));
         assert_eq!(config.position_duration, U256::from(60 * 60 * 24 * 365));
         assert_eq!(config.checkpoint_duration, U256::from(60 * 60 * 24));

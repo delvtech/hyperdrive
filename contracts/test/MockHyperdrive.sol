@@ -80,12 +80,12 @@ abstract contract MockHyperdriveBase is HyperdriveBase {
         // Increase the total shares and return with the amount of shares minted
         // and the current share price.
         if (totalShares == 0) {
-            totalShares = amount.divDown(_initialSharePrice);
-            return (totalShares, _initialSharePrice);
+            totalShares = amount.divDown(_initialVaultSharePrice);
+            return (totalShares, _initialVaultSharePrice);
         } else {
             uint256 newShares = amount.mulDivDown(totalShares, assets);
             totalShares += newShares;
-            return (newShares, _pricePerShare());
+            return (newShares, _pricePerVaultShare());
         }
     }
 
@@ -132,16 +132,16 @@ abstract contract MockHyperdriveBase is HyperdriveBase {
         }
         withdrawValue = options.asBase
             ? withdrawValue
-            : withdrawValue.divDown(_pricePerShare());
+            : withdrawValue.divDown(_pricePerVaultShare());
 
         return withdrawValue;
     }
 
-    function _pricePerShare()
+    function _pricePerVaultShare()
         internal
         view
         override
-        returns (uint256 sharePrice)
+        returns (uint256 vaultSharePrice)
     {
         // Get the total amount of base held in Hyperdrive.
         uint256 assets;
@@ -153,7 +153,7 @@ abstract contract MockHyperdriveBase is HyperdriveBase {
 
         // The share price is the total amount of base divided by the total
         // amount of shares.
-        sharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
+        vaultSharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
     }
 
     // This overrides checkMessageValue to serve the dual purpose of making
@@ -218,12 +218,12 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
     function calculateFeesGivenShares(
         uint256 _shareAmount,
         uint256 _spotPrice,
-        uint256 sharePrice
+        uint256 vaultSharePrice
     ) external view returns (uint256 curveFee, uint256 governanceCurveFee) {
         (curveFee, governanceCurveFee) = _calculateFeesGivenShares(
             _shareAmount,
             _spotPrice,
-            sharePrice
+            vaultSharePrice
         );
         return (curveFee, governanceCurveFee);
     }
@@ -232,7 +232,7 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
         uint256 _bondAmount,
         uint256 _normalizedTimeRemaining,
         uint256 _spotPrice,
-        uint256 sharePrice
+        uint256 vaultSharePrice
     )
         external
         view
@@ -252,7 +252,7 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
             _bondAmount,
             _normalizedTimeRemaining,
             _spotPrice,
-            sharePrice
+            vaultSharePrice
         );
         return (
             totalCurveFee,
@@ -265,7 +265,7 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
     // Calls Hyperdrive._calculateOpenLong
     function calculateOpenLong(
         uint256 _shareAmount,
-        uint256 _sharePrice
+        uint256 _vaultSharePrice
     )
         external
         view
@@ -276,7 +276,7 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
             uint256 totalGovernanceFee
         )
     {
-        return _calculateOpenLong(_shareAmount, _sharePrice);
+        return _calculateOpenLong(_shareAmount, _vaultSharePrice);
     }
 
     function calculateTimeRemaining(
@@ -300,9 +300,9 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
     }
 
     function calculateIdleShareReserves(
-        uint256 _sharePrice
+        uint256 _vaultSharePrice
     ) external view returns (uint256) {
-        return _calculateIdleShareReserves(_sharePrice);
+        return _calculateIdleShareReserves(_vaultSharePrice);
     }
 
     function getTotalShares() external view returns (uint256) {

@@ -13,8 +13,10 @@ impl State {
         let normalized_time_remaining = normalized_time_remaining.into();
 
         // Calculate the flat part of the trade
-        let flat =
-            bond_amount.mul_div_down(fixed!(1e18) - normalized_time_remaining, self.share_price());
+        let flat = bond_amount.mul_div_down(
+            fixed!(1e18) - normalized_time_remaining,
+            self.vault_share_price(),
+        );
 
         // Calculate the curve part of the trade
         let curve = if normalized_time_remaining > fixed!(0) {
@@ -32,19 +34,19 @@ impl State {
         &self,
         bond_amount: FixedPoint,
         share_amount: FixedPoint,
-        open_share_price: FixedPoint,
-        close_share_price: FixedPoint,
-        share_price: FixedPoint,
+        open_vault_share_price: FixedPoint,
+        close_vault_share_price: FixedPoint,
+        vault_share_price: FixedPoint,
         flat_fee: FixedPoint,
     ) -> FixedPoint {
         let mut bond_factor = bond_amount
             .mul_div_down(
-                close_share_price,
+                close_vault_share_price,
                 // We round up here do avoid overestimating the share proceeds.
-                open_share_price,
+                open_vault_share_price,
             )
-            .div_down(share_price);
-        bond_factor += bond_amount.mul_div_down(flat_fee, share_price);
+            .div_down(vault_share_price);
+        bond_factor += bond_amount.mul_div_down(flat_fee, vault_share_price);
 
         if bond_factor > share_amount {
             // proceeds = (c1 / c0 * c) * dy - dz
@@ -58,13 +60,13 @@ impl State {
     pub fn calculate_close_short<F: Into<FixedPoint>>(
         &self,
         bond_amount: F,
-        open_share_price: F,
-        close_share_price: F,
+        open_vault_share_price: F,
+        close_vault_share_price: F,
         normalized_time_remaining: F,
     ) -> FixedPoint {
         let bond_amount = bond_amount.into();
-        let open_share_price = open_share_price.into();
-        let close_share_price = close_share_price.into();
+        let open_vault_share_price = open_vault_share_price.into();
+        let close_vault_share_price = close_vault_share_price.into();
         let normalized_time_remaining = normalized_time_remaining.into();
 
         // Calculate flat + curve and subtract the fees from the trade.
@@ -77,9 +79,9 @@ impl State {
         self.calculate_short_proceeds(
             bond_amount,
             share_reserves_delta,
-            open_share_price,
-            close_share_price,
-            self.share_price(),
+            open_vault_share_price,
+            close_vault_share_price,
+            self.vault_share_price(),
             self.flat_fee(),
         )
     }
@@ -107,14 +109,14 @@ mod tests {
             let state = rng.gen::<State>();
             let bond_amount = rng.gen_range(fixed!(0)..=state.bond_reserves());
             let share_amount = rng.gen_range(fixed!(0)..=bond_amount);
-            let open_share_price = rng.gen_range(fixed!(0)..=state.share_price());
+            let open_vault_share_price = rng.gen_range(fixed!(0)..=state.vault_share_price());
             let actual = panic::catch_unwind(|| {
                 state.calculate_short_proceeds(
                     bond_amount,
                     share_amount,
-                    open_share_price,
-                    state.share_price(),
-                    state.share_price(),
+                    open_vault_share_price,
+                    state.vault_share_price(),
+                    state.vault_share_price(),
                     state.flat_fee(),
                 )
             });
@@ -122,9 +124,9 @@ mod tests {
                 .calculate_short_proceeds(
                     bond_amount.into(),
                     share_amount.into(),
-                    open_share_price.into(),
-                    state.share_price().into(),
-                    state.share_price().into(),
+                    open_vault_share_price.into(),
+                    state.vault_share_price().into(),
+                    state.vault_share_price().into(),
                     state.flat_fee().into(),
                 )
                 .call()

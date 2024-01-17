@@ -71,13 +71,16 @@ contract InitializeTest is HyperdriveTest {
     }
 
     function test_initialize_success(
-        uint256 initialSharePrice,
+        uint256 initialVaultSharePrice,
         uint256 checkpointDuration,
         uint256 checkpointsPerTerm,
         uint256 targetRate,
         uint256 contribution
     ) external {
-        initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 5e18);
+        initialVaultSharePrice = initialVaultSharePrice.normalizeToRange(
+            0.5e18,
+            5e18
+        );
         checkpointDuration = checkpointDuration.normalizeToRange(1, 24);
         checkpointDuration *= 1 hours;
         checkpointsPerTerm = checkpointsPerTerm.normalizeToRange(7, 2 * 365);
@@ -89,7 +92,7 @@ contract InitializeTest is HyperdriveTest {
             0.05e18,
             checkpointDuration * checkpointsPerTerm
         );
-        config.initialSharePrice = initialSharePrice;
+        config.initialVaultSharePrice = initialVaultSharePrice;
         config.checkpointDuration = checkpointDuration;
         deploy(alice, config);
 
@@ -136,12 +139,12 @@ contract InitializeTest is HyperdriveTest {
         (
             uint256 lpShares,
             uint256 baseAmount,
-            uint256 sharePrice,
+            uint256 vaultSharePrice,
             uint256 spotRate
         ) = abi.decode(log.data, (uint256, uint256, uint256, uint256));
         assertEq(lpShares, expectedLpShares);
         assertEq(baseAmount, expectedBaseAmount);
-        assertEq(sharePrice, hyperdrive.getPoolInfo().sharePrice);
+        assertEq(vaultSharePrice, hyperdrive.getPoolInfo().vaultSharePrice);
         assertEq(spotRate, expectedSpotRate);
     }
 }

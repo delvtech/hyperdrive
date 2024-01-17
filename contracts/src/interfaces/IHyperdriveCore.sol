@@ -10,7 +10,7 @@ interface IHyperdriveCore is IMultiTokenCore {
     function openLong(
         uint256 _baseAmount,
         uint256 _minOutput,
-        uint256 _minSharePrice,
+        uint256 _minVaultSharePrice,
         IHyperdrive.Options calldata _options
     ) external payable returns (uint256 maturityTime, uint256 bondProceeds);
 
@@ -26,7 +26,7 @@ interface IHyperdriveCore is IMultiTokenCore {
     function openShort(
         uint256 _bondAmount,
         uint256 _maxDeposit,
-        uint256 _minSharePrice,
+        uint256 _minVaultSharePrice,
         IHyperdrive.Options calldata _options
     ) external payable returns (uint256 maturityTime, uint256 traderDeposit);
 

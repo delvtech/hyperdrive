@@ -58,7 +58,7 @@ library HyperdriveUtils {
                     poolInfo.shareAdjustment
                 ),
                 poolInfo.bondReserves,
-                poolConfig.initialSharePrice,
+                poolConfig.initialVaultSharePrice,
                 poolConfig.timeStretch
             );
     }
@@ -75,7 +75,7 @@ library HyperdriveUtils {
                     poolInfo.shareAdjustment
                 ),
                 poolInfo.bondReserves,
-                poolConfig.initialSharePrice,
+                poolConfig.initialVaultSharePrice,
                 poolConfig.positionDuration,
                 poolConfig.timeStretch
             );
@@ -232,8 +232,8 @@ library HyperdriveUtils {
                 longsOutstanding: poolInfo.longsOutstanding,
                 longExposure: poolInfo.longExposure,
                 timeStretch: poolConfig.timeStretch,
-                sharePrice: poolInfo.sharePrice,
-                initialSharePrice: poolConfig.initialSharePrice,
+                vaultSharePrice: poolInfo.vaultSharePrice,
+                initialVaultSharePrice: poolConfig.initialVaultSharePrice,
                 minimumShareReserves: poolConfig.minimumShareReserves,
                 curveFee: poolConfig.fees.curve,
                 flatFee: poolConfig.fees.flat,
@@ -273,8 +273,8 @@ library HyperdriveUtils {
                     longsOutstanding: poolInfo.longsOutstanding,
                     longExposure: poolInfo.longExposure,
                     timeStretch: poolConfig.timeStretch,
-                    sharePrice: poolInfo.sharePrice,
-                    initialSharePrice: poolConfig.initialSharePrice,
+                    vaultSharePrice: poolInfo.vaultSharePrice,
+                    initialVaultSharePrice: poolConfig.initialVaultSharePrice,
                     minimumShareReserves: poolConfig.minimumShareReserves,
                     curveFee: poolConfig.fees.curve,
                     flatFee: poolConfig.fees.flat,
@@ -303,8 +303,8 @@ library HyperdriveUtils {
         uint256 longsOutstanding;
         uint256 longExposure;
         uint256 timeStretch;
-        uint256 sharePrice;
-        uint256 initialSharePrice;
+        uint256 vaultSharePrice;
+        uint256 initialVaultSharePrice;
         uint256 minimumShareReserves;
         uint256 curveFee;
         uint256 flatFee;
@@ -337,7 +337,7 @@ library HyperdriveUtils {
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
             effectiveShareReserves,
             _params.bondReserves,
-            _params.initialSharePrice,
+            _params.initialVaultSharePrice,
             _params.timeStretch
         );
         uint256 absoluteMaxBaseAmount;
@@ -506,8 +506,8 @@ library HyperdriveUtils {
                 _effectiveShareReserves,
                 _params.bondReserves,
                 ONE - _params.timeStretch,
-                _params.sharePrice,
-                _params.initialSharePrice
+                _params.vaultSharePrice,
+                _params.initialVaultSharePrice
             );
             inner = _params.curveFee.mulUp(ONE.divUp(_spotPrice) - ONE).mulUp(
                 ONE - _params.flatFee
@@ -516,11 +516,15 @@ library HyperdriveUtils {
             inner = inner.pow(
                 (ONE - _params.timeStretch).divDown(_params.timeStretch)
             );
-            inner += _params.sharePrice.divUp(_params.initialSharePrice);
+            inner += _params.vaultSharePrice.divUp(
+                _params.initialVaultSharePrice
+            );
             inner = k_.divDown(inner);
             inner = inner.pow(ONE.divDown(ONE - _params.timeStretch));
         }
-        uint256 targetShareReserves = inner.divDown(_params.initialSharePrice);
+        uint256 targetShareReserves = inner.divDown(
+            _params.initialVaultSharePrice
+        );
 
         // Now that we have the target share reserves, we can calculate the
         // target bond reserves using the formula:
@@ -543,7 +547,7 @@ library HyperdriveUtils {
         //
         // absoluteMaxBaseAmount = c * (z_t - z)
         absoluteMaxBaseAmount = (targetShareReserves - _effectiveShareReserves)
-            .mulDown(_params.sharePrice);
+            .mulDown(_params.vaultSharePrice);
 
         // The absolute max bond amount is given by:
         //
@@ -655,9 +659,12 @@ library HyperdriveUtils {
     ) internal pure returns (uint256) {
         uint256 checkpointExposure = uint256(-_checkpointExposure.min(0));
         uint256 estimate = (_params.shareReserves +
-            checkpointExposure.divDown(_params.sharePrice) -
-            _params.longExposure.divDown(_params.sharePrice) -
-            _params.minimumShareReserves).mulDivDown(_params.sharePrice, 2e18);
+            checkpointExposure.divDown(_params.vaultSharePrice) -
+            _params.longExposure.divDown(_params.vaultSharePrice) -
+            _params.minimumShareReserves).mulDivDown(
+                _params.vaultSharePrice,
+                2e18
+            );
         estimate = estimate.divDown(
             ONE.divDown(_estimatePrice) +
                 _params.governanceLPFee.mulDown(_params.curveFee).mulDown(
@@ -730,18 +737,20 @@ library HyperdriveUtils {
             _params.governanceLPFee
         );
         uint256 shareReserves = _params.shareReserves +
-            _baseAmount.divDown(_params.sharePrice) -
-            governanceFee.divDown(_params.sharePrice);
+            _baseAmount.divDown(_params.vaultSharePrice) -
+            governanceFee.divDown(_params.vaultSharePrice);
         uint256 exposure = _params.longExposure + _bondAmount;
         uint256 checkpointExposure = uint256(-_checkpointExposure.min(0));
         if (
-            shareReserves + checkpointExposure.divDown(_params.sharePrice) >=
-            exposure.divDown(_params.sharePrice) + _params.minimumShareReserves
+            shareReserves +
+                checkpointExposure.divDown(_params.vaultSharePrice) >=
+            exposure.divDown(_params.vaultSharePrice) +
+                _params.minimumShareReserves
         ) {
             return (
                 shareReserves +
-                    checkpointExposure.divDown(_params.sharePrice) -
-                    exposure.divDown(_params.sharePrice) -
+                    checkpointExposure.divDown(_params.vaultSharePrice) -
+                    exposure.divDown(_params.vaultSharePrice) -
                     _params.minimumShareReserves,
                 true
             );
@@ -802,7 +811,7 @@ library HyperdriveUtils {
         );
         derivative -= ONE;
 
-        return (derivative.mulDivDown(1e18, _params.sharePrice), success);
+        return (derivative.mulDivDown(1e18, _params.vaultSharePrice), success);
     }
 
     /// @dev Gets the long amount that will be opened for a given base amount.
@@ -838,10 +847,10 @@ library HyperdriveUtils {
         uint256 longAmount = HyperdriveMath.calculateOpenLong(
             _effectiveShareReserves,
             _params.bondReserves,
-            _baseAmount.divDown(_params.sharePrice),
+            _baseAmount.divDown(_params.vaultSharePrice),
             _params.timeStretch,
-            _params.sharePrice,
-            _params.initialSharePrice
+            _params.vaultSharePrice,
+            _params.initialVaultSharePrice
         );
         return
             longAmount -
@@ -890,25 +899,25 @@ library HyperdriveUtils {
         uint256 _spotPrice
     ) internal pure returns (uint256 derivative, bool) {
         // Compute the first part of the derivative.
-        uint256 shareAmount = _baseAmount.divDown(_params.sharePrice);
-        uint256 inner = _params.initialSharePrice.mulDown(
+        uint256 shareAmount = _baseAmount.divDown(_params.vaultSharePrice);
+        uint256 inner = _params.initialVaultSharePrice.mulDown(
             _effectiveShareReserves + shareAmount
         );
         uint256 k_ = YieldSpaceMath.kDown(
             _effectiveShareReserves,
             _params.bondReserves,
             ONE - _params.timeStretch,
-            _params.sharePrice,
-            _params.initialSharePrice
+            _params.vaultSharePrice,
+            _params.initialVaultSharePrice
         );
         derivative = ONE.divDown(inner.pow(_params.timeStretch));
 
         // It's possible that k is slightly larger than the rhs in the inner
         // calculation. If this happens, we are close to the root, and we short
         // circuit.
-        uint256 rhs = _params.sharePrice.mulDivDown(
+        uint256 rhs = _params.vaultSharePrice.mulDivDown(
             inner.pow(_params.timeStretch),
-            _params.initialSharePrice
+            _params.initialVaultSharePrice
         );
         if (k_ < rhs) {
             return (0, false);
@@ -1000,7 +1009,7 @@ library HyperdriveUtils {
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
             effectiveShareReserves,
             _params.bondReserves,
-            _params.initialSharePrice,
+            _params.initialVaultSharePrice,
             _params.timeStretch
         );
         uint256 absoluteMaxBondAmount = calculateMaxShortUpperBound(
@@ -1133,21 +1142,22 @@ library HyperdriveUtils {
             _effectiveShareReserves,
             _params.bondReserves,
             ONE - _params.timeStretch,
-            _params.sharePrice,
-            _params.initialSharePrice
+            _params.vaultSharePrice,
+            _params.initialVaultSharePrice
         );
         uint256 optimalBondReserves = (k_ -
-            (_params.sharePrice.divDown(_params.initialSharePrice)).mulDown(
-                _params
-                    .initialSharePrice
-                    .mulDown(
-                        HyperdriveMath.calculateEffectiveShareReserves(
-                            optimalShareReserves,
-                            _params.shareAdjustment
+            (_params.vaultSharePrice.divDown(_params.initialVaultSharePrice))
+                .mulDown(
+                    _params
+                        .initialVaultSharePrice
+                        .mulDown(
+                            HyperdriveMath.calculateEffectiveShareReserves(
+                                optimalShareReserves,
+                                _params.shareAdjustment
+                            )
                         )
-                    )
-                    .pow(ONE - _params.timeStretch)
-            )).pow(ONE.divUp(ONE - _params.timeStretch));
+                        .pow(ONE - _params.timeStretch)
+                )).pow(ONE.divUp(ONE - _params.timeStretch));
 
         return optimalBondReserves - _params.bondReserves;
     }
@@ -1186,12 +1196,12 @@ library HyperdriveUtils {
         int256 _checkpointExposure
     ) internal pure returns (uint256) {
         uint256 estimatePrice = _spotPrice;
-        uint256 guess = _params.sharePrice.mulDown(
+        uint256 guess = _params.vaultSharePrice.mulDown(
             _params.shareReserves +
                 uint256(_checkpointExposure.max(0)).divDown(
-                    _params.sharePrice
+                    _params.vaultSharePrice
                 ) -
-                _params.longExposure.divDown(_params.sharePrice) -
+                _params.longExposure.divDown(_params.vaultSharePrice) -
                 _params.minimumShareReserves
         );
         return
@@ -1265,8 +1275,8 @@ library HyperdriveUtils {
                 _params.bondReserves,
                 _shortAmount,
                 ONE - _params.timeStretch,
-                _params.sharePrice,
-                _params.initialSharePrice
+                _params.vaultSharePrice,
+                _params.initialVaultSharePrice
             );
         if (!success) {
             return (0, false);
@@ -1285,9 +1295,11 @@ library HyperdriveUtils {
                         _spotPrice,
                         _params.curveFee,
                         _params.governanceLPFee
-                    )).divDown(_params.sharePrice));
+                    )).divDown(_params.vaultSharePrice));
         uint256 exposure = (_params.longExposure -
-            uint256(_checkpointExposure.max(0))).divDown(_params.sharePrice);
+            uint256(_checkpointExposure.max(0))).divDown(
+                _params.vaultSharePrice
+            );
         if (shareReserves >= exposure + _params.minimumShareReserves) {
             return (
                 shareReserves - exposure - _params.minimumShareReserves,
@@ -1332,7 +1344,7 @@ library HyperdriveUtils {
             .curveFee
             .mulDown(ONE - _spotPrice)
             .mulDown(ONE - _params.governanceLPFee)
-            .divDown(_params.sharePrice);
+            .divDown(_params.vaultSharePrice);
         if (lhs >= rhs) {
             return (lhs - rhs, true);
         } else {
@@ -1363,17 +1375,17 @@ library HyperdriveUtils {
             _effectiveShareReserves,
             _params.bondReserves,
             ONE - _params.timeStretch,
-            _params.sharePrice,
-            _params.initialSharePrice
+            _params.vaultSharePrice,
+            _params.initialVaultSharePrice
         );
         uint256 lhs = ONE.divDown(
-            _params.sharePrice.mulUp(
+            _params.vaultSharePrice.mulUp(
                 (_params.bondReserves + _shortAmount).pow(_params.timeStretch)
             )
         );
         uint256 rhs = _params
-            .initialSharePrice
-            .divDown(_params.sharePrice)
+            .initialVaultSharePrice
+            .divDown(_params.vaultSharePrice)
             .mulDown(
                 k_ -
                     (_params.bondReserves + _shortAmount).pow(
@@ -1427,8 +1439,8 @@ library HyperdriveUtils {
                 shareReserves: poolInfo.shareReserves,
                 shareAdjustment: poolInfo.shareAdjustment,
                 bondReserves: poolInfo.bondReserves,
-                sharePrice: poolInfo.sharePrice,
-                initialSharePrice: poolConfig.initialSharePrice,
+                vaultSharePrice: poolInfo.vaultSharePrice,
+                initialVaultSharePrice: poolConfig.initialVaultSharePrice,
                 minimumShareReserves: poolConfig.minimumShareReserves,
                 timeStretch: poolConfig.timeStretch,
                 longsOutstanding: poolInfo.longsOutstanding,
@@ -1487,7 +1499,7 @@ library HyperdriveUtils {
         return
             LPMath
                 .calculatePresentValue(hyperdrive.getPresentValueParams())
-                .mulDown(hyperdrive.getPoolInfo().sharePrice);
+                .mulDown(hyperdrive.getPoolInfo().vaultSharePrice);
     }
 
     function lpSharePrice(
@@ -1508,7 +1520,7 @@ library HyperdriveUtils {
     function idle(IHyperdrive hyperdrive) internal view returns (uint256) {
         return
             uint256(hyperdrive.solvency().max(0)).mulDown(
-                hyperdrive.getPoolInfo().sharePrice
+                hyperdrive.getPoolInfo().vaultSharePrice
             );
     }
 
@@ -1517,7 +1529,7 @@ library HyperdriveUtils {
         IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
         return
             int256(info.shareReserves) -
-            int256(info.longExposure.divDown(info.sharePrice)) -
+            int256(info.longExposure.divDown(info.vaultSharePrice)) -
             int256(config.minimumShareReserves);
     }
 
@@ -1532,8 +1544,8 @@ library HyperdriveUtils {
                 ),
                 info.bondReserves,
                 ONE - config.timeStretch,
-                info.sharePrice,
-                config.initialSharePrice
+                info.vaultSharePrice,
+                config.initialVaultSharePrice
             );
     }
 

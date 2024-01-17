@@ -101,7 +101,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             baseToken: dai,
             linkerFactory: address(0),
             linkerCodeHash: bytes32(0),
-            initialSharePrice: ONE,
+            initialVaultSharePrice: ONE,
             minimumShareReserves: ONE,
             minimumTransactionAmount: 0.001e18,
             positionDuration: 365 days,
@@ -148,22 +148,23 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         vm.startPrank(alice);
         dai.transfer(address(pool), 5e18);
         // Now we try a deposit
-        (uint256 sharesMinted, uint256 sharePrice) = mockHyperdrive.deposit(
-            1e18,
-            IHyperdrive.Options({
-                destination: address(0),
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-        assertEq(sharePrice, 1.5e18);
+        (uint256 sharesMinted, uint256 vaultSharePrice) = mockHyperdrive
+            .deposit(
+                1e18,
+                IHyperdrive.Options({
+                    destination: address(0),
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            );
+        assertEq(vaultSharePrice, 1.5e18);
         // 1/1.5 = 0.666666666666666666
         assertEq(sharesMinted, 666666666666666666);
         assertEq(pool.balanceOf(address(mockHyperdrive)), 666666666666666666);
 
         // Now we try to do a deposit from alice's shares
         pool.approve(address(mockHyperdrive), type(uint256).max);
-        (sharesMinted, sharePrice) = mockHyperdrive.deposit(
+        (sharesMinted, vaultSharePrice) = mockHyperdrive.deposit(
             3e18,
             IHyperdrive.Options({
                 destination: address(0),
@@ -171,7 +172,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
-        assertEq(sharePrice, 1.5e18);
+        assertEq(vaultSharePrice, 1.5e18);
         assertEq(sharesMinted, 3e18);
         // 666666666666666666 shares + 3e18 shares = 3666666666666666666
         assertApproxEqAbs(
@@ -190,7 +191,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // test an underlying withdraw
         uint256 amountWithdrawn = mockHyperdrive.withdraw(
             2e18,
-            mockHyperdrive.pricePerShare(),
+            mockHyperdrive.pricePerVaultShare(),
             IHyperdrive.Options({
                 destination: alice,
                 asBase: true,
@@ -204,7 +205,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // Test a share withdraw
         amountWithdrawn = mockHyperdrive.withdraw(
             2e18,
-            mockHyperdrive.pricePerShare(),
+            mockHyperdrive.pricePerVaultShare(),
             IHyperdrive.Options({
                 destination: alice,
                 asBase: false,
@@ -225,7 +226,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // Test an underlying withdraw of zero.
         uint256 amountWithdrawn = mockHyperdrive.withdraw(
             0,
-            mockHyperdrive.pricePerShare(),
+            mockHyperdrive.pricePerVaultShare(),
             IHyperdrive.Options({
                 destination: alice,
                 asBase: true,
@@ -239,7 +240,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // Test a share withdraw of zero.
         amountWithdrawn = mockHyperdrive.withdraw(
             0,
-            mockHyperdrive.pricePerShare(),
+            mockHyperdrive.pricePerVaultShare(),
             IHyperdrive.Options({
                 destination: alice,
                 asBase: false,
@@ -303,7 +304,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         );
     }
 
-    function test_erc4626_sharePrice() public {
+    function test_erc4626_vaultSharePrice() public {
         // This test ensures that `getPoolInfo` returns the correct share price.
         vm.startPrank(alice);
         uint256 apr = 0.01e18; // 1% apr
@@ -336,14 +337,14 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         );
 
         // Ensure the share price is 1 after initialization.
-        assertEq(hyperdrive.getPoolInfo().sharePrice, 1e18);
+        assertEq(hyperdrive.getPoolInfo().vaultSharePrice, 1e18);
 
         // Simulate interest accrual by sending funds to the pool.
         dai.transfer(address(pool), contribution);
 
         // Ensure that the share price calculations are correct when share price is not equal to 1e18.
         assertEq(
-            hyperdrive.getPoolInfo().sharePrice,
+            hyperdrive.getPoolInfo().vaultSharePrice,
             (pool.totalAssets()).divDown(pool.totalSupply())
         );
     }

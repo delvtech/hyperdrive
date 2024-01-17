@@ -117,15 +117,20 @@ pub async fn test_integration_get_max_short() -> Result<()> {
         // of her budget.
         let state = alice.get_state().await?;
         let Checkpoint {
-            share_price: open_share_price,
+            vault_share_price: open_vault_share_price,
         } = alice
             .get_checkpoint(state.to_checkpoint(alice.now().await?))
             .await?;
         let checkpoint_exposure = alice
             .get_checkpoint_exposure(state.to_checkpoint(alice.now().await?))
             .await?;
-        let global_max_short =
-            state.get_max_short(U256::MAX, open_share_price, checkpoint_exposure, None, None);
+        let global_max_short = state.get_max_short(
+            U256::MAX,
+            open_vault_share_price,
+            checkpoint_exposure,
+            None,
+            None,
+        );
         let budget = bob.base();
         let slippage_tolerance = fixed!(0.001e18);
         let max_short = bob.get_max_short(Some(slippage_tolerance)).await?;
@@ -276,7 +281,7 @@ async fn test_calculate_bonds_given_shares_and_rate() -> Result<()> {
     );
     let rust_reserves = calculate_initial_bond_reserves(
         effective_share_reserves,
-        state.config.initial_share_price.into(),
+        state.config.initial_vault_share_price.into(),
         state.get_spot_rate(),
         state.config.position_duration.into(),
         state.config.time_stretch.into(),

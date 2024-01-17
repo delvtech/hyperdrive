@@ -33,7 +33,7 @@ contract ZombieInterestTest is HyperdriveTest {
 
     function test_zombie_interest_long_lp_edge_cases() external {
         // This test found a case that resulted in:
-        // balanceOf(hyperdrive) = 0 and a sharePrice == 0
+        // balanceOf(hyperdrive) = 0 and a vaultSharePrice == 0
         // resulted in correcting the zombie interest formulat to:
         // dz * (c1 - c0)/c1
         {
@@ -142,12 +142,12 @@ contract ZombieInterestTest is HyperdriveTest {
         uint256 zombieBaseBefore = hyperdrive
             .getPoolInfo()
             .zombieShareReserves
-            .mulDown(hyperdrive.getPoolInfo().sharePrice);
+            .mulDown(hyperdrive.getPoolInfo().vaultSharePrice);
         advanceTimeWithCheckpoints2(POSITION_DURATION, variableRate);
         uint256 zombieBaseAfter = hyperdrive
             .getPoolInfo()
             .zombieShareReserves
-            .mulDown(hyperdrive.getPoolInfo().sharePrice);
+            .mulDown(hyperdrive.getPoolInfo().vaultSharePrice);
         assertApproxEqAbs(zombieBaseBefore, zombieBaseAfter, 1e5);
 
         // A random amount of time passes and interest is collected.
@@ -184,19 +184,21 @@ contract ZombieInterestTest is HyperdriveTest {
         );
 
         // If the share price is zero, then the hyperdrive balance is empty and there is a problem.
-        uint256 sharePrice = hyperdrive.getPoolInfo().sharePrice;
-        assertGt(sharePrice, 0);
+        uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
+        assertGt(vaultSharePrice, 0);
 
         // Verify that the value represented in the share reserves is >= the actual amount in the contract.
         uint256 baseReserves = hyperdrive.getPoolInfo().shareReserves.mulDown(
-            sharePrice
+            vaultSharePrice
         );
         assertGe(baseToken.balanceOf(address(hyperdrive)), baseReserves);
 
         // Ensure that whatever is left in the zombie share reserves is <= hyperdrive contract - baseReserves.
         // This is an important check bc it implies ongoing solvency.
         assertLe(
-            hyperdrive.getPoolInfo().zombieShareReserves.mulDown(sharePrice),
+            hyperdrive.getPoolInfo().zombieShareReserves.mulDown(
+                vaultSharePrice
+            ),
             baseToken.balanceOf(address(hyperdrive)) - baseReserves
         );
     }
@@ -366,12 +368,12 @@ contract ZombieInterestTest is HyperdriveTest {
         uint256 zombieBaseBefore = hyperdrive
             .getPoolInfo()
             .zombieShareReserves
-            .mulDown(hyperdrive.getPoolInfo().sharePrice);
+            .mulDown(hyperdrive.getPoolInfo().vaultSharePrice);
         advanceTimeWithCheckpoints2(POSITION_DURATION, variableRate);
         uint256 zombieBaseAfter = hyperdrive
             .getPoolInfo()
             .zombieShareReserves
-            .mulDown(hyperdrive.getPoolInfo().sharePrice);
+            .mulDown(hyperdrive.getPoolInfo().vaultSharePrice);
         assertApproxEqAbs(zombieBaseBefore, zombieBaseAfter, 1e5);
 
         // A random amount of time passes and interest is collected.
@@ -409,12 +411,12 @@ contract ZombieInterestTest is HyperdriveTest {
         );
 
         // If the share price is zero, then the hyperdrive balance is empty and there is a problem.
-        uint256 sharePrice = hyperdrive.getPoolInfo().sharePrice;
-        assertGt(sharePrice, 0);
+        uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
+        assertGt(vaultSharePrice, 0);
 
         // Verify that the value represented in the share reserves is >= the actual amount in the contract.
         uint256 baseReserves = hyperdrive.getPoolInfo().shareReserves.mulDown(
-            sharePrice
+            vaultSharePrice
         );
         assertGe(baseToken.balanceOf(address(hyperdrive)) + 1, baseReserves);
 
@@ -422,7 +424,9 @@ contract ZombieInterestTest is HyperdriveTest {
         // less than `balance(hyperdrive) - baseReserves`.
         // This is an important check bc it implies ongoing solvency.
         assertLe(
-            hyperdrive.getPoolInfo().zombieShareReserves.mulDown(sharePrice),
+            hyperdrive.getPoolInfo().zombieShareReserves.mulDown(
+                vaultSharePrice
+            ),
             baseToken.balanceOf(address(hyperdrive)) + 10 wei - baseReserves
         );
     }
@@ -454,12 +458,12 @@ contract ZombieInterestTest is HyperdriveTest {
         uint256 zombieBaseBefore = hyperdrive
             .getPoolInfo()
             .zombieShareReserves
-            .mulDown(hyperdrive.getPoolInfo().sharePrice);
+            .mulDown(hyperdrive.getPoolInfo().vaultSharePrice);
         advanceTimeWithCheckpoints2(POSITION_DURATION, variableRate);
         uint256 zombieBaseAfter = hyperdrive
             .getPoolInfo()
             .zombieShareReserves
-            .mulDown(hyperdrive.getPoolInfo().sharePrice);
+            .mulDown(hyperdrive.getPoolInfo().vaultSharePrice);
         assertApproxEqAbs(zombieBaseBefore, zombieBaseAfter, 1e5);
 
         // Celina redeems her short late.
@@ -476,19 +480,21 @@ contract ZombieInterestTest is HyperdriveTest {
         );
 
         // If the share price is zero, then the hyperdrive balance is empty and there is a problem.
-        uint256 sharePrice = hyperdrive.getPoolInfo().sharePrice;
-        assertGt(sharePrice, 0);
+        uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
+        assertGt(vaultSharePrice, 0);
 
         // Verify that the value represented in the share reserves is <= the actual amount in the contract.
         uint256 baseReserves = hyperdrive.getPoolInfo().shareReserves.mulDown(
-            sharePrice
+            vaultSharePrice
         );
         assertGe(baseToken.balanceOf(address(hyperdrive)), baseReserves);
 
         // Ensure that whatever is left in the zombie share reserves is <= hyperdrive contract - baseReserves.
         // This is an important check bc it implies ongoing solvency.
         assertLe(
-            hyperdrive.getPoolInfo().zombieShareReserves.mulDown(sharePrice),
+            hyperdrive.getPoolInfo().zombieShareReserves.mulDown(
+                vaultSharePrice
+            ),
             baseToken.balanceOf(address(hyperdrive)) - baseReserves
         );
     }

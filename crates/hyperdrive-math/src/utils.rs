@@ -75,7 +75,7 @@ pub fn get_effective_share_reserves(
 /// * effective_share_reserves : The pool's effective share reserves. The
 /// effective share reserves are a modified version of the share
 /// reserves used when pricing trades.
-/// * initial_share_price : The pool's initial share price.
+/// * initial_vault_share_price : The pool's initial vault share price.
 /// * apr : The pool's APR.
 /// * position_duration : The amount of time until maturity in seconds.
 /// * time_stretch : The time stretch parameter.
@@ -86,14 +86,14 @@ pub fn get_effective_share_reserves(
 /// the pool have a specified APR.
 pub fn calculate_initial_bond_reserves(
     effective_share_reserves: FixedPoint,
-    initial_share_price: FixedPoint,
+    initial_vault_share_price: FixedPoint,
     apr: FixedPoint,
     position_duration: FixedPoint,
     time_stretch: FixedPoint,
 ) -> FixedPoint {
     let annualized_time = position_duration / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
     // mu * (z - zeta) * (1 + apr * t) ** (1 / tau)
-    initial_share_price
+    initial_vault_share_price
         .mul_down(effective_share_reserves)
         .mul_down(
             (fixed!(1e18) + apr.mul_down(annualized_time)).pow(fixed!(1e18).div_up(time_stretch)),
@@ -157,7 +157,7 @@ mod tests {
             // Calculate the bonds
             let actual = calculate_initial_bond_reserves(
                 effective_share_reserves,
-                state.config.initial_share_price.into(),
+                state.config.initial_vault_share_price.into(),
                 fixed!(0.01e18),
                 state.config.position_duration.into(),
                 state.config.time_stretch.into(),
@@ -165,7 +165,7 @@ mod tests {
             match mock
                 .calculate_initial_bond_reserves(
                     effective_share_reserves.into(),
-                    state.config.initial_share_price,
+                    state.config.initial_vault_share_price,
                     fixed!(0.01e18).into(),
                     state.config.position_duration,
                     state.config.time_stretch,

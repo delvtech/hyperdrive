@@ -59,9 +59,9 @@ abstract contract HyperdriveDeployerCoordinator is IHyperdriveDeployer {
         bytes memory _extraData
     ) external override returns (address) {
         // Convert the deploy config into the pool config and set the initial
-        // share price.
+        // vault share price.
         IHyperdrive.PoolConfig memory _config = _copyPoolConfig(_deployConfig);
-        _config.initialSharePrice = _getInitialSharePrice(_extraData);
+        _config.initialVaultSharePrice = _getInitialVaultSharePrice(_extraData);
 
         // Deploy the target0 contract.
         address target0 = IHyperdriveTargetDeployer(target0Deployer).deploy(
@@ -93,10 +93,10 @@ abstract contract HyperdriveDeployerCoordinator is IHyperdriveDeployer {
             );
     }
 
-    /// @dev Gets the initial share price of the Hyperdrive pool.
+    /// @dev Gets the initial vault share price of the Hyperdrive pool.
     /// @param _extraData The extra data passed to the child deployers.
-    /// @return The initial share price of the Hyperdrive pool.
-    function _getInitialSharePrice(
+    /// @return The initial vault share price of the Hyperdrive pool.
+    function _getInitialVaultSharePrice(
         bytes memory _extraData
     ) internal view virtual returns (uint256);
 

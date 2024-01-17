@@ -25,7 +25,7 @@ pub trait YieldSpace {
     /// The share price.
     fn c(&self) -> FixedPoint;
 
-    /// The initial share price.
+    /// The initial vault share price.
     fn mu(&self) -> FixedPoint;
 
     /// The YieldSpace time parameter.

@@ -45,11 +45,11 @@ abstract contract StETHBase is HyperdriveBase {
     ///        used in this implementation is "asBase" which determines if
     ///        the deposit is settled in ETH or stETH shares.
     /// @return shares The amount of shares that represents the amount deposited.
-    /// @return sharePrice The current share price.
+    /// @return vaultSharePrice The current vault share price.
     function _deposit(
         uint256 _amount,
         IHyperdrive.Options calldata _options
-    ) internal override returns (uint256 shares, uint256 sharePrice) {
+    ) internal override returns (uint256 shares, uint256 vaultSharePrice) {
         uint256 refund;
         if (_options.asBase) {
             // Ensure that sufficient ether was provided.
@@ -67,8 +67,8 @@ abstract contract StETHBase is HyperdriveBase {
             // stETH instead of WETH.
             shares = _lido.submit{ value: _amount }(_feeCollector);
 
-            // Calculate the share price.
-            sharePrice = _pricePerShare();
+            // Calculate the vault share price.
+            vaultSharePrice = _pricePerVaultShare();
         } else {
             // Refund any ether that was sent to the contract.
             refund = msg.value;
@@ -76,9 +76,9 @@ abstract contract StETHBase is HyperdriveBase {
             // Transfer stETH shares into the contract.
             _lido.transferSharesFrom(msg.sender, address(this), _amount);
 
-            // Calculate the share price.
+            // Calculate the vault share price.
             shares = _amount;
-            sharePrice = _pricePerShare();
+            vaultSharePrice = _pricePerVaultShare();
         }
 
         // Return excess ether that was sent to the contract.
@@ -89,7 +89,7 @@ abstract contract StETHBase is HyperdriveBase {
             }
         }
 
-        return (shares, sharePrice);
+        return (shares, vaultSharePrice);
     }
 
     /// @notice Processes a trader's withdrawal. This yield source only supports
@@ -132,10 +132,15 @@ abstract contract StETHBase is HyperdriveBase {
         return _shares;
     }
 
-    /// @dev Returns the current share price. We simply use Lido's share price.
-    /// @return price The current share price.
-    /// @dev must remain consistent with the impl inside of the DataProvider
-    function _pricePerShare() internal view override returns (uint256 price) {
+    /// @dev Returns the current vault share price. We simply use Lido's
+    ///      internal share price.
+    /// @return price The current vault share price.
+    function _pricePerVaultShare()
+        internal
+        view
+        override
+        returns (uint256 price)
+    {
         return _lido.getPooledEthByShares(ONE);
     }
 

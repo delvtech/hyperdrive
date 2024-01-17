@@ -23,7 +23,7 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
 
     /// Time ///
 
-    /// @dev The amount of seconds between share price checkpoints.
+    /// @dev The amount of seconds between vault share price checkpoints.
     uint256 internal immutable _checkpointDuration;
 
     /// @dev The amount of seconds that elapse before a bond can be redeemed.
@@ -48,8 +48,8 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
 
     /// Market State ///
 
-    /// @dev The share price at the time the pool was created.
-    uint256 internal immutable _initialSharePrice;
+    /// @dev The vault share price at the time the pool was created.
+    uint256 internal immutable _initialVaultSharePrice;
 
     /// @dev The minimum amount of share reserves that must be maintained at all
     ///      times. This is used to enforce practical limits on the share
@@ -70,8 +70,8 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
 
     /// @dev Hyperdrive positions are bucketed into checkpoints, which allows us
     ///      to avoid poking in any period that has LP or trading activity. The
-    ///      checkpoints contain the starting share price from the checkpoint as
-    ///      well as aggregate volume values.
+    ///      checkpoints contain the starting vault share price from the
+    ///      checkpoint as well as aggregate volume values.
     mapping(uint256 checkpointNumber => IHyperdrive.Checkpoint checkpoint)
         internal _checkpoints;
 
@@ -159,7 +159,7 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
         }
         _positionDuration = _config.positionDuration;
         _timeStretch = _config.timeStretch;
-        _initialSharePrice = _config.initialSharePrice;
+        _initialVaultSharePrice = _config.initialVaultSharePrice;
         _governance = _config.governance;
         _feeCollector = _config.feeCollector;
 

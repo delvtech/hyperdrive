@@ -171,7 +171,7 @@ contract OpenLongTest is HyperdriveTest {
         );
     }
 
-    function test_open_long_failure_minimum_share_price() external {
+    function test_open_long_failure_minimum_vault_share_price() external {
         uint256 apr = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
@@ -185,12 +185,13 @@ contract OpenLongTest is HyperdriveTest {
         uint256 baseAmount = 10e18;
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
-        uint256 minSharePrice = 2 * hyperdrive.getPoolInfo().sharePrice;
+        uint256 minVaultSharePrice = 2 *
+            hyperdrive.getPoolInfo().vaultSharePrice;
         vm.expectRevert(IHyperdrive.MinimumSharePrice.selector);
         hyperdrive.openLong(
             baseAmount,
             0,
-            minSharePrice,
+            minVaultSharePrice,
             IHyperdrive.Options({
                 destination: bob,
                 asBase: true,
@@ -354,7 +355,7 @@ contract OpenLongTest is HyperdriveTest {
             ) = abi.decode(log.data, (uint256, uint256, uint256, uint256));
             assertEq(eventMaturityTime, maturityTime);
             assertEq(eventBaseAmount, baseAmount);
-            assertEq(eventSharePrice, hyperdrive.getPoolInfo().sharePrice);
+            assertEq(eventSharePrice, hyperdrive.getPoolInfo().vaultSharePrice);
             assertEq(eventBondAmount, bondAmount);
         }
 
@@ -452,9 +453,9 @@ contract OpenLongTest is HyperdriveTest {
         assertEq(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves +
-                baseAmount.divDown(poolInfoBefore.sharePrice)
+                baseAmount.divDown(poolInfoBefore.vaultSharePrice)
         );
-        assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
+        assertEq(poolInfoAfter.vaultSharePrice, poolInfoBefore.vaultSharePrice);
         assertEq(poolInfoAfter.shareAdjustment, poolInfoBefore.shareAdjustment);
         assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
         assertApproxEqAbs(

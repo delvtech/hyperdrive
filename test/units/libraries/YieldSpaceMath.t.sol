@@ -101,16 +101,22 @@ contract YieldSpaceMathTest is Test {
     function test__calculateSharesInGivenBondsOut__extremeValues(
         uint256 fixedRate,
         uint256 shareReserves,
-        uint256 sharePrice,
-        uint256 initialSharePrice,
+        uint256 vaultSharePrice,
+        uint256 initialVaultSharePrice,
         uint256 tradeSize
     ) external {
         MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
 
         uint256 minimumShareReserves = 1e5;
         fixedRate = fixedRate.normalizeToRange(0.01e18, 1e18);
-        initialSharePrice = initialSharePrice.normalizeToRange(0.8e18, 5e18);
-        sharePrice = sharePrice.normalizeToRange(initialSharePrice, 5e18);
+        initialVaultSharePrice = initialVaultSharePrice.normalizeToRange(
+            0.8e18,
+            5e18
+        );
+        vaultSharePrice = vaultSharePrice.normalizeToRange(
+            initialVaultSharePrice,
+            5e18
+        );
 
         // Test a large span of orders of magnitudes of both the reserves and
         // the size of the reserves. This test demonstrates that for the
@@ -130,7 +136,7 @@ contract YieldSpaceMathTest is Test {
                 uint256 bondReserves = HyperdriveMath
                     .calculateInitialBondReserves(
                         shareReserves,
-                        initialSharePrice,
+                        initialVaultSharePrice,
                         fixedRate,
                         365 days,
                         timeStretch
@@ -145,8 +151,8 @@ contract YieldSpaceMathTest is Test {
                                 longsOutstanding: 0,
                                 longExposure: 0,
                                 timeStretch: timeStretch,
-                                sharePrice: sharePrice,
-                                initialSharePrice: initialSharePrice,
+                                vaultSharePrice: vaultSharePrice,
+                                initialVaultSharePrice: initialVaultSharePrice,
                                 minimumShareReserves: minimumShareReserves,
                                 curveFee: 0,
                                 flatFee: 0,
@@ -166,8 +172,8 @@ contract YieldSpaceMathTest is Test {
                         bondReserves,
                         tradeSize,
                         1e18 - ONE.mulDown(timeStretch),
-                        sharePrice,
-                        initialSharePrice
+                        vaultSharePrice,
+                        initialVaultSharePrice
                     );
                 assertGt(result, 0);
             }
@@ -177,8 +183,8 @@ contract YieldSpaceMathTest is Test {
     function test__calculateMaxBuy(
         uint256 fixedRate,
         uint256 shareReserves,
-        uint256 sharePrice,
-        uint256 initialSharePrice
+        uint256 vaultSharePrice,
+        uint256 initialVaultSharePrice
     ) external {
         MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
 
@@ -187,8 +193,14 @@ contract YieldSpaceMathTest is Test {
             0.0001e18,
             500_000_000e18
         );
-        initialSharePrice = initialSharePrice.normalizeToRange(0.8e18, 5e18);
-        sharePrice = sharePrice.normalizeToRange(initialSharePrice, 5e18);
+        initialVaultSharePrice = initialVaultSharePrice.normalizeToRange(
+            0.8e18,
+            5e18
+        );
+        vaultSharePrice = vaultSharePrice.normalizeToRange(
+            initialVaultSharePrice,
+            5e18
+        );
 
         // Calculate the bond reserves that give the pool the expected spot rate.
         uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(
@@ -197,7 +209,7 @@ contract YieldSpaceMathTest is Test {
         );
         uint256 bondReserves = HyperdriveMath.calculateInitialBondReserves(
             shareReserves,
-            initialSharePrice,
+            initialVaultSharePrice,
             fixedRate,
             365 days,
             timeStretch
@@ -208,15 +220,15 @@ contract YieldSpaceMathTest is Test {
             shareReserves,
             bondReserves,
             1e18 - ONE.mulDown(timeStretch),
-            sharePrice,
-            initialSharePrice
+            vaultSharePrice,
+            initialVaultSharePrice
         );
         uint256 maxDz = yieldSpaceMath.calculateMaxBuySharesIn(
             shareReserves,
             bondReserves,
             1e18 - ONE.mulDown(timeStretch),
-            sharePrice,
-            initialSharePrice
+            vaultSharePrice,
+            initialVaultSharePrice
         );
 
         // Ensure that the maximum buy is a valid trade on this invariant and
@@ -226,15 +238,15 @@ contract YieldSpaceMathTest is Test {
                 shareReserves,
                 bondReserves,
                 ONE - timeStretch,
-                sharePrice,
-                initialSharePrice
+                vaultSharePrice,
+                initialVaultSharePrice
             ),
             yieldSpaceMath.kDown(
                 shareReserves + maxDz,
                 bondReserves - maxDy,
                 ONE - timeStretch,
-                sharePrice,
-                initialSharePrice
+                vaultSharePrice,
+                initialVaultSharePrice
             ),
             1e12 // TODO: Investigate this bound.
         );
@@ -242,7 +254,7 @@ contract YieldSpaceMathTest is Test {
             HyperdriveMath.calculateSpotPrice(
                 shareReserves + maxDz,
                 bondReserves - maxDy,
-                initialSharePrice,
+                initialVaultSharePrice,
                 timeStretch
             ),
             1e18,

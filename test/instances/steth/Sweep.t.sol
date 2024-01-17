@@ -50,7 +50,7 @@ contract SweepTest is BaseTest {
             baseToken: IERC20(address(ETH)),
             linkerFactory: address(0),
             linkerCodeHash: bytes32(0),
-            initialSharePrice: ONE,
+            initialVaultSharePrice: ONE,
             minimumShareReserves: 1e15,
             minimumTransactionAmount: 1e12,
             positionDuration: 365 days,

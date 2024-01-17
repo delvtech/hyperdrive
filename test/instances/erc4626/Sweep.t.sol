@@ -50,7 +50,7 @@ contract SweepTest is BaseTest {
             baseToken: IERC20(address(leakyBase)),
             linkerFactory: address(0),
             linkerCodeHash: bytes32(0),
-            initialSharePrice: ONE,
+            initialVaultSharePrice: ONE,
             minimumShareReserves: ONE,
             minimumTransactionAmount: 0.001e18,
             positionDuration: 365 days,
@@ -139,7 +139,7 @@ contract SweepTest is BaseTest {
         hyperdrive.sweep(IERC20(baseToken));
 
         // Trying to sweep the vault token should fail.
-        address vaultToken = address(hyperdrive.pool());
+        address vaultToken = address(hyperdrive.vault());
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         hyperdrive.sweep(IERC20(vaultToken));
     }

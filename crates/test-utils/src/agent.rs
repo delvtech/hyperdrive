@@ -53,7 +53,7 @@ pub struct Agent<M, R: Rng + SeedableRng> {
     address: Address,
     provider: Provider<Arc<RetryClient<Http>>>,
     hyperdrive: IHyperdrive<M>,
-    pool: MockERC4626<M>,
+    vault: MockERC4626<M>,
     base: ERC20Mintable<M>,
     config: PoolConfig,
     wallet: Wallet,
@@ -165,17 +165,17 @@ impl Agent<ChainClient, ChaCha8Rng> {
         maybe_seed: Option<u64>,
     ) -> Result<Self> {
         let seed = maybe_seed.unwrap_or(17);
-        let pool = IERC4626Hyperdrive::new(addresses.hyperdrive, client.clone())
-            .pool()
+        let vault = IERC4626Hyperdrive::new(addresses.hyperdrive, client.clone())
+            .vault()
             .call()
             .await?;
-        let pool = MockERC4626::new(pool, client.clone());
+        let vault = MockERC4626::new(vault, client.clone());
         let hyperdrive = IHyperdrive::new(addresses.hyperdrive, client.clone());
         Ok(Self {
             address: client.address(),
             provider: client.provider().clone(),
             hyperdrive: hyperdrive.clone(),
-            pool,
+            vault,
             base: ERC20Mintable::new(addresses.base, client),
             config: hyperdrive.get_pool_config().call().await?,
             wallet: Wallet::default(),
@@ -794,7 +794,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
     /// interest accrues.
     pub async fn advance_time(&self, rate: FixedPoint, duration: FixedPoint) -> Result<()> {
         // Set the new variable rate.
-        self.pool.set_rate(rate.into()).send().await?;
+        self.vault.set_rate(rate.into()).send().await?;
 
         // Advance the chain's time and mine a block. Mining a block is
         // important because client's check the current block time by looking
@@ -819,7 +819,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         maybe_tx_options: Option<TxOptions>,
     ) -> Result<()> {
         // Set the new variable rate.
-        self.pool.set_rate(rate.into()).send().await?;
+        self.vault.set_rate(rate.into()).send().await?;
 
         // Advance time one checkpoint at a time until we've advanced time by
         // the full duration.
@@ -943,7 +943,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
     pub async fn calculate_open_short(&self, short_amount: FixedPoint) -> Result<FixedPoint> {
         let state = self.get_state().await?;
         let Checkpoint {
-            share_price: open_share_price,
+            vault_share_price: open_vault_share_price,
             ..
         } = self
             .hyperdrive
@@ -952,7 +952,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         state.calculate_open_short(
             short_amount,
             state.get_spot_price(),
-            open_share_price.into(),
+            open_vault_share_price.into(),
         )
     }
 
@@ -980,7 +980,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
 
         let state = self.get_state().await?;
         let Checkpoint {
-            share_price: open_share_price,
+            vault_share_price: open_vault_share_price,
         } = self
             .hyperdrive
             .get_checkpoint(state.to_checkpoint(self.now().await?))
@@ -1002,7 +1002,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
             let min_price = state.get_min_price();
 
             // Calculate the linear interpolation.
-            let base_reserves = FixedPoint::from(state.info.share_price)
+            let base_reserves = FixedPoint::from(state.info.vault_share_price)
                 * (FixedPoint::from(state.info.share_reserves));
             let weight = (min(self.wallet.base, base_reserves) / base_reserves)
                 .pow(fixed!(1e18) - FixedPoint::from(self.config.time_stretch));
@@ -1011,7 +1011,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
 
         Ok(state.get_max_short(
             budget,
-            open_share_price,
+            open_vault_share_price,
             checkpoint_exposure,
             Some(conservative_price),
             None,

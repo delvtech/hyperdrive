@@ -13,8 +13,10 @@ impl State {
         let normalized_time_remaining = normalized_time_remaining.into();
 
         // Calculate the flat part of the trade
-        let flat =
-            bond_amount.mul_div_down(fixed!(1e18) - normalized_time_remaining, self.share_price());
+        let flat = bond_amount.mul_div_down(
+            fixed!(1e18) - normalized_time_remaining,
+            self.vault_share_price(),
+        );
 
         // Calculate the curve part of the trade
         let curve = if normalized_time_remaining > fixed!(0) {

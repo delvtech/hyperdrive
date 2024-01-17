@@ -22,18 +22,18 @@ library HyperdriveMath {
     ///        effective share reserves are a modified version of the share
     ///        reserves used when pricing trades.
     /// @param _bondReserves The pool's bond reserves.
-    /// @param _initialSharePrice The initial share price.
+    /// @param _initialVaultSharePrice The initial vault share price.
     /// @param _timeStretch The time stretch parameter.
     /// @return spotPrice The spot price of bonds in terms of base.
     function calculateSpotPrice(
         uint256 _effectiveShareReserves,
         uint256 _bondReserves,
-        uint256 _initialSharePrice,
+        uint256 _initialVaultSharePrice,
         uint256 _timeStretch
     ) internal pure returns (uint256 spotPrice) {
         // p = (y / (mu * (z - zeta))) ** -t_s
         //   = ((mu * (z - zeta)) / y) ** t_s
-        spotPrice = _initialSharePrice
+        spotPrice = _initialVaultSharePrice
             .mulDivDown(_effectiveShareReserves, _bondReserves)
             .pow(_timeStretch);
     }
@@ -43,14 +43,14 @@ library HyperdriveMath {
     ///        effective share reserves are a modified version of the share
     ///        reserves used when pricing trades.
     /// @param _bondReserves The pool's bond reserves.
-    /// @param _initialSharePrice The pool's initial share price.
+    /// @param _initialVaultSharePrice The pool's initial vault share price.
     /// @param _positionDuration The amount of time until maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
     /// @return apr The pool's spot APR.
     function calculateSpotAPR(
         uint256 _effectiveShareReserves,
         uint256 _bondReserves,
-        uint256 _initialSharePrice,
+        uint256 _initialVaultSharePrice,
         uint256 _positionDuration,
         uint256 _timeStretch
     ) internal pure returns (uint256 apr) {
@@ -61,7 +61,7 @@ library HyperdriveMath {
         uint256 spotPrice = calculateSpotPrice(
             _effectiveShareReserves,
             _bondReserves,
-            _initialSharePrice,
+            _initialVaultSharePrice,
             _timeStretch
         );
         return
@@ -98,7 +98,7 @@ library HyperdriveMath {
     /// @param _effectiveShareReserves The pool's effective share reserves. The
     ///        effective share reserves are a modified version of the share
     ///        reserves used when pricing trades.
-    /// @param _initialSharePrice The pool's initial share price.
+    /// @param _initialVaultSharePrice The pool's initial vault share price.
     /// @param _apr The pool's APR.
     /// @param _positionDuration The amount of time until maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
@@ -106,7 +106,7 @@ library HyperdriveMath {
     ///         the pool have a specified APR.
     function calculateInitialBondReserves(
         uint256 _effectiveShareReserves,
-        uint256 _initialSharePrice,
+        uint256 _initialVaultSharePrice,
         uint256 _apr,
         uint256 _positionDuration,
         uint256 _timeStretch
@@ -116,7 +116,7 @@ library HyperdriveMath {
 
         // mu * (z - zeta) * (1 + apr * t) ** (1 / tau)
         return
-            _initialSharePrice.mulDown(_effectiveShareReserves).mulDown(
+            _initialVaultSharePrice.mulDown(_effectiveShareReserves).mulDown(
                 (ONE + _apr.mulDown(t)).pow(ONE.divUp(_timeStretch))
             );
     }
@@ -131,24 +131,24 @@ library HyperdriveMath {
     ///               = (1 + flat_fee) * dy - c * dz + (c1 / c0) * dy - dy
     ///               = (c1 / c0 + flat_fee) * dy - c * dz
     ///
-    ///      We convert the proceeds to shares by dividing by the current share
-    ///      price. In the event that the interest is negative and outweighs the
-    ///      trading profits and margin released, the short's proceeds are
-    ///      marked to zero.
+    ///      We convert the proceeds to shares by dividing by the current vault
+    ///      share price. In the event that the interest is negative and
+    ///      outweighs the trading profits and margin released, the short's
+    ///      proceeds are marked to zero.
     /// @param _bondAmount The amount of bonds underlying the closed short.
     /// @param _shareAmount The amount of shares that it costs to close the
     ///                     short.
-    /// @param _openSharePrice The share price at the short's open.
-    /// @param _closeSharePrice The share price at the short's close.
-    /// @param _sharePrice The current share price.
+    /// @param _openVaultSharePrice The vault share price at the short's open.
+    /// @param _closeVaultSharePrice The vault share price at the short's close.
+    /// @param _vaultSharePrice The current vault share price.
     /// @param _flatFee The flat fee currently within the pool
     /// @return shareProceeds The short proceeds in shares.
     function calculateShortProceeds(
         uint256 _bondAmount,
         uint256 _shareAmount,
-        uint256 _openSharePrice,
-        uint256 _closeSharePrice,
-        uint256 _sharePrice,
+        uint256 _openVaultSharePrice,
+        uint256 _closeVaultSharePrice,
+        uint256 _vaultSharePrice,
         uint256 _flatFee
     ) internal pure returns (uint256 shareProceeds) {
         // If the interest is more negative than the trading profits and margin
@@ -156,13 +156,13 @@ library HyperdriveMath {
         // calculate the proceeds as the sum of the trading proceeds, the
         // interest proceeds, and the margin released.
         uint256 bondFactor = _bondAmount
-            .mulDivDown(_closeSharePrice, _openSharePrice)
-            .divDown(_sharePrice);
+            .mulDivDown(_closeVaultSharePrice, _openVaultSharePrice)
+            .divDown(_vaultSharePrice);
 
         // We increase the bondFactor by the flat fee amount, because the trader
         // has provided the flat fee as margin, and so it must be returned to
         // them if it's not charged.
-        bondFactor += _bondAmount.mulDivDown(_flatFee, _sharePrice);
+        bondFactor += _bondAmount.mulDivDown(_flatFee, _vaultSharePrice);
 
         if (bondFactor > _shareAmount) {
             // proceeds = (c1 / c0 * c) * dy - dz
@@ -225,16 +225,16 @@ library HyperdriveMath {
     /// @param _bondReserves The pool's bond reserves.
     /// @param _shareAmount The amount of shares the user is depositing.
     /// @param _timeStretch The time stretch parameter.
-    /// @param _sharePrice The share price.
-    /// @param _initialSharePrice The initial share price.
+    /// @param _vaultSharePrice The vault share price.
+    /// @param _initialVaultSharePrice The initial vault share price.
     /// @return bondReservesDelta The bonds paid by the reserves in the trade.
     function calculateOpenLong(
         uint256 _effectiveShareReserves,
         uint256 _bondReserves,
         uint256 _shareAmount,
         uint256 _timeStretch,
-        uint256 _sharePrice,
-        uint256 _initialSharePrice
+        uint256 _vaultSharePrice,
+        uint256 _initialVaultSharePrice
     ) internal pure returns (uint256) {
         // NOTE: We underestimate the trader's bond proceeds to avoid sandwich
         // attacks.
@@ -247,8 +247,8 @@ library HyperdriveMath {
                 // we use a time remaining of 1. This means that we can use
                 // `_timeStretch = t * _timeStretch`.
                 ONE - _timeStretch,
-                _sharePrice,
-                _initialSharePrice
+                _vaultSharePrice,
+                _initialVaultSharePrice
             );
     }
 
@@ -262,8 +262,9 @@ library HyperdriveMath {
     /// @param _normalizedTimeRemaining The normalized time remaining of the
     ///        position.
     /// @param _timeStretch The time stretch parameter.
-    /// @param _sharePrice The share price.
-    /// @param _initialSharePrice The share price when the pool was deployed.
+    /// @param _vaultSharePrice The vault share price.
+    /// @param _initialVaultSharePrice The vault share price when the pool was
+    ///        deployed.
     /// @return shareCurveDelta The shares paid by the reserves in the trade.
     /// @return bondCurveDelta The bonds paid to the reserves in the trade.
     /// @return shareProceeds The shares that the user will receive.
@@ -273,8 +274,8 @@ library HyperdriveMath {
         uint256 _amountIn,
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
-        uint256 _sharePrice,
-        uint256 _initialSharePrice
+        uint256 _vaultSharePrice,
+        uint256 _initialVaultSharePrice
     )
         internal
         pure
@@ -288,11 +289,11 @@ library HyperdriveMath {
         // matured and timeRemaining * amountIn of the bonds to be newly
         // minted. The fully matured bonds are redeemed one-to-one to base
         // (our result is given in shares, so we divide the one-to-one
-        // redemption by the share price) and the newly minted bonds are
+        // redemption by the vault share price) and the newly minted bonds are
         // traded on a YieldSpace curve configured to `timeRemaining = 1`.
         shareProceeds = _amountIn.mulDivDown(
             ONE - _normalizedTimeRemaining,
-            _sharePrice
+            _vaultSharePrice
         );
         if (_normalizedTimeRemaining > 0) {
             // Calculate the curved part of the trade.
@@ -308,8 +309,8 @@ library HyperdriveMath {
                 // we use a time remaining of 1. This means that we can use
                 // `_timeStretch = t * _timeStretch`.
                 ONE - _timeStretch,
-                _sharePrice,
-                _initialSharePrice
+                _vaultSharePrice,
+                _initialVaultSharePrice
             );
             shareProceeds += shareCurveDelta;
         }
@@ -323,16 +324,16 @@ library HyperdriveMath {
     /// @param _bondReserves The pool's bonds reserves.
     /// @param _amountIn The amount of bonds the user is providing.
     /// @param _timeStretch The time stretch parameter.
-    /// @param _sharePrice The share price.
-    /// @param _initialSharePrice The initial share price.
+    /// @param _vaultSharePrice The vault share price.
+    /// @param _initialVaultSharePrice The initial vault share price.
     /// @return The shares paid by the reserves in the trade.
     function calculateOpenShort(
         uint256 _effectiveShareReserves,
         uint256 _bondReserves,
         uint256 _amountIn,
         uint256 _timeStretch,
-        uint256 _sharePrice,
-        uint256 _initialSharePrice
+        uint256 _vaultSharePrice,
+        uint256 _initialVaultSharePrice
     ) internal pure returns (uint256) {
         // NOTE: We underestimate the LP's share payment to avoid sandwiches.
         return
@@ -344,8 +345,8 @@ library HyperdriveMath {
                 // we use a time remaining of 1. This means that we can use
                 // `_timeStretch = t * _timeStretch`.
                 ONE - _timeStretch,
-                _sharePrice,
-                _initialSharePrice
+                _vaultSharePrice,
+                _initialVaultSharePrice
             );
     }
 
@@ -359,8 +360,8 @@ library HyperdriveMath {
     /// @param _normalizedTimeRemaining The amount of time remaining until
     ///        maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
-    /// @param _sharePrice The share price.
-    /// @param _initialSharePrice The initial share price.
+    /// @param _vaultSharePrice The vault share price.
+    /// @param _initialVaultSharePrice The initial vault share price.
     /// @return shareCurveDelta The shares paid to the reserves in the trade.
     /// @return bondCurveDelta The bonds paid by the reserves in the trade.
     /// @return sharePayment The shares that the user must pay.
@@ -370,8 +371,8 @@ library HyperdriveMath {
         uint256 _amountOut,
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
-        uint256 _sharePrice,
-        uint256 _initialSharePrice
+        uint256 _vaultSharePrice,
+        uint256 _initialVaultSharePrice
     )
         internal
         pure
@@ -386,12 +387,12 @@ library HyperdriveMath {
         // purchased to be fully matured and `timeRemaining * amountOut of the
         // bonds to be newly minted. The fully matured bonds are redeemed
         // one-to-one to base (our result is given in shares, so we divide
-        // the one-to-one redemption by the share price) and the newly
+        // the one-to-one redemption by the vault share price) and the newly
         // minted bonds are traded on a YieldSpace curve configured to
         // timeRemaining = 1.
         sharePayment = _amountOut.mulDivDown(
             ONE - _normalizedTimeRemaining,
-            _sharePrice
+            _vaultSharePrice
         );
         if (_normalizedTimeRemaining > 0) {
             bondCurveDelta = _amountOut.mulDown(_normalizedTimeRemaining);
@@ -406,8 +407,8 @@ library HyperdriveMath {
                 // we use a time remaining of 1. This means that we can use
                 // `_timeStretch = t * _timeStretch`.
                 ONE - _timeStretch,
-                _sharePrice,
-                _initialSharePrice
+                _vaultSharePrice,
+                _initialVaultSharePrice
             );
             sharePayment += shareCurveDelta;
         }
@@ -434,8 +435,9 @@ library HyperdriveMath {
     /// @param _shareReservesDelta The change in share reserves from the trade.
     /// @param _shareCurveDelta The curve portion of the change in share reserves.
     /// @param _totalGovernanceFee The total governance fee.
-    /// @param _openSharePrice The share price at the beginning of the term.
-    /// @param _closeSharePrice The share price at the end of the term.
+    /// @param _openVaultSharePrice The vault share price at the beginning of
+    ///        the term.
+    /// @param _closeVaultSharePrice The vault share price at the end of the term.
     /// @param _isLong A flag indicating whether or not the trade is a long.
     /// @return The adjusted share proceeds.
     /// @return The adjusted share reserves delta.
@@ -447,8 +449,8 @@ library HyperdriveMath {
         uint256 _shareReservesDelta,
         uint256 _shareCurveDelta,
         uint256 _totalGovernanceFee,
-        uint256 _openSharePrice,
-        uint256 _closeSharePrice,
+        uint256 _openVaultSharePrice,
+        uint256 _closeVaultSharePrice,
         bool _isLong
     ) internal pure returns (uint256, uint256, uint256, int256, uint256) {
         // The share reserves delta, share curve delta, and total governance fee
@@ -466,33 +468,33 @@ library HyperdriveMath {
         // shareAdjustmentDelta = min(c_1 / c_0, 1) * shareReservesDelta -
         //                        shareCurveDelta
         int256 shareAdjustmentDelta;
-        if (_closeSharePrice < _openSharePrice) {
+        if (_closeVaultSharePrice < _openVaultSharePrice) {
             // We only need to scale the proceeds in the case that we're closing
             // a long since `calculateShortProceeds` accounts for negative
             // interest.
             if (_isLong) {
                 _shareProceeds = _shareProceeds.mulDivDown(
-                    _closeSharePrice,
-                    _openSharePrice
+                    _closeVaultSharePrice,
+                    _openVaultSharePrice
                 );
             }
 
             // Scale the other values.
             _shareReservesDelta = _shareReservesDelta.mulDivDown(
-                _closeSharePrice,
-                _openSharePrice
+                _closeVaultSharePrice,
+                _openVaultSharePrice
             );
             // NOTE: Using unscaled `shareCurveDelta`.
             shareAdjustmentDelta =
                 int256(_shareReservesDelta) -
                 int256(_shareCurveDelta);
             _shareCurveDelta = _shareCurveDelta.mulDivDown(
-                _closeSharePrice,
-                _openSharePrice
+                _closeVaultSharePrice,
+                _openVaultSharePrice
             );
             _totalGovernanceFee = _totalGovernanceFee.mulDivDown(
-                _closeSharePrice,
-                _openSharePrice
+                _closeVaultSharePrice,
+                _openVaultSharePrice
             );
         } else {
             shareAdjustmentDelta =

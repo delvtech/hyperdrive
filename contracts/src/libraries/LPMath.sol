@@ -126,8 +126,8 @@ library LPMath {
         uint256 shareReserves;
         int256 shareAdjustment;
         uint256 bondReserves;
-        uint256 sharePrice;
-        uint256 initialSharePrice;
+        uint256 vaultSharePrice;
+        uint256 initialVaultSharePrice;
         uint256 minimumShareReserves;
         uint256 timeStretch;
         uint256 longsOutstanding;
@@ -241,8 +241,8 @@ library LPMath {
                     _params.bondReserves,
                     _params.minimumShareReserves,
                     ONE - _params.timeStretch,
-                    _params.sharePrice,
-                    _params.initialSharePrice
+                    _params.vaultSharePrice,
+                    _params.initialVaultSharePrice
                 );
             if (!success) {
                 return (0, false);
@@ -257,8 +257,8 @@ library LPMath {
                         _params.bondReserves,
                         netCurvePosition_,
                         ONE - _params.timeStretch,
-                        _params.sharePrice,
-                        _params.initialSharePrice
+                        _params.vaultSharePrice,
+                        _params.initialVaultSharePrice
                     );
                 return (-int256(netCurveTrade), true);
             }
@@ -304,8 +304,8 @@ library LPMath {
                 effectiveShareReserves,
                 _params.bondReserves,
                 ONE - _params.timeStretch,
-                _params.sharePrice,
-                _params.initialSharePrice
+                _params.vaultSharePrice,
+                _params.initialVaultSharePrice
             );
 
             // If the max curve trade is greater than the net curve position,
@@ -317,8 +317,8 @@ library LPMath {
                         _params.bondReserves,
                         netCurvePosition_,
                         ONE - _params.timeStretch,
-                        _params.sharePrice,
-                        _params.initialSharePrice
+                        _params.vaultSharePrice,
+                        _params.initialVaultSharePrice
                     );
                 return (int256(netCurveTrade), true);
             }
@@ -331,14 +331,14 @@ library LPMath {
                         effectiveShareReserves,
                         _params.bondReserves,
                         ONE - _params.timeStretch,
-                        _params.sharePrice,
-                        _params.initialSharePrice
+                        _params.vaultSharePrice,
+                        _params.initialVaultSharePrice
                     );
                 return (
                     int256(
                         maxSharePayment +
                             (netCurvePosition_ - maxCurveTrade).divDown(
-                                _params.sharePrice
+                                _params.vaultSharePrice
                             )
                     ),
                     true
@@ -368,13 +368,13 @@ library LPMath {
             int256(
                 _params.shortsOutstanding.mulDivDown(
                     ONE - _params.shortAverageTimeRemaining,
-                    _params.sharePrice
+                    _params.vaultSharePrice
                 )
             ) -
             int256(
                 _params.longsOutstanding.mulDivDown(
                     ONE - _params.longAverageTimeRemaining,
-                    _params.sharePrice
+                    _params.vaultSharePrice
                 )
             );
     }
@@ -615,8 +615,8 @@ library LPMath {
                         _params.presentValueParams.bondReserves,
                         _params.presentValueParams.minimumShareReserves,
                         ONE - _params.presentValueParams.timeStretch,
-                        _params.presentValueParams.sharePrice,
-                        _params.presentValueParams.initialSharePrice
+                        _params.presentValueParams.vaultSharePrice,
+                        _params.presentValueParams.initialVaultSharePrice
                     );
                 if (!success) {
                     break;
@@ -941,8 +941,8 @@ library LPMath {
                 ),
                 _params.presentValueParams.bondReserves,
                 ONE - _params.presentValueParams.timeStretch,
-                _params.presentValueParams.sharePrice,
-                _params.presentValueParams.initialSharePrice
+                _params.presentValueParams.vaultSharePrice,
+                _params.presentValueParams.initialVaultSharePrice
             );
 
             // If the maximum amount of bonds that can be purchased is greater
@@ -982,8 +982,8 @@ library LPMath {
                 ),
                 _params.presentValueParams.bondReserves,
                 ONE - _params.presentValueParams.timeStretch,
-                _params.presentValueParams.sharePrice,
-                _params.presentValueParams.initialSharePrice
+                _params.presentValueParams.vaultSharePrice,
+                _params.presentValueParams.initialVaultSharePrice
             );
 
             // Calculate the derivative of `calculateMaxBuyBondsOut(x)` at the
@@ -1101,8 +1101,8 @@ library LPMath {
                 ),
                 _params.presentValueParams.bondReserves,
                 ONE - _params.presentValueParams.timeStretch,
-                _params.presentValueParams.sharePrice,
-                _params.presentValueParams.initialSharePrice
+                _params.presentValueParams.vaultSharePrice,
+                _params.presentValueParams.initialVaultSharePrice
             );
             if (maxBondAmount >= netCurveTrade) {
                 maxShareReservesDelta = maybeMaxShareReservesDelta;
@@ -1148,12 +1148,12 @@ library LPMath {
                 _originalEffectiveShareReserves,
                 _params.originalBondReserves,
                 ONE - _params.presentValueParams.timeStretch,
-                _params.presentValueParams.sharePrice,
-                _params.presentValueParams.initialSharePrice
+                _params.presentValueParams.vaultSharePrice,
+                _params.presentValueParams.initialVaultSharePrice
             )
             .divUp(
-                _params.presentValueParams.sharePrice.divDown(
-                    _params.presentValueParams.initialSharePrice
+                _params.presentValueParams.vaultSharePrice.divDown(
+                    _params.presentValueParams.initialVaultSharePrice
                 ) + ONE
             );
         if (rhs >= ONE) {
@@ -1244,10 +1244,10 @@ library LPMath {
                 _params.presentValueParams.shareReserves,
                 _params.presentValueParams.shareAdjustment
             );
-        uint256 derivative = _params.presentValueParams.sharePrice.divUp(
+        uint256 derivative = _params.presentValueParams.vaultSharePrice.divUp(
             _params
                 .presentValueParams
-                .initialSharePrice
+                .initialVaultSharePrice
                 .mulDown(effectiveShareReserves)
                 .pow(_params.presentValueParams.timeStretch)
         ) +
@@ -1276,8 +1276,8 @@ library LPMath {
             effectiveShareReserves,
             _params.presentValueParams.bondReserves,
             ONE - _params.presentValueParams.timeStretch,
-            _params.presentValueParams.sharePrice,
-            _params.presentValueParams.initialSharePrice
+            _params.presentValueParams.vaultSharePrice,
+            _params.presentValueParams.initialVaultSharePrice
         );
         uint256 inner = (_params.presentValueParams.bondReserves + _bondAmount)
             .pow(ONE - _params.presentValueParams.timeStretch);
@@ -1286,9 +1286,9 @@ library LPMath {
             // idle since the derivative couldn't be computed.
             return (0, false);
         }
-        inner = _params.presentValueParams.initialSharePrice.mulDivUp(
+        inner = _params.presentValueParams.initialVaultSharePrice.mulDivUp(
             k - inner,
-            _params.presentValueParams.sharePrice
+            _params.presentValueParams.vaultSharePrice
         );
         if (inner >= ONE) {
             // NOTE: Round the exponent up since this rounds the result up.
@@ -1309,7 +1309,7 @@ library LPMath {
         // NOTE: Round up since this is on the rhs of the final subtraction.
         derivative = derivative.mulDivUp(
             inner,
-            _params.presentValueParams.sharePrice
+            _params.presentValueParams.vaultSharePrice
         );
 
         // derivative = 1 - derivative
@@ -1381,10 +1381,10 @@ library LPMath {
                 _params.presentValueParams.shareReserves,
                 _params.presentValueParams.shareAdjustment
             );
-        uint256 derivative = _params.presentValueParams.sharePrice.divUp(
+        uint256 derivative = _params.presentValueParams.vaultSharePrice.divUp(
             _params
                 .presentValueParams
-                .initialSharePrice
+                .initialVaultSharePrice
                 .mulDown(effectiveShareReserves)
                 .pow(_params.presentValueParams.timeStretch)
         ) +
@@ -1413,8 +1413,8 @@ library LPMath {
             effectiveShareReserves,
             _params.presentValueParams.bondReserves,
             ONE - _params.presentValueParams.timeStretch,
-            _params.presentValueParams.sharePrice,
-            _params.presentValueParams.initialSharePrice
+            _params.presentValueParams.vaultSharePrice,
+            _params.presentValueParams.initialVaultSharePrice
         );
         uint256 inner = (_params.presentValueParams.bondReserves - _bondAmount)
             .pow(ONE - _params.presentValueParams.timeStretch);
@@ -1423,9 +1423,9 @@ library LPMath {
             // idle since the derivative couldn't be computed.
             return (0, false);
         }
-        inner = _params.presentValueParams.initialSharePrice.mulDivUp(
+        inner = _params.presentValueParams.initialVaultSharePrice.mulDivUp(
             k - inner,
-            _params.presentValueParams.sharePrice
+            _params.presentValueParams.vaultSharePrice
         );
         if (inner >= 0) {
             // NOTE: Round the exponent up since this rounds the result up.
@@ -1454,7 +1454,7 @@ library LPMath {
         //              ) ** (t_s / (1 - t_s))
         derivative = derivative.mulDivUp(
             inner,
-            _params.presentValueParams.sharePrice
+            _params.presentValueParams.vaultSharePrice
         );
 
         // derivative = 1 - derivative
@@ -1523,10 +1523,10 @@ library LPMath {
                 _params.presentValueParams.shareReserves,
                 _params.presentValueParams.shareAdjustment
             );
-        uint256 derivative = _params.presentValueParams.sharePrice.divDown(
+        uint256 derivative = _params.presentValueParams.vaultSharePrice.divDown(
             _params
                 .presentValueParams
-                .initialSharePrice
+                .initialVaultSharePrice
                 .mulUp(effectiveShareReserves)
                 .pow(_params.presentValueParams.timeStretch)
         ) +
@@ -1545,8 +1545,8 @@ library LPMath {
             effectiveShareReserves,
             _params.presentValueParams.bondReserves,
             ONE - _params.presentValueParams.timeStretch,
-            _params.presentValueParams.sharePrice,
-            _params.presentValueParams.initialSharePrice
+            _params.presentValueParams.vaultSharePrice,
+            _params.presentValueParams.initialVaultSharePrice
         );
         if (k >= ONE) {
             // NOTE: Round the exponent down since this rounds the result down.
@@ -1574,8 +1574,8 @@ library LPMath {
         derivative = derivative.divDown(
             (// NOTE: Round up the divisor since this rounds the quotient
             // down.
-            _params.presentValueParams.sharePrice.divUp(
-                _params.presentValueParams.initialSharePrice
+            _params.presentValueParams.vaultSharePrice.divUp(
+                _params.presentValueParams.initialVaultSharePrice
             ) + ONE).pow(
                     // NOTE: Round up the exponent since the base is greater
                     //       than 1 and rounding the divisor up rounds the

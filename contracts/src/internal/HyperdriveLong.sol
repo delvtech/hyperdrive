@@ -23,16 +23,17 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @dev Opens a long position.
     /// @param _amount The amount to open a long with.
     /// @param _minOutput The minimum number of bonds to receive.
-    /// @param _minSharePrice The minimum share price at which to open the long.
-    ///        This allows traders to protect themselves from opening a long in
-    ///        a checkpoint where negative interest has accrued.
+    /// @param _minVaultSharePrice The minimum vault share price at which to
+    ///        open the long. This allows traders to protect themselves from
+    ///        opening a long in a checkpoint where negative interest has
+    ///        accrued.
     /// @param _options The options that configure how the trade is settled.
     /// @return maturityTime The maturity time of the bonds.
     /// @return bondProceeds The amount of bonds the user received
     function _openLong(
         uint256 _amount,
         uint256 _minOutput,
-        uint256 _minSharePrice,
+        uint256 _minVaultSharePrice,
         IHyperdrive.Options calldata _options
     )
         internal
@@ -44,28 +45,28 @@ abstract contract HyperdriveLong is HyperdriveLP {
         _checkMessageValue();
 
         // Deposit the user's input amount.
-        (uint256 sharesDeposited, uint256 sharePrice) = _deposit(
+        (uint256 sharesDeposited, uint256 vaultSharePrice) = _deposit(
             _amount,
             _options
         );
 
-        // Enforce min user inputs and min share price
-        // Note: We use the value that is returned from the
-        // deposit to check against the min transaction
-        // amount because in the event of slippage on the
-        // deposit, we want the inputs to the state updates
-        // to respect the min transaction amount requirements.
-        uint256 baseDeposited = sharesDeposited.mulDown(sharePrice);
+        // Enforce the minimum user outputs and the mininum vault share price.
+        //
+        // NOTE: We use the value that is returned from the deposit to check
+        // against the minimum transaction amount because in the event of
+        // slippage on the deposit, we want the inputs to the state updates to
+        // respect the minimum transaction amount requirements.
+        uint256 baseDeposited = sharesDeposited.mulDown(vaultSharePrice);
         if (baseDeposited < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
-        if (sharePrice < _minSharePrice) {
+        if (vaultSharePrice < _minVaultSharePrice) {
             revert IHyperdrive.MinimumSharePrice();
         }
 
         // Perform a checkpoint.
         uint256 latestCheckpoint = _latestCheckpoint();
-        _applyCheckpoint(latestCheckpoint, sharePrice);
+        _applyCheckpoint(latestCheckpoint, vaultSharePrice);
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds purchased to the beginning of the checkpoint.
@@ -79,9 +80,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
             bondReservesDelta,
             bondProceeds,
             totalGovernanceFee
-        ) = _calculateOpenLong(sharesDeposited, sharePrice);
+        ) = _calculateOpenLong(sharesDeposited, vaultSharePrice);
 
-        // Enforce min user outputs
+        // Enforce the minimum user outputs.
         if (_minOutput > bondProceeds) {
             revert IHyperdrive.OutputLimit();
         }
@@ -95,7 +96,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             shareReservesDelta,
             bondProceeds,
             bondReservesDelta,
-            sharePrice,
+            vaultSharePrice,
             maturityTime
         );
 
@@ -114,8 +115,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _options.destination,
             assetId,
             maturityTime,
-            _convertToBaseFromOption(amount, sharePrice, options),
-            sharePrice,
+            _convertToBaseFromOption(amount, vaultSharePrice, options),
+            vaultSharePrice,
             _bondProceeds
         );
 
@@ -141,8 +142,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Perform a checkpoint at the maturity time. This ensures the long and
         // all of the other positions in the checkpoint are closed. This will
         // have no effect if the maturity time is in the future.
-        uint256 sharePrice = _pricePerShare();
-        _applyCheckpoint(_maturityTime, sharePrice);
+        uint256 vaultSharePrice = _pricePerVaultShare();
+        _applyCheckpoint(_maturityTime, vaultSharePrice);
 
         // Burn the longs that are being closed.
         _burn(
@@ -159,7 +160,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 shareReservesDelta,
             int256 shareAdjustmentDelta,
             uint256 totalGovernanceFee
-        ) = _calculateCloseLong(_bondAmount, sharePrice, _maturityTime);
+        ) = _calculateCloseLong(_bondAmount, vaultSharePrice, _maturityTime);
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the long to the reserves and pay out the
@@ -185,16 +186,16 @@ abstract contract HyperdriveLong is HyperdriveLP {
             );
 
             // Distribute the excess idle to the withdrawal pool.
-            _distributeExcessIdle(sharePrice);
+            _distributeExcessIdle(vaultSharePrice);
         } else {
             // Apply the zombie close to the state and adjust the share proceeds
             // to account for negative interest that might have accrued to the
             // zombie share reserves.
-            shareProceeds = _applyZombieClose(shareProceeds, sharePrice);
+            shareProceeds = _applyZombieClose(shareProceeds, vaultSharePrice);
         }
 
         // Withdraw the profit to the trader.
-        uint256 proceeds = _withdraw(shareProceeds, sharePrice, _options);
+        uint256 proceeds = _withdraw(shareProceeds, vaultSharePrice, _options);
 
         // Enforce min user outputs.
         // Note: We use the value that is returned from the
@@ -203,7 +204,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // it to be caught be the minOutput check.
         uint256 baseProceeds = _convertToBaseFromOption(
             proceeds,
-            sharePrice,
+            vaultSharePrice,
             _options
         );
         if (_minOutput > baseProceeds) {
@@ -217,7 +218,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             maturityTime,
             baseProceeds,
-            sharePrice,
+            vaultSharePrice,
             bondAmount
         );
 
@@ -229,13 +230,13 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @param _shareReservesDelta The amount of shares paid to the curve.
     /// @param _bondProceeds The amount of bonds purchased by the trader.
     /// @param _bondReservesDelta The amount of bonds sold by the curve.
-    /// @param _sharePrice The share price.
+    /// @param _vaultSharePrice The current vault share price.
     /// @param _maturityTime The maturity time of the long.
     function _applyOpenLong(
         uint256 _shareReservesDelta,
         uint256 _bondProceeds,
         uint256 _bondReservesDelta,
-        uint256 _sharePrice,
+        uint256 _vaultSharePrice,
         uint256 _maturityTime
     ) internal {
         // Update the average maturity time of long positions.
@@ -267,12 +268,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
         );
 
         // We need to check solvency because longs increase the system's exposure.
-        if (!_isSolvent(_sharePrice)) {
+        if (!_isSolvent(_vaultSharePrice)) {
             revert IHyperdrive.InsufficientLiquidity();
         }
 
         // Distribute the excess idle to the withdrawal pool.
-        _distributeExcessIdle(_sharePrice);
+        _distributeExcessIdle(_vaultSharePrice);
     }
 
     /// @dev Applies the trading deltas from a closed long to the reserves and
@@ -340,14 +341,14 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @dev Calculate the pool reserve and trader deltas that result from
     ///      opening a long. This calculation includes trading fees.
     /// @param _shareAmount The amount of shares being paid to open the long.
-    /// @param _sharePrice The current share price.
+    /// @param _vaultSharePrice The current vault share price.
     /// @return shareReservesDelta The change in the share reserves.
     /// @return bondReservesDelta The change in the bond reserves.
     /// @return bondProceeds The proceeds in bonds.
     /// @return totalGovernanceFee The governance fee in shares.
     function _calculateOpenLong(
         uint256 _shareAmount,
-        uint256 _sharePrice
+        uint256 _vaultSharePrice
     )
         internal
         view
@@ -365,8 +366,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _marketState.bondReserves,
             _shareAmount, // amountIn
             _timeStretch,
-            _sharePrice,
-            _initialSharePrice
+            _vaultSharePrice,
+            _initialVaultSharePrice
         );
 
         // Ensure that the trader didn't purchase bonds at a negative interest
@@ -374,7 +375,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
             _effectiveShareReserves(),
             _marketState.bondReserves,
-            _initialSharePrice,
+            _initialVaultSharePrice,
             _timeStretch
         );
         if (
@@ -396,7 +397,11 @@ abstract contract HyperdriveLong is HyperdriveLP {
         (
             uint256 curveFee, // bonds
             uint256 governanceCurveFee // bonds
-        ) = _calculateFeesGivenShares(_shareAmount, spotPrice, _sharePrice);
+        ) = _calculateFeesGivenShares(
+                _shareAmount,
+                spotPrice,
+                _vaultSharePrice
+            );
 
         // Calculate the number of bonds the trader receives.
         // This is the amount of bonds the trader receives minus the fees.
@@ -415,17 +420,17 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // bonds = bonds + bonds
         bondReservesDelta = bondProceeds + governanceCurveFee;
 
-        // Calculate the fees owed to governance in shares. Open longs
-        // are calculated entirely on the curve so the curve fee is the
-        // total governance fee. In order to convert it to shares we need to
-        // multiply it by the spot price and divide it by the share price:
+        // Calculate the fees owed to governance in shares. Open longs are
+        // calculated entirely on the curve so the curve fee is the total
+        // governance fee. In order to convert it to shares we need to multiply
+        // it by the spot price and divide it by the vault share price:
         //
         // shares = (bonds * base/bonds) / (base/shares)
         // shares = bonds * shares/bonds
         // shares = shares
         totalGovernanceFee = governanceCurveFee.mulDivDown(
             spotPrice,
-            _sharePrice
+            _vaultSharePrice
         );
 
         // Calculate the number of shares to add to the shareReserves.
@@ -446,7 +451,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @dev Calculate the pool reserve and trader deltas that result from
     ///      closing a long. This calculation includes trading fees.
     /// @param _bondAmount The amount of bonds being purchased to close the short.
-    /// @param _sharePrice The current share price.
+    /// @param _vaultSharePrice The current vault share price.
     /// @param _maturityTime The maturity time of the short position.
     /// @return bondReservesDelta The bonds added to the reserves.
     /// @return shareProceeds The proceeds in shares of selling the bonds.
@@ -455,7 +460,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @return totalGovernanceFee The governance fee in shares.
     function _calculateCloseLong(
         uint256 _bondAmount,
-        uint256 _sharePrice,
+        uint256 _vaultSharePrice,
         uint256 _maturityTime
     )
         internal
@@ -488,8 +493,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
                     _bondAmount,
                     timeRemaining,
                     _timeStretch,
-                    _sharePrice,
-                    _initialSharePrice
+                    _vaultSharePrice,
+                    _initialVaultSharePrice
                 );
 
             // Calculate the fees that should be paid by the trader. The trader
@@ -500,7 +505,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
                 _effectiveShareReserves(),
                 _marketState.bondReserves,
-                _initialSharePrice,
+                _initialVaultSharePrice,
                 _timeStretch
             );
             (
@@ -512,7 +517,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _bondAmount,
                 timeRemaining,
                 spotPrice,
-                _sharePrice
+                _vaultSharePrice
             );
 
             // The curve fee (shares) is paid to the LPs, so we subtract it from
@@ -548,16 +553,17 @@ abstract contract HyperdriveLong is HyperdriveLP {
             shareReservesDelta,
             shareCurveDelta,
             totalGovernanceFee,
-            // NOTE: We use the share price from the beginning of the
-            // checkpoint as the open share price. This means that a trader
-            // that opens a long in a checkpoint that has negative interest
-            // accrued will be penalized for the negative interest when they
-            // try to close their position. The `_minSharePrice` parameter
-            // allows traders to protect themselves from this edge case.
-            _checkpoints[_maturityTime - _positionDuration].sharePrice, // open share price
+            // NOTE: We use the vault share price from the beginning of the
+            // checkpoint as the open vault share price. This means that a
+            // trader that opens a long in a checkpoint that has negative
+            // interest accrued will be penalized for the negative interest when
+            // they try to close their position. The `_minVaultSharePrice`
+            // parameter allows traders to protect themselves from this edge
+            // case.
+            _checkpoints[_maturityTime - _positionDuration].vaultSharePrice, // open vault share price
             block.timestamp < _maturityTime
-                ? _sharePrice
-                : _checkpoints[_maturityTime].sharePrice, // close share price
+                ? _vaultSharePrice
+                : _checkpoints[_maturityTime].vaultSharePrice, // close vault share price
             true
         );
     }

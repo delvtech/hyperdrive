@@ -32,21 +32,21 @@ impl State {
         &self,
         short_amount: FixedPoint,
         spot_price: FixedPoint,
-        mut open_share_price: FixedPoint,
+        mut open_vault_share_price: FixedPoint,
     ) -> Result<FixedPoint> {
         // If the open share price hasn't been set, we use the current share
         // price, since this is what will be set as the checkpoint share price
         // in the next transaction.
-        if open_share_price == fixed!(0) {
-            open_share_price = self.share_price();
+        if open_vault_share_price == fixed!(0) {
+            open_vault_share_price = self.vault_share_price();
         }
 
         // NOTE: The order of additions and subtractions is important to avoid underflows.
         Ok(
-            short_amount.mul_div_down(self.share_price(), open_share_price)
+            short_amount.mul_div_down(self.vault_share_price(), open_vault_share_price)
                 + self.flat_fee() * short_amount
                 + self.curve_fee() * (fixed!(1e18) - spot_price) * short_amount
-                - self.share_price() * self.short_principal(short_amount)?,
+                - self.vault_share_price() * self.short_principal(short_amount)?,
         )
     }
 
@@ -55,9 +55,9 @@ impl State {
         &self,
         short_amount: FixedPoint,
         spot_price: FixedPoint,
-        open_share_price: FixedPoint,
+        open_vault_share_price: FixedPoint,
     ) -> Result<FixedPoint> {
-        self.calculate_open_short(short_amount, spot_price, open_share_price)
+        self.calculate_open_short(short_amount, spot_price, open_vault_share_price)
     }
 
     /// Gets the amount of short principal that the LPs need to pay to back a
@@ -137,8 +137,8 @@ mod tests {
                         long_exposure: state.info.long_exposure,
                         share_adjustment: state.info.share_adjustment,
                         time_stretch: state.config.time_stretch,
-                        share_price: state.info.share_price,
-                        initial_share_price: state.config.initial_share_price,
+                        vault_share_price: state.info.vault_share_price,
+                        initial_vault_share_price: state.config.initial_vault_share_price,
                         minimum_share_reserves: state.config.minimum_share_reserves,
                         curve_fee: state.config.fees.curve,
                         flat_fee: state.config.fees.flat,

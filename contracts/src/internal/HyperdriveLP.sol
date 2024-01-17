@@ -41,7 +41,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
 
         // Deposit the users contribution and get the amount of shares that
         // their contribution was worth.
-        (uint256 vaultShares, uint256 sharePrice) = _deposit(
+        (uint256 vaultShares, uint256 vaultSharePrice) = _deposit(
             _contribution,
             _options
         );
@@ -72,7 +72,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         _marketState.bondReserves = HyperdriveMath
             .calculateInitialBondReserves(
                 vaultShares,
-                _initialSharePrice,
+                _initialVaultSharePrice,
                 _apr,
                 _positionDuration,
                 _timeStretch
@@ -90,19 +90,19 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         _mint(AssetId._LP_ASSET_ID, _options.destination, lpShares);
 
         // Create an initial checkpoint.
-        _applyCheckpoint(_latestCheckpoint(), sharePrice);
+        _applyCheckpoint(_latestCheckpoint(), vaultSharePrice);
 
         // Emit an Initialize event.
         uint256 baseContribution = _convertToBaseFromOption(
             _contribution,
-            sharePrice,
+            vaultSharePrice,
             _options
         );
         emit Initialize(
             _options.destination,
             lpShares,
             baseContribution,
-            sharePrice,
+            vaultSharePrice,
             _apr
         );
 
@@ -131,7 +131,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         uint256 apr = HyperdriveMath.calculateSpotAPR(
             _effectiveShareReserves(),
             _marketState.bondReserves,
-            _initialSharePrice,
+            _initialVaultSharePrice,
             _positionDuration,
             _timeStretch
         );
@@ -140,13 +140,13 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         }
 
         // Deposit for the user, this call also transfers from them
-        (uint256 vaultShares, uint256 sharePrice) = _deposit(
+        (uint256 vaultShares, uint256 vaultSharePrice) = _deposit(
             _contribution,
             _options
         );
 
         // Perform a checkpoint.
-        _applyCheckpoint(_latestCheckpoint(), sharePrice);
+        _applyCheckpoint(_latestCheckpoint(), vaultSharePrice);
 
         // Get the initial value for the total LP supply and the total supply
         // of withdrawal shares before the liquidity is added. The total LP
@@ -166,7 +166,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         {
             // Calculate the present value before updating the reserves.
             LPMath.PresentValueParams memory params = _getPresentValueParams(
-                sharePrice
+                vaultSharePrice
             );
             startingPresentValue = LPMath.calculatePresentValue(params);
 
@@ -199,7 +199,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         _mint(AssetId._LP_ASSET_ID, _options.destination, lpShares);
 
         // Distribute the excess idle to the withdrawal pool.
-        _distributeExcessIdle(sharePrice);
+        _distributeExcessIdle(vaultSharePrice);
 
         // Emit an AddLiquidity event.
         uint256 lpSharePrice = lpTotalSupply == 0
@@ -207,14 +207,14 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
             : startingPresentValue.divDown(lpTotalSupply);
         uint256 baseContribution = _convertToBaseFromOption(
             _contribution,
-            sharePrice,
+            vaultSharePrice,
             _options
         );
         emit AddLiquidity(
             _options.destination,
             lpShares,
             baseContribution,
-            sharePrice,
+            vaultSharePrice,
             lpSharePrice
         );
     }
@@ -245,8 +245,8 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         }
 
         // Perform a checkpoint.
-        uint256 sharePrice = _pricePerShare();
-        _applyCheckpoint(_latestCheckpoint(), sharePrice);
+        uint256 vaultSharePrice = _pricePerVaultShare();
+        _applyCheckpoint(_latestCheckpoint(), vaultSharePrice);
 
         // Burn the LP's shares.
         _burn(AssetId._LP_ASSET_ID, msg.sender, _lpShares);
@@ -259,13 +259,13 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         );
 
         // Distribute excess idle to the withdrawal pool.
-        _distributeExcessIdle(sharePrice);
+        _distributeExcessIdle(vaultSharePrice);
 
         // Redeem as many of the withdrawal shares as possible.
         uint256 withdrawalSharesRedeemed;
         (proceeds, withdrawalSharesRedeemed) = _redeemWithdrawalSharesInternal(
             _lpShares,
-            sharePrice,
+            vaultSharePrice,
             _minOutputPerShare,
             _options
         );
@@ -274,16 +274,16 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         // Emit a RemoveLiquidity event.
         uint256 baseProceeds = _convertToBaseFromOption(
             proceeds,
-            sharePrice,
+            vaultSharePrice,
             _options
         );
         emit RemoveLiquidity(
             _options.destination,
             _lpShares,
             baseProceeds,
-            sharePrice, // vault share price
+            vaultSharePrice,
             uint256(withdrawalShares),
-            _calculateLPSharePrice(sharePrice) // lp share price
+            _calculateLPSharePrice(vaultSharePrice)
         );
 
         return (proceeds, withdrawalShares);
@@ -310,17 +310,17 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         returns (uint256 proceeds, uint256 withdrawalSharesRedeemed)
     {
         // Perform a checkpoint.
-        uint256 sharePrice = _pricePerShare();
-        _applyCheckpoint(_latestCheckpoint(), sharePrice);
+        uint256 vaultSharePrice = _pricePerVaultShare();
+        _applyCheckpoint(_latestCheckpoint(), vaultSharePrice);
 
         // Distribute the excess idle to the withdrawal pool prior to redeeming
         // the withdrawal shares.
-        _distributeExcessIdle(sharePrice);
+        _distributeExcessIdle(vaultSharePrice);
 
         // Redeem as many of the withdrawal shares as possible.
         (proceeds, withdrawalSharesRedeemed) = _redeemWithdrawalSharesInternal(
             _withdrawalShares,
-            sharePrice,
+            vaultSharePrice,
             _minOutputPerShare,
             _options
         );
@@ -328,14 +328,14 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         // Emit a RedeemWithdrawalShares event.
         uint256 baseProceeds = _convertToBaseFromOption(
             proceeds,
-            sharePrice,
+            vaultSharePrice,
             _options
         );
         emit RedeemWithdrawalShares(
             _options.destination,
-            withdrawalSharesRedeemed, // withdrawal shares
+            withdrawalSharesRedeemed,
             baseProceeds,
-            sharePrice // vault share price
+            vaultSharePrice
         );
 
         return (proceeds, withdrawalSharesRedeemed);
@@ -402,8 +402,8 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
 
     /// @dev Distribute as much of the excess idle as possible to the withdrawal
     ///      pool while holding the LP share price constant.
-    /// @param _sharePrice The current share price.
-    function _distributeExcessIdle(uint256 _sharePrice) internal {
+    /// @param _vaultSharePrice The current vault share price.
+    function _distributeExcessIdle(uint256 _vaultSharePrice) internal {
         // If there are no withdrawal shares, then there is nothing to
         // distribute.
         uint256 withdrawalSharesTotalSupply = _totalSupply[
@@ -414,7 +414,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         }
 
         // If there is no excess idle, then there is nothing to distribute.
-        uint256 idle = _calculateIdleShareReserves(_sharePrice);
+        uint256 idle = _calculateIdleShareReserves(_vaultSharePrice);
         if (idle == 0) {
             return;
         }
@@ -426,7 +426,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
                 _getDistributeExcessIdleParams(
                     idle,
                     withdrawalSharesTotalSupply,
-                    _sharePrice
+                    _vaultSharePrice
                 )
             );
 

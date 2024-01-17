@@ -39,7 +39,7 @@ impl Distribution<State> for Standard {
                 governance_lp: rng.gen_range(fixed!(0.0001e18)..=fixed!(0.2e18)).into(),
                 governance_zombie: rng.gen_range(fixed!(0.0001e18)..=fixed!(0.2e18)).into(),
             },
-            initial_share_price: rng.gen_range(fixed!(0.5e18)..=fixed!(2.5e18)).into(),
+            initial_vault_share_price: rng.gen_range(fixed!(0.5e18)..=fixed!(2.5e18)).into(),
             minimum_share_reserves: rng.gen_range(fixed!(0.1e18)..=fixed!(1e18)).into(),
             minimum_transaction_amount: rng.gen_range(fixed!(0.1e18)..=fixed!(1e18)).into(),
             time_stretch: rng.gen_range(fixed!(0.005e18)..=fixed!(0.5e18)).into(),
@@ -61,11 +61,11 @@ impl Distribution<State> for Standard {
             zombie_share_reserves: fixed!(0).into(),
             bond_reserves: rng
                 .gen_range(
-                    share_reserves * FixedPoint::from(config.initial_share_price)
+                    share_reserves * FixedPoint::from(config.initial_vault_share_price)
                         ..=fixed!(1_000_000_000e18),
                 )
                 .into(),
-            share_price: rng.gen_range(fixed!(0.5e18)..=fixed!(2.5e18)).into(),
+            vault_share_price: rng.gen_range(fixed!(0.5e18)..=fixed!(2.5e18)).into(),
             longs_outstanding: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
             shorts_outstanding: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
             long_exposure: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
@@ -153,8 +153,8 @@ impl State {
         self.config.time_stretch.into()
     }
 
-    fn initial_share_price(&self) -> FixedPoint {
-        self.config.initial_share_price.into()
+    fn initial_vault_share_price(&self) -> FixedPoint {
+        self.config.initial_vault_share_price.into()
     }
 
     fn minimum_share_reserves(&self) -> FixedPoint {
@@ -175,8 +175,8 @@ impl State {
 
     /// Info ///
 
-    fn share_price(&self) -> FixedPoint {
-        self.info.share_price.into()
+    fn vault_share_price(&self) -> FixedPoint {
+        self.info.vault_share_price.into()
     }
 
     fn share_reserves(&self) -> FixedPoint {
@@ -230,11 +230,11 @@ impl YieldSpace for State {
     }
 
     fn mu(&self) -> FixedPoint {
-        self.initial_share_price()
+        self.initial_vault_share_price()
     }
 
     fn c(&self) -> FixedPoint {
-        self.share_price()
+        self.vault_share_price()
     }
 
     fn t(&self) -> FixedPoint {

@@ -25,7 +25,7 @@ impl State {
     pub fn calculate_open_long<F: Into<FixedPoint>>(&self, base_amount: F) -> FixedPoint {
         let base_amount = base_amount.into();
         let long_amount =
-            self.calculate_bonds_out_given_shares_in_down(base_amount / self.share_price());
+            self.calculate_bonds_out_given_shares_in_down(base_amount / self.vault_share_price());
         long_amount - self.open_long_curve_fees(base_amount)
     }
 
@@ -39,9 +39,9 @@ impl State {
     pub fn get_spot_price_after_long(&self, long_amount: FixedPoint) -> FixedPoint {
         let mut state: State = self.clone();
         state.info.bond_reserves -= state
-            .calculate_bonds_out_given_shares_in_down(long_amount / state.share_price())
+            .calculate_bonds_out_given_shares_in_down(long_amount / state.vault_share_price())
             .into();
-        state.info.share_reserves += (long_amount / state.share_price()).into();
+        state.info.share_reserves += (long_amount / state.vault_share_price()).into();
         state.get_spot_price()
     }
 }

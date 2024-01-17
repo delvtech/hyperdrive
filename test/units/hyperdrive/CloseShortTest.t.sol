@@ -446,7 +446,7 @@ contract CloseShortTest is HyperdriveTest {
 
         // A checkpoint is created to lock in the close price.
         hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
-        uint256 closeSharePrice = hyperdrive.getPoolInfo().sharePrice;
+        uint256 closeVaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
 
         // Another term passes and positive interest accrues.
         advanceTime(POSITION_DURATION, -0.2e18);
@@ -465,11 +465,12 @@ contract CloseShortTest is HyperdriveTest {
         // the short was open.
         uint256 expectedProceeds = bondAmount
             .mulDivDown(
-                closeSharePrice - hyperdrive.getPoolConfig().initialSharePrice,
-                hyperdrive.getPoolConfig().initialSharePrice
+                closeVaultSharePrice -
+                    hyperdrive.getPoolConfig().initialVaultSharePrice,
+                hyperdrive.getPoolConfig().initialVaultSharePrice
             )
-            .divDown(closeSharePrice)
-            .mulDown(hyperdrive.getPoolInfo().sharePrice);
+            .divDown(closeVaultSharePrice)
+            .mulDown(hyperdrive.getPoolInfo().vaultSharePrice);
         assertApproxEqAbs(baseProceeds, expectedProceeds, 5);
 
         // Verify that the close long updates were correct.
@@ -576,7 +577,7 @@ contract CloseShortTest is HyperdriveTest {
                 asBase: false,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: 10e18 * 2,
-                minSharePrice: 0,
+                minVaultSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint128).max,
                 extraData: new bytes(0)
@@ -612,7 +613,7 @@ contract CloseShortTest is HyperdriveTest {
                 asBase: false,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: 10e18 * 2,
-                minSharePrice: 0,
+                minVaultSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint128).max,
                 extraData: new bytes(0)
@@ -660,7 +661,7 @@ contract CloseShortTest is HyperdriveTest {
                 asBase: false,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: 10e18 * 2,
-                minSharePrice: 0,
+                minVaultSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint128).max,
                 extraData: new bytes(0)
@@ -695,7 +696,7 @@ contract CloseShortTest is HyperdriveTest {
                 asBase: false,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: 10e18 * 2,
-                minSharePrice: 0,
+                minVaultSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint128).max,
                 extraData: new bytes(0)
@@ -851,7 +852,7 @@ contract CloseShortTest is HyperdriveTest {
             ) = abi.decode(log.data, (uint256, uint256, uint256, uint256));
             assertEq(eventMaturityTime, testCase.maturityTime);
             assertEq(eventBaseAmount, testCase.baseProceeds);
-            assertEq(eventSharePrice, hyperdrive.getPoolInfo().sharePrice);
+            assertEq(eventSharePrice, hyperdrive.getPoolInfo().vaultSharePrice);
             assertEq(eventBondAmount, testCase.bondAmount);
         }
 
@@ -905,36 +906,36 @@ contract CloseShortTest is HyperdriveTest {
             // aren't repeating ourselves.
             uint256 shareReservesDelta = testCase.bondAmount.mulDivDown(
                 ONE - timeRemaining,
-                testCase.poolInfoBefore.sharePrice
+                testCase.poolInfoBefore.vaultSharePrice
             ) +
                 YieldSpaceMath.calculateSharesInGivenBondsOutUp(
                     testCase.poolInfoBefore.shareReserves,
                     testCase.poolInfoBefore.bondReserves,
                     testCase.bondAmount.mulDown(timeRemaining),
                     ONE - hyperdrive.getPoolConfig().timeStretch,
-                    testCase.poolInfoBefore.sharePrice,
-                    hyperdrive.getPoolConfig().initialSharePrice
+                    testCase.poolInfoBefore.vaultSharePrice,
+                    hyperdrive.getPoolConfig().initialVaultSharePrice
                 );
             uint256 timeElapsed = ONE -
                 hyperdrive.calculateTimeRemaining(testCase.maturityTime);
             uint256 shareAdjustmentDelta = testCase.bondAmount.mulDivDown(
                 timeElapsed,
-                poolInfoAfter.sharePrice
+                poolInfoAfter.vaultSharePrice
             );
-            uint256 initialSharePrice = hyperdrive
+            uint256 initialVaultSharePrice = hyperdrive
                 .getPoolConfig()
-                .initialSharePrice;
+                .initialVaultSharePrice;
             if (
-                poolInfoAfter.sharePrice <
-                hyperdrive.getPoolConfig().initialSharePrice
+                poolInfoAfter.vaultSharePrice <
+                hyperdrive.getPoolConfig().initialVaultSharePrice
             ) {
                 shareReservesDelta = shareReservesDelta.mulDivDown(
-                    poolInfoAfter.sharePrice,
-                    initialSharePrice
+                    poolInfoAfter.vaultSharePrice,
+                    initialVaultSharePrice
                 );
                 shareAdjustmentDelta = shareAdjustmentDelta.mulDivDown(
-                    poolInfoAfter.sharePrice,
-                    initialSharePrice
+                    poolInfoAfter.vaultSharePrice,
+                    initialVaultSharePrice
                 );
             }
             assertApproxEqAbs(
@@ -961,8 +962,8 @@ contract CloseShortTest is HyperdriveTest {
                     ),
                     poolInfoAfter.bondReserves,
                     ONE - hyperdrive.getPoolConfig().timeStretch,
-                    poolInfoAfter.sharePrice,
-                    initialSharePrice
+                    poolInfoAfter.vaultSharePrice,
+                    initialVaultSharePrice
                 ),
                 YieldSpaceMath.kDown(
                     HyperdriveMath.calculateEffectiveShareReserves(
@@ -971,8 +972,8 @@ contract CloseShortTest is HyperdriveTest {
                     ),
                     testCase.poolInfoBefore.bondReserves,
                     ONE - hyperdrive.getPoolConfig().timeStretch,
-                    testCase.poolInfoBefore.sharePrice,
-                    initialSharePrice
+                    testCase.poolInfoBefore.vaultSharePrice,
+                    initialVaultSharePrice
                 ),
                 1e10
             );

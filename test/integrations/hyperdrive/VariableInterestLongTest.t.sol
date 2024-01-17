@@ -13,88 +13,91 @@ contract VariableInterestLongTest is HyperdriveTest {
     using Lib for *;
 
     function test_positive_negative_interest_long_immediate_open_close_fuzz(
-        uint256 initialSharePrice,
+        uint256 initialVaultSharePrice,
         int256 variableInterest
     ) external {
         // Fuzz inputs
-        // initialSharePrice [0.1,5]
+        // initialVaultSharePrice [0.1,5]
         // variableInterest [-50,50]
-        initialSharePrice = initialSharePrice.normalizeToRange(.1e18, 5e18);
+        initialVaultSharePrice = initialVaultSharePrice.normalizeToRange(
+            .1e18,
+            5e18
+        );
         variableInterest = variableInterest.normalizeToRange(-.5e18, .5e18);
-        immediate_open_close(initialSharePrice, variableInterest);
+        immediate_open_close(initialVaultSharePrice, variableInterest);
     }
 
     function test_positive_interest_long_immediate_open_close() external {
         // This tests the following scenario:
-        // - initial_share_price > 1
+        // - initial_vault_share_price > 1
         // - positive interest causes the share price to go up
         // - a long is opened and immediately closed
         {
-            uint256 initialSharePrice = 1.5e18;
+            uint256 initialVaultSharePrice = 1.5e18;
             int256 variableInterest = 0.05e18;
-            immediate_open_close(initialSharePrice, variableInterest);
+            immediate_open_close(initialVaultSharePrice, variableInterest);
         }
 
         // This tests the following scenario:
-        // - initial_share_price = 1
+        // - initial_vault_share_price = 1
         // - positive interest causes the share price to go to up
         // - a long is opened and immediately closed
         {
-            uint256 initialSharePrice = 1e18;
+            uint256 initialVaultSharePrice = 1e18;
             int256 variableInterest = 0.05e18;
-            immediate_open_close(initialSharePrice, variableInterest);
+            immediate_open_close(initialVaultSharePrice, variableInterest);
         }
 
         // This tests the following scenario:
-        // - initial_share_price < 1
+        // - initial_vault_share_price < 1
         // - positive interest causes the share price to go up
         // - a long is opened and immediately closed
         {
-            uint256 initialSharePrice = 0.95e18;
+            uint256 initialVaultSharePrice = 0.95e18;
             int256 variableInterest = 0.10e18;
-            immediate_open_close(initialSharePrice, variableInterest);
+            immediate_open_close(initialVaultSharePrice, variableInterest);
         }
     }
 
     function test_negative_interest_long_immediate_open_close() external {
         // This tests the following scenario:
-        // - initial_share_price > 1
+        // - initial_vault_share_price > 1
         // - negative interest causes the share price to go down
         // - a long is opened and immediately closed
         {
-            uint256 initialSharePrice = 1.5e18;
+            uint256 initialVaultSharePrice = 1.5e18;
             int256 variableInterest = -0.05e18;
-            immediate_open_close(initialSharePrice, variableInterest);
+            immediate_open_close(initialVaultSharePrice, variableInterest);
         }
 
         // This tests the following scenario:
-        // - initial_share_price = 1
+        // - initial_vault_share_price = 1
         // - negative interest causes the share price to go to < 1
         // - a long is opened and immediately closed
         {
-            uint256 initialSharePrice = 1e18;
+            uint256 initialVaultSharePrice = 1e18;
             int256 variableInterest = -0.05e18;
-            immediate_open_close(initialSharePrice, variableInterest);
+            immediate_open_close(initialVaultSharePrice, variableInterest);
         }
 
         // This tests the following scenario:
-        // - initial_share_price < 1
+        // - initial_vault_share_price < 1
         // - negative interest causes the share price to go to further < 1
         // - a long is opened and immediately closed
         {
-            uint256 initialSharePrice = 0.95e18;
+            uint256 initialVaultSharePrice = 0.95e18;
             int256 variableInterest = -0.05e18;
-            immediate_open_close(initialSharePrice, variableInterest);
+            immediate_open_close(initialVaultSharePrice, variableInterest);
         }
     }
 
     function immediate_open_close(
-        uint256 initialSharePrice,
+        uint256 initialVaultSharePrice,
         int256 variableInterest
     ) internal {
         // Initialize the market
         uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, 0, 0, 0, 0);
+        deploy(alice, apr, initialVaultSharePrice, 0, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
@@ -114,22 +117,25 @@ contract VariableInterestLongTest is HyperdriveTest {
     }
 
     function test_positive_negative_interest_long_full_term_fuzz(
-        uint256 initialSharePrice,
+        uint256 initialVaultSharePrice,
         int256 preTradeVariableInterest,
         int256 variableInterest
     ) external {
         // Fuzz inputs
-        // initialSharePrice [0.1,5]
+        // initialVaultSharePrice [0.1,5]
         // preTradeVariableInterest [-50,50]
         // variableInterest [-50,50]
-        initialSharePrice = initialSharePrice.normalizeToRange(.1e18, 5e18);
+        initialVaultSharePrice = initialVaultSharePrice.normalizeToRange(
+            .1e18,
+            5e18
+        );
         preTradeVariableInterest = preTradeVariableInterest.normalizeToRange(
             -0.5e18,
             0.5e18
         );
         variableInterest = variableInterest.normalizeToRange(-0.5e18, 0.5e18);
         full_term(
-            initialSharePrice,
+            initialVaultSharePrice,
             preTradeVariableInterest,
             variableInterest
         );
@@ -137,51 +143,51 @@ contract VariableInterestLongTest is HyperdriveTest {
 
     function test_positive_interest_long_full_term() external {
         // This tests the following scenario:
-        // - initial_share_price > 1
+        // - initial_vault_share_price > 1
         // - positive interest causes the share price to go up
         // - a long is opened
         // - positive interest accrues over the full term
         // - long is closed
         {
-            uint256 initialSharePrice = 1.5e18;
+            uint256 initialVaultSharePrice = 1.5e18;
             int256 preTradeVariableInterest = 0.10e18;
             int256 variableInterest = 0.05e18;
             full_term(
-                initialSharePrice,
+                initialVaultSharePrice,
                 preTradeVariableInterest,
                 variableInterest
             );
         }
 
         // This tests the following scenario:
-        // - initial_share_price = 1
+        // - initial_vault_share_price = 1
         // - positive interest causes the share price to go up
         // - a long is opened
         // - positive interest accrues over the full term
         // - long is closed
         {
-            uint256 initialSharePrice = 1e18;
+            uint256 initialVaultSharePrice = 1e18;
             int256 preTradeVariableInterest = 0.10e18;
             int256 variableInterest = 0.05e18;
             full_term(
-                initialSharePrice,
+                initialVaultSharePrice,
                 preTradeVariableInterest,
                 variableInterest
             );
         }
 
         // This tests the following scenario:
-        // - initial_share_price < 1
+        // - initial_vault_share_price < 1
         // - positive interest causes the share price to go up
         // - a long is opened
         // - positive interest accrues over the full term
         // - long is closed
         {
-            uint256 initialSharePrice = 0.95e18;
+            uint256 initialVaultSharePrice = 0.95e18;
             int256 preTradeVariableInterest = 0.10e18;
             int256 variableInterest = 0.05e18;
             full_term(
-                initialSharePrice,
+                initialVaultSharePrice,
                 preTradeVariableInterest,
                 variableInterest
             );
@@ -190,51 +196,51 @@ contract VariableInterestLongTest is HyperdriveTest {
 
     function test_negative_interest_long_full_term() external {
         // This tests the following scenario:
-        // - initial_share_price > 1
+        // - initial_vault_share_price > 1
         // - negative interest causes the share price to go down
         // - a long is opened
         // - negative interest accrues over the full term
         // - long is closed
         {
-            uint256 initialSharePrice = 1.5e18;
+            uint256 initialVaultSharePrice = 1.5e18;
             int256 preTradeVariableInterest = -0.10e18;
             int256 variableInterest = -0.05e18;
             full_term(
-                initialSharePrice,
+                initialVaultSharePrice,
                 preTradeVariableInterest,
                 variableInterest
             );
         }
 
         // This tests the following scenario:
-        // - initial_share_price = 1
+        // - initial_vault_share_price = 1
         // - negative interest causes the share price to go down
         // - a long is opened
         // - negative interest accrues over the full term
         // - long is closed
         {
-            uint256 initialSharePrice = 1e18;
+            uint256 initialVaultSharePrice = 1e18;
             int256 preTradeVariableInterest = -0.10e18;
             int256 variableInterest = -0.05e18;
             full_term(
-                initialSharePrice,
+                initialVaultSharePrice,
                 preTradeVariableInterest,
                 variableInterest
             );
         }
 
         // This tests the following scenario:
-        // - initial_share_price < 1
+        // - initial_vault_share_price < 1
         // - negative interest causes the share price to go further down
         // - a long is opened
         // - negative interest accrues over the full term
         // - long is closed
         {
-            uint256 initialSharePrice = 0.95e18;
+            uint256 initialVaultSharePrice = 0.95e18;
             int256 preTradeVariableInterest = -0.10e18;
             int256 variableInterest = -0.05e18;
             full_term(
-                initialSharePrice,
+                initialVaultSharePrice,
                 preTradeVariableInterest,
                 variableInterest
             );
@@ -242,20 +248,20 @@ contract VariableInterestLongTest is HyperdriveTest {
     }
 
     function full_term(
-        uint256 initialSharePrice,
+        uint256 initialVaultSharePrice,
         int256 preTradeVariableInterest,
         int256 variableInterest
     ) internal {
         // Initialize the market
         uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, 0, 0, 0, 0);
+        deploy(alice, apr, initialVaultSharePrice, 0, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
         // fast forward time and accrue negative interest
         advanceTime(POSITION_DURATION, preTradeVariableInterest);
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        uint256 openSharePrice = poolInfo.sharePrice;
+        uint256 openVaultSharePrice = poolInfo.vaultSharePrice;
 
         // Open a long position.
         uint256 basePaid = 10_000e18;
@@ -264,14 +270,14 @@ contract VariableInterestLongTest is HyperdriveTest {
         // Full term passes
         advanceTime(POSITION_DURATION, variableInterest);
         poolInfo = hyperdrive.getPoolInfo();
-        uint256 closeSharePrice = poolInfo.sharePrice;
+        uint256 closeVaultSharePrice = poolInfo.vaultSharePrice;
 
         // Estimate the proceeds
         uint256 estimatedProceeds = estimateLongProceeds(
             bondAmount,
             HyperdriveUtils.calculateTimeRemaining(hyperdrive, maturityTime),
-            openSharePrice,
-            closeSharePrice
+            openVaultSharePrice,
+            closeVaultSharePrice
         );
 
         // Close the long
@@ -280,22 +286,25 @@ contract VariableInterestLongTest is HyperdriveTest {
     }
 
     function test_positive_negative_interest_long_half_term_fuzz(
-        uint256 initialSharePrice,
+        uint256 initialVaultSharePrice,
         int256 preTradeVariableInterest,
         int256 variableInterest
     ) external {
         // Fuzz inputs
-        // initialSharePrice [0.1,5]
+        // initialVaultSharePrice [0.1,5]
         // preTradeVariableInterest [-50,50]
         // variableInterest [-50,50]
-        initialSharePrice = initialSharePrice.normalizeToRange(.1e18, 5e18);
+        initialVaultSharePrice = initialVaultSharePrice.normalizeToRange(
+            .1e18,
+            5e18
+        );
         preTradeVariableInterest = preTradeVariableInterest.normalizeToRange(
             -0.5e18,
             0.5e18
         );
         variableInterest = variableInterest.normalizeToRange(-0.5e18, 0.5e18);
         half_term(
-            initialSharePrice,
+            initialVaultSharePrice,
             preTradeVariableInterest,
             variableInterest
         );
@@ -303,51 +312,51 @@ contract VariableInterestLongTest is HyperdriveTest {
 
     function test_positive_interest_long_half_term() external {
         // This tests the following scenario:
-        // - initial_share_price > 1
+        // - initial_vault_share_price > 1
         // - positive interest causes the share price to go up
         // - a long is opened
         // - positive interest accrues over half term
         // - long is closed
         {
-            uint256 initialSharePrice = 1.5e18;
+            uint256 initialVaultSharePrice = 1.5e18;
             int256 preTradeVariableInterest = 0.10e18;
             int256 variableInterest = 0.05e18;
             half_term(
-                initialSharePrice,
+                initialVaultSharePrice,
                 preTradeVariableInterest,
                 variableInterest
             );
         }
 
         // This tests the following scenario:
-        // - initial_share_price = 1
+        // - initial_vault_share_price = 1
         // - positive interest causes the share price to go up
         // - a long is opened
         // - positive interest accrues over half term
         // - long is closed
         {
-            uint256 initialSharePrice = 1e18;
+            uint256 initialVaultSharePrice = 1e18;
             int256 preTradeVariableInterest = 0.10e18;
             int256 variableInterest = 0.05e18;
             half_term(
-                initialSharePrice,
+                initialVaultSharePrice,
                 preTradeVariableInterest,
                 variableInterest
             );
         }
 
         // This tests the following scenario:
-        // - initial_share_price < 1
+        // - initial_vault_share_price < 1
         // - positive interest causes the share price to go up
         // - a long is opened
         // - positive interest accrues over half term
         // - long is closed
         {
-            uint256 initialSharePrice = 0.95e18;
+            uint256 initialVaultSharePrice = 0.95e18;
             int256 preTradeVariableInterest = 0.10e18;
             int256 variableInterest = 0.05e18;
             half_term(
-                initialSharePrice,
+                initialVaultSharePrice,
                 preTradeVariableInterest,
                 variableInterest
             );
@@ -356,51 +365,51 @@ contract VariableInterestLongTest is HyperdriveTest {
 
     function test_negative_interest_long_half_term() external {
         // This tests the following scenario:
-        // - initial_share_price > 1
+        // - initial_vault_share_price > 1
         // - negative interest causes the share price to go down
         // - a long is opened
         // - negative interest accrues over half term
         // - long is closed
         {
-            uint256 initialSharePrice = 1.5e18;
+            uint256 initialVaultSharePrice = 1.5e18;
             int256 preTradeVariableInterest = -0.10e18;
             int256 variableInterest = -0.05e18;
             half_term(
-                initialSharePrice,
+                initialVaultSharePrice,
                 preTradeVariableInterest,
                 variableInterest
             );
         }
 
         // This tests the following scenario:
-        // - initial_share_price = 1
+        // - initial_vault_share_price = 1
         // - negative interest causes the share price to go down
         // - a long is opened
         // - negative interest accrues over half term
         // - long is closed
         {
-            uint256 initialSharePrice = 1e18;
+            uint256 initialVaultSharePrice = 1e18;
             int256 preTradeVariableInterest = -0.10e18;
             int256 variableInterest = -0.05e18;
             half_term(
-                initialSharePrice,
+                initialVaultSharePrice,
                 preTradeVariableInterest,
                 variableInterest
             );
         }
 
         // This tests the following scenario:
-        // - initial_share_price < 1
+        // - initial_vault_share_price < 1
         // - negative interest causes the share price to go further down
         // - a long is opened
         // - negative interest accrues over half term
         // - long is closed
         {
-            uint256 initialSharePrice = 0.90e18;
+            uint256 initialVaultSharePrice = 0.90e18;
             int256 preTradeVariableInterest = -0.10e18;
             int256 variableInterest = -0.05e18;
             half_term(
-                initialSharePrice,
+                initialVaultSharePrice,
                 preTradeVariableInterest,
                 variableInterest
             );
@@ -408,20 +417,20 @@ contract VariableInterestLongTest is HyperdriveTest {
     }
 
     function half_term(
-        uint256 initialSharePrice,
+        uint256 initialVaultSharePrice,
         int256 preTradeVariableInterest,
         int256 variableInterest
     ) internal {
         // Initialize the market
         uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, 0, 0, 0, 0);
+        deploy(alice, apr, initialVaultSharePrice, 0, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
         // fast forward time and accrue negative interest
         advanceTime(POSITION_DURATION, preTradeVariableInterest);
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        uint256 openSharePrice = poolInfo.sharePrice;
+        uint256 openVaultSharePrice = poolInfo.vaultSharePrice;
 
         // Open a long position.
         uint256 basePaid = 10_000e18;
@@ -432,12 +441,12 @@ contract VariableInterestLongTest is HyperdriveTest {
 
         // Estimate the proceeds.
         poolInfo = hyperdrive.getPoolInfo();
-        uint256 closeSharePrice = poolInfo.sharePrice;
+        uint256 closeVaultSharePrice = poolInfo.vaultSharePrice;
         uint256 estimatedProceeds = estimateLongProceeds(
             bondAmount,
             HyperdriveUtils.calculateTimeRemaining(hyperdrive, maturityTime),
-            openSharePrice,
-            closeSharePrice
+            openVaultSharePrice,
+            closeVaultSharePrice
         );
 
         // Close the long.

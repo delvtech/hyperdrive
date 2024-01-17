@@ -72,7 +72,7 @@ contract FeeTest is HyperdriveTest {
         uint256 governanceFeesAfterOpenLong = IMockHyperdrive(
             address(hyperdrive)
         ).getGovernanceFeesAccrued().mulDown(
-                hyperdrive.getPoolInfo().sharePrice
+                hyperdrive.getPoolInfo().vaultSharePrice
             );
 
         // Time passes and the pool accrues interest at the current apr.
@@ -93,13 +93,21 @@ contract FeeTest is HyperdriveTest {
     }
 
     function test_zombie_interest_governance_fee() external {
-        uint256 initialSharePrice = 1e18;
+        uint256 initialVaultSharePrice = 1e18;
 
         // Initialize the market
         uint256 apr = 0.05e18;
         // Set zombie fee to 100% to verify it works.
         uint256 governanceZombieFee = 1e18;
-        deploy(alice, apr, initialSharePrice, 0, 0, 0, governanceZombieFee);
+        deploy(
+            alice,
+            apr,
+            initialVaultSharePrice,
+            0,
+            0,
+            0,
+            governanceZombieFee
+        );
         uint256 contribution = 100e18;
         initialize(alice, apr, contribution);
 
@@ -117,18 +125,18 @@ contract FeeTest is HyperdriveTest {
         closeLong(alice, maturityTimeLong, bondAmountLong);
 
         // Verify that the value represented in the share reserves is <= the actual amount in the contract.
-        uint256 sharePrice = hyperdrive.getPoolInfo().sharePrice;
+        uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
         uint256 governanceFeesAccrued = IMockHyperdrive(address(hyperdrive))
             .getGovernanceFeesAccrued();
         uint256 baseReserves = hyperdrive.getPoolInfo().shareReserves.mulDown(
-            sharePrice
+            vaultSharePrice
         );
         uint256 zombieShareReserves = hyperdrive
             .getPoolInfo()
             .zombieShareReserves;
         uint256 expectedBalance = baseReserves +
-            governanceFeesAccrued.mulDown(sharePrice) +
-            zombieShareReserves.mulDown(sharePrice);
+            governanceFeesAccrued.mulDown(vaultSharePrice) +
+            zombieShareReserves.mulDown(vaultSharePrice);
         assertApproxEqAbs(
             baseToken.balanceOf(address(hyperdrive)),
             expectedBalance,
@@ -143,7 +151,7 @@ contract FeeTest is HyperdriveTest {
                 POSITION_DURATION
             );
         assertApproxEqAbs(
-            governanceFeesAccrued.mulDown(sharePrice),
+            governanceFeesAccrued.mulDown(vaultSharePrice),
             uint256(expectedGovernanceFeesAccrued),
             1e4
         );
@@ -154,7 +162,7 @@ contract FeeTest is HyperdriveTest {
 
     // This test demonstrates that the governance fees from flat fee are NOT included in the shareReserves.
     function test_flat_gov_fee_close_long() public {
-        uint256 initialSharePrice = 1e18;
+        uint256 initialVaultSharePrice = 1e18;
         int256 variableInterest = 0.0e18;
         uint256 curveFee = 0e18; // 0%
         uint256 flatFee = 0.001e18; // 0.1%
@@ -171,7 +179,7 @@ contract FeeTest is HyperdriveTest {
             deploy(
                 alice,
                 apr,
-                initialSharePrice,
+                initialVaultSharePrice,
                 curveFee,
                 flatFee,
                 governanceLPFee,
@@ -188,7 +196,7 @@ contract FeeTest is HyperdriveTest {
                 DepositOverrides({
                     asBase: true,
                     depositAmount: basePaid,
-                    minSharePrice: 0,
+                    minVaultSharePrice: 0,
                     minSlippage: 0,
                     maxSlippage: type(uint256).max,
                     extraData: new bytes(0)
@@ -219,7 +227,7 @@ contract FeeTest is HyperdriveTest {
         uint256 shareReservesFlatFee = 0;
         {
             uint256 apr = 0.01e18;
-            deploy(alice, apr, initialSharePrice, curveFee, flatFee, 0, 0);
+            deploy(alice, apr, initialVaultSharePrice, curveFee, flatFee, 0, 0);
             uint256 contribution = 500_000_000e18;
             initialize(alice, apr, contribution);
 
@@ -231,7 +239,7 @@ contract FeeTest is HyperdriveTest {
                 DepositOverrides({
                     asBase: true,
                     depositAmount: basePaid,
-                    minSharePrice: 0,
+                    minVaultSharePrice: 0,
                     minSlippage: 0,
                     maxSlippage: type(uint256).max,
                     extraData: new bytes(0)
@@ -264,7 +272,7 @@ contract FeeTest is HyperdriveTest {
 
     // This test demonstrates that the governance fees from curve fee are NOT included in the shareReserves.
     function test_curve_gov_fee_close_long() public {
-        uint256 initialSharePrice = 1e18;
+        uint256 initialVaultSharePrice = 1e18;
         uint256 curveFee = 0.1e18; // 10%
         uint256 flatFee = 0; // 0%
         uint256 governanceLPFee = 1e18; // 100%
@@ -282,7 +290,7 @@ contract FeeTest is HyperdriveTest {
             deploy(
                 alice,
                 apr,
-                initialSharePrice,
+                initialVaultSharePrice,
                 curveFee,
                 flatFee,
                 governanceLPFee,
@@ -299,7 +307,7 @@ contract FeeTest is HyperdriveTest {
                 DepositOverrides({
                     asBase: true,
                     depositAmount: basePaid,
-                    minSharePrice: 0,
+                    minVaultSharePrice: 0,
                     minSlippage: 0,
                     maxSlippage: type(uint256).max,
                     extraData: new bytes(0)
@@ -350,7 +358,7 @@ contract FeeTest is HyperdriveTest {
         uint256 shareReservesCurveFee = 0;
         {
             uint256 apr = 0.01e18;
-            deploy(alice, apr, initialSharePrice, curveFee, flatFee, 0, 0);
+            deploy(alice, apr, initialVaultSharePrice, curveFee, flatFee, 0, 0);
             uint256 contribution = 500_000_000e18;
             initialize(alice, apr, contribution);
 
@@ -362,7 +370,7 @@ contract FeeTest is HyperdriveTest {
                 DepositOverrides({
                     asBase: true,
                     depositAmount: basePaid,
-                    minSharePrice: 0,
+                    minVaultSharePrice: 0,
                     minSlippage: 0,
                     maxSlippage: type(uint256).max,
                     extraData: new bytes(0)
@@ -576,7 +584,7 @@ contract FeeTest is HyperdriveTest {
         ).calculateFeesGivenShares(
                 1 ether, // amountIn
                 0.5 ether, // spotPrice
-                1 ether //sharePrice
+                1 ether //vaultSharePrice
             );
         // total curve fee = ((1 / p) - 1) * phi_curve * c * dz
         // ((1/.5)-1) * .1*1*1 = .1
@@ -609,7 +617,7 @@ contract FeeTest is HyperdriveTest {
                 1 ether, // amount
                 1 ether, // timeRemaining
                 0.9 ether, // spotPrice
-                1 ether // sharePrice
+                1 ether // vaultSharePrice
             );
         // curve fee = ((1 - p) * phi_curve * d_y * t) / c
         // ((1-.9)*.1*1*1)/1 = .01
@@ -626,7 +634,7 @@ contract FeeTest is HyperdriveTest {
             1 ether, // amount
             0, // timeRemaining
             0.9 ether, // spotPrice
-            1 ether // sharePrice
+            1 ether // vaultSharePrice
         );
         assertEq(curveFee + flatFee, 0.1 ether);
         assertEq(totalGovernanceFee, 0.05 ether);
@@ -655,7 +663,7 @@ contract FeeTest is HyperdriveTest {
                 1 ether, // amount
                 1 ether, // timeRemaining
                 0.9 ether, // spotPrice
-                1 ether // sharePrice
+                1 ether // vaultSharePrice
             );
         assertEq(curveFee, .01 ether);
         assertEq(flatFee, 0 ether);
@@ -671,7 +679,7 @@ contract FeeTest is HyperdriveTest {
             1 ether, // amount
             0, // timeRemaining
             0.9 ether, // spotPrice
-            1 ether // sharePrice
+            1 ether // vaultSharePrice
         );
         assertEq(curveFee, 0 ether);
         assertEq(flatFee, 0.1 ether);
