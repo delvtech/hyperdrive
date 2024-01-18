@@ -159,6 +159,7 @@ contract ReentrancyTest is HyperdriveTest {
             (
                 CONTRIBUTION,
                 0,
+                0,
                 1e18,
                 IHyperdrive.Options({
                     destination: _trader,
@@ -289,7 +290,7 @@ contract ReentrancyTest is HyperdriveTest {
             DepositOverrides({
                 asBase: true,
                 depositAmount: CONTRIBUTION + 1,
-                minVaultSharePrice: 0,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint256).max,
                 extraData: new bytes(0)
@@ -318,7 +319,7 @@ contract ReentrancyTest is HyperdriveTest {
             DepositOverrides({
                 asBase: true,
                 depositAmount: CONTRIBUTION + 1,
-                minVaultSharePrice: 0,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint256).max,
                 extraData: new bytes(0)
@@ -385,7 +386,7 @@ contract ReentrancyTest is HyperdriveTest {
             DepositOverrides({
                 asBase: true,
                 depositAmount: BASE_PAID + 1,
-                minVaultSharePrice: 0,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint256).max,
                 extraData: new bytes(0)
@@ -426,7 +427,7 @@ contract ReentrancyTest is HyperdriveTest {
                 asBase: true,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: BOND_AMOUNT * 2,
-                minVaultSharePrice: 0,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint256).max,
                 extraData: new bytes(0)
@@ -445,7 +446,7 @@ contract ReentrancyTest is HyperdriveTest {
                 asBase: true,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: BOND_AMOUNT * 2,
-                minVaultSharePrice: 0,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint256).max,
                 extraData: new bytes(0)

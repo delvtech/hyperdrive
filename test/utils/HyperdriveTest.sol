@@ -176,7 +176,7 @@ contract HyperdriveTest is BaseTest {
         uint256 depositAmount;
         // The minimum share price that will be accepted. It may not be used by
         // some actions.
-        uint256 minVaultSharePrice;
+        uint256 minSharePrice;
         // This is the slippage parameter that defines a lower bound on the
         // quantity being measured. It may not be used by some actions.
         uint256 minSlippage;
@@ -251,7 +251,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asBase: true,
                     depositAmount: contribution,
-                    minVaultSharePrice: 0, // unused
+                    minSharePrice: 0, // unused
                     minSlippage: 0, // unused
                     maxSlippage: type(uint256).max, // unused
                     extraData: new bytes(0) // unused
@@ -273,7 +273,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asBase: asBase,
                     depositAmount: contribution,
-                    minVaultSharePrice: 0, // unused
+                    minSharePrice: 0, // unused
                     minSlippage: 0, // unused
                     maxSlippage: type(uint256).max, // unused
                     extraData: new bytes(0) // unused
@@ -297,6 +297,7 @@ contract HyperdriveTest is BaseTest {
             return
                 hyperdrive.addLiquidity{ value: overrides.depositAmount }(
                     contribution,
+                    overrides.minSharePrice, // min lp share price
                     overrides.minSlippage, // min spot rate
                     overrides.maxSlippage, // max spot rate
                     IHyperdrive.Options({
@@ -311,6 +312,7 @@ contract HyperdriveTest is BaseTest {
             return
                 hyperdrive.addLiquidity(
                     contribution,
+                    overrides.minSharePrice, // min lp share price
                     overrides.minSlippage, // min spot rate
                     overrides.maxSlippage, // max spot rate
                     IHyperdrive.Options({
@@ -333,7 +335,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asBase: true,
                     depositAmount: contribution,
-                    minVaultSharePrice: 0, // unused
+                    minSharePrice: 0, // unused
                     minSlippage: 0, // min spot rate of 0
                     maxSlippage: type(uint256).max, // max spot rate of uint256 max
                     extraData: new bytes(0) // unused
@@ -353,7 +355,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asBase: asBase,
                     depositAmount: contribution,
-                    minVaultSharePrice: 0, // unused
+                    minSharePrice: 0, // min lp share price of 0
                     minSlippage: 0, // min spot rate of 0
                     maxSlippage: type(uint256).max, // max spot rate of uint256 max
                     extraData: new bytes(0) // unused
@@ -373,7 +375,7 @@ contract HyperdriveTest is BaseTest {
         return
             hyperdrive.removeLiquidity(
                 shares,
-                overrides.minSlippage, // min base proceeds
+                overrides.minSlippage, // min lp share price
                 IHyperdrive.Options({
                     destination: lp,
                     asBase: overrides.asBase,
@@ -392,7 +394,7 @@ contract HyperdriveTest is BaseTest {
                 shares,
                 WithdrawalOverrides({
                     asBase: true,
-                    minSlippage: 0, // min base proceeds of 0
+                    minSlippage: 0, // min lp share price of 0
                     extraData: new bytes(0) // unused
                 })
             );
@@ -487,7 +489,7 @@ contract HyperdriveTest is BaseTest {
                 hyperdrive.openLong{ value: overrides.depositAmount }(
                     baseAmount,
                     overrides.minSlippage, // min bond proceeds
-                    overrides.minVaultSharePrice,
+                    overrides.minSharePrice, // min vault share price
                     IHyperdrive.Options({
                         destination: trader,
                         asBase: overrides.asBase,
@@ -501,7 +503,7 @@ contract HyperdriveTest is BaseTest {
                 hyperdrive.openLong(
                     baseAmount,
                     overrides.minSlippage, // min bond proceeds
-                    overrides.minVaultSharePrice,
+                    overrides.minSharePrice, // min vault share price
                     IHyperdrive.Options({
                         destination: trader,
                         asBase: overrides.asBase,
@@ -522,7 +524,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asBase: true,
                     depositAmount: baseAmount,
-                    minVaultSharePrice: 0, // min share price of 0
+                    minSharePrice: 0, // min vault share price of 0
                     minSlippage: baseAmount, // min bond proceeds of baseAmount
                     maxSlippage: type(uint256).max, // unused
                     extraData: new bytes(0) // unused
@@ -542,7 +544,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asBase: asBase,
                     depositAmount: baseAmount,
-                    minVaultSharePrice: 0, // min share price of 0
+                    minSharePrice: 0, // min vault share price of 0
                     minSlippage: baseAmount, // min bond proceeds of baseAmount
                     maxSlippage: type(uint256).max, // unused
                     extraData: new bytes(0) // unused
@@ -631,7 +633,7 @@ contract HyperdriveTest is BaseTest {
             }(
                 bondAmount,
                 overrides.maxSlippage, // max base payment
-                overrides.minVaultSharePrice,
+                overrides.minSharePrice, // min vault share price
                 IHyperdrive.Options({
                     destination: trader,
                     asBase: overrides.asBase,
@@ -644,7 +646,7 @@ contract HyperdriveTest is BaseTest {
             (maturityTime, baseAmount) = hyperdrive.openShort(
                 bondAmount,
                 overrides.maxSlippage, // max base payment
-                overrides.minVaultSharePrice,
+                overrides.minSharePrice, // min vault share price
                 IHyperdrive.Options({
                     destination: trader,
                     asBase: overrides.asBase,
@@ -668,7 +670,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asBase: true,
                     depositAmount: bondAmount,
-                    minVaultSharePrice: 0, // min share price of 0
+                    minSharePrice: 0, // min vault share price of 0
                     minSlippage: 0, // unused
                     maxSlippage: bondAmount, // max base payment of bondAmount
                     extraData: new bytes(0) // unused
@@ -688,7 +690,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asBase: asBase,
                     depositAmount: bondAmount,
-                    minVaultSharePrice: 0, // min share price of 0
+                    minSharePrice: 0, // min vault share price of 0
                     minSlippage: 0, // unused
                     maxSlippage: bondAmount, // max base payment of bondAmount
                     extraData: new bytes(0) // unused

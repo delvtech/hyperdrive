@@ -41,7 +41,7 @@ contract StETHHyperdrive is Hyperdrive, StETHBase {
 
         // Ensure that the initial vault share price is properly configured.
         if (_config.initialVaultSharePrice != _pricePerVaultShare()) {
-            revert IHyperdrive.InvalidInitialSharePrice();
+            revert IHyperdrive.InvalidInitialVaultSharePrice();
         }
     }
 
