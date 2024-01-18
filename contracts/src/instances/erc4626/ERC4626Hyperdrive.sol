@@ -48,7 +48,7 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
         // deposit then this line will read an incorrect and possibly dangerous
         // price.
         if (_config.initialVaultSharePrice != _pricePerVaultShare()) {
-            revert IHyperdrive.InvalidInitialSharePrice();
+            revert IHyperdrive.InvalidInitialVaultSharePrice();
         }
 
         // Ensure that the base token is the same as the vault's underlying
