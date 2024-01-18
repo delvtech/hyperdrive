@@ -409,6 +409,12 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             uint256 shortAmount = 38653169555116283775616658498588757899099;
             _test_nonstandard_decimals_lp(longBasePaid, shortAmount);
         }
+        {
+            // This used to fail with negative interest. Issue #665
+            uint256 longBasePaid = 168094271564986877918040686662631549929921141726596135182978179847868;
+            uint256 shortAmount = 6515;
+            _test_nonstandard_decimals_lp(longBasePaid, shortAmount);
+        }
     }
 
     // TODO: This test should be re-written to avoid such large tolerances.
