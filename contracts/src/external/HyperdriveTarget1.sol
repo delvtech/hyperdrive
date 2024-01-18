@@ -47,17 +47,30 @@ abstract contract HyperdriveTarget1 is
 
     /// @notice Allows LPs to supply liquidity for LP shares.
     /// @param _contribution The amount of base to supply.
+    /// @param _minLpSharePrice The minimum LP share price the LP is willing
+    ///        to accept for their shares. LP's incur negative slippage when
+    ///        adding liquidity if there is a net curve position in the market,
+    ///        so this allows LPs to protect themselves from high levels of
+    ///        slippage.
     /// @param _minApr The minimum APR at which the LP is willing to supply.
     /// @param _maxApr The maximum APR at which the LP is willing to supply.
     /// @param _options The options that configure how the operation is settled.
     /// @return lpShares The number of LP tokens created.
     function addLiquidity(
         uint256 _contribution,
+        uint256 _minLpSharePrice,
         uint256 _minApr,
         uint256 _maxApr,
         IHyperdrive.Options calldata _options
     ) external payable returns (uint256 lpShares) {
-        return _addLiquidity(_contribution, _minApr, _maxApr, _options);
+        return
+            _addLiquidity(
+                _contribution,
+                _minLpSharePrice,
+                _minApr,
+                _maxApr,
+                _options
+            );
     }
 
     /// @notice Allows an LP to burn shares and withdraw from the pool.

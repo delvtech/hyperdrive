@@ -1596,8 +1596,8 @@ library HyperdriveUtils {
         if (_selector == IHyperdrive.InvalidCheckpointDuration.selector) {
             return "InvalidCheckpointDuration";
         }
-        if (_selector == IHyperdrive.InvalidInitialSharePrice.selector) {
-            return "InvalidInitialSharePrice";
+        if (_selector == IHyperdrive.InvalidInitialVaultSharePrice.selector) {
+            return "InvalidInitialVaultSharePrice";
         }
         if (_selector == IHyperdrive.InvalidMaturityTime.selector) {
             return "InvalidMaturityTime";

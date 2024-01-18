@@ -511,13 +511,15 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         );
 
         // Celine adds liquidity.
-        // Note that fuzzing will occasionally create long and short trades so large
-        // that the Celine gets less than the minimum transaction amount. This situation
-        // can be caught by setting Min/Max APR slippage guards and checking for revert
+        //
+        // NOTE: Fuzzing will occasionally create long and short trades so large
+        // that the Celine gets less than the minimum transaction amount. This
+        // situation can be caught by setting Min/Max APR slippage guards and
+        // checking for reverts.
         DepositOverrides memory overrides = DepositOverrides({
             asBase: true,
             depositAmount: testParams.contribution,
-            minVaultSharePrice: 0, // unused
+            minSharePrice: 0, // unused
             minSlippage: spotAPRBefore - 0.015e18, // min spot rate of .5%
             maxSlippage: spotAPRBefore + 0.015e18, // max spot rate of 3.5%
             extraData: new bytes(0) // unused
@@ -533,6 +535,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
 
             celineLpShares = hyperdrive.addLiquidity(
                 overrides.depositAmount,
+                overrides.minSharePrice, // min share price
                 overrides.minSlippage, // min spot rate
                 overrides.maxSlippage, // max spot rate
                 IHyperdrive.Options({

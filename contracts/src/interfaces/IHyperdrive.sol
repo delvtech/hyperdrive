@@ -267,7 +267,8 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     error InvalidFeeAmounts();
     error InvalidFeeDestination();
     error InvalidIndexes();
-    error InvalidInitialSharePrice();
+    error InvalidInitialVaultSharePrice();
+    error InvalidLpSharePrice();
     error InvalidMaturityTime();
     error InvalidMinimumShareReserves();
     error InvalidPositionDuration();
