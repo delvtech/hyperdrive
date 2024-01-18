@@ -115,21 +115,32 @@ impl State {
             open_vault_share_price,
             maybe_conservative_price,
         );
+        let mut possible_max_bond_amount = max_bond_amount;
         for _ in 0..maybe_max_iterations.unwrap_or(7) {
             let deposit = match self.calculate_open_short(
-                max_bond_amount,
+                possible_max_bond_amount,
                 spot_price,
                 open_vault_share_price,
             ) {
                 Ok(d) => d,
                 Err(_) => return max_bond_amount,
             };
-            max_bond_amount += (budget - deposit)
-                / self.short_deposit_derivative(
-                    max_bond_amount,
-                    spot_price,
-                    open_vault_share_price,
-                );
+            if deposit <= budget {
+                max_bond_amount = possible_max_bond_amount;
+                possible_max_bond_amount += (budget - deposit)
+                    / self.short_deposit_derivative(
+                        possible_max_bond_amount,
+                        spot_price,
+                        open_vault_share_price,
+                    );
+            } else {
+                possible_max_bond_amount -= (deposit - budget)
+                    / self.short_deposit_derivative(
+                        possible_max_bond_amount,
+                        spot_price,
+                        open_vault_share_price,
+                    );
+            }
         }
 
         // Verify that the max short satisfies the budget.
@@ -373,7 +384,7 @@ impl State {
             / (self.bond_reserves() + short_amount).pow(self.time_stretch()))
             * self
                 .theta(short_amount)
-                .pow(self.time_stretch() / (fixed!(1e18) + self.time_stretch()));
+                .pow(self.time_stretch() / (fixed!(1e18) - self.time_stretch()));
         (self.vault_share_price() / open_vault_share_price)
             + self.flat_fee()
             + self.curve_fee() * (fixed!(1e18) - spot_price)
