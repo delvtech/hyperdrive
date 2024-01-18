@@ -577,7 +577,7 @@ contract CloseShortTest is HyperdriveTest {
                 asBase: false,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: 10e18 * 2,
-                minVaultSharePrice: 0,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint128).max,
                 extraData: new bytes(0)
@@ -613,7 +613,7 @@ contract CloseShortTest is HyperdriveTest {
                 asBase: false,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: 10e18 * 2,
-                minVaultSharePrice: 0,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint128).max,
                 extraData: new bytes(0)
@@ -661,7 +661,7 @@ contract CloseShortTest is HyperdriveTest {
                 asBase: false,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: 10e18 * 2,
-                minVaultSharePrice: 0,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint128).max,
                 extraData: new bytes(0)
@@ -696,7 +696,7 @@ contract CloseShortTest is HyperdriveTest {
                 asBase: false,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: 10e18 * 2,
-                minVaultSharePrice: 0,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint128).max,
                 extraData: new bytes(0)

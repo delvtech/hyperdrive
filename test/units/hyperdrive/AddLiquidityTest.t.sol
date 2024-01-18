@@ -35,6 +35,7 @@ contract AddLiquidityTest is HyperdriveTest {
         hyperdrive.addLiquidity(
             0,
             0,
+            0,
             type(uint256).max,
             IHyperdrive.Options({
                 destination: bob,
@@ -56,6 +57,7 @@ contract AddLiquidityTest is HyperdriveTest {
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.addLiquidity{ value: 1 }(
+            0,
             0,
             0,
             type(uint256).max,
@@ -80,6 +82,7 @@ contract AddLiquidityTest is HyperdriveTest {
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.Paused.selector);
         hyperdrive.addLiquidity(
+            0,
             0,
             0,
             type(uint256).max,
@@ -111,6 +114,7 @@ contract AddLiquidityTest is HyperdriveTest {
         hyperdrive.addLiquidity(
             1e18,
             0,
+            0,
             type(uint256).max,
             IHyperdrive.Options({
                 destination: bob,
@@ -120,7 +124,7 @@ contract AddLiquidityTest is HyperdriveTest {
         );
     }
 
-    function test_add_liquidity_failure_invalid_apr() external {
+    function test_add_liquidity_failure_slippage_guards() external {
         uint256 apr = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
@@ -133,6 +137,7 @@ contract AddLiquidityTest is HyperdriveTest {
         vm.expectRevert(IHyperdrive.InvalidApr.selector);
         hyperdrive.addLiquidity(
             10e18,
+            0,
             0.06e18,
             type(uint256).max,
             IHyperdrive.Options({
@@ -149,7 +154,28 @@ contract AddLiquidityTest is HyperdriveTest {
         hyperdrive.addLiquidity(
             10e18,
             0,
+            0,
             0.04e18,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+
+        // Attempt to add liquidity with a minimum LP share price that is too
+        // high.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 lpSharePrice = hyperdrive.getPoolInfo().lpSharePrice;
+        baseToken.mint(10e18);
+        baseToken.approve(address(hyperdrive), 10e18);
+        vm.expectRevert(IHyperdrive.InvalidLpSharePrice.selector);
+        hyperdrive.addLiquidity(
+            10e18,
+            2 * lpSharePrice,
+            0,
+            type(uint256).max,
             IHyperdrive.Options({
                 destination: bob,
                 asBase: true,
@@ -182,6 +208,7 @@ contract AddLiquidityTest is HyperdriveTest {
         vm.expectRevert();
         hyperdrive.addLiquidity(
             contribution,
+            0,
             0,
             0.04e18,
             IHyperdrive.Options({
@@ -216,6 +243,7 @@ contract AddLiquidityTest is HyperdriveTest {
         vm.expectRevert();
         hyperdrive.addLiquidity(
             contribution,
+            0,
             0,
             0.04e18,
             IHyperdrive.Options({

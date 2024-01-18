@@ -239,7 +239,7 @@ contract OpenShortTest is HyperdriveTest {
         DepositOverrides memory depositOverrides = DepositOverrides({
             asBase: false,
             depositAmount: bondAmount * 2,
-            minVaultSharePrice: 0,
+            minSharePrice: 0,
             minSlippage: 0,
             maxSlippage: type(uint128).max,
             extraData: new bytes(0)
