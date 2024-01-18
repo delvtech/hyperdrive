@@ -1707,8 +1707,9 @@ contract LPWithdrawalTest is HyperdriveTest {
     function test_lp_withdrawal_liveness(
         uint256 contribution,
         uint256 fixedRate,
-        int256 variableRate,
-        uint256 longAmount
+        int256 preRemovalVariableRate,
+        int256 postRemovalVariableRate,
+        uint256 basePaid
     ) external {
         // Alice initializes the pool.
         contribution = contribution.normalizeToRange(
@@ -1723,19 +1724,31 @@ contract LPWithdrawalTest is HyperdriveTest {
         openShort(bob, hyperdrive.calculateMaxShort());
 
         // The term passes.
-        variableRate = variableRate.normalizeToRange(0, 2.5e18);
-        advanceTime(POSITION_DURATION, 0);
+        preRemovalVariableRate = preRemovalVariableRate.normalizeToRange(
+            0,
+            2.5e18
+        );
+        advanceTime(POSITION_DURATION, preRemovalVariableRate);
 
         // Alice removes her liquidity.
         removeLiquidityWithChecks(alice, lpShares);
 
+        // Advance the time to the next checkpoint and mint a checkpoint. This
+        // ensures that checkpoint liveness hasn't been compromised.
+        postRemovalVariableRate = postRemovalVariableRate.normalizeToRange(
+            0,
+            2.5e18
+        );
+        advanceTime(CHECKPOINT_DURATION, postRemovalVariableRate);
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+
         // Bob should be able to open a reasonably sized long despite the small
         // effective share reserves.
-        longAmount = longAmount.normalizeToRange(
-            MINIMUM_TRANSACTION_AMOUNT,
+        basePaid = basePaid.normalizeToRange(
+            2 * MINIMUM_TRANSACTION_AMOUNT,
             hyperdrive.calculateMaxLong()
         );
-        openLong(bob, longAmount);
+        openLong(bob, basePaid);
     }
 
     // This function removes liquidity and verifies that either (1) the maximum

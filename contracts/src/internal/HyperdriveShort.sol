@@ -272,12 +272,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // are satisfied. The former is checked when we check solvency (since
         // global exposure is greater than or equal to zero, z < z_min
         // implies z - e/c - z_min < 0.
-        if (
-            HyperdriveMath.calculateEffectiveShareReserves(
-                _marketState.shareReserves,
-                _marketState.shareAdjustment
-            ) < _minimumShareReserves
-        ) {
+        if (_effectiveShareReserves() < _minimumShareReserves) {
             revert IHyperdrive.InvalidEffectiveShareReserves();
         }
 

@@ -337,11 +337,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // it's important that this doesn't result in failed checkpoints.
         if (
             int256(_shareReservesDelta) > _shareAdjustmentDelta &&
-            HyperdriveMath.calculateEffectiveShareReserves(
-                _marketState.shareReserves,
-                _marketState.shareAdjustment
-            ) <
-            _minimumShareReserves
+            _effectiveShareReserves() < _minimumShareReserves
         ) {
             revert IHyperdrive.InvalidEffectiveShareReserves();
         }
