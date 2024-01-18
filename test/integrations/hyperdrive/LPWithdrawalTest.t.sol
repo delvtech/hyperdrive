@@ -1726,7 +1726,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
         advanceTime(POSITION_DURATION, 0);
 
-        // Alice removes his liquidity.
+        // Alice removes her liquidity.
         removeLiquidityWithChecks(alice, lpShares);
 
         // Bob should be able to open a reasonably sized long despite the small
