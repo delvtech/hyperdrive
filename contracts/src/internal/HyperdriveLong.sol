@@ -323,7 +323,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         _marketState.bondReserves += _bondReservesDelta.toUint128();
 
         // The share reserves are decreased in this operation, so we need to
-        // verify the invariant that z >= z_min is satisfied.
+        // Verify the invariant that z >= z_min is satisfied.
         if (uint256(_marketState.shareReserves) < _minimumShareReserves) {
             revert IHyperdrive.InvalidShareReserves();
         }
