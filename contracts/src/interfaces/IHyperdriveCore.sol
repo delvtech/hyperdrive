@@ -47,6 +47,7 @@ interface IHyperdriveCore is IMultiTokenCore {
 
     function addLiquidity(
         uint256 _contribution,
+        uint256 _minLpSharePrice,
         uint256 _minApr,
         uint256 _maxApr,
         IHyperdrive.Options calldata _options
