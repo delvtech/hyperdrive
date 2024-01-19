@@ -214,7 +214,7 @@ contract ExtremeInputs is HyperdriveTest {
         );
         baseToken.mint(shortAmount);
         baseToken.approve(address(hyperdrive), shortAmount);
-        vm.expectRevert(IHyperdrive.InsufficientLiquidity.selector);
+        vm.expectRevert(IHyperdrive.InvalidEffectiveShareReserves.selector);
         hyperdrive.openShort(
             shortAmount,
             type(uint256).max,

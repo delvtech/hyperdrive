@@ -267,20 +267,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
         _marketState.bondReserves += _bondAmount.toUint128();
         _marketState.shortsOutstanding += _bondAmount.toUint128();
 
-        // TODO: We're not sure what causes the z >= zeta check to fail.
-        // It may be unnecessary, but that needs to be proven before we can
-        // remove it.
-        //
         // The share reserves are decreased in this operation, so we need to
-        // verify that our invariants that z >= z_min and z >= zeta
+        // verify that our invariants that z >= z_min and z - zeta >= z_min
         // are satisfied. The former is checked when we check solvency (since
         // global exposure is greater than or equal to zero, z < z_min
         // implies z - e/c - z_min < 0.
-        if (
-            int256(uint256(_marketState.shareReserves)) <
-            _marketState.shareAdjustment
-        ) {
-            revert IHyperdrive.InvalidShareReserves();
+        if (_effectiveShareReserves() < _minimumShareReserves) {
+            revert IHyperdrive.InvalidEffectiveShareReserves();
         }
 
         // Update the global long exposure. Since we're opening a short, the
