@@ -227,22 +227,38 @@ impl State {
         // YieldSpace curve.
         let absolute_max_bond_amount = {
             // We have the twin constraints that $z \geq z_{min}$ and
-            // $z - \zeta \geq 0$. Combining these together, we can calculate the
-            // optimal share reserves as $z_{optimal} = max(z_{min}, \zeta)$. We
-            // run into problems when we get too close to $z - \zeta = 0$, so we
-            // add a small adjustment to the optimal share reserves to ensure that
-            // we don't run into any issues.
-            let optimal_share_reserves = self.minimum_share_reserves().max(FixedPoint::from(
-                (self.share_adjustment() + I256::from(self.minimum_share_reserves()))
-                    .max(I256::zero()),
-            ));
+            // $z - \zeta \geq z_{min}$. Combining these together, we calculate
+            // the optimal share reserves as $z_{optimal} = z_{min} + max(0, \zeta)$.
+            let optimal_share_reserves = self.minimum_share_reserves()
+                + FixedPoint::from(self.share_adjustment().max(I256::zero()));
+
+            // We calculate the optimal bond reserves by solving for the bond
+            // reserves that is implied by the optimal share reserves. We can do
+            // this as follows:
+            //
+            // k = (c / mu) * (mu * (z' - zeta)) ** (1 - t_s) + y' ** (1 - t_s)
+            //                              =>
+            // y' = (k - (c / mu) * (mu * (z' - zeta)) ** (1 - t_s)) ** (1 / (1 - t_s))
             let optimal_effective_share_reserves =
                 get_effective_share_reserves(optimal_share_reserves, self.share_adjustment());
-            let optimal_bond_reserves = (self.k_down()
-                - (self.vault_share_price() / self.initial_vault_share_price())
-                    * (self.initial_vault_share_price() * optimal_effective_share_reserves)
-                        .pow(fixed!(1e18) - self.time_stretch()))
-            .pow(fixed!(1e18).div_up(fixed!(1e18) - self.time_stretch()));
+            let optimal_bond_reserves = self.k_down()
+                - self
+                    .vault_share_price()
+                    .div_up(self.initial_vault_share_price())
+                    .mul_up(
+                        (self
+                            .initial_vault_share_price()
+                            .mul_up(optimal_effective_share_reserves))
+                        .pow(fixed!(1e18) - self.time_stretch()),
+                    );
+            let optimal_bond_reserves = if optimal_bond_reserves >= fixed!(1e18) {
+                // Rounding the exponent down results in a smaller outcome.
+                optimal_bond_reserves.pow(fixed!(1e18) / (fixed!(1e18) - self.time_stretch()))
+            } else {
+                // Rounding the exponent up results in a smaller outcome.
+                optimal_bond_reserves.pow(fixed!(1e18).div_up(fixed!(1e18) - self.time_stretch()))
+            };
+
             optimal_bond_reserves - self.bond_reserves()
         };
         if self
