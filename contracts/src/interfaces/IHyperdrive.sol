@@ -307,10 +307,17 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     /// ### Factory ###
     /// ###############
     error Unauthorized();
+    error InvalidCheckpointDurationResolution();
     error InvalidContribution();
+    error InvalidDeployConfig();
+    error InvalidFees();
+    error InvalidMaxFees();
+    error InvalidMinFees();
+    error InvalidMaxCheckpointDuration();
+    error InvalidMinCheckpointDuration();
+    error InvalidMaxPositionDuration();
+    error InvalidMinPositionDuration();
     error InvalidToken();
-    error MaxFeeTooHigh();
-    error FeeTooHigh();
     error NonPayableInitialization();
     error HyperdriveDeployerAlreadyAdded();
     error HyperdriveDeployerNotAdded();
