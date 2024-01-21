@@ -58,10 +58,15 @@ contract DevnetMigration is Script {
         // lido configuration
         uint256 lidoStartingRate;
         // factory configuration
-        uint256 factoryCurveFee;
-        uint256 factoryFlatFee;
-        uint256 factoryGovernanceLPFee;
-        uint256 factoryGovernanceZombieFee;
+        uint256 factoryCheckpointDurationResolution;
+        uint256 factoryMinCheckpointDuration;
+        uint256 factoryMaxCheckpointDuration;
+        uint256 factoryMinPositionDuration;
+        uint256 factoryMaxPositionDuration;
+        uint256 factoryMinCurveFee;
+        uint256 factoryMinFlatFee;
+        uint256 factoryMinGovernanceLPFee;
+        uint256 factoryMinGovernanceZombieFee;
         uint256 factoryMaxCurveFee;
         uint256 factoryMaxFlatFee;
         uint256 factoryMaxGovernanceLPFee;
@@ -74,6 +79,10 @@ contract DevnetMigration is Script {
         uint256 erc4626HyperdrivePositionDuration;
         uint256 erc4626HyperdriveCheckpointDuration;
         uint256 erc4626HyperdriveTimeStretchApr;
+        uint256 erc4626HyperdriveCurveFee;
+        uint256 erc4626HyperdriveFlatFee;
+        uint256 erc4626HyperdriveGovernanceLPFee;
+        uint256 erc4626HyperdriveGovernanceZombieFee;
         // steth hyperdrive configuration
         uint256 stethHyperdriveContribution;
         uint256 stethHyperdriveFixedRate;
@@ -82,6 +91,10 @@ contract DevnetMigration is Script {
         uint256 stethHyperdrivePositionDuration;
         uint256 stethHyperdriveCheckpointDuration;
         uint256 stethHyperdriveTimeStretchApr;
+        uint256 stethHyperdriveCurveFee;
+        uint256 stethHyperdriveFlatFee;
+        uint256 stethHyperdriveGovernanceLPFee;
+        uint256 stethHyperdriveGovernanceZombieFee;
     }
 
     function run() external {
@@ -113,31 +126,57 @@ contract DevnetMigration is Script {
             // lido configuration
             lidoStartingRate: vm.envOr("LIDO_STARTING_RATE", uint256(0.035e18)),
             // factory configuration
-            factoryCurveFee: vm.envOr("FACTORY_CURVE_FEE", uint256(0.01e18)),
-            factoryFlatFee: vm.envOr("FACTORY_FLAT_FEE", uint256(0.0005e18)),
-            factoryGovernanceLPFee: vm.envOr(
-                "FACTORY_GOVERNANCE_LP_FEE",
-                uint256(0.01e18)
+            factoryCheckpointDurationResolution: vm.envOr(
+                "FACTORY_CHECKPOINT_DURATION_RESOLUTION",
+                uint256(1 hours)
             ),
-            factoryGovernanceZombieFee: vm.envOr(
-                "FACTORY_GOVERNANCE_ZOMBIE_FEE",
-                uint256(0.1e18)
+            factoryMinCheckpointDuration: vm.envOr(
+                "FACTORY_MIN_CHECKPOINT_DURATION",
+                uint256(8 hours)
+            ),
+            factoryMaxCheckpointDuration: vm.envOr(
+                "FACTORY_MAX_CHECKPOINT_DURATION",
+                uint256(1 days)
+            ),
+            factoryMinPositionDuration: vm.envOr(
+                "FACTORY_MIN_POSITION_DURATION",
+                uint256(7 days)
+            ),
+            factoryMaxPositionDuration: vm.envOr(
+                "FACTORY_MAX_POSITION_DURATION",
+                uint256(10 * 365 days)
+            ),
+            factoryMinCurveFee: vm.envOr(
+                "FACTORY_MIN_CURVE_FEE",
+                uint256(0.001e18)
+            ),
+            factoryMinFlatFee: vm.envOr(
+                "FACTORY_MIN_FLAT_FEE",
+                uint256(0.0001e18)
+            ),
+            factoryMinGovernanceLPFee: vm.envOr(
+                "FACTORY_MIN_GOVERNANCE_LP_FEE",
+                uint256(0.15e18)
+            ),
+            factoryMinGovernanceZombieFee: vm.envOr(
+                "FACTORY_MIN_GOVERNANCE_ZOMBIE_FEE",
+                uint256(0.03e18)
             ),
             factoryMaxCurveFee: vm.envOr(
                 "FACTORY_MAX_CURVE_FEE",
-                uint256(0.03e18)
+                uint256(0.1e18)
             ),
             factoryMaxFlatFee: vm.envOr(
                 "FACTORY_MAX_FLAT_FEE",
-                uint256(0.0015e18)
+                uint256(0.001e18)
             ),
             factoryMaxGovernanceLPFee: vm.envOr(
                 "FACTORY_MAX_GOVERNANCE_LP_FEE",
-                uint256(0.3e18)
+                uint256(0.15e18)
             ),
             factoryMaxGovernanceZombieFee: vm.envOr(
                 "FACTORY_MAX_GOVERNANCE_ZOMBIE_FEE",
-                uint256(0.3e18)
+                uint256(0.03e18)
             ),
             // erc4626 hyperdrive configuration
             erc4626HyperdriveContribution: vm.envOr(
@@ -168,6 +207,22 @@ contract DevnetMigration is Script {
                 "ERC4626_HYPERDRIVE_TIME_STRETCH_APR",
                 uint256(0.05e18)
             ),
+            erc4626HyperdriveCurveFee: vm.envOr(
+                "ERC4626_HYPERDRIVE_CURVE_FEE",
+                uint256(0.01e18)
+            ),
+            erc4626HyperdriveFlatFee: vm.envOr(
+                "ERC4626_HYPERDRIVE_FLAT_FEE",
+                uint256(0.0005e18)
+            ),
+            erc4626HyperdriveGovernanceLPFee: vm.envOr(
+                "ERC4626_HYPERDRIVE_GOVERNANCE_LP_FEE",
+                uint256(0.15e18)
+            ),
+            erc4626HyperdriveGovernanceZombieFee: vm.envOr(
+                "ERC4626_HYPERDRIVE_GOVERNANCE_ZOMBIE_FEE",
+                uint256(0.03e18)
+            ),
             // steth hyperdrive configuration
             stethHyperdriveContribution: vm.envOr(
                 "STETH_HYPERDRIVE_CONTRIBUTION",
@@ -196,6 +251,22 @@ contract DevnetMigration is Script {
             stethHyperdriveTimeStretchApr: vm.envOr(
                 "STETH_HYPERDRIVE_TIME_STRETCH_APR",
                 uint256(0.035e18)
+            ),
+            stethHyperdriveCurveFee: vm.envOr(
+                "STETH_HYPERDRIVE_CURVE_FEE",
+                uint256(0.01e18)
+            ),
+            stethHyperdriveFlatFee: vm.envOr(
+                "STETH_HYPERDRIVE_FLAT_FEE",
+                uint256(0.0005e18)
+            ),
+            stethHyperdriveGovernanceLPFee: vm.envOr(
+                "STETH_HYPERDRIVE_GOVERNANCE_LP_FEE",
+                uint256(0.15e18)
+            ),
+            stethHyperdriveGovernanceZombieFee: vm.envOr(
+                "STETH_HYPERDRIVE_GOVERNANCE_ZOMBIE_FEE",
+                uint256(0.03e18)
             )
         });
 
@@ -250,11 +321,18 @@ contract DevnetMigration is Script {
                     governance: msg.sender,
                     hyperdriveGovernance: config.admin,
                     feeCollector: config.admin,
-                    fees: IHyperdrive.Fees({
-                        curve: config.factoryCurveFee,
-                        flat: config.factoryFlatFee,
-                        governanceLP: config.factoryGovernanceLPFee,
-                        governanceZombie: config.factoryGovernanceZombieFee
+                    defaultPausers: defaultPausers,
+                    checkpointDurationResolution: config
+                        .factoryCheckpointDurationResolution,
+                    minCheckpointDuration: config.factoryMinCheckpointDuration,
+                    maxCheckpointDuration: config.factoryMaxCheckpointDuration,
+                    minPositionDuration: config.factoryMinPositionDuration,
+                    maxPositionDuration: config.factoryMaxPositionDuration,
+                    minFees: IHyperdrive.Fees({
+                        curve: config.factoryMinCurveFee,
+                        flat: config.factoryMinFlatFee,
+                        governanceLP: config.factoryMinGovernanceLPFee,
+                        governanceZombie: config.factoryMinGovernanceZombieFee
                     }),
                     maxFees: IHyperdrive.Fees({
                         curve: config.factoryMaxCurveFee,
@@ -262,7 +340,6 @@ contract DevnetMigration is Script {
                         governanceLP: config.factoryMaxGovernanceLPFee,
                         governanceZombie: config.factoryMaxGovernanceZombieFee
                     }),
-                    defaultPausers: defaultPausers,
                     linkerFactory: address(forwarderFactory),
                     linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
                 });
@@ -308,10 +385,11 @@ contract DevnetMigration is Script {
                     governance: config.admin,
                     feeCollector: config.admin,
                     fees: IHyperdrive.Fees({
-                        curve: config.factoryCurveFee,
-                        flat: config.factoryFlatFee,
-                        governanceLP: config.factoryGovernanceLPFee,
-                        governanceZombie: config.factoryGovernanceZombieFee
+                        curve: config.erc4626HyperdriveCurveFee,
+                        flat: config.erc4626HyperdriveFlatFee,
+                        governanceLP: config.erc4626HyperdriveGovernanceLPFee,
+                        governanceZombie: config
+                            .erc4626HyperdriveGovernanceZombieFee
                     })
                 });
             erc4626Hyperdrive = factory.deployAndInitialize(
@@ -363,10 +441,11 @@ contract DevnetMigration is Script {
                     governance: config.admin,
                     feeCollector: config.admin,
                     fees: IHyperdrive.Fees({
-                        curve: config.factoryCurveFee,
-                        flat: config.factoryFlatFee,
-                        governanceLP: config.factoryGovernanceLPFee,
-                        governanceZombie: config.factoryGovernanceZombieFee
+                        curve: config.stethHyperdriveCurveFee,
+                        flat: config.stethHyperdriveFlatFee,
+                        governanceLP: config.stethHyperdriveGovernanceLPFee,
+                        governanceZombie: config
+                            .stethHyperdriveGovernanceZombieFee
                     })
                 });
             stethHyperdrive = factory.deployAndInitialize{

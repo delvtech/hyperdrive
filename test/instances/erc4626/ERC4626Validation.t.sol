@@ -70,10 +70,25 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: bob,
+                feeCollector: celine,
                 defaultPausers: defaults,
-                fees: IHyperdrive.Fees(0, 0, 0, 0),
-                maxFees: IHyperdrive.Fees(1e18, 1e18, 1e18, 1e18),
+                checkpointDurationResolution: 1 hours,
+                minCheckpointDuration: 8 hours,
+                maxCheckpointDuration: 1 days,
+                minPositionDuration: 7 days,
+                maxPositionDuration: 10 * 365 days,
+                minFees: IHyperdrive.Fees({
+                    curve: 0,
+                    flat: 0,
+                    governanceLP: 0,
+                    governanceZombie: 0
+                }),
+                maxFees: IHyperdrive.Fees({
+                    curve: ONE,
+                    flat: ONE,
+                    governanceLP: ONE,
+                    governanceZombie: ONE
+                }),
                 linkerFactory: address(forwarderFactory),
                 linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
             })
@@ -85,6 +100,10 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             POSITION_DURATION
         );
         config.baseToken = underlyingToken;
+        config.feeCollector = address(0);
+        config.governance = address(0);
+        config.linkerFactory = address(0);
+        config.linkerCodeHash = bytes32(0);
         uint256 contribution = 7_500e18;
         vm.stopPrank();
         vm.startPrank(alice);
@@ -126,7 +145,10 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             FIXED_RATE,
             POSITION_DURATION
         );
-        // Required to support ERC4626, since the test config initialVaultSharePrice is wrong
+        config.governance = address(0);
+        config.feeCollector = address(0);
+        config.linkerFactory = address(0);
+        config.linkerCodeHash = bytes32(0);
         config.baseToken = underlyingToken;
         // Designed to ensure compatibility ../../contracts/src/instances/ERC4626Hyperdrive.sol#L122C1-L122C1
         config.minimumTransactionAmount = hyperdrive

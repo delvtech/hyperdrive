@@ -78,12 +78,27 @@ contract UsdcERC4626 is ERC4626ValidationTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
+                feeCollector: celine,
                 defaultPausers: defaults,
-                feeCollector: bob,
-                fees: IHyperdrive.Fees(0, 0, 0, 0),
-                maxFees: IHyperdrive.Fees(1e18, 1e18, 1e18, 1e18),
-                linkerFactory: address(forwarderFactory),
-                linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
+                checkpointDurationResolution: 1 hours,
+                minCheckpointDuration: 8 hours,
+                maxCheckpointDuration: 1 days,
+                minPositionDuration: 7 days,
+                maxPositionDuration: 10 * 365 days,
+                minFees: IHyperdrive.Fees({
+                    curve: 0,
+                    flat: 0,
+                    governanceLP: 0,
+                    governanceZombie: 0
+                }),
+                maxFees: IHyperdrive.Fees({
+                    curve: ONE,
+                    flat: ONE,
+                    governanceLP: ONE,
+                    governanceZombie: ONE
+                }),
+                linkerFactory: address(0xdeadbeef),
+                linkerCodeHash: bytes32(uint256(0xdeadbabe))
             })
         );
 
@@ -92,6 +107,10 @@ contract UsdcERC4626 is ERC4626ValidationTest {
             FIXED_RATE,
             POSITION_DURATION
         );
+        config.governance = address(0);
+        config.feeCollector = address(0);
+        config.linkerFactory = address(0);
+        config.linkerCodeHash = bytes32(0);
         config.baseToken = underlyingToken;
         config.minimumTransactionAmount = 1e6;
         config.minimumShareReserves = 1e6;

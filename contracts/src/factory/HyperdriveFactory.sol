@@ -216,6 +216,7 @@ contract HyperdriveFactory {
         ) {
             revert IHyperdrive.InvalidMinPositionDuration();
         }
+        minPositionDuration = _factoryConfig.minPositionDuration;
 
         // Ensure that the maximum position duration is greater than or equal
         // to the minimum position duration and is a multiple of the checkpoint
@@ -229,6 +230,7 @@ contract HyperdriveFactory {
         ) {
             revert IHyperdrive.InvalidMaxPositionDuration();
         }
+        maxPositionDuration = _factoryConfig.maxPositionDuration;
 
         // Ensure that the max fees are each less than or equal to 100% and set
         // the fees.
@@ -462,8 +464,8 @@ contract HyperdriveFactory {
         if (
             __minFees.curve > _maxFees.curve ||
             __minFees.flat > _maxFees.flat ||
-            __minFees.governanceLP < _maxFees.governanceLP ||
-            __minFees.governanceZombie < _maxFees.governanceZombie
+            __minFees.governanceLP > _maxFees.governanceLP ||
+            __minFees.governanceZombie > _maxFees.governanceZombie
         ) {
             revert IHyperdrive.InvalidMinFees();
         }
