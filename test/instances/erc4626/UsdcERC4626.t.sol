@@ -11,7 +11,7 @@ import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
+import { IDeployerCoordinator } from "contracts/src/interfaces/IDeployerCoordinator.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
@@ -78,12 +78,27 @@ contract UsdcERC4626 is ERC4626ValidationTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
+                feeCollector: celine,
                 defaultPausers: defaults,
-                feeCollector: bob,
-                fees: IHyperdrive.Fees(0, 0, 0, 0),
-                maxFees: IHyperdrive.Fees(1e18, 1e18, 1e18, 1e18),
-                linkerFactory: address(forwarderFactory),
-                linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
+                checkpointDurationResolution: 1 hours,
+                minCheckpointDuration: 8 hours,
+                maxCheckpointDuration: 1 days,
+                minPositionDuration: 7 days,
+                maxPositionDuration: 10 * 365 days,
+                minFees: IHyperdrive.Fees({
+                    curve: 0,
+                    flat: 0,
+                    governanceLP: 0,
+                    governanceZombie: 0
+                }),
+                maxFees: IHyperdrive.Fees({
+                    curve: ONE,
+                    flat: ONE,
+                    governanceLP: ONE,
+                    governanceZombie: ONE
+                }),
+                linkerFactory: address(0xdeadbeef),
+                linkerCodeHash: bytes32(uint256(0xdeadbabe))
             })
         );
 
@@ -92,6 +107,10 @@ contract UsdcERC4626 is ERC4626ValidationTest {
             FIXED_RATE,
             POSITION_DURATION
         );
+        config.governance = address(0);
+        config.feeCollector = address(0);
+        config.linkerFactory = address(0);
+        config.linkerCodeHash = bytes32(0);
         config.baseToken = underlyingToken;
         config.minimumTransactionAmount = 1e6;
         config.minimumShareReserves = 1e6;
@@ -99,7 +118,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         vm.stopPrank();
         vm.startPrank(alice);
 
-        factory.addHyperdriveDeployer(deployerCoordinator);
+        factory.addDeployerCoordinator(deployerCoordinator);
 
         // Set approval to allow initial contribution to factory.
         underlyingToken.approve(address(factory), type(uint256).max);

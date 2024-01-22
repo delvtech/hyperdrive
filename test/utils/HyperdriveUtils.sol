@@ -1674,11 +1674,14 @@ library HyperdriveUtils {
         if (_selector == IHyperdrive.InvalidToken.selector) {
             return "InvalidToken";
         }
-        if (_selector == IHyperdrive.MaxFeeTooHigh.selector) {
-            return "MaxFeeTooHigh";
+        if (_selector == IHyperdrive.InvalidFees.selector) {
+            return "InvalidFees";
         }
-        if (_selector == IHyperdrive.FeeTooHigh.selector) {
-            return "FeeTooHigh";
+        if (_selector == IHyperdrive.InvalidMaxFees.selector) {
+            return "InvalidMaxFees";
+        }
+        if (_selector == IHyperdrive.InvalidMinFees.selector) {
+            return "InvalidMinFees";
         }
         if (_selector == IHyperdrive.NonPayableInitialization.selector) {
             return "NonPayableInitialization";

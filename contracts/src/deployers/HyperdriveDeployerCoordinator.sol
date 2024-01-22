@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveCoreDeployer } from "../interfaces/IHyperdriveCoreDeployer.sol";
-import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
+import { IDeployerCoordinator } from "../interfaces/IDeployerCoordinator.sol";
 import { IHyperdriveTargetDeployer } from "../interfaces/IHyperdriveTargetDeployer.sol";
 
 /// @author DELV
@@ -14,7 +14,7 @@ import { IHyperdriveTargetDeployer } from "../interfaces/IHyperdriveTargetDeploy
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveDeployerCoordinator is IHyperdriveDeployer {
+abstract contract HyperdriveDeployerCoordinator is IDeployerCoordinator {
     /// @notice The contract used to deploy new instances of Hyperdrive.
     address public immutable coreDeployer;
 
