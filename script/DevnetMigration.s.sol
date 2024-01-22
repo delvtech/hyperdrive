@@ -356,7 +356,7 @@ contract DevnetMigration is Script {
                 address(new ERC4626Target3Deployer())
             )
         );
-        factory.addHyperdriveDeployer(erc4626DeployerCoordinator);
+        factory.addDeployerCoordinator(erc4626DeployerCoordinator);
 
         // Deploy and initialize an initial ERC4626Hyperdrive instance.
         IHyperdrive erc4626Hyperdrive;
@@ -413,7 +413,7 @@ contract DevnetMigration is Script {
                 ILido(address(lido))
             )
         );
-        factory.addHyperdriveDeployer(stethDeployerCoordinator);
+        factory.addDeployerCoordinator(stethDeployerCoordinator);
 
         // Deploy and initialize an initial StETHHyperdrive instance.
         IHyperdrive stethHyperdrive;

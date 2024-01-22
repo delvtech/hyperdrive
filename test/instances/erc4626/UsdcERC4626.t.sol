@@ -11,7 +11,7 @@ import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
+import { IDeployerCoordinator } from "contracts/src/interfaces/IDeployerCoordinator.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
@@ -118,7 +118,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         vm.stopPrank();
         vm.startPrank(alice);
 
-        factory.addHyperdriveDeployer(deployerCoordinator);
+        factory.addDeployerCoordinator(deployerCoordinator);
 
         // Set approval to allow initial contribution to factory.
         underlyingToken.approve(address(factory), type(uint256).max);

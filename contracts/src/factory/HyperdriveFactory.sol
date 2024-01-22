@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
+import { IDeployerCoordinator } from "../interfaces/IDeployerCoordinator.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
@@ -26,6 +26,12 @@ contract HyperdriveFactory {
         bytes extraData
     );
 
+    /// @notice Emitted when a new deployer coordinator is added.
+    event DeployerCoordinatorAdded(address deployerCoordinator);
+
+    /// @notice Emitted when a deployer coordinator is removed.
+    event DeployerCoordinatorRemoved(address deployerCoordinator);
+
     /// @notice Emitted when the default pausers are updated.
     event DefaultPausersUpdated(address[] newDefaultPausers);
 
@@ -34,12 +40,6 @@ contract HyperdriveFactory {
 
     /// @notice Emitted when governance is transferred.
     event GovernanceUpdated(address governance);
-
-    /// @notice Emitted when a new Hyperdrive deployer is added.
-    event HyperdriveDeployerAdded(address hyperdriveDeployer);
-
-    /// @notice Emitted when a Hyperdrive deployer is remove.
-    event HyperdriveDeployerRemoved(address hyperdriveDeployer);
 
     /// @notice Emitted when the Hyperdrive governance address is updated.
     event HyperdriveGovernanceUpdated(address hyperdriveGovernance);
@@ -160,14 +160,14 @@ contract HyperdriveFactory {
         bytes32 linkerCodeHash;
     }
 
-    /// @dev List of all hyperdrive deployers onboarded by governance.
-    address[] internal _hyperdriveDeployers;
+    /// @dev List of all deployer coordinators registered by governance.
+    address[] internal _deployerCoordinators;
 
-    /// @notice Mapping to check if an hyperdriveDeployer is in the _hyperdriveDeployers array.
-    mapping(address => bool) public isHyperdriveDeployer;
+    /// @notice Mapping to check if a deployer coordinator has been registered'
+    ///         by governance.
+    mapping(address => bool) public isDeployerCoordinator;
 
     /// @dev Array of all instances deployed by this factory.
-    /// @dev Can be manually updated by governance to add previous instances deployed.
     address[] internal _instances;
 
     /// @dev Mapping to check if an instance is in the _instances array.
@@ -484,51 +484,46 @@ contract HyperdriveFactory {
         emit DefaultPausersUpdated(_defaultPausers_);
     }
 
-    // FIXME: Update this name to `addDeployerCoordinator`.
-    //
-    // FIXME: Furthermore, update `hyperdriveDeployers` to `deployerCoordinators`.
-    //
-    /// @notice Allows governance to add a new hyperdrive deployer.
-    /// @param _hyperdriveDeployer The new hyperdrive deployer.
-    function addHyperdriveDeployer(
-        address _hyperdriveDeployer
+    /// @notice Allows governance to add a new deployer coordinator.
+    /// @param _deployerCoordinator The new deployer coordinator.
+    function addDeployerCoordinator(
+        address _deployerCoordinator
     ) external onlyGovernance {
-        if (isHyperdriveDeployer[_hyperdriveDeployer]) {
-            revert IHyperdrive.HyperdriveDeployerAlreadyAdded();
+        if (isDeployerCoordinator[_deployerCoordinator]) {
+            revert IHyperdrive.DeployerCoordinatorAlreadyAdded();
         }
-        isHyperdriveDeployer[_hyperdriveDeployer] = true;
-        _hyperdriveDeployers.push(_hyperdriveDeployer);
-        emit HyperdriveDeployerAdded(_hyperdriveDeployer);
+        isDeployerCoordinator[_deployerCoordinator] = true;
+        _deployerCoordinators.push(_deployerCoordinator);
+        emit DeployerCoordinatorAdded(_deployerCoordinator);
     }
 
-    // FIXME: Update this name to `removeDeployerCoordinator`.
-    //
-    /// @notice Allows governance to remove an existing hyperdrive deployer.
-    /// @param _hyperdriveDeployer The hyperdrive deployer to remove.
-    /// @param _index The index of the hyperdrive deployer to remove.
-    function removeHyperdriveDeployer(
-        address _hyperdriveDeployer,
+    /// @notice Allows governance to remove an existing deployer coordinator.
+    /// @param _deployerCoordinator The deployer coordinator to remove.
+    /// @param _index The index of the deployer coordinator to remove.
+    function removeDeployerCoordinator(
+        address _deployerCoordinator,
         uint256 _index
     ) external onlyGovernance {
-        if (!isHyperdriveDeployer[_hyperdriveDeployer]) {
-            revert IHyperdrive.HyperdriveDeployerNotAdded();
+        if (!isDeployerCoordinator[_deployerCoordinator]) {
+            revert IHyperdrive.DeployerCoordinatorNotAdded();
         }
-        if (_hyperdriveDeployers[_index] != _hyperdriveDeployer) {
-            revert IHyperdrive.HyperdriveDeployerIndexMismatch();
+        if (_deployerCoordinators[_index] != _deployerCoordinator) {
+            revert IHyperdrive.DeployerCoordinatorIndexMismatch();
         }
-        isHyperdriveDeployer[_hyperdriveDeployer] = false;
-        _hyperdriveDeployers[_index] = _hyperdriveDeployers[
-            _hyperdriveDeployers.length - 1
+        isDeployerCoordinator[_deployerCoordinator] = false;
+        _deployerCoordinators[_index] = _deployerCoordinators[
+            _deployerCoordinators.length - 1
         ];
-        _hyperdriveDeployers.pop();
-        emit HyperdriveDeployerRemoved(_hyperdriveDeployer);
+        _deployerCoordinators.pop();
+        emit DeployerCoordinatorRemoved(_deployerCoordinator);
     }
 
     /// @notice Deploys a Hyperdrive instance with the factory's configuration.
     /// @dev This function is declared as payable to allow payable overrides
     ///      to accept ether on initialization, but payability is not supported
     ///      by default.
-    /// @param _hyperdriveDeployer Address of the hyperdrive deployer.
+    /// @param _deployerCoordinator The deployer coordinator to use in this
+    ///        deployment.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     /// @param _extraData The extra data that contains data necessary for the
     ///        specific deployer.
@@ -537,7 +532,7 @@ contract HyperdriveFactory {
     /// @param _initializeExtraData The extra data for the `initialize` call.
     /// @return The hyperdrive address deployed.
     function deployAndInitialize(
-        address _hyperdriveDeployer,
+        address _deployerCoordinator,
         IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory _extraData,
         uint256 _contribution,
@@ -545,8 +540,8 @@ contract HyperdriveFactory {
         bytes memory _initializeExtraData
     ) public payable virtual returns (IHyperdrive) {
         // Ensure that the target deployer has been registered.
-        if (!isHyperdriveDeployer[_hyperdriveDeployer]) {
-            revert IHyperdrive.InvalidDeployer();
+        if (!isDeployerCoordinator[_deployerCoordinator]) {
+            revert IHyperdrive.InvalidDeployerCoordinator();
         }
 
         // Ensure that the specified checkpoint duration is within the minimum
@@ -610,7 +605,7 @@ contract HyperdriveFactory {
         // Deploy the Hyperdrive instance with the specified Hyperdrive
         // deployer.
         IHyperdrive hyperdrive = IHyperdrive(
-            IHyperdriveDeployer(_hyperdriveDeployer).deploy(
+            IDeployerCoordinator(_deployerCoordinator).deploy(
                 _deployConfig,
                 _extraData
             )
@@ -751,26 +746,28 @@ contract HyperdriveFactory {
         }
     }
 
-    /// @notice Gets the number of hyperdrive deployers deployed by this factory.
-    /// @return The number of hyperdrive deployers deployed by this factory.
-    function getNumberOfHyperdriveDeployers() external view returns (uint256) {
-        return _hyperdriveDeployers.length;
+    /// @notice Gets the number of deployer coordinators registered in this
+    ///         factory.
+    /// @return The number of deployer coordinators deployed by this factory.
+    function getNumberOfDeployerCoordinators() external view returns (uint256) {
+        return _deployerCoordinators.length;
     }
 
-    /// @notice Gets the instance at the specified index.
-    /// @param index The index of the instance to get.
-    /// @return The instance at the specified index.
-    function getHyperdriveDeployerAtIndex(
+    /// @notice Gets the deployer coordinator at the specified index.
+    /// @param index The index of the deployer coordinator to get.
+    /// @return The deployer coordinator at the specified index.
+    function getDeployerCoordinatorAtIndex(
         uint256 index
     ) external view returns (address) {
-        return _hyperdriveDeployers[index];
+        return _deployerCoordinators[index];
     }
 
-    /// @notice Returns the hyperdrive deployers array according to specified indices.
-    /// @param startIndex The starting index of the hyperdrive deployers to get.
-    /// @param endIndex The ending index of the hyperdrive deployers to get.
-    /// @return range The resulting custom portion of the hyperdrive deployers array.
-    function getHyperdriveDeployersInRange(
+    /// @notice Returns the deployer coordinators with an index between the
+    ///         starting and ending indexes (inclusive).
+    /// @param startIndex The starting index (inclusive).
+    /// @param endIndex The ending index (inclusive).
+    /// @return range The deployer coordinators within the specified range.
+    function getDeployerCoordinatorsInRange(
         uint256 startIndex,
         uint256 endIndex
     ) external view returns (address[] memory range) {
@@ -778,14 +775,14 @@ contract HyperdriveFactory {
         if (startIndex > endIndex) {
             revert IHyperdrive.InvalidIndexes();
         }
-        if (endIndex > _hyperdriveDeployers.length) {
+        if (endIndex > _deployerCoordinators.length) {
             revert IHyperdrive.EndIndexTooLarge();
         }
 
         // Return the range of instances.
         range = new address[](endIndex - startIndex + 1);
         for (uint256 i = startIndex; i <= endIndex; i++) {
-            range[i - startIndex] = _hyperdriveDeployers[i];
+            range[i - startIndex] = _deployerCoordinators[i];
         }
     }
 }

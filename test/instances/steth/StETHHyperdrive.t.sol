@@ -93,7 +93,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
                 LIDO
             )
         );
-        factory.addHyperdriveDeployer(address(deployerCoordinator));
+        factory.addDeployerCoordinator(address(deployerCoordinator));
 
         // Alice deploys the hyperdrive instance.
         IHyperdrive.PoolDeployConfig memory config = IHyperdrive
