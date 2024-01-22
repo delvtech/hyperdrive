@@ -163,7 +163,7 @@ contract HyperdriveFactory {
     /// @dev List of all deployer coordinators registered by governance.
     address[] internal _deployerCoordinators;
 
-    /// @notice Mapping to check if a deployer coordinator has been registered'
+    /// @notice Mapping to check if a deployer coordinator has been registered
     ///         by governance.
     mapping(address => bool) public isDeployerCoordinator;
 
