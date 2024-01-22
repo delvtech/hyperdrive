@@ -54,9 +54,11 @@ library HyperdriveMath {
         uint256 _positionDuration,
         uint256 _timeStretch
     ) internal pure returns (uint256 apr) {
-        // We are interested calculating the fixed APR for the pool. The annualized rate
-        // is given by the following formula:
+        // We are interested calculating the fixed APR for the pool. The
+        // annualized rate is given by the following formula:
+        //
         // r = (1 - p) / (p * t)
+        //
         // where t = _positionDuration / 365
         uint256 spotPrice = calculateSpotPrice(
             _effectiveShareReserves,
