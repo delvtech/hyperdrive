@@ -484,6 +484,10 @@ contract HyperdriveFactory {
         emit DefaultPausersUpdated(_defaultPausers_);
     }
 
+    // FIXME: Update this name to `addDeployerCoordinator`.
+    //
+    // FIXME: Furthermore, update `hyperdriveDeployers` to `deployerCoordinators`.
+    //
     /// @notice Allows governance to add a new hyperdrive deployer.
     /// @param _hyperdriveDeployer The new hyperdrive deployer.
     function addHyperdriveDeployer(
@@ -497,6 +501,8 @@ contract HyperdriveFactory {
         emit HyperdriveDeployerAdded(_hyperdriveDeployer);
     }
 
+    // FIXME: Update this name to `removeDeployerCoordinator`.
+    //
     /// @notice Allows governance to remove an existing hyperdrive deployer.
     /// @param _hyperdriveDeployer The hyperdrive deployer to remove.
     /// @param _index The index of the hyperdrive deployer to remove.
@@ -541,6 +547,29 @@ contract HyperdriveFactory {
         // Ensure that the target deployer has been registered.
         if (!isHyperdriveDeployer[_hyperdriveDeployer]) {
             revert IHyperdrive.InvalidDeployer();
+        }
+
+        // Ensure that the specified checkpoint duration is within the minimum
+        // and maximum checkpoint durations and is a multiple of the checkpoint
+        // duration resolution.
+        if (
+            _deployConfig.checkpointDuration < minCheckpointDuration ||
+            _deployConfig.checkpointDuration > maxCheckpointDuration ||
+            _deployConfig.checkpointDuration % checkpointDurationResolution != 0
+        ) {
+            revert IHyperdrive.InvalidCheckpointDuration();
+        }
+
+        // Ensure that the specified checkpoint duration is within the minimum
+        // and maximum position durations and is a multiple of the specified
+        // checkpoint duration.
+        if (
+            _deployConfig.positionDuration < minPositionDuration ||
+            _deployConfig.positionDuration > maxPositionDuration ||
+            _deployConfig.positionDuration % _deployConfig.checkpointDuration !=
+            0
+        ) {
+            revert IHyperdrive.InvalidPositionDuration();
         }
 
         // Ensure that the specified fees are within the minimum and maximum fees.
