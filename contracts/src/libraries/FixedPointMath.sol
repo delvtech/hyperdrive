@@ -309,8 +309,9 @@ library FixedPointMath {
         // average = (totalWeight * average + deltaWeight * delta) /
         //           (totalWeight + deltaWeight)
         if (_isAdding) {
+            // NOTE: Round down to underestimate the average.
             average = (_totalWeight.mulDown(_average) +
-                _deltaWeight.mulDown(_delta)).divUp(
+                _deltaWeight.mulDown(_delta)).divDown(
                     _totalWeight + _deltaWeight
                 );
 
@@ -335,9 +336,13 @@ library FixedPointMath {
         // average = (totalWeight * average - deltaWeight * delta) /
         //           (totalWeight - deltaWeight)
         else {
-            if (_totalWeight == _deltaWeight) return 0;
+            if (_totalWeight == _deltaWeight) {
+                return 0;
+            }
+
+            // NOTE: Round down to underestimate the average.
             average = (_totalWeight.mulDown(_average) -
-                _deltaWeight.mulDown(_delta)).divUp(
+                _deltaWeight.mulUp(_delta)).divDown(
                     _totalWeight - _deltaWeight
                 );
         }
