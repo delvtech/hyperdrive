@@ -183,6 +183,8 @@ abstract contract HyperdriveBase is HyperdriveStorage {
 
     /// Helpers ///
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Calculates the normalized time remaining of a position.
     /// @param _maturityTime The maturity time of the position.
     /// @return timeRemaining The normalized time remaining (in [0, 1]).
@@ -193,9 +195,11 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         timeRemaining = _maturityTime > latestCheckpoint
             ? _maturityTime - latestCheckpoint
             : 0;
-        timeRemaining = (timeRemaining).divDown(_positionDuration);
+        timeRemaining = timeRemaining.divDown(_positionDuration);
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Calculates the normalized time remaining of a position when the
     ///      maturity time is scaled up 18 decimals.
     /// @param _maturityTime The maturity time of the position.
@@ -206,7 +210,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         timeRemaining = _maturityTime > latestCheckpoint
             ? _maturityTime - latestCheckpoint
             : 0;
-        timeRemaining = (timeRemaining).divDown(_positionDuration * ONE);
+        timeRemaining = timeRemaining.divDown(_positionDuration * ONE);
     }
 
     /// @dev Gets the most recent checkpoint time.
@@ -262,6 +266,8 @@ abstract contract HyperdriveBase is HyperdriveStorage {
             );
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Gets the distribute excess idle parameters from the current state.
     /// @param _vaultSharePrice The current vault share price.
     /// @return params The distribute excess idle parameters.
@@ -349,6 +355,8 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         return endingSpotPrice > _maxSpotPrice;
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Check solvency by verifying that the share reserves are greater
     ///      than the exposure plus the minimum share reserves.
     /// @param _vaultSharePrice The current vault share price.
@@ -379,6 +387,8 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         }
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Apply the updates to the market state as a result of closing a
     ///      position after maturity. This function also adjusts the proceeds
     ///      to account for any negative interest that has accrued in the
@@ -426,6 +436,8 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         return _shareProceeds;
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Collect the interest earned on unredeemed matured positions. This
     ///      interest is split between the LPs and governance.
     /// @param _vaultSharePrice The current vault share price.
@@ -484,6 +496,8 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         }
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Calculates the number of share reserves that are not reserved by
     ///      open positions.
     /// @param _vaultSharePrice The current vault share price.
@@ -504,6 +518,8 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         return idleShares;
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Calculates the LP share price.
     /// @param _vaultSharePrice The current vault share price.
     /// @return lpSharePrice The LP share price in units of (base / lp shares).
@@ -524,6 +540,8 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         return lpSharePrice;
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Calculates the fees that go to the LPs and governance.
     /// @param _shareAmount The amount of shares exchanged for bonds.
     /// @param _spotPrice The price without slippage of bonds in terms of base
@@ -567,6 +585,8 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         governanceCurveFee = curveFee.mulDown(_governanceLPFee);
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Calculates the fees that go to the LPs and governance.
     /// @param _bondAmount The amount of bonds being exchanged for shares.
     /// @param _normalizedTimeRemaining The normalized amount of time until
@@ -641,6 +661,8 @@ abstract contract HyperdriveBase is HyperdriveStorage {
             flatFee.mulDown(_governanceLPFee);
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Converts input to base if necessary according to what is specified
     ///      in options.
     /// @param _amount The amount to convert.
@@ -659,6 +681,8 @@ abstract contract HyperdriveBase is HyperdriveStorage {
         }
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Converts input to what is specified in the options from base.
     /// @param _amount The amount to convert.
     /// @param _vaultSharePrice The current vault share price.

@@ -20,6 +20,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
     using SafeCast for uint256;
     using SafeCast for int256;
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Opens a long position.
     /// @param _amount The amount to open a long with.
     /// @param _minOutput The minimum number of bonds to receive.
@@ -123,6 +125,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         return (maturityTime, _bondProceeds);
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Closes a long position with a specified maturity time.
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of longs to close.
@@ -225,6 +229,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         return proceeds;
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Applies an open long to the state. This includes updating the
     ///      reserves and maintaining the reserve invariants.
     /// @param _shareReservesDelta The amount of shares paid to the curve.
@@ -276,6 +282,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         _distributeExcessIdle(_vaultSharePrice);
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Applies the trading deltas from a closed long to the reserves and
     ///      the withdrawal pool.
     /// @param _bondAmount The amount of longs that were closed.
@@ -343,6 +351,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         }
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Calculate the pool reserve and trader deltas that result from
     ///      opening a long. This calculation includes trading fees.
     /// @param _shareAmount The amount of shares being paid to open the long.
@@ -453,6 +463,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         );
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Calculate the pool reserve and trader deltas that result from
     ///      closing a long. This calculation includes trading fees.
     /// @param _bondAmount The amount of bonds being purchased to close the short.

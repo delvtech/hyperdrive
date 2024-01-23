@@ -856,9 +856,8 @@ contract HyperdriveTest is BaseTest {
             variableRate,
             timeElapsed
         );
-        int256 delta = int256(
-            shortAmount - poolInfo.vaultSharePrice.mulDown(expectedSharePayment)
-        );
+        int256 delta = int256(shortAmount) -
+            int256(poolInfo.vaultSharePrice.mulDown(expectedSharePayment));
         if (delta + expectedInterest > 0) {
             return uint256(delta + expectedInterest);
         } else {

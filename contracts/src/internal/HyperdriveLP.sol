@@ -109,6 +109,8 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         return lpShares;
     }
 
+    // TODO: Do a rounding pass on this function.
+    //
     /// @dev Allows LPs to supply liquidity for LP shares.
     /// @param _contribution The amount to supply.
     /// @param _minLpSharePrice The minimum LP share price the LP is willing
@@ -230,6 +232,8 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         );
     }
 
+    // TODO: Do a rounding pass on this function.
+    //
     /// @dev Allows an LP to burn shares and withdraw from the pool.
     /// @param _lpShares The LP shares to burn.
     /// @param _minOutputPerShare The minimum amount of base per LP share that
@@ -300,6 +304,8 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         return (proceeds, withdrawalShares);
     }
 
+    // TODO: Do a rounding pass on this function.
+    //
     /// @dev Redeems withdrawal shares by giving the LP a pro-rata amount of the
     ///      withdrawal pool's proceeds. This function redeems the maximum
     ///      amount of the specified withdrawal shares given the amount of
@@ -352,6 +358,8 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         return (proceeds, withdrawalSharesRedeemed);
     }
 
+    // TODO: Do a rounding pass on this function.
+    //
     /// @dev Redeems withdrawal shares by giving the LP a pro-rata amount of the
     ///      withdrawal pool's proceeds. This function redeems the maximum
     ///      amount of the specified withdrawal shares given the amount of
@@ -411,6 +419,8 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         return (proceeds, withdrawalSharesRedeemed);
     }
 
+    // TODO: Do a rounding pass on this function.
+    //
     /// @dev Distribute as much of the excess idle as possible to the withdrawal
     ///      pool while holding the LP share price constant.
     /// @param _vaultSharePrice The current vault share price.
@@ -449,6 +459,8 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         _updateLiquidity(-int256(shareProceeds));
     }
 
+    // TODO: Do a rounding pass on this function.
+    //
     /// @dev Updates the pool's liquidity and holds the pool's spot price constant.
     /// @param _shareReservesDelta The delta that should be applied to share reserves.
     function _updateLiquidity(int256 _shareReservesDelta) internal {

@@ -229,7 +229,7 @@ contract MockHyperdriveMath {
         return result;
     }
 
-    function calculateShortProceeds(
+    function calculateShortProceedsUp(
         uint256 _bondAmount,
         uint256 _shareAmount,
         uint256 _openVaultSharePrice,
@@ -237,7 +237,26 @@ contract MockHyperdriveMath {
         uint256 _vaultSharePrice,
         uint256 _flatFee
     ) external pure returns (uint256) {
-        uint256 result = HyperdriveMath.calculateShortProceeds(
+        uint256 result = HyperdriveMath.calculateShortProceedsUp(
+            _bondAmount,
+            _shareAmount,
+            _openVaultSharePrice,
+            _closeVaultSharePrice,
+            _vaultSharePrice,
+            _flatFee
+        );
+        return result;
+    }
+
+    function calculateShortProceedsDown(
+        uint256 _bondAmount,
+        uint256 _shareAmount,
+        uint256 _openVaultSharePrice,
+        uint256 _closeVaultSharePrice,
+        uint256 _vaultSharePrice,
+        uint256 _flatFee
+    ) external pure returns (uint256) {
+        uint256 result = HyperdriveMath.calculateShortProceedsDown(
             _bondAmount,
             _shareAmount,
             _openVaultSharePrice,

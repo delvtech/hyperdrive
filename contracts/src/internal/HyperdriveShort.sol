@@ -20,6 +20,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
     using SafeCast for uint256;
     using SafeCast for int256;
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Opens a short position.
     /// @param _bondAmount The amount of bonds to short.
     /// @param _maxDeposit The most the user expects to deposit for this trade.
@@ -127,6 +129,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         return (maturityTime, traderDeposit);
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @notice Closes a short position with a specified maturity time.
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of shorts to close.
@@ -233,6 +237,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         return proceeds;
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Applies an open short to the state. This includes updating the
     ///      reserves and maintaining the reserve invariants.
     /// @param _bondAmount The amount of bonds shorted.
@@ -297,6 +303,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         _distributeExcessIdle(_vaultSharePrice);
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Applies the trading deltas from a closed short to the reserves and
     ///      the withdrawal pool.
     /// @param _bondAmount The amount of shorts that were closed.
@@ -335,6 +343,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         _marketState.bondReserves -= _bondReservesDelta.toUint128();
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Calculate the pool reserve and trader deltas that result from
     ///      opening a short. This calculation includes trading fees.
     /// @param _bondAmount The amount of bonds being sold to open the short.
@@ -410,6 +420,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // shares -= shares - shares
         shareReservesDelta -= curveFee - governanceCurveFee;
 
+        // NOTE: Round up to overestimate the base deposit.
+        //
         // The trader will need to deposit capital to pay for the fixed rate,
         // the curve fee, the flat fee, and any back-paid interest that will be
         // received back upon closing the trade. If negative interest has
@@ -418,7 +430,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // don't benefit from negative interest that accrued during the current
         // checkpoint.
         baseDeposit = HyperdriveMath
-            .calculateShortProceeds(
+            .calculateShortProceedsUp(
                 _bondAmount,
                 // NOTE: We add the governance fee back to the share reserves
                 // delta here because the trader will need to provide this in
@@ -434,6 +446,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         return (baseDeposit, shareReservesDelta, governanceCurveFee);
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Calculate the pool reserve and trader deltas that result from
     ///      closing a short. This calculation includes trading fees.
     /// @param _bondAmount The amount of bonds being purchased to close the
@@ -556,6 +570,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 ? _vaultSharePrice
                 : _checkpoints[_maturityTime].vaultSharePrice;
 
+            // NOTE: Round down to underestimate the short proceeds.
+            //
             // Calculate the share proceeds owed to the short. We calculate this
             // before scaling the share payment for negative interest. Shorts
             // are responsible for paying for 100% of the negative interest, so
@@ -563,7 +579,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // negative interest. Similarly, the governance fee is included in
             // the share payment. The LPs don't receive the governance fee, but
             // the short is responsible for paying it.
-            shareProceeds = HyperdriveMath.calculateShortProceeds(
+            shareProceeds = HyperdriveMath.calculateShortProceedsDown(
                 _bondAmount,
                 shareReservesDelta,
                 openVaultSharePrice,

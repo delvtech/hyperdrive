@@ -31,8 +31,6 @@ library LPMath {
     ///      to short-circuit.
     uint256 internal constant MAX_SHARE_RESERVES_DELTA_MIN_TOLERANCE = 1e6;
 
-    // TODO: Evaluate the rounding.
-    //
     /// @dev Calculates the new share reserves, share adjustment, and bond
     ///      reserves after liquidity is added or removed from the pool. This
     ///      update is made in such a way that the pool's spot price remains
@@ -84,6 +82,8 @@ library LPMath {
         //                  =>
         // zeta_new = zeta_old * (z_new / z_old)
         if (_shareAdjustment >= 0) {
+            // NOTE: Rounding down to avoid introducing dust into the
+            // computation.
             shareAdjustment = int256(
                 uint256(shareReserves).mulDivDown(
                     uint256(_shareAdjustment),
@@ -91,6 +91,8 @@ library LPMath {
                 )
             );
         } else {
+            // NOTE: Rounding down to avoid introducing dust into the
+            // computation.
             shareAdjustment = -int256(
                 uint256(shareReserves).mulDivDown(
                     uint256(-_shareAdjustment),
@@ -99,6 +101,8 @@ library LPMath {
             );
         }
 
+        // NOTE: Rounding down to avoid introducing dust into the computation.
+        //
         // The liquidity update should hold the spot price invariant. The spot
         // price of base in terms of bonds is given by:
         //

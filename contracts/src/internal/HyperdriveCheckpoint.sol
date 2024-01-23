@@ -68,6 +68,8 @@ abstract contract HyperdriveCheckpoint is
         }
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Creates a new checkpoint if necessary.
     /// @param _checkpointTime The time of the checkpoint to create.
     /// @param _vaultSharePrice The current vault share price.
@@ -129,7 +131,8 @@ abstract contract HyperdriveCheckpoint is
             uint256 shareReservesDelta = maturedShortsAmount.divDown(
                 _vaultSharePrice
             );
-            shareProceeds = HyperdriveMath.calculateShortProceeds(
+            // NOTE: Round down to underestimate the short proceeds.
+            shareProceeds = HyperdriveMath.calculateShortProceedsDown(
                 maturedShortsAmount,
                 shareReservesDelta,
                 openVaultSharePrice,
@@ -205,6 +208,8 @@ abstract contract HyperdriveCheckpoint is
         return _vaultSharePrice;
     }
 
+    // TODO: Do a rounding pass here.
+    //
     /// @dev Calculates the proceeds of the holders of a given position at
     ///      maturity.
     /// @param _bondAmount The bond amount of the position.
