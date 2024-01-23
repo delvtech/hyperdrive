@@ -361,7 +361,7 @@ abstract contract HyperdriveBase is HyperdriveStorage {
     /// @return True if the share reserves are greater than the exposure plus
     ///         the minimum share reserves.
     function _isSolvent(uint256 _vaultSharePrice) internal view returns (bool) {
-        // NOTE: Round the lhs up and the rhs down to make the strict more
+        // NOTE: Round the lhs up and the rhs down to make the check more
         // conservative.
         return
             int256(
