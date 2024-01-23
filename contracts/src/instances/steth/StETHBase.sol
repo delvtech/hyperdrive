@@ -115,6 +115,8 @@ abstract contract StETHBase is HyperdriveBase {
             revert IHyperdrive.UnsupportedToken();
         }
 
+        // NOTE: Round down to underestimate the base proceeds.
+        //
         // Correct for any error that crept into the calculation of the share
         // amount by converting the shares to base and then back to shares
         // using the vault's share conversion logic.
