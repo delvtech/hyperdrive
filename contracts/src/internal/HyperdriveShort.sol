@@ -20,8 +20,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
     using SafeCast for uint256;
     using SafeCast for int256;
 
-    // TODO: Do a rounding pass here.
-    //
     /// @dev Opens a short position.
     /// @param _bondAmount The amount of bonds to short.
     /// @param _maxDeposit The most the user expects to deposit for this trade.
@@ -129,8 +127,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         return (maturityTime, traderDeposit);
     }
 
-    // TODO: Do a rounding pass here.
-    //
     /// @notice Closes a short position with a specified maturity time.
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of shorts to close.
@@ -237,8 +233,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         return proceeds;
     }
 
-    // TODO: Do a rounding pass here.
-    //
     /// @dev Applies an open short to the state. This includes updating the
     ///      reserves and maintaining the reserve invariants.
     /// @param _bondAmount The amount of bonds shorted.
@@ -303,8 +297,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         _distributeExcessIdle(_vaultSharePrice);
     }
 
-    // TODO: Do a rounding pass here.
-    //
     /// @dev Applies the trading deltas from a closed short to the reserves and
     ///      the withdrawal pool.
     /// @param _bondAmount The amount of shorts that were closed.
@@ -343,8 +335,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         _marketState.bondReserves -= _bondReservesDelta.toUint128();
     }
 
-    // TODO: Do a rounding pass here.
-    //
     /// @dev Calculate the pool reserve and trader deltas that result from
     ///      opening a short. This calculation includes trading fees.
     /// @param _bondAmount The amount of bonds being sold to open the short.
@@ -379,10 +369,12 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _initialVaultSharePrice
         );
 
+        // NOTE: Round up to make the check stricter.
+        //
         // If the base proceeds of selling the bonds is greater than the bond
         // amount, then the trade occurred in the negative interest domain. We
         // revert in these pathological cases.
-        if (shareReservesDelta.mulDown(_vaultSharePrice) > _bondAmount) {
+        if (shareReservesDelta.mulUp(_vaultSharePrice) > _bondAmount) {
             revert IHyperdrive.NegativeInterest();
         }
 
@@ -441,13 +433,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 _vaultSharePrice,
                 _flatFee
             )
-            .mulDown(_vaultSharePrice);
+            .mulUp(_vaultSharePrice);
 
         return (baseDeposit, shareReservesDelta, governanceCurveFee);
     }
 
-    // TODO: Do a rounding pass here.
-    //
     /// @dev Calculate the pool reserve and trader deltas that result from
     ///      closing a short. This calculation includes trading fees.
     /// @param _bondAmount The amount of bonds being purchased to close the
