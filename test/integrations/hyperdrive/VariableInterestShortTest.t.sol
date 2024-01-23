@@ -197,11 +197,6 @@ contract VariableInterestShortTest is HyperdriveTest {
         int256 preTradeVariableInterest,
         int256 variableInterest
     ) external {
-        // FIXME
-        initialVaultSharePrice = 34778671436198528228969157798148911829006461373551783056986145839822293636051;
-        preTradeVariableInterest = 102440065373578136490305101693001783737566310;
-        variableInterest = -218271149486368278932534866513971484546;
-
         // Fuzz inputs
         // initialVaultSharePrice [0.1,5]
         // preTradeVariableInterest [-50,50]
