@@ -41,6 +41,12 @@ impl State {
         long_average_time_remaining: FixedPoint,
         short_average_time_remaining: FixedPoint,
     ) -> I256 {
+        // NOTE: To underestimate the impact of closing the net curve position,
+        // we round up the long side of the net curve position (since this
+        // results in a larger value removed from the share reserves) and round
+        // down the short side of the net curve position (since this results in
+        // a smaller value added to the share reserves).
+        //
         // The net curve position is the net of the longs and shorts that are
         // currently tradeable on the curve. Given the amount of outstanding
         // longs `y_l` and shorts `y_s` as well as the average time remaining
@@ -48,13 +54,12 @@ impl State {
         // compute the net curve position as:
         //
         // netCurveTrade = y_l * t_l - y_s * t_s.
-        let net_curve_position: I256 = I256::from(
-            self.longs_outstanding()
-                .mul_down(long_average_time_remaining),
-        ) - I256::from(
-            self.shorts_outstanding()
-                .mul_down(short_average_time_remaining),
-        );
+        let net_curve_position: I256 =
+            I256::from(self.longs_outstanding().mul_up(long_average_time_remaining))
+                - I256::from(
+                    self.shorts_outstanding()
+                        .mul_down(short_average_time_remaining),
+                );
 
         // If the net curve position is positive, then the pool is net long.
         // Closing the net curve position results in the longs being paid out
@@ -78,6 +83,9 @@ impl State {
                     I256::from(self.calculate_shares_in_given_bonds_out_up(_net_curve_position))
                 } else {
                     let max_share_payment = self.calculate_max_buy_shares_in();
+
+                    // NOTE: We round the difference down to underestimate the
+                    // impact of closing the net curve position.
                     I256::from(
                         max_share_payment
                             + (_net_curve_position - max_curve_trade)
@@ -94,12 +102,16 @@ impl State {
         long_average_time_remaining: FixedPoint,
         short_average_time_remaining: FixedPoint,
     ) -> I256 {
+        // NOTE: In order to underestimate the impact of closing all of the
+        // flat trades, we round the impact of closing the shorts down and round
+        // the impact of closing the longs up.
+        //
         // Compute the net of the longs and shorts that will be traded flat and
         // apply this net to the reserves.
         I256::from(self.shorts_outstanding().mul_div_down(
             fixed!(1e18) - short_average_time_remaining,
             self.vault_share_price(),
-        )) - I256::from(self.longs_outstanding().mul_div_down(
+        )) - I256::from(self.longs_outstanding().mul_div_up(
             fixed!(1e18) - long_average_time_remaining,
             self.vault_share_price(),
         ))

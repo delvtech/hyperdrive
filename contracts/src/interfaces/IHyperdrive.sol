@@ -262,11 +262,12 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     error InvalidBaseToken();
     error InvalidCheckpointTime();
     error InvalidCheckpointDuration();
-    error InvalidDeployer();
+    error InvalidEffectiveShareReserves();
     error InvalidFeeAmounts();
     error InvalidFeeDestination();
     error InvalidIndexes();
-    error InvalidInitialSharePrice();
+    error InvalidInitialVaultSharePrice();
+    error InvalidLpSharePrice();
     error InvalidMaturityTime();
     error InvalidMinimumShareReserves();
     error InvalidPositionDuration();
@@ -305,14 +306,22 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     /// ### Factory ###
     /// ###############
     error Unauthorized();
+    error InvalidCheckpointDurationResolution();
     error InvalidContribution();
+    error InvalidDeployConfig();
+    error InvalidDeployerCoordinator();
+    error InvalidFees();
+    error InvalidMaxFees();
+    error InvalidMinFees();
+    error InvalidMaxCheckpointDuration();
+    error InvalidMinCheckpointDuration();
+    error InvalidMaxPositionDuration();
+    error InvalidMinPositionDuration();
     error InvalidToken();
-    error MaxFeeTooHigh();
-    error FeeTooHigh();
     error NonPayableInitialization();
-    error HyperdriveDeployerAlreadyAdded();
-    error HyperdriveDeployerNotAdded();
-    error HyperdriveDeployerIndexMismatch();
+    error DeployerCoordinatorAlreadyAdded();
+    error DeployerCoordinatorNotAdded();
+    error DeployerCoordinatorIndexMismatch();
 
     /// ######################
     /// ### ERC20Forwarder ###

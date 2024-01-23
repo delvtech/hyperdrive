@@ -16,7 +16,7 @@ import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IERC4626Hyperdrive } from "contracts/src/interfaces/IERC4626Hyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
+import { IDeployerCoordinator } from "contracts/src/interfaces/IDeployerCoordinator.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
@@ -83,10 +83,25 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: bob,
+                feeCollector: celine,
                 defaultPausers: defaults,
-                fees: IHyperdrive.Fees(0, 0, 0, 0),
-                maxFees: IHyperdrive.Fees(0, 0, 0, 0),
+                checkpointDurationResolution: 1 hours,
+                minCheckpointDuration: 8 hours,
+                maxCheckpointDuration: 1 days,
+                minPositionDuration: 7 days,
+                maxPositionDuration: 10 * 365 days,
+                minFees: IHyperdrive.Fees({
+                    curve: 0,
+                    flat: 0,
+                    governanceLP: 0,
+                    governanceZombie: 0
+                }),
+                maxFees: IHyperdrive.Fees({
+                    curve: ONE,
+                    flat: ONE,
+                    governanceLP: ONE,
+                    governanceZombie: ONE
+                }),
                 linkerFactory: address(forwarderFactory),
                 linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
             })
@@ -126,7 +141,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
 
         vm.stopPrank();
         vm.startPrank(alice);
-        factory.addHyperdriveDeployer(deployerCoordinator);
+        factory.addDeployerCoordinator(deployerCoordinator);
         dai.approve(address(factory), type(uint256).max);
         dai.approve(address(hyperdrive), type(uint256).max);
         dai.approve(address(mockHyperdrive), type(uint256).max);
@@ -268,8 +283,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                     apr,
                     365 days
                 ),
-                governance: alice,
-                feeCollector: bob,
+                governance: address(0),
+                feeCollector: address(0),
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
             });
         dai.approve(address(factory), type(uint256).max);
@@ -322,8 +337,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                     apr,
                     365 days
                 ),
-                governance: alice,
-                feeCollector: bob,
+                governance: address(0),
+                feeCollector: address(0),
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
             });
         dai.approve(address(factory), type(uint256).max);

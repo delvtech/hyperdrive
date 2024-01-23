@@ -13,7 +13,7 @@ import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
@@ -53,12 +53,27 @@ contract StETHHyperdriveTest is HyperdriveTest {
         forwarderFactory = new ForwarderFactory();
         factory = new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
-                governance: deployer,
+                governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: bob,
+                feeCollector: celine,
                 defaultPausers: defaults,
-                fees: IHyperdrive.Fees(0, 0, 0, 0),
-                maxFees: IHyperdrive.Fees(0, 0, 0, 0),
+                checkpointDurationResolution: 1 hours,
+                minCheckpointDuration: 8 hours,
+                maxCheckpointDuration: 1 days,
+                minPositionDuration: 7 days,
+                maxPositionDuration: 10 * 365 days,
+                minFees: IHyperdrive.Fees({
+                    curve: 0,
+                    flat: 0,
+                    governanceLP: 0,
+                    governanceZombie: 0
+                }),
+                maxFees: IHyperdrive.Fees({
+                    curve: ONE,
+                    flat: ONE,
+                    governanceLP: ONE,
+                    governanceZombie: ONE
+                }),
                 linkerFactory: address(forwarderFactory),
                 linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
             })
@@ -66,6 +81,8 @@ contract StETHHyperdriveTest is HyperdriveTest {
 
         // Deploy the hyperdrive deployers and register the deployer coordinator
         // in the factory.
+        vm.stopPrank();
+        vm.startPrank(alice);
         deployerCoordinator = address(
             new StETHHyperdriveDeployerCoordinator(
                 address(new StETHHyperdriveCoreDeployer(LIDO)),
@@ -76,11 +93,9 @@ contract StETHHyperdriveTest is HyperdriveTest {
                 LIDO
             )
         );
-        factory.addHyperdriveDeployer(address(deployerCoordinator));
+        factory.addDeployerCoordinator(address(deployerCoordinator));
 
         // Alice deploys the hyperdrive instance.
-        vm.stopPrank();
-        vm.startPrank(alice);
         IHyperdrive.PoolDeployConfig memory config = IHyperdrive
             .PoolDeployConfig({
                 baseToken: IERC20(ETH),
@@ -94,8 +109,8 @@ contract StETHHyperdriveTest is HyperdriveTest {
                     0.05e18,
                     POSITION_DURATION
                 ),
-                governance: governance,
-                feeCollector: feeCollector,
+                governance: address(0),
+                feeCollector: address(0),
                 fees: IHyperdrive.Fees({
                     curve: 0,
                     flat: 0,
@@ -150,6 +165,8 @@ contract StETHHyperdriveTest is HyperdriveTest {
         IHyperdrive.PoolDeployConfig memory config = IHyperdrive
             .PoolDeployConfig({
                 baseToken: IERC20(ETH),
+                governance: address(0),
+                feeCollector: address(0),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0),
                 minimumShareReserves: 1e15,
@@ -160,8 +177,6 @@ contract StETHHyperdriveTest is HyperdriveTest {
                     0.05e18,
                     POSITION_DURATION
                 ),
-                governance: governance,
-                feeCollector: feeCollector,
                 fees: IHyperdrive.Fees({
                     curve: 0,
                     flat: 0,

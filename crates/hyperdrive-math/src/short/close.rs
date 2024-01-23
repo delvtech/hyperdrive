@@ -12,14 +12,19 @@ impl State {
         let bond_amount = bond_amount.into();
         let normalized_time_remaining = normalized_time_remaining.into();
 
+        // NOTE: We overestimate the trader's share payment to avoid sandwiches.
+        //
         // Calculate the flat part of the trade
-        let flat = bond_amount.mul_div_down(
+        let flat = bond_amount.mul_div_up(
             fixed!(1e18) - normalized_time_remaining,
             self.vault_share_price(),
         );
 
         // Calculate the curve part of the trade
         let curve = if normalized_time_remaining > fixed!(0) {
+            // NOTE: Round the `shareCurveDelta` up to overestimate the share
+            // payment.
+            //
             let curve_bonds_in = bond_amount * normalized_time_remaining;
             self.calculate_shares_in_given_bonds_out_up(curve_bonds_in)
         } else {
@@ -121,7 +126,7 @@ mod tests {
                 )
             });
             match mock
-                .calculate_short_proceeds(
+                .calculate_short_proceeds_down(
                     bond_amount.into(),
                     share_amount.into(),
                     open_vault_share_price.into(),

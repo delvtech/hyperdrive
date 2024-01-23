@@ -111,12 +111,18 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
 
     /// @dev Allows LPs to supply liquidity for LP shares.
     /// @param _contribution The amount to supply.
+    /// @param _minLpSharePrice The minimum LP share price the LP is willing
+    ///        to accept for their shares. LP's incur negative slippage when
+    ///        adding liquidity if there is a net curve position in the market,
+    ///        so this allows LPs to protect themselves from high levels of
+    ///        slippage.
     /// @param _minApr The minimum APR at which the LP is willing to supply.
     /// @param _maxApr The maximum APR at which the LP is willing to supply.
     /// @param _options The options that configure how the operation is settled.
     /// @return lpShares The number of LP tokens created
     function _addLiquidity(
         uint256 _contribution,
+        uint256 _minLpSharePrice,
         uint256 _minApr,
         uint256 _maxApr,
         IHyperdrive.Options calldata _options
@@ -178,6 +184,8 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
             params.bondReserves = _marketState.bondReserves;
             endingPresentValue = LPMath.calculatePresentValue(params);
 
+            // NOTE: Round down to underestimate the amount of LP shares minted.
+            //
             // The LP shares minted to the LP is derived by solving for the
             // change in LP shares that preserves the ratio of present value to
             // total LP shares. This ensures that LPs are fairly rewarded for
@@ -195,6 +203,13 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
             }
         }
 
+        // NOTE: Round down to make the check more conservative.
+        //
+        // Enforce the minimum LP share price slippage guard.
+        if (_contribution.divDown(lpShares) < _minLpSharePrice) {
+            revert IHyperdrive.InvalidLpSharePrice();
+        }
+
         // Mint LP shares to the supplier.
         _mint(AssetId._LP_ASSET_ID, _options.destination, lpShares);
 
@@ -203,7 +218,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
 
         // Emit an AddLiquidity event.
         uint256 lpSharePrice = lpTotalSupply == 0
-            ? 0
+            ? 0 // NOTE: We always round the LP share price down for consistency.
             : startingPresentValue.divDown(lpTotalSupply);
         uint256 baseContribution = _convertToBaseFromOption(
             _contribution,
@@ -376,6 +391,8 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
             withdrawalSharesRedeemed
         );
 
+        // NOTE: Round down to underestimate the share proceeds.
+        //
         // The LP gets the pro-rata amount of the collected proceeds.
         uint128 proceeds_ = _withdrawPool.proceeds;
         uint256 shareProceeds = withdrawalSharesRedeemed.mulDivDown(
@@ -392,8 +409,10 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         // Withdraw the share proceeds to the user.
         proceeds = _withdraw(shareProceeds, _sharePrice, _options);
 
+        // NOTE: Round up to make the check more conservative.
+        //
         // Enforce the minimum user output per share.
-        if (_minOutputPerShare.mulDown(withdrawalSharesRedeemed) > proceeds) {
+        if (_minOutputPerShare.mulUp(withdrawalSharesRedeemed) > proceeds) {
             revert IHyperdrive.OutputLimit();
         }
 

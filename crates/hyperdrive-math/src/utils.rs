@@ -89,13 +89,30 @@ pub fn calculate_initial_bond_reserves(
     position_duration: FixedPoint,
     time_stretch: FixedPoint,
 ) -> FixedPoint {
-    let annualized_time = position_duration / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
+    // NOTE: Round down to underestimate the initial bond reserves.
+    //
+    // Normalize the time to maturity to fractions of a year since the provided
+    // rate is an APR.
+    let t = position_duration / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
+
+    // NOTE: Round down to underestimate the initial bond reserves.
+    //
+    // inner = (1 + apr * t) ** (1 / t_s)
+    let mut inner = fixed!(1e18) + apr.mul_down(t);
+    if inner >= fixed!(1e18) {
+        // Rounding down the exponent results in a smaller result.
+        inner = inner.pow(fixed!(1e18) / time_stretch);
+    } else {
+        // Rounding up the exponent results in a smaller result.
+        inner = inner.pow(fixed!(1e18).div_up(time_stretch));
+    }
+
+    // NOTE: Round down to underestimate the initial bond reserves.
+    //
     // mu * (z - zeta) * (1 + apr * t) ** (1 / tau)
     initial_vault_share_price
         .mul_down(effective_share_reserves)
-        .mul_down(
-            (fixed!(1e18) + apr.mul_down(annualized_time)).pow(fixed!(1e18).div_up(time_stretch)),
-        )
+        .mul_down(inner)
 }
 
 #[cfg(test)]

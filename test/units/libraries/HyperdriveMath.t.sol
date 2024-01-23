@@ -1180,7 +1180,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         closeShort(bob, maturityTime, maxShort);
     }
 
-    function test__calculateShortProceeds() external {
+    function test__calculateShortProceedsUp() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
@@ -1191,7 +1191,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         uint256 closeVaultSharePrice = 1e18;
         uint256 vaultSharePrice = 1e18;
         uint256 flatFee = 0;
-        uint256 shortProceeds = hyperdriveMath.calculateShortProceeds(
+        uint256 shortProceeds = hyperdriveMath.calculateShortProceedsUp(
             bondAmount,
             shareAmount,
             openVaultSharePrice,
@@ -1209,7 +1209,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         vaultSharePrice = 1.05e18;
         shareAmount = uint256(1e18).divDown(vaultSharePrice);
         flatFee = 0;
-        shortProceeds = hyperdriveMath.calculateShortProceeds(
+        shortProceeds = hyperdriveMath.calculateShortProceedsUp(
             bondAmount,
             shareAmount,
             openVaultSharePrice,
@@ -1231,7 +1231,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         vaultSharePrice = 1.05e18;
         shareAmount = uint256(1e18).divDown(vaultSharePrice);
         flatFee = 0;
-        shortProceeds = hyperdriveMath.calculateShortProceeds(
+        shortProceeds = hyperdriveMath.calculateShortProceedsUp(
             bondAmount,
             shareAmount,
             openVaultSharePrice,
@@ -1253,7 +1253,181 @@ contract HyperdriveMathTest is HyperdriveTest {
         vaultSharePrice = 1.155e18;
         shareAmount = uint256(1e18).divDown(vaultSharePrice);
         flatFee = 0;
-        shortProceeds = hyperdriveMath.calculateShortProceeds(
+        shortProceeds = hyperdriveMath.calculateShortProceedsUp(
+            bondAmount,
+            shareAmount,
+            openVaultSharePrice,
+            closeVaultSharePrice,
+            vaultSharePrice,
+            flatFee
+        );
+        // proceeds = (margin + interest) / vault_share_price = (0.05 + 1.05 * 0.05) / 1.155
+        assertApproxEqAbs(
+            shortProceeds,
+            (0.05e18 + bondAmount.mulDown(0.05e18)).divDown(vaultSharePrice),
+            2
+        );
+
+        // -10% interest - 5% margin released - 0% interest after close
+        bondAmount = 1.05e18;
+        openVaultSharePrice = 1e18;
+        closeVaultSharePrice = 0.9e18;
+        vaultSharePrice = 0.9e18;
+        shareAmount = uint256(1e18).divDown(vaultSharePrice);
+        flatFee = 0;
+        shortProceeds = hyperdriveMath.calculateShortProceedsUp(
+            bondAmount,
+            shareAmount,
+            openVaultSharePrice,
+            closeVaultSharePrice,
+            vaultSharePrice,
+            flatFee
+        );
+        assertEq(shortProceeds, 0);
+
+        // -10% interest - 5% margin released - 20% interest after close
+        bondAmount = 1.05e18;
+        openVaultSharePrice = 1e18;
+        closeVaultSharePrice = 0.9e18;
+        vaultSharePrice = 1.08e18;
+        shareAmount = uint256(1e18).divDown(vaultSharePrice);
+        flatFee = 0;
+        shortProceeds = hyperdriveMath.calculateShortProceedsUp(
+            bondAmount,
+            shareAmount,
+            openVaultSharePrice,
+            closeVaultSharePrice,
+            vaultSharePrice,
+            flatFee
+        );
+        assertEq(shortProceeds, 0);
+
+        // 5% interest - 0% margin released - 0% interest after close
+        // 50% flatFee applied
+        bondAmount = 1e18;
+        openVaultSharePrice = 1e18;
+        closeVaultSharePrice = 1.05e18;
+        vaultSharePrice = 1.05e18;
+        shareAmount = uint256(1e18).divDown(vaultSharePrice);
+        flatFee = 0.5e18;
+        shortProceeds = hyperdriveMath.calculateShortProceedsUp(
+            bondAmount,
+            shareAmount,
+            openVaultSharePrice,
+            closeVaultSharePrice,
+            vaultSharePrice,
+            flatFee
+        );
+        // proceeds = (margin + interest) / vault_share_price
+        //            + (bondAmount * flatFee) / vault_share_price
+        //          = (0 + 1 * 0.05) / 1.05 + (1 * 0.5) / 1.05
+        assertApproxEqAbs(
+            shortProceeds,
+            (bondAmount.mulDown(0.05e18)).divDown(vaultSharePrice) +
+                (bondAmount.mulDivDown(flatFee, vaultSharePrice)),
+            2
+        );
+
+        // 5% interest - 5% margin released - 0% interest after close
+        bondAmount = 1.05e18;
+        openVaultSharePrice = 1e18;
+        closeVaultSharePrice = 1.05e18;
+        vaultSharePrice = 1.05e18;
+        shareAmount = uint256(1e18).divDown(vaultSharePrice);
+        flatFee = 0.25e18;
+        shortProceeds = hyperdriveMath.calculateShortProceedsUp(
+            bondAmount,
+            shareAmount,
+            openVaultSharePrice,
+            closeVaultSharePrice,
+            vaultSharePrice,
+            flatFee
+        );
+        // proceeds = (margin + interest) / vault_share_price
+        //            + (bondAmount * flatFee) / vault_share_price
+        //          = ((0.05 + 1.05 * 0.05) / 1.05) + ((1 * 0.25) / 1.05)
+        assertApproxEqAbs(
+            shortProceeds,
+            (0.05e18 + bondAmount.mulDown(0.05e18)).divDown(vaultSharePrice) +
+                bondAmount.mulDivDown(flatFee, vaultSharePrice),
+            1
+        );
+    }
+
+    function test__calculateShortProceedsDown() external {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+
+        // 0% interest - 5% margin released - 0% interest after close
+        uint256 bondAmount = 1.05e18;
+        uint256 shareAmount = 1e18;
+        uint256 openVaultSharePrice = 1e18;
+        uint256 closeVaultSharePrice = 1e18;
+        uint256 vaultSharePrice = 1e18;
+        uint256 flatFee = 0;
+        uint256 shortProceeds = hyperdriveMath.calculateShortProceedsDown(
+            bondAmount,
+            shareAmount,
+            openVaultSharePrice,
+            closeVaultSharePrice,
+            vaultSharePrice,
+            flatFee
+        );
+        // proceeds = (margin + interest) / vault_share_price = (0.05 + 0) / 1
+        assertEq(shortProceeds, 0.05e18);
+
+        // 5% interest - 5% margin released - 0% interest after close
+        bondAmount = 1.05e18;
+        openVaultSharePrice = 1e18;
+        closeVaultSharePrice = 1.05e18;
+        vaultSharePrice = 1.05e18;
+        shareAmount = uint256(1e18).divDown(vaultSharePrice);
+        flatFee = 0;
+        shortProceeds = hyperdriveMath.calculateShortProceedsDown(
+            bondAmount,
+            shareAmount,
+            openVaultSharePrice,
+            closeVaultSharePrice,
+            vaultSharePrice,
+            flatFee
+        );
+        // proceeds = (margin + interest) / vault_share_price = (0.05 + 1.05 * 0.05) / 1.05
+        assertApproxEqAbs(
+            shortProceeds,
+            (0.05e18 + bondAmount.mulDown(0.05e18)).divDown(vaultSharePrice),
+            1
+        );
+
+        // 5% interest - 0% margin released - 0% interest after close
+        bondAmount = 1e18;
+        openVaultSharePrice = 1e18;
+        closeVaultSharePrice = 1.05e18;
+        vaultSharePrice = 1.05e18;
+        shareAmount = uint256(1e18).divDown(vaultSharePrice);
+        flatFee = 0;
+        shortProceeds = hyperdriveMath.calculateShortProceedsDown(
+            bondAmount,
+            shareAmount,
+            openVaultSharePrice,
+            closeVaultSharePrice,
+            vaultSharePrice,
+            flatFee
+        );
+        // proceeds = (margin + interest) / vault_share_price = (0 + 1 * 0.05) / 1.05
+        assertApproxEqAbs(
+            shortProceeds,
+            (bondAmount.mulDown(0.05e18)).divDown(vaultSharePrice),
+            1
+        );
+
+        // 5% interest - 5% margin released - 10% interest after close
+        bondAmount = 1.05e18;
+        openVaultSharePrice = 1e18;
+        closeVaultSharePrice = 1.05e18;
+        vaultSharePrice = 1.155e18;
+        shareAmount = uint256(1e18).divDown(vaultSharePrice);
+        flatFee = 0;
+        shortProceeds = hyperdriveMath.calculateShortProceedsDown(
             bondAmount,
             shareAmount,
             openVaultSharePrice,
@@ -1275,7 +1449,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         vaultSharePrice = 0.9e18;
         shareAmount = uint256(1e18).divDown(vaultSharePrice);
         flatFee = 0;
-        shortProceeds = hyperdriveMath.calculateShortProceeds(
+        shortProceeds = hyperdriveMath.calculateShortProceedsDown(
             bondAmount,
             shareAmount,
             openVaultSharePrice,
@@ -1292,7 +1466,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         vaultSharePrice = 1.08e18;
         shareAmount = uint256(1e18).divDown(vaultSharePrice);
         flatFee = 0;
-        shortProceeds = hyperdriveMath.calculateShortProceeds(
+        shortProceeds = hyperdriveMath.calculateShortProceedsDown(
             bondAmount,
             shareAmount,
             openVaultSharePrice,
@@ -1310,7 +1484,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         vaultSharePrice = 1.05e18;
         shareAmount = uint256(1e18).divDown(vaultSharePrice);
         flatFee = 0.5e18;
-        shortProceeds = hyperdriveMath.calculateShortProceeds(
+        shortProceeds = hyperdriveMath.calculateShortProceedsDown(
             bondAmount,
             shareAmount,
             openVaultSharePrice,
@@ -1335,7 +1509,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         vaultSharePrice = 1.05e18;
         shareAmount = uint256(1e18).divDown(vaultSharePrice);
         flatFee = 0.25e18;
-        shortProceeds = hyperdriveMath.calculateShortProceeds(
+        shortProceeds = hyperdriveMath.calculateShortProceedsDown(
             bondAmount,
             shareAmount,
             openVaultSharePrice,

@@ -577,7 +577,7 @@ contract CloseShortTest is HyperdriveTest {
                 asBase: false,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: 10e18 * 2,
-                minVaultSharePrice: 0,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint128).max,
                 extraData: new bytes(0)
@@ -613,7 +613,7 @@ contract CloseShortTest is HyperdriveTest {
                 asBase: false,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: 10e18 * 2,
-                minVaultSharePrice: 0,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint128).max,
                 extraData: new bytes(0)
@@ -661,7 +661,7 @@ contract CloseShortTest is HyperdriveTest {
                 asBase: false,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: 10e18 * 2,
-                minVaultSharePrice: 0,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint128).max,
                 extraData: new bytes(0)
@@ -696,7 +696,7 @@ contract CloseShortTest is HyperdriveTest {
                 asBase: false,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: 10e18 * 2,
-                minVaultSharePrice: 0,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint128).max,
                 extraData: new bytes(0)
@@ -809,11 +809,11 @@ contract CloseShortTest is HyperdriveTest {
         }
 
         // Verify that the proceeds are about the same.
-        assertApproxEqAbs(shortProceeds1, shortProceeds2, 60 wei);
-        assertApproxEqAbs(shortProceeds1, shortProceeds3, 6.2e9);
+        assertApproxEqAbs(shortProceeds1, shortProceeds2, 106 wei);
+        assertApproxEqAbs(shortProceeds1, shortProceeds3, 9.8e9);
 
         // NOTE: This is a large tolerance, but it is explained in issue #691.
-        assertApproxEqAbs(shortProceeds1, shortProceeds4, 3.6e18);
+        assertApproxEqAbs(shortProceeds1, shortProceeds4, 5.3e18);
         assertGe(shortProceeds1, shortProceeds4);
     }
 

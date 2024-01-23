@@ -31,8 +31,6 @@ library LPMath {
     ///      to short-circuit.
     uint256 internal constant MAX_SHARE_RESERVES_DELTA_MIN_TOLERANCE = 1e6;
 
-    // TODO: Evaluate the rounding.
-    //
     /// @dev Calculates the new share reserves, share adjustment, and bond
     ///      reserves after liquidity is added or removed from the pool. This
     ///      update is made in such a way that the pool's spot price remains
@@ -84,6 +82,8 @@ library LPMath {
         //                  =>
         // zeta_new = zeta_old * (z_new / z_old)
         if (_shareAdjustment >= 0) {
+            // NOTE: Rounding down to avoid introducing dust into the
+            // computation.
             shareAdjustment = int256(
                 uint256(shareReserves).mulDivDown(
                     uint256(_shareAdjustment),
@@ -91,6 +91,8 @@ library LPMath {
                 )
             );
         } else {
+            // NOTE: Rounding down to avoid introducing dust into the
+            // computation.
             shareAdjustment = -int256(
                 uint256(shareReserves).mulDivDown(
                     uint256(-_shareAdjustment),
@@ -99,6 +101,8 @@ library LPMath {
             );
         }
 
+        // NOTE: Rounding down to avoid introducing dust into the computation.
+        //
         // The liquidity update should hold the spot price invariant. The spot
         // price of base in terms of bonds is given by:
         //
@@ -136,10 +140,9 @@ library LPMath {
         uint256 shortAverageTimeRemaining;
     }
 
-    // TODO: Evaluate the rounding.
-    //
     /// @dev Calculates the present value LPs capital in the pool and reverts
-    ///      if the value is negative.
+    ///      if the value is negative. This calculation underestimates the
+    ///      present value to avoid paying out more than the pool can afford.
     /// @param _params The parameters for the present value calculation.
     /// @return The present value of the pool.
     function calculatePresentValue(
@@ -154,10 +157,10 @@ library LPMath {
         return presentValue;
     }
 
-    // TODO: Evaluate the rounding.
-    //
     /// @dev Calculates the present value LPs capital in the pool and returns
     ///      a flag indicating whether the calculation succeeded or failed.
+    ///      This calculation underestimates the present value to avoid paying
+    ///      out more than the pool can afford.
     /// @param _params The parameters for the present value calculation.
     /// @return The present value of the pool.
     /// @return A flag indicating whether the calculation succeeded or failed.
@@ -194,8 +197,6 @@ library LPMath {
         return (uint256(presentValue), true);
     }
 
-    // TODO: Evaluate the rounding.
-    //
     /// @dev Calculates the result of closing the net curve position.
     /// @param _params The parameters for the present value calculation.
     /// @return The impact of closing the net curve position on the share
@@ -204,6 +205,12 @@ library LPMath {
     function calculateNetCurveTradeSafe(
         PresentValueParams memory _params
     ) internal pure returns (int256, bool) {
+        // NOTE: To underestimate the impact of closing the net curve position,
+        // we round up the long side of the net curve position (since this
+        // results in a larger value removed from the share reserves) and round
+        // down the short side of the net curve position (since this results in
+        // a smaller value added to the share reserves).
+        //
         // The net curve position is the net of the longs and shorts that are
         // currently tradeable on the curve. Given the amount of outstanding
         // longs `y_l` and shorts `y_s` as well as the average time remaining
@@ -212,7 +219,7 @@ library LPMath {
         //
         // netCurveTrade = y_l * t_l - y_s * t_s.
         int256 netCurvePosition = int256(
-            _params.longsOutstanding.mulDown(_params.longAverageTimeRemaining)
+            _params.longsOutstanding.mulUp(_params.longAverageTimeRemaining)
         ) -
             int256(
                 _params.shortsOutstanding.mulDown(
@@ -335,6 +342,8 @@ library LPMath {
                         _params.initialVaultSharePrice
                     );
                 return (
+                    // NOTE: We round the difference down to underestimate the
+                    // impact of closing the net curve position.
                     int256(
                         maxSharePayment +
                             (netCurvePosition_ - maxCurveTrade).divDown(
@@ -349,8 +358,6 @@ library LPMath {
         return (0, true);
     }
 
-    // TODO: Evaluate the rounding.
-    //
     /// @dev Calculates the result of closing the net flat position.
     /// @param _params The parameters for the present value calculation.
     /// @return The impact of closing the net flat position on the share
@@ -358,6 +365,10 @@ library LPMath {
     function calculateNetFlatTrade(
         PresentValueParams memory _params
     ) internal pure returns (int256) {
+        // NOTE: In order to underestimate the impact of closing all of the
+        // flat trades, we round the impact of closing the shorts down and round
+        // the impact of closing the longs up.
+        //
         // The net curve position is the net of the component of longs and
         // shorts that have matured. Given the amount of outstanding longs `y_l`
         // and shorts `y_s` as well as the average time remaining of outstanding
@@ -372,7 +383,7 @@ library LPMath {
                 )
             ) -
             int256(
-                _params.longsOutstanding.mulDivDown(
+                _params.longsOutstanding.mulDivUp(
                     ONE - _params.longAverageTimeRemaining,
                     _params.vaultSharePrice
                 )
@@ -818,10 +829,6 @@ library LPMath {
             return (0, false);
         }
 
-        // TODO: Double-check how the flat trade is used in the context of
-        // rounding once we do a rounding path through the present value
-        // calculation.
-        //
         // Calculate the net flat trade using the original reserves.
         _params.presentValueParams.shareReserves = _params
             .originalShareReserves;

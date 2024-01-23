@@ -505,6 +505,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
             let tx = ContractCall_(self.hyperdrive.add_liquidity(
                 contribution.into(),
                 uint256!(0),
+                uint256!(0),
                 U256::MAX,
                 Options {
                     destination: self.address,
