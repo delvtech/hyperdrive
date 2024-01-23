@@ -126,10 +126,12 @@ abstract contract HyperdriveCheckpoint is
                 int256(shareProceeds), // keep the effective share reserves constant
                 _checkpointTime
             );
-            uint256 shareReservesDelta = maturedShortsAmount.divDown(
+            // NOTE: Round up to underestimate the short proceeds.
+            uint256 shareReservesDelta = maturedShortsAmount.divUp(
                 _vaultSharePrice
             );
-            shareProceeds = HyperdriveMath.calculateShortProceeds(
+            // NOTE: Round down to underestimate the short proceeds.
+            shareProceeds = HyperdriveMath.calculateShortProceedsDown(
                 maturedShortsAmount,
                 shareReservesDelta,
                 openVaultSharePrice,
@@ -137,6 +139,7 @@ abstract contract HyperdriveCheckpoint is
                 _vaultSharePrice,
                 _flatFee
             );
+            // NOTE: Round down to underestimate the short proceeds.
             _marketState.zombieBaseProceeds += shareProceeds
                 .mulDown(_vaultSharePrice)
                 .toUint112();
@@ -170,6 +173,7 @@ abstract contract HyperdriveCheckpoint is
                 int256(shareProceeds), // keep the effective share reserves constant
                 checkpointTime
             );
+            // NOTE: Round down to underestimate the long proceeds.
             _marketState.zombieBaseProceeds += shareProceeds
                 .mulDown(_vaultSharePrice)
                 .toUint112();
@@ -223,6 +227,9 @@ abstract contract HyperdriveCheckpoint is
         // Calculate the share proceeds, flat fee, and governance fee. Since the
         // position is closed at maturity, the share proceeds are equal to the
         // bond amount divided by the vault share price.
+        //
+        // NOTE: Round down to underestimate the share proceeds, flat fee, and
+        // governance fee.
         shareProceeds = _bondAmount.divDown(_vaultSharePrice);
         uint256 flatFee = shareProceeds.mulDown(_flatFee);
         governanceFee = flatFee.mulDown(_governanceLPFee);
@@ -249,10 +256,13 @@ abstract contract HyperdriveCheckpoint is
         // governance fee are given a "haircut" proportional to the negative
         // interest that accrued.
         if (_vaultSharePrice < _openVaultSharePrice) {
+            // NOTE: Round down to underestimate the proceeds.
             shareProceeds = shareProceeds.mulDivDown(
                 _vaultSharePrice,
                 _openVaultSharePrice
             );
+
+            // NOTE: Round down to underestimate the governance fee.
             governanceFee = governanceFee.mulDivDown(
                 _vaultSharePrice,
                 _openVaultSharePrice

@@ -30,7 +30,7 @@ library HyperdriveUtils {
         timeRemaining = _maturityTime > latestCheckpoint(_hyperdrive)
             ? _maturityTime - latestCheckpoint(_hyperdrive)
             : 0;
-        timeRemaining = (timeRemaining).divDown(
+        timeRemaining = timeRemaining.divDown(
             _hyperdrive.getPoolConfig().positionDuration
         );
         return timeRemaining;

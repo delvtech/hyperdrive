@@ -184,6 +184,8 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
             params.bondReserves = _marketState.bondReserves;
             endingPresentValue = LPMath.calculatePresentValue(params);
 
+            // NOTE: Round down to underestimate the amount of LP shares minted.
+            //
             // The LP shares minted to the LP is derived by solving for the
             // change in LP shares that preserves the ratio of present value to
             // total LP shares. This ensures that LPs are fairly rewarded for
@@ -201,6 +203,8 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
             }
         }
 
+        // NOTE: Round down to make the check more conservative.
+        //
         // Enforce the minimum LP share price slippage guard.
         if (_contribution.divDown(lpShares) < _minLpSharePrice) {
             revert IHyperdrive.InvalidLpSharePrice();
@@ -214,7 +218,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
 
         // Emit an AddLiquidity event.
         uint256 lpSharePrice = lpTotalSupply == 0
-            ? 0
+            ? 0 // NOTE: We always round the LP share price down for consistency.
             : startingPresentValue.divDown(lpTotalSupply);
         uint256 baseContribution = _convertToBaseFromOption(
             _contribution,
@@ -387,6 +391,8 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
             withdrawalSharesRedeemed
         );
 
+        // NOTE: Round down to underestimate the share proceeds.
+        //
         // The LP gets the pro-rata amount of the collected proceeds.
         uint128 proceeds_ = _withdrawPool.proceeds;
         uint256 shareProceeds = withdrawalSharesRedeemed.mulDivDown(
@@ -403,8 +409,10 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         // Withdraw the share proceeds to the user.
         proceeds = _withdraw(shareProceeds, _sharePrice, _options);
 
+        // NOTE: Round up to make the check more conservative.
+        //
         // Enforce the minimum user output per share.
-        if (_minOutputPerShare.mulDown(withdrawalSharesRedeemed) > proceeds) {
+        if (_minOutputPerShare.mulUp(withdrawalSharesRedeemed) > proceeds) {
             revert IHyperdrive.OutputLimit();
         }
 

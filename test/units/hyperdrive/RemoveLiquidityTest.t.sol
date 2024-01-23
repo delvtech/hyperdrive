@@ -223,7 +223,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertApproxEqAbs(
             testCase.initialLpBaseProceeds,
             expectedBaseProceeds,
-            1
+            2
         );
         {
             assertEq(

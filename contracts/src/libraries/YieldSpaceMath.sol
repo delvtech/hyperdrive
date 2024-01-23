@@ -401,6 +401,8 @@ library YieldSpaceMath {
         uint256 c,
         uint256 mu
     ) internal pure returns (uint256) {
+        // NOTE: Rounding up to overestimate the result.
+        //
         /// k = (c / µ) * (µ * ze)^(1 - t) + y^(1 - t)
         return c.mulDivUp(mu.mulUp(ze).pow(t), mu) + y.pow(t);
     }
@@ -423,6 +425,8 @@ library YieldSpaceMath {
         uint256 c,
         uint256 mu
     ) internal pure returns (uint256) {
+        // NOTE: Rounding down to underestimate the result.
+        //
         /// k = (c / µ) * (µ * ze)^(1 - t) + y^(1 - t)
         return c.mulDivDown(mu.mulDown(ze).pow(t), mu) + y.pow(t);
     }

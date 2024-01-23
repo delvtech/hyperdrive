@@ -56,6 +56,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // against the minimum transaction amount because in the event of
         // slippage on the deposit, we want the inputs to the state updates to
         // respect the minimum transaction amount requirements.
+        //
+        // NOTE: Round down to underestimate the base deposit. This makes the
+        //       minimum transaction amount check more conservative.
         uint256 baseDeposited = sharesDeposited.mulDown(vaultSharePrice);
         if (baseDeposited < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
@@ -425,6 +428,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // bonds = bonds + bonds
         bondReservesDelta = bondProceeds + governanceCurveFee;
 
+        // NOTE: Round down to underestimate the governance fee.
+        //
         // Calculate the fees owed to governance in shares. Open longs are
         // calculated entirely on the curve so the curve fee is the total
         // governance fee. In order to convert it to shares we need to multiply

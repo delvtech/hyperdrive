@@ -369,10 +369,12 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _initialVaultSharePrice
         );
 
+        // NOTE: Round up to make the check stricter.
+        //
         // If the base proceeds of selling the bonds is greater than the bond
         // amount, then the trade occurred in the negative interest domain. We
         // revert in these pathological cases.
-        if (shareReservesDelta.mulDown(_vaultSharePrice) > _bondAmount) {
+        if (shareReservesDelta.mulUp(_vaultSharePrice) > _bondAmount) {
             revert IHyperdrive.NegativeInterest();
         }
 
@@ -410,6 +412,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // shares -= shares - shares
         shareReservesDelta -= curveFee - governanceCurveFee;
 
+        // NOTE: Round up to overestimate the base deposit.
+        //
         // The trader will need to deposit capital to pay for the fixed rate,
         // the curve fee, the flat fee, and any back-paid interest that will be
         // received back upon closing the trade. If negative interest has
@@ -418,7 +422,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // don't benefit from negative interest that accrued during the current
         // checkpoint.
         baseDeposit = HyperdriveMath
-            .calculateShortProceeds(
+            .calculateShortProceedsUp(
                 _bondAmount,
                 // NOTE: We add the governance fee back to the share reserves
                 // delta here because the trader will need to provide this in
@@ -429,7 +433,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 _vaultSharePrice,
                 _flatFee
             )
-            .mulDown(_vaultSharePrice);
+            .mulUp(_vaultSharePrice);
 
         return (baseDeposit, shareReservesDelta, governanceCurveFee);
     }
@@ -556,6 +560,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 ? _vaultSharePrice
                 : _checkpoints[_maturityTime].vaultSharePrice;
 
+            // NOTE: Round down to underestimate the short proceeds.
+            //
             // Calculate the share proceeds owed to the short. We calculate this
             // before scaling the share payment for negative interest. Shorts
             // are responsible for paying for 100% of the negative interest, so
@@ -563,7 +569,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // negative interest. Similarly, the governance fee is included in
             // the share payment. The LPs don't receive the governance fee, but
             // the short is responsible for paying it.
-            shareProceeds = HyperdriveMath.calculateShortProceeds(
+            shareProceeds = HyperdriveMath.calculateShortProceedsDown(
                 _bondAmount,
                 shareReservesDelta,
                 openVaultSharePrice,
