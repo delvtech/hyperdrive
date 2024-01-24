@@ -213,26 +213,22 @@ interface IHyperdrive is
     error UnsupportedToken();
     error ZeroLpTotalSupply();
 
+    error InvalidERC20Bridge();
+
+    error InvalidSignature();
+
+    error BatchInputLengthMismatch();
+
+    error ExpiredDeadline();
+
+    error RestrictedZeroAddress();
+
     /// ####################
     /// ### DataProvider ###
     /// ####################
     error ReturnData(bytes data);
     error CallFailed(bytes4 underlyingError);
     error UnexpectedSuccess();
-
-    /// ######################
-    /// ### ERC20Forwarder ###
-    /// ######################
-    error BatchInputLengthMismatch();
-    error ExpiredDeadline();
-    error InvalidSignature();
-    error InvalidERC20Bridge();
-    error RestrictedZeroAddress();
-
-    /// #############################
-    /// ### ERC20ForwarderFactory ###
-    /// #############################
-    error InvalidForwarderAddress();
 
     /// ###############
     /// ### AssetId ###
