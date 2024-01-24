@@ -12,6 +12,7 @@ import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { MockERC4626, ERC20 } from "contracts/test/MockERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveFactory } from "contracts/src/interfaces/IHyperdriveFactory.sol";
 import { IDeployerCoordinator } from "contracts/src/interfaces/IDeployerCoordinator.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
@@ -115,7 +116,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
         // Ensure that the factory can't be constructed with a minimum
         // checkpoint duration less than the checkpoint duration resolution.
-        vm.expectRevert(IHyperdrive.InvalidMinCheckpointDuration.selector);
+        vm.expectRevert(
+            IHyperdriveFactory.InvalidMinCheckpointDuration.selector
+        );
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -137,7 +140,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // Ensure that the factory can't be constructed with a minimum
         // checkpoint duration that isn't a multiple of the checkpoint duration
         // resolution.
-        vm.expectRevert(IHyperdrive.InvalidMinCheckpointDuration.selector);
+        vm.expectRevert(
+            IHyperdriveFactory.InvalidMinCheckpointDuration.selector
+        );
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -159,7 +164,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // Ensure that the factory can't be constructed with a maximum
         // checkpoint duration that is less than the minimum checkpoint
         // duration.
-        vm.expectRevert(IHyperdrive.InvalidMaxCheckpointDuration.selector);
+        vm.expectRevert(
+            IHyperdriveFactory.InvalidMaxCheckpointDuration.selector
+        );
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -181,7 +188,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // Ensure that the factory can't be constructed with a maximum
         // checkpoint duration that isn't a multiple of the checkpoint duration
         // resolution.
-        vm.expectRevert(IHyperdrive.InvalidMaxCheckpointDuration.selector);
+        vm.expectRevert(
+            IHyperdriveFactory.InvalidMaxCheckpointDuration.selector
+        );
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -202,7 +211,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
         // Ensure that the factory can't be constructed with a minimum position
         // duration that is less than the maximum checkpoint duration.
-        vm.expectRevert(IHyperdrive.InvalidMinPositionDuration.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMinPositionDuration.selector);
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -224,7 +233,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // Ensure that the factory can't be constructed with a minimum
         // position duration that isn't a multiple of the checkpoint duration
         // resolution.
-        vm.expectRevert(IHyperdrive.InvalidMinPositionDuration.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMinPositionDuration.selector);
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -245,7 +254,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
         // Ensure that the factory can't be constructed with a maximum
         // position duration that is less than the minimum position duration.
-        vm.expectRevert(IHyperdrive.InvalidMaxPositionDuration.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMaxPositionDuration.selector);
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -267,7 +276,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // Ensure that the factory can't be constructed with a maximum
         // position duration that isn't a multiple of the checkpoint duration
         // resolution.
-        vm.expectRevert(IHyperdrive.InvalidMaxPositionDuration.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMaxPositionDuration.selector);
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -288,7 +297,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
         // Ensure that the factory can't be constructed with a maximum
         // curve fee greater than 1.
-        vm.expectRevert(IHyperdrive.InvalidMaxFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMaxFees.selector);
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -309,7 +318,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
         // Ensure that the factory can't be constructed with a maximum
         // flat fee greater than 1.
-        vm.expectRevert(IHyperdrive.InvalidMaxFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMaxFees.selector);
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -330,7 +339,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
         // Ensure that the factory can't be constructed with a maximum
         // governance LP fee greater than 1.
-        vm.expectRevert(IHyperdrive.InvalidMaxFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMaxFees.selector);
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -351,7 +360,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
         // Ensure that the factory can't be constructed with a maximum
         // governance zombie fee greater than 1.
-        vm.expectRevert(IHyperdrive.InvalidMaxFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMaxFees.selector);
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -372,7 +381,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
         // Ensure that the factory can't be constructed with a minimum
         // curve fee greater than the maximum curve fee.
-        vm.expectRevert(IHyperdrive.InvalidMinFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMinFees.selector);
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -393,7 +402,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
         // Ensure that the factory can't be constructed with a minimum
         // flat fee greater than the maximum flat fee.
-        vm.expectRevert(IHyperdrive.InvalidMinFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMinFees.selector);
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -414,7 +423,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
         // Ensure that the factory can't be constructed with a minimum
         // governance LP fee greater than the maximum governance LP fee.
-        vm.expectRevert(IHyperdrive.InvalidMinFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMinFees.selector);
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -435,7 +444,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
         // Ensure that the factory can't be constructed with a minimum
         // governance zombie fee greater than the maximum governance zombie fee.
-        vm.expectRevert(IHyperdrive.InvalidMinFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMinFees.selector);
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -507,7 +516,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // the current governance.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
         factory.updateGovernance(newGovernance);
 
         // Ensure that governance was updated successfully and that the correct
@@ -527,7 +536,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // than the current governance.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
         factory.updateHyperdriveGovernance(newHyperdriveGovernance);
 
         // Ensure that hyperdrive governance was updated successfully and that
@@ -547,7 +556,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // than the current governance.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
         factory.updateLinkerFactory(newLinkerFactory);
 
         // Ensure that the linker factory was updated successfully and that the
@@ -567,7 +576,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // than the current governance.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
         factory.updateLinkerCodeHash(newLinkerCodeHash);
 
         // Ensure that the linker code hash was updated successfully and that
@@ -587,7 +596,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // the current governance.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
         factory.updateFeeCollector(newFeeCollector);
 
         // Ensure that the fee collector was updated successfully and that the
@@ -607,7 +616,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // someone other than the current governance.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
         factory.updateCheckpointDurationResolution(
             newCheckpointDurationResolution
         );
@@ -621,7 +630,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         factory.updateMinPositionDuration(4 hours);
         factory.updateMaxPositionDuration(4 hours);
         vm.expectRevert(
-            IHyperdrive.InvalidCheckpointDurationResolution.selector
+            IHyperdriveFactory.InvalidCheckpointDurationResolution.selector
         );
         factory.updateCheckpointDurationResolution(2 hours);
 
@@ -634,7 +643,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         factory.updateMinPositionDuration(4 hours);
         factory.updateMaxPositionDuration(4 hours);
         vm.expectRevert(
-            IHyperdrive.InvalidCheckpointDurationResolution.selector
+            IHyperdriveFactory.InvalidCheckpointDurationResolution.selector
         );
         factory.updateCheckpointDurationResolution(3 hours);
 
@@ -647,7 +656,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         factory.updateMinPositionDuration(4 hours);
         factory.updateMaxPositionDuration(6 hours);
         vm.expectRevert(
-            IHyperdrive.InvalidCheckpointDurationResolution.selector
+            IHyperdriveFactory.InvalidCheckpointDurationResolution.selector
         );
         factory.updateCheckpointDurationResolution(3 hours);
 
@@ -660,7 +669,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         factory.updateMinPositionDuration(3 hours);
         factory.updateMaxPositionDuration(4 hours);
         vm.expectRevert(
-            IHyperdrive.InvalidCheckpointDurationResolution.selector
+            IHyperdriveFactory.InvalidCheckpointDurationResolution.selector
         );
         factory.updateCheckpointDurationResolution(3 hours);
 
@@ -692,7 +701,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // other than the current governance.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
         factory.updateMaxCheckpointDuration(newMaxCheckpointDuration);
 
         // Ensure that the max checkpoint duration can't be set to a value
@@ -700,7 +709,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(factory.governance());
         uint256 minCheckpointDuration = factory.minCheckpointDuration();
-        vm.expectRevert(IHyperdrive.InvalidMaxCheckpointDuration.selector);
+        vm.expectRevert(
+            IHyperdriveFactory.InvalidMaxCheckpointDuration.selector
+        );
         factory.updateMaxCheckpointDuration(minCheckpointDuration - 1);
 
         // Ensure that the max checkpoint duration can't be set to a value
@@ -709,7 +720,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(factory.governance());
         uint256 checkpointDurationResolution = factory
             .checkpointDurationResolution();
-        vm.expectRevert(IHyperdrive.InvalidMaxCheckpointDuration.selector);
+        vm.expectRevert(
+            IHyperdriveFactory.InvalidMaxCheckpointDuration.selector
+        );
         factory.updateMaxCheckpointDuration(
             minCheckpointDuration + checkpointDurationResolution / 2
         );
@@ -719,7 +732,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(factory.governance());
         uint256 minPositionDuration = factory.minPositionDuration();
-        vm.expectRevert(IHyperdrive.InvalidMaxCheckpointDuration.selector);
+        vm.expectRevert(
+            IHyperdriveFactory.InvalidMaxCheckpointDuration.selector
+        );
         factory.updateMaxCheckpointDuration(minPositionDuration + 1);
 
         // Ensure that the max checkpoint duration was updated successfully and
@@ -739,7 +754,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // other than the current governance.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
         factory.updateMinCheckpointDuration(newMinCheckpointDuration);
 
         // Ensure that the min checkpoint duration can't be set to a value
@@ -748,7 +763,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(factory.governance());
         uint256 checkpointDurationResolution = factory
             .checkpointDurationResolution();
-        vm.expectRevert(IHyperdrive.InvalidMinCheckpointDuration.selector);
+        vm.expectRevert(
+            IHyperdriveFactory.InvalidMinCheckpointDuration.selector
+        );
         factory.updateMinCheckpointDuration(checkpointDurationResolution - 1);
 
         // Ensure that the min checkpoint duration can't be set to a value
@@ -756,7 +773,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(factory.governance());
         uint256 minCheckpointDuration = factory.minCheckpointDuration();
-        vm.expectRevert(IHyperdrive.InvalidMinCheckpointDuration.selector);
+        vm.expectRevert(
+            IHyperdriveFactory.InvalidMinCheckpointDuration.selector
+        );
         factory.updateMinCheckpointDuration(
             minCheckpointDuration + checkpointDurationResolution / 2
         );
@@ -766,7 +785,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(factory.governance());
         uint256 maxCheckpointDuration = factory.maxCheckpointDuration();
-        vm.expectRevert(IHyperdrive.InvalidMinCheckpointDuration.selector);
+        vm.expectRevert(
+            IHyperdriveFactory.InvalidMinCheckpointDuration.selector
+        );
         factory.updateMinCheckpointDuration(maxCheckpointDuration + 1);
 
         // Ensure that the min checkpoint duration was updated successfully and
@@ -786,7 +807,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // other than the current governance.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
         factory.updateMaxPositionDuration(newMaxPositionDuration);
 
         // Ensure that the max position duration can't be set to a value
@@ -794,7 +815,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(factory.governance());
         uint256 minPositionDuration = factory.minPositionDuration();
-        vm.expectRevert(IHyperdrive.InvalidMaxPositionDuration.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMaxPositionDuration.selector);
         factory.updateMaxPositionDuration(minPositionDuration - 1);
 
         // Ensure that the max position duration can't be set to a value
@@ -803,7 +824,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(factory.governance());
         uint256 checkpointDurationResolution = factory
             .checkpointDurationResolution();
-        vm.expectRevert(IHyperdrive.InvalidMaxPositionDuration.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMaxPositionDuration.selector);
         factory.updateMaxPositionDuration(
             minPositionDuration + checkpointDurationResolution / 2
         );
@@ -825,7 +846,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // other than the current governance.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
         factory.updateMinPositionDuration(newMinPositionDuration);
 
         // Ensure that the min position duration can't be set to a value
@@ -834,7 +855,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(factory.governance());
         uint256 checkpointDurationResolution = factory
             .checkpointDurationResolution();
-        vm.expectRevert(IHyperdrive.InvalidMinPositionDuration.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMinPositionDuration.selector);
         factory.updateMinPositionDuration(checkpointDurationResolution - 1);
 
         // Ensure that the min position duration can't be set to a value that
@@ -842,7 +863,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(factory.governance());
         uint256 maxCheckpointDuration = factory.maxCheckpointDuration();
-        vm.expectRevert(IHyperdrive.InvalidMinPositionDuration.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMinPositionDuration.selector);
         factory.updateMinPositionDuration(
             maxCheckpointDuration + checkpointDurationResolution / 2
         );
@@ -852,7 +873,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(factory.governance());
         uint256 maxPositionDuration = factory.maxPositionDuration();
-        vm.expectRevert(IHyperdrive.InvalidMinPositionDuration.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMinPositionDuration.selector);
         factory.updateMinPositionDuration(maxPositionDuration + 1);
 
         // Ensure that the min position duration was updated successfully and
@@ -877,14 +898,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // the current governance.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
         factory.updateMaxFees(newMaxFees);
 
         // Ensure that the maximum fees can't be set when the curve fee is
         // greater than 1.
         vm.stopPrank();
         vm.startPrank(factory.governance());
-        vm.expectRevert(IHyperdrive.InvalidMaxFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMaxFees.selector);
         factory.updateMaxFees(
             IHyperdrive.Fees({
                 curve: 1.1e18,
@@ -898,7 +919,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // greater than 1.
         vm.stopPrank();
         vm.startPrank(factory.governance());
-        vm.expectRevert(IHyperdrive.InvalidMaxFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMaxFees.selector);
         factory.updateMaxFees(
             IHyperdrive.Fees({
                 curve: 0.1e18,
@@ -912,7 +933,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // is greater than 1.
         vm.stopPrank();
         vm.startPrank(factory.governance());
-        vm.expectRevert(IHyperdrive.InvalidMaxFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMaxFees.selector);
         factory.updateMaxFees(
             IHyperdrive.Fees({
                 curve: 0.1e18,
@@ -926,7 +947,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // fee is greater than 1.
         vm.stopPrank();
         vm.startPrank(factory.governance());
-        vm.expectRevert(IHyperdrive.InvalidMaxFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMaxFees.selector);
         factory.updateMaxFees(
             IHyperdrive.Fees({
                 curve: 0.1e18,
@@ -948,7 +969,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 governanceZombie: 0.03e18
             })
         );
-        vm.expectRevert(IHyperdrive.InvalidMaxFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMaxFees.selector);
         factory.updateMaxFees(
             IHyperdrive.Fees({
                 curve: 0.05e18,
@@ -970,7 +991,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 governanceZombie: 0.03e18
             })
         );
-        vm.expectRevert(IHyperdrive.InvalidMaxFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMaxFees.selector);
         factory.updateMaxFees(
             IHyperdrive.Fees({
                 curve: 0.1e18,
@@ -992,7 +1013,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 governanceZombie: 0.03e18
             })
         );
-        vm.expectRevert(IHyperdrive.InvalidMaxFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMaxFees.selector);
         factory.updateMaxFees(
             IHyperdrive.Fees({
                 curve: 0.1e18,
@@ -1014,7 +1035,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 governanceZombie: 0.03e18
             })
         );
-        vm.expectRevert(IHyperdrive.InvalidMaxFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMaxFees.selector);
         factory.updateMaxFees(
             IHyperdrive.Fees({
                 curve: 0.1e18,
@@ -1057,7 +1078,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // the current governance.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
         factory.updateMinFees(newMinFees);
 
         // Ensure that the minimum fees can't be set when the curve fee is
@@ -1072,7 +1093,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 governanceZombie: 0.1e18
             })
         );
-        vm.expectRevert(IHyperdrive.InvalidMinFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMinFees.selector);
         factory.updateMinFees(
             IHyperdrive.Fees({
                 curve: 0.2e18,
@@ -1094,7 +1115,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 governanceZombie: 0.1e18
             })
         );
-        vm.expectRevert(IHyperdrive.InvalidMinFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMinFees.selector);
         factory.updateMinFees(
             IHyperdrive.Fees({
                 curve: 0.1e18,
@@ -1116,7 +1137,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 governanceZombie: 0.1e18
             })
         );
-        vm.expectRevert(IHyperdrive.InvalidMinFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMinFees.selector);
         factory.updateMinFees(
             IHyperdrive.Fees({
                 curve: 0.1e18,
@@ -1138,7 +1159,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 governanceZombie: 0.1e18
             })
         );
-        vm.expectRevert(IHyperdrive.InvalidMinFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidMinFees.selector);
         factory.updateMinFees(
             IHyperdrive.Fees({
                 curve: 0.1e18,
@@ -1178,7 +1199,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // than the current governance.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
         factory.updateDefaultPausers(newDefaultPausers);
 
         // Ensure that the default pausers were updated successfully and that
@@ -1249,7 +1270,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         bytes memory extraData = abi.encode(vault);
-        vm.expectRevert(IHyperdrive.InvalidDeployerCoordinator.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidDeployerCoordinator.selector);
         factory.deployAndInitialize(
             address(0xdeadbeef),
             config,
@@ -1267,7 +1288,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         config.checkpointDuration =
             factory.maxCheckpointDuration() +
             factory.checkpointDurationResolution();
-        vm.expectRevert(IHyperdrive.InvalidCheckpointDuration.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidCheckpointDuration.selector);
         factory.deployAndInitialize(
             deployerCoordinator,
             config,
@@ -1286,7 +1307,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         config.checkpointDuration =
             factory.minCheckpointDuration() -
             factory.checkpointDurationResolution();
-        vm.expectRevert(IHyperdrive.InvalidCheckpointDuration.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidCheckpointDuration.selector);
         factory.deployAndInitialize(
             deployerCoordinator,
             config,
@@ -1303,7 +1324,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(bob);
         oldCheckpointDuration = config.checkpointDuration;
         config.checkpointDuration = factory.minCheckpointDuration() + 1;
-        vm.expectRevert(IHyperdrive.InvalidCheckpointDuration.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidCheckpointDuration.selector);
         factory.deployAndInitialize(
             deployerCoordinator,
             config,
@@ -1322,7 +1343,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         config.positionDuration =
             factory.maxPositionDuration() +
             factory.checkpointDurationResolution();
-        vm.expectRevert(IHyperdrive.InvalidPositionDuration.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidPositionDuration.selector);
         factory.deployAndInitialize(
             deployerCoordinator,
             config,
@@ -1341,7 +1362,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         config.positionDuration =
             factory.minPositionDuration() -
             factory.checkpointDurationResolution();
-        vm.expectRevert(IHyperdrive.InvalidPositionDuration.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidPositionDuration.selector);
         factory.deployAndInitialize(
             deployerCoordinator,
             config,
@@ -1358,7 +1379,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(bob);
         oldPositionDuration = config.positionDuration;
         config.positionDuration = 365 * config.checkpointDuration + 1;
-        vm.expectRevert(IHyperdrive.InvalidPositionDuration.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidPositionDuration.selector);
         factory.deployAndInitialize(
             deployerCoordinator,
             config,
@@ -1375,7 +1396,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(bob);
         uint256 oldCurveFee = config.fees.curve;
         config.fees.curve = factory.maxFees().curve + 1;
-        vm.expectRevert(IHyperdrive.InvalidFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
         factory.deployAndInitialize(
             deployerCoordinator,
             config,
@@ -1392,7 +1413,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(bob);
         oldCurveFee = config.fees.curve;
         config.fees.curve = factory.minFees().curve - 1;
-        vm.expectRevert(IHyperdrive.InvalidFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
         factory.deployAndInitialize(
             deployerCoordinator,
             config,
@@ -1409,7 +1430,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(bob);
         uint256 oldFlatFee = config.fees.flat;
         config.fees.flat = factory.maxFees().flat + 1;
-        vm.expectRevert(IHyperdrive.InvalidFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
         factory.deployAndInitialize(
             deployerCoordinator,
             config,
@@ -1426,7 +1447,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(bob);
         oldFlatFee = config.fees.flat;
         config.fees.flat = factory.minFees().flat - 1;
-        vm.expectRevert(IHyperdrive.InvalidFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
         factory.deployAndInitialize(
             deployerCoordinator,
             config,
@@ -1443,7 +1464,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(bob);
         uint256 oldGovernanceLPFee = config.fees.governanceLP;
         config.fees.governanceLP = factory.maxFees().governanceLP + 1;
-        vm.expectRevert(IHyperdrive.InvalidFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
         factory.deployAndInitialize(
             deployerCoordinator,
             config,
@@ -1460,7 +1481,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(bob);
         oldGovernanceLPFee = config.fees.governanceLP;
         config.fees.governanceLP = factory.minFees().governanceLP - 1;
-        vm.expectRevert(IHyperdrive.InvalidFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
         factory.deployAndInitialize(
             deployerCoordinator,
             config,
@@ -1477,7 +1498,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(bob);
         uint256 oldGovernanceZombieFee = config.fees.governanceZombie;
         config.fees.governanceZombie = factory.maxFees().governanceZombie + 1;
-        vm.expectRevert(IHyperdrive.InvalidFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
         factory.deployAndInitialize(
             deployerCoordinator,
             config,
@@ -1494,7 +1515,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(bob);
         oldGovernanceZombieFee = config.fees.governanceZombie;
         config.fees.governanceZombie = factory.minFees().governanceZombie - 1;
-        vm.expectRevert(IHyperdrive.InvalidFees.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
         factory.deployAndInitialize(
             deployerCoordinator,
             config,
@@ -1511,7 +1532,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(bob);
         address oldLinkerFactory = config.linkerFactory;
         config.linkerFactory = address(0xdeadbeef);
-        vm.expectRevert(IHyperdrive.InvalidDeployConfig.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
         factory.deployAndInitialize(
             deployerCoordinator,
             config,
@@ -1528,7 +1549,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(bob);
         bytes32 oldLinkerCodeHash = config.linkerCodeHash;
         config.linkerCodeHash = bytes32(uint256(0xdeadbeef));
-        vm.expectRevert(IHyperdrive.InvalidDeployConfig.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
         factory.deployAndInitialize(
             deployerCoordinator,
             config,
@@ -1545,7 +1566,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(bob);
         address oldFeeCollector = config.feeCollector;
         config.feeCollector = address(0xdeadbeef);
-        vm.expectRevert(IHyperdrive.InvalidDeployConfig.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
         factory.deployAndInitialize(
             deployerCoordinator,
             config,
@@ -1562,7 +1583,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(bob);
         address oldGovernance = config.governance;
         config.governance = address(0xdeadbeef);
-        vm.expectRevert(IHyperdrive.InvalidDeployConfig.selector);
+        vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
         factory.deployAndInitialize(
             deployerCoordinator,
             config,
@@ -2183,7 +2204,7 @@ contract HyperdriveFactoryAddHyperdriveFactoryTest is HyperdriveTest {
     function test_hyperdriveFactory_addDeployerCoordinator_notGovernance()
         external
     {
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
         factory.addDeployerCoordinator(deployerCoordinator0);
 
         vm.prank(alice);
@@ -2196,7 +2217,9 @@ contract HyperdriveFactoryAddHyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(alice);
         factory.addDeployerCoordinator(deployerCoordinator0);
 
-        vm.expectRevert(IHyperdrive.DeployerCoordinatorAlreadyAdded.selector);
+        vm.expectRevert(
+            IHyperdriveFactory.DeployerCoordinatorAlreadyAdded.selector
+        );
         factory.addDeployerCoordinator(deployerCoordinator0);
     }
 
@@ -2285,7 +2308,7 @@ contract HyperdriveFactoryRemoveInstanceTest is HyperdriveTest {
     }
 
     function test_hyperdriveFactory_removeInstance_notGovernance() external {
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
         factory.removeDeployerCoordinator(deployerCoordinator0, 0);
 
         vm.startPrank(alice);
@@ -2297,7 +2320,9 @@ contract HyperdriveFactoryRemoveInstanceTest is HyperdriveTest {
     {
         vm.startPrank(alice);
 
-        vm.expectRevert(IHyperdrive.DeployerCoordinatorNotAdded.selector);
+        vm.expectRevert(
+            IHyperdriveFactory.DeployerCoordinatorNotAdded.selector
+        );
         factory.removeDeployerCoordinator(
             address(makeAddr("not added address")),
             0
@@ -2311,7 +2336,9 @@ contract HyperdriveFactoryRemoveInstanceTest is HyperdriveTest {
     {
         vm.startPrank(alice);
 
-        vm.expectRevert(IHyperdrive.DeployerCoordinatorIndexMismatch.selector);
+        vm.expectRevert(
+            IHyperdriveFactory.DeployerCoordinatorIndexMismatch.selector
+        );
         factory.removeDeployerCoordinator(deployerCoordinator0, 1);
 
         factory.removeDeployerCoordinator(deployerCoordinator0, 0);

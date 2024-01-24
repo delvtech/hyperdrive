@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
@@ -14,7 +15,7 @@ import { HyperdriveLP } from "./HyperdriveLP.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveShort is HyperdriveLP {
+abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;

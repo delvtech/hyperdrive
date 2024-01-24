@@ -3,94 +3,16 @@ pragma solidity 0.8.19;
 
 import { IERC20 } from "./IERC20.sol";
 import { IHyperdriveCore } from "./IHyperdriveCore.sol";
+import { IHyperdriveEvents } from "./IHyperdriveEvents.sol";
 import { IHyperdriveRead } from "./IHyperdriveRead.sol";
 import { IMultiToken } from "./IMultiToken.sol";
 
-interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
-    /// Events ///
-
-    event Initialize(
-        address indexed provider,
-        uint256 lpAmount,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 apr
-    );
-
-    event AddLiquidity(
-        address indexed provider,
-        uint256 lpAmount,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 lpSharePrice
-    );
-
-    event RemoveLiquidity(
-        address indexed provider,
-        uint256 lpAmount,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 withdrawalShareAmount,
-        uint256 lpSharePrice
-    );
-
-    event RedeemWithdrawalShares(
-        address indexed provider,
-        uint256 withdrawalShareAmount,
-        uint256 baseAmount,
-        uint256 vaultSharePrice
-    );
-
-    event OpenLong(
-        address indexed trader,
-        uint256 indexed assetId,
-        uint256 maturityTime,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 bondAmount
-    );
-
-    event OpenShort(
-        address indexed trader,
-        uint256 indexed assetId,
-        uint256 maturityTime,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 bondAmount
-    );
-
-    event CloseLong(
-        address indexed trader,
-        uint256 indexed assetId,
-        uint256 maturityTime,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 bondAmount
-    );
-
-    event CloseShort(
-        address indexed trader,
-        uint256 indexed assetId,
-        uint256 maturityTime,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 bondAmount
-    );
-
-    event CreateCheckpoint(
-        uint256 indexed checkpointTime,
-        uint256 vaultSharePrice,
-        uint256 maturedShorts,
-        uint256 maturedLongs,
-        uint256 lpSharePrice
-    );
-
-    event CollectGovernanceFee(
-        address indexed collector,
-        uint256 baseFees,
-        uint256 vaultSharePrice
-    );
-
+interface IHyperdrive is
+    IHyperdriveEvents,
+    IHyperdriveRead,
+    IHyperdriveCore,
+    IMultiToken
+{
     /// Structs ///
 
     struct MarketState {
@@ -285,6 +207,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     error ShareReservesDeltaExceedsBondReservesDelta();
     error SweepFailed();
     error TransferFailed();
+    error Unauthorized();
     error UnexpectedAssetId();
     error UnexpectedSender();
     error UnsupportedToken();
@@ -296,27 +219,6 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     error ReturnData(bytes data);
     error CallFailed(bytes4 underlyingError);
     error UnexpectedSuccess();
-
-    /// ###############
-    /// ### Factory ###
-    /// ###############
-    error Unauthorized();
-    error InvalidCheckpointDurationResolution();
-    error InvalidContribution();
-    error InvalidDeployConfig();
-    error InvalidDeployerCoordinator();
-    error InvalidFees();
-    error InvalidMaxFees();
-    error InvalidMinFees();
-    error InvalidMaxCheckpointDuration();
-    error InvalidMinCheckpointDuration();
-    error InvalidMaxPositionDuration();
-    error InvalidMinPositionDuration();
-    error InvalidToken();
-    error NonPayableInitialization();
-    error DeployerCoordinatorAlreadyAdded();
-    error DeployerCoordinatorNotAdded();
-    error DeployerCoordinatorIndexMismatch();
 
     /// ######################
     /// ### ERC20Forwarder ###

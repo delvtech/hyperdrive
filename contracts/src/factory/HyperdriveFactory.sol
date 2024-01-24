@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IHyperdriveFactory } from "../interfaces/IHyperdriveFactory.sol";
 import { IDeployerCoordinator } from "../interfaces/IDeployerCoordinator.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 
@@ -14,67 +15,9 @@ import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract HyperdriveFactory {
+contract HyperdriveFactory is IHyperdriveFactory {
     using FixedPointMath for uint256;
     using SafeTransferLib for ERC20;
-
-    /// @notice Emitted when new instances are deployed.
-    event Deployed(
-        uint256 indexed version,
-        address hyperdrive,
-        IHyperdrive.PoolDeployConfig config,
-        bytes extraData
-    );
-
-    /// @notice Emitted when a new deployer coordinator is added.
-    event DeployerCoordinatorAdded(address deployerCoordinator);
-
-    /// @notice Emitted when a deployer coordinator is removed.
-    event DeployerCoordinatorRemoved(address deployerCoordinator);
-
-    /// @notice Emitted when the default pausers are updated.
-    event DefaultPausersUpdated(address[] newDefaultPausers);
-
-    /// @notice Emitted when the fee collector is updated.
-    event FeeCollectorUpdated(address newFeeCollector);
-
-    /// @notice Emitted when governance is transferred.
-    event GovernanceUpdated(address governance);
-
-    /// @notice Emitted when the Hyperdrive governance address is updated.
-    event HyperdriveGovernanceUpdated(address hyperdriveGovernance);
-
-    /// @notice Emitted when the Hyperdrive implementation is updated.
-    event ImplementationUpdated(address newDeployer);
-
-    /// @notice Emitted when the linker factory is updated.
-    event LinkerFactoryUpdated(address newLinkerFactory);
-
-    /// @notice Emitted when the linker code hash is updated.
-    event LinkerCodeHashUpdated(bytes32 newLinkerCodeHash);
-
-    /// @notice Emitted when the checkpoint duration resolution is updated.
-    event CheckpointDurationResolutionUpdated(
-        uint256 newCheckpointDurationResolution
-    );
-
-    /// @notice Emitted when the maximum checkpoint duration is updated.
-    event MaxCheckpointDurationUpdated(uint256 newMaxCheckpointDuration);
-
-    /// @notice Emitted when the minimum checkpoint duration is updated.
-    event MinCheckpointDurationUpdated(uint256 newMinCheckpointDuration);
-
-    /// @notice Emitted when the maximum position duration is updated.
-    event MaxPositionDurationUpdated(uint256 newMaxPositionDuration);
-
-    /// @notice Emitted when the minimum position duration is updated.
-    event MinPositionDurationUpdated(uint256 newMinPositionDuration);
-
-    /// @notice Emitted when the max fees are updated.
-    event MaxFeesUpdated(IHyperdrive.Fees newMaxFees);
-
-    /// @notice Emitted when the min fees are updated.
-    event MinFeesUpdated(IHyperdrive.Fees newMinFees);
 
     /// @notice The resolution for the checkpoint duration. Every checkpoint
     ///         duration must be a multiple of this resolution.
@@ -186,7 +129,7 @@ contract HyperdriveFactory {
                 _factoryConfig.checkpointDurationResolution !=
             0
         ) {
-            revert IHyperdrive.InvalidMinCheckpointDuration();
+            revert IHyperdriveFactory.InvalidMinCheckpointDuration();
         }
         minCheckpointDuration = _factoryConfig.minCheckpointDuration;
 
@@ -200,7 +143,7 @@ contract HyperdriveFactory {
                 _factoryConfig.checkpointDurationResolution !=
             0
         ) {
-            revert IHyperdrive.InvalidMaxCheckpointDuration();
+            revert IHyperdriveFactory.InvalidMaxCheckpointDuration();
         }
         maxCheckpointDuration = _factoryConfig.maxCheckpointDuration;
 
@@ -214,7 +157,7 @@ contract HyperdriveFactory {
                 _factoryConfig.checkpointDurationResolution !=
             0
         ) {
-            revert IHyperdrive.InvalidMinPositionDuration();
+            revert IHyperdriveFactory.InvalidMinPositionDuration();
         }
         minPositionDuration = _factoryConfig.minPositionDuration;
 
@@ -228,7 +171,7 @@ contract HyperdriveFactory {
                 _factoryConfig.checkpointDurationResolution !=
             0
         ) {
-            revert IHyperdrive.InvalidMaxPositionDuration();
+            revert IHyperdriveFactory.InvalidMaxPositionDuration();
         }
         maxPositionDuration = _factoryConfig.maxPositionDuration;
 
@@ -240,7 +183,7 @@ contract HyperdriveFactory {
             _factoryConfig.maxFees.governanceLP > ONE ||
             _factoryConfig.maxFees.governanceZombie > ONE
         ) {
-            revert IHyperdrive.InvalidMaxFees();
+            revert IHyperdriveFactory.InvalidMaxFees();
         }
         _maxFees = _factoryConfig.maxFees;
 
@@ -254,7 +197,7 @@ contract HyperdriveFactory {
             _factoryConfig.minFees.governanceZombie >
             _factoryConfig.maxFees.governanceZombie
         ) {
-            revert IHyperdrive.InvalidMinFees();
+            revert IHyperdriveFactory.InvalidMinFees();
         }
         _minFees = _factoryConfig.minFees;
 
@@ -332,7 +275,7 @@ contract HyperdriveFactory {
             minPositionDuration % _checkpointDurationResolution != 0 ||
             maxPositionDuration % _checkpointDurationResolution != 0
         ) {
-            revert IHyperdrive.InvalidCheckpointDurationResolution();
+            revert IHyperdriveFactory.InvalidCheckpointDurationResolution();
         }
 
         // Update the checkpoint duration resolution and emit an event.
@@ -355,7 +298,7 @@ contract HyperdriveFactory {
             _maxCheckpointDuration % checkpointDurationResolution != 0 ||
             _maxCheckpointDuration > minPositionDuration
         ) {
-            revert IHyperdrive.InvalidMaxCheckpointDuration();
+            revert IHyperdriveFactory.InvalidMaxCheckpointDuration();
         }
 
         // Update the maximum checkpoint duration and emit an event.
@@ -378,7 +321,7 @@ contract HyperdriveFactory {
             _minCheckpointDuration % checkpointDurationResolution != 0 ||
             _minCheckpointDuration > maxCheckpointDuration
         ) {
-            revert IHyperdrive.InvalidMinCheckpointDuration();
+            revert IHyperdriveFactory.InvalidMinCheckpointDuration();
         }
 
         // Update the minimum checkpoint duration and emit an event.
@@ -398,7 +341,7 @@ contract HyperdriveFactory {
             _maxPositionDuration < minPositionDuration ||
             _maxPositionDuration % checkpointDurationResolution != 0
         ) {
-            revert IHyperdrive.InvalidMaxPositionDuration();
+            revert IHyperdriveFactory.InvalidMaxPositionDuration();
         }
 
         // Update the maximum position duration and emit an event.
@@ -420,7 +363,7 @@ contract HyperdriveFactory {
             _minPositionDuration % checkpointDurationResolution != 0 ||
             _minPositionDuration > maxPositionDuration
         ) {
-            revert IHyperdrive.InvalidMinPositionDuration();
+            revert IHyperdriveFactory.InvalidMinPositionDuration();
         }
 
         // Update the minimum position duration and emit an event.
@@ -446,7 +389,7 @@ contract HyperdriveFactory {
             __maxFees.governanceLP < _minFees.governanceLP ||
             __maxFees.governanceZombie < _minFees.governanceZombie
         ) {
-            revert IHyperdrive.InvalidMaxFees();
+            revert IHyperdriveFactory.InvalidMaxFees();
         }
 
         // Update the max fees and emit an event.
@@ -467,7 +410,7 @@ contract HyperdriveFactory {
             __minFees.governanceLP > _maxFees.governanceLP ||
             __minFees.governanceZombie > _maxFees.governanceZombie
         ) {
-            revert IHyperdrive.InvalidMinFees();
+            revert IHyperdriveFactory.InvalidMinFees();
         }
 
         // Update the max fees and emit an event.
@@ -490,7 +433,7 @@ contract HyperdriveFactory {
         address _deployerCoordinator
     ) external onlyGovernance {
         if (isDeployerCoordinator[_deployerCoordinator]) {
-            revert IHyperdrive.DeployerCoordinatorAlreadyAdded();
+            revert IHyperdriveFactory.DeployerCoordinatorAlreadyAdded();
         }
         isDeployerCoordinator[_deployerCoordinator] = true;
         _deployerCoordinators.push(_deployerCoordinator);
@@ -505,10 +448,10 @@ contract HyperdriveFactory {
         uint256 _index
     ) external onlyGovernance {
         if (!isDeployerCoordinator[_deployerCoordinator]) {
-            revert IHyperdrive.DeployerCoordinatorNotAdded();
+            revert IHyperdriveFactory.DeployerCoordinatorNotAdded();
         }
         if (_deployerCoordinators[_index] != _deployerCoordinator) {
-            revert IHyperdrive.DeployerCoordinatorIndexMismatch();
+            revert IHyperdriveFactory.DeployerCoordinatorIndexMismatch();
         }
         isDeployerCoordinator[_deployerCoordinator] = false;
         _deployerCoordinators[_index] = _deployerCoordinators[
@@ -541,7 +484,7 @@ contract HyperdriveFactory {
     ) public payable virtual returns (IHyperdrive) {
         // Ensure that the target deployer has been registered.
         if (!isDeployerCoordinator[_deployerCoordinator]) {
-            revert IHyperdrive.InvalidDeployerCoordinator();
+            revert IHyperdriveFactory.InvalidDeployerCoordinator();
         }
 
         // Ensure that the specified checkpoint duration is within the minimum
@@ -552,7 +495,7 @@ contract HyperdriveFactory {
             _deployConfig.checkpointDuration > maxCheckpointDuration ||
             _deployConfig.checkpointDuration % checkpointDurationResolution != 0
         ) {
-            revert IHyperdrive.InvalidCheckpointDuration();
+            revert IHyperdriveFactory.InvalidCheckpointDuration();
         }
 
         // Ensure that the specified checkpoint duration is within the minimum
@@ -564,7 +507,7 @@ contract HyperdriveFactory {
             _deployConfig.positionDuration % _deployConfig.checkpointDuration !=
             0
         ) {
-            revert IHyperdrive.InvalidPositionDuration();
+            revert IHyperdriveFactory.InvalidPositionDuration();
         }
 
         // Ensure that the specified fees are within the minimum and maximum fees.
@@ -578,7 +521,7 @@ contract HyperdriveFactory {
             _deployConfig.fees.governanceLP < _minFees.governanceLP ||
             _deployConfig.fees.governanceZombie < _minFees.governanceZombie
         ) {
-            revert IHyperdrive.InvalidFees();
+            revert IHyperdriveFactory.InvalidFees();
         }
 
         // Ensure that the linker factory, linker code hash, fee collector,
@@ -590,7 +533,7 @@ contract HyperdriveFactory {
             _deployConfig.feeCollector != address(0) ||
             _deployConfig.governance != address(0)
         ) {
-            revert IHyperdrive.InvalidDeployConfig();
+            revert IHyperdriveFactory.InvalidDeployConfig();
         }
 
         // Override the config values to the default values set by governance.

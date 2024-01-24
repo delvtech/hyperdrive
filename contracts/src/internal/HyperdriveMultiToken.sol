@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 
 /// @author DELV
@@ -21,7 +22,7 @@ import { HyperdriveBase } from "./HyperdriveBase.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveMultiToken is HyperdriveBase {
+abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
     /// @notice This modifier checks the caller is the create2 validated ERC20 bridge.
     /// @param tokenID The internal token identifier.
     modifier onlyLinker(uint256 tokenID) {
