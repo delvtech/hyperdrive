@@ -460,9 +460,6 @@ contract DevnetMigration is Script {
             );
         }
 
-        // Deploy the MockHyperdriveMath contract.
-        MockHyperdriveMath mockHyperdriveMath = new MockHyperdriveMath();
-
         // Transfer ownership of the base token, factory, vault, and lido to the
         // admin address now that we're done minting tokens and updating the
         // configuration.
@@ -486,11 +483,6 @@ contract DevnetMigration is Script {
             result,
             "stethHyperdrive",
             address(stethHyperdrive)
-        );
-        result = vm.serializeAddress(
-            result,
-            "mockHyperdriveMath",
-            address(mockHyperdriveMath)
         );
         result.write("./artifacts/script_addresses.json");
     }

@@ -121,7 +121,7 @@ contract LPWithdrawalTest is HyperdriveTest {
                 hyperdrive.getPoolInfo().vaultSharePrice +
                     hyperdrive.lpSharePrice()
             ),
-            1e9
+            1e10
         );
 
         // Ensure that no withdrawal shares are ready for withdrawal and that
@@ -229,7 +229,7 @@ contract LPWithdrawalTest is HyperdriveTest {
                 hyperdrive.getPoolInfo().vaultSharePrice +
                     hyperdrive.lpSharePrice()
             ),
-            1e9
+            1e10
         );
 
         // Ensure that no withdrawal shares are ready for withdrawal and that
@@ -359,7 +359,7 @@ contract LPWithdrawalTest is HyperdriveTest {
                 hyperdrive.getPoolInfo().vaultSharePrice +
                     hyperdrive.lpSharePrice()
             ),
-            1e9
+            1e10
         );
 
         // Ensure that no withdrawal shares are ready for withdrawal and that
@@ -478,6 +478,20 @@ contract LPWithdrawalTest is HyperdriveTest {
             uint256 longBasePaid = 11709480438780642195;
             uint256 shortAmount = 7116;
             int256 variableRate = 1334;
+            _test_lp_withdrawal_long_and_short_maturity(
+                longBasePaid,
+                shortAmount,
+                variableRate
+            );
+        }
+        // This edge case results in the ending base balance being slightly more
+        // than 1e9 larger than the expected value.
+        vm.revertTo(snapshotId);
+        snapshotId = vm.snapshot();
+        {
+            uint256 longBasePaid = 340282366920938463456522083463006420839;
+            uint256 shortAmount = 999999999884744250715574269;
+            int256 variableRate = 4070;
             _test_lp_withdrawal_long_and_short_maturity(
                 longBasePaid,
                 shortAmount,
@@ -735,7 +749,7 @@ contract LPWithdrawalTest is HyperdriveTest {
                 hyperdrive.getPoolInfo().vaultSharePrice +
                     hyperdrive.lpSharePrice()
             ),
-            1e9
+            1e10
         );
 
         // Ensure that no withdrawal shares are ready for withdrawal and that
@@ -1223,7 +1237,7 @@ contract LPWithdrawalTest is HyperdriveTest {
                 hyperdrive.getPoolInfo().vaultSharePrice +
                     hyperdrive.lpSharePrice()
             ),
-            1e9
+            1e10
         );
 
         // Ensure that no withdrawal shares are ready for withdrawal and that

@@ -290,11 +290,6 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     error UnsupportedToken();
     error ZeroLpTotalSupply();
 
-    /// ############
-    /// ### TWAP ###
-    /// ############
-    error QueryOutOfRange();
-
     /// ####################
     /// ### DataProvider ###
     /// ####################
@@ -336,17 +331,6 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
     /// ### ERC20ForwarderFactory ###
     /// #############################
     error InvalidForwarderAddress();
-
-    /// ###################
-    /// ### BondWrapper ###
-    /// ###################
-    error InvalidRecipient(address recipient);
-    error AlreadyClosed();
-    error BondMatured();
-    error BondNotMatured();
-    error InsufficientPrice();
-    error InputLengthMismatch();
-    error MintPercentTooHigh();
 
     /// ###############
     /// ### AssetId ###
