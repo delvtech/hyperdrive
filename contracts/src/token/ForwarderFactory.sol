@@ -54,7 +54,7 @@ contract ForwarderFactory is IForwarderFactory {
 
         // As a consistency check we check that this is in the right address.
         if (!(address(deployed) == getForwarder(__token, __tokenId))) {
-            revert InvalidForwarderAddress();
+            revert IForwarderFactory.InvalidForwarderAddress();
         }
 
         // Reset the transient state.

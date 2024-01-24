@@ -179,7 +179,6 @@ interface IHyperdrive is
     /// ##################
     error BelowMinimumContribution();
     error BelowMinimumShareReserves();
-    error EndIndexTooLarge();
     error InvalidApr();
     error InvalidBaseToken();
     error InvalidCheckpointTime();
@@ -187,7 +186,6 @@ interface IHyperdrive is
     error InvalidEffectiveShareReserves();
     error InvalidFeeAmounts();
     error InvalidFeeDestination();
-    error InvalidIndexes();
     error InvalidInitialVaultSharePrice();
     error InvalidLpSharePrice();
     error InvalidMaturityTime();

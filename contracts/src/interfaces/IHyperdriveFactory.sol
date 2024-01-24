@@ -55,6 +55,8 @@ interface IHyperdriveFactory {
 
     error DeployerCoordinatorIndexMismatch();
 
+    error EndIndexTooLarge();
+
     error InvalidCheckpointDuration();
 
     error InvalidCheckpointDurationResolution();
@@ -64,6 +66,8 @@ interface IHyperdriveFactory {
     error InvalidDeployerCoordinator();
 
     error InvalidFees();
+
+    error InvalidIndexes();
 
     error InvalidMaxFees();
 
@@ -78,6 +82,8 @@ interface IHyperdriveFactory {
     error InvalidMinPositionDuration();
 
     error InvalidPositionDuration();
+
+    error TransferFailed();
 
     error Unauthorized();
 }

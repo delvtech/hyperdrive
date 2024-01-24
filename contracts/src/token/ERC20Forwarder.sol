@@ -194,9 +194,14 @@ contract ERC20Forwarder is IERC20Forwarder {
         bytes32 s
     ) external {
         // Require that the signature is not expired
-        if (block.timestamp > deadline) revert ExpiredDeadline();
+        if (block.timestamp > deadline) {
+            revert IERC20Forwarder.ExpiredDeadline();
+        }
+
         // Require that the owner is not zero
-        if (owner == address(0)) revert RestrictedZeroAddress();
+        if (owner == address(0)) {
+            revert IERC20Forwarder.RestrictedZeroAddress();
+        }
 
         uint256 nonce = nonces[owner];
         bytes32 structHash = keccak256(

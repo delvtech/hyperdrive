@@ -214,7 +214,9 @@ contract HyperdriveFactory is IHyperdriveFactory {
 
     /// @dev Ensure that the sender is the governance address.
     modifier onlyGovernance() {
-        if (msg.sender != governance) revert IHyperdrive.Unauthorized();
+        if (msg.sender != governance) {
+            revert IHyperdriveFactory.Unauthorized();
+        }
         _;
     }
 
@@ -618,7 +620,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
         if (refund > 0) {
             (bool success, ) = payable(msg.sender).call{ value: refund }("");
             if (!success) {
-                revert IHyperdrive.TransferFailed();
+                revert IHyperdriveFactory.TransferFailed();
             }
         }
 
@@ -676,10 +678,10 @@ contract HyperdriveFactory is IHyperdriveFactory {
     ) external view returns (address[] memory range) {
         // If the indexes are malformed, revert.
         if (startIndex > endIndex) {
-            revert IHyperdrive.InvalidIndexes();
+            revert IHyperdriveFactory.InvalidIndexes();
         }
         if (endIndex > _instances.length) {
-            revert IHyperdrive.EndIndexTooLarge();
+            revert IHyperdriveFactory.EndIndexTooLarge();
         }
 
         // Return the range of instances.
@@ -716,10 +718,10 @@ contract HyperdriveFactory is IHyperdriveFactory {
     ) external view returns (address[] memory range) {
         // If the indexes are malformed, revert.
         if (startIndex > endIndex) {
-            revert IHyperdrive.InvalidIndexes();
+            revert IHyperdriveFactory.InvalidIndexes();
         }
         if (endIndex > _deployerCoordinators.length) {
-            revert IHyperdrive.EndIndexTooLarge();
+            revert IHyperdriveFactory.EndIndexTooLarge();
         }
 
         // Return the range of instances.

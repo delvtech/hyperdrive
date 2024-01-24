@@ -49,6 +49,8 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
     function _pause(bool _status) internal {
         if (!_pausers[msg.sender]) revert IHyperdrive.Unauthorized();
         _marketState.isPaused = _status;
+
+        // FIXME: This needs to emit an event.
     }
 
     /// @dev Allows governance to change governance.
