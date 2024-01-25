@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { AssetId } from "../libraries/AssetId.sol";
+import { Errors } from "../libraries/Errors.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
@@ -273,7 +274,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
 
         // We need to check solvency because longs increase the system's exposure.
         if (!_isSolvent(_vaultSharePrice)) {
-            revert IHyperdrive.InsufficientLiquidity(
+            Errors.throwInsufficientLiquidityError(
                 IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
             );
         }
@@ -324,7 +325,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             shareReserves < _shareReservesDelta ||
             shareReserves - _shareReservesDelta < _minimumShareReserves
         ) {
-            revert IHyperdrive.InsufficientLiquidity(
+            Errors.throwInsufficientLiquidityError(
                 IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
             );
         }
@@ -351,7 +352,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             int256(_shareReservesDelta) > _shareAdjustmentDelta &&
             _effectiveShareReserves() < _minimumShareReserves
         ) {
-            revert IHyperdrive.InsufficientLiquidity(
+            Errors.throwInsufficientLiquidityError(
                 IHyperdrive
                     .InsufficientLiquidityReason
                     .InvalidEffectiveShareReserves
@@ -410,7 +411,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
                 )
             )
         ) {
-            revert IHyperdrive.InsufficientLiquidity(
+            Errors.throwInsufficientLiquidityError(
                 IHyperdrive.InsufficientLiquidityReason.NegativeInterest
             );
         }

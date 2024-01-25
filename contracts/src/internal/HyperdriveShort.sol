@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { AssetId } from "../libraries/AssetId.sol";
+import { Errors } from "../libraries/Errors.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
@@ -262,7 +263,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // we revert with an insufficient liquidity error.
         uint256 shareReserves_ = _marketState.shareReserves;
         if (shareReserves_ < _shareReservesDelta) {
-            revert IHyperdrive.InsufficientLiquidity(
+            Errors.throwInsufficientLiquidityError(
                 IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
             );
         }
@@ -281,7 +282,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // global exposure is greater than or equal to zero, z < z_min
         // implies z - e/c - z_min < 0.
         if (_effectiveShareReserves() < _minimumShareReserves) {
-            revert IHyperdrive.InsufficientLiquidity(
+            Errors.throwInsufficientLiquidityError(
                 IHyperdrive
                     .InsufficientLiquidityReason
                     .InvalidEffectiveShareReserves
@@ -302,7 +303,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // of capital available to back non-netted long exposure. Since both
         // quantities decrease, we need to check that the system is still solvent.
         if (!_isSolvent(_vaultSharePrice)) {
-            revert IHyperdrive.InsufficientLiquidity(
+            Errors.throwInsufficientLiquidityError(
                 IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
             );
         }
@@ -389,7 +390,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // amount, then the trade occurred in the negative interest domain. We
         // revert in these pathological cases.
         if (shareReservesDelta.mulUp(_vaultSharePrice) > _bondAmount) {
-            revert IHyperdrive.InsufficientLiquidity(
+            Errors.throwInsufficientLiquidityError(
                 IHyperdrive.InsufficientLiquidityReason.NegativeInterest
             );
         }
@@ -525,7 +526,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
                     )
                 )
             ) {
-                revert IHyperdrive.InsufficientLiquidity(
+                Errors.throwInsufficientLiquidityError(
                     IHyperdrive.InsufficientLiquidityReason.NegativeInterest
                 );
             }

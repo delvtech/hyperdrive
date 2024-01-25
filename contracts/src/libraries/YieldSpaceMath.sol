@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { Errors } from "./Errors.sol";
 import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { HyperdriveMath } from "./HyperdriveMath.sol";
 
@@ -63,7 +64,7 @@ library YieldSpaceMath {
 
         // If k < ze, we have no choice but to revert.
         if (k < ze) {
-            revert IHyperdrive.InsufficientLiquidity(
+            Errors.throwInsufficientLiquidityError(
                 IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
             );
         }
@@ -82,7 +83,7 @@ library YieldSpaceMath {
 
         // If y < _y, we have no choice but to revert.
         if (y < _y) {
-            revert IHyperdrive.InsufficientLiquidity(
+            Errors.throwInsufficientLiquidityError(
                 IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
             );
         }
@@ -116,7 +117,7 @@ library YieldSpaceMath {
 
         // If y < dy, we have no choice but to revert.
         if (y < dy) {
-            revert IHyperdrive.InsufficientLiquidity(
+            Errors.throwInsufficientLiquidityError(
                 IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
             );
         }
@@ -126,7 +127,7 @@ library YieldSpaceMath {
 
         // If k < y, we have no choice but to revert.
         if (k < y) {
-            revert IHyperdrive.InsufficientLiquidity(
+            Errors.throwInsufficientLiquidityError(
                 IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
             );
         }
@@ -147,7 +148,7 @@ library YieldSpaceMath {
 
         // If _z < ze, we have no choice but to revert.
         if (_z < ze) {
-            revert IHyperdrive.InsufficientLiquidity(
+            Errors.throwInsufficientLiquidityError(
                 IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
             );
         }
@@ -181,7 +182,7 @@ library YieldSpaceMath {
 
         // If y < dy, we have no choice but to revert.
         if (y < dy) {
-            revert IHyperdrive.InsufficientLiquidity(
+            Errors.throwInsufficientLiquidityError(
                 IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
             );
         }
@@ -191,7 +192,7 @@ library YieldSpaceMath {
 
         // If k < y, we have no choice but to revert.
         if (k < y) {
-            revert IHyperdrive.InsufficientLiquidity(
+            Errors.throwInsufficientLiquidityError(
                 IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
             );
         }
@@ -212,7 +213,7 @@ library YieldSpaceMath {
 
         // If _z < ze, we have no choice but to revert.
         if (_z < ze) {
-            revert IHyperdrive.InsufficientLiquidity(
+            Errors.throwInsufficientLiquidityError(
                 IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
             );
         }
@@ -250,7 +251,7 @@ library YieldSpaceMath {
             mu
         );
         if (!success) {
-            revert IHyperdrive.InsufficientLiquidity(
+            Errors.throwInsufficientLiquidityError(
                 IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
             );
         }
