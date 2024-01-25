@@ -274,7 +274,11 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // global exposure is greater than or equal to zero, z < z_min
         // implies z - e/c - z_min < 0.
         if (_effectiveShareReserves() < _minimumShareReserves) {
-            revert IHyperdrive.InvalidEffectiveShareReserves();
+            revert IHyperdrive.InsufficientLiquidity(
+                IHyperdrive
+                    .InsufficientLiquidityReason
+                    .InvalidEffectiveShareReserves
+            );
         }
 
         // Update the global long exposure. Since we're opening a short, the
@@ -291,7 +295,9 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // of capital available to back non-netted long exposure. Since both
         // quantities decrease, we need to check that the system is still solvent.
         if (!_isSolvent(_vaultSharePrice)) {
-            revert IHyperdrive.InsufficientLiquidity();
+            revert IHyperdrive.InsufficientLiquidity(
+                IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
+            );
         }
 
         // Distribute the excess idle to the withdrawal pool.
@@ -376,7 +382,9 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // amount, then the trade occurred in the negative interest domain. We
         // revert in these pathological cases.
         if (shareReservesDelta.mulUp(_vaultSharePrice) > _bondAmount) {
-            revert IHyperdrive.NegativeInterest();
+            revert IHyperdrive.InsufficientLiquidity(
+                IHyperdrive.InsufficientLiquidityReason.NegativeInterest
+            );
         }
 
         // Calculate the fees charged to the user (curveFee) and the portion
@@ -510,7 +518,9 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
                     )
                 )
             ) {
-                revert IHyperdrive.NegativeInterest();
+                revert IHyperdrive.InsufficientLiquidity(
+                    IHyperdrive.InsufficientLiquidityReason.NegativeInterest
+                );
             }
 
             // Calculate the fees charged to the user (curveFee and

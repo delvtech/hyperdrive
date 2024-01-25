@@ -194,7 +194,9 @@ library YieldSpaceMath {
             mu
         );
         if (!success) {
-            revert IHyperdrive.InvalidTradeSize();
+            revert IHyperdrive.InsufficientLiquidity(
+                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
+            );
         }
     }
 

@@ -194,7 +194,14 @@ contract CloseLongTest is HyperdriveTest {
         // minimum share reserves. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.InvalidEffectiveShareReserves.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IHyperdrive.InsufficientLiquidity.selector,
+                IHyperdrive
+                    .InsufficientLiquidityReason
+                    .InvalidEffectiveShareReserves
+            )
+        );
         hyperdrive.closeLong(
             maturityTime,
             longAmount,

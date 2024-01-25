@@ -172,6 +172,22 @@ interface IHyperdrive is
         bytes extraData;
     }
 
+    /// Enums ///
+
+    /// @notice The reason for an InsufficientLiquidity error.
+    enum InsufficientLiquidityReason {
+        /// @dev The trade resulted in an arithmetic underflow.
+        ArithmeticUnderflow,
+        /// @dev The trade brought the effective share reserves below the
+        ///      minimum share reserves.
+        InvalidEffectiveShareReserves,
+        /// @dev The trade resulted in negative interest on some or all of the
+        ///      bonds.
+        NegativeInterest,
+        /// @dev The trade violated our solvency requirements.
+        SolvencyViolated
+    }
+
     /// Errors ///
 
     /// @notice Thrown when the inputs to a batch transfer don't match in
@@ -192,7 +208,7 @@ interface IHyperdrive is
 
     /// @notice Thrown when the pool doesn't have sufficient liquidity to
     ///         complete the trade.
-    error InsufficientLiquidity();
+    error InsufficientLiquidity(InsufficientLiquidityReason reason);
 
     /// @notice Thrown when the pool's APR is outside the bounds specified by
     ///         a LP when they are adding liquidity.
@@ -209,12 +225,6 @@ interface IHyperdrive is
     ///         larger than the current checkpoint or isn't divisible by the
     ///         checkpoint duration.
     error InvalidCheckpointTime();
-
-    // FIXME: Replace this with a variant of InsufficientLiquidity
-    //
-    /// @notice Thrown when a trade causes the effective share reserves to fall
-    ///         below the minimum share reserves.
-    error InvalidEffectiveShareReserves();
 
     /// @notice Thrown when the caller of one of MultiToken's bridge-only
     ///         functions is not the corresponding bridge.
@@ -242,9 +252,6 @@ interface IHyperdrive is
     ///         duration or is not a multiple of the checkpoint duration.
     error InvalidPositionDuration();
 
-    // FIXME: This is more of a fatal error, so it probably doesn't fall into
-    //        the same bucket as `InsufficientLiquidity`.
-    //
     /// @notice Thrown when update liquidity brings the share reserves below
     ///         the minimum share reserves.
     error InvalidShareReserves();
@@ -257,12 +264,6 @@ interface IHyperdrive is
     /// @notice Thrown when the timestamp used to construct an asset ID exceeds
     ///         the uint248 scale.
     error InvalidTimestamp();
-
-    // FIXME: Replace this with a variant of InsufficientLiquidity
-    //
-    /// @notice Thrown when the pool doesn't have sufficient liquidity to
-    ///         complete the trade.
-    error InvalidTradeSize();
 
     /// @notice Thrown when the input to `FixedPointMath.ln` is less than or
     ///         equal to zero.
@@ -277,12 +278,6 @@ interface IHyperdrive is
     ///         than the minimum transaction amount. This protects traders and
     ///         LPs from losses of precision that can occur at small scales.
     error MinimumTransactionAmount();
-
-    // FIXME: Replace this with a variant of InsufficientLiquidity
-    //
-    /// @notice Thrown when part of the trade dips into the negative interest
-    ///         domain.
-    error NegativeInterest();
 
     /// @notice Thrown when the present value is negative. Whatever proceeded
     ///         a negative present value should be reverted.

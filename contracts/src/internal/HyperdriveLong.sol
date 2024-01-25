@@ -273,7 +273,9 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
 
         // We need to check solvency because longs increase the system's exposure.
         if (!_isSolvent(_vaultSharePrice)) {
-            revert IHyperdrive.InsufficientLiquidity();
+            revert IHyperdrive.InsufficientLiquidity(
+                IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
+            );
         }
 
         // Distribute the excess idle to the withdrawal pool.
@@ -343,7 +345,11 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             int256(_shareReservesDelta) > _shareAdjustmentDelta &&
             _effectiveShareReserves() < _minimumShareReserves
         ) {
-            revert IHyperdrive.InvalidEffectiveShareReserves();
+            revert IHyperdrive.InsufficientLiquidity(
+                IHyperdrive
+                    .InsufficientLiquidityReason
+                    .InvalidEffectiveShareReserves
+            );
         }
     }
 
@@ -398,7 +404,9 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
                 )
             )
         ) {
-            revert IHyperdrive.NegativeInterest();
+            revert IHyperdrive.InsufficientLiquidity(
+                IHyperdrive.InsufficientLiquidityReason.NegativeInterest
+            );
         }
 
         // Calculate the fees charged to the user (curveFee) and the portion
