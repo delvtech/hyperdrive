@@ -64,6 +64,8 @@ abstract contract HyperdriveTarget3 is
         return _closeShort(_maturityTime, _bondAmount, _minOutput, _options);
     }
 
+    /// Checkpoints ///
+
     /// @notice Allows anyone to mint a new checkpoint.
     /// @param _checkpointTime The time of the checkpoint to create.
     function checkpoint(uint256 _checkpointTime) external {

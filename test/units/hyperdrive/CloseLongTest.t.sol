@@ -128,7 +128,7 @@ contract CloseLongTest is HyperdriveTest {
         );
     }
 
-    function test_close_long_failure_invalid_share_reserves() external {
+    function test_close_long_failure_insufficient_liquidity() external {
         uint256 apr = 0.05e18;
 
         // Initialize the pool with a small amount of capital.
@@ -150,7 +150,12 @@ contract CloseLongTest is HyperdriveTest {
         // minimum share reserves. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.InvalidShareReserves.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IHyperdrive.InsufficientLiquidity.selector,
+                IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
+            )
+        );
         hyperdrive.closeLong(
             maturityTime,
             longAmount,

@@ -317,6 +317,18 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
                 _bondAmount.toUint128();
         }
 
+        // The share reserves are decreased in this operation, so we need to
+        // verify the invariant that z >= z_min is satisfied.
+        uint256 shareReserves = _marketState.shareReserves;
+        if (
+            shareReserves < _shareReservesDelta ||
+            shareReserves - _shareReservesDelta < _minimumShareReserves
+        ) {
+            revert IHyperdrive.InsufficientLiquidity(
+                IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
+            );
+        }
+
         // Apply the updates from the curve and flat components of the trade to
         // the reserves. The share proceeds are added to the share reserves
         // since the LPs are buying bonds for shares.  The bond reserves are
@@ -327,12 +339,6 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         _marketState.shareReserves -= _shareReservesDelta.toUint128();
         _marketState.shareAdjustment -= _shareAdjustmentDelta.toInt128();
         _marketState.bondReserves += _bondReservesDelta.toUint128();
-
-        // The share reserves are decreased in this operation, so we need to
-        // Verify the invariant that z >= z_min is satisfied.
-        if (uint256(_marketState.shareReserves) < _minimumShareReserves) {
-            revert IHyperdrive.InvalidShareReserves();
-        }
 
         // If the effective share reserves are decreasing, then we need to
         // verify that z - zeta >= z_min is satisfied.

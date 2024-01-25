@@ -279,7 +279,12 @@ contract OpenLongTest is HyperdriveTest {
         baseToken.mint(longAmount);
         baseToken.approve(address(hyperdrive), longAmount);
 
-        vm.expectRevert(IHyperdrive.InsufficientLiquidity.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IHyperdrive.InsufficientLiquidity.selector,
+                IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
+            )
+        );
         hyperdrive.openLong(
             longAmount,
             0,

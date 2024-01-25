@@ -258,13 +258,20 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             )
             .toUint128();
 
+        // If the share reserves would underflow when the short is opened, then
+        // we revert with an insufficient liquidity error.
+        uint256 shareReserves_ = _marketState.shareReserves;
+        if (shareReserves_ < _shareReservesDelta) {
+            revert IHyperdrive.InsufficientLiquidity(
+                IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
+            );
+        }
+
         // Apply the trading deltas to the reserves and increase the bond buffer
         // by the amount of bonds that were shorted. We don't need to add the
         // margin or pre-paid interest to the reserves because of the way that
         // the close short accounting works.
-        uint128 shareReserves_ = _marketState.shareReserves -
-            _shareReservesDelta.toUint128();
-        _marketState.shareReserves = shareReserves_;
+        _marketState.shareReserves -= _shareReservesDelta.toUint128();
         _marketState.bondReserves += _bondAmount.toUint128();
         _marketState.shortsOutstanding += _bondAmount.toUint128();
 
