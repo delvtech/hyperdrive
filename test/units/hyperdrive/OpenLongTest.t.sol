@@ -83,7 +83,7 @@ contract OpenLongTest is HyperdriveTest {
         vm.stopPrank();
         pause(true);
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.Paused.selector);
+        vm.expectRevert(IHyperdrive.PoolIsPaused.selector);
         hyperdrive.openLong(
             0,
             0,

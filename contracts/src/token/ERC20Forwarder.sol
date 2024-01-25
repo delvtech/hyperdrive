@@ -223,7 +223,9 @@ contract ERC20Forwarder is IERC20Forwarder {
 
         // Check that the signature is valid
         address signer = ecrecover(structHash, v, r, s);
-        if (signer != owner) revert InvalidSignature();
+        if (signer != owner) {
+            revert InvalidSignature();
+        }
 
         // Increment the signature nonce
         unchecked {

@@ -212,7 +212,7 @@ abstract contract HyperdriveLP is
         //
         // Enforce the minimum LP share price slippage guard.
         if (_contribution.divDown(lpShares) < _minLpSharePrice) {
-            revert IHyperdrive.InvalidLpSharePrice();
+            revert IHyperdrive.OutputLimit();
         }
 
         // Mint LP shares to the supplier.

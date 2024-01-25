@@ -18,7 +18,9 @@ contract HyperdriveRegistry is
     }
 
     modifier onlyGovernance() {
-        if (msg.sender != governance) revert IHyperdrive.Unauthorized();
+        if (msg.sender != governance) {
+            revert IHyperdriveGovernedRegistry.Unauthorized();
+        }
         _;
     }
 

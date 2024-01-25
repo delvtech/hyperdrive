@@ -70,7 +70,9 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
 
     /// @dev Blocks a function execution if the contract is paused.
     modifier isNotPaused() {
-        if (_marketState.isPaused) revert IHyperdrive.Paused();
+        if (_marketState.isPaused) {
+            revert IHyperdrive.PoolIsPaused();
+        }
         _;
     }
 

@@ -80,7 +80,7 @@ contract OpenShortTest is HyperdriveTest {
         vm.stopPrank();
         pause(true);
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.Paused.selector);
+        vm.expectRevert(IHyperdrive.PoolIsPaused.selector);
         hyperdrive.openShort(
             0,
             type(uint256).max,

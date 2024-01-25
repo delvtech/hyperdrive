@@ -47,12 +47,14 @@ abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
         uint256[] calldata values
     ) internal {
         // Checks for inconsistent addresses.
-        if (from == address(0) || to == address(0))
+        if (from == address(0) || to == address(0)) {
             revert IHyperdrive.RestrictedZeroAddress();
+        }
 
         // Check for inconsistent length.
-        if (ids.length != values.length)
+        if (ids.length != values.length) {
             revert IHyperdrive.BatchInputLengthMismatch();
+        }
 
         // Call internal transfer for each asset.
         for (uint256 i = 0; i < ids.length; ) {
@@ -214,7 +216,9 @@ abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
             )
         );
         address signer = ecrecover(structHash, v, r, s);
-        if (signer != owner) revert IHyperdrive.InvalidSignature();
+        if (signer != owner) {
+            revert IHyperdrive.InvalidSignature();
+        }
 
         // Increment the signature nonce.
         ++_nonces[owner];
