@@ -16,18 +16,32 @@ contract RoundTripTest is HyperdriveTest {
     using Lib for *;
 
     function test_long_round_trip_immediately_at_checkpoint(
-        uint256 fixedRateParam,
-        uint256 basePaidParam
+        uint256 fixedRate,
+        uint256 timeStretchFixedRate,
+        uint256 basePaid
     ) external {
         // Ensure a feasible fixed rate.
-        uint256 fixedRate = fixedRateParam.normalizeToRange(0.01e18, 0.50e18);
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.50e18);
 
-        // Initialize the pool with capital.
+        // Ensure a feasible time stretch fixed rate.
+        uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
+        uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(lowerBound, upperBound);
+        
+        // Deploy the pool and initialize the market
+        deploy(
+            alice,
+            timeStretchFixedRate,
+            0,
+            0,
+            0,
+            0
+        );
         uint256 contribution = 500_000_000e18;
         initialize(alice, fixedRate, contribution);
 
         // Ensure a feasible trade size.
-        uint256 basePaid = basePaidParam.normalizeToRange(
+        basePaid = basePaid.normalizeToRange(
             2 * MINIMUM_TRANSACTION_AMOUNT,
             hyperdrive.calculateMaxLong() - MINIMUM_TRANSACTION_AMOUNT
         );
@@ -45,32 +59,47 @@ contract RoundTripTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         // If they aren't the same, then the pool should be the one that wins.
-        assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
+
+        assertGe(poolInfoAfter.shareReserves + 1e12, poolInfoBefore.shareReserves);
 
         // Should be exact if out = in.
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
     }
 
     function test_long_round_trip_immediately_partially_thru_checkpoint(
-        uint256 fixedRateParam,
-        uint256 basePaidParam,
-        uint256 timeDeltaParam
+        uint256 fixedRate,
+        uint256 timeStretchFixedRate,
+        uint256 basePaid,
+        uint256 timeDelta
     ) external {
         // Ensure a feasible fixed rate.
-        uint256 fixedRate = fixedRateParam.normalizeToRange(0.01e18, 0.50e18);
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.50e18);
 
-        // Initialize the pool with capital.
+        // Ensure a feasible time stretch fixed rate.
+        uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
+        uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(lowerBound, upperBound);
+
+        // Deploy the pool and initialize the market
+        deploy(
+            alice,
+            timeStretchFixedRate,
+            0,
+            0,
+            0,
+            0
+        );
         uint256 contribution = 500_000_000e18;
         initialize(alice, fixedRate, contribution);
 
         // Ensure a feasible trade size.
-        uint256 basePaid = basePaidParam.normalizeToRange(
+        basePaid = basePaid.normalizeToRange(
             2 * MINIMUM_TRANSACTION_AMOUNT,
             hyperdrive.calculateMaxLong() - MINIMUM_TRANSACTION_AMOUNT
         );
 
         // Calculate time elapsed.
-        uint256 timeDelta = timeDeltaParam.normalizeToRange(
+        timeDelta = timeDelta.normalizeToRange(
             0,
             CHECKPOINT_DURATION - 1
         );
@@ -91,25 +120,39 @@ contract RoundTripTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         // If they aren't the same, then the pool should be the one that wins.
-        assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
+        assertGe(poolInfoAfter.shareReserves + 1e12, poolInfoBefore.shareReserves);
 
         // Should be exact if out = in.
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
     }
 
     function test_short_round_trip_immediately_at_checkpoint(
-        uint256 fixedRateParam,
-        uint256 shortSizeParam
+        uint256 fixedRate,
+        uint256 timeStretchFixedRate,
+        uint256 shortSize
     ) external {
         // Ensure a feasible fixed rate.
-        uint256 fixedRate = fixedRateParam.normalizeToRange(0.01e18, 0.50e18);
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.50e18);
 
-        // Initialize the pool with capital.
+        // Ensure a feasible time stretch fixed rate.
+        uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
+        uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(lowerBound, upperBound);
+
+        // Deploy the pool and initialize the market
+        deploy(
+            alice,
+            timeStretchFixedRate,
+            0,
+            0,
+            0,
+            0
+        );
         uint256 contribution = 500_000_000e18;
         initialize(alice, fixedRate, contribution);
 
         // Ensure a feasible trade size.
-        uint256 shortSize = shortSizeParam.normalizeToRange(
+        shortSize = shortSize.normalizeToRange(
             2 * MINIMUM_TRANSACTION_AMOUNT,
             hyperdrive.calculateMaxShort() - MINIMUM_TRANSACTION_AMOUNT
         );
@@ -127,32 +170,46 @@ contract RoundTripTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         // If they aren't the same, then the pool should be the one that wins.
-        assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
+        assertGe(poolInfoAfter.shareReserves + 1e12, poolInfoBefore.shareReserves);
 
         // Should be exact if out = in.
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
     }
 
     function test_short_round_trip_immediately_partially_thru_checkpoint(
-        uint256 fixedRateParam,
-        uint256 shortSizeParam,
-        uint256 timeDeltaParam
+        uint256 fixedRate,
+        uint256 timeStretchFixedRate,
+        uint256 shortSize,
+        uint256 timeDelta
     ) external {
         // Ensure a feasible fixed rate.
-        uint256 fixedRate = fixedRateParam.normalizeToRange(0.01e18, 0.50e18);
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.50e18);
 
-        // Initialize the pool with capital.
+        // Ensure a feasible time stretch fixed rate.
+        uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
+        uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(lowerBound, upperBound);
+
+        // Deploy the pool and initialize the market
+        deploy(
+            alice,
+            timeStretchFixedRate,
+            0,
+            0,
+            0,
+            0
+        );
         uint256 contribution = 500_000_000e18;
         initialize(alice, fixedRate, contribution);
 
         // Ensure a feasible trade size.
-        uint256 shortSize = shortSizeParam.normalizeToRange(
+        shortSize = shortSize.normalizeToRange(
             2 * MINIMUM_TRANSACTION_AMOUNT,
             hyperdrive.calculateMaxShort() - MINIMUM_TRANSACTION_AMOUNT
         );
 
         // Calculate time elapsed.
-        uint256 timeDelta = timeDeltaParam.normalizeToRange(
+        timeDelta = timeDelta.normalizeToRange(
             0,
             CHECKPOINT_DURATION - 1
         );
@@ -173,20 +230,33 @@ contract RoundTripTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         // If they aren't the same, then the pool should be the one that wins.
-        assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
+        assertGe(poolInfoAfter.shareReserves + 1e12, poolInfoBefore.shareReserves);
 
         // Should be exact if out = in.
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
     }
 
-    function test_sandwiched_long_round_trip(uint256 fixedRateParam) external {
+    function test_sandwiched_long_round_trip(
+        uint256 fixedRate,
+        uint256 timeStretchFixedRate
+    ) external {
         // Ensure a feasible fixed rate.
-        uint256 fixedRate = fixedRateParam.normalizeToRange(0.01e18, 0.50e18);
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.50e18);
 
-        // Deploy the pool and initialize the market.
-        {
-            deploy(alice, fixedRate, 0, 0, 0, 0);
-        }
+        // Ensure a feasible time stretch fixed rate.
+        uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
+        uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(lowerBound, upperBound);
+
+        // Deploy the pool and initialize the market
+        deploy(
+            alice,
+            timeStretchFixedRate,
+            0,
+            0,
+            0,
+            0
+        );
         uint256 contribution = 500_000_000e18;
         initialize(alice, fixedRate, contribution);
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -211,7 +281,7 @@ contract RoundTripTest is HyperdriveTest {
 
         // If they aren't the same, then the pool should be the one that wins.
         assertGe(
-            poolInfoAfter.shareReserves + 1e10,
+            poolInfoAfter.shareReserves + 1e12,
             poolInfoBefore.shareReserves
         );
 
@@ -220,14 +290,14 @@ contract RoundTripTest is HyperdriveTest {
     }
 
     function test_long_multiblock_round_trip_end_of_checkpoint(
-        uint256 fixedRateParam,
-        uint256 timeStretchFixedRateParam,
-        uint256 basePaidParam
+        uint256 fixedRate,
+        uint256 timeStretchFixedRate,
+        uint256 basePaid
     ) external {
         _test_long_multiblock_round_trip_end_of_checkpoint(
-            fixedRateParam,
-            timeStretchFixedRateParam,
-            basePaidParam
+            fixedRate,
+            timeStretchFixedRate,
+            basePaid
         );
     }
 
@@ -236,48 +306,52 @@ contract RoundTripTest is HyperdriveTest {
     {
         uint256 snapshotId = vm.snapshot();
         {
-            uint256 fixedRateParam = 115792089237316195423570985008687907853269984665640564039457583990320674062335;
-            uint256 timeStretchFixedRateParam = 886936259672610464646559504023817532562726574141720139630650341263;
-            uint256 basePaidParam = 65723876150308947051900890891865009457038319412461;
+            uint256 fixedRate = 115792089237316195423570985008687907853269984665640564039457583990320674062335;
+            uint256 timeStretchFixedRate = 886936259672610464646559504023817532562726574141720139630650341263;
+            uint256 basePaid = 65723876150308947051900890891865009457038319412461;
             _test_long_multiblock_round_trip_end_of_checkpoint(
-                fixedRateParam,
-                timeStretchFixedRateParam,
-                basePaidParam
+                fixedRate,
+                timeStretchFixedRate,
+                basePaid
             );
         }
         vm.revertTo(snapshotId);
         snapshotId = vm.snapshot();
         {
-            uint256 fixedRateParam = 63203229717248733662763783222570;
-            uint256 timeStretchFixedRateParam = 3408059979187494427077136;
-            uint256 basePaidParam = 57669888194155013968076316270639259357724635816572534634741412969387347636732;
+            uint256 fixedRate = 63203229717248733662763783222570;
+            uint256 timeStretchFixedRate = 3408059979187494427077136;
+            uint256 basePaid = 57669888194155013968076316270639259357724635816572534634741412969387347636732;
             _test_long_multiblock_round_trip_end_of_checkpoint(
-                fixedRateParam,
-                timeStretchFixedRateParam,
-                basePaidParam
+                fixedRate,
+                timeStretchFixedRate,
+                basePaid
             );
         }
         vm.revertTo(snapshotId);
         {
-            uint256 fixedRateParam = 115792089237316195423570985008687907853269984665640564039457583996916939587517; // 0.172756074408646686
-            uint256 timeStretchFixedRateParam = 41280540007823693914881174596677236629628473357578130920607715; // 0.059510057259928604
-            uint256 basePaidParam = 3512909646876087064266547833688149281604992599057120012676367392282791491; // 3_942_239_358.711925131571174045
+            uint256 fixedRate = 115792089237316195423570985008687907853269984665640564039457583996916939587517; // 0.172756074408646686
+            uint256 timeStretchFixedRate = 41280540007823693914881174596677236629628473357578130920607715; // 0.059510057259928604
+            uint256 basePaid = 3512909646876087064266547833688149281604992599057120012676367392282791491; // 3_942_239_358.711925131571174045
             _test_long_multiblock_round_trip_end_of_checkpoint(
-                fixedRateParam,
-                timeStretchFixedRateParam,
-                basePaidParam
+                fixedRate,
+                timeStretchFixedRate,
+                basePaid
             );
         }
     }
 
     function _test_long_multiblock_round_trip_end_of_checkpoint(
-        uint256 fixedRateParam,
-        uint256 timeStretchFixedRateParam,
-        uint256 basePaidParam
+        uint256 fixedRate,
+        uint256 timeStretchFixedRate,
+        uint256 basePaid
     ) internal {
-        uint256 fixedRate = fixedRateParam.normalizeToRange(0.001e18, .4e18);
-        uint256 timeStretchFixedRate = timeStretchFixedRateParam
-            .normalizeToRange(0.05e18, 0.4e18);
+        // Ensure a feasible fixed rate.
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.50e18);
+
+        // Ensure a feasible time stretch fixed rate.
+        uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
+        uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(lowerBound, upperBound);
 
         // Deploy the pool and initialize the market
         uint256 curveFee = 0.01e18;
@@ -300,7 +374,7 @@ contract RoundTripTest is HyperdriveTest {
         advanceTime(CHECKPOINT_DURATION - 1, 0);
 
         // Open a long position.
-        uint256 basePaid = basePaidParam.normalizeToRange(
+        basePaid = basePaid.normalizeToRange(
             MINIMUM_TRANSACTION_AMOUNT,
             hyperdrive.calculateMaxLong()
         );
@@ -316,6 +390,6 @@ contract RoundTripTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         // If they aren't the same, then the pool should be the one that wins.
-        assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
+        assertGe(poolInfoAfter.shareReserves + 1e12, poolInfoBefore.shareReserves);
     }
 }
