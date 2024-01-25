@@ -90,6 +90,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minTimestretchAPR: 0.01e18,
+                maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees({
                     curve: 0,
                     flat: 0,

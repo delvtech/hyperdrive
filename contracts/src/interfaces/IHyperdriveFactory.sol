@@ -83,6 +83,8 @@ interface IHyperdriveFactory {
 
     error InvalidPositionDuration();
 
+    error InvalidTimestretchAPR();
+
     error TransferFailed();
 
     error Unauthorized();

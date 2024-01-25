@@ -67,6 +67,12 @@ contract HyperdriveFactory is IHyperdriveFactory {
     /// @notice The maximum fee parameters that can be used by new deployments.
     IHyperdrive.Fees internal _maxFees;
 
+    /// @notice The minimum time stretch APR that can be used by new deployments.
+    uint256 public minTimestretchAPR;
+
+    /// @notice The maximum time stretch APR that can be used by new deployments.
+    uint256 public maxTimestretchAPR;
+
     /// @notice The defaultPausers used when new instances are deployed.
     address[] internal _defaultPausers;
 
@@ -93,6 +99,12 @@ contract HyperdriveFactory is IHyperdriveFactory {
         /// @dev The maximum position duration that can be used in new
         ///      deployments.
         uint256 maxPositionDuration;
+        /// @dev The minimum time stretch APR that can be used in new
+        ///      deployments.
+        uint256 minTimestretchAPR;
+        /// @dev The maximum time stretch APR that can be used in new
+        ///      deployments.
+        uint256 maxTimestretchAPR;
         /// @dev The lower bound on the fees that can be used in new deployments.
         IHyperdrive.Fees minFees;
         /// @dev The upper bound on the fees that can be used in new deployments.
@@ -174,6 +186,16 @@ contract HyperdriveFactory is IHyperdriveFactory {
             revert IHyperdriveFactory.InvalidMaxPositionDuration();
         }
         maxPositionDuration = _factoryConfig.maxPositionDuration;
+
+        // Ensure that the minimum time stretch APR is less than or equal to the
+        // maximum time stretch APR.
+        if (
+            _factoryConfig.minTimestretchAPR > _factoryConfig.maxTimestretchAPR
+        ) {
+            revert IHyperdriveFactory.InvalidTimestretchAPR();
+        }
+        minTimestretchAPR = _factoryConfig.minTimestretchAPR;
+        maxTimestretchAPR = _factoryConfig.maxTimestretchAPR;
 
         // Ensure that the max fees are each less than or equal to 100% and set
         // the fees.
