@@ -297,27 +297,6 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         int256 _shareAdjustmentDelta,
         uint256 _maturityTime
     ) internal {
-        {
-            uint128 longsOutstanding_ = _marketState.longsOutstanding;
-
-            // Update the long average maturity time.
-            _marketState.longAverageMaturityTime = uint256(
-                _marketState.longAverageMaturityTime
-            )
-                .updateWeightedAverage(
-                    longsOutstanding_,
-                    _maturityTime * 1e18, // scale up to fixed point scale
-                    _bondAmount,
-                    false
-                )
-                .toUint128();
-
-            // Reduce the amount of outstanding longs.
-            _marketState.longsOutstanding =
-                longsOutstanding_ -
-                _bondAmount.toUint128();
-        }
-
         // The share reserves are decreased in this operation, so we need to
         // verify the invariant that z >= z_min is satisfied.
         uint256 shareReserves = _marketState.shareReserves;
@@ -329,17 +308,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
                 IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
             );
         }
-
-        // Apply the updates from the curve and flat components of the trade to
-        // the reserves. The share proceeds are added to the share reserves
-        // since the LPs are buying bonds for shares.  The bond reserves are
-        // increased by the curve component to decrease the spot price. The
-        // share adjustment is increased by the flat component of the share
-        // reserves update so that we can translate the curve to hold the
-        // pricing invariant under the flat update.
-        _marketState.shareReserves -= _shareReservesDelta.toUint128();
-        _marketState.shareAdjustment -= _shareAdjustmentDelta.toInt128();
-        _marketState.bondReserves += _bondReservesDelta.toUint128();
+        shareReserves -= _shareReservesDelta;
 
         // If the effective share reserves are decreasing, then we need to
         // verify that z - zeta >= z_min is satisfied.
@@ -348,9 +317,15 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         // decreasing is important since `removeLiquidity` can result in an
         // effective share reserves less than the minimum share reserves, and
         // it's important that this doesn't result in failed checkpoints.
+        int256 shareAdjustment = _marketState.shareAdjustment;
+        shareAdjustment -= _shareAdjustmentDelta;
         if (
             int256(_shareReservesDelta) > _shareAdjustmentDelta &&
-            _effectiveShareReserves() < _minimumShareReserves
+            HyperdriveMath.calculateEffectiveShareReserves(
+                shareReserves,
+                shareAdjustment
+            ) <
+            _minimumShareReserves
         ) {
             Errors.throwInsufficientLiquidityError(
                 IHyperdrive
@@ -358,6 +333,34 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
                     .InvalidEffectiveShareReserves
             );
         }
+
+        // Update the long average maturity time.
+        uint256 longsOutstanding = _marketState.longsOutstanding;
+        _marketState.longAverageMaturityTime = uint256(
+            _marketState.longAverageMaturityTime
+        )
+            .updateWeightedAverage(
+                longsOutstanding,
+                _maturityTime * 1e18, // scale up to fixed point scale
+                _bondAmount,
+                false
+            )
+            .toUint128();
+
+        // Reduce the amount of outstanding longs.
+        longsOutstanding -= _bondAmount;
+        _marketState.longsOutstanding = longsOutstanding.toUint128();
+
+        // Apply the updates from the curve and flat components of the trade to
+        // the reserves. The share proceeds are added to the share reserves
+        // since the LPs are buying bonds for shares.  The bond reserves are
+        // increased by the curve component to decrease the spot price. The
+        // share adjustment is increased by the flat component of the share
+        // reserves update so that we can translate the curve to hold the
+        // pricing invariant under the flat update.
+        _marketState.shareReserves = shareReserves.toUint128();
+        _marketState.shareAdjustment = shareAdjustment.toInt128();
+        _marketState.bondReserves += _bondReservesDelta.toUint128();
     }
 
     /// @dev Calculate the pool reserve and trader deltas that result from
