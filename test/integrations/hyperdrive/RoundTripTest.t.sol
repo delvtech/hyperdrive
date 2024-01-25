@@ -26,17 +26,13 @@ contract RoundTripTest is HyperdriveTest {
         // Ensure a feasible time stretch fixed rate.
         uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
         uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
-        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(lowerBound, upperBound);
-        
-        // Deploy the pool and initialize the market
-        deploy(
-            alice,
-            timeStretchFixedRate,
-            0,
-            0,
-            0,
-            0
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(
+            lowerBound,
+            upperBound
         );
+
+        // Deploy the pool and initialize the market
+        deploy(alice, timeStretchFixedRate, 0, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
         initialize(alice, fixedRate, contribution);
 
@@ -60,7 +56,10 @@ contract RoundTripTest is HyperdriveTest {
 
         // If they aren't the same, then the pool should be the one that wins.
 
-        assertGe(poolInfoAfter.shareReserves + 1e12, poolInfoBefore.shareReserves);
+        assertGe(
+            poolInfoAfter.shareReserves + 1e12,
+            poolInfoBefore.shareReserves
+        );
 
         // Should be exact if out = in.
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
@@ -78,17 +77,13 @@ contract RoundTripTest is HyperdriveTest {
         // Ensure a feasible time stretch fixed rate.
         uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
         uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
-        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(lowerBound, upperBound);
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(
+            lowerBound,
+            upperBound
+        );
 
         // Deploy the pool and initialize the market
-        deploy(
-            alice,
-            timeStretchFixedRate,
-            0,
-            0,
-            0,
-            0
-        );
+        deploy(alice, timeStretchFixedRate, 0, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
         initialize(alice, fixedRate, contribution);
 
@@ -99,10 +94,7 @@ contract RoundTripTest is HyperdriveTest {
         );
 
         // Calculate time elapsed.
-        timeDelta = timeDelta.normalizeToRange(
-            0,
-            CHECKPOINT_DURATION - 1
-        );
+        timeDelta = timeDelta.normalizeToRange(0, CHECKPOINT_DURATION - 1);
 
         // Fast forward time.
         advanceTime(timeDelta, 0);
@@ -120,7 +112,10 @@ contract RoundTripTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         // If they aren't the same, then the pool should be the one that wins.
-        assertGe(poolInfoAfter.shareReserves + 1e12, poolInfoBefore.shareReserves);
+        assertGe(
+            poolInfoAfter.shareReserves + 1e12,
+            poolInfoBefore.shareReserves
+        );
 
         // Should be exact if out = in.
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
@@ -137,17 +132,13 @@ contract RoundTripTest is HyperdriveTest {
         // Ensure a feasible time stretch fixed rate.
         uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
         uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
-        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(lowerBound, upperBound);
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(
+            lowerBound,
+            upperBound
+        );
 
         // Deploy the pool and initialize the market
-        deploy(
-            alice,
-            timeStretchFixedRate,
-            0,
-            0,
-            0,
-            0
-        );
+        deploy(alice, timeStretchFixedRate, 0, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
         initialize(alice, fixedRate, contribution);
 
@@ -170,7 +161,10 @@ contract RoundTripTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         // If they aren't the same, then the pool should be the one that wins.
-        assertGe(poolInfoAfter.shareReserves + 1e12, poolInfoBefore.shareReserves);
+        assertGe(
+            poolInfoAfter.shareReserves + 1e12,
+            poolInfoBefore.shareReserves
+        );
 
         // Should be exact if out = in.
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
@@ -188,17 +182,13 @@ contract RoundTripTest is HyperdriveTest {
         // Ensure a feasible time stretch fixed rate.
         uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
         uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
-        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(lowerBound, upperBound);
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(
+            lowerBound,
+            upperBound
+        );
 
         // Deploy the pool and initialize the market
-        deploy(
-            alice,
-            timeStretchFixedRate,
-            0,
-            0,
-            0,
-            0
-        );
+        deploy(alice, timeStretchFixedRate, 0, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
         initialize(alice, fixedRate, contribution);
 
@@ -209,10 +199,7 @@ contract RoundTripTest is HyperdriveTest {
         );
 
         // Calculate time elapsed.
-        timeDelta = timeDelta.normalizeToRange(
-            0,
-            CHECKPOINT_DURATION - 1
-        );
+        timeDelta = timeDelta.normalizeToRange(0, CHECKPOINT_DURATION - 1);
 
         // Fast forward time to halfway through checkpoint.
         advanceTime(timeDelta, 0);
@@ -230,7 +217,10 @@ contract RoundTripTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         // If they aren't the same, then the pool should be the one that wins.
-        assertGe(poolInfoAfter.shareReserves + 1e12, poolInfoBefore.shareReserves);
+        assertGe(
+            poolInfoAfter.shareReserves + 1e12,
+            poolInfoBefore.shareReserves
+        );
 
         // Should be exact if out = in.
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
@@ -246,17 +236,13 @@ contract RoundTripTest is HyperdriveTest {
         // Ensure a feasible time stretch fixed rate.
         uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
         uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
-        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(lowerBound, upperBound);
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(
+            lowerBound,
+            upperBound
+        );
 
         // Deploy the pool and initialize the market
-        deploy(
-            alice,
-            timeStretchFixedRate,
-            0,
-            0,
-            0,
-            0
-        );
+        deploy(alice, timeStretchFixedRate, 0, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
         initialize(alice, fixedRate, contribution);
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -351,7 +337,10 @@ contract RoundTripTest is HyperdriveTest {
         // Ensure a feasible time stretch fixed rate.
         uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
         uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
-        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(lowerBound, upperBound);
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(
+            lowerBound,
+            upperBound
+        );
 
         // Deploy the pool and initialize the market
         uint256 curveFee = 0.01e18;
@@ -390,6 +379,9 @@ contract RoundTripTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         // If they aren't the same, then the pool should be the one that wins.
-        assertGe(poolInfoAfter.shareReserves + 1e12, poolInfoBefore.shareReserves);
+        assertGe(
+            poolInfoAfter.shareReserves + 1e12,
+            poolInfoBefore.shareReserves
+        );
     }
 }
