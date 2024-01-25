@@ -27,50 +27,32 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
     event DefaultPausersUpdated(address[] newDefaultPausers);
 
-    event FeeCollectorUpdated(address newFeeCollector);
+    event FeeCollectorUpdated(address indexed newFeeCollector);
 
-    /// @notice Emitted when governance is transferred.
-    event GovernanceUpdated(address governance);
+    event DeployerCoordinatorAdded(address indexed deployerCoordinator);
 
-    /// @notice Emitted when a new Hyperdrive deployer is added.
-    event DeployerCoordinatorAdded(address deployerCoordinator);
+    event DeployerCoordinatorRemoved(address indexed deployerCoordinator);
 
-    /// @notice Emitted when a Hyperdrive deployer is remove.
-    event DeployerCoordinatorRemoved(address deployerCoordinator);
+    event HyperdriveGovernanceUpdated(address indexed hyperdriveGovernance);
 
-    /// @notice Emitted when the Hyperdrive governance address is updated.
-    event HyperdriveGovernanceUpdated(address hyperdriveGovernance);
+    event LinkerFactoryUpdated(address indexed newLinkerFactory);
 
-    /// @notice Emitted when the Hyperdrive implementation is updated.
-    event ImplementationUpdated(address newDeployer);
+    event LinkerCodeHashUpdated(bytes32 indexed newLinkerCodeHash);
 
-    /// @notice Emitted when the linker factory is updated.
-    event LinkerFactoryUpdated(address newLinkerFactory);
-
-    /// @notice Emitted when the linker code hash is updated.
-    event LinkerCodeHashUpdated(bytes32 newLinkerCodeHash);
-
-    /// @notice Emitted when the checkpoint duration resolution is updated.
     event CheckpointDurationResolutionUpdated(
         uint256 newCheckpointDurationResolution
     );
 
-    /// @notice Emitted when the maximum checkpoint duration is updated.
     event MaxCheckpointDurationUpdated(uint256 newMaxCheckpointDuration);
 
-    /// @notice Emitted when the minimum checkpoint duration is updated.
     event MinCheckpointDurationUpdated(uint256 newMinCheckpointDuration);
 
-    /// @notice Emitted when the maximum position duration is updated.
     event MaxPositionDurationUpdated(uint256 newMaxPositionDuration);
 
-    /// @notice Emitted when the minimum position duration is updated.
     event MinPositionDurationUpdated(uint256 newMinPositionDuration);
 
-    /// @notice Emitted when the max fees are updated.
     event MaxFeesUpdated(IHyperdrive.Fees newMaxFees);
 
-    /// @notice Emitted when the min fees are updated.
     event MinFeesUpdated(IHyperdrive.Fees newMinFees);
 
     function setUp() public override {

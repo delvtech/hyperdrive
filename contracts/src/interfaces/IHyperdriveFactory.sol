@@ -13,23 +13,23 @@ interface IHyperdriveFactory {
         bytes extraData
     );
 
-    event DeployerCoordinatorAdded(address deployerCoordinator);
+    event DeployerCoordinatorAdded(address indexed deployerCoordinator);
 
-    event DeployerCoordinatorRemoved(address deployerCoordinator);
+    event DeployerCoordinatorRemoved(address indexed deployerCoordinator);
 
     event DefaultPausersUpdated(address[] newDefaultPausers);
 
-    event FeeCollectorUpdated(address newFeeCollector);
+    event FeeCollectorUpdated(address indexed newFeeCollector);
 
-    event GovernanceUpdated(address governance);
+    event GovernanceUpdated(address indexed governance);
 
-    event HyperdriveGovernanceUpdated(address hyperdriveGovernance);
+    event HyperdriveGovernanceUpdated(address indexed hyperdriveGovernance);
 
-    event ImplementationUpdated(address newDeployer);
+    event ImplementationUpdated(address indexed newDeployer);
 
-    event LinkerFactoryUpdated(address newLinkerFactory);
+    event LinkerFactoryUpdated(address indexed newLinkerFactory);
 
-    event LinkerCodeHashUpdated(bytes32 newLinkerCodeHash);
+    event LinkerCodeHashUpdated(bytes32 indexed newLinkerCodeHash);
 
     event CheckpointDurationResolutionUpdated(
         uint256 newCheckpointDurationResolution
