@@ -382,8 +382,8 @@ contract DevnetMigration is Script {
                         .calculateTimeStretch(
                             config.erc4626HyperdrivePositionDuration
                         ),
-                    governance: config.admin,
-                    feeCollector: config.admin,
+                    governance: address(0),
+                    feeCollector: address(0),
                     fees: IHyperdrive.Fees({
                         curve: config.erc4626HyperdriveCurveFee,
                         flat: config.erc4626HyperdriveFlatFee,
@@ -438,8 +438,8 @@ contract DevnetMigration is Script {
                         .calculateTimeStretch(
                             config.stethHyperdrivePositionDuration
                         ),
-                    governance: config.admin,
-                    feeCollector: config.admin,
+                    governance: address(0),
+                    feeCollector: address(0),
                     fees: IHyperdrive.Fees({
                         curve: config.stethHyperdriveCurveFee,
                         flat: config.stethHyperdriveFlatFee,
