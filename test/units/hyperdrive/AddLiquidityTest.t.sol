@@ -80,7 +80,7 @@ contract AddLiquidityTest is HyperdriveTest {
         vm.stopPrank();
         pause(true);
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.Paused.selector);
+        vm.expectRevert(IHyperdrive.PoolIsPaused.selector);
         hyperdrive.addLiquidity(
             0,
             0,
@@ -170,7 +170,7 @@ contract AddLiquidityTest is HyperdriveTest {
         uint256 lpSharePrice = hyperdrive.getPoolInfo().lpSharePrice;
         baseToken.mint(10e18);
         baseToken.approve(address(hyperdrive), 10e18);
-        vm.expectRevert(IHyperdrive.InvalidLpSharePrice.selector);
+        vm.expectRevert(IHyperdrive.OutputLimit.selector);
         hyperdrive.addLiquidity(
             10e18,
             2 * lpSharePrice,

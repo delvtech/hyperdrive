@@ -1294,6 +1294,19 @@ contract LPWithdrawalTest is HyperdriveTest {
             uint256 shortAmount = 87342192650471344091577440890542836777098066063815963805951289712;
             _test_lp_withdrawal_three_lps(longBasePaid, shortAmount);
         }
+        // This edge case caused `addLiquidity` to underflow because the ending
+        // present value is less than the starting present value. Upon closer
+        // inspection, the short amount is 1.1 billion bonds and is 90 bonds
+        // away from the max short. Not only would the LP not want to add
+        // liquidity at this point, but traders would immediately start opening
+        // profitable longs to rebalance the pool.
+        vm.revertTo(snapshotId);
+        snapshotId = vm.snapshot();
+        {
+            uint256 longBasePaid = 4674632025073503415410714;
+            uint256 shortAmount = 26193669303865160140313984349110751923066458523699888939112349;
+            _test_lp_withdrawal_three_lps(longBasePaid, shortAmount);
+        }
     }
 
     // This test ensures that three LPs (Alice, Bob, and Celine) will receive a
@@ -1366,7 +1379,49 @@ contract LPWithdrawalTest is HyperdriveTest {
 
         // Celine adds liquidity.
         lpSharePrice = hyperdrive.lpSharePrice();
-        uint256 celineLpShares = addLiquidity(celine, testParams.contribution);
+        vm.stopPrank();
+        vm.startPrank(celine);
+        baseToken.mint(testParams.contribution);
+        baseToken.approve(address(hyperdrive), testParams.contribution);
+        uint256 celineLpShares;
+        try
+            hyperdrive.addLiquidity(
+                testParams.contribution,
+                0, // min lp share price of 0
+                0, // min spot rate of 0
+                type(uint256).max, // max spot rate of uint256 max
+                IHyperdrive.Options({
+                    destination: celine,
+                    asBase: true,
+                    extraData: new bytes(0) // unused
+                })
+            )
+        returns (uint256 lpShares_) {
+            celineLpShares = lpShares_;
+        } catch (bytes memory reason) {
+            // Ensure that the failure was caused by an arithmetic error.
+            assertEq(keccak256(reason), keccak256(stdError.arithmeticError));
+
+            // In the event that the LP couldn't add liquidity, we should be
+            // able to open a moderately sized long to rebalance the pool and
+            // then add liquidity. In practice, the LP wouldn't even want to
+            // add liquidity, and traders would immediately start opening
+            // profitable longs to rebalance the pool.
+            openLong(bob, 50_000e18);
+            vm.stopPrank();
+            vm.startPrank(celine);
+            celineLpShares = hyperdrive.addLiquidity(
+                testParams.contribution,
+                0, // min lp share price of 0
+                0, // min spot rate of 0
+                type(uint256).max, // max spot rate of uint256 max
+                IHyperdrive.Options({
+                    destination: celine,
+                    asBase: true,
+                    extraData: new bytes(0) // unused
+                })
+            );
+        }
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),

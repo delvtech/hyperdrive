@@ -185,7 +185,7 @@ contract FixedPointMathTest is Test {
     function test_fail_exp_negative_or_zero_input() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-        vm.expectRevert(IHyperdrive.FixedPointMath_InvalidExponent.selector);
+        vm.expectRevert(IHyperdrive.ExpInvalidExponent.selector);
         mockFixedPointMath.exp(135305999368893231589);
     }
 
@@ -199,9 +199,7 @@ contract FixedPointMathTest is Test {
     function test_fail_ln_negative_or_zero_input() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-        vm.expectRevert(
-            IHyperdrive.FixedPointMath_NegativeOrZeroInput.selector
-        );
+        vm.expectRevert(IHyperdrive.LnInvalidInput.selector);
         mockFixedPointMath.ln(0);
     }
 

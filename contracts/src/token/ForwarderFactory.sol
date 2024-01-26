@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IERC20Forwarder } from "../interfaces/IERC20Forwarder.sol";
 import { IForwarderFactory } from "../interfaces/IForwarderFactory.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IMultiToken } from "../interfaces/IMultiToken.sol";
 import { ERC20Forwarder } from "./ERC20Forwarder.sol";
 
+// FIXME: Rename this to ERC20ForwarderFactory for clarity.
+//
 /// @author DELV
 /// @title ForwarderFactory
 /// @notice Our MultiToken contract consists of fungible sub-tokens that
@@ -27,6 +30,8 @@ contract ForwarderFactory is IForwarderFactory {
     bytes32 public constant ERC20LINK_HASH =
         keccak256(type(ERC20Forwarder).creationCode);
 
+    // FIXME: This should emit an event to make discoverability easier.
+    //
     /// @notice Uses create2 to deploy a forwarder at a predictable address as
     ///         part of our ERC20 multitoken implementation.
     /// @param __token The multitoken which the forwarder should link to.
@@ -36,7 +41,7 @@ contract ForwarderFactory is IForwarderFactory {
     function create(
         IMultiToken __token,
         uint256 __tokenId
-    ) external returns (ERC20Forwarder) {
+    ) external returns (IERC20Forwarder) {
         // Set the transient state variables before deploy.
         _tokenId = __tokenId;
         _token = __token;
@@ -49,7 +54,7 @@ contract ForwarderFactory is IForwarderFactory {
 
         // As a consistency check we check that this is in the right address.
         if (!(address(deployed) == getForwarder(__token, __tokenId))) {
-            revert IHyperdrive.InvalidForwarderAddress();
+            revert IForwarderFactory.InvalidForwarderAddress();
         }
 
         // Reset the transient state.
