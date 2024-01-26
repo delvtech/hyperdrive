@@ -25,7 +25,7 @@ library HyperdriveMath {
     ///      wider the range of feasible APRs.
     /// @param _apr The target APR to use when calculating the time stretch.
     /// @param _positionDuration The position duration in seconds.
-    /// @param The time stretch parameter.
+    /// @return The time stretch parameter.
     function calculateTimeStretch(
         uint256 _apr,
         uint256 _positionDuration
