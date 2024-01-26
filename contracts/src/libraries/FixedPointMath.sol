@@ -295,6 +295,11 @@ library FixedPointMath {
         uint256 _deltaWeight,
         bool _isAdding
     ) internal pure returns (uint256 average) {
+        // If the delta weight is zero, the average does not change.
+        if (_deltaWeight == 0) {
+            return _average;
+        }
+
         // If the delta weight should be added to the total weight, we compute
         // the weighted average as:
         //

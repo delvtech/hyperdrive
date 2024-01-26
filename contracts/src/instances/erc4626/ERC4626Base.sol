@@ -58,7 +58,10 @@ abstract contract ERC4626Base is HyperdriveBase {
             );
 
             // Deposit the base into the yield source.
-            ERC20(address(_baseToken)).forceApprove(address(_vault), _amount);
+            ERC20(address(_baseToken)).forceApprove(
+                address(_vault),
+                _amount + 1
+            );
             sharesMinted = _vault.deposit(_amount, address(this));
         } else {
             // WARN: This logic doesn't account for slippage in the conversion

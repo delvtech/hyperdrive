@@ -209,6 +209,10 @@ contract FixedPointMathTest is Test {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
         assertEq(
+            mockFixedPointMath.updateWeightedAverage(2e18, 1e18, 3e18, 0, true),
+            2e18
+        );
+        assertEq(
             mockFixedPointMath.updateWeightedAverage(
                 1e18,
                 1e18,
