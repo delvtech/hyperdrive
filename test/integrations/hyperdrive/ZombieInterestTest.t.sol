@@ -626,14 +626,14 @@ contract ZombieInterestTest is HyperdriveTest {
         assertApproxEqAbs(shareReserves1, shareReserves2, 5 wei);
     }
 
-    function test_zombie_derp_long_short(uint256 zombieTime) external {
-        _test_zombie_derp_long_short(zombieTime);
+    function test_zombie_long_short(uint256 zombieTime) external {
+        _test_zombie_long_short(zombieTime);
     }
 
-    function test_zombie_derp_long_short_fail() external {
+    function test_zombie_long_short_fail() external {
         {
             uint256 zombieTime = 13760682222010956785399785229688766246692699;
-            _test_zombie_derp_long_short(zombieTime);
+            _test_zombie_long_short(zombieTime);
         }
     }
 
@@ -645,7 +645,7 @@ contract ZombieInterestTest is HyperdriveTest {
 
         // Alice adds liquidity.
         uint256 initialLiquidity = 500_000_000e18;
-        uint256 aliceLpShares = addLiquidity(alice, initialLiquidity);
+        addLiquidity(alice, initialLiquidity);
 
         // Limit the fuzz testing to variableRate's less than or equal to 200%.
         int256 variableRate = 0.05e18;
@@ -664,10 +664,7 @@ contract ZombieInterestTest is HyperdriveTest {
         hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
 
         // Celine opens a long.
-        (uint256 maturityTime, uint256 bondsReceived) = openLong(
-            celine,
-            longTradeSize
-        );
+        openLong(celine, longTradeSize);
         advanceTimeWithCheckpoints2(CHECKPOINT_DURATION * 5, variableRate);
 
         // Ensure a feasible trade size.
@@ -687,6 +684,7 @@ contract ZombieInterestTest is HyperdriveTest {
 
         // Ensure that whatever is left in the zombie share reserves is <= hyperdrive contract - baseReserves.
         // This is an important check bc it implies ongoing solvency.
+        uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
         {
             uint256 baseReserves = hyperdrive
                 .getPoolInfo()
