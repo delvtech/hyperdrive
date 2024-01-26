@@ -19,7 +19,7 @@ import { ERC4626Base } from "./ERC4626Base.sol";
 ///                    particular legal or regulatory significance.
 contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
     using FixedPointMath for uint256;
-    using SafeTransferLib for ERC20;
+    using SafeERC20 for ERC20;
 
     /// @notice Instantiates Hyperdrive with a ERC4626 vault as the yield source.
     /// @param _config The configuration of the Hyperdrive pool.
@@ -59,7 +59,7 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
 
         // Approve the base token with 1 wei. This ensures that all of the
         // subsequent approvals will be writing to a dirty storage slot.
-        ERC20(address(_config.baseToken)).safeApprove(address(_vault), 1);
+        ERC20(address(_config.baseToken)).forceApprove(address(_vault), 1);
     }
 
     /// @notice Some yield sources [eg Morpho] pay rewards directly to this

@@ -30,7 +30,7 @@ contract ReentrancyTester {
 
     function _testReentrancy() internal {
         (bool success, bytes memory data) = _target.call(_data);
-        if (!success && data.eq("REENTRANCY".toError())) {
+        if (!success && data.eq("ReentrancyGuard: reentrant call".toError())) {
             isSuccess = true;
         }
     }

@@ -654,7 +654,7 @@ contract HyperdriveFactory {
                 address(this),
                 _contribution
             );
-            ERC20(address(_deployConfig.baseToken)).safeApprove(
+            ERC20(address(_deployConfig.baseToken)).forceApprove(
                 address(hyperdrive),
                 _contribution
             );
