@@ -288,13 +288,47 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
             });
         dai.approve(address(factory), type(uint256).max);
-        hyperdrive = factory.deployAndInitialize(
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
-            abi.encode(address(pool), new address[](0)),
+            abi.encode(address(pool)),
+            0,
+            bytes32(uint256(0xdeadbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            abi.encode(address(pool)),
+            1,
+            bytes32(uint256(0xdeadbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            abi.encode(address(pool)),
+            2,
+            bytes32(uint256(0xdeadbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            abi.encode(address(pool)),
+            3,
+            bytes32(uint256(0xdeadbabe))
+        );
+        hyperdrive = factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            abi.encode(address(pool)),
             contribution,
             apr,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
 
         // The initial price per share is one so the LP shares will initially
@@ -314,7 +348,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             contribution,
             apr,
             config.minimumShareReserves,
-            abi.encode(address(pool), new address[](0)),
+            abi.encode(address(pool)),
             0
         );
     }
@@ -342,13 +376,47 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
             });
         dai.approve(address(factory), type(uint256).max);
-        hyperdrive = factory.deployAndInitialize(
+        factory.deployTarget(
+            bytes32(uint256(0xdead)),
             deployerCoordinator,
             config,
-            abi.encode(address(pool), new address[](0)),
+            abi.encode(address(pool)),
+            0,
+            bytes32(uint256(0xbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdead)),
+            deployerCoordinator,
+            config,
+            abi.encode(address(pool)),
+            1,
+            bytes32(uint256(0xbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdead)),
+            deployerCoordinator,
+            config,
+            abi.encode(address(pool)),
+            2,
+            bytes32(uint256(0xbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdead)),
+            deployerCoordinator,
+            config,
+            abi.encode(address(pool)),
+            3,
+            bytes32(uint256(0xbabe))
+        );
+        hyperdrive = factory.deployAndInitialize(
+            bytes32(uint256(0xdead)),
+            deployerCoordinator,
+            config,
+            abi.encode(address(pool)),
             contribution,
             apr,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xbabe))
         );
 
         // Ensure the share price is 1 after initialization.

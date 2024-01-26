@@ -18,6 +18,10 @@ interface IHyperdriveDeployerCoordinator {
     ///         without first deploying the required targets.
     error IncompleteDeployment();
 
+    /// @notice Thrown when a user attempts to deploy a hyperdrive contract
+    ///         after it has already been deployed.
+    error HyperdriveAlreadyDeployed();
+
     /// @notice Thrown when the checkpoint duration specified is zero.
     error InvalidCheckpointDuration();
 

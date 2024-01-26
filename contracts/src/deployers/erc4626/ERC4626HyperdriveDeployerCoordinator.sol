@@ -40,7 +40,11 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     function _checkPoolConfig(
         IHyperdrive.PoolDeployConfig memory _deployConfig
     ) internal pure override {
+        // Perform the default checks.
+        super._checkPoolConfig(_deployConfig);
+
         // FIXME: Add a check for the minimum share reserves.
+
         // FIXME: Add a check for the minimum transaction amount.
     }
 

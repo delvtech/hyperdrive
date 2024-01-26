@@ -1228,7 +1228,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         );
         factory.addDeployerCoordinator(deployerCoordinator);
 
-        // Define a config that can be reused for each test.
+        // Define a config that can be reused for each test and deploy the
+        // targets with this config.
         IHyperdrive.PoolDeployConfig memory config = IHyperdrive
             .PoolDeployConfig({
                 baseToken: IERC20(address(base)),
@@ -1246,20 +1247,56 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
             });
+        vm.stopPrank();
+        vm.startPrank(bob);
+        bytes memory extraData = abi.encode(vault);
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            extraData,
+            0,
+            bytes32(uint256(0xdeadbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            extraData,
+            1,
+            bytes32(uint256(0xdeadbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            extraData,
+            2,
+            bytes32(uint256(0xdeadbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            extraData,
+            3,
+            bytes32(uint256(0xdeadbabe))
+        );
 
         // Ensure that an instance can't be deployed with a coordinator that
         // hasn't been added.
         vm.stopPrank();
         vm.startPrank(bob);
-        bytes memory extraData = abi.encode(vault);
         vm.expectRevert(IHyperdriveFactory.InvalidDeployerCoordinator.selector);
         factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
             address(0xdeadbeef),
             config,
             extraData,
             10_000e18,
             0.02e18,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
 
         // Ensure than an instance can't be deployed with a checkpoint duration
@@ -1272,12 +1309,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.checkpointDurationResolution();
         vm.expectRevert(IHyperdriveFactory.InvalidCheckpointDuration.selector);
         factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
             extraData,
             10_000e18,
             0.02e18,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
         config.checkpointDuration = oldCheckpointDuration;
 
@@ -1291,12 +1330,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.checkpointDurationResolution();
         vm.expectRevert(IHyperdriveFactory.InvalidCheckpointDuration.selector);
         factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
             extraData,
             10_000e18,
             0.02e18,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
         config.checkpointDuration = oldCheckpointDuration;
 
@@ -1308,12 +1349,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         config.checkpointDuration = factory.minCheckpointDuration() + 1;
         vm.expectRevert(IHyperdriveFactory.InvalidCheckpointDuration.selector);
         factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
             extraData,
             10_000e18,
             0.02e18,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
         config.checkpointDuration = oldCheckpointDuration;
 
@@ -1327,12 +1370,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.checkpointDurationResolution();
         vm.expectRevert(IHyperdriveFactory.InvalidPositionDuration.selector);
         factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
             extraData,
             10_000e18,
             0.02e18,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
         config.positionDuration = oldPositionDuration;
 
@@ -1346,12 +1391,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.checkpointDurationResolution();
         vm.expectRevert(IHyperdriveFactory.InvalidPositionDuration.selector);
         factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
             extraData,
             10_000e18,
             0.02e18,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
         config.positionDuration = oldPositionDuration;
 
@@ -1363,12 +1410,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         config.positionDuration = 365 * config.checkpointDuration + 1;
         vm.expectRevert(IHyperdriveFactory.InvalidPositionDuration.selector);
         factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
             extraData,
             10_000e18,
             0.02e18,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
         config.positionDuration = oldPositionDuration;
 
@@ -1380,12 +1429,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         config.fees.curve = factory.maxFees().curve + 1;
         vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
         factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
             extraData,
             10_000e18,
             0.02e18,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
         config.fees.curve = oldCurveFee;
 
@@ -1397,12 +1448,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         config.fees.curve = factory.minFees().curve - 1;
         vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
         factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
             extraData,
             10_000e18,
             0.02e18,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
         config.fees.curve = oldCurveFee;
 
@@ -1414,12 +1467,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         config.fees.flat = factory.maxFees().flat + 1;
         vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
         factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
             extraData,
             10_000e18,
             0.02e18,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
         config.fees.flat = oldFlatFee;
 
@@ -1431,12 +1486,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         config.fees.flat = factory.minFees().flat - 1;
         vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
         factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
             extraData,
             10_000e18,
             0.02e18,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
         config.fees.flat = oldFlatFee;
 
@@ -1448,12 +1505,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         config.fees.governanceLP = factory.maxFees().governanceLP + 1;
         vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
         factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
             extraData,
             10_000e18,
             0.02e18,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
         config.fees.governanceLP = oldGovernanceLPFee;
 
@@ -1465,12 +1524,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         config.fees.governanceLP = factory.minFees().governanceLP - 1;
         vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
         factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
             extraData,
             10_000e18,
             0.02e18,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
         config.fees.governanceLP = oldGovernanceLPFee;
 
@@ -1482,12 +1543,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         config.fees.governanceZombie = factory.maxFees().governanceZombie + 1;
         vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
         factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
             extraData,
             10_000e18,
             0.02e18,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
         config.fees.governanceZombie = oldGovernanceZombieFee;
 
@@ -1499,12 +1562,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         config.fees.governanceZombie = factory.minFees().governanceZombie - 1;
         vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
         factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
             extraData,
             10_000e18,
             0.02e18,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
         config.fees.governanceZombie = oldGovernanceZombieFee;
 
@@ -1516,12 +1581,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         config.linkerFactory = address(0xdeadbeef);
         vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
         factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
             extraData,
             10_000e18,
             0.02e18,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
         config.linkerFactory = oldLinkerFactory;
 
@@ -1533,12 +1600,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         config.linkerCodeHash = bytes32(uint256(0xdeadbeef));
         vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
         factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
             extraData,
             10_000e18,
             0.02e18,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
         config.linkerCodeHash = oldLinkerCodeHash;
 
@@ -1550,12 +1619,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         config.feeCollector = address(0xdeadbeef);
         vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
         factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
             extraData,
             10_000e18,
             0.02e18,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
         config.feeCollector = oldFeeCollector;
 
@@ -1567,12 +1638,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         config.governance = address(0xdeadbeef);
         vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
         factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
             extraData,
             10_000e18,
             0.02e18,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
         config.governance = oldGovernance;
     }
@@ -1599,6 +1672,9 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
 
     uint256 constant APR = 0.01e18; // 1% apr
     uint256 constant CONTRIBUTION = 2_500e18;
+
+    bytes32 deploymentId;
+    bytes32 salt;
 
     IHyperdrive.PoolDeployConfig config;
 
@@ -1701,6 +1777,10 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             )
         );
 
+        // Initialize the deployment ID and salt.
+        deploymentId = keccak256("deploymentId");
+        salt = keccak256("salt");
+
         // Start recording events.
         vm.recordLogs();
     }
@@ -1715,13 +1795,50 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
 
         dai.approve(address(factory), CONTRIBUTION);
 
-        IHyperdrive hyperdrive = factory.deployAndInitialize(
+        deploymentId = keccak256(abi.encode(deploymentId));
+        salt = keccak256(abi.encode(salt));
+        bytes memory extraData = abi.encode(address(pool));
+        factory.deployTarget(
+            deploymentId,
             deployerCoordinator,
             config,
-            abi.encode(address(pool), new address[](0)), // TODO: Add test with sweeps
+            extraData,
+            0,
+            salt
+        );
+        factory.deployTarget(
+            deploymentId,
+            deployerCoordinator,
+            config,
+            extraData,
+            1,
+            salt
+        );
+        factory.deployTarget(
+            deploymentId,
+            deployerCoordinator,
+            config,
+            extraData,
+            2,
+            salt
+        );
+        factory.deployTarget(
+            deploymentId,
+            deployerCoordinator,
+            config,
+            extraData,
+            3,
+            salt
+        );
+        IHyperdrive hyperdrive = factory.deployAndInitialize(
+            deploymentId,
+            deployerCoordinator,
+            config,
+            extraData,
             CONTRIBUTION,
             APR,
-            new bytes(0)
+            new bytes(0),
+            salt
         );
 
         vm.stopPrank();
@@ -1767,13 +1884,48 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
         assertEq(dai.balanceOf(charlie), CONTRIBUTION);
         assertEq(dai.balanceOf(address(pool1)), 0);
 
-        IHyperdrive hyperdrive1 = factory.deployAndInitialize(
+        bytes memory extraData = abi.encode(address(pool1));
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
-            abi.encode(address(pool1), new address[](0)),
+            extraData,
+            0,
+            bytes32(uint256(0xdeadbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            extraData,
+            1,
+            bytes32(uint256(0xdeadbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            extraData,
+            2,
+            bytes32(uint256(0xdeadbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            extraData,
+            3,
+            bytes32(uint256(0xdeadbabe))
+        );
+        IHyperdrive hyperdrive1 = factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            extraData,
             CONTRIBUTION,
             APR,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
 
         assertEq(dai.balanceOf(charlie), 0);
@@ -1796,7 +1948,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             CONTRIBUTION,
             APR,
             config.minimumShareReserves,
-            abi.encode(address(pool1), new address[](0)),
+            extraData,
             0
         );
 
@@ -1813,13 +1965,48 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
 
         dai.approve(address(factory), CONTRIBUTION);
 
-        IHyperdrive hyperdrive2 = factory.deployAndInitialize(
+        extraData = abi.encode(address(pool2));
+        factory.deployTarget(
+            bytes32(uint256(0xdead)),
             deployerCoordinator1,
             config,
-            abi.encode(address(pool2), new address[](0)),
+            extraData,
+            0,
+            bytes32(uint256(0xbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdead)),
+            deployerCoordinator1,
+            config,
+            extraData,
+            1,
+            bytes32(uint256(0xbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdead)),
+            deployerCoordinator1,
+            config,
+            extraData,
+            2,
+            bytes32(uint256(0xbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdead)),
+            deployerCoordinator1,
+            config,
+            extraData,
+            3,
+            bytes32(uint256(0xbabe))
+        );
+        IHyperdrive hyperdrive2 = factory.deployAndInitialize(
+            bytes32(uint256(0xdead)),
+            deployerCoordinator1,
+            config,
+            extraData,
             CONTRIBUTION,
             APR,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xbabe))
         );
 
         assertEq(dai.balanceOf(charlie), 0);
@@ -1842,7 +2029,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             CONTRIBUTION,
             APR,
             config.minimumShareReserves,
-            abi.encode(address(pool2), new address[](0)),
+            extraData,
             0
         );
 
@@ -1866,13 +2053,48 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
         assertEq(dai.balanceOf(dan), CONTRIBUTION);
         assertEq(dai.balanceOf(address(pool2)), CONTRIBUTION); // From Charlie
 
-        IHyperdrive hyperdrive3 = factory.deployAndInitialize(
+        extraData = abi.encode(address(pool2));
+        factory.deployTarget(
+            bytes32(uint256(0xbeef)),
             deployerCoordinator,
             config,
-            abi.encode(address(pool2), new address[](0)),
+            extraData,
+            0,
+            bytes32(uint256(0xdead))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeef)),
+            deployerCoordinator,
+            config,
+            extraData,
+            1,
+            bytes32(uint256(0xdead))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeef)),
+            deployerCoordinator,
+            config,
+            extraData,
+            2,
+            bytes32(uint256(0xdead))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeef)),
+            deployerCoordinator,
+            config,
+            extraData,
+            3,
+            bytes32(uint256(0xdead))
+        );
+        IHyperdrive hyperdrive3 = factory.deployAndInitialize(
+            bytes32(uint256(0xbeef)),
+            deployerCoordinator,
+            config,
+            extraData,
             CONTRIBUTION,
             APR,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdead))
         );
 
         assertEq(dai.balanceOf(dan), 0);
@@ -1895,7 +2117,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             CONTRIBUTION,
             APR,
             config.minimumShareReserves,
-            abi.encode(address(pool2), new address[](0)),
+            extraData,
             0
         );
 

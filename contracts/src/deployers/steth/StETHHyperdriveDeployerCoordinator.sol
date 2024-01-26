@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { ILido } from "../../interfaces/ILido.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
@@ -49,12 +50,15 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     function _checkPoolConfig(
         IHyperdrive.PoolDeployConfig memory _deployConfig
     ) internal pure override {
+        // Perform the default checks.
+        super._checkPoolConfig(_deployConfig);
+
         // Ensure that the minimum share reserves are equal to 1e15. This value
         // has been tested to prevent arithmetic overflows in the
         // `_updateLiquidity` function when the share reserves are as high as
         // 200 million.
         if (_deployConfig.minimumShareReserves != 1e15) {
-            revert IHyperdrive.InvalidMinimumShareReserves();
+            revert IHyperdriveDeployerCoordinator.InvalidMinimumShareReserves();
         }
 
         // FIXME: Add a check for the minimum transaction amount.

@@ -114,13 +114,47 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         underlyingToken.approve(address(factory), type(uint256).max);
 
         // Deploy and set hyperdrive instance
-        hyperdrive = factory.deployAndInitialize(
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
-            abi.encode(address(token), new address[](0)),
+            abi.encode(address(token)),
+            0,
+            bytes32(uint256(0xdeadbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            abi.encode(address(token)),
+            1,
+            bytes32(uint256(0xdeadbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            abi.encode(address(token)),
+            2,
+            bytes32(uint256(0xdeadbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            abi.encode(address(token)),
+            3,
+            bytes32(uint256(0xdeadbabe))
+        );
+        hyperdrive = factory.deployAndInitialize(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            abi.encode(address(token)),
             contribution,
             FIXED_RATE,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
 
         // Setup maximum approvals so transfers don't require further approval
@@ -161,13 +195,48 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         underlyingToken.approve(address(factory), type(uint256).max);
 
         // Deploy a new hyperdrive instance
-        hyperdrive = factory.deployAndInitialize(
+        bytes memory extraData = abi.encode(address(token));
+        factory.deployTarget(
+            bytes32(uint256(0xbeef)),
             deployerCoordinator,
             config,
-            abi.encode(address(token), new address[](0)),
+            extraData,
+            0,
+            bytes32(uint256(0xfade))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeef)),
+            deployerCoordinator,
+            config,
+            extraData,
+            1,
+            bytes32(uint256(0xfade))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeef)),
+            deployerCoordinator,
+            config,
+            extraData,
+            2,
+            bytes32(uint256(0xfade))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeef)),
+            deployerCoordinator,
+            config,
+            extraData,
+            3,
+            bytes32(uint256(0xfade))
+        );
+        hyperdrive = factory.deployAndInitialize(
+            bytes32(uint256(0xbeef)),
+            deployerCoordinator,
+            config,
+            extraData,
             contribution,
             FIXED_RATE,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xfade))
         );
 
         // Ensure minimumShareReserves were added, and lpTotalSupply increased
@@ -184,7 +253,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             contribution,
             FIXED_RATE,
             config.minimumShareReserves,
-            abi.encode(address(token), new address[](0)),
+            extraData,
             1e5
         );
     }

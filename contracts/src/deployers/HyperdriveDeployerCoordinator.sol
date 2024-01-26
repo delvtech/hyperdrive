@@ -92,9 +92,14 @@ abstract contract HyperdriveDeployerCoordinator is
         bytes memory _extraData,
         bytes32 _salt
     ) external returns (address) {
+        // Ensure that the Hyperdrive entrypoint has not already been deployed.
+        Deployment memory deployment = deployments[msg.sender][_deploymentId];
+        if (deployment.hyperdrive != address(0)) {
+            revert IHyperdriveDeployerCoordinator.HyperdriveAlreadyDeployed();
+        }
+
         // Ensure that the deployment is not a fresh deployment. We can check
         // this by ensuring that the config hash is set.
-        Deployment memory deployment = deployments[msg.sender][_deploymentId];
         if (deployment.configHash == bytes32(0)) {
             revert IHyperdriveDeployerCoordinator.DeploymentDoesNotExist();
         }

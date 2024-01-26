@@ -467,6 +467,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
     /// @dev This function is declared as payable to allow payable overrides
     ///      to accept ether on initialization, but payability is not supported
     ///      by default.
+    /// @param _deploymentId The deployment ID to use when deploying the pool.
     /// @param _deployerCoordinator The deployer coordinator to use in this
     ///        deployment.
     /// @param _config The configuration of the Hyperdrive pool.
@@ -475,83 +476,37 @@ contract HyperdriveFactory is IHyperdriveFactory {
     /// @param _contribution Base token to call init with
     /// @param _apr The apr to call init with
     /// @param _initializeExtraData The extra data for the `initialize` call.
+    /// @param _salt The create2 salt to use for the deployment.
     /// @return The hyperdrive address deployed.
     function deployAndInitialize(
+        bytes32 _deploymentId,
         address _deployerCoordinator,
-        IHyperdrive.PoolConfig memory _config,
+        IHyperdrive.PoolDeployConfig memory _config,
         bytes memory _extraData,
         uint256 _contribution,
         uint256 _apr,
-        bytes memory _initializeExtraData
-    ) public payable virtual returns (IHyperdrive) {
-        // Ensure that the target deployer has been registered.
+        bytes memory _initializeExtraData,
+        bytes32 _salt
+    ) external payable returns (IHyperdrive) {
+        // Ensure that the deployer coordinator has been registered.
         if (!isDeployerCoordinator[_deployerCoordinator]) {
             revert IHyperdriveFactory.InvalidDeployerCoordinator();
         }
 
-        // Ensure that the specified checkpoint duration is within the minimum
-        // and maximum checkpoint durations and is a multiple of the checkpoint
-        // duration resolution.
-        if (
-            _config.checkpointDuration < minCheckpointDuration ||
-            _config.checkpointDuration > maxCheckpointDuration ||
-            _config.checkpointDuration % checkpointDurationResolution != 0
-        ) {
-            revert IHyperdriveFactory.InvalidCheckpointDuration();
-        }
+        // Override the config values to the default values set by governance
+        // and ensure that the config is valid.
+        _overrideConfig(_config);
 
-        // Ensure that the specified checkpoint duration is within the minimum
-        // and maximum position durations and is a multiple of the specified
-        // checkpoint duration.
-        if (
-            _config.positionDuration < minPositionDuration ||
-            _config.positionDuration > maxPositionDuration ||
-            _config.positionDuration % _config.checkpointDuration != 0
-        ) {
-            revert IHyperdriveFactory.InvalidPositionDuration();
-        }
-
-        // Ensure that the specified fees are within the minimum and maximum fees.
-        if (
-            _config.fees.curve > _maxFees.curve ||
-            _config.fees.flat > _maxFees.flat ||
-            _config.fees.governanceLP > _maxFees.governanceLP ||
-            _config.fees.governanceZombie > _maxFees.governanceZombie ||
-            _config.fees.curve < _minFees.curve ||
-            _config.fees.flat < _minFees.flat ||
-            _config.fees.governanceLP < _minFees.governanceLP ||
-            _config.fees.governanceZombie < _minFees.governanceZombie
-        ) {
-            revert IHyperdriveFactory.InvalidFees();
-        }
-
-        // Ensure that the linker factory, linker code hash, fee collector,
-        // and governance addresses aren't set. This ensures that the
-        // deployer isn't trying to set these values.
-        if (
-            _config.linkerFactory != address(0) ||
-            _config.linkerCodeHash != bytes32(0) ||
-            _config.feeCollector != address(0) ||
-            _config.governance != address(0)
-        ) {
-            revert IHyperdriveFactory.InvalidDeployConfig();
-        }
-
-        // Override the config values to the default values set by governance.
-        // The factory assumes the governance role during deployment so that it
-        // can set up some initial values; however the governance role will
-        // ultimately be transferred to the hyperdrive governance address.
-        _config.linkerFactory = linkerFactory;
-        _config.linkerCodeHash = linkerCodeHash;
-        _config.feeCollector = feeCollector;
-        _config.governance = address(this);
-
-        // Deploy the Hyperdrive instance with the specified Hyperdrive
-        // deployer.
+        // Deploy the Hyperdrive instance with the specified deployer
+        // coordinator.
         IHyperdrive hyperdrive = IHyperdrive(
             IHyperdriveDeployerCoordinator(_deployerCoordinator).deploy(
+                // NOTE: We hash the deployer's address into the deployment ID
+                // to prevent their deployment from being front-run.
+                keccak256(abi.encode(msg.sender, _deploymentId)),
                 _config,
-                _extraData
+                _extraData,
+                _salt
             )
         );
 
@@ -629,6 +584,48 @@ contract HyperdriveFactory is IHyperdriveFactory {
         hyperdrive.setGovernance(hyperdriveGovernance);
 
         return hyperdrive;
+    }
+
+    /// @notice Deploys a Hyperdrive target with the factory's configuration.
+    /// @param _deploymentId The deployment ID to use when deploying the pool.
+    /// @param _deployerCoordinator The deployer coordinator to use in this
+    ///        deployment.
+    /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _extraData The extra data that contains data necessary for the
+    ///        specific deployer.
+    /// @param _targetIndex The index of the target to deploy.
+    /// @param _salt The create2 salt to use for the deployment.
+    /// @return The target address deployed.
+    function deployTarget(
+        bytes32 _deploymentId,
+        address _deployerCoordinator,
+        IHyperdrive.PoolDeployConfig memory _config,
+        bytes memory _extraData,
+        uint256 _targetIndex,
+        bytes32 _salt
+    ) external returns (address) {
+        // Ensure that the deployer coordinator has been registered.
+        if (!isDeployerCoordinator[_deployerCoordinator]) {
+            revert IHyperdriveFactory.InvalidDeployerCoordinator();
+        }
+
+        // Override the config values to the default values set by governance
+        // and ensure that the config is valid.
+        _overrideConfig(_config);
+
+        // Deploy the target instance with the specified deployer coordinator.
+        address target = IHyperdriveDeployerCoordinator(_deployerCoordinator)
+            .deployTarget(
+                // NOTE: We hash the deployer's address into the deployment ID
+                // to prevent their deployment from being front-run.
+                keccak256(abi.encode(msg.sender, _deploymentId)),
+                _config,
+                _extraData,
+                _targetIndex,
+                _salt
+            );
+
+        return target;
     }
 
     /// @notice Gets the max fees.
@@ -723,5 +720,70 @@ contract HyperdriveFactory is IHyperdriveFactory {
         for (uint256 i = startIndex; i <= endIndex; i++) {
             range[i - startIndex] = _deployerCoordinators[i];
         }
+    }
+
+    /// @dev Overrides the config values to the default values set by
+    ///      governance. In the process of overriding these parameters, this
+    ///      verifies that the specified config is valid.
+    /// @param _config The config to override.
+    function _overrideConfig(
+        IHyperdrive.PoolDeployConfig memory _config
+    ) internal view {
+        // Ensure that the specified checkpoint duration is within the minimum
+        // and maximum checkpoint durations and is a multiple of the checkpoint
+        // duration resolution.
+        if (
+            _config.checkpointDuration < minCheckpointDuration ||
+            _config.checkpointDuration > maxCheckpointDuration ||
+            _config.checkpointDuration % checkpointDurationResolution != 0
+        ) {
+            revert IHyperdriveFactory.InvalidCheckpointDuration();
+        }
+
+        // Ensure that the specified checkpoint duration is within the minimum
+        // and maximum position durations and is a multiple of the specified
+        // checkpoint duration.
+        if (
+            _config.positionDuration < minPositionDuration ||
+            _config.positionDuration > maxPositionDuration ||
+            _config.positionDuration % _config.checkpointDuration != 0
+        ) {
+            revert IHyperdriveFactory.InvalidPositionDuration();
+        }
+
+        // Ensure that the specified fees are within the minimum and maximum fees.
+        if (
+            _config.fees.curve > _maxFees.curve ||
+            _config.fees.flat > _maxFees.flat ||
+            _config.fees.governanceLP > _maxFees.governanceLP ||
+            _config.fees.governanceZombie > _maxFees.governanceZombie ||
+            _config.fees.curve < _minFees.curve ||
+            _config.fees.flat < _minFees.flat ||
+            _config.fees.governanceLP < _minFees.governanceLP ||
+            _config.fees.governanceZombie < _minFees.governanceZombie
+        ) {
+            revert IHyperdriveFactory.InvalidFees();
+        }
+
+        // Ensure that the linker factory, linker code hash, fee collector,
+        // and governance addresses aren't set. This ensures that the
+        // deployer isn't trying to set these values.
+        if (
+            _config.linkerFactory != address(0) ||
+            _config.linkerCodeHash != bytes32(0) ||
+            _config.feeCollector != address(0) ||
+            _config.governance != address(0)
+        ) {
+            revert IHyperdriveFactory.InvalidDeployConfig();
+        }
+
+        // Override the config values to the default values set by governance.
+        // The factory assumes the governance role during deployment so that it
+        // can set up some initial values; however the governance role will
+        // ultimately be transferred to the hyperdrive governance address.
+        _config.linkerFactory = linkerFactory;
+        _config.linkerCodeHash = linkerCodeHash;
+        _config.feeCollector = feeCollector;
+        _config.governance = address(this);
     }
 }

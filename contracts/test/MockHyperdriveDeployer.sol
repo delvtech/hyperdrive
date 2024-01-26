@@ -8,9 +8,11 @@ import { MockHyperdrive } from "./MockHyperdrive.sol";
 
 contract MockHyperdriveDeployer is IHyperdriveDeployerCoordinator {
     function deploy(
+        bytes32,
         IHyperdrive.PoolDeployConfig memory _deployConfig,
-        bytes memory
-    ) external override returns (address) {
+        bytes memory,
+        bytes32
+    ) external returns (address) {
         IHyperdrive.PoolConfig memory _config;
 
         // Copy struct info to PoolConfig
@@ -26,10 +28,21 @@ contract MockHyperdriveDeployer is IHyperdriveDeployerCoordinator {
         _config.governance = _deployConfig.governance;
         _config.feeCollector = _deployConfig.feeCollector;
         _config.fees = _deployConfig.fees;
-
         _config.initialVaultSharePrice = 1e18; // TODO: Make setter
 
         return (address(new MockHyperdrive(_config)));
+    }
+
+    // HACK: This function doesn't return anything because MockHyperdrive
+    // deploys the target contracts in it's constructor.
+    function deployTarget(
+        bytes32,
+        IHyperdrive.PoolDeployConfig memory,
+        bytes memory,
+        uint256,
+        bytes32
+    ) external pure returns (address target) {
+        return address(0);
     }
 }
 
@@ -38,8 +51,9 @@ contract MockHyperdriveDeployer is IHyperdriveDeployerCoordinator {
 contract MockHyperdriveTargetDeployer is IHyperdriveTargetDeployer {
     function deploy(
         IHyperdrive.PoolConfig memory,
-        bytes memory
-    ) external pure override returns (address) {
+        bytes memory,
+        bytes32
+    ) external pure returns (address) {
         return address(0);
     }
 }

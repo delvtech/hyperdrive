@@ -392,13 +392,47 @@ contract DevnetMigration is Script {
                             .erc4626HyperdriveGovernanceZombieFee
                     })
                 });
+            factory.deployTarget(
+                bytes32(uint256(0xdeadbeef)),
+                erc4626DeployerCoordinator,
+                poolConfig,
+                abi.encode(address(pool), new address[](0)),
+                0,
+                bytes32(uint256(0xdeadbabe))
+            );
+            factory.deployTarget(
+                bytes32(uint256(0xdeadbeef)),
+                erc4626DeployerCoordinator,
+                poolConfig,
+                abi.encode(address(pool), new address[](0)),
+                1,
+                bytes32(uint256(0xdeadbabe))
+            );
+            factory.deployTarget(
+                bytes32(uint256(0xdeadbeef)),
+                erc4626DeployerCoordinator,
+                poolConfig,
+                abi.encode(address(pool), new address[](0)),
+                2,
+                bytes32(uint256(0xdeadbabe))
+            );
+            factory.deployTarget(
+                bytes32(uint256(0xdeadbeef)),
+                erc4626DeployerCoordinator,
+                poolConfig,
+                abi.encode(address(pool), new address[](0)),
+                3,
+                bytes32(uint256(0xdeadbabe))
+            );
             erc4626Hyperdrive = factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
                 erc4626DeployerCoordinator,
                 poolConfig,
                 abi.encode(address(pool), new address[](0)),
                 contribution,
                 fixedRate,
-                new bytes(0)
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
             );
         }
 
@@ -448,15 +482,49 @@ contract DevnetMigration is Script {
                             .stethHyperdriveGovernanceZombieFee
                     })
                 });
-            stethHyperdrive = factory.deployAndInitialize{
-                value: contribution
-            }(
+            factory.deployTarget(
+                bytes32(uint256(0xdeadbeef)),
                 stethDeployerCoordinator,
                 poolConfig,
                 abi.encode(address(pool), new address[](0)),
+                0,
+                bytes32(uint256(0xdeadbabe))
+            );
+            factory.deployTarget(
+                bytes32(uint256(0xdeadbeef)),
+                stethDeployerCoordinator,
+                poolConfig,
+                abi.encode(address(pool), new address[](0)),
+                1,
+                bytes32(uint256(0xdeadbabe))
+            );
+            factory.deployTarget(
+                bytes32(uint256(0xdeadbeef)),
+                stethDeployerCoordinator,
+                poolConfig,
+                abi.encode(address(pool), new address[](0)),
+                2,
+                bytes32(uint256(0xdeadbabe))
+            );
+            factory.deployTarget(
+                bytes32(uint256(0xdeadbeef)),
+                stethDeployerCoordinator,
+                poolConfig,
+                abi.encode(address(pool), new address[](0)),
+                3,
+                bytes32(uint256(0xdeadbabe))
+            );
+            stethHyperdrive = factory.deployAndInitialize{
+                value: contribution
+            }(
+                bytes32(uint256(0xdeadbeef)),
+                stethDeployerCoordinator,
+                poolConfig,
+                new bytes(0),
                 contribution,
                 fixedRate,
-                new bytes(0)
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
             );
         }
 
