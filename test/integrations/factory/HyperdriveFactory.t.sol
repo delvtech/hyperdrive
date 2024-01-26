@@ -1570,11 +1570,139 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         );
         config.positionDuration = oldPositionDuration;
 
-        // FIXME: Add cases for the min and max fixed APR.
+        // Ensure than an instance can't be deployed with a fixed APR less than
+        // the minimum.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 fixedAPR = factory.minFixedAPR() - 1;
+        vm.expectRevert(IHyperdriveFactory.InvalidFixedAPR.selector);
+        factory.deployAndInitialize(
+            deployerCoordinator,
+            config,
+            extraData,
+            10_000e18,
+            fixedAPR,
+            0.05e18,
+            new bytes(0)
+        );
 
-        // FIXME: Add cases for the min and max time stretch APR.
+        // Ensure than an instance can't be deployed with a fixed APR greater
+        // than the maximum.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        fixedAPR = factory.maxFixedAPR() + 1;
+        vm.expectRevert(IHyperdriveFactory.InvalidFixedAPR.selector);
+        factory.deployAndInitialize(
+            deployerCoordinator,
+            config,
+            extraData,
+            10_000e18,
+            fixedAPR,
+            0.05e18,
+            new bytes(0)
+        );
 
-        // FIXME: Add cases for the additional checks on the timeStretch APR.
+        // Ensure than an instance can't be deployed with a time stretch APR
+        // less than 0.5%.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        factory.updateMinTimeStretchAPR(0.001e18);
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdriveFactory.InvalidTimeStretchAPR.selector);
+        factory.deployAndInitialize(
+            deployerCoordinator,
+            config,
+            extraData,
+            10_000e18,
+            0.001e18,
+            0.004e18,
+            new bytes(0)
+        );
+
+        // Ensure than an instance can't be deployed with a time stretch APR
+        // less than the fixed rate divided by two.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdriveFactory.InvalidTimeStretchAPR.selector);
+        factory.deployAndInitialize(
+            deployerCoordinator,
+            config,
+            extraData,
+            10_000e18,
+            0.02e18,
+            0.006e18,
+            new bytes(0)
+        );
+
+        // Ensure than an instance can't be deployed with a time stretch APR
+        // less than the minimum time stretch APR specified by governance.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        factory.updateMinTimeStretchAPR(0.02e18);
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdriveFactory.InvalidTimeStretchAPR.selector);
+        factory.deployAndInitialize(
+            deployerCoordinator,
+            config,
+            extraData,
+            10_000e18,
+            0.02e18,
+            0.019e18,
+            new bytes(0)
+        );
+
+        // Ensure than an instance can't be deployed with a time stretch APR
+        // greater than the lower bound (0.5%) multiplied by two.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        factory.updateMinTimeStretchAPR(0.001e18);
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdriveFactory.InvalidTimeStretchAPR.selector);
+        factory.deployAndInitialize(
+            deployerCoordinator,
+            config,
+            extraData,
+            10_000e18,
+            0.003e18,
+            0.011e18,
+            new bytes(0)
+        );
+
+        // Ensure than an instance can't be deployed with a time stretch APR
+        // greater than the fixed rate multiplied by two.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdriveFactory.InvalidTimeStretchAPR.selector);
+        factory.deployAndInitialize(
+            deployerCoordinator,
+            config,
+            extraData,
+            10_000e18,
+            0.012e18,
+            0.025e18,
+            new bytes(0)
+        );
+
+        // Ensure than an instance can't be deployed with a time stretch APR
+        // greater than the max time stretch APR specified by governance.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        factory.updateMaxTimeStretchAPR(0.3e18);
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdriveFactory.InvalidTimeStretchAPR.selector);
+        factory.deployAndInitialize(
+            deployerCoordinator,
+            config,
+            extraData,
+            10_000e18,
+            0.3e18,
+            0.31e18,
+            new bytes(0)
+        );
 
         // Ensure than an instance can't be deployed with a curve fee greater
         // than the maximum curve fee.
