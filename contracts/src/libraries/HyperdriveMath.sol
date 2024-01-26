@@ -17,6 +17,64 @@ library HyperdriveMath {
     using FixedPointMath for int256;
     using SafeCast for uint256;
 
+    // FIXME: Validate that a small correlates to a lower inventory and vice
+    //        versa.
+    //
+    /// @dev Calculates the time stretch parameter for the YieldSpace curve.
+    ///      This parameter modifies the curvature in order to target a
+    ///      specified inventory. The lower the time stretch, the flatter the
+    ///      curve will be and the smaller the inventory will be. The higher the
+    ///      time stretch, the higher the curvature will be and the larger the
+    ///      inventory will be.
+    /// @param _apr The target APR to use when calculating the time stretch.
+    /// @param _positionDuration The position duration in seconds.
+    function calculateTimeStretch(
+        uint256 _apr,
+        uint256 _positionDuration
+    ) internal pure returns (uint256) {
+        // Calculate the benchmark time stretch. This time stretch is tuned for
+        // a position duration of 1 year.
+        uint256 timeStretch = uint256(5.24592e18).divDown(
+            uint256(0.04665e18).mulDown(_apr * 100)
+        );
+        timeStretch = ONE.divDown(timeStretch);
+
+        // If the position duration is 1 year, we can return the benchmark.
+        if (_positionDuration == 365 days) {
+            return timeStretch;
+        }
+
+        // Otherwise, we need to adjust the time stretch to account for the
+        // position duration. We do this by holding the reserve ratio constant
+        // and solving for the new time stretch directly.
+        //
+        // We can calculate the spot price at the target apr and position
+        // duration as:
+        //
+        // p = 1 / (1 + apr * (positionDuration / 365 days))
+        //
+        // We then calculate the benchmark reserve ratio, `ratio`, implied by
+        // the benchmark time stretch using the `calculateInitialBondReserves`
+        // function.
+        //
+        // We can then derive the adjusted time stretch using the spot price
+        // calculation:
+        //
+        // p = ratio ** timeStretch
+        //          =>
+        // timeStretch = ln(p) / ln(ratio)
+        uint256 targetSpotPrice = ONE.divDown(
+            ONE + _apr.mulDivDown(_positionDuration, 365 days)
+        );
+        uint256 benchmarkReserveRatio = ONE.divDown(
+            calculateInitialBondReserves(ONE, ONE, _apr, 365 days, timeStretch)
+        );
+        return
+            uint256(-int256(targetSpotPrice).ln()).divDown(
+                uint256(-int256(benchmarkReserveRatio).ln())
+            );
+    }
+
     /// @dev Calculates the spot price of bonds in terms of base. This
     ///      calculation underestimates the pool's spot price.
     /// @param _effectiveShareReserves The pool's effective share reserves. The

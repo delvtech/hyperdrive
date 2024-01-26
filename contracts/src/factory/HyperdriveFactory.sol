@@ -7,6 +7,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveFactory } from "../interfaces/IHyperdriveFactory.sol";
 import { IDeployerCoordinator } from "../interfaces/IDeployerCoordinator.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 
 /// @author DELV
 /// @title HyperdriveFactory
@@ -68,10 +69,10 @@ contract HyperdriveFactory is IHyperdriveFactory {
     uint256 public maxFixedAPR;
 
     /// @notice The minimum time stretch APR that can be used by new deployments.
-    uint256 public minTimestretchAPR;
+    uint256 public minTimeStretchAPR;
 
     /// @notice The maximum time stretch APR that can be used by new deployments.
-    uint256 public maxTimestretchAPR;
+    uint256 public maxTimeStretchAPR;
 
     /// @notice The minimum fee parameters that can be used by new deployments.
     IHyperdrive.Fees internal _minFees;
@@ -111,10 +112,10 @@ contract HyperdriveFactory is IHyperdriveFactory {
         uint256 maxFixedAPR;
         /// @dev The minimum time stretch APR that can be used in new
         ///      deployments.
-        uint256 minTimestretchAPR;
+        uint256 minTimeStretchAPR;
         /// @dev The maximum time stretch APR that can be used in new
         ///      deployments.
-        uint256 maxTimestretchAPR;
+        uint256 maxTimeStretchAPR;
         /// @dev The lower bound on the fees that can be used in new deployments.
         IHyperdrive.Fees minFees;
         /// @dev The upper bound on the fees that can be used in new deployments.
@@ -208,12 +209,12 @@ contract HyperdriveFactory is IHyperdriveFactory {
         // Ensure that the minimum time stretch APR is less than or equal to the
         // maximum time stretch APR.
         if (
-            _factoryConfig.minTimestretchAPR > _factoryConfig.maxTimestretchAPR
+            _factoryConfig.minTimeStretchAPR > _factoryConfig.maxTimeStretchAPR
         ) {
-            revert IHyperdriveFactory.InvalidTimestretchAPR();
+            revert IHyperdriveFactory.InvalidTimeStretchAPR();
         }
-        minTimestretchAPR = _factoryConfig.minTimestretchAPR;
-        maxTimestretchAPR = _factoryConfig.maxTimestretchAPR;
+        minTimeStretchAPR = _factoryConfig.minTimeStretchAPR;
+        maxTimeStretchAPR = _factoryConfig.maxTimeStretchAPR;
 
         // Ensure that the max fees are each less than or equal to 100% and set
         // the fees.
@@ -441,36 +442,36 @@ contract HyperdriveFactory is IHyperdriveFactory {
         emit MinFixedAPRUpdated(_minFixedAPR);
     }
 
-    /// @notice Allows governance to update the maximum timestretch APR.
-    /// @param _maxTimestretchAPR The new maximum timestretch APR.
-    function updateMaxTimestretchAPR(
-        uint256 _maxTimestretchAPR
+    /// @notice Allows governance to update the maximum time stretch APR.
+    /// @param _maxTimeStretchAPR The new maximum time stretch APR.
+    function updateMaxTimeStretchAPR(
+        uint256 _maxTimeStretchAPR
     ) external onlyGovernance {
-        // Ensure that the maximum timestretch APR is greater than or equal
-        // to the minimum timestretch APR.
-        if (_maxTimestretchAPR < minTimestretchAPR) {
-            revert IHyperdriveFactory.InvalidMaxTimestretchAPR();
+        // Ensure that the maximum time stretch APR is greater than or equal
+        // to the minimum time stretch APR.
+        if (_maxTimeStretchAPR < minTimeStretchAPR) {
+            revert IHyperdriveFactory.InvalidMaxTimeStretchAPR();
         }
 
-        // Update the maximum timestretch APR and emit an event.
-        maxTimestretchAPR = _maxTimestretchAPR;
-        emit MaxTimestretchAPRUpdated(_maxTimestretchAPR);
+        // Update the maximum time stretch APR and emit an event.
+        maxTimeStretchAPR = _maxTimeStretchAPR;
+        emit MaxTimeStretchAPRUpdated(_maxTimeStretchAPR);
     }
 
-    /// @notice Allows governance to update the minimum timestretch APR.
-    /// @param _minTimestretchAPR The new minimum timestretch APR.
-    function updateMinTimestretchAPR(
-        uint256 _minTimestretchAPR
+    /// @notice Allows governance to update the minimum time stretch APR.
+    /// @param _minTimeStretchAPR The new minimum time stretch APR.
+    function updateMinTimeStretchAPR(
+        uint256 _minTimeStretchAPR
     ) external onlyGovernance {
-        // Ensure that the minimum timestretch APR is less than or equal
-        // to the maximum timestretch APR.
-        if (_minTimestretchAPR > maxTimestretchAPR) {
-            revert IHyperdriveFactory.InvalidMinTimestretchAPR();
+        // Ensure that the minimum time stretch APR is less than or equal
+        // to the maximum time stretch APR.
+        if (_minTimeStretchAPR > maxTimeStretchAPR) {
+            revert IHyperdriveFactory.InvalidMinTimeStretchAPR();
         }
 
-        // Update the minimum timestretch APR and emit an event.
-        minTimestretchAPR = _minTimestretchAPR;
-        emit MinTimestretchAPRUpdated(_minTimestretchAPR);
+        // Update the minimum time stretch APR and emit an event.
+        minTimeStretchAPR = _minTimeStretchAPR;
+        emit MinTimeStretchAPRUpdated(_minTimeStretchAPR);
     }
 
     /// @notice Allows governance to update the maximum fee parameters.
@@ -573,7 +574,8 @@ contract HyperdriveFactory is IHyperdriveFactory {
     /// @param _extraData The extra data that contains data necessary for the
     ///        specific deployer.
     /// @param _contribution The contribution amount in base to the pool.
-    /// @param _fixedAPR The fixed APR rate that the pool will be initialized to.
+    /// @param _fixedAPR The fixed APR used to initialize the pool.
+    /// @param _timeStretchAPR The time stretch APR used to initialize the pool.
     /// @param _initializeExtraData The extra data for the `initialize` call.
     /// @return The hyperdrive address deployed.
     function deployAndInitialize(
@@ -582,6 +584,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
         bytes memory _extraData,
         uint256 _contribution,
         uint256 _fixedAPR,
+        uint256 _timeStretchAPR,
         bytes memory _initializeExtraData
     ) public payable virtual returns (IHyperdrive) {
         // Ensure that the target deployer has been registered.
@@ -630,22 +633,46 @@ contract HyperdriveFactory is IHyperdriveFactory {
         // and governance addresses aren't set. This ensures that the
         // deployer isn't trying to set these values.
         if (
+            _deployConfig.governance != address(0) ||
+            _deployConfig.feeCollector != address(0) ||
             _deployConfig.linkerFactory != address(0) ||
             _deployConfig.linkerCodeHash != bytes32(0) ||
-            _deployConfig.feeCollector != address(0) ||
-            _deployConfig.governance != address(0)
+            _deployConfig.timeStretch != 0
         ) {
             revert IHyperdriveFactory.InvalidDeployConfig();
         }
+
+        // Ensure that specified fixed APR is within the minimum and maximum
+        // fixed APRs.
+        if (_fixedAPR < minFixedAPR || _fixedAPR > maxFixedAPR) {
+            revert IHyperdriveFactory.InvalidFixedAPR();
+        }
+
+        // Calculate the time stretch using the provided APR and ensure that
+        // the time stretch falls within a safe range and the guards specified
+        // by governance.
+        uint256 lowerBound = _fixedAPR.divDown(2e18).max(0.005e18);
+        if (
+            _timeStretchAPR < minTimeStretchAPR.max(lowerBound) ||
+            _timeStretchAPR >
+            maxTimeStretchAPR.min(_fixedAPR.max(lowerBound).mulDown(2e18))
+        ) {
+            revert IHyperdriveFactory.InvalidTimeStretchAPR();
+        }
+        uint256 timeStretch = HyperdriveMath.calculateTimeStretch(
+            _timeStretchAPR,
+            _deployConfig.positionDuration
+        );
 
         // Override the config values to the default values set by governance.
         // The factory assumes the governance role during deployment so that it
         // can set up some initial values; however the governance role will
         // ultimately be transferred to the hyperdrive governance address.
+        _deployConfig.governance = address(this);
+        _deployConfig.feeCollector = feeCollector;
         _deployConfig.linkerFactory = linkerFactory;
         _deployConfig.linkerCodeHash = linkerCodeHash;
-        _deployConfig.feeCollector = feeCollector;
-        _deployConfig.governance = address(this);
+        _deployConfig.timeStretch = timeStretch;
 
         // Deploy the Hyperdrive instance with the specified Hyperdrive
         // deployer.

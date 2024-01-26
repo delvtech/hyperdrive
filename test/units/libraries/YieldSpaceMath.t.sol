@@ -129,7 +129,7 @@ contract YieldSpaceMathTest is Test {
             );
             for (uint256 j = i - (i / 2 + 1); j < i; j++) {
                 // Calculate the bond reserves that give the pool the expected spot rate.
-                uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(
+                uint256 timeStretch = HyperdriveMath.calculateTimeStretch(
                     fixedRate,
                     365 days
                 );
@@ -203,7 +203,7 @@ contract YieldSpaceMathTest is Test {
         );
 
         // Calculate the bond reserves that give the pool the expected spot rate.
-        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(
+        uint256 timeStretch = HyperdriveMath.calculateTimeStretch(
             fixedRate,
             365 days
         );

@@ -64,8 +64,8 @@ contract StETHHyperdriveTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
-                minTimestretchAPR: 0.005e18,
-                maxTimestretchAPR: 0.5e18,
+                minTimeStretchAPR: 0.005e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees({
                     curve: 0,
                     flat: 0,
@@ -109,10 +109,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
                 minimumTransactionAmount: 1e15,
                 positionDuration: POSITION_DURATION,
                 checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: HyperdriveUtils.calculateTimeStretch(
-                    0.05e18,
-                    POSITION_DURATION
-                ),
+                timeStretch: 0,
                 governance: address(0),
                 feeCollector: address(0),
                 fees: IHyperdrive.Fees({
@@ -128,6 +125,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
             config,
             new bytes(0),
             contribution,
+            FIXED_RATE,
             FIXED_RATE,
             new bytes(0)
         );
@@ -177,10 +175,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
                 minimumTransactionAmount: 1e15,
                 positionDuration: POSITION_DURATION,
                 checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: HyperdriveUtils.calculateTimeStretch(
-                    0.05e18,
-                    POSITION_DURATION
-                ),
+                timeStretch: 0,
                 fees: IHyperdrive.Fees({
                     curve: 0,
                     flat: 0,
@@ -194,6 +189,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
             config,
             new bytes(0),
             contribution,
+            FIXED_RATE,
             FIXED_RATE,
             new bytes(0)
         );
