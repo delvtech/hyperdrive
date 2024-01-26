@@ -1,5 +1,5 @@
 [profile.default]
-solc_version = '0.8.19'
+solc_version = '0.8.20'
 # The source directory
 src = 'contracts'
 # The artifact directory
@@ -17,7 +17,6 @@ remappings = [
   'forge-std=lib/forge-std/src',
   'openzeppelin=lib/openzeppelin-contracts/contracts',
   'solmate=lib/solmate/src',
-  'yield-daddy=lib/yield-daddy',
 ]
 # gas limit - max u64
 gas_limit = "18446744073709551615"

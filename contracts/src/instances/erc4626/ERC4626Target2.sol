@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
 import { HyperdriveTarget2 } from "../../external/HyperdriveTarget2.sol";
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
