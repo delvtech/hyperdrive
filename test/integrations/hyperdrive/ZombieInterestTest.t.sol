@@ -203,16 +203,22 @@ contract ZombieInterestTest is HyperdriveTest {
             baseToken.balanceOf(address(hyperdrive)) - baseReserves
         );
 
-        uint256 lowerBound =  hyperdrive.getPoolInfo().shareReserves
-        + hyperdrive.getPoolInfo().shortsOutstanding.divDown(hyperdrive.getPoolInfo().vaultSharePrice)
-        + hyperdrive.getPoolInfo().shortsOutstanding.mulDown(hyperdrive.getPoolConfig().fees.flat).divDown(hyperdrive.getPoolInfo().vaultSharePrice)
-        + hyperdrive.getUncollectedGovernanceFees()
-        + hyperdrive.getPoolInfo().withdrawalSharesProceeds
-        + hyperdrive.getPoolInfo().zombieShareReserves;
+        uint256 lowerBound = hyperdrive.getPoolInfo().shareReserves +
+            hyperdrive.getPoolInfo().shortsOutstanding.divDown(
+                hyperdrive.getPoolInfo().vaultSharePrice
+            ) +
+            hyperdrive
+                .getPoolInfo()
+                .shortsOutstanding
+                .mulDown(hyperdrive.getPoolConfig().fees.flat)
+                .divDown(hyperdrive.getPoolInfo().vaultSharePrice) +
+            hyperdrive.getUncollectedGovernanceFees() +
+            hyperdrive.getPoolInfo().withdrawalSharesProceeds +
+            hyperdrive.getPoolInfo().zombieShareReserves;
 
         assertLe(
             lowerBound,
-            baseToken.balanceOf(address(hyperdrive)).divDown(vaultSharePrice)   
+            baseToken.balanceOf(address(hyperdrive)).divDown(vaultSharePrice)
         );
     }
 
@@ -442,18 +448,23 @@ contract ZombieInterestTest is HyperdriveTest {
             ),
             baseToken.balanceOf(address(hyperdrive)) + 10 wei - baseReserves
         );
-        uint256 lowerBound =  hyperdrive.getPoolInfo().shareReserves
-        + hyperdrive.getPoolInfo().shortsOutstanding.divDown(hyperdrive.getPoolInfo().vaultSharePrice)
-        + hyperdrive.getPoolInfo().shortsOutstanding.mulDown(hyperdrive.getPoolConfig().fees.flat).divDown(hyperdrive.getPoolInfo().vaultSharePrice)
-        + hyperdrive.getUncollectedGovernanceFees()
-        + hyperdrive.getPoolInfo().withdrawalSharesProceeds
-        + hyperdrive.getPoolInfo().zombieShareReserves;
+        uint256 lowerBound = hyperdrive.getPoolInfo().shareReserves +
+            hyperdrive.getPoolInfo().shortsOutstanding.divDown(
+                hyperdrive.getPoolInfo().vaultSharePrice
+            ) +
+            hyperdrive
+                .getPoolInfo()
+                .shortsOutstanding
+                .mulDown(hyperdrive.getPoolConfig().fees.flat)
+                .divDown(hyperdrive.getPoolInfo().vaultSharePrice) +
+            hyperdrive.getUncollectedGovernanceFees() +
+            hyperdrive.getPoolInfo().withdrawalSharesProceeds +
+            hyperdrive.getPoolInfo().zombieShareReserves;
 
         assertLe(
             lowerBound,
-            baseToken.balanceOf(address(hyperdrive)).divDown(vaultSharePrice)   
+            baseToken.balanceOf(address(hyperdrive)).divDown(vaultSharePrice)
         );
-        
     }
 
     // This test just demonstrates that shorts redeemed late do not receive
@@ -615,9 +626,7 @@ contract ZombieInterestTest is HyperdriveTest {
         assertApproxEqAbs(shareReserves1, shareReserves2, 5 wei);
     }
 
-    function test_zombie_derp_long_short(
-        uint256 zombieTime
-    ) external {
+    function test_zombie_derp_long_short(uint256 zombieTime) external {
         _test_zombie_derp_long_short(zombieTime);
     }
 
@@ -628,9 +637,7 @@ contract ZombieInterestTest is HyperdriveTest {
         }
     }
 
-    function _test_zombie_long_short(
-        uint256 zombieTime
-    ) internal {
+    function _test_zombie_long_short(uint256 zombieTime) internal {
         // Initialize the pool with capital.
         uint256 fixedRate = 0.05e18;
         deploy(bob, fixedRate, 1e18, 0, 0.001e18, 0, 0);
@@ -676,14 +683,15 @@ contract ZombieInterestTest is HyperdriveTest {
         advanceTimeWithCheckpoints2(CHECKPOINT_DURATION * 5, variableRate);
 
         // A random amount of time passes and interest is collected.
-        advanceTimeWithCheckpoints2(zombieTime , variableRate);
+        advanceTimeWithCheckpoints2(zombieTime, variableRate);
 
         // Ensure that whatever is left in the zombie share reserves is <= hyperdrive contract - baseReserves.
         // This is an important check bc it implies ongoing solvency.
         {
-            uint256 baseReserves = hyperdrive.getPoolInfo().shareReserves.mulDown(
-                vaultSharePrice
-            );
+            uint256 baseReserves = hyperdrive
+                .getPoolInfo()
+                .shareReserves
+                .mulDown(vaultSharePrice);
             assertLe(
                 hyperdrive.getPoolInfo().zombieShareReserves.mulDown(
                     vaultSharePrice
@@ -694,16 +702,24 @@ contract ZombieInterestTest is HyperdriveTest {
 
         // Ensure that the lower bound for base balance is never violated (used in python fuzzing).
         {
-            uint256 lowerBound =  hyperdrive.getPoolInfo().shareReserves
-            + hyperdrive.getPoolInfo().shortsOutstanding.divDown(vaultSharePrice)
-            + hyperdrive.getPoolInfo().shortsOutstanding.mulDown(hyperdrive.getPoolConfig().fees.flat).divDown(vaultSharePrice)
-            + hyperdrive.getUncollectedGovernanceFees()
-            + hyperdrive.getPoolInfo().withdrawalSharesProceeds
-            + hyperdrive.getPoolInfo().zombieShareReserves;
+            uint256 lowerBound = hyperdrive.getPoolInfo().shareReserves +
+                hyperdrive.getPoolInfo().shortsOutstanding.divDown(
+                    vaultSharePrice
+                ) +
+                hyperdrive
+                    .getPoolInfo()
+                    .shortsOutstanding
+                    .mulDown(hyperdrive.getPoolConfig().fees.flat)
+                    .divDown(vaultSharePrice) +
+                hyperdrive.getUncollectedGovernanceFees() +
+                hyperdrive.getPoolInfo().withdrawalSharesProceeds +
+                hyperdrive.getPoolInfo().zombieShareReserves;
 
             assertLe(
                 lowerBound,
-                baseToken.balanceOf(address(hyperdrive)).divDown(vaultSharePrice) + 1e9 
+                baseToken.balanceOf(address(hyperdrive)).divDown(
+                    vaultSharePrice
+                ) + 1e9
             );
         }
     }
