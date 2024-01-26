@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 
 /// @author DELV
@@ -21,7 +22,7 @@ import { HyperdriveBase } from "./HyperdriveBase.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveMultiToken is HyperdriveBase {
+abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
     /// @notice This modifier checks the caller is the create2 validated ERC20 bridge.
     /// @param tokenID The internal token identifier.
     modifier onlyLinker(uint256 tokenID) {
@@ -46,12 +47,14 @@ abstract contract HyperdriveMultiToken is HyperdriveBase {
         uint256[] calldata values
     ) internal {
         // Checks for inconsistent addresses.
-        if (from == address(0) || to == address(0))
+        if (from == address(0) || to == address(0)) {
             revert IHyperdrive.RestrictedZeroAddress();
+        }
 
         // Check for inconsistent length.
-        if (ids.length != values.length)
+        if (ids.length != values.length) {
             revert IHyperdrive.BatchInputLengthMismatch();
+        }
 
         // Call internal transfer for each asset.
         for (uint256 i = 0; i < ids.length; ) {
@@ -213,7 +216,9 @@ abstract contract HyperdriveMultiToken is HyperdriveBase {
             )
         );
         address signer = ecrecover(structHash, v, r, s);
-        if (signer != owner) revert IHyperdrive.InvalidSignature();
+        if (signer != owner) {
+            revert IHyperdrive.InvalidSignature();
+        }
 
         // Increment the signature nonce.
         ++_nonces[owner];

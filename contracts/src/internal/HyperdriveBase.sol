@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
@@ -17,107 +18,11 @@ import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveBase is HyperdriveStorage {
+abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;
     using SafeCast for int256;
-
-    event Initialize(
-        address indexed provider,
-        uint256 lpAmount,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 apr
-    );
-
-    event AddLiquidity(
-        address indexed provider,
-        uint256 lpAmount,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 lpSharePrice
-    );
-
-    event RemoveLiquidity(
-        address indexed provider,
-        uint256 lpAmount,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 withdrawalShareAmount,
-        uint256 lpSharePrice
-    );
-
-    event RedeemWithdrawalShares(
-        address indexed provider,
-        uint256 withdrawalShareAmount,
-        uint256 baseAmount,
-        uint256 vaultSharePrice
-    );
-
-    event OpenLong(
-        address indexed trader,
-        uint256 indexed assetId,
-        uint256 maturityTime,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 bondAmount
-    );
-
-    event OpenShort(
-        address indexed trader,
-        uint256 indexed assetId,
-        uint256 maturityTime,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 bondAmount
-    );
-
-    event CloseLong(
-        address indexed trader,
-        uint256 indexed assetId,
-        uint256 maturityTime,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 bondAmount
-    );
-
-    event CloseShort(
-        address indexed trader,
-        uint256 indexed assetId,
-        uint256 maturityTime,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 bondAmount
-    );
-
-    event CreateCheckpoint(
-        uint256 indexed checkpointTime,
-        uint256 vaultSharePrice,
-        uint256 maturedShorts,
-        uint256 maturedLongs,
-        uint256 lpSharePrice
-    );
-
-    event TransferSingle(
-        address indexed operator,
-        address indexed from,
-        address indexed to,
-        uint256 id,
-        uint256 value
-    );
-
-    event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 value
-    );
-
-    event ApprovalForAll(
-        address indexed account,
-        address indexed operator,
-        bool approved
-    );
 
     /// Yield Source ///
 
@@ -165,7 +70,9 @@ abstract contract HyperdriveBase is HyperdriveStorage {
 
     /// @dev Blocks a function execution if the contract is paused.
     modifier isNotPaused() {
-        if (_marketState.isPaused) revert IHyperdrive.Paused();
+        if (_marketState.isPaused) {
+            revert IHyperdrive.PoolIsPaused();
+        }
         _;
     }
 

@@ -5,6 +5,7 @@ import { VmSafe } from "forge-std/Vm.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveEvents } from "contracts/src/interfaces/IHyperdriveEvents.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
@@ -18,7 +19,7 @@ import { ETH } from "test/utils/Constants.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-contract HyperdriveTest is BaseTest {
+contract HyperdriveTest is IHyperdriveEvents, BaseTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
@@ -889,82 +890,6 @@ contract HyperdriveTest is BaseTest {
         address hyperdrive,
         IHyperdrive.PoolDeployConfig config,
         bytes extraData
-    );
-
-    event Initialize(
-        address indexed provider,
-        uint256 lpAmount,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 apr
-    );
-
-    event AddLiquidity(
-        address indexed provider,
-        uint256 lpAmount,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 lpSharePrice
-    );
-
-    event RemoveLiquidity(
-        address indexed provider,
-        uint256 lpAmount,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 withdrawalShareAmount,
-        uint256 lpSharePrice
-    );
-
-    event RedeemWithdrawalShares(
-        address indexed provider,
-        uint256 withdrawalShareAmount,
-        uint256 baseAmount,
-        uint256 vaultSharePrice
-    );
-
-    event OpenLong(
-        address indexed trader,
-        uint256 indexed assetId,
-        uint256 maturityTime,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 bondAmount
-    );
-
-    event OpenShort(
-        address indexed trader,
-        uint256 indexed assetId,
-        uint256 maturityTime,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 bondAmount
-    );
-
-    event CloseLong(
-        address indexed trader,
-        uint256 indexed assetId,
-        uint256 maturityTime,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 bondAmount
-    );
-
-    event CloseShort(
-        address indexed trader,
-        uint256 indexed assetId,
-        uint256 maturityTime,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 bondAmount
-    );
-
-    event CreateCheckpoint(
-        uint256 indexed checkpointTime,
-        uint256 vaultSharePrice,
-        uint256 maturedShorts,
-        uint256 maturedLongs,
-        uint256 lpSharePrice
     );
 
     event CollectGovernanceFee(

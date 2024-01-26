@@ -3,94 +3,16 @@ pragma solidity 0.8.19;
 
 import { IERC20 } from "./IERC20.sol";
 import { IHyperdriveCore } from "./IHyperdriveCore.sol";
+import { IHyperdriveEvents } from "./IHyperdriveEvents.sol";
 import { IHyperdriveRead } from "./IHyperdriveRead.sol";
 import { IMultiToken } from "./IMultiToken.sol";
 
-interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
-    /// Events ///
-
-    event Initialize(
-        address indexed provider,
-        uint256 lpAmount,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 apr
-    );
-
-    event AddLiquidity(
-        address indexed provider,
-        uint256 lpAmount,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 lpSharePrice
-    );
-
-    event RemoveLiquidity(
-        address indexed provider,
-        uint256 lpAmount,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 withdrawalShareAmount,
-        uint256 lpSharePrice
-    );
-
-    event RedeemWithdrawalShares(
-        address indexed provider,
-        uint256 withdrawalShareAmount,
-        uint256 baseAmount,
-        uint256 vaultSharePrice
-    );
-
-    event OpenLong(
-        address indexed trader,
-        uint256 indexed assetId,
-        uint256 maturityTime,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 bondAmount
-    );
-
-    event OpenShort(
-        address indexed trader,
-        uint256 indexed assetId,
-        uint256 maturityTime,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 bondAmount
-    );
-
-    event CloseLong(
-        address indexed trader,
-        uint256 indexed assetId,
-        uint256 maturityTime,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 bondAmount
-    );
-
-    event CloseShort(
-        address indexed trader,
-        uint256 indexed assetId,
-        uint256 maturityTime,
-        uint256 baseAmount,
-        uint256 vaultSharePrice,
-        uint256 bondAmount
-    );
-
-    event CreateCheckpoint(
-        uint256 indexed checkpointTime,
-        uint256 vaultSharePrice,
-        uint256 maturedShorts,
-        uint256 maturedLongs,
-        uint256 lpSharePrice
-    );
-
-    event CollectGovernanceFee(
-        address indexed collector,
-        uint256 baseFees,
-        uint256 vaultSharePrice
-    );
-
+interface IHyperdrive is
+    IHyperdriveEvents,
+    IHyperdriveRead,
+    IHyperdriveCore,
+    IMultiToken
+{
     /// Structs ///
 
     struct MarketState {
@@ -250,112 +172,177 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveCore, IMultiToken {
         bytes extraData;
     }
 
+    /// Enums ///
+
+    /// @notice The reason for an InsufficientLiquidity error.
+    enum InsufficientLiquidityReason {
+        /// @dev The trade resulted in an arithmetic underflow.
+        ArithmeticUnderflow,
+        /// @dev The trade brought the effective share reserves below the
+        ///      minimum share reserves.
+        InvalidEffectiveShareReserves,
+        /// @dev The trade resulted in negative interest on some or all of the
+        ///      bonds.
+        NegativeInterest,
+        /// @dev The trade violated our solvency requirements.
+        SolvencyViolated
+    }
+
     /// Errors ///
 
-    /// ##################
-    /// ### Hyperdrive ###
-    /// ##################
-    error BelowMinimumContribution();
-    error BelowMinimumShareReserves();
-    error EndIndexTooLarge();
-    error InvalidApr();
-    error InvalidBaseToken();
-    error InvalidCheckpointTime();
-    error InvalidCheckpointDuration();
-    error InvalidEffectiveShareReserves();
-    error InvalidFeeAmounts();
-    error InvalidFeeDestination();
-    error InvalidIndexes();
-    error InvalidInitialVaultSharePrice();
-    error InvalidLpSharePrice();
-    error InvalidMaturityTime();
-    error InvalidMinimumShareReserves();
-    error InvalidPositionDuration();
-    error InvalidShareReserves();
-    error InsufficientLiquidity();
-    error MinimumSharePrice();
-    error MinimumTransactionAmount();
-    error NegativeInterest();
-    error NegativePresentValue();
-    error NoAssetsToWithdraw();
-    error NotPayable();
-    error OutputLimit();
-    error Paused();
-    error PoolAlreadyInitialized();
-    error ShareReservesDeltaExceedsBondReservesDelta();
-    error SweepFailed();
-    error TransferFailed();
-    error UnexpectedAssetId();
-    error UnexpectedSender();
-    error UnsupportedToken();
-    error ZeroLpTotalSupply();
-
-    /// ####################
-    /// ### DataProvider ###
-    /// ####################
-    error ReturnData(bytes data);
-    error CallFailed(bytes4 underlyingError);
-    error UnexpectedSuccess();
-
-    /// ###############
-    /// ### Factory ###
-    /// ###############
-    error Unauthorized();
-    error InvalidCheckpointDurationResolution();
-    error InvalidContribution();
-    error InvalidDeployConfig();
-    error InvalidDeployerCoordinator();
-    error InvalidFees();
-    error InvalidMaxFees();
-    error InvalidMinFees();
-    error InvalidMaxCheckpointDuration();
-    error InvalidMinCheckpointDuration();
-    error InvalidMaxPositionDuration();
-    error InvalidMinPositionDuration();
-    error InvalidToken();
-    error NonPayableInitialization();
-    error DeployerCoordinatorAlreadyAdded();
-    error DeployerCoordinatorNotAdded();
-    error DeployerCoordinatorIndexMismatch();
-
-    /// ######################
-    /// ### ERC20Forwarder ###
-    /// ######################
+    /// @notice Thrown when the inputs to a batch transfer don't match in
+    ///         length.
     error BatchInputLengthMismatch();
+
+    /// @notice Thrown when the initializer doesn't provide sufficient liquidity
+    ///         to cover the minimum share reserves and the LP shares that are
+    ///         burned on initialization.
+    error BelowMinimumContribution();
+
+    /// @notice Thrown when the exponent to `FixedPointMath.exp` would cause the
+    ///         the result to be larger than the representable scale.
+    error ExpInvalidExponent();
+
+    /// @notice Thrown when a permit signature is expired.
     error ExpiredDeadline();
-    error InvalidSignature();
+
+    /// @notice Thrown when the pool doesn't have sufficient liquidity to
+    ///         complete the trade.
+    error InsufficientLiquidity(InsufficientLiquidityReason reason);
+
+    /// @notice Thrown when the pool's APR is outside the bounds specified by
+    ///         a LP when they are adding liquidity.
+    error InvalidApr();
+
+    /// @notice Thrown when the base token isn't valid. Each instance will have
+    ///         different criteria for what constitutes a valid base token.
+    error InvalidBaseToken();
+
+    /// @notice Thrown when the checkpoint duration specified is zero.
+    error InvalidCheckpointDuration();
+
+    /// @notice Thrown when the checkpoint time provided to `checkpoint` is
+    ///         larger than the current checkpoint or isn't divisible by the
+    ///         checkpoint duration.
+    error InvalidCheckpointTime();
+
+    /// @notice Thrown when the caller of one of MultiToken's bridge-only
+    ///         functions is not the corresponding bridge.
     error InvalidERC20Bridge();
-    error RestrictedZeroAddress();
 
-    /// #############################
-    /// ### ERC20ForwarderFactory ###
-    /// #############################
-    error InvalidForwarderAddress();
+    /// @notice Thrown when the curve fee, flat fee, governance LP fee, or
+    ///         governance zombie fee is greater than 100%.
+    error InvalidFeeAmounts();
 
-    /// ###############
-    /// ### AssetId ###
-    /// ###############
+    /// @notice Thrown when a destination other than the fee collector is
+    ///         specified in `collectGovernanceFee`.
+    error InvalidFeeDestination();
+
+    /// @notice Thrown when the initial share price doesn't match the share
+    ///         price of the underlying yield source on deployment.
+    error InvalidInitialVaultSharePrice();
+
+    /// @notice Thrown when the minimum share reserves is too small. The
+    ///         absolute smallest allowable minimum share reserves is 1e3;
+    ///         however, yield sources may require a larger minimum share
+    ///         reserves.
+    error InvalidMinimumShareReserves();
+
+    /// @notice Thrown when the position duration is smaller than the checkpoint
+    ///         duration or is not a multiple of the checkpoint duration.
+    error InvalidPositionDuration();
+
+    /// @notice Thrown when update liquidity brings the share reserves below
+    ///         the minimum share reserves.
+    error InvalidShareReserves();
+
+    /// @notice Thrown when an invalid signature is used provide permit access
+    ///         to the MultiToken. A signature is considered to be invalid if
+    ///         it fails to recover to the owner's address.
+    error InvalidSignature();
+
+    /// @notice Thrown when the timestamp used to construct an asset ID exceeds
+    ///         the uint248 scale.
     error InvalidTimestamp();
 
-    /// ######################
-    /// ### FixedPointMath ###
-    /// ######################
-    error FixedPointMath_InvalidExponent();
-    error FixedPointMath_InvalidInput();
-    error FixedPointMath_NegativeOrZeroInput();
-    error FixedPointMath_NegativeInput();
+    /// @notice Thrown when the input to `FixedPointMath.ln` is less than or
+    ///         equal to zero.
+    error LnInvalidInput();
 
-    /// ######################
-    /// ### YieldSpaceMath ###
-    /// ######################
-    error InvalidTradeSize();
+    /// @notice Thrown when vault share price is smaller than the minimum share
+    ///         price. This protects traders from unknowingly opening a long or
+    ///         short after negative interest has accrued.
+    error MinimumSharePrice();
 
-    /// ################
-    /// ### SafeCast ###
-    /// ################
+    /// @notice Thrown when the input or output amount of a trade is smaller
+    ///         than the minimum transaction amount. This protects traders and
+    ///         LPs from losses of precision that can occur at small scales.
+    error MinimumTransactionAmount();
+
+    /// @notice Thrown when the present value is negative. Whatever proceeded
+    ///         a negative present value should be reverted.
+    error NegativePresentValue();
+
+    /// @notice Thrown when ether is sent to an instance that doesn't accept
+    ///         ether as a deposit asset.
+    error NotPayable();
+
+    /// @notice Thrown when a slippage guard is violated.
+    error OutputLimit();
+
+    /// @notice Thrown when the pool is already initialized and a trader calls
+    ///         `initialize`. This prevents the pool from being reinitialized
+    ///         after it has been initialized.
+    error PoolAlreadyInitialized();
+
+    /// @notice Thrown when the pool is paused and a trader tries to add
+    ///         liquidity, open a long, or open a short. Traders can still
+    ///         close their existing positions while the pool is paused.
+    error PoolIsPaused();
+
+    /// @notice Thrown when the owner passed to permit is the zero address. This
+    ///         prevents users from spending the funds in address zero by
+    ///         sending an invalid signature to ecrecover.
+    error RestrictedZeroAddress();
+
+    /// @notice Thrown by a read-only function called by the proxy. Unlike a
+    ///         normal error, this error actually indicates that a read-only
+    ///         call succeeded. The data that it wraps is the return data from
+    ///         the read-only call.
+    error ReturnData(bytes data);
+
+    /// @notice Thrown when an asset is swept from the pool and one of the
+    ///         pool's depository assets changes.
+    error SweepFailed();
+
+    /// @notice Thrown when an ether transfer fails.
+    error TransferFailed();
+
+    /// @notice Thrown when an unauthorized user attempts to access admin
+    ///         functionality.
+    error Unauthorized();
+
+    /// @notice Thrown when a read-only call succeeds. The proxy architecture
+    ///         uses a force-revert delegatecall pattern to ensure that calls
+    ///         that are intended to be read-only are actually read-only.
+    error UnexpectedSuccess();
+
+    /// @notice Thrown when casting a value to a uint112 that is outside of the
+    ///         uint128 scale.
     error UnsafeCastToUint112();
+
+    /// @notice Thrown when casting a value to a uint128 that is outside of the
+    ///         uint128 scale.
     error UnsafeCastToUint128();
+
+    /// @notice Thrown when casting a value to a int128 that is outside of the
+    ///         int128 scale.
     error UnsafeCastToInt128();
+
+    /// @notice Thrown when an unsupported option is passed to a function or
+    ///         a user attempts to sweep an invalid token. The options and sweep
+    ///         targets that are supported vary between instances.
+    error UnsupportedToken();
 
     /// Getters ///
 

@@ -167,7 +167,8 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
         if (
             _config.fees.curve > 1e18 ||
             _config.fees.flat > 1e18 ||
-            _config.fees.governanceLP > 1e18
+            _config.fees.governanceLP > 1e18 ||
+            _config.fees.governanceZombie > 1e18
         ) {
             revert IHyperdrive.InvalidFeeAmounts();
         }

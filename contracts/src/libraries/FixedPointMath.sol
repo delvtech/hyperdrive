@@ -122,8 +122,8 @@ library FixedPointMath {
         int256 y_int256 = int256(y); // solhint-disable-line var-name-mixedcase
 
         // Compute y*ln(x)
-        // Any overflow for x will be caught in _ln() in the initial bounds check
-        int256 lnx = _ln(int256(x));
+        // Any overflow for x will be caught in ln() in the initial bounds check
+        int256 lnx = ln(int256(x));
         int256 ylnx;
         assembly ("memory-safe") {
             ylnx := mul(y_int256, lnx)
@@ -147,7 +147,7 @@ library FixedPointMath {
             // When the result is > (2**255 - 1) / 1e18 we can not represent it as an
             // int. This happens when x >= floor(log((2**255 - 1) / 1e18) * 1e18) ~ 135.
             if (x >= 135305999368893231589)
-                revert IHyperdrive.FixedPointMath_InvalidExponent();
+                revert IHyperdrive.ExpInvalidExponent();
 
             // x is now in the range (-42, 136) * 1e18. Convert to (-42, 136) * 2**96
             // for more intermediate precision and a binary basis. This base conversion
@@ -208,16 +208,12 @@ library FixedPointMath {
     /// @dev Reverts if x is negative
     /// @dev Credit to Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/SignedWadMath.sol)
     /// @param x Fixed point number in 1e18 format.
-    /// @return Result of ln(x).
-    function ln(int256 x) internal pure returns (int256) {
-        if (x <= 0) revert IHyperdrive.FixedPointMath_NegativeOrZeroInput();
-        return _ln(x);
-    }
-
-    // Reverts if x is negative, but we allow ln(0)=0
-    function _ln(int256 x) private pure returns (int256 r) {
+    /// @return r Result of ln(x).
+    function ln(int256 x) internal pure returns (int256 r) {
         unchecked {
-            if (x <= 0) revert IHyperdrive.FixedPointMath_InvalidInput();
+            if (x <= 0) {
+                revert IHyperdrive.LnInvalidInput();
+            }
 
             // We want to convert x from 10**18 fixed point to 2**96 fixed point.
             // We do this by multiplying by 2**96 / 10**18. But since

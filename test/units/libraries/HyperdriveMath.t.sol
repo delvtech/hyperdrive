@@ -417,7 +417,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 1 ether
             );
         // verify that the bondReservesDelta equals the amountOut/2
-        assertEq(bondReservesDelta, amountOut.mulDown(normalizedTimeRemaining));
+        assertEq(bondReservesDelta, amountOut.mulUp(normalizedTimeRemaining));
         shareReserves += shareReservesDelta;
         bondReserves -= bondReservesDelta;
         uint256 result = hyperdriveMath.calculateSpotAPR(

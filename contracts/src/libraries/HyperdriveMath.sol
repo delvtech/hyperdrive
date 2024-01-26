@@ -405,6 +405,9 @@ library HyperdriveMath {
             _vaultSharePrice
         );
         if (_normalizedTimeRemaining > 0) {
+            // NOTE: Round the `bondCurveDelta` down to underestimate the share
+            // proceeds.
+            //
             // Calculate the curved part of the trade.
             bondCurveDelta = _amountIn.mulDown(_normalizedTimeRemaining);
 
@@ -506,7 +509,9 @@ library HyperdriveMath {
             _vaultSharePrice
         );
         if (_normalizedTimeRemaining > 0) {
-            bondCurveDelta = _amountOut.mulDown(_normalizedTimeRemaining);
+            // NOTE: Round the `bondCurveDelta` up to overestimate the share
+            // payment.
+            bondCurveDelta = _amountOut.mulUp(_normalizedTimeRemaining);
 
             // NOTE: Round the `shareCurveDelta` up to overestimate the share
             // payment.

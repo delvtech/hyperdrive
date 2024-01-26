@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 
 /// @author DELV
@@ -11,13 +12,7 @@ import { HyperdriveBase } from "./HyperdriveBase.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveAdmin is HyperdriveBase {
-    event CollectGovernanceFee(address indexed collector, uint256 fees);
-
-    event GovernanceUpdated(address indexed newGovernance);
-
-    event PauserUpdated(address indexed newPauser);
-
+abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
     /// @dev This function collects the governance fees accrued by the pool.
     /// @param _options The options that configure how the fees are settled.
     /// @return proceeds The amount collected in units specified by _options.
@@ -54,6 +49,8 @@ abstract contract HyperdriveAdmin is HyperdriveBase {
     function _pause(bool _status) internal {
         if (!_pausers[msg.sender]) revert IHyperdrive.Unauthorized();
         _marketState.isPaused = _status;
+
+        // FIXME: This needs to emit an event.
     }
 
     /// @dev Allows governance to change governance.

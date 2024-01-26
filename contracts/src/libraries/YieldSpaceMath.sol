@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { Errors } from "./Errors.sol";
 import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { HyperdriveMath } from "./HyperdriveMath.sol";
 
@@ -61,6 +62,13 @@ library YieldSpaceMath {
         //  (c / µ) * (µ * (ze + dz))^(1 - t)
         ze = c.mulDivDown(ze, mu);
 
+        // If k < ze, we have no choice but to revert.
+        if (k < ze) {
+            Errors.throwInsufficientLiquidityError(
+                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
+            );
+        }
+
         // NOTE: We round _y up to make the rhs of the equation larger.
         //
         // (k - (c / µ) * (µ * (ze + dz))^(1 - t))^(1 / (1 - t))
@@ -71,6 +79,13 @@ library YieldSpaceMath {
         } else {
             // Rounding down the exponent results in a larger result.
             _y = _y.pow(ONE.divDown(t));
+        }
+
+        // If y < _y, we have no choice but to revert.
+        if (y < _y) {
+            Errors.throwInsufficientLiquidityError(
+                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
+            );
         }
 
         // Δy = y - (k - (c / µ) * (µ * (ze + dz))^(1 - t))^(1 / (1 - t))
@@ -100,8 +115,22 @@ library YieldSpaceMath {
         // k = (c / µ) * (µ * ze)^(1 - t) + y^(1 - t)
         uint256 k = kUp(ze, y, t, c, mu);
 
+        // If y < dy, we have no choice but to revert.
+        if (y < dy) {
+            Errors.throwInsufficientLiquidityError(
+                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
+            );
+        }
+
         // (y - dy)^(1 - t)
         y = (y - dy).pow(t);
+
+        // If k < y, we have no choice but to revert.
+        if (k < y) {
+            Errors.throwInsufficientLiquidityError(
+                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
+            );
+        }
 
         // NOTE: We round _z up to make the lhs of the equation larger.
         //
@@ -116,6 +145,13 @@ library YieldSpaceMath {
         }
         // ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
         _z = _z.divUp(mu);
+
+        // If _z < ze, we have no choice but to revert.
+        if (_z < ze) {
+            Errors.throwInsufficientLiquidityError(
+                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
+            );
+        }
 
         // Δz = (((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ - ze
         return _z - ze;
@@ -144,8 +180,22 @@ library YieldSpaceMath {
         // k = (c / µ) * (µ * ze)^(1 - t) + y^(1 - t)
         uint256 k = kDown(ze, y, t, c, mu);
 
+        // If y < dy, we have no choice but to revert.
+        if (y < dy) {
+            Errors.throwInsufficientLiquidityError(
+                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
+            );
+        }
+
         // (y - dy)^(1 - t)
         y = (y - dy).pow(t);
+
+        // If k < y, we have no choice but to revert.
+        if (k < y) {
+            Errors.throwInsufficientLiquidityError(
+                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
+            );
+        }
 
         // NOTE: We round _z down to make the lhs of the equation smaller.
         //
@@ -160,6 +210,13 @@ library YieldSpaceMath {
         }
         // ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
         _z = _z.divDown(mu);
+
+        // If _z < ze, we have no choice but to revert.
+        if (_z < ze) {
+            Errors.throwInsufficientLiquidityError(
+                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
+            );
+        }
 
         // Δz = (((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ - ze
         return _z - ze;
@@ -194,7 +251,9 @@ library YieldSpaceMath {
             mu
         );
         if (!success) {
-            revert IHyperdrive.InvalidTradeSize();
+            Errors.throwInsufficientLiquidityError(
+                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
+            );
         }
     }
 

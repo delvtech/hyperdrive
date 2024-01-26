@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IERC20 } from "../interfaces/IERC20.sol";
+import { IERC20Forwarder } from "../interfaces/IERC20Forwarder.sol";
 import { IForwarderFactory } from "../interfaces/IForwarderFactory.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IMultiToken } from "../interfaces/IMultiToken.sol";
@@ -18,7 +18,7 @@ import { IMultiToken } from "../interfaces/IMultiToken.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract ERC20Forwarder is IERC20 {
+contract ERC20Forwarder is IERC20Forwarder {
     // The contract which contains the actual state for this 'ERC20'
     IMultiToken public immutable token;
     // The ID for this contract's 'ERC20' as a sub token of the main token
@@ -61,35 +61,35 @@ contract ERC20Forwarder is IERC20 {
     ///         so we just return 18 in all cases
     /// @return Always 18
     function decimals() external pure override returns (uint8) {
-        return (18);
+        return 18;
     }
 
     /// @notice Returns the name of this sub token by calling into the
     ///         main token to load it.
     /// @return Returns the name of this token
     function name() external view override returns (string memory) {
-        return (token.name(tokenId));
+        return token.name(tokenId);
     }
 
     /// @notice Returns the totalSupply of the sub token by calling into the
     ///         main token to load it.
     /// @return Returns the totalSupply of this token
     function totalSupply() external view override returns (uint256) {
-        return (token.totalSupply(tokenId));
+        return token.totalSupply(tokenId);
     }
 
     /// @notice Returns the symbol of this sub token by calling into the
     ///         main token to load it.
     /// @return Returns the symbol of this token
     function symbol() external view override returns (string memory) {
-        return (token.symbol(tokenId));
+        return token.symbol(tokenId);
     }
 
     /// @notice Returns the balance of this sub token through an ERC20 compliant
     ///         interface.
     /// @return The balance of the queried account.
     function balanceOf(address who) external view override returns (uint256) {
-        return (token.balanceOf(tokenId, who));
+        return token.balanceOf(tokenId, who);
     }
 
     /// @notice Loads the allowance information for an owner spender pair.
@@ -194,9 +194,14 @@ contract ERC20Forwarder is IERC20 {
         bytes32 s
     ) external {
         // Require that the signature is not expired
-        if (block.timestamp > deadline) revert IHyperdrive.ExpiredDeadline();
+        if (block.timestamp > deadline) {
+            revert IERC20Forwarder.ExpiredDeadline();
+        }
+
         // Require that the owner is not zero
-        if (owner == address(0)) revert IHyperdrive.RestrictedZeroAddress();
+        if (owner == address(0)) {
+            revert IERC20Forwarder.RestrictedZeroAddress();
+        }
 
         uint256 nonce = nonces[owner];
         bytes32 structHash = keccak256(
@@ -218,7 +223,9 @@ contract ERC20Forwarder is IERC20 {
 
         // Check that the signature is valid
         address signer = ecrecover(structHash, v, r, s);
-        if (signer != owner) revert IHyperdrive.InvalidSignature();
+        if (signer != owner) {
+            revert InvalidSignature();
+        }
 
         // Increment the signature nonce
         unchecked {

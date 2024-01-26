@@ -2,6 +2,8 @@
 pragma solidity 0.8.19;
 
 interface IMultiTokenCore {
+    /// Functions ///
+
     function transferFrom(
         uint256 tokenID,
         address from,
