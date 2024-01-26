@@ -34,6 +34,12 @@ abstract contract StETHBase is HyperdriveBase {
         if (_minimumShareReserves != 1e15) {
             revert IHyperdrive.InvalidMinimumShareReserves();
         }
+
+        // Ensure that the minimum transaction amount are equal to 1e15. This
+        // value has been tested to prevent precision issues.
+        if (_minimumTransactionAmount != 1e15) {
+            revert IHyperdrive.InvalidMinimumTransactionAmount();
+        }
     }
 
     /// Yield Source ///

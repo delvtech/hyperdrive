@@ -63,6 +63,18 @@ abstract contract HyperdriveDeployerCoordinator is IDeployerCoordinator {
         IHyperdrive.PoolConfig memory _config = _copyPoolConfig(_deployConfig);
         _config.initialVaultSharePrice = _getInitialVaultSharePrice(_extraData);
 
+        // Ensure that the minimum share reserves are large enough to meet the
+        // minimum requirements for safety.
+        //
+        // NOTE: Some pools may require larger minimum share reserves to be
+        // considered safe. This is just a sanity check.
+        if (
+            _config.minimumShareReserves <
+            10 ** (_config.baseToken.decimals() - 4)
+        ) {
+            revert IHyperdrive.InvalidMinimumShareReserves();
+        }
+
         // Deploy the target0 contract.
         address target0 = IHyperdriveTargetDeployer(target0Deployer).deploy(
             _config,

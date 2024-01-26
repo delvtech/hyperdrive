@@ -61,17 +61,23 @@ contract HyperdriveFactory is IHyperdriveFactory {
     ///         deployments.
     uint256 public maxPositionDuration;
 
-    /// @notice The minimum fee parameters that can be used by new deployments.
-    IHyperdrive.Fees internal _minFees;
+    /// @notice The minimum fixed APR that can be used by new deployments.
+    uint256 public minFixedAPR;
 
-    /// @notice The maximum fee parameters that can be used by new deployments.
-    IHyperdrive.Fees internal _maxFees;
+    /// @notice The maximum fixed APR that can be used by new deployments.
+    uint256 public maxFixedAPR;
 
     /// @notice The minimum time stretch APR that can be used by new deployments.
     uint256 public minTimestretchAPR;
 
     /// @notice The maximum time stretch APR that can be used by new deployments.
     uint256 public maxTimestretchAPR;
+
+    /// @notice The minimum fee parameters that can be used by new deployments.
+    IHyperdrive.Fees internal _minFees;
+
+    /// @notice The maximum fee parameters that can be used by new deployments.
+    IHyperdrive.Fees internal _maxFees;
 
     /// @notice The defaultPausers used when new instances are deployed.
     address[] internal _defaultPausers;
@@ -99,6 +105,10 @@ contract HyperdriveFactory is IHyperdriveFactory {
         /// @dev The maximum position duration that can be used in new
         ///      deployments.
         uint256 maxPositionDuration;
+        /// @dev The minimum fixed APR that can be used in new deployments.
+        uint256 minFixedAPR;
+        /// @dev The maximum fixed APR that can be used in new deployments.
+        uint256 maxFixedAPR;
         /// @dev The minimum time stretch APR that can be used in new
         ///      deployments.
         uint256 minTimestretchAPR;
@@ -186,6 +196,14 @@ contract HyperdriveFactory is IHyperdriveFactory {
             revert IHyperdriveFactory.InvalidMaxPositionDuration();
         }
         maxPositionDuration = _factoryConfig.maxPositionDuration;
+
+        // Ensure that the minimum fixed APR is less than or equal to the
+        // maximum fixed APR.
+        if (_factoryConfig.minFixedAPR > _factoryConfig.maxFixedAPR) {
+            revert IHyperdriveFactory.InvalidFixedAPR();
+        }
+        minFixedAPR = _factoryConfig.minFixedAPR;
+        maxFixedAPR = _factoryConfig.maxFixedAPR;
 
         // Ensure that the minimum time stretch APR is less than or equal to the
         // maximum time stretch APR.
@@ -395,6 +413,66 @@ contract HyperdriveFactory is IHyperdriveFactory {
         emit MinPositionDurationUpdated(_minPositionDuration);
     }
 
+    /// @notice Allows governance to update the maximum fixed APR.
+    /// @param _maxFixedAPR The new maximum fixed APR.
+    function updateMaxFixedAPR(uint256 _maxFixedAPR) external onlyGovernance {
+        // Ensure that the maximum fixed APR is greater than or equal to the
+        // minimum fixed APR.
+        if (_maxFixedAPR < minFixedAPR) {
+            revert IHyperdriveFactory.InvalidMaxFixedAPR();
+        }
+
+        // Update the maximum fixed APR and emit an event.
+        maxFixedAPR = _maxFixedAPR;
+        emit MaxFixedAPRUpdated(_maxFixedAPR);
+    }
+
+    /// @notice Allows governance to update the minimum fixed APR.
+    /// @param _minFixedAPR The new minimum fixed APR.
+    function updateMinFixedAPR(uint256 _minFixedAPR) external onlyGovernance {
+        // Ensure that the minimum fixed APR is less than or equal to the
+        // maximum fixed APR.
+        if (_minFixedAPR > maxFixedAPR) {
+            revert IHyperdriveFactory.InvalidMinFixedAPR();
+        }
+
+        // Update the minimum fixed APR and emit an event.
+        minFixedAPR = _minFixedAPR;
+        emit MinFixedAPRUpdated(_minFixedAPR);
+    }
+
+    /// @notice Allows governance to update the maximum timestretch APR.
+    /// @param _maxTimestretchAPR The new maximum timestretch APR.
+    function updateMaxTimestretchAPR(
+        uint256 _maxTimestretchAPR
+    ) external onlyGovernance {
+        // Ensure that the maximum timestretch APR is greater than or equal
+        // to the minimum timestretch APR.
+        if (_maxTimestretchAPR < minTimestretchAPR) {
+            revert IHyperdriveFactory.InvalidMaxTimestretchAPR();
+        }
+
+        // Update the maximum timestretch APR and emit an event.
+        maxTimestretchAPR = _maxTimestretchAPR;
+        emit MaxTimestretchAPRUpdated(_maxTimestretchAPR);
+    }
+
+    /// @notice Allows governance to update the minimum timestretch APR.
+    /// @param _minTimestretchAPR The new minimum timestretch APR.
+    function updateMinTimestretchAPR(
+        uint256 _minTimestretchAPR
+    ) external onlyGovernance {
+        // Ensure that the minimum timestretch APR is less than or equal
+        // to the maximum timestretch APR.
+        if (_minTimestretchAPR > maxTimestretchAPR) {
+            revert IHyperdriveFactory.InvalidMinTimestretchAPR();
+        }
+
+        // Update the minimum timestretch APR and emit an event.
+        minTimestretchAPR = _minTimestretchAPR;
+        emit MinTimestretchAPRUpdated(_minTimestretchAPR);
+    }
+
     /// @notice Allows governance to update the maximum fee parameters.
     /// @param __maxFees The new maximum fee parameters.
     function updateMaxFees(
@@ -494,8 +572,8 @@ contract HyperdriveFactory is IHyperdriveFactory {
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     /// @param _extraData The extra data that contains data necessary for the
     ///        specific deployer.
-    /// @param _contribution Base token to call init with
-    /// @param _apr The apr to call init with
+    /// @param _contribution The contribution amount in base to the pool.
+    /// @param _fixedAPR The fixed APR rate that the pool will be initialized to.
     /// @param _initializeExtraData The extra data for the `initialize` call.
     /// @return The hyperdrive address deployed.
     function deployAndInitialize(
@@ -503,7 +581,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
         IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory _extraData,
         uint256 _contribution,
-        uint256 _apr,
+        uint256 _fixedAPR,
         bytes memory _initializeExtraData
     ) public payable virtual returns (IHyperdrive) {
         // Ensure that the target deployer has been registered.
@@ -603,7 +681,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
             // Initialize the Hyperdrive instance.
             hyperdrive.initialize{ value: _contribution }(
                 _contribution,
-                _apr,
+                _fixedAPR,
                 IHyperdrive.Options({
                     destination: msg.sender,
                     asBase: true,
@@ -629,7 +707,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
             // Initialize the Hyperdrive instance.
             hyperdrive.initialize(
                 _contribution,
-                _apr,
+                _fixedAPR,
                 IHyperdrive.Options({
                     destination: msg.sender,
                     asBase: true,

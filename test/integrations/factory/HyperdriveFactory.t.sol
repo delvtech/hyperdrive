@@ -51,6 +51,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
     event MinPositionDurationUpdated(uint256 newMinPositionDuration);
 
+    event MaxFixedAPRUpdated(uint256 newMaxFixedAPR);
+
+    event MinFixedAPRUpdated(uint256 newMinFixedAPR);
+
+    event MaxTimestretchAPRUpdated(uint256 newMaxTimestretchAPR);
+
+    event MinTimestretchAPRUpdated(uint256 newMinTimestretchAPR);
+
     event MaxFeesUpdated(IHyperdrive.Fees newMaxFees);
 
     event MinFeesUpdated(IHyperdrive.Fees newMinFees);
@@ -74,7 +82,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
-                minTimestretchAPR: 0.01e18,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimestretchAPR: 0.005e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees({
                     curve: 0.001e18,
@@ -114,6 +124,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
                 minTimestretchAPR: 0.01e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
@@ -140,6 +152,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
                 minTimestretchAPR: 0.01e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
@@ -166,6 +180,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 7 hours,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
                 minTimestretchAPR: 0.01e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
@@ -192,6 +208,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 8.5 hours,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
                 minTimestretchAPR: 0.01e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
@@ -215,6 +233,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 8 hours,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
                 minTimestretchAPR: 0.01e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
@@ -239,6 +259,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days + 30 minutes,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
                 minTimestretchAPR: 0.01e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
@@ -262,6 +284,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 6 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
                 minTimestretchAPR: 0.01e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
@@ -286,6 +310,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days + 30 minutes,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
                 minTimestretchAPR: 0.01e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
@@ -309,6 +335,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
                 minTimestretchAPR: 0.01e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
@@ -332,6 +360,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
                 minTimestretchAPR: 0.01e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
@@ -355,6 +385,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
                 minTimestretchAPR: 0.01e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
@@ -378,6 +410,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
                 minTimestretchAPR: 0.01e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
@@ -401,6 +435,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
                 minTimestretchAPR: 0.01e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(ONE, 0, 0, 0),
@@ -424,6 +460,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
                 minTimestretchAPR: 0.01e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, ONE, 0, 0),
@@ -447,6 +485,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
                 minTimestretchAPR: 0.01e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, ONE, 0),
@@ -470,6 +510,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
                 minTimestretchAPR: 0.01e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, ONE),
@@ -492,6 +534,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
                 minTimestretchAPR: 0.01e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
@@ -904,6 +948,118 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         emit MinPositionDurationUpdated(newMinPositionDuration);
         factory.updateMinPositionDuration(newMinPositionDuration);
         assertEq(factory.minPositionDuration(), newMinPositionDuration);
+    }
+
+    function test_updateMaxFixedAPR() external {
+        uint256 newMaxFixedAPR = 0.25e18;
+
+        // Ensure that the max fixed APR can't be updated by someone other than
+        // the current governance.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
+        factory.updateMaxFixedAPR(newMaxFixedAPR);
+
+        // Ensure that the max fixed APR can't be set to a value less than the
+        // min fixed APR.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        uint256 minFixedAPR = factory.minFixedAPR();
+        vm.expectRevert(IHyperdriveFactory.InvalidMaxFixedAPR.selector);
+        factory.updateMaxFixedAPR(minFixedAPR - 1);
+
+        // Ensure that the max fixed APR was updated successfully and that the
+        // correct event was emitted.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        vm.expectEmit(true, true, true, true);
+        emit MaxFixedAPRUpdated(newMaxFixedAPR);
+        factory.updateMaxFixedAPR(newMaxFixedAPR);
+        assertEq(factory.maxFixedAPR(), newMaxFixedAPR);
+    }
+
+    function test_updateMinFixedAPR() external {
+        uint256 newMinFixedAPR = 0.01e18;
+
+        // Ensure that the min fixed APR can't be updated by someone other than
+        // the current governance.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
+        factory.updateMinFixedAPR(newMinFixedAPR);
+
+        // Ensure that the min fixed APR can't be set to a value greater than
+        // the max fixed APR.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        uint256 maxFixedAPR = factory.maxFixedAPR();
+        vm.expectRevert(IHyperdriveFactory.InvalidMinFixedAPR.selector);
+        factory.updateMinFixedAPR(maxFixedAPR + 1);
+
+        // Ensure that the min fixed APR was updated successfully and that the
+        // correct event was emitted.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        vm.expectEmit(true, true, true, true);
+        emit MinFixedAPRUpdated(newMinFixedAPR);
+        factory.updateMinFixedAPR(newMinFixedAPR);
+        assertEq(factory.minFixedAPR(), newMinFixedAPR);
+    }
+
+    function test_updateMaxTimestretchAPR() external {
+        uint256 newMaxTimestretchAPR = 0.25e18;
+
+        // Ensure that the max timestretch APR can't be updated by someone
+        // other than the current governance.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
+        factory.updateMaxTimestretchAPR(newMaxTimestretchAPR);
+
+        // Ensure that the max timestretch APR can't be set to a value
+        // less than the min timestretch APR.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        uint256 minTimestretchAPR = factory.minTimestretchAPR();
+        vm.expectRevert(IHyperdriveFactory.InvalidMaxTimestretchAPR.selector);
+        factory.updateMaxTimestretchAPR(minTimestretchAPR - 1);
+
+        // Ensure that the max timestretch APR was updated successfully and
+        // that the correct event was emitted.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        vm.expectEmit(true, true, true, true);
+        emit MaxTimestretchAPRUpdated(newMaxTimestretchAPR);
+        factory.updateMaxTimestretchAPR(newMaxTimestretchAPR);
+        assertEq(factory.maxTimestretchAPR(), newMaxTimestretchAPR);
+    }
+
+    function test_updateMinTimestretchAPR() external {
+        uint256 newMinTimestretchAPR = 0.01e18;
+
+        // Ensure that the min timestretch APR can't be updated by someone
+        // other than the current governance.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
+        factory.updateMinTimestretchAPR(newMinTimestretchAPR);
+
+        // Ensure that the min timestretch APR can't be set to a value
+        // greater than the max timestretch APR.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        uint256 maxTimestretchAPR = factory.maxTimestretchAPR();
+        vm.expectRevert(IHyperdriveFactory.InvalidMinTimestretchAPR.selector);
+        factory.updateMinTimestretchAPR(maxTimestretchAPR + 1);
+
+        // Ensure that the min timestretch APR was updated successfully and
+        // that the correct event was emitted.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        vm.expectEmit(true, true, true, true);
+        emit MinTimestretchAPRUpdated(newMinTimestretchAPR);
+        factory.updateMinTimestretchAPR(newMinTimestretchAPR);
+        assertEq(factory.minTimestretchAPR(), newMinTimestretchAPR);
     }
 
     function test_updateMaxFees() external {
@@ -1410,6 +1566,12 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         );
         config.positionDuration = oldPositionDuration;
 
+        // FIXME: Add cases for the min and max fixed APR.
+
+        // FIXME: Add cases for the min and max time stretch APR.
+
+        // FIXME: Add cases for the additional checks on the timestretch APR.
+
         // Ensure than an instance can't be deployed with a curve fee greater
         // than the maximum curve fee.
         vm.stopPrank();
@@ -1676,6 +1838,8 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
                 minTimestretchAPR: 0.01e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees({
@@ -2036,6 +2200,8 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
                 minTimestretchAPR: 0.01e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees({
@@ -2207,6 +2373,8 @@ contract HyperdriveFactoryAddHyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
                 minTimestretchAPR: 0.01e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees({
@@ -2309,6 +2477,8 @@ contract HyperdriveFactoryRemoveInstanceTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
                 minTimestretchAPR: 0.01e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees({

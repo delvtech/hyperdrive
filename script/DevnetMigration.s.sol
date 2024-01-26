@@ -63,6 +63,8 @@ contract DevnetMigration is Script {
         uint256 factoryMaxCheckpointDuration;
         uint256 factoryMinPositionDuration;
         uint256 factoryMaxPositionDuration;
+        uint256 factoryMinFixedAPR;
+        uint256 factoryMaxFixedAPR;
         uint256 factoryMinTimestretchAPR;
         uint256 factoryMaxTimestretchAPR;
         uint256 factoryMinCurveFee;
@@ -147,6 +149,14 @@ contract DevnetMigration is Script {
             factoryMaxPositionDuration: vm.envOr(
                 "FACTORY_MAX_POSITION_DURATION",
                 uint256(10 * 365 days)
+            ),
+            factoryMinFixedAPR: vm.envOr(
+                "FACTORY_MIN_FIXED_APR",
+                uint256(0.01e18)
+            ),
+            factoryMaxFixedAPR: vm.envOr(
+                "FACTORY_MAX_FIXED_APR",
+                uint256(0.5e18)
             ),
             factoryMinTimestretchAPR: vm.envOr(
                 "FACTORY_MIN_TIMESTRETCH_APR",
@@ -338,6 +348,8 @@ contract DevnetMigration is Script {
                     maxCheckpointDuration: config.factoryMaxCheckpointDuration,
                     minPositionDuration: config.factoryMinPositionDuration,
                     maxPositionDuration: config.factoryMaxPositionDuration,
+                    minFixedAPR: config.factoryMinFixedAPR,
+                    maxFixedAPR: config.factoryMaxFixedAPR,
                     minTimestretchAPR: config.factoryMinTimestretchAPR,
                     maxTimestretchAPR: config.factoryMaxTimestretchAPR,
                     minFees: IHyperdrive.Fees({

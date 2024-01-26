@@ -62,7 +62,9 @@ contract StETHHyperdriveTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
-                minTimestretchAPR: 0.01e18,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimestretchAPR: 0.005e18,
                 maxTimestretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees({
                     curve: 0,
