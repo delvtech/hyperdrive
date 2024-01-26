@@ -132,7 +132,7 @@ contract DevnetMigration is Script {
             ),
             factoryMinCheckpointDuration: vm.envOr(
                 "FACTORY_MIN_CHECKPOINT_DURATION",
-                uint256(8 hours)
+                uint256(1 hours)
             ),
             factoryMaxCheckpointDuration: vm.envOr(
                 "FACTORY_MAX_CHECKPOINT_DURATION",
@@ -382,8 +382,8 @@ contract DevnetMigration is Script {
                         .calculateTimeStretch(
                             config.erc4626HyperdrivePositionDuration
                         ),
-                    governance: config.admin,
-                    feeCollector: config.admin,
+                    governance: address(0),
+                    feeCollector: address(0),
                     fees: IHyperdrive.Fees({
                         curve: config.erc4626HyperdriveCurveFee,
                         flat: config.erc4626HyperdriveFlatFee,
@@ -438,8 +438,8 @@ contract DevnetMigration is Script {
                         .calculateTimeStretch(
                             config.stethHyperdrivePositionDuration
                         ),
-                    governance: config.admin,
-                    feeCollector: config.admin,
+                    governance: address(0),
+                    feeCollector: address(0),
                     fees: IHyperdrive.Fees({
                         curve: config.stethHyperdriveCurveFee,
                         flat: config.stethHyperdriveFlatFee,
