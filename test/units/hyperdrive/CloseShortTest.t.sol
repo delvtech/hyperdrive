@@ -24,9 +24,8 @@ contract CloseShortTest is HyperdriveTest {
     }
 
     function test_close_short_failure_zero_amount() external {
-        uint256 apr = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 apr = 0.05e18;
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
@@ -51,9 +50,8 @@ contract CloseShortTest is HyperdriveTest {
     }
 
     function test_close_short_failure_invalid_amount() external {
-        uint256 apr = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 apr = 0.05e18;
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
@@ -78,9 +76,8 @@ contract CloseShortTest is HyperdriveTest {
     }
 
     function test_close_short_failure_invalid_timestamp() external {
-        uint256 apr = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 apr = 0.05e18;
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
@@ -96,6 +93,36 @@ contract CloseShortTest is HyperdriveTest {
             uint256(type(uint248).max) + 1,
             MINIMUM_TRANSACTION_AMOUNT,
             0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
+    function test_close_short_failure_output_limit() external {
+        // Initialize the pool with a large amount of capital.
+        uint256 apr = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Bob opens a short.
+        uint256 shortAmount = 10_000e18;
+        (uint256 maturityTime, uint256 shortBasePaid) = openShort(
+            bob,
+            shortAmount
+        );
+
+        // Bob tries to close his short with an output limit that is too high.
+        // This should fail the output limit check.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdrive.OutputLimit.selector);
+        hyperdrive.closeShort(
+            maturityTime,
+            shortAmount,
+            shortBasePaid.mulDown(1.1e18),
             IHyperdrive.Options({
                 destination: bob,
                 asBase: true,
