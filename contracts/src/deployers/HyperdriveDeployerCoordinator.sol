@@ -3,7 +3,7 @@ pragma solidity 0.8.20;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveCoreDeployer } from "../interfaces/IHyperdriveCoreDeployer.sol";
-import { IDeployerCoordinator } from "../interfaces/IDeployerCoordinator.sol";
+import { IHyperdriveDeployerCoordinator } from "../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IHyperdriveTargetDeployer } from "../interfaces/IHyperdriveTargetDeployer.sol";
 
 /// @author DELV
@@ -14,7 +14,34 @@ import { IHyperdriveTargetDeployer } from "../interfaces/IHyperdriveTargetDeploy
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveDeployerCoordinator is IDeployerCoordinator {
+abstract contract HyperdriveDeployerCoordinator is
+    IHyperdriveDeployerCoordinator
+{
+    struct Deployment {
+        /// @dev The hash of the config used in this deployment. This is used to
+        ///      ensure that the config is the same across all deployments in
+        ///      the batch.
+        bytes32 configHash;
+        /// @dev The hash of the extra data passed to the child deployers. This
+        ///      is used to ensure that the extra data is the same across all
+        ///      deployments in the batch.
+        bytes32 extraDataHash;
+        /// @dev The initial share price used in the first part of this
+        ///      deployment. This is used to ensure that the initial share price
+        ///      is the same across all deployments in the batch.
+        uint256 initialSharePrice;
+        /// @dev The address of the Hyperdrive entrypoint.
+        address hyperdrive;
+        /// @dev The address of the HyperdriveTarget0 contract.
+        address target0;
+        /// @dev The address of the HyperdriveTarget1 contract.
+        address target1;
+        /// @dev The address of the HyperdriveTarget2 contract.
+        address target2;
+        /// @dev The address of the HyperdriveTarget3 contract.
+        address target3;
+    }
+
     /// @notice The contract used to deploy new instances of Hyperdrive.
     address public immutable coreDeployer;
 
@@ -29,6 +56,9 @@ abstract contract HyperdriveDeployerCoordinator is IDeployerCoordinator {
 
     /// @notice The contract used to deploy new instances of HyperdriveTarget3.
     address public immutable target3Deployer;
+
+    /// @notice A mapping from deployer to deployment ID to deployment.
+    mapping(address => mapping(bytes32 => Deployment)) public deployments;
 
     /// @notice Instantiates the deployer coordinator.
     /// @param _coreDeployer The core deployer.
@@ -51,46 +81,224 @@ abstract contract HyperdriveDeployerCoordinator is IDeployerCoordinator {
     }
 
     /// @notice Deploys a Hyperdrive instance with the given parameters.
+    /// @param _salt The create2 salt used to deploy Hyperdrive.
+    /// @param _deploymentId The ID of the deployment.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     /// @param _extraData The extra data that contains the pool and sweep targets.
     /// @return The address of the newly deployed ERC4626Hyperdrive Instance.
     function deploy(
+        bytes32 _deploymentId,
         IHyperdrive.PoolDeployConfig memory _deployConfig,
-        bytes memory _extraData
-    ) external override returns (address) {
+        bytes memory _extraData,
+        bytes32 _salt
+    ) external returns (address) {
+        // Ensure that the deployment is not a fresh deployment. We can check
+        // this by ensuring that the config hash is set.
+        Deployment memory deployment = deployments[msg.sender][_deploymentId];
+        if (deployment.configHash == bytes32(0)) {
+            revert IHyperdriveDeployerCoordinator.DeploymentDoesNotExist();
+        }
+
+        // Ensure that all of the targets have been deployed.
+        if (
+            deployment.target0 == address(0) ||
+            deployment.target1 == address(0) ||
+            deployment.target2 == address(0) ||
+            deployment.target3 == address(0)
+        ) {
+            revert IHyperdriveDeployerCoordinator.IncompleteDeployment();
+        }
+
+        // Ensure that the provided config matches the config hash.
+        if (keccak256(abi.encode(_deployConfig)) != deployment.configHash) {
+            revert IHyperdriveDeployerCoordinator.MismatchedConfig();
+        }
+
+        // Ensure that the provided extra data matches the extra data hash.
+        if (keccak256(_extraData) != deployment.extraDataHash) {
+            revert IHyperdriveDeployerCoordinator.MismatchedExtraData();
+        }
+
         // Convert the deploy config into the pool config and set the initial
         // vault share price.
-        IHyperdrive.PoolConfig memory _config = _copyPoolConfig(_deployConfig);
-        _config.initialVaultSharePrice = _getInitialVaultSharePrice(_extraData);
-
-        // Deploy the target0 contract.
-        address target0 = IHyperdriveTargetDeployer(target0Deployer).deploy(
-            _config,
-            _extraData
-        );
-        address target1 = IHyperdriveTargetDeployer(target1Deployer).deploy(
-            _config,
-            _extraData
-        );
-        address target2 = IHyperdriveTargetDeployer(target2Deployer).deploy(
-            _config,
-            _extraData
-        );
-        address target3 = IHyperdriveTargetDeployer(target3Deployer).deploy(
-            _config,
-            _extraData
-        );
+        IHyperdrive.PoolConfig memory config = _copyPoolConfig(_deployConfig);
+        config.initialVaultSharePrice = deployment.initialSharePrice;
 
         // Deploy the Hyperdrive instance.
         return
             IHyperdriveCoreDeployer(coreDeployer).deploy(
-                _config,
+                config,
                 _extraData,
-                target0,
-                target1,
-                target2,
-                target3
+                deployment.target0,
+                deployment.target1,
+                deployment.target2,
+                deployment.target3,
+                _salt
             );
+    }
+
+    // FIXME: Ensure that the factory calculates the deployment ID by hashing
+    //        the deployers address with the deployment ID that they provide.
+    //        This will ensure that their deployments can't be front-run by
+    //        someone else.
+    //
+    /// @notice Deploys a HyperdriveTarget0 instance with the given parameters.
+    ///         This must be deployed first as a convention.
+    /// @param _deploymentId The ID of the deployment.
+    /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
+    /// @param _extraData The extra data that contains the pool and sweep targets.
+    /// @param _targetIndex The index of the target to deploy.
+    /// @param _salt The create2 salt used to deploy the target.
+    /// @return target The address of the newly deployed HyperdriveTarget0
+    ///         instance.
+    function deployTarget(
+        bytes32 _deploymentId,
+        IHyperdrive.PoolDeployConfig memory _deployConfig,
+        bytes memory _extraData,
+        uint256 _targetIndex,
+        bytes32 _salt
+    ) external returns (address target) {
+        if (_targetIndex == 0) {
+            // Ensure that the deployment is a fresh deployment. We can check this
+            // by ensuring that the config hash is not set.
+            if (
+                deployments[msg.sender][_deploymentId].configHash != bytes32(0)
+            ) {
+                revert IHyperdriveDeployerCoordinator.DeploymentAlreadyExists();
+            }
+
+            // Check the pool configuration to ensure that it's a valid
+            // configuration for this instance.
+            _checkPoolConfig(_deployConfig);
+
+            // Get the initial share price and the hashes of the config and extra
+            // data.
+            uint256 initialSharePrice = _getInitialVaultSharePrice(_extraData);
+            bytes32 configHash = keccak256(abi.encode(_deployConfig));
+            bytes32 extraDataHash = keccak256(_extraData);
+
+            // Convert the deploy config into the pool config and set the initial
+            // vault share price.
+            IHyperdrive.PoolConfig memory config_ = _copyPoolConfig(
+                _deployConfig
+            );
+            config_.initialVaultSharePrice = initialSharePrice;
+
+            // Deploy the target0 contract.
+            target = IHyperdriveTargetDeployer(target0Deployer).deploy(
+                config_,
+                _extraData,
+                _salt
+            );
+
+            // Store the deployment.
+            deployments[msg.sender][_deploymentId].configHash = configHash;
+            deployments[msg.sender][_deploymentId]
+                .extraDataHash = extraDataHash;
+            deployments[msg.sender][_deploymentId]
+                .initialSharePrice = initialSharePrice;
+            deployments[msg.sender][_deploymentId].target0 = target;
+
+            return target;
+        }
+
+        // Ensure that the deployment is not a fresh deployment. We can check
+        // this by ensuring that the config hash is set.
+        if (deployments[msg.sender][_deploymentId].configHash == bytes32(0)) {
+            revert IHyperdriveDeployerCoordinator.DeploymentDoesNotExist();
+        }
+
+        // Ensure that the provided config matches the config hash.
+        if (
+            keccak256(abi.encode(_deployConfig)) !=
+            deployments[msg.sender][_deploymentId].configHash
+        ) {
+            revert IHyperdriveDeployerCoordinator.MismatchedConfig();
+        }
+
+        // Ensure that the provided extra data matches the extra data hash.
+        if (
+            keccak256(_extraData) !=
+            deployments[msg.sender][_deploymentId].extraDataHash
+        ) {
+            revert IHyperdriveDeployerCoordinator.MismatchedExtraData();
+        }
+
+        // Convert the deploy config into the pool config and set the initial
+        // vault share price.
+        IHyperdrive.PoolConfig memory config = _copyPoolConfig(_deployConfig);
+        config.initialVaultSharePrice = deployments[msg.sender][_deploymentId]
+            .initialSharePrice;
+
+        // Deploy the appropriate target and update the deployment data.
+        if (_targetIndex == 1) {
+            if (deployments[msg.sender][_deploymentId].target1 != address(0)) {
+                revert IHyperdriveDeployerCoordinator.TargetAlreadyDeployed();
+            }
+            target = IHyperdriveTargetDeployer(target1Deployer).deploy(
+                config,
+                _extraData,
+                _salt
+            );
+            deployments[msg.sender][_deploymentId].target1 = target;
+        } else if (_targetIndex == 2) {
+            if (deployments[msg.sender][_deploymentId].target2 != address(0)) {
+                revert IHyperdriveDeployerCoordinator.TargetAlreadyDeployed();
+            }
+            target = IHyperdriveTargetDeployer(target2Deployer).deploy(
+                config,
+                _extraData,
+                _salt
+            );
+            deployments[msg.sender][_deploymentId].target2 = target;
+        } else if (_targetIndex == 3) {
+            if (deployments[msg.sender][_deploymentId].target3 != address(0)) {
+                revert IHyperdriveDeployerCoordinator.TargetAlreadyDeployed();
+            }
+            target = IHyperdriveTargetDeployer(target3Deployer).deploy(
+                config,
+                _extraData,
+                _salt
+            );
+            deployments[msg.sender][_deploymentId].target3 = target;
+        } else {
+            revert IHyperdriveDeployerCoordinator.InvalidTargetIndex();
+        }
+
+        return target;
+    }
+
+    /// @notice Checks the pool configuration to ensure that it is valid.
+    /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
+    function _checkPoolConfig(
+        IHyperdrive.PoolDeployConfig memory _deployConfig
+    ) internal pure virtual {
+        // Ensure that the minimum share reserves is at least 1e3. Deployer
+        // coordinators should override this to be stricter.
+        if (_deployConfig.minimumShareReserves < 1e3) {
+            revert IHyperdriveDeployerCoordinator.InvalidMinimumShareReserves();
+        }
+
+        if (_deployConfig.checkpointDuration == 0) {
+            revert IHyperdriveDeployerCoordinator.InvalidCheckpointDuration();
+        }
+        if (
+            _deployConfig.positionDuration < _deployConfig.checkpointDuration ||
+            _deployConfig.positionDuration % _deployConfig.checkpointDuration !=
+            0
+        ) {
+            revert IHyperdriveDeployerCoordinator.InvalidPositionDuration();
+        }
+
+        // Ensure that the fees don't exceed 100%.
+        if (
+            _deployConfig.fees.curve > 1e18 ||
+            _deployConfig.fees.flat > 1e18 ||
+            _deployConfig.fees.governanceLP > 1e18 ||
+            _deployConfig.fees.governanceZombie > 1e18
+        ) {
+            revert IHyperdriveDeployerCoordinator.InvalidFeeAmounts();
+        }
     }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.

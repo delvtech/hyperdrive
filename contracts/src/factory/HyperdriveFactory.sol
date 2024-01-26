@@ -5,7 +5,7 @@ import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveFactory } from "../interfaces/IHyperdriveFactory.sol";
-import { IDeployerCoordinator } from "../interfaces/IDeployerCoordinator.sol";
+import { IHyperdriveDeployerCoordinator } from "../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
@@ -469,7 +469,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
     ///      by default.
     /// @param _deployerCoordinator The deployer coordinator to use in this
     ///        deployment.
-    /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
+    /// @param _config The configuration of the Hyperdrive pool.
     /// @param _extraData The extra data that contains data necessary for the
     ///        specific deployer.
     /// @param _contribution Base token to call init with
@@ -478,7 +478,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
     /// @return The hyperdrive address deployed.
     function deployAndInitialize(
         address _deployerCoordinator,
-        IHyperdrive.PoolDeployConfig memory _deployConfig,
+        IHyperdrive.PoolConfig memory _config,
         bytes memory _extraData,
         uint256 _contribution,
         uint256 _apr,
@@ -493,9 +493,9 @@ contract HyperdriveFactory is IHyperdriveFactory {
         // and maximum checkpoint durations and is a multiple of the checkpoint
         // duration resolution.
         if (
-            _deployConfig.checkpointDuration < minCheckpointDuration ||
-            _deployConfig.checkpointDuration > maxCheckpointDuration ||
-            _deployConfig.checkpointDuration % checkpointDurationResolution != 0
+            _config.checkpointDuration < minCheckpointDuration ||
+            _config.checkpointDuration > maxCheckpointDuration ||
+            _config.checkpointDuration % checkpointDurationResolution != 0
         ) {
             revert IHyperdriveFactory.InvalidCheckpointDuration();
         }
@@ -504,24 +504,23 @@ contract HyperdriveFactory is IHyperdriveFactory {
         // and maximum position durations and is a multiple of the specified
         // checkpoint duration.
         if (
-            _deployConfig.positionDuration < minPositionDuration ||
-            _deployConfig.positionDuration > maxPositionDuration ||
-            _deployConfig.positionDuration % _deployConfig.checkpointDuration !=
-            0
+            _config.positionDuration < minPositionDuration ||
+            _config.positionDuration > maxPositionDuration ||
+            _config.positionDuration % _config.checkpointDuration != 0
         ) {
             revert IHyperdriveFactory.InvalidPositionDuration();
         }
 
         // Ensure that the specified fees are within the minimum and maximum fees.
         if (
-            _deployConfig.fees.curve > _maxFees.curve ||
-            _deployConfig.fees.flat > _maxFees.flat ||
-            _deployConfig.fees.governanceLP > _maxFees.governanceLP ||
-            _deployConfig.fees.governanceZombie > _maxFees.governanceZombie ||
-            _deployConfig.fees.curve < _minFees.curve ||
-            _deployConfig.fees.flat < _minFees.flat ||
-            _deployConfig.fees.governanceLP < _minFees.governanceLP ||
-            _deployConfig.fees.governanceZombie < _minFees.governanceZombie
+            _config.fees.curve > _maxFees.curve ||
+            _config.fees.flat > _maxFees.flat ||
+            _config.fees.governanceLP > _maxFees.governanceLP ||
+            _config.fees.governanceZombie > _maxFees.governanceZombie ||
+            _config.fees.curve < _minFees.curve ||
+            _config.fees.flat < _minFees.flat ||
+            _config.fees.governanceLP < _minFees.governanceLP ||
+            _config.fees.governanceZombie < _minFees.governanceZombie
         ) {
             revert IHyperdriveFactory.InvalidFees();
         }
@@ -530,10 +529,10 @@ contract HyperdriveFactory is IHyperdriveFactory {
         // and governance addresses aren't set. This ensures that the
         // deployer isn't trying to set these values.
         if (
-            _deployConfig.linkerFactory != address(0) ||
-            _deployConfig.linkerCodeHash != bytes32(0) ||
-            _deployConfig.feeCollector != address(0) ||
-            _deployConfig.governance != address(0)
+            _config.linkerFactory != address(0) ||
+            _config.linkerCodeHash != bytes32(0) ||
+            _config.feeCollector != address(0) ||
+            _config.governance != address(0)
         ) {
             revert IHyperdriveFactory.InvalidDeployConfig();
         }
@@ -542,16 +541,16 @@ contract HyperdriveFactory is IHyperdriveFactory {
         // The factory assumes the governance role during deployment so that it
         // can set up some initial values; however the governance role will
         // ultimately be transferred to the hyperdrive governance address.
-        _deployConfig.linkerFactory = linkerFactory;
-        _deployConfig.linkerCodeHash = linkerCodeHash;
-        _deployConfig.feeCollector = feeCollector;
-        _deployConfig.governance = address(this);
+        _config.linkerFactory = linkerFactory;
+        _config.linkerCodeHash = linkerCodeHash;
+        _config.feeCollector = feeCollector;
+        _config.governance = address(this);
 
         // Deploy the Hyperdrive instance with the specified Hyperdrive
         // deployer.
         IHyperdrive hyperdrive = IHyperdrive(
-            IDeployerCoordinator(_deployerCoordinator).deploy(
-                _deployConfig,
+            IHyperdriveDeployerCoordinator(_deployerCoordinator).deploy(
+                _config,
                 _extraData
             )
         );
@@ -559,13 +558,8 @@ contract HyperdriveFactory is IHyperdriveFactory {
         // Add this instance to the registry and emit an event with the
         // deployment configuration.
         isOfficial[address(hyperdrive)] = versionCounter;
-        _deployConfig.governance = hyperdriveGovernance;
-        emit Deployed(
-            versionCounter,
-            address(hyperdrive),
-            _deployConfig,
-            _extraData
-        );
+        _config.governance = hyperdriveGovernance;
+        emit Deployed(versionCounter, address(hyperdrive), _config, _extraData);
 
         // Add the newly deployed Hyperdrive instance to the registry.
         _instances.push(address(hyperdrive));
@@ -594,12 +588,12 @@ contract HyperdriveFactory is IHyperdriveFactory {
 
             // Transfer the contribution to this contract and set an approval
             // on Hyperdrive to prepare for initialization.
-            ERC20(address(_deployConfig.baseToken)).safeTransferFrom(
+            ERC20(address(_config.baseToken)).safeTransferFrom(
                 msg.sender,
                 address(this),
                 _contribution
             );
-            ERC20(address(_deployConfig.baseToken)).forceApprove(
+            ERC20(address(_config.baseToken)).forceApprove(
                 address(hyperdrive),
                 _contribution
             );

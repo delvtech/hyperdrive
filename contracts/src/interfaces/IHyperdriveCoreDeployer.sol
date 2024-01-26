@@ -7,9 +7,10 @@ interface IHyperdriveCoreDeployer {
     function deploy(
         IHyperdrive.PoolConfig memory _config,
         bytes memory _extraData,
-        address target0,
-        address target1,
-        address target2,
-        address target3
+        address _target0,
+        address _target1,
+        address _target2,
+        address _target3,
+        bytes32 _salt
     ) external returns (address);
 }

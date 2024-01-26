@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
+import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
@@ -33,6 +34,15 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _target3Deployer
         )
     {}
+
+    /// @notice Checks the pool configuration to ensure that it is valid.
+    /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
+    function _checkPoolConfig(
+        IHyperdrive.PoolDeployConfig memory _deployConfig
+    ) internal pure override {
+        // FIXME: Add a check for the minimum share reserves.
+        // FIXME: Add a check for the minimum transaction amount.
+    }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
     /// @param _extraData The extra data passed to the child deployers.

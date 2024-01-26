@@ -26,14 +26,6 @@ abstract contract StETHBase is HyperdriveBase {
     /// @param __lido The Lido contract.
     constructor(ILido __lido) {
         _lido = __lido;
-
-        // Ensure that the minimum share reserves are equal to 1e15. This value
-        // has been tested to prevent arithmetic overflows in the
-        // `_updateLiquidity` function when the share reserves are as high as
-        // 200 million.
-        if (_minimumShareReserves != 1e15) {
-            revert IHyperdrive.InvalidMinimumShareReserves();
-        }
     }
 
     /// Yield Source ///

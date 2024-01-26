@@ -20,6 +20,7 @@ contract ERC4626HyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     /// @param target1 The target1 address.
     /// @param target2 The target2 address.
     /// @param target3 The target3 address.
+    /// @param _salt The create2 salt used in the deployment.
     /// @return The address of the newly deployed ERC4626Hyperdrive instance.
     function deploy(
         IHyperdrive.PoolConfig memory _config,
@@ -27,13 +28,13 @@ contract ERC4626HyperdriveCoreDeployer is IHyperdriveCoreDeployer {
         address target0,
         address target1,
         address target2,
-        address target3
-    ) external override returns (address) {
-        // Deploy the ERC4626Hyperdrive instance.
+        address target3,
+        bytes32 _salt
+    ) external returns (address) {
         address vault = abi.decode(_extraData, (address));
         return (
             address(
-                new ERC4626Hyperdrive(
+                new ERC4626Hyperdrive{ salt: _salt }(
                     _config,
                     target0,
                     target1,

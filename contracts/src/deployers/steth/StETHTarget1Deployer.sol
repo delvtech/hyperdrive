@@ -24,12 +24,13 @@ contract StETHTarget1Deployer is IHyperdriveTargetDeployer {
 
     /// @notice Deploys a target1 instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _salt The create2 salt used in the deployment.
     /// @return The address of the newly deployed StETHTarget1 Instance.
     function deploy(
         IHyperdrive.PoolConfig memory _config,
-        bytes memory // unused extra data
-    ) external override returns (address) {
-        // Deploy the StETHTarget1 instance.
-        return address(new StETHTarget1(_config, lido));
+        bytes memory, // unused extra data
+        bytes32 _salt
+    ) external returns (address) {
+        return address(new StETHTarget1{ salt: _salt }(_config, lido));
     }
 }

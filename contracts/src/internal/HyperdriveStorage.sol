@@ -127,16 +127,14 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
         // Initialize the base token address.
         _baseToken = _config.baseToken;
 
+        // Initialize the initial vault share price.
+        _initialVaultSharePrice = _config.initialVaultSharePrice;
+
         // Initialize the minimum share reserves. The minimum share reserves
         // defines the amount of shares that will be reserved to ensure that
         // the share reserves are never empty. We will also burn LP shares equal
         // to the minimum share reserves upon initialization to ensure that the
-        // total supply of active LP tokens is always greater than zero. We
-        // don't allow a value less than 1e3 to avoid numerical issues that
-        // occur with small amounts of shares.
-        if (_config.minimumShareReserves < 1e3) {
-            revert IHyperdrive.InvalidMinimumShareReserves();
-        }
+        // total supply of active LP tokens is always greater than zero.
         _minimumShareReserves = _config.minimumShareReserves;
 
         // Initialize the minimum transaction amount. The minimum transaction
@@ -147,31 +145,11 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
 
         // Initialize the time configurations. There must be at least one
         // checkpoint per term to avoid having a position duration of zero.
-        if (_config.checkpointDuration == 0) {
-            revert IHyperdrive.InvalidCheckpointDuration();
-        }
         _checkpointDuration = _config.checkpointDuration;
-        if (
-            _config.positionDuration < _config.checkpointDuration ||
-            _config.positionDuration % _config.checkpointDuration != 0
-        ) {
-            revert IHyperdrive.InvalidPositionDuration();
-        }
         _positionDuration = _config.positionDuration;
         _timeStretch = _config.timeStretch;
-        _initialVaultSharePrice = _config.initialVaultSharePrice;
-        _governance = _config.governance;
-        _feeCollector = _config.feeCollector;
 
         // Initialize the fee parameters.
-        if (
-            _config.fees.curve > 1e18 ||
-            _config.fees.flat > 1e18 ||
-            _config.fees.governanceLP > 1e18 ||
-            _config.fees.governanceZombie > 1e18
-        ) {
-            revert IHyperdrive.InvalidFeeAmounts();
-        }
         _curveFee = _config.fees.curve;
         _flatFee = _config.fees.flat;
         _governanceLPFee = _config.fees.governanceLP;
@@ -180,5 +158,9 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
         // Initialize the MultiToken immutables.
         _linkerFactory = _config.linkerFactory;
         _linkerCodeHash = _config.linkerCodeHash;
+
+        // Initialize the governance and fee collector.
+        _governance = _config.governance;
+        _feeCollector = _config.feeCollector;
     }
 }

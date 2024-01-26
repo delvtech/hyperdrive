@@ -2,11 +2,11 @@
 pragma solidity 0.8.20;
 
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IDeployerCoordinator } from "contracts/src/interfaces/IDeployerCoordinator.sol";
+import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IHyperdriveTargetDeployer } from "contracts/src/interfaces/IHyperdriveTargetDeployer.sol";
 import { MockHyperdrive } from "./MockHyperdrive.sol";
 
-contract MockHyperdriveDeployer is IDeployerCoordinator {
+contract MockHyperdriveDeployer is IHyperdriveDeployerCoordinator {
     function deploy(
         IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory

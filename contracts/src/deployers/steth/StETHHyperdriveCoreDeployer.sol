@@ -28,6 +28,7 @@ contract StETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     /// @param target1 The target1 address.
     /// @param target2 The target2 address.
     /// @param target3 The target3 address.
+    /// @param _salt The create2 salt used in the deployment.
     /// @return The address of the newly deployed StETHHyperdrive Instance.
     function deploy(
         IHyperdrive.PoolConfig memory _config,
@@ -35,11 +36,12 @@ contract StETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
         address target0,
         address target1,
         address target2,
-        address target3
-    ) external override returns (address) {
+        address target3,
+        bytes32 _salt
+    ) external returns (address) {
         return (
             address(
-                new StETHHyperdrive(
+                new StETHHyperdrive{ salt: _salt }(
                     _config,
                     target0,
                     target1,
