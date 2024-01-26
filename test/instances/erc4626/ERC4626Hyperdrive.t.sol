@@ -19,6 +19,7 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IDeployerCoordinator } from "contracts/src/interfaces/IDeployerCoordinator.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockERC4626, ERC20 } from "contracts/test/MockERC4626.sol";
@@ -90,6 +91,10 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.005e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees({
                     curve: 0,
                     flat: 0,
@@ -279,10 +284,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 minimumTransactionAmount: 0.001e18,
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
-                timeStretch: HyperdriveUtils.calculateTimeStretch(
-                    apr,
-                    365 days
-                ),
+                timeStretch: 0,
                 governance: address(0),
                 feeCollector: address(0),
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
@@ -293,6 +295,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             config,
             abi.encode(address(pool), new address[](0)),
             contribution,
+            apr,
             apr,
             new bytes(0)
         );
@@ -333,10 +336,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 minimumTransactionAmount: 0.001e18,
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
-                timeStretch: HyperdriveUtils.calculateTimeStretch(
-                    apr,
-                    365 days
-                ),
+                timeStretch: 0,
                 governance: address(0),
                 feeCollector: address(0),
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
@@ -347,6 +347,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             config,
             abi.encode(address(pool), new address[](0)),
             contribution,
+            apr,
             apr,
             new bytes(0)
         );

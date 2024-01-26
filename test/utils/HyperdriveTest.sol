@@ -152,7 +152,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
                 positionDuration: positionDuration,
                 checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: HyperdriveUtils.calculateTimeStretch(
+                timeStretch: HyperdriveMath.calculateTimeStretch(
                     fixedRate,
                     positionDuration
                 ),

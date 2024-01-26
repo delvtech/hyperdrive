@@ -62,6 +62,10 @@ contract StETHHyperdriveTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.005e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees({
                     curve: 0,
                     flat: 0,
@@ -102,13 +106,10 @@ contract StETHHyperdriveTest is HyperdriveTest {
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0),
                 minimumShareReserves: 1e15,
-                minimumTransactionAmount: 1e14,
+                minimumTransactionAmount: 1e15,
                 positionDuration: POSITION_DURATION,
                 checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: HyperdriveUtils.calculateTimeStretch(
-                    0.05e18,
-                    POSITION_DURATION
-                ),
+                timeStretch: 0,
                 governance: address(0),
                 feeCollector: address(0),
                 fees: IHyperdrive.Fees({
@@ -124,6 +125,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
             config,
             new bytes(0),
             contribution,
+            FIXED_RATE,
             FIXED_RATE,
             new bytes(0)
         );
@@ -170,13 +172,10 @@ contract StETHHyperdriveTest is HyperdriveTest {
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0),
                 minimumShareReserves: 1e15,
-                minimumTransactionAmount: 1e14,
+                minimumTransactionAmount: 1e15,
                 positionDuration: POSITION_DURATION,
                 checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: HyperdriveUtils.calculateTimeStretch(
-                    0.05e18,
-                    POSITION_DURATION
-                ),
+                timeStretch: 0,
                 fees: IHyperdrive.Fees({
                     curve: 0,
                     flat: 0,
@@ -190,6 +189,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
             config,
             new bytes(0),
             contribution,
+            FIXED_RATE,
             FIXED_RATE,
             new bytes(0)
         );

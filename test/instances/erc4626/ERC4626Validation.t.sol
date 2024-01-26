@@ -77,6 +77,10 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.005e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees({
                     curve: 0,
                     flat: 0,
@@ -100,10 +104,11 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             POSITION_DURATION
         );
         config.baseToken = underlyingToken;
-        config.feeCollector = address(0);
         config.governance = address(0);
+        config.feeCollector = address(0);
         config.linkerFactory = address(0);
         config.linkerCodeHash = bytes32(0);
+        config.timeStretch = 0;
         uint256 contribution = 7_500e18;
         vm.stopPrank();
         vm.startPrank(alice);
@@ -119,6 +124,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             config,
             abi.encode(address(token), new address[](0)),
             contribution,
+            FIXED_RATE,
             FIXED_RATE,
             new bytes(0)
         );
@@ -149,6 +155,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         config.feeCollector = address(0);
         config.linkerFactory = address(0);
         config.linkerCodeHash = bytes32(0);
+        config.timeStretch = 0;
         config.baseToken = underlyingToken;
         // Designed to ensure compatibility ../../contracts/src/instances/ERC4626Hyperdrive.sol#L122C1-L122C1
         config.minimumTransactionAmount = hyperdrive
@@ -166,6 +173,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             config,
             abi.encode(address(token), new address[](0)),
             contribution,
+            FIXED_RATE,
             FIXED_RATE,
             new bytes(0)
         );

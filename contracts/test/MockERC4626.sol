@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import { Authority } from "solmate/auth/Auth.sol";
 import { MultiRolesAuthority } from "solmate/auth/authorities/MultiRolesAuthority.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
-import { ERC4626 } from "solmate/mixins/ERC4626.sol";
+import { ERC4626 } from "solmate/tokens/ERC4626.sol";
 import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "./ERC20Mintable.sol";
 

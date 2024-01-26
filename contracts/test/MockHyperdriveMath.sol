@@ -167,7 +167,7 @@ contract MockHyperdriveMath {
         uint256 apr,
         uint256 positionDuration
     ) external pure returns (uint256) {
-        uint256 result = HyperdriveUtils.calculateTimeStretch(
+        uint256 result = HyperdriveMath.calculateTimeStretch(
             apr,
             positionDuration
         );

@@ -43,6 +43,14 @@ interface IHyperdriveFactory {
 
     event MinPositionDurationUpdated(uint256 newMinPositionDuration);
 
+    event MaxFixedAPRUpdated(uint256 newMaxFixedAPR);
+
+    event MinFixedAPRUpdated(uint256 newMinFixedAPR);
+
+    event MaxTimeStretchAPRUpdated(uint256 newMaxTimeStretchAPR);
+
+    event MinTimeStretchAPRUpdated(uint256 newMinTimeStretchAPR);
+
     event MaxFeesUpdated(IHyperdrive.Fees newMaxFees);
 
     event MinFeesUpdated(IHyperdrive.Fees newMinFees);
@@ -82,6 +90,18 @@ interface IHyperdriveFactory {
     error InvalidMinPositionDuration();
 
     error InvalidPositionDuration();
+
+    error InvalidMaxFixedAPR();
+
+    error InvalidMinFixedAPR();
+
+    error InvalidFixedAPR();
+
+    error InvalidMaxTimeStretchAPR();
+
+    error InvalidMinTimeStretchAPR();
+
+    error InvalidTimeStretchAPR();
 
     error TransferFailed();
 

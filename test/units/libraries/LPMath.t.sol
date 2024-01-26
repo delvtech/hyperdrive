@@ -22,7 +22,7 @@ contract LPMathTest is HyperdriveTest {
         uint256 apr = 0.02e18;
         uint256 initialVaultSharePrice = 1e18;
         uint256 positionDuration = 365 days;
-        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(
+        uint256 timeStretch = HyperdriveMath.calculateTimeStretch(
             apr,
             positionDuration
         );
@@ -635,7 +635,7 @@ contract LPMathTest is HyperdriveTest {
         uint256 apr = 0.02e18;
         uint256 initialVaultSharePrice = 0.5e18;
         uint256 positionDuration = 365 days;
-        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(
+        uint256 timeStretch = HyperdriveMath.calculateTimeStretch(
             apr,
             positionDuration
         );
@@ -997,7 +997,7 @@ contract LPMathTest is HyperdriveTest {
         uint256 apr = 0.02e18;
         uint256 initialVaultSharePrice = 1e18;
         uint256 positionDuration = 365 days;
-        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(
+        uint256 timeStretch = HyperdriveMath.calculateTimeStretch(
             apr,
             positionDuration
         );
@@ -1294,7 +1294,7 @@ contract LPMathTest is HyperdriveTest {
         uint256 apr = 0.02e18;
         uint256 initialVaultSharePrice = 1e18;
         uint256 positionDuration = 365 days;
-        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(
+        uint256 timeStretch = HyperdriveMath.calculateTimeStretch(
             apr,
             positionDuration
         );

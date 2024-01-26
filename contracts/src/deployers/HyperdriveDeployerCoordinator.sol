@@ -57,7 +57,7 @@ abstract contract HyperdriveDeployerCoordinator is IDeployerCoordinator {
     function deploy(
         IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory _extraData
-    ) external override returns (address) {
+    ) public virtual returns (address) {
         // Convert the deploy config into the pool config and set the initial
         // vault share price.
         IHyperdrive.PoolConfig memory _config = _copyPoolConfig(_deployConfig);

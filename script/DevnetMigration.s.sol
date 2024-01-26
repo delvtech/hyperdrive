@@ -21,6 +21,7 @@ import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockERC4626 } from "contracts/test/MockERC4626.sol";
@@ -39,9 +40,15 @@ import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 ///                    particular legal or regulatory significance.
 contract DevnetMigration is Script {
     using stdJson for string;
+    using HyperdriveMath for *;
     using HyperdriveUtils for *;
 
     function setUp() external {}
+
+    ERC20Mintable internal baseToken;
+    HyperdriveFactory internal factory;
+    MockERC4626 internal pool;
+    MockLido internal lido;
 
     struct Config {
         // admin configuration
@@ -63,6 +70,10 @@ contract DevnetMigration is Script {
         uint256 factoryMaxCheckpointDuration;
         uint256 factoryMinPositionDuration;
         uint256 factoryMaxPositionDuration;
+        uint256 factoryMinFixedAPR;
+        uint256 factoryMaxFixedAPR;
+        uint256 factoryMinTimeStretchAPR;
+        uint256 factoryMaxTimeStretchAPR;
         uint256 factoryMinCurveFee;
         uint256 factoryMinFlatFee;
         uint256 factoryMinGovernanceLPFee;
@@ -73,24 +84,24 @@ contract DevnetMigration is Script {
         uint256 factoryMaxGovernanceZombieFee;
         // erc4626 hyperdrive configuration
         uint256 erc4626HyperdriveContribution;
-        uint256 erc4626HyperdriveFixedRate;
+        uint256 erc4626HyperdriveFixedAPR;
+        uint256 erc4626HyperdriveTimeStretchAPR;
         uint256 erc4626HyperdriveMinimumShareReserves;
         uint256 erc4626HyperdriveMinimumTransactionAmount;
         uint256 erc4626HyperdrivePositionDuration;
         uint256 erc4626HyperdriveCheckpointDuration;
-        uint256 erc4626HyperdriveTimeStretchApr;
         uint256 erc4626HyperdriveCurveFee;
         uint256 erc4626HyperdriveFlatFee;
         uint256 erc4626HyperdriveGovernanceLPFee;
         uint256 erc4626HyperdriveGovernanceZombieFee;
         // steth hyperdrive configuration
         uint256 stethHyperdriveContribution;
-        uint256 stethHyperdriveFixedRate;
+        uint256 stethHyperdriveFixedAPR;
+        uint256 stethHyperdriveTimeStretchAPR;
         uint256 stethHyperdriveMinimumShareReserves;
         uint256 stethHyperdriveMinimumTransactionAmount;
         uint256 stethHyperdrivePositionDuration;
         uint256 stethHyperdriveCheckpointDuration;
-        uint256 stethHyperdriveTimeStretchApr;
         uint256 stethHyperdriveCurveFee;
         uint256 stethHyperdriveFlatFee;
         uint256 stethHyperdriveGovernanceLPFee;
@@ -146,6 +157,22 @@ contract DevnetMigration is Script {
                 "FACTORY_MAX_POSITION_DURATION",
                 uint256(10 * 365 days)
             ),
+            factoryMinFixedAPR: vm.envOr(
+                "FACTORY_MIN_FIXED_APR",
+                uint256(0.01e18)
+            ),
+            factoryMaxFixedAPR: vm.envOr(
+                "FACTORY_MAX_FIXED_APR",
+                uint256(0.5e18)
+            ),
+            factoryMinTimeStretchAPR: vm.envOr(
+                "FACTORY_MIN_TIME_STRETCH_APR",
+                uint256(0.01e18)
+            ),
+            factoryMaxTimeStretchAPR: vm.envOr(
+                "FACTORY_MAX_TIME_STRETCH_APR",
+                uint256(0.5e18)
+            ),
             factoryMinCurveFee: vm.envOr(
                 "FACTORY_MIN_CURVE_FEE",
                 uint256(0.001e18)
@@ -183,8 +210,8 @@ contract DevnetMigration is Script {
                 "ERC4626_HYPERDRIVE_CONTRIBUTION",
                 uint256(100_000_000e18)
             ),
-            erc4626HyperdriveFixedRate: vm.envOr(
-                "ERC4626_HYPERDRIVE_FIXED_RATE",
+            erc4626HyperdriveFixedAPR: vm.envOr(
+                "ERC4626_HYPERDRIVE_FIXED_APR",
                 uint256(0.05e18)
             ),
             erc4626HyperdriveMinimumShareReserves: vm.envOr(
@@ -203,7 +230,7 @@ contract DevnetMigration is Script {
                 "ERC4626_HYPERDRIVE_CHECKPOINT_DURATION",
                 uint256(1 hours)
             ),
-            erc4626HyperdriveTimeStretchApr: vm.envOr(
+            erc4626HyperdriveTimeStretchAPR: vm.envOr(
                 "ERC4626_HYPERDRIVE_TIME_STRETCH_APR",
                 uint256(0.05e18)
             ),
@@ -228,8 +255,8 @@ contract DevnetMigration is Script {
                 "STETH_HYPERDRIVE_CONTRIBUTION",
                 uint256(50_000e18)
             ),
-            stethHyperdriveFixedRate: vm.envOr(
-                "STETH_HYPERDRIVE_FIXED_RATE",
+            stethHyperdriveFixedAPR: vm.envOr(
+                "STETH_HYPERDRIVE_FIXED_APR",
                 uint256(0.035e18)
             ),
             stethHyperdriveMinimumShareReserves: vm.envOr(
@@ -248,7 +275,7 @@ contract DevnetMigration is Script {
                 "STETH_HYPERDRIVE_CHECKPOINT_DURATION",
                 uint256(1 hours)
             ),
-            stethHyperdriveTimeStretchApr: vm.envOr(
+            stethHyperdriveTimeStretchAPR: vm.envOr(
                 "STETH_HYPERDRIVE_TIME_STRETCH_APR",
                 uint256(0.035e18)
             ),
@@ -271,14 +298,14 @@ contract DevnetMigration is Script {
         });
 
         // Deploy the base token and the vault.
-        ERC20Mintable baseToken = new ERC20Mintable(
+        baseToken = new ERC20Mintable(
             config.baseTokenName,
             config.baseTokenSymbol,
             config.baseTokenDecimals,
             msg.sender,
             config.isCompetitionMode
         );
-        MockERC4626 pool = new MockERC4626(
+        pool = new MockERC4626(
             baseToken,
             config.vaultName,
             config.vaultSymbol,
@@ -302,7 +329,7 @@ contract DevnetMigration is Script {
 
         // Deploy the mock Lido system. We fund Lido with 1 eth to start to
         // avoid reverts when we initialize the pool.
-        MockLido lido = new MockLido(
+        lido = new MockLido(
             config.lidoStartingRate,
             msg.sender,
             config.isCompetitionMode
@@ -311,7 +338,6 @@ contract DevnetMigration is Script {
         lido.submit{ value: 1 ether }(address(0));
 
         // Deploy the Hyperdrive factory.
-        HyperdriveFactory factory;
         {
             address[] memory defaultPausers = new address[](1);
             defaultPausers[0] = config.admin;
@@ -328,6 +354,10 @@ contract DevnetMigration is Script {
                     maxCheckpointDuration: config.factoryMaxCheckpointDuration,
                     minPositionDuration: config.factoryMinPositionDuration,
                     maxPositionDuration: config.factoryMaxPositionDuration,
+                    minFixedAPR: config.factoryMinFixedAPR,
+                    maxFixedAPR: config.factoryMaxFixedAPR,
+                    minTimeStretchAPR: config.factoryMinTimeStretchAPR,
+                    maxTimeStretchAPR: config.factoryMaxTimeStretchAPR,
                     minFees: IHyperdrive.Fees({
                         curve: config.factoryMinCurveFee,
                         flat: config.factoryMinFlatFee,
@@ -361,10 +391,11 @@ contract DevnetMigration is Script {
         // Deploy and initialize an initial ERC4626Hyperdrive instance.
         IHyperdrive erc4626Hyperdrive;
         {
-            uint256 contribution = config.erc4626HyperdriveContribution;
-            uint256 fixedRate = config.erc4626HyperdriveFixedRate;
-            baseToken.mint(msg.sender, contribution);
-            baseToken.approve(address(factory), contribution);
+            baseToken.mint(msg.sender, config.erc4626HyperdriveContribution);
+            baseToken.approve(
+                address(factory),
+                config.erc4626HyperdriveContribution
+            );
             IHyperdrive.PoolDeployConfig memory poolConfig = IHyperdrive
                 .PoolDeployConfig({
                     baseToken: IERC20(address(baseToken)),
@@ -377,11 +408,7 @@ contract DevnetMigration is Script {
                     positionDuration: config.erc4626HyperdrivePositionDuration,
                     checkpointDuration: config
                         .erc4626HyperdriveCheckpointDuration,
-                    timeStretch: config
-                        .erc4626HyperdriveTimeStretchApr
-                        .calculateTimeStretch(
-                            config.erc4626HyperdrivePositionDuration
-                        ),
+                    timeStretch: 0,
                     governance: address(0),
                     feeCollector: address(0),
                     fees: IHyperdrive.Fees({
@@ -396,8 +423,9 @@ contract DevnetMigration is Script {
                 erc4626DeployerCoordinator,
                 poolConfig,
                 abi.encode(address(pool), new address[](0)),
-                contribution,
-                fixedRate,
+                config.erc4626HyperdriveContribution,
+                config.erc4626HyperdriveFixedAPR,
+                config.erc4626HyperdriveTimeStretchAPR,
                 new bytes(0)
             );
         }
@@ -418,9 +446,7 @@ contract DevnetMigration is Script {
         // Deploy and initialize an initial StETHHyperdrive instance.
         IHyperdrive stethHyperdrive;
         {
-            uint256 contribution = config.stethHyperdriveContribution;
-            uint256 fixedRate = config.stethHyperdriveFixedRate;
-            vm.deal(msg.sender, contribution);
+            vm.deal(msg.sender, config.stethHyperdriveContribution);
             IHyperdrive.PoolDeployConfig memory poolConfig = IHyperdrive
                 .PoolDeployConfig({
                     baseToken: IERC20(address(ETH)),
@@ -433,11 +459,7 @@ contract DevnetMigration is Script {
                     positionDuration: config.stethHyperdrivePositionDuration,
                     checkpointDuration: config
                         .stethHyperdriveCheckpointDuration,
-                    timeStretch: config
-                        .stethHyperdriveTimeStretchApr
-                        .calculateTimeStretch(
-                            config.stethHyperdrivePositionDuration
-                        ),
+                    timeStretch: 0,
                     governance: address(0),
                     feeCollector: address(0),
                     fees: IHyperdrive.Fees({
@@ -449,13 +471,14 @@ contract DevnetMigration is Script {
                     })
                 });
             stethHyperdrive = factory.deployAndInitialize{
-                value: contribution
+                value: config.stethHyperdriveContribution
             }(
                 stethDeployerCoordinator,
                 poolConfig,
                 abi.encode(address(pool), new address[](0)),
-                contribution,
-                fixedRate,
+                config.stethHyperdriveContribution,
+                config.stethHyperdriveFixedAPR,
+                config.stethHyperdriveTimeStretchAPR,
                 new bytes(0)
             );
         }

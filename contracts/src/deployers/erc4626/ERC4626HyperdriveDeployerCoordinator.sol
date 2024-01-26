@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
+import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
@@ -33,6 +34,42 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _target3Deployer
         )
     {}
+
+    /// @notice Deploys a Hyperdrive instance with the given parameters.
+    /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
+    /// @param _extraData The extra data that contains the pool and sweep targets.
+    /// @return The address of the newly deployed ERC4626Hyperdrive Instance.
+    function deploy(
+        IHyperdrive.PoolDeployConfig memory _deployConfig,
+        bytes memory _extraData
+    ) public override returns (address) {
+        // Ensure that the minimum share reserves are large enough to meet the
+        // minimum requirements for safety.
+        //
+        // NOTE: Some pools may require larger minimum share reserves to be
+        // considered safe. This is just a sanity check.
+        if (
+            _deployConfig.minimumShareReserves <
+            10 ** (_deployConfig.baseToken.decimals() - 4)
+        ) {
+            revert IHyperdrive.InvalidMinimumShareReserves();
+        }
+
+        // Ensure that the minimum transaction amount is large enough to meet
+        // the minimum requirements for safety.
+        //
+        // NOTE: Some pools may require larger minimum transaction amounts to be
+        // considered safe. This is just a sanity check.
+        if (
+            _deployConfig.minimumShareReserves <
+            10 ** (_deployConfig.baseToken.decimals() - 4)
+        ) {
+            revert IHyperdrive.InvalidMinimumTransactionAmount();
+        }
+
+        // Deploy the Hyperdrive instance.
+        return super.deploy(_deployConfig, _extraData);
+    }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
     /// @param _extraData The extra data passed to the child deployers.
