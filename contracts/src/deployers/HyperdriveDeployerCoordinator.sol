@@ -88,10 +88,10 @@ abstract contract HyperdriveDeployerCoordinator is
     }
 
     /// @notice Deploys a Hyperdrive instance with the given parameters.
-    /// @param _salt The create2 salt used to deploy Hyperdrive.
     /// @param _deploymentId The ID of the deployment.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     /// @param _extraData The extra data that contains the pool and sweep targets.
+    /// @param _salt The create2 salt used to deploy Hyperdrive.
     /// @return The address of the newly deployed ERC4626Hyperdrive Instance.
     function deploy(
         bytes32 _deploymentId,
