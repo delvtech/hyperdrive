@@ -23,5 +23,6 @@ interface IForwarderFactory {
         uint256 _tokenId
     ) external view returns (address);
 
+    // solhint-disable-next-line func-name-mixedcase
     function ERC20LINK_HASH() external pure returns (bytes32);
 }

@@ -11,7 +11,7 @@ contract HyperdriveRegistry is
 {
     address public governance;
 
-    mapping(address hyperdrive => uint256 data) _hyperdriveInfo;
+    mapping(address hyperdrive => uint256 data) internal _hyperdriveInfo;
 
     constructor() {
         governance = msg.sender;
