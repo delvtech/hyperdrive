@@ -10,12 +10,14 @@ import { ERC4626Target0Deployer } from "contracts/src/deployers/erc4626/ERC4626T
 import { ERC4626Target1Deployer } from "contracts/src/deployers/erc4626/ERC4626Target1Deployer.sol";
 import { ERC4626Target2Deployer } from "contracts/src/deployers/erc4626/ERC4626Target2Deployer.sol";
 import { ERC4626Target3Deployer } from "contracts/src/deployers/erc4626/ERC4626Target3Deployer.sol";
+import { ERC4626Target4Deployer } from "contracts/src/deployers/erc4626/ERC4626Target4Deployer.sol";
 import { StETHHyperdriveCoreDeployer } from "contracts/src/deployers/steth/StETHHyperdriveCoreDeployer.sol";
 import { StETHHyperdriveDeployerCoordinator } from "contracts/src/deployers/steth/StETHHyperdriveDeployerCoordinator.sol";
 import { StETHTarget0Deployer } from "contracts/src/deployers/steth/StETHTarget0Deployer.sol";
 import { StETHTarget1Deployer } from "contracts/src/deployers/steth/StETHTarget1Deployer.sol";
 import { StETHTarget2Deployer } from "contracts/src/deployers/steth/StETHTarget2Deployer.sol";
 import { StETHTarget3Deployer } from "contracts/src/deployers/steth/StETHTarget3Deployer.sol";
+import { StETHTarget4Deployer } from "contracts/src/deployers/steth/StETHTarget4Deployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
@@ -353,7 +355,8 @@ contract DevnetMigration is Script {
                 address(new ERC4626Target0Deployer()),
                 address(new ERC4626Target1Deployer()),
                 address(new ERC4626Target2Deployer()),
-                address(new ERC4626Target3Deployer())
+                address(new ERC4626Target3Deployer()),
+                address(new ERC4626Target4Deployer())
             )
         );
         factory.addDeployerCoordinator(erc4626DeployerCoordinator);
@@ -396,7 +399,7 @@ contract DevnetMigration is Script {
                 bytes32(uint256(0xdeadbeef)),
                 erc4626DeployerCoordinator,
                 poolConfig,
-                abi.encode(address(pool), new address[](0)),
+                abi.encode(address(pool)),
                 0,
                 bytes32(uint256(0xdeadbabe))
             );
@@ -404,7 +407,7 @@ contract DevnetMigration is Script {
                 bytes32(uint256(0xdeadbeef)),
                 erc4626DeployerCoordinator,
                 poolConfig,
-                abi.encode(address(pool), new address[](0)),
+                abi.encode(address(pool)),
                 1,
                 bytes32(uint256(0xdeadbabe))
             );
@@ -412,7 +415,7 @@ contract DevnetMigration is Script {
                 bytes32(uint256(0xdeadbeef)),
                 erc4626DeployerCoordinator,
                 poolConfig,
-                abi.encode(address(pool), new address[](0)),
+                abi.encode(address(pool)),
                 2,
                 bytes32(uint256(0xdeadbabe))
             );
@@ -420,15 +423,23 @@ contract DevnetMigration is Script {
                 bytes32(uint256(0xdeadbeef)),
                 erc4626DeployerCoordinator,
                 poolConfig,
-                abi.encode(address(pool), new address[](0)),
+                abi.encode(address(pool)),
                 3,
+                bytes32(uint256(0xdeadbabe))
+            );
+            factory.deployTarget(
+                bytes32(uint256(0xdeadbeef)),
+                erc4626DeployerCoordinator,
+                poolConfig,
+                abi.encode(address(pool)),
+                4,
                 bytes32(uint256(0xdeadbabe))
             );
             erc4626Hyperdrive = factory.deployAndInitialize(
                 bytes32(uint256(0xdeadbeef)),
                 erc4626DeployerCoordinator,
                 poolConfig,
-                abi.encode(address(pool), new address[](0)),
+                abi.encode(address(pool)),
                 contribution,
                 fixedRate,
                 new bytes(0),
@@ -444,6 +455,7 @@ contract DevnetMigration is Script {
                 address(new StETHTarget1Deployer(ILido(address(lido)))),
                 address(new StETHTarget2Deployer(ILido(address(lido)))),
                 address(new StETHTarget3Deployer(ILido(address(lido)))),
+                address(new StETHTarget4Deployer(ILido(address(lido)))),
                 ILido(address(lido))
             )
         );
@@ -486,7 +498,7 @@ contract DevnetMigration is Script {
                 bytes32(uint256(0xdeadbeef)),
                 stethDeployerCoordinator,
                 poolConfig,
-                abi.encode(address(pool), new address[](0)),
+                new bytes(0),
                 0,
                 bytes32(uint256(0xdeadbabe))
             );
@@ -494,7 +506,7 @@ contract DevnetMigration is Script {
                 bytes32(uint256(0xdeadbeef)),
                 stethDeployerCoordinator,
                 poolConfig,
-                abi.encode(address(pool), new address[](0)),
+                new bytes(0),
                 1,
                 bytes32(uint256(0xdeadbabe))
             );
@@ -502,7 +514,7 @@ contract DevnetMigration is Script {
                 bytes32(uint256(0xdeadbeef)),
                 stethDeployerCoordinator,
                 poolConfig,
-                abi.encode(address(pool), new address[](0)),
+                new bytes(0),
                 2,
                 bytes32(uint256(0xdeadbabe))
             );
@@ -510,8 +522,16 @@ contract DevnetMigration is Script {
                 bytes32(uint256(0xdeadbeef)),
                 stethDeployerCoordinator,
                 poolConfig,
-                abi.encode(address(pool), new address[](0)),
+                new bytes(0),
                 3,
+                bytes32(uint256(0xdeadbabe))
+            );
+            factory.deployTarget(
+                bytes32(uint256(0xdeadbeef)),
+                stethDeployerCoordinator,
+                poolConfig,
+                new bytes(0),
+                4,
                 bytes32(uint256(0xdeadbabe))
             );
             stethHyperdrive = factory.deployAndInitialize{

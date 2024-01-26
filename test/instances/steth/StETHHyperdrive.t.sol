@@ -8,6 +8,7 @@ import { StETHTarget0Deployer } from "contracts/src/deployers/steth/StETHTarget0
 import { StETHTarget1Deployer } from "contracts/src/deployers/steth/StETHTarget1Deployer.sol";
 import { StETHTarget2Deployer } from "contracts/src/deployers/steth/StETHTarget2Deployer.sol";
 import { StETHTarget3Deployer } from "contracts/src/deployers/steth/StETHTarget3Deployer.sol";
+import { StETHTarget4Deployer } from "contracts/src/deployers/steth/StETHTarget4Deployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -90,6 +91,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
                 address(new StETHTarget1Deployer(LIDO)),
                 address(new StETHTarget2Deployer(LIDO)),
                 address(new StETHTarget3Deployer(LIDO)),
+                address(new StETHTarget4Deployer(LIDO)),
                 LIDO
             )
         );
@@ -149,6 +151,14 @@ contract StETHHyperdriveTest is HyperdriveTest {
             config,
             new bytes(0),
             3,
+            bytes32(uint256(0xdeadbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            4,
             bytes32(uint256(0xdeadbabe))
         );
         hyperdrive = factory.deployAndInitialize{ value: contribution }(
@@ -249,6 +259,14 @@ contract StETHHyperdriveTest is HyperdriveTest {
             config,
             new bytes(0),
             3,
+            bytes32(uint256(0xdeadfade))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeefbabe)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            4,
             bytes32(uint256(0xdeadfade))
         );
         hyperdrive = factory.deployAndInitialize{ value: contribution + 1e18 }(

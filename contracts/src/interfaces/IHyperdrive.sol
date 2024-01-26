@@ -336,4 +336,6 @@ interface IHyperdrive is
     function target2() external view returns (address);
 
     function target3() external view returns (address);
+
+    function target4() external view returns (address);
 }

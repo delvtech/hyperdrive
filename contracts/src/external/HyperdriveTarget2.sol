@@ -32,43 +32,43 @@ abstract contract HyperdriveTarget2 is
 
     /// Longs ///
 
-    /// @notice Opens a long position.
-    /// @param _baseAmount The amount of base to use when trading.
-    /// @param _minOutput The minium number of bonds to receive.
-    /// @param _minVaultSharePrice The minium share price at which to open the long.
-    ///        This allows traders to protect themselves from opening a long in
-    ///        a checkpoint where negative interest has accrued.
+    /// @notice Closes a long position with a specified maturity time.
+    /// @param _maturityTime The maturity time of the short.
+    /// @param _bondAmount The amount of longs to close.
+    /// @param _minOutput The minimum amount of base the trader will accept.
     /// @param _options The options that configure how the trade is settled.
-    /// @return maturityTime The maturity time of the bonds.
-    /// @return bondProceeds The amount of bonds the user received.
-    function openLong(
-        uint256 _baseAmount,
+    /// @return The amount of underlying the user receives.
+    function closeLong(
+        uint256 _maturityTime,
+        uint256 _bondAmount,
         uint256 _minOutput,
-        uint256 _minVaultSharePrice,
         IHyperdrive.Options calldata _options
-    ) external payable returns (uint256 maturityTime, uint256 bondProceeds) {
-        return
-            _openLong(_baseAmount, _minOutput, _minVaultSharePrice, _options);
+    ) external returns (uint256) {
+        return _closeLong(_maturityTime, _bondAmount, _minOutput, _options);
     }
 
     /// Shorts ///
 
-    /// @notice Opens a short position.
-    /// @param _bondAmount The amount of bonds to short.
-    /// @param _maxDeposit The most the user expects to deposit for this trade
-    /// @param _minVaultSharePrice The minium share price at which to open the long.
-    ///        This allows traders to protect themselves from opening a long in
-    ///        a checkpoint where negative interest has accrued.
+    /// @notice Closes a short position with a specified maturity time.
+    /// @param _maturityTime The maturity time of the short.
+    /// @param _bondAmount The amount of shorts to close.
+    /// @param _minOutput The minimum output of this trade.
     /// @param _options The options that configure how the trade is settled.
-    /// @return maturityTime The maturity time of the short.
-    /// @return traderDeposit The amount the user deposited for this trade.
-    function openShort(
+    /// @return The amount of base tokens produced by closing this short.
+    function closeShort(
+        uint256 _maturityTime,
         uint256 _bondAmount,
-        uint256 _maxDeposit,
-        uint256 _minVaultSharePrice,
+        uint256 _minOutput,
         IHyperdrive.Options calldata _options
-    ) external payable returns (uint256 maturityTime, uint256 traderDeposit) {
-        return
-            _openShort(_bondAmount, _maxDeposit, _minVaultSharePrice, _options);
+    ) external returns (uint256) {
+        return _closeShort(_maturityTime, _bondAmount, _minOutput, _options);
+    }
+
+    /// Checkpoints ///
+
+    /// @notice Allows anyone to mint a new checkpoint.
+    /// @param _checkpointTime The time of the checkpoint to create.
+    function checkpoint(uint256 _checkpointTime) external {
+        _checkpoint(_checkpointTime);
     }
 }

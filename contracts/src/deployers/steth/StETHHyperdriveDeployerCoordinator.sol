@@ -25,6 +25,7 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target1Deployer The target1 deployer.
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
+    /// @param _target4Deployer The target4 deployer.
     /// @param _lido The Lido contract.
     constructor(
         address _coreDeployer,
@@ -32,6 +33,7 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _target1Deployer,
         address _target2Deployer,
         address _target3Deployer,
+        address _target4Deployer,
         ILido _lido
     )
         HyperdriveDeployerCoordinator(
@@ -39,7 +41,8 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _target0Deployer,
             _target1Deployer,
             _target2Deployer,
-            _target3Deployer
+            _target3Deployer,
+            _target4Deployer
         )
     {
         lido = _lido;

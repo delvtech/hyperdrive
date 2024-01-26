@@ -27,6 +27,7 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
     /// @param _target1 The target1 address.
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
+    /// @param _target4 The target4 address.
     /// @param __vault The ERC4626 compatible yield source.
     constructor(
         IHyperdrive.PoolConfig memory _config,
@@ -34,9 +35,10 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
         address _target1,
         address _target2,
         address _target3,
+        address _target4,
         IERC4626 __vault
     )
-        Hyperdrive(_config, _target0, _target1, _target2, _target3)
+        Hyperdrive(_config, _target0, _target1, _target2, _target3, _target4)
         ERC4626Base(__vault)
     {
         // Ensure that the base token is the same as the vault's underlying

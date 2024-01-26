@@ -22,6 +22,7 @@ contract StETHHyperdrive is Hyperdrive, StETHBase {
     /// @param _target1 The target1 address.
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
+    /// @param _target4 The target4 address.
     /// @param _lido The Lido contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
@@ -29,9 +30,10 @@ contract StETHHyperdrive is Hyperdrive, StETHBase {
         address _target1,
         address _target2,
         address _target3,
+        address _target4,
         ILido _lido
     )
-        Hyperdrive(_config, _target0, _target1, _target2, _target3)
+        Hyperdrive(_config, _target0, _target1, _target2, _target3, _target4)
         StETHBase(_lido)
     {
         // Ensure that the base token address is properly configured.

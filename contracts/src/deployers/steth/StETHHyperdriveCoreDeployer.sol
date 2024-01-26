@@ -28,6 +28,7 @@ contract StETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     /// @param target1 The target1 address.
     /// @param target2 The target2 address.
     /// @param target3 The target3 address.
+    /// @param target4 The target4 address.
     /// @param _salt The create2 salt used in the deployment.
     /// @return The address of the newly deployed StETHHyperdrive Instance.
     function deploy(
@@ -37,6 +38,7 @@ contract StETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
         address target1,
         address target2,
         address target3,
+        address target4,
         bytes32 _salt
     ) external returns (address) {
         return (
@@ -47,6 +49,7 @@ contract StETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
                     target1,
                     target2,
                     target3,
+                    target4,
                     lido
                 )
             )

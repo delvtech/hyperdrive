@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Ident:wqifier: Apache-2.0
 pragma solidity 0.8.20;
 
 import { ERC4626Hyperdrive } from "contracts/src/instances/erc4626/ERC4626Hyperdrive.sol";
@@ -14,6 +14,7 @@ contract MockERC4626Hyperdrive is ERC4626Hyperdrive {
         address _target1,
         address _target2,
         address _target3,
+        address _target4,
         IERC4626 _pool
     )
         ERC4626Hyperdrive(
@@ -22,6 +23,7 @@ contract MockERC4626Hyperdrive is ERC4626Hyperdrive {
             _target1,
             _target2,
             _target3,
+            _target4,
             _pool
         )
     {}

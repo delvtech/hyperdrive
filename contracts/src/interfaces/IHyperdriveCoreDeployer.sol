@@ -11,6 +11,7 @@ interface IHyperdriveCoreDeployer {
         address _target1,
         address _target2,
         address _target3,
+        address _target4,
         bytes32 _salt
     ) external returns (address);
 }
