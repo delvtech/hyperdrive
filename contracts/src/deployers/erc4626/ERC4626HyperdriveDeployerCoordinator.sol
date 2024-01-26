@@ -64,7 +64,7 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _deployConfig.minimumShareReserves <
             10 ** (_deployConfig.baseToken.decimals() - 4)
         ) {
-            revert IHyperdrive.InvalidMinimumShareReserves();
+            revert IHyperdrive.InvalidMinimumTransactionAmount();
         }
 
         // Deploy the Hyperdrive instance.
