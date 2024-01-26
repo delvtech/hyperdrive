@@ -286,7 +286,7 @@ interface IHyperdrive is
     ///         a negative present value should be reverted.
     error NegativePresentValue();
 
-    /// @notice Thrown the present value prior to adding liquidity results in a
+    /// @notice Thrown when the present value prior to adding liquidity results in a
     ///         decrease in present value after liquidity. This is caused by a
     ///         shortage in liquidity that prevents all the open positions being
     ///         closed on the curve and therefore marked to 1.
