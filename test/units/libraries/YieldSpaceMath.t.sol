@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { Test } from "forge-std/Test.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/HyperdriveMath.sol";
@@ -12,6 +13,25 @@ import { Lib } from "test/utils/Lib.sol";
 contract YieldSpaceMathTest is Test {
     using FixedPointMath for uint256;
     using Lib for *;
+
+    function test__calculateSharesInGivenBondsOutDown__failure() external {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IHyperdrive.InsufficientLiquidity.selector,
+                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
+            )
+        );
+        yieldSpaceMath.calculateSharesInGivenBondsOutDown(
+            1_000_000e18, // shareReserves
+            3_000_000e18, // bondReserves + s
+            3_000_000e18 + 1, // amountOut
+            ONE - ONE.divDown(22.186877016851916266e18), // stretchedTimeElapsed
+            ONE, // c
+            ONE // mu
+        );
+    }
 
     function test__calculateOutGivenIn() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
