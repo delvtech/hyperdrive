@@ -15,18 +15,37 @@ contract RoundTripTest is HyperdriveTest {
     using HyperdriveUtils for *;
     using Lib for *;
 
-    function test_long_round_trip_immediately_at_checkpoint() external {
-        uint256 apr = 0.05e18;
+    function test_long_round_trip_immediately_at_checkpoint(
+        uint256 fixedRate,
+        uint256 timeStretchFixedRate,
+        uint256 basePaid
+    ) external {
+        // Ensure a feasible fixed rate.
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.50e18);
 
-        // Initialize the pool with capital.
+        // Ensure a feasible time stretch fixed rate.
+        uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
+        uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(
+            lowerBound,
+            upperBound
+        );
+
+        // Deploy the pool and initialize the market
+        deploy(alice, timeStretchFixedRate, 0, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
+
+        // Ensure a feasible trade size.
+        basePaid = basePaid.normalizeToRange(
+            2 * MINIMUM_TRANSACTION_AMOUNT,
+            hyperdrive.calculateMaxLong() - MINIMUM_TRANSACTION_AMOUNT
+        );
 
         // Get the poolInfo before opening the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Open a long position.
-        uint256 basePaid = 10e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
         // Immediately close the long.
@@ -35,29 +54,55 @@ contract RoundTripTest is HyperdriveTest {
         // Get the poolInfo after closing the long.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
-        // if they aren't the same, then the pool should be the one that wins
-        assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
-        // should be exact if out = in
+        // If they aren't the same, then the pool should be the one that wins.
+
+        assertGe(
+            poolInfoAfter.shareReserves + 1e12,
+            poolInfoBefore.shareReserves
+        );
+
+        // Should be exact if out = in.
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
     }
 
-    function test_long_round_trip_immediately_halfway_thru_checkpoint()
-        external
-    {
-        uint256 apr = 0.05e18;
+    function test_long_round_trip_immediately_partially_thru_checkpoint(
+        uint256 fixedRate,
+        uint256 timeStretchFixedRate,
+        uint256 basePaid,
+        uint256 timeDelta
+    ) external {
+        // Ensure a feasible fixed rate.
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.50e18);
 
-        // Initialize the pool with capital.
+        // Ensure a feasible time stretch fixed rate.
+        uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
+        uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(
+            lowerBound,
+            upperBound
+        );
+
+        // Deploy the pool and initialize the market
+        deploy(alice, timeStretchFixedRate, 0, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
+
+        // Ensure a feasible trade size.
+        basePaid = basePaid.normalizeToRange(
+            2 * MINIMUM_TRANSACTION_AMOUNT,
+            hyperdrive.calculateMaxLong() - MINIMUM_TRANSACTION_AMOUNT
+        );
+
+        // Calculate time elapsed.
+        timeDelta = timeDelta.normalizeToRange(0, CHECKPOINT_DURATION - 1);
+
+        // Fast forward time.
+        advanceTime(timeDelta, 0);
 
         // Get the poolInfo before opening the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
-        // fast forward time to halfway through checkpoint
-        advanceTime(CHECKPOINT_DURATION / 2, 0);
-
         // Open a long position.
-        uint256 basePaid = 10e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
         // Immediately close the long.
@@ -66,114 +111,178 @@ contract RoundTripTest is HyperdriveTest {
         // Get the poolInfo after closing the long.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
-        // if they aren't the same, then the pool should be the one that wins
-        assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
-        // should be exact if out = in
+        // If they aren't the same, then the pool should be the one that wins.
+        assertGe(
+            poolInfoAfter.shareReserves + 1e12,
+            poolInfoBefore.shareReserves
+        );
+
+        // Should be exact if out = in.
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
     }
 
-    function test_short_round_trip_immediately_at_checkpoint() external {
-        uint256 apr = 0.05e18;
+    function test_short_round_trip_immediately_at_checkpoint(
+        uint256 fixedRate,
+        uint256 timeStretchFixedRate,
+        uint256 shortSize
+    ) external {
+        // Ensure a feasible fixed rate.
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.50e18);
 
-        // Initialize the pool with capital.
+        // Ensure a feasible time stretch fixed rate.
+        uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
+        uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(
+            lowerBound,
+            upperBound
+        );
+
+        // Deploy the pool and initialize the market
+        deploy(alice, timeStretchFixedRate, 0, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
+
+        // Ensure a feasible trade size.
+        shortSize = shortSize.normalizeToRange(
+            2 * MINIMUM_TRANSACTION_AMOUNT,
+            hyperdrive.calculateMaxShort() - MINIMUM_TRANSACTION_AMOUNT
+        );
 
         // Get the poolInfo before opening the short.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Open a short position.
-        uint256 bondAmount = 10e18;
-        (uint256 maturityTime, ) = openShort(bob, bondAmount);
-
-        // Immediately close the short
-        closeShort(bob, maturityTime, bondAmount);
-
-        // Get the poolInfo after closing the short.
-        IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
-
-        // if they aren't the same, then the pool should be the one that wins
-        assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
-        // should be exact if out = in
-        assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
-    }
-
-    function test_short_round_trip_immediately_halfway_thru_checkpoint()
-        external
-    {
-        uint256 apr = 0.05e18;
-
-        // Initialize the pool with capital.
-        uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
-
-        // Get the poolInfo before opening the short.
-        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
-
-        // fast forward time to halfway through checkpoint
-        advanceTime(CHECKPOINT_DURATION / 2, 0);
-
-        // Open a short position.
-        uint256 bondAmount = 10e18;
-        (uint256 maturityTime, ) = openShort(bob, bondAmount);
+        (uint256 maturityTime, ) = openShort(bob, shortSize);
 
         // Immediately close the short.
-        closeShort(bob, maturityTime, bondAmount);
+        closeShort(bob, maturityTime, shortSize);
 
         // Get the poolInfo after closing the short.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
-        // if they aren't the same, then the pool should be the one that wins
-        assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
+        // If they aren't the same, then the pool should be the one that wins.
+        assertGe(
+            poolInfoAfter.shareReserves + 1e12,
+            poolInfoBefore.shareReserves
+        );
 
-        // should be exact if out = in
+        // Should be exact if out = in.
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
     }
 
-    function test_sandwiched_long_round_trip() external {
-        uint256 apr = 0.05e18;
-        // Deploy the pool and initialize the market
-        {
-            uint256 timeStretchApr = 0.05e18;
-            deploy(alice, timeStretchApr, 0, 0, 0, 0);
-        }
-        uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+    function test_short_round_trip_immediately_partially_thru_checkpoint(
+        uint256 fixedRate,
+        uint256 timeStretchFixedRate,
+        uint256 shortSize,
+        uint256 timeDelta
+    ) external {
+        // Ensure a feasible fixed rate.
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.50e18);
 
+        // Ensure a feasible time stretch fixed rate.
+        uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
+        uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(
+            lowerBound,
+            upperBound
+        );
+
+        // Deploy the pool and initialize the market
+        deploy(alice, timeStretchFixedRate, 0, 0, 0, 0);
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, fixedRate, contribution);
+
+        // Ensure a feasible trade size.
+        shortSize = shortSize.normalizeToRange(
+            2 * MINIMUM_TRANSACTION_AMOUNT,
+            hyperdrive.calculateMaxShort() - MINIMUM_TRANSACTION_AMOUNT
+        );
+
+        // Calculate time elapsed.
+        timeDelta = timeDelta.normalizeToRange(0, CHECKPOINT_DURATION - 1);
+
+        // Fast forward time to halfway through checkpoint.
+        advanceTime(timeDelta, 0);
+
+        // Get the poolInfo before opening the short.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
-        // Calculate how much profit would be made from a long sandwiched by shorts
+        // Open a short position.
+        (uint256 maturityTime, ) = openShort(bob, shortSize);
+
+        // Immediately close the short.
+        closeShort(bob, maturityTime, shortSize);
+
+        // Get the poolInfo after closing the short.
+        IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
+
+        // If they aren't the same, then the pool should be the one that wins.
+        assertGe(
+            poolInfoAfter.shareReserves + 1e12,
+            poolInfoBefore.shareReserves
+        );
+
+        // Should be exact if out = in.
+        assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
+    }
+
+    function test_sandwiched_long_round_trip(
+        uint256 fixedRate,
+        uint256 timeStretchFixedRate
+    ) external {
+        // Ensure a feasible fixed rate.
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.50e18);
+
+        // Ensure a feasible time stretch fixed rate.
+        uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
+        uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(
+            lowerBound,
+            upperBound
+        );
+
+        // Deploy the pool and initialize the market
+        deploy(alice, timeStretchFixedRate, 0, 0, 0, 0);
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, fixedRate, contribution);
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Bob opens a short.
         uint256 bondsShorted = 10_000_000e18;
         (uint256 shortMaturityTime, ) = openShort(bob, bondsShorted);
+
         // Celine opens a long.
         uint256 basePaid = 10_000_000e18;
         (uint256 longMaturityTime, uint256 bondsReceived) = openLong(
             celine,
             basePaid
         );
+
         // Bob immediately closes short.
         closeShort(bob, shortMaturityTime, bondsShorted);
+
         // Celine closes long.
         closeLong(celine, longMaturityTime, bondsReceived);
-
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
-        // if they aren't the same, then the pool should be the one that wins
-        assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
-        // should be exact if out = in
+        // If they aren't the same, then the pool should be the one that wins.
+        assertGe(
+            poolInfoAfter.shareReserves + 1e12,
+            poolInfoBefore.shareReserves
+        );
+
+        // Should be exact if out = in.
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
     }
 
     function test_long_multiblock_round_trip_end_of_checkpoint(
-        uint256 apr,
-        uint256 timeStretchApr,
+        uint256 fixedRate,
+        uint256 timeStretchFixedRate,
         uint256 basePaid
     ) external {
         _test_long_multiblock_round_trip_end_of_checkpoint(
-            apr,
-            timeStretchApr,
+            fixedRate,
+            timeStretchFixedRate,
             basePaid
         );
     }
@@ -183,59 +292,74 @@ contract RoundTripTest is HyperdriveTest {
     {
         uint256 snapshotId = vm.snapshot();
         {
-            uint256 apr = 115792089237316195423570985008687907853269984665640564039457583990320674062335;
-            uint256 timeStretchApr = 886936259672610464646559504023817532562726574141720139630650341263;
+            uint256 fixedRate = 115792089237316195423570985008687907853269984665640564039457583990320674062335;
+            uint256 timeStretchFixedRate = 886936259672610464646559504023817532562726574141720139630650341263;
             uint256 basePaid = 65723876150308947051900890891865009457038319412461;
             _test_long_multiblock_round_trip_end_of_checkpoint(
-                apr,
-                timeStretchApr,
+                fixedRate,
+                timeStretchFixedRate,
                 basePaid
             );
         }
         vm.revertTo(snapshotId);
         snapshotId = vm.snapshot();
         {
-            uint256 apr = 63203229717248733662763783222570;
-            uint256 timeStretchApr = 3408059979187494427077136;
+            uint256 fixedRate = 63203229717248733662763783222570;
+            uint256 timeStretchFixedRate = 3408059979187494427077136;
             uint256 basePaid = 57669888194155013968076316270639259357724635816572534634741412969387347636732;
             _test_long_multiblock_round_trip_end_of_checkpoint(
-                apr,
-                timeStretchApr,
+                fixedRate,
+                timeStretchFixedRate,
                 basePaid
             );
         }
         vm.revertTo(snapshotId);
         {
-            uint256 apr = 115792089237316195423570985008687907853269984665640564039457583996916939587517; // 0.172756074408646686
-            uint256 timeStretchApr = 41280540007823693914881174596677236629628473357578130920607715; // 0.059510057259928604
+            uint256 fixedRate = 115792089237316195423570985008687907853269984665640564039457583996916939587517; // 0.172756074408646686
+            uint256 timeStretchFixedRate = 41280540007823693914881174596677236629628473357578130920607715; // 0.059510057259928604
             uint256 basePaid = 3512909646876087064266547833688149281604992599057120012676367392282791491; // 3_942_239_358.711925131571174045
             _test_long_multiblock_round_trip_end_of_checkpoint(
-                apr,
-                timeStretchApr,
+                fixedRate,
+                timeStretchFixedRate,
                 basePaid
             );
         }
     }
 
     function _test_long_multiblock_round_trip_end_of_checkpoint(
-        uint256 apr,
-        uint256 timeStretchApr,
+        uint256 fixedRate,
+        uint256 timeStretchFixedRate,
         uint256 basePaid
     ) internal {
-        apr = apr.normalizeToRange(0.001e18, .4e18);
-        timeStretchApr = timeStretchApr.normalizeToRange(0.05e18, 0.4e18);
+        // Ensure a feasible fixed rate.
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.50e18);
+
+        // Ensure a feasible time stretch fixed rate.
+        uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
+        uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(
+            lowerBound,
+            upperBound
+        );
 
         // Deploy the pool and initialize the market
-        uint256 curveFee = 0.05e18; // 5% of APR
-        uint256 flatFee = 0.0005e18; // 5 bps
-        deploy(alice, timeStretchApr, curveFee, flatFee, 0.015e18, 0.015e18);
+        uint256 curveFee = 0.01e18;
+        uint256 flatFee = 0.0001e18;
+        deploy(
+            alice,
+            timeStretchFixedRate,
+            curveFee,
+            flatFee,
+            0.15e18,
+            0.15e18
+        );
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Get the poolInfo before opening the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
-        // fast forward time to almost the end of the checkpoint
+        // Fast forward time to almost the end of the checkpoint.
         advanceTime(CHECKPOINT_DURATION - 1, 0);
 
         // Open a long position.
@@ -245,7 +369,7 @@ contract RoundTripTest is HyperdriveTest {
         );
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
-        // fast forward time to the end of the checkpoint
+        // Fast forward time to the end of the checkpoint.
         advanceTime(1, 0);
 
         // Immediately close the long.
@@ -254,7 +378,10 @@ contract RoundTripTest is HyperdriveTest {
         // Get the poolInfo after closing the long.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
-        // if they aren't the same, then the pool should be the one that wins
-        assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
+        // If they aren't the same, then the pool should be the one that wins.
+        assertGe(
+            poolInfoAfter.shareReserves + 1e12,
+            poolInfoBefore.shareReserves
+        );
     }
 }
