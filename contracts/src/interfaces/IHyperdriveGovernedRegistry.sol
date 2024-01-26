@@ -8,6 +8,9 @@ interface IHyperdriveGovernedRegistry {
     /// @notice Emitted when hyperdrive info is updated.
     event HyperdriveInfoUpdated(address indexed hyperdrive, uint256 data);
 
+    /// @notice Thrown when caller is not governance.
+    error Unauthorized();
+
     /// @notice Allows governance to transfer the governance role.
     /// @param _governance The new governance address.
     function updateGovernance(address _governance) external;

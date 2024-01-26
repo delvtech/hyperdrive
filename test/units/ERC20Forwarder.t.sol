@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
+import { IERC20Forwarder } from "contracts/src/interfaces/IERC20Forwarder.sol";
 import { IMultiToken } from "contracts/src/interfaces/IMultiToken.sol";
+import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ERC20Forwarder } from "contracts/src/token/ERC20Forwarder.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { MockAssetId } from "contracts/test/MockAssetId.sol";
@@ -12,8 +13,9 @@ import { Lib } from "test/utils/Lib.sol";
 
 contract ERC20ForwarderFactoryTest is BaseTest {
     using Lib for *;
+
     IMockMultiToken multiToken;
-    ERC20Forwarder forwarder;
+    IERC20Forwarder forwarder;
 
     bytes32 public constant PERMIT_TYPEHASH =
         keccak256(

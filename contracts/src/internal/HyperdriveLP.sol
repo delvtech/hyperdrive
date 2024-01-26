@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
@@ -16,7 +17,11 @@ import { HyperdriveMultiToken } from "./HyperdriveMultiToken.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
+abstract contract HyperdriveLP is
+    IHyperdriveEvents,
+    HyperdriveBase,
+    HyperdriveMultiToken
+{
     using FixedPointMath for uint256;
     using SafeCast for int256;
     using SafeCast for uint256;
@@ -207,7 +212,7 @@ abstract contract HyperdriveLP is HyperdriveBase, HyperdriveMultiToken {
         //
         // Enforce the minimum LP share price slippage guard.
         if (_contribution.divDown(lpShares) < _minLpSharePrice) {
-            revert IHyperdrive.InvalidLpSharePrice();
+            revert IHyperdrive.OutputLimit();
         }
 
         // Mint LP shares to the supplier.

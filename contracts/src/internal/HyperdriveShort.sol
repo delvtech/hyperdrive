@@ -2,7 +2,9 @@
 pragma solidity 0.8.19;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { AssetId } from "../libraries/AssetId.sol";
+import { Errors } from "../libraries/Errors.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
@@ -14,7 +16,7 @@ import { HyperdriveLP } from "./HyperdriveLP.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveShort is HyperdriveLP {
+abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;
@@ -245,7 +247,35 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _vaultSharePrice,
         uint256 _maturityTime
     ) internal {
-        // Update the average maturity time of long positions.
+        // If the share reserves would underflow when the short is opened, then
+        // we revert with an insufficient liquidity error.
+        uint256 shareReserves = _marketState.shareReserves;
+        if (shareReserves < _shareReservesDelta) {
+            Errors.throwInsufficientLiquidityError(
+                IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
+            );
+        }
+        shareReserves -= _shareReservesDelta;
+
+        // The share reserves are decreased in this operation, so we need to
+        // verify that our invariants that z >= z_min and z - zeta >= z_min
+        // are satisfied. The former is checked when we check solvency (since
+        // global exposure is greater than or equal to zero, z < z_min
+        // implies z - e/c - z_min < 0.
+        if (
+            HyperdriveMath.calculateEffectiveShareReserves(
+                shareReserves,
+                _marketState.shareAdjustment
+            ) < _minimumShareReserves
+        ) {
+            Errors.throwInsufficientLiquidityError(
+                IHyperdrive
+                    .InsufficientLiquidityReason
+                    .InvalidEffectiveShareReserves
+            );
+        }
+
+        // Update the average maturity time of short positions.
         _marketState.shortAverageMaturityTime = uint256(
             _marketState.shortAverageMaturityTime
         )
@@ -261,20 +291,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // by the amount of bonds that were shorted. We don't need to add the
         // margin or pre-paid interest to the reserves because of the way that
         // the close short accounting works.
-        uint128 shareReserves_ = _marketState.shareReserves -
-            _shareReservesDelta.toUint128();
-        _marketState.shareReserves = shareReserves_;
+        _marketState.shareReserves = shareReserves.toUint128();
         _marketState.bondReserves += _bondAmount.toUint128();
         _marketState.shortsOutstanding += _bondAmount.toUint128();
-
-        // The share reserves are decreased in this operation, so we need to
-        // verify that our invariants that z >= z_min and z - zeta >= z_min
-        // are satisfied. The former is checked when we check solvency (since
-        // global exposure is greater than or equal to zero, z < z_min
-        // implies z - e/c - z_min < 0.
-        if (_effectiveShareReserves() < _minimumShareReserves) {
-            revert IHyperdrive.InvalidEffectiveShareReserves();
-        }
 
         // Update the global long exposure. Since we're opening a short, the
         // number of non-netted longs decreases by the bond amount.
@@ -290,7 +309,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // of capital available to back non-netted long exposure. Since both
         // quantities decrease, we need to check that the system is still solvent.
         if (!_isSolvent(_vaultSharePrice)) {
-            revert IHyperdrive.InsufficientLiquidity();
+            Errors.throwInsufficientLiquidityError(
+                IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
+            );
         }
 
         // Distribute the excess idle to the withdrawal pool.
@@ -375,7 +396,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // amount, then the trade occurred in the negative interest domain. We
         // revert in these pathological cases.
         if (shareReservesDelta.mulUp(_vaultSharePrice) > _bondAmount) {
-            revert IHyperdrive.NegativeInterest();
+            Errors.throwInsufficientLiquidityError(
+                IHyperdrive.InsufficientLiquidityReason.NegativeInterest
+            );
         }
 
         // Calculate the fees charged to the user (curveFee) and the portion
@@ -509,7 +532,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
                     )
                 )
             ) {
-                revert IHyperdrive.NegativeInterest();
+                Errors.throwInsufficientLiquidityError(
+                    IHyperdrive.InsufficientLiquidityReason.NegativeInterest
+                );
             }
 
             // Calculate the fees charged to the user (curveFee and
