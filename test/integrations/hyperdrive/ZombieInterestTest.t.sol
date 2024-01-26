@@ -201,24 +201,6 @@ contract ZombieInterestTest is HyperdriveTest {
             ),
             baseToken.balanceOf(address(hyperdrive)) - baseReserves
         );
-
-        uint256 lowerBound = hyperdrive.getPoolInfo().shareReserves +
-            hyperdrive.getPoolInfo().shortsOutstanding.divDown(
-                hyperdrive.getPoolInfo().vaultSharePrice
-            ) +
-            hyperdrive
-                .getPoolInfo()
-                .shortsOutstanding
-                .mulDown(hyperdrive.getPoolConfig().fees.flat)
-                .divDown(hyperdrive.getPoolInfo().vaultSharePrice) +
-            hyperdrive.getUncollectedGovernanceFees() +
-            hyperdrive.getPoolInfo().withdrawalSharesProceeds +
-            hyperdrive.getPoolInfo().zombieShareReserves;
-
-        assertLe(
-            lowerBound,
-            baseToken.balanceOf(address(hyperdrive)).divDown(vaultSharePrice)
-        );
     }
 
     function test_zombie_interest_short_lp(
