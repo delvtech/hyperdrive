@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import { Authority } from "solmate/auth/Auth.sol";
 import { MultiRolesAuthority } from "solmate/auth/authorities/MultiRolesAuthority.sol";
-import { ERC20 } from "solmate/tokens/ERC20.sol";
+import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 
 contract ERC20Mintable is ERC20, MultiRolesAuthority {
     bool public immutable isCompetitionMode;

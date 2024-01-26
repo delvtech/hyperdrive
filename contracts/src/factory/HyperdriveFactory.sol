@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { ERC20 } from "solmate/tokens/ERC20.sol";
-import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
+import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
+import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IDeployerCoordinator } from "../interfaces/IDeployerCoordinator.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
@@ -16,7 +16,7 @@ import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 ///                    particular legal or regulatory significance.
 contract HyperdriveFactory {
     using FixedPointMath for uint256;
-    using SafeTransferLib for ERC20;
+    using SafeERC20 for ERC20;
 
     /// @notice Emitted when new instances are deployed.
     event Deployed(

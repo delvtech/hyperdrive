@@ -16,7 +16,6 @@ library FixedPointMath {
 
     uint256 internal constant MAX_UINT256 = 2 ** 256 - 1;
 
-    /// @dev Credit to Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
     /// @param x Fixed point number in 1e18 format.
     /// @param y Fixed point number in 1e18 format.
     /// @param denominator Fixed point number in 1e18 format.
@@ -40,7 +39,6 @@ library FixedPointMath {
         }
     }
 
-    /// @dev Credit to Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
     /// @param a Fixed point number in 1e18 format.
     /// @param b Fixed point number in 1e18 format.
     /// @return Result of a * b rounded down.
@@ -48,7 +46,6 @@ library FixedPointMath {
         return (mulDivDown(a, b, 1e18));
     }
 
-    /// @dev Credit to Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
     /// @param a Fixed point number in 1e18 format.
     /// @param b Fixed point number in 1e18 format.
     /// @return Result of a / b rounded down.
@@ -56,7 +53,6 @@ library FixedPointMath {
         return (mulDivDown(a, 1e18, b)); // Equivalent to (a * 1e18) / b rounded down.
     }
 
-    /// @dev Credit to Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
     /// @param x Fixed point number in 1e18 format.
     /// @param y Fixed point number in 1e18 format.
     /// @param denominator Fixed point number in 1e18 format.
@@ -84,7 +80,6 @@ library FixedPointMath {
         }
     }
 
-    /// @dev Credit to Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
     /// @param a Fixed point number in 1e18 format.
     /// @param b Fixed point number in 1e18 format.
     /// @return The result of a * b rounded up.
@@ -92,7 +87,6 @@ library FixedPointMath {
         return (mulDivUp(a, b, 1e18));
     }
 
-    /// @dev Credit to Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
     /// @param a Fixed point number in 1e18 format.
     /// @param b Fixed point number in 1e18 format.
     /// @return The result of a / b rounded up.
@@ -101,7 +95,6 @@ library FixedPointMath {
     }
 
     /// @dev Exponentiation (x^y) with unsigned 18 decimal fixed point base and exponent.
-    /// @dev Partially inspired by Balancer LogExpMath library (https://github.com/balancer-labs/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/LogExpMath.sol)
     /// @param x Fixed point number in 1e18 format.
     /// @param y Fixed point number in 1e18 format.
     /// @return The result of x^y.
@@ -135,7 +128,7 @@ library FixedPointMath {
     }
 
     /// @dev Computes e^x in 1e18 fixed point.
-    /// @dev Credit to Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/SignedWadMath.sol)
+    /// @dev Credit to Remco (https://github.com/recmo/experiment-solexp/blob/main/src/FixedPointMathLib.sol)
     /// @param x Fixed point number in 1e18 format.
     /// @return r The result of e^x.
     function exp(int256 x) internal pure returns (int256 r) {
@@ -206,7 +199,6 @@ library FixedPointMath {
 
     /// @dev Computes ln(x) in 1e18 fixed point.
     /// @dev Reverts if x is negative
-    /// @dev Credit to Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/SignedWadMath.sol)
     /// @param x Fixed point number in 1e18 format.
     /// @return Result of ln(x).
     function ln(int256 x) internal pure returns (int256) {

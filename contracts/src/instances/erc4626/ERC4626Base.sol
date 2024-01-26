@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { ERC20 } from "solmate/tokens/ERC20.sol";
-import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
+import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
+import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IERC4626Hyperdrive } from "../../interfaces/IERC4626Hyperdrive.sol";
@@ -17,7 +17,7 @@ import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 ///                    particular legal or regulatory significance.
 abstract contract ERC4626Base is HyperdriveBase {
     using FixedPointMath for uint256;
-    using SafeTransferLib for ERC20;
+    using SafeERC20 for ERC20;
 
     /// @dev The ERC4626 vault that this pool uses as a yield source.
     IERC4626 internal immutable _vault;

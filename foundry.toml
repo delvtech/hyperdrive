@@ -15,6 +15,7 @@ cache_path = 'forge-cache'
 # Enables or disables the optimizer
 remappings = [
   'forge-std=lib/forge-std/src',
+  'openzeppelin=lib/openzeppelin-contracts/contracts',
   'solmate=lib/solmate/src',
 ]
 # gas limit - max u64
