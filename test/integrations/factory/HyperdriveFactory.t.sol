@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-
 import { ERC4626HyperdriveCoreDeployer } from "contracts/src/deployers/erc4626/ERC4626HyperdriveCoreDeployer.sol";
 import { ERC4626HyperdriveDeployerCoordinator } from "contracts/src/deployers/erc4626/ERC4626HyperdriveDeployerCoordinator.sol";
 import { ERC4626Target0Deployer } from "contracts/src/deployers/erc4626/ERC4626Target0Deployer.sol";
@@ -55,6 +52,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
     event MinPositionDurationUpdated(uint256 newMinPositionDuration);
 
+    event MaxFixedAPRUpdated(uint256 newMaxFixedAPR);
+
+    event MinFixedAPRUpdated(uint256 newMinFixedAPR);
+
+    event MaxTimeStretchAPRUpdated(uint256 newMaxTimeStretchAPR);
+
+    event MinTimeStretchAPRUpdated(uint256 newMinTimeStretchAPR);
+
     event MaxFeesUpdated(IHyperdrive.Fees newMaxFees);
 
     event MinFeesUpdated(IHyperdrive.Fees newMinFees);
@@ -78,6 +83,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.005e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees({
                     curve: 0.001e18,
                     flat: 0.0001e18,
@@ -116,6 +125,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, ONE),
                 linkerFactory: address(0),
@@ -140,6 +153,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, ONE),
                 linkerFactory: address(0),
@@ -164,6 +181,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 7 hours,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, ONE),
                 linkerFactory: address(0),
@@ -188,6 +209,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 8.5 hours,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, ONE),
                 linkerFactory: address(0),
@@ -209,6 +234,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 8 hours,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, ONE),
                 linkerFactory: address(0),
@@ -231,6 +260,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days + 30 minutes,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, ONE),
                 linkerFactory: address(0),
@@ -252,6 +285,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 6 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, ONE),
                 linkerFactory: address(0),
@@ -274,6 +311,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days + 30 minutes,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, ONE),
                 linkerFactory: address(0),
@@ -295,6 +336,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
                 maxFees: IHyperdrive.Fees(2 * ONE, ONE, ONE, ONE),
                 linkerFactory: address(0),
@@ -316,6 +361,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
                 maxFees: IHyperdrive.Fees(ONE, 2 * ONE, ONE, ONE),
                 linkerFactory: address(0),
@@ -337,6 +386,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
                 maxFees: IHyperdrive.Fees(ONE, ONE, 2 * ONE, ONE),
                 linkerFactory: address(0),
@@ -358,6 +411,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, 2 * ONE),
                 linkerFactory: address(0),
@@ -379,6 +436,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(ONE, 0, 0, 0),
                 maxFees: IHyperdrive.Fees(0, ONE, ONE, ONE),
                 linkerFactory: address(0),
@@ -400,6 +461,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, ONE, 0, 0),
                 maxFees: IHyperdrive.Fees(ONE, 0, ONE, ONE),
                 linkerFactory: address(0),
@@ -421,6 +486,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, ONE, 0),
                 maxFees: IHyperdrive.Fees(ONE, ONE, 0, ONE),
                 linkerFactory: address(0),
@@ -442,6 +511,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, ONE),
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, 0),
                 linkerFactory: address(0),
@@ -462,6 +535,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, ONE),
                 linkerFactory: address(0xdeadbeef),
@@ -481,6 +558,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         assertEq(factory.maxCheckpointDuration(), config.maxCheckpointDuration);
         assertEq(factory.minPositionDuration(), config.minPositionDuration);
         assertEq(factory.maxPositionDuration(), config.maxPositionDuration);
+        assertEq(factory.minTimeStretchAPR(), config.minTimeStretchAPR);
+        assertEq(factory.maxTimeStretchAPR(), config.maxTimeStretchAPR);
         assertEq(
             keccak256(abi.encode(factory.minFees())),
             keccak256(abi.encode(config.minFees))
@@ -872,6 +951,118 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         assertEq(factory.minPositionDuration(), newMinPositionDuration);
     }
 
+    function test_updateMaxFixedAPR() external {
+        uint256 newMaxFixedAPR = 0.25e18;
+
+        // Ensure that the max fixed APR can't be updated by someone other than
+        // the current governance.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
+        factory.updateMaxFixedAPR(newMaxFixedAPR);
+
+        // Ensure that the max fixed APR can't be set to a value less than the
+        // min fixed APR.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        uint256 minFixedAPR = factory.minFixedAPR();
+        vm.expectRevert(IHyperdriveFactory.InvalidMaxFixedAPR.selector);
+        factory.updateMaxFixedAPR(minFixedAPR - 1);
+
+        // Ensure that the max fixed APR was updated successfully and that the
+        // correct event was emitted.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        vm.expectEmit(true, true, true, true);
+        emit MaxFixedAPRUpdated(newMaxFixedAPR);
+        factory.updateMaxFixedAPR(newMaxFixedAPR);
+        assertEq(factory.maxFixedAPR(), newMaxFixedAPR);
+    }
+
+    function test_updateMinFixedAPR() external {
+        uint256 newMinFixedAPR = 0.01e18;
+
+        // Ensure that the min fixed APR can't be updated by someone other than
+        // the current governance.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
+        factory.updateMinFixedAPR(newMinFixedAPR);
+
+        // Ensure that the min fixed APR can't be set to a value greater than
+        // the max fixed APR.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        uint256 maxFixedAPR = factory.maxFixedAPR();
+        vm.expectRevert(IHyperdriveFactory.InvalidMinFixedAPR.selector);
+        factory.updateMinFixedAPR(maxFixedAPR + 1);
+
+        // Ensure that the min fixed APR was updated successfully and that the
+        // correct event was emitted.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        vm.expectEmit(true, true, true, true);
+        emit MinFixedAPRUpdated(newMinFixedAPR);
+        factory.updateMinFixedAPR(newMinFixedAPR);
+        assertEq(factory.minFixedAPR(), newMinFixedAPR);
+    }
+
+    function test_updateMaxTimeStretchAPR() external {
+        uint256 newMaxTimeStretchAPR = 0.25e18;
+
+        // Ensure that the max timeStretch APR can't be updated by someone
+        // other than the current governance.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
+        factory.updateMaxTimeStretchAPR(newMaxTimeStretchAPR);
+
+        // Ensure that the max timeStretch APR can't be set to a value
+        // less than the min timeStretch APR.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        uint256 minTimeStretchAPR = factory.minTimeStretchAPR();
+        vm.expectRevert(IHyperdriveFactory.InvalidMaxTimeStretchAPR.selector);
+        factory.updateMaxTimeStretchAPR(minTimeStretchAPR - 1);
+
+        // Ensure that the max timeStretch APR was updated successfully and
+        // that the correct event was emitted.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        vm.expectEmit(true, true, true, true);
+        emit MaxTimeStretchAPRUpdated(newMaxTimeStretchAPR);
+        factory.updateMaxTimeStretchAPR(newMaxTimeStretchAPR);
+        assertEq(factory.maxTimeStretchAPR(), newMaxTimeStretchAPR);
+    }
+
+    function test_updateMinTimeStretchAPR() external {
+        uint256 newMinTimeStretchAPR = 0.01e18;
+
+        // Ensure that the min timeStretch APR can't be updated by someone
+        // other than the current governance.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
+        factory.updateMinTimeStretchAPR(newMinTimeStretchAPR);
+
+        // Ensure that the min timeStretch APR can't be set to a value
+        // greater than the max timeStretch APR.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        uint256 maxTimeStretchAPR = factory.maxTimeStretchAPR();
+        vm.expectRevert(IHyperdriveFactory.InvalidMinTimeStretchAPR.selector);
+        factory.updateMinTimeStretchAPR(maxTimeStretchAPR + 1);
+
+        // Ensure that the min timeStretch APR was updated successfully and
+        // that the correct event was emitted.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        vm.expectEmit(true, true, true, true);
+        emit MinTimeStretchAPRUpdated(newMinTimeStretchAPR);
+        factory.updateMinTimeStretchAPR(newMinTimeStretchAPR);
+        assertEq(factory.minTimeStretchAPR(), newMinTimeStretchAPR);
+    }
+
     function test_updateMaxFees() external {
         IHyperdrive.Fees memory newMaxFees = IHyperdrive.Fees({
             curve: 0.1e18,
@@ -1242,10 +1433,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 minimumTransactionAmount: 1e15,
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
-                timeStretch: HyperdriveUtils.calculateTimeStretch(
-                    0.05e18,
-                    365 days
-                ),
+                timeStretch: 0,
                 governance: address(0),
                 feeCollector: address(0),
                 fees: IHyperdrive.Fees(0.01e18, 0.001e18, 0.15e18, 0.03e18),
@@ -1260,6 +1448,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             deployerCoordinator,
             config,
             extraData,
+            0.05e18,
+            0.05e18,
             0,
             bytes32(uint256(0xdeadbabe))
         );
@@ -1268,6 +1458,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             deployerCoordinator,
             config,
             extraData,
+            0.05e18,
+            0.05e18,
             1,
             bytes32(uint256(0xdeadbabe))
         );
@@ -1276,6 +1468,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             deployerCoordinator,
             config,
             extraData,
+            0.05e18,
+            0.05e18,
             2,
             bytes32(uint256(0xdeadbabe))
         );
@@ -1284,6 +1478,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             deployerCoordinator,
             config,
             extraData,
+            0.05e18,
+            0.05e18,
             3,
             bytes32(uint256(0xdeadbabe))
         );
@@ -1292,356 +1488,596 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             deployerCoordinator,
             config,
             extraData,
+            0.05e18,
+            0.05e18,
             4,
             bytes32(uint256(0xdeadbabe))
         );
 
         // Ensure that an instance can't be deployed with a coordinator that
         // hasn't been added.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        vm.expectRevert(IHyperdriveFactory.InvalidDeployerCoordinator.selector);
-        factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            address(0xdeadbeef),
-            config,
-            extraData,
-            10_000e18,
-            0.02e18,
-            new bytes(0),
-            bytes32(uint256(0xdeadbabe))
-        );
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            vm.expectRevert(
+                IHyperdriveFactory.InvalidDeployerCoordinator.selector
+            );
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                address(0xdeadbeef),
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.05e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+        }
 
         // Ensure than an instance can't be deployed with a checkpoint duration
         // that is greater than the maximum checkpoint duration.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        uint256 oldCheckpointDuration = config.checkpointDuration;
-        config.checkpointDuration =
-            factory.maxCheckpointDuration() +
-            factory.checkpointDurationResolution();
-        vm.expectRevert(IHyperdriveFactory.InvalidCheckpointDuration.selector);
-        factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            10_000e18,
-            0.02e18,
-            new bytes(0),
-            bytes32(uint256(0xdeadbabe))
-        );
-        config.checkpointDuration = oldCheckpointDuration;
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 oldCheckpointDuration = config.checkpointDuration;
+            config.checkpointDuration =
+                factory.maxCheckpointDuration() +
+                factory.checkpointDurationResolution();
+            vm.expectRevert(
+                IHyperdriveFactory.InvalidCheckpointDuration.selector
+            );
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.05e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+            config.checkpointDuration = oldCheckpointDuration;
+        }
 
         // Ensure than an instance can't be deployed with a checkpoint duration
         // that is less than the minimum checkpoint duration.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        oldCheckpointDuration = config.checkpointDuration;
-        config.checkpointDuration =
-            factory.minCheckpointDuration() -
-            factory.checkpointDurationResolution();
-        vm.expectRevert(IHyperdriveFactory.InvalidCheckpointDuration.selector);
-        factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            10_000e18,
-            0.02e18,
-            new bytes(0),
-            bytes32(uint256(0xdeadbabe))
-        );
-        config.checkpointDuration = oldCheckpointDuration;
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 oldCheckpointDuration = config.checkpointDuration;
+            config.checkpointDuration =
+                factory.minCheckpointDuration() -
+                factory.checkpointDurationResolution();
+            vm.expectRevert(
+                IHyperdriveFactory.InvalidCheckpointDuration.selector
+            );
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.05e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+            config.checkpointDuration = oldCheckpointDuration;
+        }
 
         // Ensure than an instance can't be deployed with a checkpoint duration
         // that isn't a multiple of the checkpoint duration resolution.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        oldCheckpointDuration = config.checkpointDuration;
-        config.checkpointDuration = factory.minCheckpointDuration() + 1;
-        vm.expectRevert(IHyperdriveFactory.InvalidCheckpointDuration.selector);
-        factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            10_000e18,
-            0.02e18,
-            new bytes(0),
-            bytes32(uint256(0xdeadbabe))
-        );
-        config.checkpointDuration = oldCheckpointDuration;
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 oldCheckpointDuration = config.checkpointDuration;
+            config.checkpointDuration = factory.minCheckpointDuration() + 1;
+            vm.expectRevert(
+                IHyperdriveFactory.InvalidCheckpointDuration.selector
+            );
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.05e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+            config.checkpointDuration = oldCheckpointDuration;
+        }
 
         // Ensure than an instance can't be deployed with a position duration
         // that is greater than the maximum position duration.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        uint256 oldPositionDuration = config.positionDuration;
-        config.positionDuration =
-            factory.maxPositionDuration() +
-            factory.checkpointDurationResolution();
-        vm.expectRevert(IHyperdriveFactory.InvalidPositionDuration.selector);
-        factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            10_000e18,
-            0.02e18,
-            new bytes(0),
-            bytes32(uint256(0xdeadbabe))
-        );
-        config.positionDuration = oldPositionDuration;
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 oldPositionDuration = config.positionDuration;
+            config.positionDuration =
+                factory.maxPositionDuration() +
+                factory.checkpointDurationResolution();
+            vm.expectRevert(
+                IHyperdriveFactory.InvalidPositionDuration.selector
+            );
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.05e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+            config.positionDuration = oldPositionDuration;
+        }
 
         // Ensure than an instance can't be deployed with a position duration
         // that is less than the minimum position duration.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        oldPositionDuration = config.positionDuration;
-        config.positionDuration =
-            factory.minPositionDuration() -
-            factory.checkpointDurationResolution();
-        vm.expectRevert(IHyperdriveFactory.InvalidPositionDuration.selector);
-        factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            10_000e18,
-            0.02e18,
-            new bytes(0),
-            bytes32(uint256(0xdeadbabe))
-        );
-        config.positionDuration = oldPositionDuration;
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 oldPositionDuration = config.positionDuration;
+            config.positionDuration =
+                factory.minPositionDuration() -
+                factory.checkpointDurationResolution();
+            vm.expectRevert(
+                IHyperdriveFactory.InvalidPositionDuration.selector
+            );
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.05e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+            config.positionDuration = oldPositionDuration;
+        }
 
         // Ensure than an instance can't be deployed with a position duration
         // that isn't a multiple of the checkpoint duration.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        oldPositionDuration = config.positionDuration;
-        config.positionDuration = 365 * config.checkpointDuration + 1;
-        vm.expectRevert(IHyperdriveFactory.InvalidPositionDuration.selector);
-        factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            10_000e18,
-            0.02e18,
-            new bytes(0),
-            bytes32(uint256(0xdeadbabe))
-        );
-        config.positionDuration = oldPositionDuration;
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 oldPositionDuration = config.positionDuration;
+            config.positionDuration = 365 * config.checkpointDuration + 1;
+            vm.expectRevert(
+                IHyperdriveFactory.InvalidPositionDuration.selector
+            );
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.05e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+            config.positionDuration = oldPositionDuration;
+        }
+
+        // Ensure than an instance can't be deployed with a fixed APR less than
+        // the minimum.
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 fixedAPR = factory.minFixedAPR() - 1;
+            vm.expectRevert(IHyperdriveFactory.InvalidFixedAPR.selector);
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                fixedAPR,
+                0.05e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+        }
+
+        // Ensure than an instance can't be deployed with a fixed APR greater
+        // than the maximum.
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 fixedAPR = factory.maxFixedAPR() + 1;
+            vm.expectRevert(IHyperdriveFactory.InvalidFixedAPR.selector);
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                fixedAPR,
+                0.05e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+        }
+
+        // Ensure than an instance can't be deployed with a time stretch APR
+        // less than 0.5%.
+        {
+            vm.stopPrank();
+            vm.startPrank(factory.governance());
+            factory.updateMinTimeStretchAPR(0.001e18);
+            vm.stopPrank();
+            vm.startPrank(bob);
+            vm.expectRevert(IHyperdriveFactory.InvalidTimeStretchAPR.selector);
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.001e18,
+                0.004e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+        }
+
+        // Ensure than an instance can't be deployed with a time stretch APR
+        // less than the fixed rate divided by two.
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            vm.expectRevert(IHyperdriveFactory.InvalidTimeStretchAPR.selector);
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.006e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+        }
+
+        // Ensure than an instance can't be deployed with a time stretch APR
+        // less than the minimum time stretch APR specified by governance.
+        {
+            vm.stopPrank();
+            vm.startPrank(factory.governance());
+            factory.updateMinTimeStretchAPR(0.02e18);
+            vm.stopPrank();
+            vm.startPrank(bob);
+            vm.expectRevert(IHyperdriveFactory.InvalidTimeStretchAPR.selector);
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.019e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+        }
+
+        // Ensure than an instance can't be deployed with a time stretch APR
+        // greater than the lower bound (0.5%) multiplied by two.
+        {
+            vm.stopPrank();
+            vm.startPrank(factory.governance());
+            factory.updateMinTimeStretchAPR(0.001e18);
+            vm.stopPrank();
+            vm.startPrank(bob);
+            vm.expectRevert(IHyperdriveFactory.InvalidTimeStretchAPR.selector);
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.003e18,
+                0.011e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+        }
+
+        // Ensure than an instance can't be deployed with a time stretch APR
+        // greater than the fixed rate multiplied by two.
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            vm.expectRevert(IHyperdriveFactory.InvalidTimeStretchAPR.selector);
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.012e18,
+                0.025e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+        }
+
+        // Ensure than an instance can't be deployed with a time stretch APR
+        // greater than the max time stretch APR specified by governance.
+        {
+            vm.stopPrank();
+            vm.startPrank(factory.governance());
+            factory.updateMaxTimeStretchAPR(0.3e18);
+            vm.stopPrank();
+            vm.startPrank(bob);
+            vm.expectRevert(IHyperdriveFactory.InvalidTimeStretchAPR.selector);
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.3e18,
+                0.31e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+        }
 
         // Ensure than an instance can't be deployed with a curve fee greater
         // than the maximum curve fee.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        uint256 oldCurveFee = config.fees.curve;
-        config.fees.curve = factory.maxFees().curve + 1;
-        vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
-        factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            10_000e18,
-            0.02e18,
-            new bytes(0),
-            bytes32(uint256(0xdeadbabe))
-        );
-        config.fees.curve = oldCurveFee;
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 oldCurveFee = config.fees.curve;
+            config.fees.curve = factory.maxFees().curve + 1;
+            vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.05e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+            config.fees.curve = oldCurveFee;
+        }
 
         // Ensure than an instance can't be deployed with a curve fee less
         // than the minimum curve fee.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        oldCurveFee = config.fees.curve;
-        config.fees.curve = factory.minFees().curve - 1;
-        vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
-        factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            10_000e18,
-            0.02e18,
-            new bytes(0),
-            bytes32(uint256(0xdeadbabe))
-        );
-        config.fees.curve = oldCurveFee;
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 oldCurveFee = config.fees.curve;
+            config.fees.curve = factory.minFees().curve - 1;
+            vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.05e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+            config.fees.curve = oldCurveFee;
+        }
 
         // Ensure than an instance can't be deployed with a flat fee greater
         // than the maximum flat fee.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        uint256 oldFlatFee = config.fees.flat;
-        config.fees.flat = factory.maxFees().flat + 1;
-        vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
-        factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            10_000e18,
-            0.02e18,
-            new bytes(0),
-            bytes32(uint256(0xdeadbabe))
-        );
-        config.fees.flat = oldFlatFee;
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 oldFlatFee = config.fees.flat;
+            config.fees.flat = factory.maxFees().flat + 1;
+            vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.05e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+            config.fees.flat = oldFlatFee;
+        }
 
         // Ensure than an instance can't be deployed with a flat fee less
         // than the minimum flat fee.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        oldFlatFee = config.fees.flat;
-        config.fees.flat = factory.minFees().flat - 1;
-        vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
-        factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            10_000e18,
-            0.02e18,
-            new bytes(0),
-            bytes32(uint256(0xdeadbabe))
-        );
-        config.fees.flat = oldFlatFee;
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 oldFlatFee = config.fees.flat;
+            config.fees.flat = factory.minFees().flat - 1;
+            vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.05e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+            config.fees.flat = oldFlatFee;
+        }
 
         // Ensure than an instance can't be deployed with a governance LP fee
         // greater than the maximum governance LP fee.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        uint256 oldGovernanceLPFee = config.fees.governanceLP;
-        config.fees.governanceLP = factory.maxFees().governanceLP + 1;
-        vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
-        factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            10_000e18,
-            0.02e18,
-            new bytes(0),
-            bytes32(uint256(0xdeadbabe))
-        );
-        config.fees.governanceLP = oldGovernanceLPFee;
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 oldGovernanceLPFee = config.fees.governanceLP;
+            config.fees.governanceLP = factory.maxFees().governanceLP + 1;
+            vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.05e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+            config.fees.governanceLP = oldGovernanceLPFee;
+        }
 
         // Ensure than an instance can't be deployed with a governance LP fee
         // less than the minimum governance LP fee.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        oldGovernanceLPFee = config.fees.governanceLP;
-        config.fees.governanceLP = factory.minFees().governanceLP - 1;
-        vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
-        factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            10_000e18,
-            0.02e18,
-            new bytes(0),
-            bytes32(uint256(0xdeadbabe))
-        );
-        config.fees.governanceLP = oldGovernanceLPFee;
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 oldGovernanceLPFee = config.fees.governanceLP;
+            config.fees.governanceLP = factory.minFees().governanceLP - 1;
+            vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.05e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+            config.fees.governanceLP = oldGovernanceLPFee;
+        }
 
         // Ensure than an instance can't be deployed with a governance zombie
         // fee greater than the maximum governance zombie fee.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        uint256 oldGovernanceZombieFee = config.fees.governanceZombie;
-        config.fees.governanceZombie = factory.maxFees().governanceZombie + 1;
-        vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
-        factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            10_000e18,
-            0.02e18,
-            new bytes(0),
-            bytes32(uint256(0xdeadbabe))
-        );
-        config.fees.governanceZombie = oldGovernanceZombieFee;
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 oldGovernanceZombieFee = config.fees.governanceZombie;
+            config.fees.governanceZombie =
+                factory.maxFees().governanceZombie +
+                1;
+            vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.05e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+            config.fees.governanceZombie = oldGovernanceZombieFee;
+        }
 
         // Ensure than an instance can't be deployed with a governance zombie
         // fee less than the minimum governance zombie fee.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        oldGovernanceZombieFee = config.fees.governanceZombie;
-        config.fees.governanceZombie = factory.minFees().governanceZombie - 1;
-        vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
-        factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            10_000e18,
-            0.02e18,
-            new bytes(0),
-            bytes32(uint256(0xdeadbabe))
-        );
-        config.fees.governanceZombie = oldGovernanceZombieFee;
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 oldGovernanceZombieFee = config.fees.governanceZombie;
+            config.fees.governanceZombie =
+                factory.minFees().governanceZombie -
+                1;
+            vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.05e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+            config.fees.governanceZombie = oldGovernanceZombieFee;
+        }
 
         // Ensure than an instance can't be deployed with a linker factory that
         // is set.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        address oldLinkerFactory = config.linkerFactory;
-        config.linkerFactory = address(0xdeadbeef);
-        vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
-        factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            10_000e18,
-            0.02e18,
-            new bytes(0),
-            bytes32(uint256(0xdeadbabe))
-        );
-        config.linkerFactory = oldLinkerFactory;
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            address oldLinkerFactory = config.linkerFactory;
+            config.linkerFactory = address(0xdeadbeef);
+            vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.05e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+            config.linkerFactory = oldLinkerFactory;
+        }
 
         // Ensure than an instance can't be deployed with a linker code hash
         // that is set.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        bytes32 oldLinkerCodeHash = config.linkerCodeHash;
-        config.linkerCodeHash = bytes32(uint256(0xdeadbeef));
-        vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
-        factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            10_000e18,
-            0.02e18,
-            new bytes(0),
-            bytes32(uint256(0xdeadbabe))
-        );
-        config.linkerCodeHash = oldLinkerCodeHash;
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            bytes32 oldLinkerCodeHash = config.linkerCodeHash;
+            config.linkerCodeHash = bytes32(uint256(0xdeadbeef));
+            vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.05e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+            config.linkerCodeHash = oldLinkerCodeHash;
+        }
 
         // Ensure than an instance can't be deployed with a fee collector that
         // is set.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        address oldFeeCollector = config.feeCollector;
-        config.feeCollector = address(0xdeadbeef);
-        vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
-        factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            10_000e18,
-            0.02e18,
-            new bytes(0),
-            bytes32(uint256(0xdeadbabe))
-        );
-        config.feeCollector = oldFeeCollector;
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            address oldFeeCollector = config.feeCollector;
+            config.feeCollector = address(0xdeadbeef);
+            vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.05e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+            config.feeCollector = oldFeeCollector;
+        }
 
         // Ensure than an instance can't be deployed with a governance address
         // that is set.
@@ -1657,6 +2093,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             extraData,
             10_000e18,
             0.02e18,
+            0.05e18,
             new bytes(0),
             bytes32(uint256(0xdeadbabe))
         );
@@ -1730,6 +2167,10 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees({
                     curve: 0.001e18,
                     flat: 0.0001e18,
@@ -1754,7 +2195,7 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             minimumTransactionAmount: 1e15,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(APR, 365 days),
+            timeStretch: 0,
             governance: address(0),
             feeCollector: address(0),
             fees: IHyperdrive.Fees(0.01e18, 0.001e18, 0.15e18, 0.03e18),
@@ -1819,6 +2260,8 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             deployerCoordinator,
             config,
             extraData,
+            APR,
+            APR,
             0,
             salt
         );
@@ -1827,6 +2270,8 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             deployerCoordinator,
             config,
             extraData,
+            APR,
+            APR,
             1,
             salt
         );
@@ -1835,6 +2280,8 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             deployerCoordinator,
             config,
             extraData,
+            APR,
+            APR,
             2,
             salt
         );
@@ -1843,6 +2290,8 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             deployerCoordinator,
             config,
             extraData,
+            APR,
+            APR,
             3,
             salt
         );
@@ -1851,6 +2300,8 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             deployerCoordinator,
             config,
             extraData,
+            APR,
+            APR,
             4,
             salt
         );
@@ -1860,6 +2311,7 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             config,
             extraData,
             CONTRIBUTION,
+            APR,
             APR,
             new bytes(0),
             salt
@@ -1915,6 +2367,8 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             deployerCoordinator,
             config,
             extraData,
+            APR,
+            APR,
             0,
             bytes32(uint256(0xdeadbabe))
         );
@@ -1923,6 +2377,8 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             deployerCoordinator,
             config,
             extraData,
+            APR,
+            APR,
             1,
             bytes32(uint256(0xdeadbabe))
         );
@@ -1931,6 +2387,8 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             deployerCoordinator,
             config,
             extraData,
+            APR,
+            APR,
             2,
             bytes32(uint256(0xdeadbabe))
         );
@@ -1939,6 +2397,8 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             deployerCoordinator,
             config,
             extraData,
+            APR,
+            APR,
             3,
             bytes32(uint256(0xdeadbabe))
         );
@@ -1947,6 +2407,8 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             deployerCoordinator,
             config,
             extraData,
+            APR,
+            APR,
             4,
             bytes32(uint256(0xdeadbabe))
         );
@@ -1956,6 +2418,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             config,
             extraData,
             CONTRIBUTION,
+            APR,
             APR,
             new bytes(0),
             bytes32(uint256(0xdeadbabe))
@@ -2004,6 +2467,8 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             deployerCoordinator1,
             config,
             extraData,
+            APR,
+            APR,
             0,
             bytes32(uint256(0xbabe))
         );
@@ -2012,6 +2477,8 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             deployerCoordinator1,
             config,
             extraData,
+            APR,
+            APR,
             1,
             bytes32(uint256(0xbabe))
         );
@@ -2020,6 +2487,8 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             deployerCoordinator1,
             config,
             extraData,
+            APR,
+            APR,
             2,
             bytes32(uint256(0xbabe))
         );
@@ -2028,6 +2497,8 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             deployerCoordinator1,
             config,
             extraData,
+            APR,
+            APR,
             3,
             bytes32(uint256(0xbabe))
         );
@@ -2036,6 +2507,8 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             deployerCoordinator1,
             config,
             extraData,
+            APR,
+            APR,
             4,
             bytes32(uint256(0xbabe))
         );
@@ -2045,6 +2518,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             config,
             extraData,
             CONTRIBUTION,
+            APR,
             APR,
             new bytes(0),
             bytes32(uint256(0xbabe))
@@ -2100,6 +2574,8 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             deployerCoordinator,
             config,
             extraData,
+            APR,
+            APR,
             0,
             bytes32(uint256(0xdead))
         );
@@ -2108,6 +2584,8 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             deployerCoordinator,
             config,
             extraData,
+            APR,
+            APR,
             1,
             bytes32(uint256(0xdead))
         );
@@ -2116,6 +2594,8 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             deployerCoordinator,
             config,
             extraData,
+            APR,
+            APR,
             2,
             bytes32(uint256(0xdead))
         );
@@ -2124,6 +2604,8 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             deployerCoordinator,
             config,
             extraData,
+            APR,
+            APR,
             3,
             bytes32(uint256(0xdead))
         );
@@ -2132,6 +2614,8 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             deployerCoordinator,
             config,
             extraData,
+            APR,
+            APR,
             4,
             bytes32(uint256(0xdead))
         );
@@ -2141,6 +2625,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             config,
             extraData,
             CONTRIBUTION,
+            APR,
             APR,
             new bytes(0),
             bytes32(uint256(0xdead))
@@ -2267,6 +2752,10 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees({
                     curve: 0.001e18,
                     flat: 0.0001e18,
@@ -2439,6 +2928,10 @@ contract HyperdriveFactoryAddHyperdriveFactoryTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees({
                     curve: 0.001e18,
                     flat: 0.0001e18,
@@ -2539,6 +3032,10 @@ contract HyperdriveFactoryRemoveInstanceTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees({
                     curve: 0.001e18,
                     flat: 0.0001e18,

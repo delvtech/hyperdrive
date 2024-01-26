@@ -12,6 +12,7 @@ import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IERC4626Hyperdrive } from "contracts/src/interfaces/IERC4626Hyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ONE } from "contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockERC4626 } from "contracts/test/MockERC4626.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
@@ -56,10 +57,7 @@ contract SweepTest is BaseTest {
             minimumTransactionAmount: 0.001e18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(
-                0.01e18,
-                365 days
-            ),
+            timeStretch: HyperdriveMath.calculateTimeStretch(0.01e18, 365 days),
             governance: alice,
             feeCollector: bob,
             fees: IHyperdrive.Fees(0, 0, 0, 0)

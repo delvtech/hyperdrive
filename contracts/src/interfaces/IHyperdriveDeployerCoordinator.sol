@@ -35,6 +35,9 @@ interface IHyperdriveDeployerCoordinator {
     ///         reserves.
     error InvalidMinimumShareReserves();
 
+    /// @notice Thrown when the minimum transaction amount is too small.
+    error InvalidMinimumTransactionAmount();
+
     /// @notice Thrown when the position duration is smaller than the checkpoint
     ///         duration or is not a multiple of the checkpoint duration.
     error InvalidPositionDuration();

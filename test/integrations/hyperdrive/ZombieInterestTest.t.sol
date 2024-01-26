@@ -13,6 +13,7 @@ contract ZombieInterestTest is HyperdriveTest {
     using HyperdriveUtils for *;
     using Lib for *;
 
+    /// forge-config: default.fuzz.runs = 1000
     function test_zombie_interest_long_lp(
         uint256 variableRateParam,
         uint256 longTradeSizeParam,
@@ -203,6 +204,7 @@ contract ZombieInterestTest is HyperdriveTest {
         );
     }
 
+    /// forge-config: default.fuzz.runs = 1000
     function test_zombie_interest_short_lp(
         uint256 variableRateParam,
         uint256 shortTradeSizeParam,
@@ -431,8 +433,7 @@ contract ZombieInterestTest is HyperdriveTest {
         );
     }
 
-    // This test just demonstrates that shorts redeemed late do not receive
-    // zombie interest.
+    /// forge-config: default.fuzz.runs = 1000
     function test_zombie_short() external {
         // Initialize the pool with capital.
         deploy(bob, 0.035e18, 1e18, 0, 0, 0, 0);
@@ -499,6 +500,7 @@ contract ZombieInterestTest is HyperdriveTest {
         );
     }
 
+    /// forge-config: default.fuzz.runs = 1000
     function test_skipped_checkpoint(
         uint256 variableRateParam,
         uint256 longTradeSizeParam
@@ -590,6 +592,7 @@ contract ZombieInterestTest is HyperdriveTest {
         assertApproxEqAbs(shareReserves1, shareReserves2, 5 wei);
     }
 
+    /// forge-config: default.fuzz.runs = 1000
     function test_zombie_long_short(uint256 zombieTime) external {
         _test_zombie_long_short(zombieTime);
     }

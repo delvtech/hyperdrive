@@ -15,6 +15,7 @@ contract RoundTripTest is HyperdriveTest {
     using HyperdriveUtils for *;
     using Lib for *;
 
+    /// forge-config: default.fuzz.runs = 1000
     function test_long_round_trip_immediately_at_checkpoint(
         uint256 fixedRate,
         uint256 timeStretchFixedRate,
@@ -65,6 +66,7 @@ contract RoundTripTest is HyperdriveTest {
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
     }
 
+    /// forge-config: default.fuzz.runs = 1000
     function test_long_round_trip_immediately_partially_thru_checkpoint(
         uint256 fixedRate,
         uint256 timeStretchFixedRate,
@@ -121,6 +123,7 @@ contract RoundTripTest is HyperdriveTest {
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
     }
 
+    /// forge-config: default.fuzz.runs = 1000
     function test_short_round_trip_immediately_at_checkpoint(
         uint256 fixedRate,
         uint256 timeStretchFixedRate,
@@ -170,6 +173,7 @@ contract RoundTripTest is HyperdriveTest {
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
     }
 
+    /// forge-config: default.fuzz.runs = 1000
     function test_short_round_trip_immediately_partially_thru_checkpoint(
         uint256 fixedRate,
         uint256 timeStretchFixedRate,
@@ -226,6 +230,7 @@ contract RoundTripTest is HyperdriveTest {
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
     }
 
+    /// forge-config: default.fuzz.runs = 1000
     function test_sandwiched_long_round_trip(
         uint256 fixedRate,
         uint256 timeStretchFixedRate
@@ -275,6 +280,7 @@ contract RoundTripTest is HyperdriveTest {
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
     }
 
+    /// forge-config: default.fuzz.runs = 1000
     function test_long_multiblock_round_trip_end_of_checkpoint(
         uint256 fixedRate,
         uint256 timeStretchFixedRate,

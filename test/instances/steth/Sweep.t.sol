@@ -12,6 +12,7 @@ import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { IStETHHyperdrive } from "contracts/src/interfaces/IStETHHyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ONE } from "contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockLido } from "contracts/test/MockLido.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
@@ -53,13 +54,10 @@ contract SweepTest is BaseTest {
             linkerCodeHash: bytes32(0),
             initialVaultSharePrice: ONE,
             minimumShareReserves: 1e15,
-            minimumTransactionAmount: 1e12,
+            minimumTransactionAmount: 1e15,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(
-                0.01e18,
-                365 days
-            ),
+            timeStretch: HyperdriveMath.calculateTimeStretch(0.01e18, 365 days),
             governance: alice,
             feeCollector: bob,
             fees: IHyperdrive.Fees(0, 0, 0, 0)

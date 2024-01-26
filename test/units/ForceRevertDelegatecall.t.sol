@@ -6,6 +6,7 @@ import { Hyperdrive } from "contracts/src/external/Hyperdrive.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { HyperdriveStorage } from "contracts/src/internal/HyperdriveStorage.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { MockHyperdriveBase } from "contracts/test/MockHyperdrive.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
@@ -36,7 +37,7 @@ contract DummyHyperdrive is Hyperdrive, MockHyperdriveBase {
                 minimumTransactionAmount: 1e15,
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
-                timeStretch: HyperdriveUtils.calculateTimeStretch(
+                timeStretch: HyperdriveMath.calculateTimeStretch(
                     0.05e18,
                     365 days
                 ),

@@ -7,6 +7,7 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IMultiToken } from "contracts/src/interfaces/IMultiToken.sol";
 import { HyperdriveMultiToken } from "contracts/src/internal/HyperdriveMultiToken.sol";
 import { HyperdriveStorage } from "contracts/src/internal/HyperdriveStorage.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { MockHyperdriveBase, MockHyperdriveTarget0 } from "contracts/test/MockHyperdrive.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
@@ -57,7 +58,7 @@ contract MockMultiToken is HyperdriveMultiToken, MockHyperdriveBase {
                 minimumTransactionAmount: 1e15,
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
-                timeStretch: HyperdriveUtils.calculateTimeStretch(
+                timeStretch: HyperdriveMath.calculateTimeStretch(
                     0.05e18,
                     365 days
                 ),
@@ -84,7 +85,7 @@ contract MockMultiToken is HyperdriveMultiToken, MockHyperdriveBase {
                     minimumTransactionAmount: 1e15,
                     positionDuration: 365 days,
                     checkpointDuration: 1 days,
-                    timeStretch: HyperdriveUtils.calculateTimeStretch(
+                    timeStretch: HyperdriveMath.calculateTimeStretch(
                         0.05e18,
                         365 days
                     ),

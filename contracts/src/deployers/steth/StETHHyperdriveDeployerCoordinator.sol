@@ -52,7 +52,7 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     function _checkPoolConfig(
         IHyperdrive.PoolDeployConfig memory _deployConfig
-    ) internal pure override {
+    ) internal view override {
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig);
 
@@ -64,7 +64,12 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             revert IHyperdriveDeployerCoordinator.InvalidMinimumShareReserves();
         }
 
-        // FIXME: Add a check for the minimum transaction amount.
+        // Ensure that the minimum transaction amount are equal to 1e15. This
+        // value has been tested to prevent precision issues.
+        if (_deployConfig.minimumTransactionAmount != 1e15) {
+            revert IHyperdriveDeployerCoordinator
+                .InvalidMinimumTransactionAmount();
+        }
     }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.

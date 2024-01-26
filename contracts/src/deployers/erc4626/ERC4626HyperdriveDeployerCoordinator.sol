@@ -3,6 +3,7 @@ pragma solidity 0.8.20;
 
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
@@ -42,13 +43,34 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     function _checkPoolConfig(
         IHyperdrive.PoolDeployConfig memory _deployConfig
-    ) internal pure override {
+    ) internal view override {
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig);
 
-        // FIXME: Add a check for the minimum share reserves.
+        // Ensure that the minimum share reserves are large enough to meet the
+        // minimum requirements for safety.
+        //
+        // NOTE: Some pools may require larger minimum share reserves to be
+        // considered safe. This is just a sanity check.
+        if (
+            _deployConfig.minimumShareReserves <
+            10 ** (_deployConfig.baseToken.decimals() - 4)
+        ) {
+            revert IHyperdriveDeployerCoordinator.InvalidMinimumShareReserves();
+        }
 
-        // FIXME: Add a check for the minimum transaction amount.
+        // Ensure that the minimum transaction amount is large enough to meet
+        // the minimum requirements for safety.
+        //
+        // NOTE: Some pools may require larger minimum transaction amounts to be
+        // considered safe. This is just a sanity check.
+        if (
+            _deployConfig.minimumShareReserves <
+            10 ** (_deployConfig.baseToken.decimals() - 4)
+        ) {
+            revert IHyperdriveDeployerCoordinator
+                .InvalidMinimumTransactionAmount();
+        }
     }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.

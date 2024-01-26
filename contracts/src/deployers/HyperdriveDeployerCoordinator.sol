@@ -291,7 +291,7 @@ abstract contract HyperdriveDeployerCoordinator is
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     function _checkPoolConfig(
         IHyperdrive.PoolDeployConfig memory _deployConfig
-    ) internal pure virtual {
+    ) internal view virtual {
         // Ensure that the minimum share reserves is at least 1e3. Deployer
         // coordinators should override this to be stricter.
         if (_deployConfig.minimumShareReserves < 1e3) {
