@@ -129,7 +129,12 @@ abstract contract HyperdriveCheckpoint is
             // NOTE: Round up to underestimate the short proceeds.
             uint256 shareReservesDelta = maturedShortsAmount.divUp(
                 _vaultSharePrice
-            ) + maturedShortsAmount.mulDivDown(_flatFee, _vaultSharePrice);
+            );
+            // NOTE: We divDown then mulDown to mimic the exact rounding that occurs 
+            // when the short is closed and the fee is calculated in _calculateFeesGivenBonds().
+            shareReservesDelta += maturedShortsAmount.divDown(_vaultSharePrice).mulDown(
+                _flatFee
+            );
             // NOTE: Round down to underestimate the short proceeds.
             shareProceeds = HyperdriveMath.calculateShortProceedsDown(
                 maturedShortsAmount,

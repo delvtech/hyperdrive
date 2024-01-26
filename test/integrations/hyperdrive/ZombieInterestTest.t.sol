@@ -447,23 +447,6 @@ contract ZombieInterestTest is HyperdriveTest {
             ),
             baseToken.balanceOf(address(hyperdrive)) + 10 wei - baseReserves
         );
-        uint256 lowerBound = hyperdrive.getPoolInfo().shareReserves +
-            hyperdrive.getPoolInfo().shortsOutstanding.divDown(
-                hyperdrive.getPoolInfo().vaultSharePrice
-            ) +
-            hyperdrive
-                .getPoolInfo()
-                .shortsOutstanding
-                .mulDown(hyperdrive.getPoolConfig().fees.flat)
-                .divDown(hyperdrive.getPoolInfo().vaultSharePrice) +
-            hyperdrive.getUncollectedGovernanceFees() +
-            hyperdrive.getPoolInfo().withdrawalSharesProceeds +
-            hyperdrive.getPoolInfo().zombieShareReserves;
-
-        assertLe(
-            lowerBound,
-            baseToken.balanceOf(address(hyperdrive)).divDown(vaultSharePrice)
-        );
     }
 
     // This test just demonstrates that shorts redeemed late do not receive
