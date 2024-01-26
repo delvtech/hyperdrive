@@ -17,15 +17,12 @@ library HyperdriveMath {
     using FixedPointMath for int256;
     using SafeCast for uint256;
 
-    // FIXME: Validate that a small correlates to a lower inventory and vice
-    //        versa.
-    //
     /// @dev Calculates the time stretch parameter for the YieldSpace curve.
-    ///      This parameter modifies the curvature in order to target a
-    ///      specified inventory. The lower the time stretch, the flatter the
-    ///      curve will be and the smaller the inventory will be. The higher the
-    ///      time stretch, the higher the curvature will be and the larger the
-    ///      inventory will be.
+    ///      This parameter modifies the curvature in order to support a larger
+    ///      or smaller range of APRs. The lower the time stretch, the flatter
+    ///      the curve will be and the narrower the range of feasible APRs. The
+    ///      higher the time stretch, the higher the curvature will be and the
+    ///      wider the range of feasible APRs.
     /// @param _apr The target APR to use when calculating the time stretch.
     /// @param _positionDuration The position duration in seconds.
     function calculateTimeStretch(

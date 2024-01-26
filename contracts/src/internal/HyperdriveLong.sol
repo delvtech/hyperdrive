@@ -297,27 +297,6 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         int256 _shareAdjustmentDelta,
         uint256 _maturityTime
     ) internal {
-        {
-            uint128 longsOutstanding_ = _marketState.longsOutstanding;
-
-            // Update the long average maturity time.
-            _marketState.longAverageMaturityTime = uint256(
-                _marketState.longAverageMaturityTime
-            )
-                .updateWeightedAverage(
-                    longsOutstanding_,
-                    _maturityTime * 1e18, // scale up to fixed point scale
-                    _bondAmount,
-                    false
-                )
-                .toUint128();
-
-            // Reduce the amount of outstanding longs.
-            _marketState.longsOutstanding =
-                longsOutstanding_ -
-                _bondAmount.toUint128();
-        }
-
         // The share reserves are decreased in this operation, so we need to
         // verify the invariant that z >= z_min is satisfied.
         uint256 shareReserves = _marketState.shareReserves;
