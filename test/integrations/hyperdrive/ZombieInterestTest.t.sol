@@ -6,7 +6,6 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "test/utils/HyperdriveTest.sol";
 import { MockHyperdrive, IMockHyperdrive } from "contracts/test/MockHyperdrive.sol";
 import { Lib } from "test/utils/Lib.sol";
-import "forge-std/console2.sol";
 
 contract ZombieInterestTest is HyperdriveTest {
     using FixedPointMath for uint256;
