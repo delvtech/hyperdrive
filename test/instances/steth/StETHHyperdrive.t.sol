@@ -106,7 +106,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0),
                 minimumShareReserves: 1e15,
-                minimumTransactionAmount: 1e14,
+                minimumTransactionAmount: 1e15,
                 positionDuration: POSITION_DURATION,
                 checkpointDuration: CHECKPOINT_DURATION,
                 timeStretch: HyperdriveUtils.calculateTimeStretch(
@@ -174,7 +174,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0),
                 minimumShareReserves: 1e15,
-                minimumTransactionAmount: 1e14,
+                minimumTransactionAmount: 1e15,
                 positionDuration: POSITION_DURATION,
                 checkpointDuration: CHECKPOINT_DURATION,
                 timeStretch: HyperdriveUtils.calculateTimeStretch(

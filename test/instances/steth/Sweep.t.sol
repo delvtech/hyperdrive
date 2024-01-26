@@ -52,7 +52,7 @@ contract SweepTest is BaseTest {
             linkerCodeHash: bytes32(0),
             initialVaultSharePrice: ONE,
             minimumShareReserves: 1e15,
-            minimumTransactionAmount: 1e12,
+            minimumTransactionAmount: 1e15,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: HyperdriveUtils.calculateTimeStretch(
