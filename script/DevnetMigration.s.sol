@@ -610,7 +610,7 @@ contract DevnetMigration is Script {
             "erc4626Hyperdrive",
             address(erc4626Hyperdrive)
         );
-        vm.serializeAddress(
+        result = vm.serializeAddress(
             result,
             "stethHyperdrive",
             address(stethHyperdrive)
