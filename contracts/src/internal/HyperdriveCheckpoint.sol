@@ -180,9 +180,18 @@ abstract contract HyperdriveCheckpoint is
                 int256(shareProceeds), // keep the effective share reserves constant
                 checkpointTime
             );
+
+            // Subtract the governance fee out when we add
+            // share proceeds to the zombie share reserves.
+            uint256 vaultSharePrice_ = _vaultSharePrice; // Avoid stack too deep error.
+            shareProceeds -= maturedLongsAmount
+                .divDown(vaultSharePrice_)
+                .mulDown(_flatFee)
+                .mulDown(_governanceLPFee);
+
             // NOTE: Round down to underestimate the long proceeds.
             _marketState.zombieBaseProceeds += shareProceeds
-                .mulDown(_vaultSharePrice)
+                .mulDown(vaultSharePrice_)
                 .toUint112();
             _marketState.zombieShareReserves += shareProceeds.toUint128();
             positionsClosed = true;
