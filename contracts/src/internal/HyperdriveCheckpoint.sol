@@ -180,6 +180,11 @@ abstract contract HyperdriveCheckpoint is
                 int256(shareProceeds), // keep the effective share reserves constant
                 checkpointTime
             );
+
+            // Subtract the governance fee out when we add
+            // share proceeds to the zombie share reserves.
+            shareProceeds -= governanceFee;
+
             // NOTE: Round down to underestimate the long proceeds.
             _marketState.zombieBaseProceeds += shareProceeds
                 .mulDown(_vaultSharePrice)
