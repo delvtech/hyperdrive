@@ -417,7 +417,6 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         }
     }
 
-    // TODO: This test should be re-written to avoid such large tolerances.
     function _test_nonstandard_decimals_lp(
         uint256 longBasePaid,
         uint256 shortAmount
@@ -589,12 +588,6 @@ contract NonstandardDecimalsTest is HyperdriveTest {
                 0,
                 1 wei
             );
-
-            // TODO: There is an edge case where the withdrawal pool doesn't receive
-            // all of its portion of the available idle liquidity when a closed
-            // position doesn't perform well.
-            // Ensure that the ending base balance of Hyperdrive is zero.
-            // assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
         }
     }
 }
