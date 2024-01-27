@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
+import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { ILido } from "../../interfaces/ILido.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
@@ -23,6 +25,7 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target1Deployer The target1 deployer.
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
+    /// @param _target4Deployer The target4 deployer.
     /// @param _lido The Lido contract.
     constructor(
         address _coreDeployer,
@@ -30,6 +33,7 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _target1Deployer,
         address _target2Deployer,
         address _target3Deployer,
+        address _target4Deployer,
         ILido _lido
     )
         HyperdriveDeployerCoordinator(
@@ -37,10 +41,35 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _target0Deployer,
             _target1Deployer,
             _target2Deployer,
-            _target3Deployer
+            _target3Deployer,
+            _target4Deployer
         )
     {
         lido = _lido;
+    }
+
+    /// @notice Checks the pool configuration to ensure that it is valid.
+    /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
+    function _checkPoolConfig(
+        IHyperdrive.PoolDeployConfig memory _deployConfig
+    ) internal view override {
+        // Perform the default checks.
+        super._checkPoolConfig(_deployConfig);
+
+        // Ensure that the minimum share reserves are equal to 1e15. This value
+        // has been tested to prevent arithmetic overflows in the
+        // `_updateLiquidity` function when the share reserves are as high as
+        // 200 million.
+        if (_deployConfig.minimumShareReserves != 1e15) {
+            revert IHyperdriveDeployerCoordinator.InvalidMinimumShareReserves();
+        }
+
+        // Ensure that the minimum transaction amount are equal to 1e15. This
+        // value has been tested to prevent precision issues.
+        if (_deployConfig.minimumTransactionAmount != 1e15) {
+            revert IHyperdriveDeployerCoordinator
+                .InvalidMinimumTransactionAmount();
+        }
     }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.

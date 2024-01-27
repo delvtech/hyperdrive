@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
@@ -19,30 +20,33 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target1Deployer The target1 deployer.
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
+    /// @param _target4Deployer The target4 deployer.
     constructor(
         address _coreDeployer,
         address _target0Deployer,
         address _target1Deployer,
         address _target2Deployer,
-        address _target3Deployer
+        address _target3Deployer,
+        address _target4Deployer
     )
         HyperdriveDeployerCoordinator(
             _coreDeployer,
             _target0Deployer,
             _target1Deployer,
             _target2Deployer,
-            _target3Deployer
+            _target3Deployer,
+            _target4Deployer
         )
     {}
 
-    /// @notice Deploys a Hyperdrive instance with the given parameters.
+    /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
-    /// @param _extraData The extra data that contains the pool and sweep targets.
-    /// @return The address of the newly deployed ERC4626Hyperdrive Instance.
-    function deploy(
-        IHyperdrive.PoolDeployConfig memory _deployConfig,
-        bytes memory _extraData
-    ) public override returns (address) {
+    function _checkPoolConfig(
+        IHyperdrive.PoolDeployConfig memory _deployConfig
+    ) internal view override {
+        // Perform the default checks.
+        super._checkPoolConfig(_deployConfig);
+
         // Ensure that the minimum share reserves are large enough to meet the
         // minimum requirements for safety.
         //
@@ -52,7 +56,7 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _deployConfig.minimumShareReserves <
             10 ** (_deployConfig.baseToken.decimals() - 4)
         ) {
-            revert IHyperdrive.InvalidMinimumShareReserves();
+            revert IHyperdriveDeployerCoordinator.InvalidMinimumShareReserves();
         }
 
         // Ensure that the minimum transaction amount is large enough to meet
@@ -64,11 +68,9 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _deployConfig.minimumShareReserves <
             10 ** (_deployConfig.baseToken.decimals() - 4)
         ) {
-            revert IHyperdrive.InvalidMinimumTransactionAmount();
+            revert IHyperdriveDeployerCoordinator
+                .InvalidMinimumTransactionAmount();
         }
-
-        // Deploy the Hyperdrive instance.
-        return super.deploy(_deployConfig, _extraData);
     }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.

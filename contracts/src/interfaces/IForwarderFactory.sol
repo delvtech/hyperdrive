@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
 import { IERC20Forwarder } from "./IERC20Forwarder.sol";
 import { IMultiToken } from "./IMultiToken.sol";
@@ -23,5 +23,6 @@ interface IForwarderFactory {
         uint256 _tokenId
     ) external view returns (address);
 
+    // solhint-disable-next-line func-name-mixedcase
     function ERC20LINK_HASH() external pure returns (bytes32);
 }

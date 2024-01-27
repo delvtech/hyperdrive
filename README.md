@@ -1,4 +1,4 @@
-[![Tests](https://github.com/delvtech/hyperdrive/actions/workflows/test.yml/badge.svg)](https://github.com/delvtech/hyperdrive/actions/workflows/test.yml)
+[![Tests](https://github.com/delvtech/hyperdrive/actions/workflows/solidity_test.yml/badge.svg)](https://github.com/delvtech/hyperdrive/actions/workflows/solidity_test.yml)
 [![Coverage](https://coveralls.io/repos/github/delvtech/hyperdrive/badge.svg?branch=main&t=vnW3xG&kill_cache=1&service=github)](https://coveralls.io/github/delvtech/hyperdrive?branch=main)
 
 # Hyperdrive
@@ -41,7 +41,7 @@ If you want to automatically format the code, run `yarn prettier`.
 
 ## Yield Sources
 
-The current suggested way of integrating your yield source with hyperdrive is through the [ERC-4626 standard](https://eips.ethereum.org/EIPS/eip-4626) although accomodations can be made if this is not possible. Hyperdrive currently makes use of [Yield Daddy](https://github.com/timeless-fi/yield-daddy) to wrap many existing yield sources into this standard.
+The current suggested way of integrating your yield source with hyperdrive is through the [ERC-4626 standard](https://eips.ethereum.org/EIPS/eip-4626) although accomodations can be made if this is not possible.
 
 # Disclaimer
 

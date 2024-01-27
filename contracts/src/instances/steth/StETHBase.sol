@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { ILido } from "../../interfaces/ILido.sol";
@@ -26,20 +26,6 @@ abstract contract StETHBase is HyperdriveBase {
     /// @param __lido The Lido contract.
     constructor(ILido __lido) {
         _lido = __lido;
-
-        // Ensure that the minimum share reserves are equal to 1e15. This value
-        // has been tested to prevent arithmetic overflows in the
-        // `_updateLiquidity` function when the share reserves are as high as
-        // 200 million.
-        if (_minimumShareReserves != 1e15) {
-            revert IHyperdrive.InvalidMinimumShareReserves();
-        }
-
-        // Ensure that the minimum transaction amount are equal to 1e15. This
-        // value has been tested to prevent precision issues.
-        if (_minimumTransactionAmount != 1e15) {
-            revert IHyperdrive.InvalidMinimumTransactionAmount();
-        }
     }
 
     /// Yield Source ///
