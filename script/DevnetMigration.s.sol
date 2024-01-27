@@ -527,59 +527,59 @@ contract DevnetMigration is Script {
                     })
                 });
             factory.deployTarget(
-                bytes32(uint256(0xdeadbeef)),
+                bytes32(uint256(0xbeefbabe)),
                 stethDeployerCoordinator,
                 poolConfig,
                 new bytes(0),
-                config.erc4626HyperdriveFixedAPR,
-                config.erc4626HyperdriveTimeStretchAPR,
+                config.stethHyperdriveFixedAPR,
+                config.stethHyperdriveTimeStretchAPR,
                 0,
-                bytes32(uint256(0xdeadbabe))
+                bytes32(uint256(0xdeadfade))
             );
             factory.deployTarget(
-                bytes32(uint256(0xdeadbeef)),
+                bytes32(uint256(0xbeefbabe)),
                 stethDeployerCoordinator,
                 poolConfig,
                 new bytes(0),
-                config.erc4626HyperdriveFixedAPR,
-                config.erc4626HyperdriveTimeStretchAPR,
+                config.stethHyperdriveFixedAPR,
+                config.stethHyperdriveTimeStretchAPR,
                 1,
-                bytes32(uint256(0xdeadbabe))
+                bytes32(uint256(0xdeadfade))
             );
             factory.deployTarget(
-                bytes32(uint256(0xdeadbeef)),
+                bytes32(uint256(0xbeefbabe)),
                 stethDeployerCoordinator,
                 poolConfig,
                 new bytes(0),
-                config.erc4626HyperdriveFixedAPR,
-                config.erc4626HyperdriveTimeStretchAPR,
+                config.stethHyperdriveFixedAPR,
+                config.stethHyperdriveTimeStretchAPR,
                 2,
-                bytes32(uint256(0xdeadbabe))
+                bytes32(uint256(0xdeadfade))
             );
             factory.deployTarget(
-                bytes32(uint256(0xdeadbeef)),
+                bytes32(uint256(0xbeefbabe)),
                 stethDeployerCoordinator,
                 poolConfig,
                 new bytes(0),
-                config.erc4626HyperdriveFixedAPR,
-                config.erc4626HyperdriveTimeStretchAPR,
+                config.stethHyperdriveFixedAPR,
+                config.stethHyperdriveTimeStretchAPR,
                 3,
-                bytes32(uint256(0xdeadbabe))
+                bytes32(uint256(0xdeadfade))
             );
             factory.deployTarget(
-                bytes32(uint256(0xdeadbeef)),
+                bytes32(uint256(0xbeefbabe)),
                 stethDeployerCoordinator,
                 poolConfig,
                 new bytes(0),
-                config.erc4626HyperdriveFixedAPR,
-                config.erc4626HyperdriveTimeStretchAPR,
+                config.stethHyperdriveFixedAPR,
+                config.stethHyperdriveTimeStretchAPR,
                 4,
-                bytes32(uint256(0xdeadbabe))
+                bytes32(uint256(0xdeadfade))
             );
             stethHyperdrive = factory.deployAndInitialize{
                 value: config.stethHyperdriveContribution
             }(
-                bytes32(uint256(0xdeadbeef)),
+                bytes32(uint256(0xbeefbabe)),
                 stethDeployerCoordinator,
                 poolConfig,
                 new bytes(0),
@@ -587,7 +587,7 @@ contract DevnetMigration is Script {
                 config.stethHyperdriveFixedAPR,
                 config.stethHyperdriveTimeStretchAPR,
                 new bytes(0),
-                bytes32(uint256(0xdeadbabe))
+                bytes32(uint256(0xdeadfade))
             );
         }
 
