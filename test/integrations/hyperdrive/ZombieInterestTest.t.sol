@@ -434,73 +434,6 @@ contract ZombieInterestTest is HyperdriveTest {
     }
 
     /// forge-config: default.fuzz.runs = 1000
-    function test_zombie_short() external {
-        // Initialize the pool with capital.
-        deploy(bob, 0.035e18, 1e18, 0, 0, 0, 0);
-        initialize(bob, 0.035e18, 2 * MINIMUM_SHARE_RESERVES);
-
-        // Alice adds liquidity.
-        uint256 initialLiquidity = 500_000_000e18;
-        uint256 aliceLpShares = addLiquidity(alice, initialLiquidity);
-        int256 variableRate = 0.1e18;
-
-        // Ensure a feasible trade size.
-        uint256 shortTradeSize = 1_000_000e18;
-
-        // Celine opens a short.
-        (uint256 maturityTime, ) = openShort(celine, shortTradeSize);
-
-        // One term passes and shorts mature.
-        advanceTime(POSITION_DURATION, variableRate);
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
-
-        // One term passes while we collect zombie interest. This is
-        // necessary to show that the zombied base amount stays constant.
-        uint256 zombieBaseBefore = hyperdrive
-            .getPoolInfo()
-            .zombieShareReserves
-            .mulDown(hyperdrive.getPoolInfo().vaultSharePrice);
-        advanceTimeWithCheckpoints2(POSITION_DURATION, variableRate);
-        uint256 zombieBaseAfter = hyperdrive
-            .getPoolInfo()
-            .zombieShareReserves
-            .mulDown(hyperdrive.getPoolInfo().vaultSharePrice);
-        assertApproxEqAbs(zombieBaseBefore, zombieBaseAfter, 1e5);
-
-        // Celina redeems her short late.
-        closeShort(celine, maturityTime, shortTradeSize);
-
-        // Alice removes liquidity.
-        removeLiquidity(alice, aliceLpShares);
-        baseToken.balanceOf(address(hyperdrive));
-
-        // Verify that the baseToken balance is within the expected range.
-        assertGe(
-            baseToken.balanceOf(address(hyperdrive)),
-            MINIMUM_SHARE_RESERVES
-        );
-
-        // If the share price is zero, then the hyperdrive balance is empty and there is a problem.
-        uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
-        assertGt(vaultSharePrice, 0);
-
-        // Verify that the value represented in the share reserves is <= the actual amount in the contract.
-        uint256 baseReserves = hyperdrive.getPoolInfo().shareReserves.mulDown(
-            vaultSharePrice
-        );
-        assertGe(baseToken.balanceOf(address(hyperdrive)), baseReserves);
-
-        // Ensure that whatever is left in the zombie share reserves is <= hyperdrive contract - baseReserves.
-        // This is an important check bc it implies ongoing solvency.
-        assertLe(
-            hyperdrive.getPoolInfo().zombieShareReserves.mulDown(
-                vaultSharePrice
-            ),
-            baseToken.balanceOf(address(hyperdrive)) - baseReserves
-        );
-    }
-
-    /// forge-config: default.fuzz.runs = 1000
     function test_skipped_checkpoint(
         uint256 variableRateParam,
         uint256 longTradeSizeParam
@@ -593,21 +526,26 @@ contract ZombieInterestTest is HyperdriveTest {
     }
 
     /// forge-config: default.fuzz.runs = 1000
-    function test_zombie_long_short(uint256 zombieTime) external {
-        _test_zombie_long_short(zombieTime);
+    function test_zombie_long_short(uint256 zombieTime, bool fees) external {
+        _test_zombie_long_short(zombieTime, fees);
     }
 
     function test_zombie_long_short_fail() external {
         {
             uint256 zombieTime = 13760682222010956785399785229688766246692699;
-            _test_zombie_long_short(zombieTime);
+            _test_zombie_long_short(zombieTime, false);
         }
     }
 
-    function _test_zombie_long_short(uint256 zombieTime) internal {
+    function _test_zombie_long_short(uint256 zombieTime, bool fees) internal {
         // Initialize the pool with capital.
         uint256 fixedRate = 0.05e18;
-        deploy(bob, fixedRate, 1e18, 0, 0.001e18, 0, 0);
+        if (fees) {
+            deploy(bob, fixedRate, 1e18, 0.01e18, 0.0005e18, 0.15e18, 0.03e18);
+        } else {
+            deploy(bob, fixedRate, 1e18, 0, 0, 0, 0);
+        }
+        deploy(bob, fixedRate, 1e18, 0.01e18, 0.0005e18, 0.15e18, 0.03e18);
         initialize(bob, fixedRate, 2 * MINIMUM_SHARE_RESERVES);
 
         // Alice adds liquidity.
@@ -689,18 +627,21 @@ contract ZombieInterestTest is HyperdriveTest {
         }
     }
 
-    function test_zombie_long(uint256 zombieTime) external {
+    /// forge-config: default.fuzz.runs = 1000
+    function test_zombie_long(uint256 zombieTime, bool fees) external {
         // Initialize the pool with capital.
         uint256 fixedRate = 0.05e18;
-        deploy(bob, fixedRate, 1e18, 0.01e18, 0.0005e18, 0.15e18, 0.03e18);
+        int256 variableRate = 0.05e18;
+        if (fees) {
+            deploy(bob, fixedRate, 1e18, 0.01e18, 0.0005e18, 0.15e18, 0.03e18);
+        } else {
+            deploy(bob, fixedRate, 1e18, 0, 0, 0, 0);
+        }
         initialize(bob, fixedRate, 2 * MINIMUM_SHARE_RESERVES);
 
         // Alice adds liquidity.
         uint256 initialLiquidity = 100_000_000e18;
         addLiquidity(alice, initialLiquidity);
-
-        // Limit the fuzz testing to variableRate's less than or equal to 200%.
-        int256 variableRate = 0.05e18;
 
         // Ensure a feasible trade size.
         uint256 longTradeSize = hyperdrive.calculateMaxLong();
@@ -718,7 +659,7 @@ contract ZombieInterestTest is HyperdriveTest {
         // Celine opens a long.
         openLong(celine, longTradeSize);
 
-        // One term passes and longs mature.
+        // One term passes and long matures.
         advanceTimeWithCheckpoints2(POSITION_DURATION, variableRate);
 
         // A random amount of time passes and interest is collected.
@@ -760,6 +701,84 @@ contract ZombieInterestTest is HyperdriveTest {
                 baseToken.balanceOf(address(hyperdrive)).divDown(
                     vaultSharePrice
                 )
+            );
+        }
+    }
+
+    /// forge-config: default.fuzz.runs = 1000
+    function test_zombie_short(uint256 zombieTime, bool fees) external {
+        // Initialize the pool with capital.
+        uint256 fixedRate = 0.05e18;
+        int256 variableRate = 0.05e18;
+        if (fees) {
+            deploy(bob, fixedRate, 1e18, 0.01e18, 0.0005e18, 0.15e18, 0.03e18);
+        } else {
+            deploy(bob, fixedRate, 1e18, 0, 0, 0, 0);
+        }
+        initialize(bob, fixedRate, 2 * MINIMUM_SHARE_RESERVES);
+
+        // Alice adds liquidity.
+        uint256 initialLiquidity = 100_000_000e18;
+        addLiquidity(alice, initialLiquidity);
+
+        // Ensure a feasible trade size.
+        uint256 shortTradeSize = hyperdrive.calculateMaxShort();
+
+        // A random amount of time passes after the term before the position is redeemed.
+        zombieTime = zombieTime.normalizeToRange(
+            POSITION_DURATION,
+            POSITION_DURATION * 5
+        );
+
+        // Time passes before first trade.
+        advanceTime(36 seconds, variableRate);
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+
+        // Celine opens a short.
+        openShort(celine, shortTradeSize);
+
+        // One term passes and short matures.
+        advanceTimeWithCheckpoints2(POSITION_DURATION, variableRate);
+
+        // A random amount of time passes and interest is collected.
+        advanceTimeWithCheckpoints2(zombieTime, variableRate);
+
+        // Ensure that whatever is left in the zombie share reserves is <= hyperdrive contract - baseReserves.
+        // This is an important check bc it implies ongoing solvency.
+        uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
+        {
+            uint256 baseReserves = hyperdrive
+                .getPoolInfo()
+                .shareReserves
+                .mulDown(vaultSharePrice);
+            assertLe(
+                hyperdrive.getPoolInfo().zombieShareReserves.mulDown(
+                    vaultSharePrice
+                ),
+                baseToken.balanceOf(address(hyperdrive)) - baseReserves + 1e9
+            );
+        }
+
+        // Ensure that the lower bound for base balance is never violated (used in python fuzzing).
+        {
+            uint256 lowerBound = hyperdrive.getPoolInfo().shareReserves +
+                hyperdrive.getPoolInfo().shortsOutstanding.divDown(
+                    vaultSharePrice
+                ) +
+                hyperdrive
+                    .getPoolInfo()
+                    .shortsOutstanding
+                    .mulDown(hyperdrive.getPoolConfig().fees.flat)
+                    .divDown(vaultSharePrice) +
+                hyperdrive.getUncollectedGovernanceFees() +
+                hyperdrive.getPoolInfo().withdrawalSharesProceeds +
+                hyperdrive.getPoolInfo().zombieShareReserves;
+
+            assertLe(
+                lowerBound,
+                baseToken.balanceOf(address(hyperdrive)).divDown(
+                    vaultSharePrice
+                ) + 1e9
             );
         }
     }
