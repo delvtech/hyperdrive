@@ -151,15 +151,15 @@ abstract contract HyperdriveDeployerCoordinator is
             );
     }
 
-    /// @notice Deploys a HyperdriveTarget0 instance with the given parameters.
-    ///         This must be deployed first as a convention.
+    /// @notice Deploys a Hyperdrive target instance with the given parameters.
+    /// @dev As a convention, target0 must be deployed first. After this, the
+    ///      targets can be deployed in any order.
     /// @param _deploymentId The ID of the deployment.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     /// @param _extraData The extra data that contains the pool and sweep targets.
     /// @param _targetIndex The index of the target to deploy.
     /// @param _salt The create2 salt used to deploy the target.
-    /// @return target The address of the newly deployed HyperdriveTarget0
-    ///         instance.
+    /// @return target The address of the newly deployed target instance.
     function deployTarget(
         bytes32 _deploymentId,
         IHyperdrive.PoolDeployConfig memory _deployConfig,
@@ -167,6 +167,9 @@ abstract contract HyperdriveDeployerCoordinator is
         uint256 _targetIndex,
         bytes32 _salt
     ) external returns (address target) {
+        // If the target index is 0, then we're deploying the target0 instance.
+        // By convention, this target must be deployed first, and as part of the
+        // deployment of target0, we will register the deployment in the state.
         if (_targetIndex == 0) {
             // Ensure that the deployment is a fresh deployment. We can check this
             // by ensuring that the config hash is not set.
@@ -239,7 +242,10 @@ abstract contract HyperdriveDeployerCoordinator is
         config.initialVaultSharePrice = deployments[msg.sender][_deploymentId]
             .initialSharePrice;
 
-        // Deploy the appropriate target and update the deployment data.
+        // If the target index is greater than 0, then we're deploying one of
+        // the other target instances. We don't allow targets to be deployed
+        // more than once, and their addresses are stored in the deployment
+        // state.
         if (_targetIndex == 1) {
             if (deployments[msg.sender][_deploymentId].target1 != address(0)) {
                 revert IHyperdriveDeployerCoordinator.TargetAlreadyDeployed();
