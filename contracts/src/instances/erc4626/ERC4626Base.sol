@@ -58,6 +58,10 @@ abstract contract ERC4626Base is HyperdriveBase {
             );
 
             // Deposit the base into the yield source.
+            //
+            // NOTE: We increase the required approval amount by 1 wei so that
+            // the vault ends with an approval of 1 wei. This makes future
+            // approvals cheaper by keeping the storage slot warm.
             ERC20(address(_baseToken)).forceApprove(
                 address(_vault),
                 _amount + 1
