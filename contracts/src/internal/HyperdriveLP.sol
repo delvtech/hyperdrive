@@ -189,6 +189,11 @@ abstract contract HyperdriveLP is
             params.bondReserves = _marketState.bondReserves;
             endingPresentValue = LPMath.calculatePresentValue(params);
 
+            // Revert if the present value decreased after adding liquidity.
+            if (endingPresentValue < startingPresentValue) {
+                revert IHyperdrive.DecreasedPresentValueWhenAddingLiquidity();
+            }
+
             // NOTE: Round down to underestimate the amount of LP shares minted.
             //
             // The LP shares minted to the LP is derived by solving for the

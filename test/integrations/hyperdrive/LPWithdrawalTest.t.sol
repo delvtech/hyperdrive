@@ -1400,7 +1400,16 @@ contract LPWithdrawalTest is HyperdriveTest {
             celineLpShares = lpShares_;
         } catch (bytes memory reason) {
             // Ensure that the failure was caused by an arithmetic error.
-            assertEq(keccak256(reason), keccak256(stdError.arithmeticError));
+            assertEq(
+                keccak256(reason),
+                keccak256(
+                    abi.encodeWithSelector(
+                        IHyperdrive
+                            .DecreasedPresentValueWhenAddingLiquidity
+                            .selector
+                    )
+                )
+            );
 
             // In the event that the LP couldn't add liquidity, we should be
             // able to open a moderately sized long to rebalance the pool and
