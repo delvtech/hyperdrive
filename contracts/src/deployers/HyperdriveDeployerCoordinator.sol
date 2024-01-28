@@ -143,18 +143,20 @@ abstract contract HyperdriveDeployerCoordinator is
         IHyperdrive.PoolConfig memory config = _copyPoolConfig(_deployConfig);
         config.initialVaultSharePrice = deployment.initialSharePrice;
 
-        // Deploy the Hyperdrive instance.
-        return
-            IHyperdriveCoreDeployer(coreDeployer).deploy(
-                config,
-                _extraData,
-                deployment.target0,
-                deployment.target1,
-                deployment.target2,
-                deployment.target3,
-                deployment.target4,
-                _salt
-            );
+        // Deploy the Hyperdrive instance and add it to the deployment struct.
+        address hyperdrive = IHyperdriveCoreDeployer(coreDeployer).deploy(
+            config,
+            _extraData,
+            deployment.target0,
+            deployment.target1,
+            deployment.target2,
+            deployment.target3,
+            deployment.target4,
+            _salt
+        );
+        _deployments[msg.sender][_deploymentId].hyperdrive = hyperdrive;
+
+        return hyperdrive;
     }
 
     /// @notice Deploys a Hyperdrive target instance with the given parameters.
