@@ -4,7 +4,7 @@ pragma solidity 0.8.20;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
-import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
+import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
 import { CombinatorialTest } from "test/utils/CombinatorialTest.sol";
 

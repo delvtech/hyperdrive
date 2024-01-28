@@ -16,7 +16,7 @@ import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperd
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
+import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { MockERC4626Hyperdrive } from "contracts/test/MockERC4626Hyperdrive.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
@@ -67,7 +67,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
-        forwarderFactory = new ForwarderFactory();
+        forwarderFactory = new ERC20ForwarderFactory();
 
         // Hyperdrive factory to produce ERC4626 instances for stethERC4626
         factory = new HyperdriveFactory(

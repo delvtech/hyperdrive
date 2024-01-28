@@ -3,7 +3,7 @@ pragma solidity 0.8.20;
 
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
+import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { MockAssetId } from "contracts/test/MockAssetId.sol";
 import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
@@ -21,7 +21,7 @@ contract MultiTokenTest is BaseTest {
     function setUp() public override {
         super.setUp();
         vm.startPrank(deployer);
-        forwarderFactory = new ForwarderFactory();
+        forwarderFactory = new ERC20ForwarderFactory();
         multiToken = IMockMultiToken(
             address(new MockMultiToken(bytes32(0), address(forwarderFactory)))
         );

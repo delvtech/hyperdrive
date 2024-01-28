@@ -5,13 +5,13 @@ import { IERC20Forwarder } from "contracts/src/interfaces/IERC20Forwarder.sol";
 import { IMultiToken } from "contracts/src/interfaces/IMultiToken.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ERC20Forwarder } from "contracts/src/token/ERC20Forwarder.sol";
-import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
+import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { MockAssetId } from "contracts/test/MockAssetId.sol";
 import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-contract ERC20ForwarderFactoryTest is BaseTest {
+contract ERC20ERC20ForwarderFactoryTest is BaseTest {
     using Lib for *;
 
     IMockMultiToken multiToken;
@@ -25,7 +25,7 @@ contract ERC20ForwarderFactoryTest is BaseTest {
     function setUp() public override {
         super.setUp();
         vm.startPrank(deployer);
-        forwarderFactory = new ForwarderFactory();
+        forwarderFactory = new ERC20ForwarderFactory();
         bytes32 codeHash = keccak256(type(ERC20Forwarder).creationCode);
         multiToken = IMockMultiToken(
             address(new MockMultiToken(codeHash, address(forwarderFactory)))
@@ -49,7 +49,7 @@ contract ERC20ForwarderFactoryTest is BaseTest {
         assertEq(forwarder.balanceOf(bob), AMOUNT);
     }
 
-    function testForwarderFactory() public {
+    function testERC20ForwarderFactory() public {
         (IMultiToken token, uint256 tokenID) = forwarderFactory
             .getDeployDetails();
         assertEq(address(token), address((IMultiToken(address(1)))));

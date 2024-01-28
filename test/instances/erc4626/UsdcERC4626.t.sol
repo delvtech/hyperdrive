@@ -17,7 +17,7 @@ import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
+import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { MockERC4626Hyperdrive } from "contracts/test/MockERC4626Hyperdrive.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
@@ -74,7 +74,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
 
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
-        forwarderFactory = new ForwarderFactory();
+        forwarderFactory = new ERC20ForwarderFactory();
 
         // Hyperdrive factory to produce ERC4626 instances for UsdcERC4626.
         factory = new HyperdriveFactory(

@@ -11,7 +11,7 @@ import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol"
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { LPMath } from "contracts/src/libraries/LPMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
-import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
+import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockHyperdrive, MockHyperdriveTarget0, MockHyperdriveTarget1 } from "contracts/test/MockHyperdrive.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";

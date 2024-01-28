@@ -23,11 +23,12 @@ import { HyperdriveBase } from "./HyperdriveBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
-    /// @notice This modifier checks the caller is the create2 validated ERC20 bridge.
+    /// @notice This modifier checks the caller is the create2 validated
+    ///         ERC20 bridge.
     /// @param tokenID The internal token identifier.
     modifier onlyLinker(uint256 tokenID) {
-        // If the caller does not match the address hash, we revert because it is not
-        // allowed to access permission-ed methods.
+        // If the caller does not match the address hash, we revert because it
+        // is not allowed to access permissioned methods.
         if (msg.sender != _deriveForwarderAddress(tokenID)) {
             revert IHyperdrive.InvalidERC20Bridge();
         }
@@ -35,9 +36,9 @@ abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
         _;
     }
 
-    /// @dev Transfers several assets from one account to another
-    /// @param from the source account.
-    /// @param to the destination account.
+    /// @dev Transfers several assets from one account to another.
+    /// @param from The source account.
+    /// @param to The destination account.
     /// @param ids The array of token ids of the asset to transfer.
     /// @param values The amount of each token to transfer.
     function _batchTransferFrom(

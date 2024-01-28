@@ -17,7 +17,7 @@ import { IHyperdriveFactory } from "contracts/src/interfaces/IHyperdriveFactory.
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
+import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockHyperdriveDeployer, MockHyperdriveTargetDeployer } from "contracts/test/MockHyperdriveDeployer.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
@@ -2155,7 +2155,7 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
         );
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
-        forwarderFactory = new ForwarderFactory();
+        forwarderFactory = new ERC20ForwarderFactory();
         factory = new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
