@@ -370,7 +370,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
 
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
-            factory,
+            deployerCoordinator,
             hyperdrive,
             alice,
             contribution,

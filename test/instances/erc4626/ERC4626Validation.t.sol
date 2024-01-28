@@ -295,7 +295,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
         // Verify that the correct events were emitted during creation
         verifyFactoryEvents(
-            factory,
+            deployerCoordinator,
             hyperdrive,
             alice,
             contribution,

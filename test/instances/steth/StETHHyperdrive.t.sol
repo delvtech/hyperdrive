@@ -329,7 +329,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
 
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
-            factory,
+            deployerCoordinator,
             hyperdrive,
             bob,
             contribution,

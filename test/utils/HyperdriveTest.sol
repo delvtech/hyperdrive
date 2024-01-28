@@ -886,14 +886,14 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
     /// Event Utils ///
 
     event Deployed(
-        uint256 indexed version,
+        address indexed deployerCoordinator,
         address hyperdrive,
         IHyperdrive.PoolDeployConfig config,
         bytes extraData
     );
 
     function verifyFactoryEvents(
-        HyperdriveFactory factory,
+        address deployerCoordinator,
         IHyperdrive _hyperdrive,
         address deployer,
         uint256 contribution,
@@ -916,7 +916,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
             assertEq(filteredLogs[0].topics[0], Deployed.selector);
             assertEq(
                 uint256(filteredLogs[0].topics[1]),
-                factory.versionCounter()
+                uint256(uint160(deployerCoordinator))
             );
 
             // Verify the event data.

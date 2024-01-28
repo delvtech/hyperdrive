@@ -20,19 +20,8 @@ contract HyperdriveFactory is IHyperdriveFactory {
     using FixedPointMath for uint256;
     using SafeERC20 for ERC20;
 
-    /// @notice The resolution for the checkpoint duration. Every checkpoint
-    ///         duration must be a multiple of this resolution.
-    uint256 public checkpointDurationResolution;
-
     /// @notice The governance address that updates the factory's configuration.
     address public governance;
-
-    /// @notice The number of times the factory's deployer has been updated.
-    uint256 public versionCounter = 1;
-
-    /// @notice A mapping from deployed Hyperdrive instances to the version
-    ///         of the deployer that deployed them.
-    mapping(address instance => uint256 version) public isOfficial;
 
     /// @notice The governance address used when new instances are deployed.
     address public hyperdriveGovernance;
@@ -45,6 +34,10 @@ contract HyperdriveFactory is IHyperdriveFactory {
 
     /// @notice The fee collector used when new instances are deployed.
     address public feeCollector;
+
+    /// @notice The resolution for the checkpoint duration. Every checkpoint
+    ///         duration must be a multiple of this resolution.
+    uint256 public checkpointDurationResolution;
 
     /// @notice The minimum checkpoint duration that can be used by new
     ///         deployments.
@@ -132,6 +125,12 @@ contract HyperdriveFactory is IHyperdriveFactory {
     /// @notice Mapping to check if a deployer coordinator has been registered
     ///         by governance.
     mapping(address => bool) public isDeployerCoordinator;
+
+    /// @notice A mapping from deployed Hyperdrive instances to the deployer.
+    ///         coordintor that deployed them. This is useful for verifying
+    ///         the bytecode that was used to deploy the instance.
+    mapping(address instance => address deployCoordinator)
+        public instancesToDeployerCoordinators;
 
     /// @dev Array of all instances deployed by this factory.
     address[] internal _instances;
@@ -615,9 +614,16 @@ contract HyperdriveFactory is IHyperdriveFactory {
 
         // Add this instance to the registry and emit an event with the
         // deployment configuration.
-        isOfficial[address(hyperdrive)] = versionCounter;
+        instancesToDeployerCoordinators[
+            address(hyperdrive)
+        ] = _deployerCoordinator;
         _config.governance = hyperdriveGovernance;
-        emit Deployed(versionCounter, address(hyperdrive), _config, _extraData);
+        emit Deployed(
+            _deployerCoordinator,
+            address(hyperdrive),
+            _config,
+            _extraData
+        );
 
         // Add the newly deployed Hyperdrive instance to the registry.
         _instances.push(address(hyperdrive));

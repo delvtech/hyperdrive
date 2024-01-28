@@ -2438,7 +2438,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
 
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
-            factory,
+            deployerCoordinator,
             hyperdrive1,
             charlie,
             CONTRIBUTION,
@@ -2538,7 +2538,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
 
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
-            factory,
+            deployerCoordinator1,
             hyperdrive2,
             charlie,
             CONTRIBUTION,
@@ -2645,7 +2645,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
 
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
-            factory,
+            deployerCoordinator,
             hyperdrive3,
             dan,
             CONTRIBUTION,
