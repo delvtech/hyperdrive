@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveGovernedRegistry } from "../interfaces/IHyperdriveGovernedRegistry.sol";
@@ -11,7 +11,7 @@ contract HyperdriveRegistry is
 {
     address public governance;
 
-    mapping(address hyperdrive => uint256 data) _hyperdriveInfo;
+    mapping(address hyperdrive => uint256 data) internal _hyperdriveInfo;
 
     constructor() {
         governance = msg.sender;

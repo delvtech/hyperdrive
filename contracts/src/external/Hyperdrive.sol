@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
 import { HyperdriveTarget0 } from "../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
@@ -83,6 +83,10 @@ abstract contract Hyperdrive is
     ///         tateful functions.
     address public immutable target3;
 
+    /// @notice The target4 address. This is a logic contract that contains all
+    ///         some stateful functions.
+    address public immutable target4;
+
     /// @notice The typehash used to calculate the EIP712 hash for `permitForAll`.
     bytes32 public constant PERMIT_TYPEHASH =
         keccak256(
@@ -98,18 +102,21 @@ abstract contract Hyperdrive is
     /// @param _target1 The target1 address.
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
+    /// @param _target4 The target4 address.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         address _target0,
         address _target1,
         address _target2,
-        address _target3
+        address _target3,
+        address _target4
     ) HyperdriveStorage(_config) {
         // Initialize the target contracts.
         target0 = _target0;
         target1 = _target1;
         target2 = _target2;
         target3 = _target3;
+        target4 = _target4;
 
         // NOTE: It's convenient to keep this in the `Hyperdrive.sol`
         //       entry-point to avoiding issues with initializing the domain
@@ -167,7 +174,7 @@ abstract contract Hyperdrive is
         uint256,
         IHyperdrive.Options calldata
     ) external payable returns (uint256, uint256) {
-        _delegate(target2);
+        _delegate(target3);
     }
 
     /// @notice Closes a long position with a specified maturity time.
@@ -177,7 +184,7 @@ abstract contract Hyperdrive is
         uint256,
         IHyperdrive.Options calldata
     ) external returns (uint256) {
-        _delegate(target3);
+        _delegate(target2);
     }
 
     /// Shorts ///
@@ -189,7 +196,7 @@ abstract contract Hyperdrive is
         uint256,
         IHyperdrive.Options calldata
     ) external payable returns (uint256, uint256) {
-        _delegate(target2);
+        _delegate(target4);
     }
 
     /// @notice Closes a short position with a specified maturity time.
@@ -199,7 +206,7 @@ abstract contract Hyperdrive is
         uint256,
         IHyperdrive.Options calldata
     ) external returns (uint256) {
-        _delegate(target3);
+        _delegate(target2);
     }
 
     /// LPs ///
@@ -249,7 +256,7 @@ abstract contract Hyperdrive is
 
     /// @notice Allows anyone to mint a new checkpoint.
     function checkpoint(uint256) external {
-        _delegate(target3);
+        _delegate(target2);
     }
 
     /// Admin ///

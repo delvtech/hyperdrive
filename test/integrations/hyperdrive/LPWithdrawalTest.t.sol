@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
 import { stdError } from "forge-std/StdError.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -781,6 +781,7 @@ contract LPWithdrawalTest is HyperdriveTest {
             );
         }
         vm.revertTo(snapshotId);
+        snapshotId = vm.snapshot();
         {
             uint256 longBasePaid = 4107; //0.001000000000004107
             uint256 shortAmount = 49890332890205; //0.001049890332890205
@@ -792,6 +793,7 @@ contract LPWithdrawalTest is HyperdriveTest {
             );
         }
         vm.revertTo(snapshotId);
+        snapshotId = vm.snapshot();
         {
             uint256 longBasePaid = 47622440666488;
             uint256 shortAmount = 99991360285271;
@@ -804,6 +806,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         }
         // This edge case caused the present value to become negative.
         vm.revertTo(snapshotId);
+        snapshotId = vm.snapshot();
         {
             uint256 longBasePaid = 9359120568038014548496614986532107423060977700952779944229929110473;
             uint256 shortAmount = 6363481524035208645046457754761807956049413076188199707925459155397040;

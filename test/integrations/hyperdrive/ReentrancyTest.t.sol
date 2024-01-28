@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
 import { stdError } from "forge-std/StdError.sol";
+import { ReentrancyGuard } from "openzeppelin/utils/ReentrancyGuard.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
@@ -30,7 +31,14 @@ contract ReentrancyTester {
 
     function _testReentrancy() internal {
         (bool success, bytes memory data) = _target.call(_data);
-        if (!success && data.eq("REENTRANCY".toError())) {
+        if (
+            !success &&
+            data.eq(
+                abi.encodeWithSelector(
+                    ReentrancyGuard.ReentrancyGuardReentrantCall.selector
+                )
+            )
+        ) {
             isSuccess = true;
         }
     }

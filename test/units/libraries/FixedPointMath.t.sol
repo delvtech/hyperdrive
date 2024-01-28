@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
 import { stdError, Test } from "forge-std/Test.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -206,6 +206,10 @@ contract FixedPointMathTest is Test {
     function test_updateWeightedAverage() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
+        assertEq(
+            mockFixedPointMath.updateWeightedAverage(2e18, 1e18, 3e18, 0, true),
+            2e18
+        );
         assertEq(
             mockFixedPointMath.updateWeightedAverage(
                 1e18,

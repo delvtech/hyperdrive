@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
 import { IERC20 } from "./IERC20.sol";
 import { IHyperdriveCore } from "./IHyperdriveCore.sol";
@@ -218,9 +218,6 @@ interface IHyperdrive is
     ///         different criteria for what constitutes a valid base token.
     error InvalidBaseToken();
 
-    /// @notice Thrown when the checkpoint duration specified is zero.
-    error InvalidCheckpointDuration();
-
     /// @notice Thrown when the checkpoint time provided to `checkpoint` is
     ///         larger than the current checkpoint or isn't divisible by the
     ///         checkpoint duration.
@@ -230,10 +227,6 @@ interface IHyperdrive is
     ///         functions is not the corresponding bridge.
     error InvalidERC20Bridge();
 
-    /// @notice Thrown when the curve fee, flat fee, governance LP fee, or
-    ///         governance zombie fee is greater than 100%.
-    error InvalidFeeAmounts();
-
     /// @notice Thrown when a destination other than the fee collector is
     ///         specified in `collectGovernanceFee`.
     error InvalidFeeDestination();
@@ -241,19 +234,6 @@ interface IHyperdrive is
     /// @notice Thrown when the initial share price doesn't match the share
     ///         price of the underlying yield source on deployment.
     error InvalidInitialVaultSharePrice();
-
-    /// @notice Thrown when the minimum share reserves is too small. The
-    ///         absolute smallest allowable minimum share reserves is 1e3;
-    ///         however, yield sources may require a larger minimum share
-    ///         reserves.
-    error InvalidMinimumShareReserves();
-
-    /// @notice Thrown when the minimum transaction amount is too small.
-    error InvalidMinimumTransactionAmount();
-
-    /// @notice Thrown when the position duration is smaller than the checkpoint
-    ///         duration or is not a multiple of the checkpoint duration.
-    error InvalidPositionDuration();
 
     /// @notice Thrown when update liquidity brings the share reserves below
     ///         the minimum share reserves.
@@ -362,4 +342,6 @@ interface IHyperdrive is
     function target2() external view returns (address);
 
     function target3() external view returns (address);
+
+    function target4() external view returns (address);
 }
