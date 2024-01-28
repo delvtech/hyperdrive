@@ -892,12 +892,6 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         bytes extraData
     );
 
-    event CollectGovernanceFee(
-        address indexed collector,
-        uint256 baseFees,
-        uint256 vaultSharePrice
-    );
-
     function verifyFactoryEvents(
         HyperdriveFactory factory,
         IHyperdrive _hyperdrive,
