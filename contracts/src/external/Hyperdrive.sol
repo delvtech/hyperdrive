@@ -80,7 +80,7 @@ abstract contract Hyperdrive is
     address public immutable target2;
 
     /// @notice The target3 address. This is a logic contract that contains
-    ///         tateful functions.
+    ///         stateful functions.
     address public immutable target3;
 
     /// @notice The target4 address. This is a logic contract that contains all
