@@ -12,6 +12,46 @@ import { HyperdriveLP } from "../internal/HyperdriveLP.sol";
 import { HyperdriveShort } from "../internal/HyperdriveShort.sol";
 import { HyperdriveStorage } from "../internal/HyperdriveStorage.sol";
 
+//      ______  __                           _________      _____             
+//      ___  / / /____  ___________________________  /_________(_)__   ______ 
+//      __  /_/ /__  / / /__  __ \  _ \_  ___/  __  /__  ___/_  /__ | / /  _ \
+//      _  __  / _  /_/ /__  /_/ /  __/  /   / /_/ / _  /   _  / __ |/ //  __/
+//      /_/ /_/  _\__, / _   ___/\___//_/    \__,_/  /_/    /_/  _____/ \___/ 
+//               /____/   /_/                                                  
+//                     XXX          ++          ++          XXX                    
+//     ############   XXXXX        ++@+        +@++        XXXXX   ###########     
+//   ##////////////########       ++@@++      ++@@++       ########///////////##   
+//  ##////////////##########      ++@@@++    ++@@@++      ##########///////////## 
+//  ##%%%%%%/////      ######     ++@@@0+    +0@@@++     ######     /////%%%%%%## 
+//    %%%%%%%%&&             ##   ++@@@@+    +@@@@++   ##           &&%%%%%%%%%    
+//         %&&&                ##  +o@@0+    +0@@o+  ##              &&&%               
+//                              ## ++@@+-    -+@@++ ##                             
+//                               #% ++0+      +0++ %#                              
+//                               ###-:Oo.++++.oO:-###                  
+//                                ##: @@++++++@@ :##                               
+//                    #S###########* @++@0+++0@++@ *##########S#                   
+//                  #S               % $ @+++@ $ %              S#                 
+//                #S   ----------   %+++++:#:+++++%-----------    S#               
+//              #S   ------------- %++++: ### :++++%------------    S#             
+//             S    ---------------%++++*\ | /*++++%-------------     S            
+//           #S     --------------- %++++ ~W~ ++++%666--o UUUU o-      S#          
+//         #S?      ---------------  %+++++~+++++%&&&8 o  \  /  o       ?S#        
+//        ?*????**+++;::,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,::;+++**????*?       
+//      #?+////////////////////////////////////////////////////////////////+?#     
+//    #;;;;;//////////////////////////////////////////////////////////////;;;;;#   
+//  S;;;;;;;;;//////////////////////////////////////////////////////////;;;;;;;;;S 
+// /;;;;;;;;;;;///////////////////////////////////////////////////////;;;;;;;;;;;;\
+// |||OOOOOOOO||OOOOOOOO=========== __  ___        ===========OOOOOOOO||OOOOOOOO|||
+// |||OOOOOOOO||OOOOOOOO===========|  \[__ |   \  /===========OOOOOOOO||OOOOOOOO|||
+// |||OOOOOOOO||OOOOOOOO===========|__/[___|___ \/ ===========OOOOOOOO||OOOOOOOO|||
+// ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+// |||////////000000000000\\\\\\\\|:::::::::::::::|////////00000000000\\\\\\\\\\|||
+// SSS\\\\\\\\000000000000////////|:::::0x666:::::|\\\\\\\\00000000000//////////SSS
+// SSS|||||||||||||||||||||||||||||:::::::::::::::||||||||||||||||||||||||||||||SSS
+// SSSSSSSS|_______________|______________||_______________|______________|SSSSSSSS
+// SSSSSSSS                                                                SSSSSSSS
+// SSSSSSSS                                                                SSSSSSSS
+
 /// @author DELV
 /// @title Hyperdrive
 /// @notice A fixed-rate AMM that mints bonds on demand for longs and shorts.
@@ -31,16 +71,16 @@ abstract contract Hyperdrive is
     ///         functions.
     address public immutable target0;
 
-    /// @notice The target1 address. This is a logic contract that contains all
-    ///         some stateful functions.
+    /// @notice The target1 address. This is a logic contract that contains
+    ///         stateful functions.
     address public immutable target1;
 
-    /// @notice The target2 address. This is a logic contract that contains all
-    ///         some stateful functions.
+    /// @notice The target2 address. This is a logic contract that contains
+    ///         stateful functions.
     address public immutable target2;
 
-    /// @notice The target3 address. This is a logic contract that contains all
-    ///         some stateful functions.
+    /// @notice The target3 address. This is a logic contract that contains
+    ///         tateful functions.
     address public immutable target3;
 
     /// @notice The typehash used to calculate the EIP712 hash for `permitForAll`.
