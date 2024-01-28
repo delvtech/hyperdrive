@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
-import { ERC20 } from "solmate/tokens/ERC20.sol";
-import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
+import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
+import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveFactory } from "../interfaces/IHyperdriveFactory.sol";
-import { IDeployerCoordinator } from "../interfaces/IDeployerCoordinator.sol";
+import { IHyperdriveDeployerCoordinator } from "../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 
@@ -18,7 +18,7 @@ import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 ///                    particular legal or regulatory significance.
 contract HyperdriveFactory is IHyperdriveFactory {
     using FixedPointMath for uint256;
-    using SafeTransferLib for ERC20;
+    using SafeERC20 for ERC20;
 
     /// @notice The resolution for the checkpoint duration. Every checkpoint
     ///         duration must be a multiple of this resolution.
@@ -568,131 +568,56 @@ contract HyperdriveFactory is IHyperdriveFactory {
     /// @dev This function is declared as payable to allow payable overrides
     ///      to accept ether on initialization, but payability is not supported
     ///      by default.
+    /// @param _deploymentId The deployment ID to use when deploying the pool.
     /// @param _deployerCoordinator The deployer coordinator to use in this
     ///        deployment.
-    /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
+    /// @param _config The configuration of the Hyperdrive pool.
     /// @param _extraData The extra data that contains data necessary for the
     ///        specific deployer.
     /// @param _contribution The contribution amount in base to the pool.
     /// @param _fixedAPR The fixed APR used to initialize the pool.
     /// @param _timeStretchAPR The time stretch APR used to initialize the pool.
     /// @param _initializeExtraData The extra data for the `initialize` call.
+    /// @param _salt The create2 salt to use for the deployment.
     /// @return The hyperdrive address deployed.
     function deployAndInitialize(
+        bytes32 _deploymentId,
         address _deployerCoordinator,
-        IHyperdrive.PoolDeployConfig memory _deployConfig,
+        IHyperdrive.PoolDeployConfig memory _config,
         bytes memory _extraData,
         uint256 _contribution,
         uint256 _fixedAPR,
         uint256 _timeStretchAPR,
-        bytes memory _initializeExtraData
-    ) public payable virtual returns (IHyperdrive) {
-        // Ensure that the target deployer has been registered.
+        bytes memory _initializeExtraData,
+        bytes32 _salt
+    ) external payable returns (IHyperdrive) {
+        // Ensure that the deployer coordinator has been registered.
         if (!isDeployerCoordinator[_deployerCoordinator]) {
             revert IHyperdriveFactory.InvalidDeployerCoordinator();
         }
 
-        // Ensure that the specified checkpoint duration is within the minimum
-        // and maximum checkpoint durations and is a multiple of the checkpoint
-        // duration resolution.
-        if (
-            _deployConfig.checkpointDuration < minCheckpointDuration ||
-            _deployConfig.checkpointDuration > maxCheckpointDuration ||
-            _deployConfig.checkpointDuration % checkpointDurationResolution != 0
-        ) {
-            revert IHyperdriveFactory.InvalidCheckpointDuration();
-        }
+        // Override the config values to the default values set by governance
+        // and ensure that the config is valid.
+        _overrideConfig(_config, _fixedAPR, _timeStretchAPR);
 
-        // Ensure that the specified checkpoint duration is within the minimum
-        // and maximum position durations and is a multiple of the specified
-        // checkpoint duration.
-        if (
-            _deployConfig.positionDuration < minPositionDuration ||
-            _deployConfig.positionDuration > maxPositionDuration ||
-            _deployConfig.positionDuration % _deployConfig.checkpointDuration !=
-            0
-        ) {
-            revert IHyperdriveFactory.InvalidPositionDuration();
-        }
-
-        // Ensure that the specified fees are within the minimum and maximum fees.
-        if (
-            _deployConfig.fees.curve > _maxFees.curve ||
-            _deployConfig.fees.flat > _maxFees.flat ||
-            _deployConfig.fees.governanceLP > _maxFees.governanceLP ||
-            _deployConfig.fees.governanceZombie > _maxFees.governanceZombie ||
-            _deployConfig.fees.curve < _minFees.curve ||
-            _deployConfig.fees.flat < _minFees.flat ||
-            _deployConfig.fees.governanceLP < _minFees.governanceLP ||
-            _deployConfig.fees.governanceZombie < _minFees.governanceZombie
-        ) {
-            revert IHyperdriveFactory.InvalidFees();
-        }
-
-        // Ensure that the linker factory, linker code hash, fee collector,
-        // and governance addresses aren't set. This ensures that the
-        // deployer isn't trying to set these values.
-        if (
-            _deployConfig.governance != address(0) ||
-            _deployConfig.feeCollector != address(0) ||
-            _deployConfig.linkerFactory != address(0) ||
-            _deployConfig.linkerCodeHash != bytes32(0) ||
-            _deployConfig.timeStretch != 0
-        ) {
-            revert IHyperdriveFactory.InvalidDeployConfig();
-        }
-
-        // Ensure that specified fixed APR is within the minimum and maximum
-        // fixed APRs.
-        if (_fixedAPR < minFixedAPR || _fixedAPR > maxFixedAPR) {
-            revert IHyperdriveFactory.InvalidFixedAPR();
-        }
-
-        // Calculate the time stretch using the provided APR and ensure that
-        // the time stretch falls within a safe range and the guards specified
-        // by governance.
-        uint256 lowerBound = _fixedAPR.divDown(2e18).max(0.005e18);
-        if (
-            _timeStretchAPR < minTimeStretchAPR.max(lowerBound) ||
-            _timeStretchAPR >
-            maxTimeStretchAPR.min(_fixedAPR.max(lowerBound).mulDown(2e18))
-        ) {
-            revert IHyperdriveFactory.InvalidTimeStretchAPR();
-        }
-        uint256 timeStretch = HyperdriveMath.calculateTimeStretch(
-            _timeStretchAPR,
-            _deployConfig.positionDuration
-        );
-
-        // Override the config values to the default values set by governance.
-        // The factory assumes the governance role during deployment so that it
-        // can set up some initial values; however the governance role will
-        // ultimately be transferred to the hyperdrive governance address.
-        _deployConfig.governance = address(this);
-        _deployConfig.feeCollector = feeCollector;
-        _deployConfig.linkerFactory = linkerFactory;
-        _deployConfig.linkerCodeHash = linkerCodeHash;
-        _deployConfig.timeStretch = timeStretch;
-
-        // Deploy the Hyperdrive instance with the specified Hyperdrive
-        // deployer.
+        // Deploy the Hyperdrive instance with the specified deployer
+        // coordinator.
         IHyperdrive hyperdrive = IHyperdrive(
-            IDeployerCoordinator(_deployerCoordinator).deploy(
-                _deployConfig,
-                _extraData
+            IHyperdriveDeployerCoordinator(_deployerCoordinator).deploy(
+                // NOTE: We hash the deployer's address into the deployment ID
+                // to prevent their deployment from being front-run.
+                keccak256(abi.encode(msg.sender, _deploymentId)),
+                _config,
+                _extraData,
+                _salt
             )
         );
 
         // Add this instance to the registry and emit an event with the
         // deployment configuration.
         isOfficial[address(hyperdrive)] = versionCounter;
-        _deployConfig.governance = hyperdriveGovernance;
-        emit Deployed(
-            versionCounter,
-            address(hyperdrive),
-            _deployConfig,
-            _extraData
-        );
+        _config.governance = hyperdriveGovernance;
+        emit Deployed(versionCounter, address(hyperdrive), _config, _extraData);
 
         // Add the newly deployed Hyperdrive instance to the registry.
         _instances.push(address(hyperdrive));
@@ -721,12 +646,12 @@ contract HyperdriveFactory is IHyperdriveFactory {
 
             // Transfer the contribution to this contract and set an approval
             // on Hyperdrive to prepare for initialization.
-            ERC20(address(_deployConfig.baseToken)).safeTransferFrom(
+            ERC20(address(_config.baseToken)).safeTransferFrom(
                 msg.sender,
                 address(this),
                 _contribution
             );
-            ERC20(address(_deployConfig.baseToken)).safeApprove(
+            ERC20(address(_config.baseToken)).forceApprove(
                 address(hyperdrive),
                 _contribution
             );
@@ -762,6 +687,52 @@ contract HyperdriveFactory is IHyperdriveFactory {
         hyperdrive.setGovernance(hyperdriveGovernance);
 
         return hyperdrive;
+    }
+
+    /// @notice Deploys a Hyperdrive target with the factory's configuration.
+    /// @param _deploymentId The deployment ID to use when deploying the pool.
+    /// @param _deployerCoordinator The deployer coordinator to use in this
+    ///        deployment.
+    /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _extraData The extra data that contains data necessary for the
+    ///        specific deployer.
+    /// @param _fixedAPR The fixed APR used to initialize the pool.
+    /// @param _timeStretchAPR The time stretch APR used to initialize the pool.
+    /// @param _targetIndex The index of the target to deploy.
+    /// @param _salt The create2 salt to use for the deployment.
+    /// @return The target address deployed.
+    function deployTarget(
+        bytes32 _deploymentId,
+        address _deployerCoordinator,
+        IHyperdrive.PoolDeployConfig memory _config,
+        bytes memory _extraData,
+        uint256 _fixedAPR,
+        uint256 _timeStretchAPR,
+        uint256 _targetIndex,
+        bytes32 _salt
+    ) external returns (address) {
+        // Ensure that the deployer coordinator has been registered.
+        if (!isDeployerCoordinator[_deployerCoordinator]) {
+            revert IHyperdriveFactory.InvalidDeployerCoordinator();
+        }
+
+        // Override the config values to the default values set by governance
+        // and ensure that the config is valid.
+        _overrideConfig(_config, _fixedAPR, _timeStretchAPR);
+
+        // Deploy the target instance with the specified deployer coordinator.
+        address target = IHyperdriveDeployerCoordinator(_deployerCoordinator)
+            .deployTarget(
+                // NOTE: We hash the deployer's address into the deployment ID
+                // to prevent their deployment from being front-run.
+                keccak256(abi.encode(msg.sender, _deploymentId)),
+                _config,
+                _extraData,
+                _targetIndex,
+                _salt
+            );
+
+        return target;
     }
 
     /// @notice Gets the max fees.
@@ -856,5 +827,98 @@ contract HyperdriveFactory is IHyperdriveFactory {
         for (uint256 i = startIndex; i <= endIndex; i++) {
             range[i - startIndex] = _deployerCoordinators[i];
         }
+    }
+
+    /// @dev Overrides the config values to the default values set by
+    ///      governance. In the process of overriding these parameters, this
+    ///      verifies that the specified config is valid.
+    /// @param _config The config to override.
+    /// @param _fixedAPR The fixed APR to use in the override.
+    /// @param _timeStretchAPR The time stretch APR to use in the override.
+    function _overrideConfig(
+        IHyperdrive.PoolDeployConfig memory _config,
+        uint256 _fixedAPR,
+        uint256 _timeStretchAPR
+    ) internal view {
+        // Ensure that the specified checkpoint duration is within the minimum
+        // and maximum checkpoint durations and is a multiple of the checkpoint
+        // duration resolution.
+        if (
+            _config.checkpointDuration < minCheckpointDuration ||
+            _config.checkpointDuration > maxCheckpointDuration ||
+            _config.checkpointDuration % checkpointDurationResolution != 0
+        ) {
+            revert IHyperdriveFactory.InvalidCheckpointDuration();
+        }
+
+        // Ensure that the specified checkpoint duration is within the minimum
+        // and maximum position durations and is a multiple of the specified
+        // checkpoint duration.
+        if (
+            _config.positionDuration < minPositionDuration ||
+            _config.positionDuration > maxPositionDuration ||
+            _config.positionDuration % _config.checkpointDuration != 0
+        ) {
+            revert IHyperdriveFactory.InvalidPositionDuration();
+        }
+
+        // Ensure that the specified fees are within the minimum and maximum fees.
+        if (
+            _config.fees.curve > _maxFees.curve ||
+            _config.fees.flat > _maxFees.flat ||
+            _config.fees.governanceLP > _maxFees.governanceLP ||
+            _config.fees.governanceZombie > _maxFees.governanceZombie ||
+            _config.fees.curve < _minFees.curve ||
+            _config.fees.flat < _minFees.flat ||
+            _config.fees.governanceLP < _minFees.governanceLP ||
+            _config.fees.governanceZombie < _minFees.governanceZombie
+        ) {
+            revert IHyperdriveFactory.InvalidFees();
+        }
+
+        // Ensure that the linker factory, linker code hash, fee collector, and
+        // governance addresses and time stretch aren't set. This ensures that
+        // the deployer isn't trying to set these values.
+        if (
+            _config.linkerFactory != address(0) ||
+            _config.linkerCodeHash != bytes32(0) ||
+            _config.feeCollector != address(0) ||
+            _config.governance != address(0) ||
+            _config.timeStretch != 0
+        ) {
+            revert IHyperdriveFactory.InvalidDeployConfig();
+        }
+
+        // Ensure that specified fixed APR is within the minimum and maximum
+        // fixed APRs.
+        if (_fixedAPR < minFixedAPR || _fixedAPR > maxFixedAPR) {
+            revert IHyperdriveFactory.InvalidFixedAPR();
+        }
+
+        // Calculate the time stretch using the provided APR and ensure that
+        // the time stretch falls within a safe range and the guards specified
+        // by governance.
+        uint256 lowerBound = _fixedAPR.divDown(2e18).max(0.005e18);
+        if (
+            _timeStretchAPR < minTimeStretchAPR.max(lowerBound) ||
+            _timeStretchAPR >
+            maxTimeStretchAPR.min(_fixedAPR.max(lowerBound).mulDown(2e18))
+        ) {
+            revert IHyperdriveFactory.InvalidTimeStretchAPR();
+        }
+        uint256 timeStretch = HyperdriveMath.calculateTimeStretch(
+            _timeStretchAPR,
+            _config.positionDuration
+        );
+
+        // Override the config values to the default values set by governance.
+        // The factory assumes the governance role during deployment so that it
+        // can set up some initial values; however the governance role will
+        // ultimately be transferred to the hyperdrive governance address.
+        _config.linkerFactory = linkerFactory;
+        _config.linkerCodeHash = linkerCodeHash;
+        _config.feeCollector = feeCollector;
+        _config.governance = address(this);
+        _config.timeStretch = timeStretch;
     }
 }

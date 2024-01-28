@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import { StETHHyperdriveCoreDeployer } from "contracts/src/deployers/steth/StETHHyperdriveCoreDeployer.sol";
@@ -8,6 +8,7 @@ import { StETHTarget0Deployer } from "contracts/src/deployers/steth/StETHTarget0
 import { StETHTarget1Deployer } from "contracts/src/deployers/steth/StETHTarget1Deployer.sol";
 import { StETHTarget2Deployer } from "contracts/src/deployers/steth/StETHTarget2Deployer.sol";
 import { StETHTarget3Deployer } from "contracts/src/deployers/steth/StETHTarget3Deployer.sol";
+import { StETHTarget4Deployer } from "contracts/src/deployers/steth/StETHTarget4Deployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -94,6 +95,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
                 address(new StETHTarget1Deployer(LIDO)),
                 address(new StETHTarget2Deployer(LIDO)),
                 address(new StETHTarget3Deployer(LIDO)),
+                address(new StETHTarget4Deployer(LIDO)),
                 LIDO
             )
         );
@@ -120,14 +122,66 @@ contract StETHHyperdriveTest is HyperdriveTest {
                 })
             });
         uint256 contribution = 10_000e18;
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            0,
+            bytes32(uint256(0xdeadbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            1,
+            bytes32(uint256(0xdeadbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            2,
+            bytes32(uint256(0xdeadbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            3,
+            bytes32(uint256(0xdeadbabe))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xdeadbeef)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            4,
+            bytes32(uint256(0xdeadbabe))
+        );
         hyperdrive = factory.deployAndInitialize{ value: contribution }(
+            bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
             new bytes(0),
             contribution,
             FIXED_RATE,
             FIXED_RATE,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadbabe))
         );
 
         // Ensure that Bob received the correct amount of LP tokens. She should
@@ -184,14 +238,66 @@ contract StETHHyperdriveTest is HyperdriveTest {
                 })
             });
         uint256 contribution = 5_000e18;
+        factory.deployTarget(
+            bytes32(uint256(0xbeefbabe)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            0,
+            bytes32(uint256(0xdeadfade))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeefbabe)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            1,
+            bytes32(uint256(0xdeadfade))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeefbabe)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            2,
+            bytes32(uint256(0xdeadfade))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeefbabe)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            3,
+            bytes32(uint256(0xdeadfade))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeefbabe)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            4,
+            bytes32(uint256(0xdeadfade))
+        );
         hyperdrive = factory.deployAndInitialize{ value: contribution + 1e18 }(
+            bytes32(uint256(0xbeefbabe)),
             address(deployerCoordinator),
             config,
             new bytes(0),
             contribution,
             FIXED_RATE,
             FIXED_RATE,
-            new bytes(0)
+            new bytes(0),
+            bytes32(uint256(0xdeadfade))
         );
         assertEq(address(bob).balance, bobBalanceBefore - contribution);
 

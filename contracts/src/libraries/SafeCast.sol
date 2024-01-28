@@ -1,10 +1,9 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 
 /// @notice Safe unsigned integer casting library that reverts on overflow.
-/// @author Inspired by Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/SafeCastLib.sol)
 /// @author Inspired by OpenZeppelin (https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeCast.sol)
 library SafeCast {
     /// @notice This function safely casts a uint256 to a uint112.

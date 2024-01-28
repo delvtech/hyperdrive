@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
 import { StETHHyperdrive } from "contracts/src/instances/steth/StETHHyperdrive.sol";
 import { StETHTarget0 } from "contracts/src/instances/steth/StETHTarget0.sol";
 import { StETHTarget1 } from "contracts/src/instances/steth/StETHTarget1.sol";
 import { StETHTarget2 } from "contracts/src/instances/steth/StETHTarget2.sol";
 import { StETHTarget3 } from "contracts/src/instances/steth/StETHTarget3.sol";
+import { StETHTarget4 } from "contracts/src/instances/steth/StETHTarget4.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { IStETHHyperdrive } from "contracts/src/interfaces/IStETHHyperdrive.sol";
@@ -77,6 +78,9 @@ contract SweepTest is BaseTest {
                     ),
                     address(
                         new StETHTarget3(config, ILido(address(leakyLido)))
+                    ),
+                    address(
+                        new StETHTarget4(config, ILido(address(leakyLido)))
                     ),
                     ILido(address(leakyLido))
                 )

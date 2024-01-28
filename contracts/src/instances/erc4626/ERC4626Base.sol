@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
-import { ERC20 } from "solmate/tokens/ERC20.sol";
-import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
+import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
+import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IERC4626Hyperdrive } from "../../interfaces/IERC4626Hyperdrive.sol";
@@ -17,7 +17,7 @@ import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 ///                    particular legal or regulatory significance.
 abstract contract ERC4626Base is HyperdriveBase {
     using FixedPointMath for uint256;
-    using SafeTransferLib for ERC20;
+    using SafeERC20 for ERC20;
 
     /// @dev The ERC4626 vault that this pool uses as a yield source.
     IERC4626 internal immutable _vault;
@@ -58,7 +58,14 @@ abstract contract ERC4626Base is HyperdriveBase {
             );
 
             // Deposit the base into the yield source.
-            ERC20(address(_baseToken)).safeApprove(address(_vault), _amount);
+            //
+            // NOTE: We increase the required approval amount by 1 wei so that
+            // the vault ends with an approval of 1 wei. This makes future
+            // approvals cheaper by keeping the storage slot warm.
+            ERC20(address(_baseToken)).forceApprove(
+                address(_vault),
+                _amount + 1
+            );
             sharesMinted = _vault.deposit(_amount, address(this));
         } else {
             // WARN: This logic doesn't account for slippage in the conversion
