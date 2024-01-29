@@ -31,9 +31,8 @@ contract ERC20ForwarderFactory is IERC20ForwarderFactory {
 
     /// @notice Uses create2 to deploy a forwarder at a predictable address as
     ///         part of our ERC20 multitoken implementation.
-    /// @param __token The multitoken which the forwarder should link to.
-    /// @param __tokenId The id of the sub token from the multitoken which we
-    ///        are creating an interface for.
+    /// @param __token The MultiToken targeted by this factory.
+    /// @param __tokenId The sub-token ID targeted by this factory.
     /// @return Returns the address of the deployed forwarder.
     function create(
         IMultiToken __token,

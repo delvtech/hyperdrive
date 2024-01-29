@@ -126,7 +126,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
     ///         by governance.
     mapping(address => bool) public isDeployerCoordinator;
 
-    /// @notice A mapping from deployed Hyperdrive instances to the deployer.
+    /// @notice A mapping from deployed Hyperdrive instances to the deployer
     ///         coordintor that deployed them. This is useful for verifying
     ///         the bytecode that was used to deploy the instance.
     mapping(address instance => address deployCoordinator)

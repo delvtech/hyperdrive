@@ -94,7 +94,7 @@ contract ERC20Forwarder is IERC20Forwarder {
 
     /// @notice Returns a user's token balance. This is the balance of the user
     ///         in the underlying MultiToken sub-token.
-    /// @param who The user.
+    /// @param who The owner of the tokens.
     /// @return Returns the user's balance.
     function balanceOf(address who) external view override returns (uint256) {
         return token.balanceOf(tokenId, who);
