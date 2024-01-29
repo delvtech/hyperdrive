@@ -17,7 +17,8 @@ interface IHyperdriveGovernedRegistry {
 
     /// @notice Allows governance set arbitrary info for a hyperdrive instance.
     /// @param _hyperdriveInstance The hyperdrive instance address.
-    /// @param _data The uint256 value to be set to convey information about the instance.
+    /// @param _data The uint256 value to be set to convey information about the
+    ///        instance.
     function setHyperdriveInfo(
         address _hyperdriveInstance,
         uint256 _data

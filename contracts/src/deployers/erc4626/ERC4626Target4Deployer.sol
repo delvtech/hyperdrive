@@ -17,7 +17,7 @@ contract ERC4626Target4Deployer is IHyperdriveTargetDeployer {
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _extraData The extra data that contains the pool and sweep targets.
     /// @param _salt The create2 salt used in the deployment.
-    /// @return The address of the newly deployed ERC4626Target4 Instance.
+    /// @return The address of the newly deployed ERC4626Target4 instance.
     function deploy(
         IHyperdrive.PoolConfig memory _config,
         bytes memory _extraData,

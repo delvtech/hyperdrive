@@ -5,5 +5,7 @@ import { IHyperdriveRead } from "./IHyperdriveRead.sol";
 import { ILido } from "./ILido.sol";
 
 interface IStETHHyperdriveRead is IHyperdriveRead {
+    /// @notice Gets the Lido contract used as this pool's yield source.
+    /// @return The Lido contract.
     function lido() external view returns (ILido);
 }

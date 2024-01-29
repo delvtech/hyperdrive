@@ -339,13 +339,23 @@ interface IHyperdrive is
 
     /// Getters ///
 
+    /// @notice Gets the target0 address.
+    /// @return The target0 address.
     function target0() external view returns (address);
 
+    /// @notice Gets the target1 address.
+    /// @return The target1 address.
     function target1() external view returns (address);
 
+    /// @notice Gets the target2 address.
+    /// @return The target2 address.
     function target2() external view returns (address);
 
+    /// @notice Gets the target3 address.
+    /// @return The target3 address.
     function target3() external view returns (address);
 
+    /// @notice Gets the target4 address.
+    /// @return The target4 address.
     function target4() external view returns (address);
 }

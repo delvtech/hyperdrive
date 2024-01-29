@@ -129,7 +129,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         return (maturityTime, traderDeposit);
     }
 
-    /// @notice Closes a short position with a specified maturity time.
+    /// @dev Closes a short position with a specified maturity time.
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of shorts to close.
     /// @param _minOutput The minimum output of this trade.

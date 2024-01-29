@@ -82,6 +82,8 @@ contract StETHHyperdrive is Hyperdrive, StETHBase {
         }
     }
 
+    // FIXME: inheritdoc
+    //
     /// @notice Some yield sources [eg Morpho] pay rewards directly to this
     ///         contract but we can't handle distributing them internally so we
     ///         sweep to the fee collector address to then redistribute to users.

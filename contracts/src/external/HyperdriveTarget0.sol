@@ -272,7 +272,7 @@ abstract contract HyperdriveTarget0 is
 
     /// @notice Gets info about the pool's reserves and other state that is
     ///         important to evaluate potential trades.
-    /// @return The PoolInfo struct.
+    /// @return The pool info.
     function getPoolInfo() external view returns (IHyperdrive.PoolInfo memory) {
         uint256 vaultSharePrice = _pricePerVaultShare();
         uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +

@@ -92,6 +92,8 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
         ERC20(address(_config.baseToken)).forceApprove(address(_vault), 1);
     }
 
+    // FIXME: inheritdoc
+    //
     /// @notice Some yield sources [eg Morpho] pay rewards directly to this
     ///         contract but we can't handle distributing them internally so we
     ///         sweep to the fee collector address to then redistribute to users.

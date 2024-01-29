@@ -61,15 +61,18 @@ contract ERC20ForwarderFactory is IERC20ForwarderFactory {
         return deployed;
     }
 
-    /// @notice Returns the transient storage of this contract.
-    /// @return Returns the stored multitoken address and the sub token id.
+    /// @notice Gets the MultiToken and token ID that should be targeted by the
+    ///         calling forwarder.
+    /// @dev The target MultiToken and token ID are transient state variables
+    ///      that are set during deployment.
+    /// @return The target MultiToken and token ID.
     function getDeployDetails() external view returns (IMultiToken, uint256) {
         return (_token, _tokenId);
     }
 
     /// @notice Helper to calculate expected forwarder contract addresses.
-    /// @param __token The multitoken which the forwarder should link to.
-    /// @param __tokenId The id of the sub token from the multitoken.
+    /// @param __token The target MultiToken of the forwarder.
+    /// @param __tokenId The target token ID of the forwarder.
     /// @return The expected address of the forwarder.
     function getForwarder(
         IMultiToken __token,

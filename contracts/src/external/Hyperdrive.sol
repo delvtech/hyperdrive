@@ -167,6 +167,8 @@ abstract contract Hyperdrive is
 
     /// Longs ///
 
+    // FIXME: inheritdoc
+    //
     /// @notice Opens a long position.
     function openLong(
         uint256,
@@ -177,6 +179,8 @@ abstract contract Hyperdrive is
         _delegate(target3);
     }
 
+    // FIXME: inheritdoc
+    //
     /// @notice Closes a long position with a specified maturity time.
     function closeLong(
         uint256,
@@ -189,6 +193,8 @@ abstract contract Hyperdrive is
 
     /// Shorts ///
 
+    // FIXME: inheritdoc
+    //
     /// @notice Opens a short position.
     function openShort(
         uint256,
@@ -199,6 +205,8 @@ abstract contract Hyperdrive is
         _delegate(target4);
     }
 
+    // FIXME: inheritdoc
+    //
     /// @notice Closes a short position with a specified maturity time.
     function closeShort(
         uint256,
@@ -211,6 +219,8 @@ abstract contract Hyperdrive is
 
     /// LPs ///
 
+    // FIXME: inheritdoc
+    //
     /// @notice Allows the first LP to initialize the market with a target APR.
     function initialize(
         uint256,
@@ -220,6 +230,8 @@ abstract contract Hyperdrive is
         _delegate(target1);
     }
 
+    // FIXME: inheritdoc
+    //
     /// @notice Allows LPs to supply liquidity for LP shares.
     function addLiquidity(
         uint256,
@@ -231,6 +243,8 @@ abstract contract Hyperdrive is
         _delegate(target1);
     }
 
+    // FIXME: inheritdoc
+    //
     /// @notice Allows an LP to burn shares and withdraw from the pool.
     function removeLiquidity(
         uint256,
@@ -240,6 +254,8 @@ abstract contract Hyperdrive is
         _delegate(target1);
     }
 
+    // FIXME: inheritdoc
+    //
     /// @notice Redeems withdrawal shares by giving the LP a pro-rata amount of
     ///         the withdrawal pool's proceeds. This function redeems the
     ///         maximum amount of the specified withdrawal shares given the
@@ -254,6 +270,8 @@ abstract contract Hyperdrive is
 
     /// Checkpoints ///
 
+    // FIXME: inheritdoc
+    //
     /// @notice Allows anyone to mint a new checkpoint.
     function checkpoint(uint256) external {
         _delegate(target2);
@@ -261,6 +279,8 @@ abstract contract Hyperdrive is
 
     /// Admin ///
 
+    // FIXME: inheritdoc
+    //
     /// @notice This function collects the governance fees accrued by the pool.
     /// @return proceeds The amount of base collected.
     function collectGovernanceFee(
@@ -269,28 +289,38 @@ abstract contract Hyperdrive is
         _delegate(target0);
     }
 
+    // FIXME: inheritdoc
+    //
     /// @notice Allows an authorized address to pause this contract.
     function pause(bool) external {
         _delegate(target0);
     }
 
+    // FIXME: inheritdoc
+    //
     /// @notice Allows governance to change governance.
     function setGovernance(address) external {
         _delegate(target0);
     }
 
+    // FIXME: inheritdoc
+    //
     /// @notice Allows governance to change the pauser status of an address.
     function setPauser(address, bool) external {
         _delegate(target0);
     }
 
-    /// Token ///
+    /// MultiToken ///
 
+    // FIXME: inheritdoc
+    //
     /// @notice Transfers an amount of assets from the source to the destination.
     function transferFrom(uint256, address, address, uint256) external {
         _delegate(target0);
     }
 
+    // FIXME: inheritdoc
+    //
     /// @notice Permissioned transfer for the bridge to access, only callable by
     ///         the ERC20 linking bridge.
     function transferFromBridge(
@@ -303,24 +333,32 @@ abstract contract Hyperdrive is
         _delegate(target0);
     }
 
+    // FIXME: inheritdoc
+    //
     /// @notice Allows the compatibility linking contract to forward calls to
     ///         set asset approvals.
     function setApprovalBridge(uint256, address, uint256, address) external {
         _delegate(target0);
     }
 
+    // FIXME: inheritdoc
+    //
     /// @notice Allows a user to approve an operator to use all of their assets.
     function setApprovalForAll(address, bool) external {
         _delegate(target0);
     }
 
+    // FIXME: inheritdoc
+    //
     /// @notice Allows a user to set an approval for an individual asset with
     ///         specific amount.
     function setApproval(uint256, address, uint256) external {
         _delegate(target0);
     }
 
-    /// @notice Transfers several assets from one account to another
+    // FIXME: inheritdoc
+    //
+    /// @notice Transfers several assets from one account to another.
     function batchTransferFrom(
         address,
         address,
@@ -330,8 +368,8 @@ abstract contract Hyperdrive is
         _delegate(target0);
     }
 
-    /// MultiToken ///
-
+    // FIXME: interitdoc
+    //
     /// @notice Allows a caller who is not the owner of an account to execute the
     ///      functionality of 'approve' for all assets with the owners signature.
     /// @param owner The owner of the account which is having the new approval set.
