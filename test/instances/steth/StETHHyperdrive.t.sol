@@ -16,7 +16,7 @@ import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
+import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { ETH } from "test/utils/Constants.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
@@ -51,7 +51,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
         vm.startPrank(deployer);
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
-        forwarderFactory = new ForwarderFactory();
+        forwarderFactory = new ERC20ForwarderFactory();
         factory = new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -329,7 +329,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
 
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
-            factory,
+            deployerCoordinator,
             hyperdrive,
             bob,
             contribution,

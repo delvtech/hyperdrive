@@ -4,7 +4,7 @@ pragma solidity 0.8.20;
 import { IERC20Forwarder } from "./IERC20Forwarder.sol";
 import { IMultiToken } from "./IMultiToken.sol";
 
-interface IForwarderFactory {
+interface IERC20ForwarderFactory {
     /// Errors ///
 
     error InvalidForwarderAddress();

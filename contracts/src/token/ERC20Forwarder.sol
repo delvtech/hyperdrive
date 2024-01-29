@@ -2,7 +2,7 @@
 pragma solidity 0.8.20;
 
 import { IERC20Forwarder } from "../interfaces/IERC20Forwarder.sol";
-import { IForwarderFactory } from "../interfaces/IForwarderFactory.sol";
+import { IERC20ForwarderFactory } from "../interfaces/IERC20ForwarderFactory.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IMultiToken } from "../interfaces/IMultiToken.sol";
 
@@ -19,31 +19,38 @@ import { IMultiToken } from "../interfaces/IMultiToken.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ERC20Forwarder is IERC20Forwarder {
-    // The contract which contains the actual state for this 'ERC20'
+    /// @notice The target token ID that this ERC20 interface forwards to.
     IMultiToken public immutable token;
-    // The ID for this contract's 'ERC20' as a sub token of the main token
+
+    /// @notice The target token ID that this ERC20 interface forwards to.
     uint256 public immutable tokenId;
-    // A mapping to track the permit signature nonces
+
+    /// @notice A mapping from a user to their nonce for permit signatures.
     mapping(address user => uint256 nonce) public nonces;
-    // EIP712
+
+    /// @notice The EIP712 domain separator for this contract
     bytes32 public immutable DOMAIN_SEPARATOR; // solhint-disable-line var-name-mixedcase
+
+    /// @notice The EIP712 typehash for the permit struct used by this contract
+    ///         to validate permit signatures.
     bytes32 public constant PERMIT_TYPEHASH =
         keccak256(
             "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
         );
 
-    /// @notice Constructs this contract by initializing the immutables
-    /// @dev To give the contract a constant deploy code hash we call back
-    ///      into the factory to load info instead of using calldata.
+    /// @notice Initializes the ERC20 forwarder.
+    /// @dev To give the contract a constant deploy code hash we call back into
+    ///      the factory to load info instead of using calldata.
     constructor() {
-        // The deployer is the factory
-        IForwarderFactory factory = IForwarderFactory(msg.sender);
-        // We load the data we need to init
+        // The deployer is the factory.
+        IERC20ForwarderFactory factory = IERC20ForwarderFactory(msg.sender);
+
+        // Load the initialization data from the factory.
         (token, tokenId) = factory.getDeployDetails();
 
-        // Computes the EIP 712 domain separator which prevents user signed messages for
-        // this contract to be replayed in other contracts.
-        // https://eips.ethereum.org/EIPS/eip-712
+        // Computes the EIP712 domain separator which prevents user signed
+        // messages for this contract to be replayed in other contracts:
+        // https://eips.ethereum.org/EIPS/eip-712.
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 keccak256(
@@ -57,37 +64,38 @@ contract ERC20Forwarder is IERC20Forwarder {
         );
     }
 
-    /// @notice Returns the decimals for this 'ERC20', we are opinionated
-    ///         so we just return 18 in all cases
-    /// @return Always 18
+    /// @notice Returns the decimals for this ERC20 interface. Hyperdrive's
+    ///         sub-tokens always use 18 decimals.
+    /// @return The amount of decimals (always 18).
     function decimals() external pure override returns (uint8) {
         return 18;
     }
 
-    /// @notice Returns the name of this sub token by calling into the
-    ///         main token to load it.
-    /// @return Returns the name of this token
+    /// @notice Returns this token's name. This is the name of the underlying
+    ///         MultiToken sub-token.
+    /// @return Returns the token's name.
     function name() external view override returns (string memory) {
         return token.name(tokenId);
     }
 
-    /// @notice Returns the totalSupply of the sub token by calling into the
-    ///         main token to load it.
-    /// @return Returns the totalSupply of this token
+    /// @notice Returns this token's total supply. This is the total supply
+    ///         of the underlying MultiToken sub-token.
+    /// @return Returns the total supply of this token.
     function totalSupply() external view override returns (uint256) {
         return token.totalSupply(tokenId);
     }
 
-    /// @notice Returns the symbol of this sub token by calling into the
-    ///         main token to load it.
-    /// @return Returns the symbol of this token
+    /// @notice Returns this token's symbol. This is the symbol of the
+    ///         underlying MultiToken sub-token.
+    /// @return Returns the token's symbol.
     function symbol() external view override returns (string memory) {
         return token.symbol(tokenId);
     }
 
-    /// @notice Returns the balance of this sub token through an ERC20 compliant
-    ///         interface.
-    /// @return The balance of the queried account.
+    /// @notice Returns a user's token balance. This is the balance of the user
+    ///         in the underlying MultiToken sub-token.
+    /// @param who The owner of the tokens.
+    /// @return Returns the user's balance.
     function balanceOf(address who) external view override returns (uint256) {
         return token.balanceOf(tokenId, who);
     }
@@ -96,33 +104,37 @@ contract ERC20Forwarder is IERC20Forwarder {
     ///         If spender is approved for all tokens in the main contract
     ///         it will return Max(uint256) otherwise it returns the allowance
     ///         the allowance for just this asset.
-    /// @param owner The account who's tokens would be spent
-    /// @param spender The account who might be able to spend tokens
-    /// @return The amount of the owner's tokens the spender can spend
+    /// @param owner The account who's tokens would be spent.
+    /// @param spender The account who might be able to spend tokens.
+    /// @return The amount of the owner's tokens the spender can spend.
     function allowance(
         address owner,
         address spender
     ) external view override returns (uint256) {
-        // If the owner is approved for all they can spend an unlimited amount
+        // If the owner is approved for all they can spend an unlimited amount.
         if (token.isApprovedForAll(owner, spender)) {
             return type(uint256).max;
-        } else {
-            // otherwise they can only spend up the their per token approval for
-            // the owner
+        }
+        // Otherwise they can only spend up the their per-token approval for
+        // the owner.
+        else {
             return token.perTokenApprovals(tokenId, owner, spender);
         }
     }
 
-    /// @notice Sets an approval for just this sub-token for the caller in the main token
-    /// @param spender The address which can spend tokens of the caller
+    /// @notice Sets an approval for just this sub-token for the caller in the
+    ///         main token.
+    /// @param spender The address which can spend tokens of the caller.
     /// @param amount The amount which the spender is allowed to spend, if it is
-    ///               set to uint256.max it is infinite and will not be reduced by transfer.
-    /// @return True if approval successful, false if not. The contract also reverts
-    ///         on failure so only true is possible.
+    ///        set to uint256.max it is infinite and will not be reduced by
+    ///        transfer.
+    /// @return True if approval successful, false if not. The contract also
+    ///         reverts on failure so only true is possible.
     function approve(address spender, uint256 amount) external returns (bool) {
-        // The main token handles the internal approval logic
+        // The main token handles the internal approval logic.
         token.setApprovalBridge(tokenId, spender, amount, msg.sender);
-        // Emit a ERC20 compliant approval event
+
+        // Emit a ERC20 compliant approval event.
         emit Approval(msg.sender, spender, amount);
         return true;
     }
@@ -130,8 +142,8 @@ contract ERC20Forwarder is IERC20Forwarder {
     /// @notice Forwards a call to transfer from the msg.sender to the recipient.
     /// @param recipient The recipient of the token transfer
     /// @param amount The amount of token to transfer
-    /// @return True if transfer successful, false if not. The contract also reverts
-    ///         on failed transfer so only true is possible.
+    /// @return True if transfer successful, false if not. The contract also
+    ///         reverts on failed transfer so only true is possible.
     function transfer(
         address recipient,
         uint256 amount
@@ -143,23 +155,25 @@ contract ERC20Forwarder is IERC20Forwarder {
             amount,
             msg.sender
         );
-        // Emits an ERC20 compliant transfer event
+
+        // Emits an ERC20 compliant transfer event.
         emit Transfer(msg.sender, recipient, amount);
         return true;
     }
 
-    /// @notice Forwards a call to transferFrom to move funds from an owner to a recipient
-    /// @param source The source of the tokens to be transferred
-    /// @param recipient The recipient of the tokens
-    /// @param amount The amount of tokens to be transferred
-    /// @return Returns true for success false for failure, also reverts on fail, so will
-    ///         always return true.
+    /// @notice Forwards a call to transferFrom to move funds from an owner to a
+    ///         recipient.
+    /// @param source The source of the tokens to be transferred.
+    /// @param recipient The recipient of the tokens.
+    /// @param amount The amount of tokens to be transferred.
+    /// @return Returns true for success false for failure, also reverts on
+    ///         fail, so will always return true.
     function transferFrom(
         address source,
         address recipient,
         uint256 amount
     ) external returns (bool) {
-        // The token handles the approval logic checking and transfer
+        // The token handles the approval logic checking and transfer.
         token.transferFromBridge(
             tokenId,
             source,
@@ -167,23 +181,30 @@ contract ERC20Forwarder is IERC20Forwarder {
             amount,
             msg.sender
         );
-        // Emits an ERC20 compliant transfer event
+
+        // Emits an ERC20 compliant transfer event.
         emit Transfer(source, recipient, amount);
         return true;
     }
 
-    /// @notice This function allows a caller who is not the owner of an account to execute the functionality of 'approve' with the owners signature.
-    /// @param owner the owner of the account which is having the new approval set
-    /// @param spender the address which will be allowed to spend owner's tokens
-    /// @param value the new allowance value
-    /// @param deadline the timestamp which the signature must be submitted by to be valid
-    /// @param v Extra ECDSA data which allows public key recovery from signature assumed to be 27 or 28
-    /// @param r The r component of the ECDSA signature
-    /// @param s The s component of the ECDSA signature
-    /// @dev The signature for this function follows EIP 712 standard and should be generated with the
-    ///      eth_signTypedData JSON RPC call instead of the eth_sign JSON RPC call. If using out of date
-    ///      parity signing libraries the v component may need to be adjusted. Also it is very rare but possible
-    ///      for v to be other values, those values are not supported.
+    /// @notice This function allows a caller who is not the owner of an account
+    ///         to execute the functionality of 'approve' with the owners
+    ///         signature.
+    /// @dev The signature for this function follows EIP712 standard and should
+    ///      be generated with the eth_signTypedData JSON RPC call instead of
+    ///      the eth_sign JSON RPC call. If using out of date parity signing
+    ///      libraries the v component may need to be adjusted. Also it is very
+    ///      rare but possible for v to be other values. Those values are not
+    ///      supported.
+    /// @param owner The owner of the account which is having the new approval set.
+    /// @param spender The address which will be allowed to spend owner's tokens.
+    /// @param value The new allowance value.
+    /// @param deadline The timestamp which the signature must be submitted by
+    ///        to be valid.
+    /// @param v Extra ECDSA data which allows public key recovery from
+    ///        signature assumed to be 27 or 28.
+    /// @param r The r component of the ECDSA signature.
+    /// @param s The s component of the ECDSA signature.
     function permit(
         address owner,
         address spender,
@@ -193,16 +214,17 @@ contract ERC20Forwarder is IERC20Forwarder {
         bytes32 r,
         bytes32 s
     ) external {
-        // Require that the signature is not expired
+        // Require that the signature is not expired.
         if (block.timestamp > deadline) {
             revert IERC20Forwarder.ExpiredDeadline();
         }
 
-        // Require that the owner is not zero
+        // Require that the owner is not zero.
         if (owner == address(0)) {
             revert IERC20Forwarder.RestrictedZeroAddress();
         }
 
+        // Get the current nonce for the owner and calculate the EIP712 struct.
         uint256 nonce = nonces[owner];
         bytes32 structHash = keccak256(
             abi.encodePacked(
@@ -221,17 +243,18 @@ contract ERC20Forwarder is IERC20Forwarder {
             )
         );
 
-        // Check that the signature is valid
+        // Check that the signature is valid.
         address signer = ecrecover(structHash, v, r, s);
         if (signer != owner) {
             revert InvalidSignature();
         }
 
-        // Increment the signature nonce
+        // Increment the signature nonce.
         unchecked {
             nonces[owner] = nonce + 1;
         }
-        // Set the approval to the new value
+
+        // Set the approval to the new value.
         token.setApprovalBridge(tokenId, spender, value, owner);
         emit Approval(owner, spender, value);
     }

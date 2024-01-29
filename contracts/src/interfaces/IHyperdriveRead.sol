@@ -34,6 +34,8 @@ interface IHyperdriveRead is IMultiTokenRead {
 
     function getPoolInfo() external view returns (IHyperdrive.PoolInfo memory);
 
+    function isPauser(address _account) external view returns (bool);
+
     function load(
         uint256[] calldata _slots
     ) external view returns (bytes32[] memory);

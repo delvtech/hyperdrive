@@ -206,6 +206,10 @@ interface IHyperdrive is
     /// @notice Thrown when a permit signature is expired.
     error ExpiredDeadline();
 
+    /// @notice Thrown when a user doesn't have a sufficient balance to perform
+    ///         an action.
+    error InsufficientBalance();
+
     /// @notice Thrown when the pool doesn't have sufficient liquidity to
     ///         complete the trade.
     error InsufficientLiquidity(InsufficientLiquidityReason reason);

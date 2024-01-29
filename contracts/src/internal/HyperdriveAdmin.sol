@@ -47,18 +47,26 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
     /// @dev Allows an authorized address to pause this contract.
     /// @param _status True to pause all deposits and false to unpause them.
     function _pause(bool _status) internal {
-        if (!_pausers[msg.sender]) revert IHyperdrive.Unauthorized();
-        _marketState.isPaused = _status;
+        // Ensure that the sender is authorized to pause the contract.
+        if (!_pausers[msg.sender]) {
+            revert IHyperdrive.Unauthorized();
+        }
 
-        // FIXME: This needs to emit an event.
+        // Update the paused status and emit an event.
+        _marketState.isPaused = _status;
+        emit PauseStatusUpdated(_status);
     }
 
     /// @dev Allows governance to change governance.
     /// @param _who The new governance address.
     function _setGovernance(address _who) internal {
-        if (msg.sender != _governance) revert IHyperdrive.Unauthorized();
-        _governance = _who;
+        // Ensure that the sender is governance.
+        if (msg.sender != _governance) {
+            revert IHyperdrive.Unauthorized();
+        }
 
+        // Update the governance address and emit an event.
+        _governance = _who;
         emit GovernanceUpdated(_who);
     }
 
@@ -66,7 +74,12 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
     /// @param who The address to change.
     /// @param status The new pauser status.
     function _setPauser(address who, bool status) internal {
-        if (msg.sender != _governance) revert IHyperdrive.Unauthorized();
+        // Ensure that the sender is governance.
+        if (msg.sender != _governance) {
+            revert IHyperdrive.Unauthorized();
+        }
+
+        // Update the pauser status and emit an event.
         _pausers[who] = status;
         emit PauserUpdated(who);
     }
