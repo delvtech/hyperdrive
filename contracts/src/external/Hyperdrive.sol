@@ -50,7 +50,7 @@ import { HyperdriveStorage } from "../internal/HyperdriveStorage.sol";
 /// SSS|||||||||||||||||||||||||||||:::::::::::::::||||||||||||||||||||||||||||||SSS
 /// SSSSSSSS|_______________|______________||_______________|______________|SSSSSSSS
 /// SSSSSSSS                                                                SSSSSSSS
-/// SSSSSSSS                                                               SSSSSSSS
+/// SSSSSSSS                                                                SSSSSSSS
 ///
 /// @author DELV
 /// @title Hyperdrive

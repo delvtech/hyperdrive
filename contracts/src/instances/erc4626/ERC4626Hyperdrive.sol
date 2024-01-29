@@ -49,7 +49,7 @@ import { ERC4626Base } from "./ERC4626Base.sol";
 /// SSS|||||||||||||||||||||||||||||:::::::::::::::||||||||||||||||||||||||||||||SSS
 /// SSSSSSSS|_______________|______________||_______________|______________|SSSSSSSS
 /// SSSSSSSS                                                                SSSSSSSS
-/// SSSSSSSS                                                               SSSSSSSS
+/// SSSSSSSS                                                                SSSSSSSS
 ///
 /// @author DELV
 /// @title ERC4626Hyperdrive
