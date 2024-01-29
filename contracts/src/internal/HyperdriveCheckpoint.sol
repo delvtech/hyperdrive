@@ -111,6 +111,12 @@ abstract contract HyperdriveCheckpoint is
         uint256 maturedShortsAmount = _totalSupply[shortAssetId];
         bool positionsClosed;
         if (maturedShortsAmount > 0) {
+            // Since we're closing out short positions, we'll need to distribute
+            // excess idle once the accounting updates have been performed.
+            positionsClosed = true;
+
+            // Apply the governance and LP proceeds from closing out the matured
+            // short positions to the state.
             (
                 uint256 shareProceeds,
                 uint256 governanceFee
@@ -128,30 +134,35 @@ abstract contract HyperdriveCheckpoint is
                 int256(shareProceeds), // keep the effective share reserves constant
                 _checkpointTime
             );
-            // NOTE: Round up to underestimate the short proceeds.
-            uint256 shareReservesDelta = maturedShortsAmount.divUp(
-                _vaultSharePrice
-            );
-            // NOTE: We divDown then mulDown to mimic the exact rounding that occurs
-            // when the short is closed and the fee is calculated in _calculateFeesGivenBonds().
-            shareReservesDelta += maturedShortsAmount
-                .divDown(_vaultSharePrice)
-                .mulDown(_flatFee);
+
+            // Add the governance fee back to the share proceeds. We removed it
+            // from the LP's share proceeds since the fee is paid to governance;
+            // however, the shorts must pay the flat fee.
+            shareProceeds += governanceFee;
+
+            // Calculate the share proceeds owed to the matured short positions.
+            // Since the shorts have matured and the bonds have matured to a
+            // value of 1, this is the amount of variable interest that the
+            // shorts earned minus the flat fee.
+            //
             // NOTE: Round down to underestimate the short proceeds.
             shareProceeds = HyperdriveMath.calculateShortProceedsDown(
                 maturedShortsAmount,
-                shareReservesDelta,
+                shareProceeds,
                 openVaultSharePrice,
                 _vaultSharePrice,
                 _vaultSharePrice,
                 _flatFee
             );
+
+            // Add the short proceeds to the zombie base proceeds and share
+            // reserves.
+            //
             // NOTE: Round down to underestimate the short proceeds.
             _marketState.zombieBaseProceeds += shareProceeds
                 .mulDown(_vaultSharePrice)
                 .toUint112();
             _marketState.zombieShareReserves += shareProceeds.toUint128();
-            positionsClosed = true;
         }
 
         // Close out all of the long positions that matured at the beginning of
@@ -162,6 +173,12 @@ abstract contract HyperdriveCheckpoint is
         );
         uint256 maturedLongsAmount = _totalSupply[longAssetId];
         if (maturedLongsAmount > 0) {
+            // Since we're closing out long positions, we'll need to distribute
+            // excess idle once the accounting updates have been performed.
+            positionsClosed = true;
+
+            // Apply the governance and LP proceeds from closing out the matured
+            // long positions to the state.
             (
                 uint256 shareProceeds,
                 uint256 governanceFee
@@ -185,12 +202,14 @@ abstract contract HyperdriveCheckpoint is
             // share proceeds to the zombie share reserves.
             shareProceeds -= governanceFee;
 
+            // Add the long proceeds to the zombie base proceeds and share
+            // reserves.
+            //
             // NOTE: Round down to underestimate the long proceeds.
             _marketState.zombieBaseProceeds += shareProceeds
                 .mulDown(_vaultSharePrice)
                 .toUint112();
             _marketState.zombieShareReserves += shareProceeds.toUint128();
-            positionsClosed = true;
         }
 
         // If we closed any positions, update the global long exposure and

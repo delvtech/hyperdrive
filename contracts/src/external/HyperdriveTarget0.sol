@@ -203,6 +203,13 @@ abstract contract HyperdriveTarget0 is
 
     /// Getters ///
 
+    /// @notice Gets the pauser status of an address.
+    /// @param _account The account to check.
+    /// @return The pauser status.
+    function isPauser(address _account) external view returns (bool) {
+        _revert(abi.encode(_pausers[_account]));
+    }
+
     /// @notice Gets the base token.
     /// @return The base token.
     function baseToken() external view returns (address) {

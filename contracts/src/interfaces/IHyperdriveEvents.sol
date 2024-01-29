@@ -85,4 +85,6 @@ interface IHyperdriveEvents is IMultiTokenEvents {
     event GovernanceUpdated(address indexed newGovernance);
 
     event PauserUpdated(address indexed newPauser);
+
+    event PauseStatusUpdated(bool isPaused);
 }

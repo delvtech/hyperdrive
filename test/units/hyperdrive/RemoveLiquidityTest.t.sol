@@ -58,7 +58,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         // Alice attempts to remove 0 lp shares.
         vm.stopPrank();
         vm.startPrank(alice);
-        vm.expectRevert(stdError.arithmeticError);
+        vm.expectRevert(IHyperdrive.InsufficientBalance.selector);
         hyperdrive.removeLiquidity(
             lpShares + 1,
             0,

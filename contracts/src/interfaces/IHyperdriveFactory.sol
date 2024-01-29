@@ -7,7 +7,7 @@ interface IHyperdriveFactory {
     /// Events ///
 
     event Deployed(
-        uint256 indexed version,
+        address indexed deployerCoordinator,
         address hyperdrive,
         IHyperdrive.PoolDeployConfig config,
         bytes extraData

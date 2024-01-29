@@ -63,7 +63,7 @@ contract CloseLongTest is HyperdriveTest {
         // Attempt to close too many longs. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(stdError.arithmeticError);
+        vm.expectRevert(IHyperdrive.InsufficientBalance.selector);
         hyperdrive.closeLong(
             maturityTime,
             bondAmount + 1,

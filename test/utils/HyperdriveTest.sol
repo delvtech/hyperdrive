@@ -11,7 +11,7 @@ import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol"
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { LPMath } from "contracts/src/libraries/LPMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
-import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
+import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockHyperdrive, MockHyperdriveTarget0, MockHyperdriveTarget1 } from "contracts/test/MockHyperdrive.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
@@ -886,20 +886,14 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
     /// Event Utils ///
 
     event Deployed(
-        uint256 indexed version,
+        address indexed deployerCoordinator,
         address hyperdrive,
         IHyperdrive.PoolDeployConfig config,
         bytes extraData
     );
 
-    event CollectGovernanceFee(
-        address indexed collector,
-        uint256 baseFees,
-        uint256 vaultSharePrice
-    );
-
     function verifyFactoryEvents(
-        HyperdriveFactory factory,
+        address deployerCoordinator,
         IHyperdrive _hyperdrive,
         address deployer,
         uint256 contribution,
@@ -922,7 +916,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
             assertEq(filteredLogs[0].topics[0], Deployed.selector);
             assertEq(
                 uint256(filteredLogs[0].topics[1]),
-                factory.versionCounter()
+                uint256(uint160(deployerCoordinator))
             );
 
             // Verify the event data.

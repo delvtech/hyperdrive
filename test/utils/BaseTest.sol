@@ -4,10 +4,10 @@ pragma solidity 0.8.20;
 import { console2 } from "forge-std/console2.sol";
 import { Test } from "forge-std/Test.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
+import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 
 contract BaseTest is Test {
-    ForwarderFactory forwarderFactory;
+    ERC20ForwarderFactory forwarderFactory;
 
     address alice;
     address bob;

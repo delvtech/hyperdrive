@@ -24,7 +24,7 @@ import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
+import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockERC4626 } from "contracts/test/MockERC4626.sol";
 import { MockHyperdriveMath } from "contracts/test/MockHyperdriveMath.sol";
@@ -343,7 +343,7 @@ contract DevnetMigration is Script {
         {
             address[] memory defaultPausers = new address[](1);
             defaultPausers[0] = config.admin;
-            ForwarderFactory forwarderFactory = new ForwarderFactory();
+            ERC20ForwarderFactory forwarderFactory = new ERC20ForwarderFactory();
             HyperdriveFactory.FactoryConfig
                 memory factoryConfig = HyperdriveFactory.FactoryConfig({
                     governance: msg.sender,
