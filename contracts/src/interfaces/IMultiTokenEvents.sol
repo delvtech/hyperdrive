@@ -11,7 +11,7 @@ interface IMultiTokenEvents {
         uint256 value
     );
 
-    /// @notice Emitted when an accounts changes the allowance for another
+    /// @notice Emitted when an account changes the allowance for another
     ///         account.
     event Approval(
         address indexed owner,

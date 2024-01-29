@@ -4,8 +4,8 @@ pragma solidity 0.8.20;
 interface IMultiTokenCore {
     /// @notice Transfers an amount of assets from the source to the destination.
     /// @param tokenID The token identifier.
-    /// @param from The address who's balance will be reduced.
-    /// @param to The address who's balance will be increased.
+    /// @param from The address whose balance will be reduced.
+    /// @param to The address whose balance will be increased.
     /// @param amount The amount of token to move.
     function transferFrom(
         uint256 tokenID,
@@ -17,8 +17,8 @@ interface IMultiTokenCore {
     /// @notice Permissioned transfer for the bridge to access, only callable by
     ///         the ERC20 linking bridge.
     /// @param tokenID The token identifier.
-    /// @param from The address who's balance will be reduced.
-    /// @param to The address who's balance will be increased.
+    /// @param from The address whose balance will be reduced.
+    /// @param to The address whose balance will be increased.
     /// @param amount The amount of token to move.
     /// @param caller The msg.sender or the caller of the ERC20Forwarder.
     function transferFromBridge(
@@ -58,8 +58,8 @@ interface IMultiTokenCore {
     function setApprovalForAll(address operator, bool approved) external;
 
     /// @notice Transfers several assets from one account to another.
-    /// @param from the source account.
-    /// @param to the destination account.
+    /// @param from The source account.
+    /// @param to The destination account.
     /// @param ids The array of token ids of the asset to transfer.
     /// @param values The amount of each token to transfer.
     function batchTransferFrom(
@@ -70,7 +70,8 @@ interface IMultiTokenCore {
     ) external;
 
     /// @notice Allows a caller who is not the owner of an account to execute the
-    ///      functionality of 'approve' for all assets with the owners signature.
+    ///         functionality of 'approve' for all assets with the owner's
+    ///         signature.
     /// @param owner The owner of the account which is having the new approval set.
     /// @param spender The address which will be allowed to spend owner's tokens.
     /// @param _approved A boolean of the approval status to set to.

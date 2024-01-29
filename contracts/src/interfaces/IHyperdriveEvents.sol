@@ -95,7 +95,7 @@ interface IHyperdriveEvents is IMultiTokenEvents {
     /// @notice Emitted when the governance address is updated.
     event GovernanceUpdated(address indexed newGovernance);
 
-    /// @notice Emitted when a pauser is added.
+    /// @notice Emitted when a pauser is updated.
     event PauserUpdated(address indexed newPauser);
 
     /// @notice Emitted when the pause status is updated.

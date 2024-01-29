@@ -24,7 +24,8 @@ interface IERC20ForwarderFactory {
 
     /// @notice Gets the MultiToken and token ID that should be targeted by the
     ///         calling forwarder.
-    /// @return The target MultiToken and token ID.
+    /// @return The target MultiToken.
+    /// @return The target token ID.
     function getDeployDetails() external view returns (IMultiToken, uint256);
 
     /// @notice Helper to calculate expected forwarder contract addresses.

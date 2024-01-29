@@ -43,8 +43,8 @@ interface IHyperdriveCore is IMultiTokenCore {
     /// @param _bondAmount The amount of bonds to short.
     /// @param _maxDeposit The most the user expects to deposit for this trade.
     /// @param _minVaultSharePrice The minimum vault share price at which to open
-    ///        the long. This allows traders to protect themselves from opening
-    ///        a long in a checkpoint where negative interest has accrued.
+    ///        the short. This allows traders to protect themselves from opening
+    ///        a short in a checkpoint where negative interest has accrued.
     /// @param _options The options that configure how the trade is settled.
     /// @return maturityTime The maturity time of the short.
     /// @return traderDeposit The amount the user deposited for this trade.
@@ -84,14 +84,14 @@ interface IHyperdriveCore is IMultiTokenCore {
     /// @notice Allows LPs to supply liquidity for LP shares.
     /// @param _contribution The amount to supply.
     /// @param _minLpSharePrice The minimum LP share price the LP is willing
-    ///        to accept for their shares. LP's incur negative slippage when
+    ///        to accept for their shares. LPs incur negative slippage when
     ///        adding liquidity if there is a net curve position in the market,
     ///        so this allows LPs to protect themselves from high levels of
     ///        slippage.
     /// @param _minApr The minimum APR at which the LP is willing to supply.
     /// @param _maxApr The maximum APR at which the LP is willing to supply.
     /// @param _options The options that configure how the operation is settled.
-    /// @return lpShares The number of LP tokens created
+    /// @return lpShares The number of LP tokens created.
     function addLiquidity(
         uint256 _contribution,
         uint256 _minLpSharePrice,
@@ -154,7 +154,7 @@ interface IHyperdriveCore is IMultiTokenCore {
     /// @param _status True to pause all deposits and false to unpause them.
     function pause(bool _status) external;
 
-    /// @notice Allows governance to change governance.
+    /// @notice Allows governance to transfer the governance role.
     /// @param _who The new governance address.
     function setGovernance(address _who) external;
 

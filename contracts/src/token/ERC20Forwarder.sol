@@ -104,7 +104,7 @@ contract ERC20Forwarder is IERC20Forwarder {
     ///         If spender is approved for all tokens in the main contract
     ///         it will return Max(uint256) otherwise it returns the allowance
     ///         the allowance for just this asset.
-    /// @param owner The account who's tokens would be spent.
+    /// @param owner The account whose tokens would be spent.
     /// @param spender The account who might be able to spend tokens.
     /// @return The amount of the owner's tokens the spender can spend.
     function allowance(

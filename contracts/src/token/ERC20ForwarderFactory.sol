@@ -65,7 +65,8 @@ contract ERC20ForwarderFactory is IERC20ForwarderFactory {
     ///         calling forwarder.
     /// @dev The target MultiToken and token ID are transient state variables
     ///      that are set during deployment.
-    /// @return The target MultiToken and token ID.
+    /// @return The target MultiToken.
+    /// @return The target token ID.
     function getDeployDetails() external view returns (IMultiToken, uint256) {
         return (_token, _tokenId);
     }

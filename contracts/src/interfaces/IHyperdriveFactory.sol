@@ -29,7 +29,8 @@ interface IHyperdriveFactory {
     /// @notice Emitted when the factory's governance is updated.
     event GovernanceUpdated(address indexed governance);
 
-    /// @notice Emitted when the governance used in new deployments is updated.
+    /// @notice Emitted when the governance address used in new deployments is
+    ///         updated.
     event HyperdriveGovernanceUpdated(address indexed hyperdriveGovernance);
 
     /// @notice Emitted when the linker factory used in new deployments is
@@ -158,7 +159,7 @@ interface IHyperdriveFactory {
     ///         duration.
     error InvalidMinPositionDuration();
 
-    /// @notice Thrown the position duration passed to `deployAndInitialize`
+    /// @notice Thrown when the position duration passed to `deployAndInitialize`
     ///         doesn't fall within the range specified by the minimum and
     ///         maximum position durations.
     error InvalidPositionDuration();

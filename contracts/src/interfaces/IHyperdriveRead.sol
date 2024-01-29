@@ -58,7 +58,7 @@ interface IHyperdriveRead is IMultiTokenRead {
 
     /// @notice Gets an account's pauser status within the Hyperdrive pool.
     /// @param _account The account to check.
-    /// @return The account's pauser status..
+    /// @return The account's pauser status.
     function isPauser(address _account) external view returns (bool);
 
     /// @notice Gets the storage values at the specified slots.

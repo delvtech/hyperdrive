@@ -25,9 +25,9 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
     /// @dev Opens a short position.
     /// @param _bondAmount The amount of bonds to short.
     /// @param _maxDeposit The most the user expects to deposit for this trade.
-    /// @param _minVaultSharePrice The minium vault share price at which to open
-    ///        the long. This allows traders to protect themselves from opening
-    ///        a long in a checkpoint where negative interest has accrued.
+    /// @param _minVaultSharePrice The minimum vault share price at which to open
+    ///        the short. This allows traders to protect themselves from opening
+    ///        a short in a checkpoint where negative interest has accrued.
     /// @param _options The options that configure how the trade is settled.
     /// @return The maturity time of the short.
     /// @return The amount the user deposited for this trade.

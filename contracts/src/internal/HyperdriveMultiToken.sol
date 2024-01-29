@@ -68,8 +68,8 @@ abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
 
     /// @dev Performs the actual transfer logic.
     /// @param tokenID The token identifier.
-    /// @param from The address who's balance will be reduced.
-    /// @param to The address who's balance will be increased.
+    /// @param from The address whose balance will be reduced.
+    /// @param to The address whose balance will be increased.
     /// @param amount The amount of token to move.
     /// @param caller The msg.sender or the caller of the ERC20Forwarder.
     function _transferFrom(
@@ -130,7 +130,7 @@ abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
 
     /// @notice Minting function to create tokens.
     /// @param tokenID The asset type to create.
-    /// @param to The address who's balance to increase.
+    /// @param to The address whose balance to increase.
     /// @param amount The number of tokens to create.
     /// @dev Must be used from inheriting contracts.
     function _mint(
@@ -147,7 +147,7 @@ abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
 
     /// @notice Burning function to remove tokens.
     /// @param tokenID The asset type to remove.
-    /// @param from The address who's balance to decrease.
+    /// @param from The address whose balance to decrease.
     /// @param amount The number of tokens to remove.
     /// @dev Must be used from inheriting contracts.
     function _burn(uint256 tokenID, address from, uint256 amount) internal {
