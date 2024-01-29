@@ -151,6 +151,12 @@ abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
     /// @param amount The number of tokens to remove.
     /// @dev Must be used from inheriting contracts.
     function _burn(uint256 tokenID, address from, uint256 amount) internal {
+        // Check to see if the balance is sufficient. If it isn't, throw an
+        // insufficient balance error.
+        if (_balanceOf[tokenID][from] < amount) {
+            revert IHyperdrive.InsufficientBalance();
+        }
+
         // Decrement from the source and supply.
         _balanceOf[tokenID][from] -= amount;
         _totalSupply[tokenID] -= amount;

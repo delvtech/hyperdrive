@@ -62,7 +62,7 @@ contract CloseShortTest is HyperdriveTest {
         // Attempt to close too many shorts. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(stdError.arithmeticError);
+        vm.expectRevert(IHyperdrive.InsufficientBalance.selector);
         hyperdrive.closeShort(
             maturityTime,
             bondAmount + 1,
