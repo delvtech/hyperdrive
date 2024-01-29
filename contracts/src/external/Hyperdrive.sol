@@ -51,7 +51,7 @@ import { HyperdriveStorage } from "../internal/HyperdriveStorage.sol";
 /// SSSSSSSS|_______________|______________||_______________|______________|SSSSSSSS
 /// SSSSSSSS                                                                SSSSSSSS
 /// SSSSSSSS                                                                SSSSSSSS
-
+///
 /// @author DELV
 /// @title Hyperdrive
 /// @notice A fixed-rate AMM that mints bonds on demand for longs and shorts.
