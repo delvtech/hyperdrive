@@ -21,7 +21,7 @@ interface IERC20Forwarder is IERC20 {
     /// Functions ///
 
     /// @notice This function allows a caller who is not the owner of an account
-    ///         to execute the functionality of 'approve' with the owners
+    ///         to execute the functionality of 'approve' with the owner's
     ///         signature.
     /// @dev The signature for this function follows EIP712 standard and should
     ///      be generated with the eth_signTypedData JSON RPC call instead of
