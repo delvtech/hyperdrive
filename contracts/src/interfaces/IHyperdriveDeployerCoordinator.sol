@@ -62,16 +62,31 @@ interface IHyperdriveDeployerCoordinator {
 
     /// Functions ///
 
+    /// @notice Deploys a Hyperdrive instance with the given parameters.
+    /// @param _deploymentId The ID of the deployment.
+    /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
+    /// @param _extraData The extra data that contains the pool and sweep targets.
+    /// @param _salt The create2 salt used to deploy Hyperdrive.
+    /// @return The address of the newly deployed Hyperdrive instance.
     function deploy(
         bytes32 _deploymentId,
-        IHyperdrive.PoolDeployConfig memory _config,
+        IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory _extraData,
         bytes32 _salt
     ) external returns (address);
 
+    /// @notice Deploys a Hyperdrive target instance with the given parameters.
+    /// @dev As a convention, target0 must be deployed first. After this, the
+    ///      targets can be deployed in any order.
+    /// @param _deploymentId The ID of the deployment.
+    /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
+    /// @param _extraData The extra data that contains the pool and sweep targets.
+    /// @param _targetIndex The index of the target to deploy.
+    /// @param _salt The create2 salt used to deploy the target.
+    /// @return target The address of the newly deployed target instance.
     function deployTarget(
         bytes32 _deploymentId,
-        IHyperdrive.PoolDeployConfig memory _config,
+        IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory _extraData,
         uint256 _targetIndex,
         bytes32 _salt

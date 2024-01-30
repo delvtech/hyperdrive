@@ -4,6 +4,7 @@ pragma solidity 0.8.20;
 import { HyperdriveTarget0 } from "../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveCore } from "../interfaces/IHyperdriveCore.sol";
+import { IMultiTokenCore } from "../interfaces/IMultiTokenCore.sol";
 import { HyperdriveAdmin } from "../internal/HyperdriveAdmin.sol";
 import { HyperdriveBase } from "../internal/HyperdriveBase.sol";
 import { HyperdriveCheckpoint } from "../internal/HyperdriveCheckpoint.sol";
@@ -167,7 +168,7 @@ abstract contract Hyperdrive is
 
     /// Longs ///
 
-    /// @notice Opens a long position.
+    /// @inheritdoc IHyperdriveCore
     function openLong(
         uint256,
         uint256,
@@ -177,7 +178,7 @@ abstract contract Hyperdrive is
         _delegate(target3);
     }
 
-    /// @notice Closes a long position with a specified maturity time.
+    /// @inheritdoc IHyperdriveCore
     function closeLong(
         uint256,
         uint256,
@@ -189,7 +190,7 @@ abstract contract Hyperdrive is
 
     /// Shorts ///
 
-    /// @notice Opens a short position.
+    /// @inheritdoc IHyperdriveCore
     function openShort(
         uint256,
         uint256,
@@ -199,7 +200,7 @@ abstract contract Hyperdrive is
         _delegate(target4);
     }
 
-    /// @notice Closes a short position with a specified maturity time.
+    /// @inheritdoc IHyperdriveCore
     function closeShort(
         uint256,
         uint256,
@@ -211,7 +212,7 @@ abstract contract Hyperdrive is
 
     /// LPs ///
 
-    /// @notice Allows the first LP to initialize the market with a target APR.
+    /// @inheritdoc IHyperdriveCore
     function initialize(
         uint256,
         uint256,
@@ -220,7 +221,7 @@ abstract contract Hyperdrive is
         _delegate(target1);
     }
 
-    /// @notice Allows LPs to supply liquidity for LP shares.
+    /// @inheritdoc IHyperdriveCore
     function addLiquidity(
         uint256,
         uint256,
@@ -231,7 +232,7 @@ abstract contract Hyperdrive is
         _delegate(target1);
     }
 
-    /// @notice Allows an LP to burn shares and withdraw from the pool.
+    /// @inheritdoc IHyperdriveCore
     function removeLiquidity(
         uint256,
         uint256,
@@ -240,10 +241,7 @@ abstract contract Hyperdrive is
         _delegate(target1);
     }
 
-    /// @notice Redeems withdrawal shares by giving the LP a pro-rata amount of
-    ///         the withdrawal pool's proceeds. This function redeems the
-    ///         maximum amount of the specified withdrawal shares given the
-    ///         amount of withdrawal shares ready to withdraw.
+    /// @inheritdoc IHyperdriveCore
     function redeemWithdrawalShares(
         uint256,
         uint256,
@@ -254,45 +252,43 @@ abstract contract Hyperdrive is
 
     /// Checkpoints ///
 
-    /// @notice Allows anyone to mint a new checkpoint.
+    /// @inheritdoc IHyperdriveCore
     function checkpoint(uint256) external {
         _delegate(target2);
     }
 
     /// Admin ///
 
-    /// @notice This function collects the governance fees accrued by the pool.
-    /// @return proceeds The amount of base collected.
+    /// @inheritdoc IHyperdriveCore
     function collectGovernanceFee(
         IHyperdrive.Options calldata
     ) external returns (uint256) {
         _delegate(target0);
     }
 
-    /// @notice Allows an authorized address to pause this contract.
+    /// @inheritdoc IHyperdriveCore
     function pause(bool) external {
         _delegate(target0);
     }
 
-    /// @notice Allows governance to change governance.
+    /// @inheritdoc IHyperdriveCore
     function setGovernance(address) external {
         _delegate(target0);
     }
 
-    /// @notice Allows governance to change the pauser status of an address.
+    /// @inheritdoc IHyperdriveCore
     function setPauser(address, bool) external {
         _delegate(target0);
     }
 
-    /// Token ///
+    /// MultiToken ///
 
-    /// @notice Transfers an amount of assets from the source to the destination.
+    /// @inheritdoc IMultiTokenCore
     function transferFrom(uint256, address, address, uint256) external {
         _delegate(target0);
     }
 
-    /// @notice Permissioned transfer for the bridge to access, only callable by
-    ///         the ERC20 linking bridge.
+    /// @inheritdoc IMultiTokenCore
     function transferFromBridge(
         uint256,
         address,
@@ -303,24 +299,22 @@ abstract contract Hyperdrive is
         _delegate(target0);
     }
 
-    /// @notice Allows the compatibility linking contract to forward calls to
-    ///         set asset approvals.
+    /// @inheritdoc IMultiTokenCore
     function setApprovalBridge(uint256, address, uint256, address) external {
         _delegate(target0);
     }
 
-    /// @notice Allows a user to approve an operator to use all of their assets.
+    /// @inheritdoc IMultiTokenCore
     function setApprovalForAll(address, bool) external {
         _delegate(target0);
     }
 
-    /// @notice Allows a user to set an approval for an individual asset with
-    ///         specific amount.
+    /// @inheritdoc IMultiTokenCore
     function setApproval(uint256, address, uint256) external {
         _delegate(target0);
     }
 
-    /// @notice Transfers several assets from one account to another
+    /// @inheritdoc IMultiTokenCore
     function batchTransferFrom(
         address,
         address,
@@ -329,8 +323,6 @@ abstract contract Hyperdrive is
     ) external {
         _delegate(target0);
     }
-
-    /// MultiToken ///
 
     /// @notice Allows a caller who is not the owner of an account to execute the
     ///      functionality of 'approve' for all assets with the owners signature.

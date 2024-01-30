@@ -92,7 +92,7 @@ abstract contract HyperdriveDeployerCoordinator is
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     /// @param _extraData The extra data that contains the pool and sweep targets.
     /// @param _salt The create2 salt used to deploy Hyperdrive.
-    /// @return The address of the newly deployed ERC4626Hyperdrive Instance.
+    /// @return The address of the newly deployed Hyperdrive instance.
     function deploy(
         bytes32 _deploymentId,
         IHyperdrive.PoolDeployConfig memory _deployConfig,

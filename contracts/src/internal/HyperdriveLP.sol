@@ -117,14 +117,14 @@ abstract contract HyperdriveLP is
     /// @dev Allows LPs to supply liquidity for LP shares.
     /// @param _contribution The amount to supply.
     /// @param _minLpSharePrice The minimum LP share price the LP is willing
-    ///        to accept for their shares. LP's incur negative slippage when
+    ///        to accept for their shares. LPs incur negative slippage when
     ///        adding liquidity if there is a net curve position in the market,
     ///        so this allows LPs to protect themselves from high levels of
     ///        slippage.
     /// @param _minApr The minimum APR at which the LP is willing to supply.
     /// @param _maxApr The maximum APR at which the LP is willing to supply.
     /// @param _options The options that configure how the operation is settled.
-    /// @return lpShares The number of LP tokens created
+    /// @return lpShares The number of LP tokens created.
     function _addLiquidity(
         uint256 _contribution,
         uint256 _minLpSharePrice,

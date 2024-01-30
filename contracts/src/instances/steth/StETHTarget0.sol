@@ -30,13 +30,12 @@ contract StETHTarget0 is HyperdriveTarget0, StETHBase {
 
     /// Extras ///
 
-    /// @notice Some yield sources [eg Morpho] pay rewards directly to this
-    ///         contract but we can't handle distributing them internally so we
-    ///         sweep to the fee collector address to then redistribute to users.
+    /// @notice Transfers the contract's balance of a target token to the fee
+    ///         collector address.
     /// @dev WARN: It is unlikely but possible that there is a selector overlap
     ///      with 'transferFrom'. Any integrating contracts should be checked
     ///      for that, as it may result in an unexpected call from this address.
-    /// @param _target The token to sweep.
+    /// @param _target The target token to sweep.
     function sweep(IERC20 _target) external {
         // Ensure that the sender is the fee collector or a pauser.
         if (msg.sender != _feeCollector && !_pausers[msg.sender]) {

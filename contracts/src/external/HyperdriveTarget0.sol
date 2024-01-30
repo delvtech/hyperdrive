@@ -71,8 +71,8 @@ abstract contract HyperdriveTarget0 is
 
     /// @notice Transfers an amount of assets from the source to the destination.
     /// @param tokenID The token identifier.
-    /// @param from The address who's balance will be reduced.
-    /// @param to The address who's balance will be increased.
+    /// @param from The address whose balance will be reduced.
+    /// @param to The address whose balance will be increased.
     /// @param amount The amount of token to move.
     function transferFrom(
         uint256 tokenID,
@@ -87,8 +87,8 @@ abstract contract HyperdriveTarget0 is
     /// @notice Permissioned transfer for the bridge to access, only callable by
     ///         the ERC20 linking bridge.
     /// @param tokenID The token identifier.
-    /// @param from The address who's balance will be reduced.
-    /// @param to The address who's balance will be increased.
+    /// @param from The address whose balance will be reduced.
+    /// @param to The address whose balance will be increased.
     /// @param amount The amount of token to move.
     /// @param caller The msg.sender from the bridge.
     function transferFromBridge(
@@ -145,8 +145,8 @@ abstract contract HyperdriveTarget0 is
     }
 
     /// @notice Transfers several assets from one account to another.
-    /// @param from the source account.
-    /// @param to the destination account.
+    /// @param from The source account.
+    /// @param to The destination account.
     /// @param ids The array of token ids of the asset to transfer.
     /// @param values The amount of each token to transfer.
     function batchTransferFrom(
@@ -159,7 +159,8 @@ abstract contract HyperdriveTarget0 is
     }
 
     /// @notice Allows a caller who is not the owner of an account to execute the
-    ///      functionality of 'approve' for all assets with the owners signature.
+    ///         functionality of 'approve' for all assets with the owner's
+    ///         signature.
     /// @param domainSeparator The EIP712 domain separator of the contract.
     /// @param permitTypeHash The EIP712 domain separator of the contract.
     /// @param owner The owner of the account which is having the new approval set.
@@ -272,7 +273,7 @@ abstract contract HyperdriveTarget0 is
 
     /// @notice Gets info about the pool's reserves and other state that is
     ///         important to evaluate potential trades.
-    /// @return The PoolInfo struct.
+    /// @return The pool info.
     function getPoolInfo() external view returns (IHyperdrive.PoolInfo memory) {
         uint256 vaultSharePrice = _pricePerVaultShare();
         uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +

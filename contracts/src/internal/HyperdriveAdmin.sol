@@ -57,7 +57,7 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
         emit PauseStatusUpdated(_status);
     }
 
-    /// @dev Allows governance to change governance.
+    /// @dev Allows governance to transfer the governance role.
     /// @param _who The new governance address.
     function _setGovernance(address _who) internal {
         // Ensure that the sender is governance.
