@@ -49,7 +49,7 @@ use hyperdrive_wrappers::wrappers::{
     steth_target3_deployer::StETHTarget3Deployer,
     steth_target4_deployer::StETHTarget4Deployer,
 };
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use super::{dev_chain::MNEMONIC, Chain, ChainClient};
 use crate::{
@@ -57,6 +57,15 @@ use crate::{
     constants::{DEFAULT_GAS_PRICE, MAYBE_ETHEREUM_URL},
     crash_reports::{ActionType, CrashReport},
 };
+
+fn deserialize_u256<'de, D>(deserializer: D) -> Result<U256, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let dec_string: String = Deserialize::deserialize(deserializer)?;
+    let u256 = U256::from_dec_str(&dec_string).map_err(serde::de::Error::custom)?;
+    Ok(u256)
+}
 
 /// A configuration for a test chain that specifies the factory parameters,
 /// the base token parameters, the lido parameters, and the parameters for an
@@ -74,50 +83,91 @@ struct TestChainConfig {
     // vault configuration
     vault_name: String,
     vault_symbol: String,
+    #[serde(deserialize_with = "deserialize_u256")]
     vault_starting_rate: U256,
     // lido configuration
+    #[serde(deserialize_with = "deserialize_u256")]
     lido_starting_rate: U256,
     // factory configuration
+    #[serde(deserialize_with = "deserialize_u256")]
     factory_checkpoint_duration_resolution: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     factory_min_checkpoint_duration: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     factory_max_checkpoint_duration: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     factory_min_position_duration: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     factory_max_position_duration: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     factory_min_fixed_apr: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     factory_max_fixed_apr: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     factory_min_time_stretch_apr: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     factory_max_time_stretch_apr: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     factory_min_curve_fee: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     factory_min_flat_fee: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     factory_min_governance_lp_fee: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     factory_min_governance_zombie_fee: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     factory_max_curve_fee: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     factory_max_flat_fee: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     factory_max_governance_lp_fee: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     factory_max_governance_zombie_fee: U256,
     // erc4626 hyperdrive configuration
+    #[serde(deserialize_with = "deserialize_u256")]
     erc4626_hyperdrive_contribution: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     erc4626_hyperdrive_fixed_apr: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     erc4626_hyperdrive_time_stretch_apr: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     erc4626_hyperdrive_minimum_share_reserves: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     erc4626_hyperdrive_minimum_transaction_amount: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     erc4626_hyperdrive_position_duration: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     erc4626_hyperdrive_checkpoint_duration: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     erc4626_hyperdrive_curve_fee: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     erc4626_hyperdrive_flat_fee: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     erc4626_hyperdrive_governance_lp_fee: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     erc4626_hyperdrive_governance_zombie_fee: U256,
     // steth hyperdrive configuration
+    #[serde(deserialize_with = "deserialize_u256")]
     steth_hyperdrive_contribution: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     steth_hyperdrive_fixed_apr: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     steth_hyperdrive_time_stretch_apr: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     steth_hyperdrive_minimum_share_reserves: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     steth_hyperdrive_minimum_transaction_amount: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     steth_hyperdrive_position_duration: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     steth_hyperdrive_checkpoint_duration: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     steth_hyperdrive_curve_fee: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     steth_hyperdrive_flat_fee: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     steth_hyperdrive_governance_lp_fee: U256,
+    #[serde(deserialize_with = "deserialize_u256")]
     steth_hyperdrive_governance_zombie_fee: U256,
 }
 

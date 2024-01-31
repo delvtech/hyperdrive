@@ -20,7 +20,7 @@ async fn main() -> Result<()> {
 
     // Write the chain's addresses to a file.
     create_dir_all("./artifacts")?;
-    let mut f = File::create("./artifacts/addresses.json")?;
+    let f = File::create("./artifacts/addresses.json")?;
     serde_json::to_writer(f, &chain.addresses())?;
 
     Ok(())
