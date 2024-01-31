@@ -24,6 +24,7 @@ name = "test_chain_load_crash"
 # External dependencies.
 async-trait = "0.1.73"
 dotenvy = "0.15"
+envy = "0.4.2"
 ethers = "2.0.8"
 eyre = "0.6.8"
 lazy_static = "1.4.0"

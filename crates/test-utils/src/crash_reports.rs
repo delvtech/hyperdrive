@@ -129,8 +129,7 @@ impl<'de> Deserialize<'de> for CrashReport {
 #[cfg(test)]
 mod tests {
     use eyre::Result;
-    use fixed_point_macros::{int256, uint256};
-    use hyperdrive_wrappers::wrappers::i_hyperdrive::Fees;
+    use fixed_point_macros::uint256;
 
     use super::*;
 
@@ -300,7 +299,9 @@ mod tests {
                 // Agent Context
                 addresses: Addresses {
                     base: "0x5FbDB2315678afecb367f032d93F642f64180aa3".parse()?,
-                    hyperdrive: "0xd8058efe0198ae9dD7D563e1b4938Dcbc86A1F81".parse()?,
+                    erc4626_hyperdrive: "0xd8058efe0198ae9dD7D563e1b4938Dcbc86A1F81".parse()?,
+                    steth_hyperdrive: Address::zero(),
+                    factory: Address::zero(),
                 },
                 agent_info: AgentInfo {
                     address: "0x31b86D1eC3DB7f34656B5308DD94C6a29a0226D8".parse()?,

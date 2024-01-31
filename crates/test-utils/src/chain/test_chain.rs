@@ -1,35 +1,55 @@
 use std::{convert::TryFrom, sync::Arc, time::Duration};
 
 use ethers::{
-    core::utils::Anvil,
+    abi,
+    abi::Token,
+    core::utils::{keccak256, Anvil},
     middleware::SignerMiddleware,
+    prelude::EthLogDecode,
     providers::{Http, Middleware, Provider},
     signers::{coins_bip39::English, LocalWallet, MnemonicBuilder, Signer},
     types::{Address, Bytes, U256},
     utils::AnvilInstance,
 };
 use eyre::{eyre, Result};
-use fixed_point::FixedPoint;
-use fixed_point_macros::{fixed, uint256};
+use fixed_point_macros::uint256;
 use hyperdrive_addresses::Addresses;
-use hyperdrive_math::get_time_stretch;
 use hyperdrive_wrappers::wrappers::{
+    erc20_forwarder_factory::ERC20ForwarderFactory,
     erc20_mintable::ERC20Mintable,
     erc4626_hyperdrive::ERC4626Hyperdrive,
+    erc4626_hyperdrive_core_deployer::ERC4626HyperdriveCoreDeployer,
+    erc4626_hyperdrive_deployer_coordinator::ERC4626HyperdriveDeployerCoordinator,
     erc4626_target0::ERC4626Target0,
+    erc4626_target0_deployer::ERC4626Target0Deployer,
     erc4626_target1::ERC4626Target1,
+    erc4626_target1_deployer::ERC4626Target1Deployer,
     erc4626_target2::ERC4626Target2,
+    erc4626_target2_deployer::ERC4626Target2Deployer,
     erc4626_target3::ERC4626Target3,
+    erc4626_target3_deployer::ERC4626Target3Deployer,
     erc4626_target4::ERC4626Target4,
+    erc4626_target4_deployer::ERC4626Target4Deployer,
     etching_vault::EtchingVault,
-    i_hyperdrive::{Fees, PoolConfig},
+    hyperdrive_factory::{
+        Fees as FactoryFees, HyperdriveFactory, HyperdriveFactoryEvents, PoolDeployConfig,
+    },
     ierc4626_hyperdrive::IERC4626Hyperdrive,
     mock_erc4626::MockERC4626,
     mock_fixed_point_math::MockFixedPointMath,
     mock_hyperdrive_math::MockHyperdriveMath,
+    mock_lido::MockLido,
     mock_lp_math::MockLPMath,
     mock_yield_space_math::MockYieldSpaceMath,
+    steth_hyperdrive_core_deployer::StETHHyperdriveCoreDeployer,
+    steth_hyperdrive_deployer_coordinator::StETHHyperdriveDeployerCoordinator,
+    steth_target0_deployer::StETHTarget0Deployer,
+    steth_target1_deployer::StETHTarget1Deployer,
+    steth_target2_deployer::StETHTarget2Deployer,
+    steth_target3_deployer::StETHTarget3Deployer,
+    steth_target4_deployer::StETHTarget4Deployer,
 };
+use serde::{Deserialize, Serialize};
 
 use super::{dev_chain::MNEMONIC, Chain, ChainClient};
 use crate::{
@@ -37,6 +57,131 @@ use crate::{
     constants::{DEFAULT_GAS_PRICE, MAYBE_ETHEREUM_URL},
     crash_reports::{ActionType, CrashReport},
 };
+
+/// A configuration for a test chain that specifies the factory parameters,
+/// the base token parameters, the lido parameters, and the parameters for an
+/// ERC4626 and a stETH hyperdrive pool.
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(default)]
+struct TestChainConfig {
+    // admin configuration
+    admin: Address,
+    is_competition_mode: bool,
+    // base token configuration
+    base_token_name: String,
+    base_token_symbol: String,
+    base_token_decimals: u8,
+    // vault configuration
+    vault_name: String,
+    vault_symbol: String,
+    vault_starting_rate: U256,
+    // lido configuration
+    lido_starting_rate: U256,
+    // factory configuration
+    factory_checkpoint_duration_resolution: U256,
+    factory_min_checkpoint_duration: U256,
+    factory_max_checkpoint_duration: U256,
+    factory_min_position_duration: U256,
+    factory_max_position_duration: U256,
+    factory_min_fixed_apr: U256,
+    factory_max_fixed_apr: U256,
+    factory_min_time_stretch_apr: U256,
+    factory_max_time_stretch_apr: U256,
+    factory_min_curve_fee: U256,
+    factory_min_flat_fee: U256,
+    factory_min_governance_lp_fee: U256,
+    factory_min_governance_zombie_fee: U256,
+    factory_max_curve_fee: U256,
+    factory_max_flat_fee: U256,
+    factory_max_governance_lp_fee: U256,
+    factory_max_governance_zombie_fee: U256,
+    // erc4626 hyperdrive configuration
+    erc4626_hyperdrive_contribution: U256,
+    erc4626_hyperdrive_fixed_apr: U256,
+    erc4626_hyperdrive_time_stretch_apr: U256,
+    erc4626_hyperdrive_minimum_share_reserves: U256,
+    erc4626_hyperdrive_minimum_transaction_amount: U256,
+    erc4626_hyperdrive_position_duration: U256,
+    erc4626_hyperdrive_checkpoint_duration: U256,
+    erc4626_hyperdrive_curve_fee: U256,
+    erc4626_hyperdrive_flat_fee: U256,
+    erc4626_hyperdrive_governance_lp_fee: U256,
+    erc4626_hyperdrive_governance_zombie_fee: U256,
+    // steth hyperdrive configuration
+    steth_hyperdrive_contribution: U256,
+    steth_hyperdrive_fixed_apr: U256,
+    steth_hyperdrive_time_stretch_apr: U256,
+    steth_hyperdrive_minimum_share_reserves: U256,
+    steth_hyperdrive_minimum_transaction_amount: U256,
+    steth_hyperdrive_position_duration: U256,
+    steth_hyperdrive_checkpoint_duration: U256,
+    steth_hyperdrive_curve_fee: U256,
+    steth_hyperdrive_flat_fee: U256,
+    steth_hyperdrive_governance_lp_fee: U256,
+    steth_hyperdrive_governance_zombie_fee: U256,
+}
+
+impl Default for TestChainConfig {
+    fn default() -> Self {
+        Self {
+            // admin configuration
+            admin: Address::zero(),
+            is_competition_mode: false,
+            // base token configuration
+            base_token_name: "Base".to_string(),
+            base_token_symbol: "BASE".to_string(),
+            base_token_decimals: 18,
+            // vault configuration
+            vault_name: "Delvnet Yield Source".to_string(),
+            vault_symbol: "DELV".to_string(),
+            vault_starting_rate: uint256!(0.05e18),
+            // lido configuration
+            lido_starting_rate: uint256!(0.035e18),
+            // factory configuration
+            factory_checkpoint_duration_resolution: U256::from(60 * 60), // 1 hour
+            factory_min_checkpoint_duration: U256::from(60 * 60),        // 1 hour
+            factory_max_checkpoint_duration: U256::from(60 * 60 * 24),   // 1 day
+            factory_min_position_duration: U256::from(60 * 60 * 24 * 7), // 7 days
+            factory_max_position_duration: U256::from(60 * 60 * 24 * 365 * 10), // 10 years
+            factory_min_fixed_apr: uint256!(0.01e18),
+            factory_max_fixed_apr: uint256!(0.5e18),
+            factory_min_time_stretch_apr: uint256!(0.01e18),
+            factory_max_time_stretch_apr: uint256!(0.5e18),
+            factory_min_curve_fee: uint256!(0.0001e18),
+            factory_min_flat_fee: uint256!(0.0001e18),
+            factory_min_governance_lp_fee: uint256!(0.15e18),
+            factory_min_governance_zombie_fee: uint256!(0.03e18),
+            factory_max_curve_fee: uint256!(0.1e18),
+            factory_max_flat_fee: uint256!(0.001e18),
+            factory_max_governance_lp_fee: uint256!(0.15e18),
+            factory_max_governance_zombie_fee: uint256!(0.03e18),
+            // erc4626 hyperdrive configuration
+            erc4626_hyperdrive_contribution: uint256!(100_000_000e18),
+            erc4626_hyperdrive_fixed_apr: uint256!(0.05e18),
+            erc4626_hyperdrive_time_stretch_apr: uint256!(0.05e18),
+            erc4626_hyperdrive_minimum_share_reserves: uint256!(10e18),
+            erc4626_hyperdrive_minimum_transaction_amount: uint256!(0.001e18),
+            erc4626_hyperdrive_position_duration: U256::from(60 * 60 * 24 * 7), // 7 days
+            erc4626_hyperdrive_checkpoint_duration: U256::from(60 * 60),        // 1 hour
+            erc4626_hyperdrive_curve_fee: uint256!(0.01e18),
+            erc4626_hyperdrive_flat_fee: uint256!(0.0005e18),
+            erc4626_hyperdrive_governance_lp_fee: uint256!(0.15e18),
+            erc4626_hyperdrive_governance_zombie_fee: uint256!(0.03e18),
+            // steth hyperdrive configuration
+            steth_hyperdrive_contribution: uint256!(50_000e18),
+            steth_hyperdrive_fixed_apr: uint256!(0.035e18),
+            steth_hyperdrive_time_stretch_apr: uint256!(0.035e18),
+            steth_hyperdrive_minimum_share_reserves: uint256!(1e15),
+            steth_hyperdrive_minimum_transaction_amount: uint256!(1e15),
+            steth_hyperdrive_position_duration: U256::from(60 * 60 * 24 * 7), // 7 days
+            steth_hyperdrive_checkpoint_duration: U256::from(60 * 60),        // 1 hour
+            steth_hyperdrive_curve_fee: uint256!(0.01e18),
+            steth_hyperdrive_flat_fee: uint256!(0.0005e18),
+            steth_hyperdrive_governance_lp_fee: uint256!(0.15e18),
+            steth_hyperdrive_governance_zombie_fee: uint256!(0.03e18),
+        }
+    }
+}
 
 /// A local anvil instance with the Hyperdrive contracts deployed.
 #[derive(Clone)]
@@ -75,6 +220,17 @@ impl TestChain {
 
         // Generate a set of accounts from the default mnemonic and fund them.
         let accounts = Self::fund_accounts(&provider, num_accounts).await?;
+
+        Self::new_with_accounts(accounts).await
+    }
+
+    pub async fn new_with_accounts(accounts: Vec<LocalWallet>) -> Result<Self> {
+        if accounts.is_empty() {
+            panic!("cannot create a test chain with zero accounts");
+        }
+
+        // Connect to the anvil node.
+        let (provider, _maybe_anvil) = Self::connect().await?;
 
         // Deploy the Hyperdrive contracts.
         let addresses = Self::deploy(provider.clone(), accounts[0].clone()).await?;
@@ -229,19 +385,24 @@ impl TestChain {
 
     /// Deploys a fresh instance of Hyperdrive.
     async fn deploy(provider: Provider<Http>, signer: LocalWallet) -> Result<Addresses> {
-        // Deploy the base token and vault.
+        // Set up an ethers client with the provider and signer.
         let client = Arc::new(SignerMiddleware::new(
             provider.clone(),
             signer.with_chain_id(provider.get_chainid().await?.low_u64()),
         ));
+
+        // Load the config from the environment.
+        let config = envy::from_env::<TestChainConfig>()?;
+
+        // Deploy the base token and vault.
         let base = ERC20Mintable::deploy(
             client.clone(),
             (
-                "Base".to_string(),
-                "BASE".to_string(),
-                18_u8,
-                Address::zero(),
-                false,
+                config.base_token_name,
+                config.base_token_symbol,
+                config.base_token_decimals,
+                client.address(),
+                config.is_competition_mode,
             ),
         )?
         .gas_price(DEFAULT_GAS_PRICE)
@@ -251,77 +412,503 @@ impl TestChain {
             client.clone(),
             (
                 base.address(),
-                "Mock ERC4626 Vault".to_string(),
-                "MOCK".to_string(),
-                uint256!(0.05e18),
-                Address::zero(),
-                false,
+                config.vault_name,
+                config.vault_symbol,
+                config.vault_starting_rate,
+                client.address(),
+                config.is_competition_mode,
             ),
         )?
         .gas_price(DEFAULT_GAS_PRICE)
         .send()
         .await?;
+        if config.is_competition_mode {
+            base.set_user_role(vault.address(), 1, true)
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            base.set_role_capability(
+                1,
+                keccak256("mint(uint256)".as_bytes())[0..4].try_into()?,
+                true,
+            )
+            .gas_price(DEFAULT_GAS_PRICE)
+            .send()
+            .await?;
+            base.set_role_capability(
+                1,
+                keccak256("burn(uint256)".as_bytes())[0..4].try_into()?,
+                true,
+            )
+            .gas_price(DEFAULT_GAS_PRICE)
+            .send()
+            .await?;
+        }
 
-        // Deploy the Hyperdrive instance.
-        let config = PoolConfig {
-            base_token: base.address(),
-            linker_factory: Address::from_low_u64_be(1),
-            linker_code_hash: [1; 32],
-            initial_vault_share_price: uint256!(1e18),
-            minimum_share_reserves: uint256!(10e18),
-            minimum_transaction_amount: uint256!(0.001e18),
-            position_duration: U256::from(60 * 60 * 24 * 365), // 1 year
-            checkpoint_duration: U256::from(60 * 60 * 24),     // 1 day
-            time_stretch: get_time_stretch(fixed!(0.05e18), U256::from(60 * 60 * 24 * 365).into())
-                .into(), // time stretch for 5% rate
-            governance: client.address(),
-            fee_collector: client.address(),
-            fees: Fees {
-                curve: uint256!(0.05e18),
-                flat: uint256!(0.0005e18),
-                governance_lp: uint256!(0.15e18),
-                governance_zombie: uint256!(0.15e18),
-            },
+        // Deploy the mock Lido system. We fund Lido with 1 eth to start to
+        // avoid reverts when we initialize the pool.
+        let lido = {
+            let lido = MockLido::deploy(
+                client.clone(),
+                (
+                    config.lido_starting_rate,
+                    client.address(),
+                    config.is_competition_mode,
+                ),
+            )?
+            .gas_price(DEFAULT_GAS_PRICE)
+            .send()
+            .await?;
+            provider
+                .request(
+                    "anvil_setBalance",
+                    (
+                        client.address(),
+                        client.get_balance(client.address(), None).await? + U256::one(),
+                    ),
+                )
+                .await?;
+            lido.submit(Address::zero())
+                .value(uint256!(1e18))
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            lido
         };
-        let target0 = ERC4626Target0::deploy(client.clone(), (config.clone(), vault.address()))?
+
+        // Deployer the ERC20 forwarder factory.
+        let erc20_forwarder_factory = ERC20ForwarderFactory::deploy(client.clone(), ())?
             .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
-        let target1 = ERC4626Target1::deploy(client.clone(), (config.clone(), vault.address()))?
+
+        // Deploy the Hyperdrive factory.
+        let factory = {
+            HyperdriveFactory::deploy(
+                client.clone(),
+                ((
+                    client.address(),   // governance
+                    config.admin,       // hyperdrive governance
+                    vec![config.admin], // default pausers
+                    config.admin,       // fee collector
+                    config.factory_checkpoint_duration_resolution,
+                    config.factory_min_checkpoint_duration,
+                    config.factory_max_checkpoint_duration,
+                    config.factory_min_position_duration,
+                    config.factory_max_position_duration,
+                    config.factory_min_fixed_apr,
+                    config.factory_max_fixed_apr,
+                    config.factory_min_time_stretch_apr,
+                    config.factory_max_time_stretch_apr,
+                    (
+                        config.factory_min_curve_fee,
+                        config.factory_min_flat_fee,
+                        config.factory_min_governance_lp_fee,
+                        config.factory_min_governance_zombie_fee,
+                    ),
+                    (
+                        config.factory_max_curve_fee,
+                        config.factory_max_flat_fee,
+                        config.factory_max_governance_lp_fee,
+                        config.factory_max_governance_zombie_fee,
+                    ),
+                    erc20_forwarder_factory.address(),
+                    erc20_forwarder_factory.erc20link_hash().await?,
+                ),),
+            )?
+            .gas_price(DEFAULT_GAS_PRICE)
+            .send()
+            .await?
+        };
+
+        // Deploy the ERC4626Hyperdrive deployers and add them to the factory.
+        let erc4626_deployer_coordinator = {
+            let core_deployer = ERC4626HyperdriveCoreDeployer::deploy(client.clone(), ())?
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            let target0 = ERC4626Target0Deployer::deploy(client.clone(), ())?
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            let target1 = ERC4626Target1Deployer::deploy(client.clone(), ())?
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            let target2 = ERC4626Target2Deployer::deploy(client.clone(), ())?
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            let target3 = ERC4626Target3Deployer::deploy(client.clone(), ())?
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            let target4 = ERC4626Target4Deployer::deploy(client.clone(), ())?
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            ERC4626HyperdriveDeployerCoordinator::deploy(
+                client.clone(),
+                (
+                    core_deployer.address(),
+                    target0.address(),
+                    target1.address(),
+                    target2.address(),
+                    target3.address(),
+                    target4.address(),
+                ),
+            )?
+            .gas_price(DEFAULT_GAS_PRICE)
+            .send()
+            .await?
+        };
+        factory
+            .add_deployer_coordinator(erc4626_deployer_coordinator.address())
             .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
-        let target2 = ERC4626Target2::deploy(client.clone(), (config.clone(), vault.address()))?
+
+        // Deploy and initialize an initial ERC4626Hyperdrive instance.
+        let erc4626_hyperdrive = {
+            base.mint_with_destination(client.address(), config.erc4626_hyperdrive_contribution)
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            base.approve(factory.address(), config.erc4626_hyperdrive_contribution)
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            let pool_config = PoolDeployConfig {
+                governance: Address::zero(),
+                fee_collector: Address::zero(),
+                linker_factory: Address::zero(),
+                linker_code_hash: [0; 32],
+                time_stretch: U256::zero(),
+                base_token: base.address(),
+                minimum_share_reserves: config.erc4626_hyperdrive_minimum_share_reserves,
+                minimum_transaction_amount: config.erc4626_hyperdrive_minimum_transaction_amount,
+                position_duration: config.erc4626_hyperdrive_position_duration,
+                checkpoint_duration: config.erc4626_hyperdrive_checkpoint_duration,
+                fees: FactoryFees {
+                    curve: config.erc4626_hyperdrive_curve_fee,
+                    flat: config.erc4626_hyperdrive_flat_fee,
+                    governance_lp: config.erc4626_hyperdrive_governance_lp_fee,
+                    governance_zombie: config.erc4626_hyperdrive_governance_zombie_fee,
+                },
+            };
+            factory
+                .deploy_target(
+                    [0x01; 32],
+                    erc4626_deployer_coordinator.address(),
+                    pool_config.clone(),
+                    abi::encode(&[Token::Address(vault.address())]).into(),
+                    config.erc4626_hyperdrive_fixed_apr,
+                    config.erc4626_hyperdrive_time_stretch_apr,
+                    U256::from(0),
+                    [0x01; 32],
+                )
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            factory
+                .deploy_target(
+                    [0x01; 32],
+                    erc4626_deployer_coordinator.address(),
+                    pool_config.clone(),
+                    abi::encode(&[Token::Address(vault.address())]).into(),
+                    config.erc4626_hyperdrive_fixed_apr,
+                    config.erc4626_hyperdrive_time_stretch_apr,
+                    U256::from(1),
+                    [0x01; 32],
+                )
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            factory
+                .deploy_target(
+                    [0x01; 32],
+                    erc4626_deployer_coordinator.address(),
+                    pool_config.clone(),
+                    abi::encode(&[Token::Address(vault.address())]).into(),
+                    config.erc4626_hyperdrive_fixed_apr,
+                    config.erc4626_hyperdrive_time_stretch_apr,
+                    U256::from(2),
+                    [0x01; 32],
+                )
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            factory
+                .deploy_target(
+                    [0x01; 32],
+                    erc4626_deployer_coordinator.address(),
+                    pool_config.clone(),
+                    abi::encode(&[Token::Address(vault.address())]).into(),
+                    config.erc4626_hyperdrive_fixed_apr,
+                    config.erc4626_hyperdrive_time_stretch_apr,
+                    U256::from(3),
+                    [0x01; 32],
+                )
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            factory
+                .deploy_target(
+                    [0x01; 32],
+                    erc4626_deployer_coordinator.address(),
+                    pool_config.clone(),
+                    abi::encode(&[Token::Address(vault.address())]).into(),
+                    config.erc4626_hyperdrive_fixed_apr,
+                    config.erc4626_hyperdrive_time_stretch_apr,
+                    U256::from(4),
+                    [0x01; 32],
+                )
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            let tx = factory
+                .deploy_and_initialize(
+                    [0x01; 32],
+                    erc4626_deployer_coordinator.address(),
+                    pool_config,
+                    abi::encode(&[Token::Address(vault.address())]).into(),
+                    config.erc4626_hyperdrive_contribution,
+                    config.erc4626_hyperdrive_fixed_apr,
+                    config.erc4626_hyperdrive_time_stretch_apr,
+                    Vec::new().into(),
+                    [0x01; 32],
+                )
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?
+                .await?
+                .unwrap();
+            let logs = tx
+                .logs
+                .into_iter()
+                .filter_map(|log| {
+                    if let Ok(HyperdriveFactoryEvents::DeployedFilter(log)) =
+                        HyperdriveFactoryEvents::decode_log(&log.into())
+                    {
+                        Some(log)
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>();
+            logs[0].clone().hyperdrive
+        };
+
+        // Deploy the StETHHyperdrive deployers and add them to the factory.
+        let steth_deployer_coordinator = {
+            let core_deployer =
+                StETHHyperdriveCoreDeployer::deploy(client.clone(), lido.address())?
+                    .gas_price(DEFAULT_GAS_PRICE)
+                    .send()
+                    .await?;
+            let target0 = StETHTarget0Deployer::deploy(client.clone(), lido.address())?
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            let target1 = StETHTarget1Deployer::deploy(client.clone(), lido.address())?
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            let target2 = StETHTarget2Deployer::deploy(client.clone(), lido.address())?
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            let target3 = StETHTarget3Deployer::deploy(client.clone(), lido.address())?
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            let target4 = StETHTarget4Deployer::deploy(client.clone(), lido.address())?
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            StETHHyperdriveDeployerCoordinator::deploy(
+                client.clone(),
+                (
+                    core_deployer.address(),
+                    target0.address(),
+                    target1.address(),
+                    target2.address(),
+                    target3.address(),
+                    target4.address(),
+                    lido.address(),
+                ),
+            )?
+            .gas_price(DEFAULT_GAS_PRICE)
+            .send()
+            .await?
+        };
+        factory
+            .add_deployer_coordinator(steth_deployer_coordinator.address())
             .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
-        let target3 = ERC4626Target3::deploy(client.clone(), (config.clone(), vault.address()))?
+
+        // Deploy and initialize an initial StETHHyperdrive instance.
+        let steth_hyperdrive = {
+            provider
+                .request(
+                    "anvil_setBalance",
+                    (
+                        client.address(),
+                        client.get_balance(client.address(), None).await?
+                            + config.steth_hyperdrive_contribution,
+                    ),
+                )
+                .await?;
+            let pool_config = PoolDeployConfig {
+                governance: Address::zero(),
+                fee_collector: Address::zero(),
+                linker_factory: Address::zero(),
+                linker_code_hash: [0; 32],
+                time_stretch: U256::zero(),
+                base_token: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE".parse()?,
+                minimum_share_reserves: config.steth_hyperdrive_minimum_share_reserves,
+                minimum_transaction_amount: config.steth_hyperdrive_minimum_transaction_amount,
+                position_duration: config.steth_hyperdrive_position_duration,
+                checkpoint_duration: config.steth_hyperdrive_checkpoint_duration,
+                fees: FactoryFees {
+                    curve: config.steth_hyperdrive_curve_fee,
+                    flat: config.steth_hyperdrive_flat_fee,
+                    governance_lp: config.steth_hyperdrive_governance_lp_fee,
+                    governance_zombie: config.steth_hyperdrive_governance_zombie_fee,
+                },
+            };
+            factory
+                .deploy_target(
+                    [0x02; 32],
+                    steth_deployer_coordinator.address(),
+                    pool_config.clone(),
+                    Vec::new().into(),
+                    config.steth_hyperdrive_fixed_apr,
+                    config.steth_hyperdrive_time_stretch_apr,
+                    U256::from(0),
+                    [0x02; 32],
+                )
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            factory
+                .deploy_target(
+                    [0x02; 32],
+                    steth_deployer_coordinator.address(),
+                    pool_config.clone(),
+                    Vec::new().into(),
+                    config.steth_hyperdrive_fixed_apr,
+                    config.steth_hyperdrive_time_stretch_apr,
+                    U256::from(1),
+                    [0x02; 32],
+                )
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            factory
+                .deploy_target(
+                    [0x02; 32],
+                    steth_deployer_coordinator.address(),
+                    pool_config.clone(),
+                    Vec::new().into(),
+                    config.steth_hyperdrive_fixed_apr,
+                    config.steth_hyperdrive_time_stretch_apr,
+                    U256::from(2),
+                    [0x02; 32],
+                )
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            factory
+                .deploy_target(
+                    [0x02; 32],
+                    steth_deployer_coordinator.address(),
+                    pool_config.clone(),
+                    Vec::new().into(),
+                    config.steth_hyperdrive_fixed_apr,
+                    config.steth_hyperdrive_time_stretch_apr,
+                    U256::from(3),
+                    [0x02; 32],
+                )
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            factory
+                .deploy_target(
+                    [0x02; 32],
+                    steth_deployer_coordinator.address(),
+                    pool_config.clone(),
+                    Vec::new().into(),
+                    config.steth_hyperdrive_fixed_apr,
+                    config.steth_hyperdrive_time_stretch_apr,
+                    U256::from(4),
+                    [0x02; 32],
+                )
+                .gas_price(DEFAULT_GAS_PRICE)
+                .send()
+                .await?;
+            let tx = factory
+                .deploy_and_initialize(
+                    [0x02; 32],
+                    steth_deployer_coordinator.address(),
+                    pool_config,
+                    Vec::new().into(),
+                    config.steth_hyperdrive_contribution,
+                    config.steth_hyperdrive_fixed_apr,
+                    config.steth_hyperdrive_time_stretch_apr,
+                    Vec::new().into(),
+                    [0x02; 32],
+                )
+                .gas_price(DEFAULT_GAS_PRICE)
+                .value(config.steth_hyperdrive_contribution)
+                .send()
+                .await?
+                .await?
+                .unwrap();
+            let logs = tx
+                .logs
+                .into_iter()
+                .filter_map(|log| {
+                    if let Ok(HyperdriveFactoryEvents::DeployedFilter(log)) =
+                        HyperdriveFactoryEvents::decode_log(&log.into())
+                    {
+                        Some(log)
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>();
+            logs[0].clone().hyperdrive
+        };
+
+        // Transfer ownership of the base token, factory, vault, and lido to the
+        // admin address now that we're done minting tokens and updating the
+        // configuration.
+        base.transfer_ownership(config.admin)
             .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
-        let target4 = ERC4626Target4::deploy(client.clone(), (config.clone(), vault.address()))?
+        vault
+            .transfer_ownership(config.admin)
             .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
-        let erc4626_hyperdrive = ERC4626Hyperdrive::deploy(
-            client.clone(),
-            (
-                config,
-                target0.address(),
-                target1.address(),
-                target2.address(),
-                target3.address(),
-                target4.address(),
-                vault.address(),
-            ),
-        )?
-        .gas_price(DEFAULT_GAS_PRICE)
-        .send()
-        .await?;
+        lido.transfer_ownership(config.admin)
+            .gas_price(DEFAULT_GAS_PRICE)
+            .send()
+            .await?;
+        factory
+            .update_governance(config.admin)
+            .gas_price(DEFAULT_GAS_PRICE)
+            .send()
+            .await?;
 
         Ok(Addresses {
             base: base.address(),
-            hyperdrive: erc4626_hyperdrive.address(),
+            factory: factory.address(),
+            erc4626_hyperdrive,
+            steth_hyperdrive,
         })
     }
 
@@ -337,7 +924,7 @@ impl TestChain {
             provider.clone(),
             signer.with_chain_id(provider.get_chainid().await?.low_u64()),
         ));
-        let hyperdrive = IERC4626Hyperdrive::new(addresses.hyperdrive, client.clone());
+        let hyperdrive = IERC4626Hyperdrive::new(addresses.erc4626_hyperdrive, client.clone());
 
         // Get the contract addresses of the vault and the targets.
         let target0_address = hyperdrive.target_0().call().await?;
@@ -469,7 +1056,7 @@ impl TestChain {
             .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
-            pairs.push((addresses.hyperdrive, hyperdrive_template.address()));
+            pairs.push((addresses.erc4626_hyperdrive, hyperdrive_template.address()));
 
             pairs
         };
@@ -637,67 +1224,96 @@ impl TestChainWithMocks {
 
 #[cfg(test)]
 mod tests {
-    use fixed_point_macros::uint256;
-    use hyperdrive_wrappers::wrappers::{
-        erc20_mintable::ERC20Mintable,
-        i_hyperdrive::{IHyperdrive, Options},
-    };
+    use hyperdrive_math::get_time_stretch;
+    use hyperdrive_wrappers::wrappers::ihyperdrive::{Fees, IHyperdrive};
 
     use super::*;
 
     #[tokio::test]
     async fn test_deploy() -> Result<()> {
+        let test_chain_config = TestChainConfig::default();
         let chain = TestChain::new(1).await?;
         let client = chain.client(chain.accounts()[0].clone()).await?;
-        let base = ERC20Mintable::new(chain.addresses.base, client.clone());
-        let hyperdrive = IHyperdrive::new(chain.addresses.hyperdrive, client.clone());
 
         // Verify that the addresses are non-zero.
         assert_ne!(chain.addresses, Addresses::default());
 
-        // Verify that the pool config is correct.
+        // Verify that the erc4626 pool config is correct.
+        let hyperdrive = IHyperdrive::new(chain.addresses.erc4626_hyperdrive, client.clone());
         let config = hyperdrive.get_pool_config().call().await?;
         assert_eq!(config.base_token, chain.addresses.base);
-        assert_eq!(config.linker_factory, Address::from_low_u64_be(1));
-        assert_eq!(config.linker_code_hash, [1; 32]);
-        assert_eq!(config.initial_vault_share_price, uint256!(1e18));
-        assert_eq!(config.minimum_share_reserves, uint256!(10e18));
-        assert_eq!(config.position_duration, U256::from(60 * 60 * 24 * 365));
-        assert_eq!(config.checkpoint_duration, U256::from(60 * 60 * 24));
+        assert_eq!(
+            config.minimum_share_reserves,
+            test_chain_config.erc4626_hyperdrive_minimum_share_reserves
+        );
+        assert_eq!(
+            config.position_duration,
+            test_chain_config.erc4626_hyperdrive_position_duration
+        );
+        assert_eq!(
+            config.checkpoint_duration,
+            test_chain_config.erc4626_hyperdrive_checkpoint_duration
+        );
         assert_eq!(
             config.time_stretch,
-            get_time_stretch(fixed!(0.05e18), config.position_duration.into()).into()
+            get_time_stretch(
+                test_chain_config.erc4626_hyperdrive_time_stretch_apr.into(),
+                test_chain_config
+                    .erc4626_hyperdrive_position_duration
+                    .into(),
+            )
+            .into()
         );
-        assert_eq!(config.governance, client.address());
-        assert_eq!(config.fee_collector, client.address());
+        assert_eq!(config.governance, test_chain_config.admin);
+        assert_eq!(config.fee_collector, test_chain_config.admin);
         assert_eq!(
             config.fees,
             Fees {
-                curve: uint256!(0.05e18),
-                flat: uint256!(0.0005e18),
-                governance_lp: uint256!(0.15e18),
-                governance_zombie: uint256!(0.15e18),
+                curve: test_chain_config.erc4626_hyperdrive_curve_fee,
+                flat: test_chain_config.erc4626_hyperdrive_flat_fee,
+                governance_lp: test_chain_config.erc4626_hyperdrive_governance_lp_fee,
+                governance_zombie: test_chain_config.erc4626_hyperdrive_governance_zombie_fee,
             }
         );
 
-        // Initialize the pool.
-        let contribution = uint256!(100e18);
-        base.mint(contribution).send().await?;
-        base.approve(hyperdrive.address(), contribution)
-            .send()
-            .await?;
-        hyperdrive
-            .initialize(
-                contribution,
-                uint256!(0.05e18),
-                Options {
-                    destination: client.address(),
-                    as_base: true,
-                    extra_data: [].into(),
-                },
+        // Verify that the steth pool config is correct.
+        let hyperdrive = IHyperdrive::new(chain.addresses.steth_hyperdrive, client.clone());
+        let config = hyperdrive.get_pool_config().call().await?;
+        assert_eq!(
+            config.base_token,
+            "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE".parse::<Address>()?
+        );
+        assert_eq!(
+            config.minimum_share_reserves,
+            test_chain_config.steth_hyperdrive_minimum_share_reserves
+        );
+        assert_eq!(
+            config.position_duration,
+            test_chain_config.steth_hyperdrive_position_duration
+        );
+        assert_eq!(
+            config.checkpoint_duration,
+            test_chain_config.steth_hyperdrive_checkpoint_duration
+        );
+        assert_eq!(
+            config.time_stretch,
+            get_time_stretch(
+                test_chain_config.steth_hyperdrive_time_stretch_apr.into(),
+                test_chain_config.steth_hyperdrive_position_duration.into(),
             )
-            .send()
-            .await?;
+            .into()
+        );
+        assert_eq!(config.governance, test_chain_config.admin);
+        assert_eq!(config.fee_collector, test_chain_config.admin);
+        assert_eq!(
+            config.fees,
+            Fees {
+                curve: test_chain_config.steth_hyperdrive_curve_fee,
+                flat: test_chain_config.steth_hyperdrive_flat_fee,
+                governance_lp: test_chain_config.steth_hyperdrive_governance_lp_fee,
+                governance_zombie: test_chain_config.steth_hyperdrive_governance_zombie_fee,
+            }
+        );
 
         Ok(())
     }

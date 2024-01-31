@@ -165,12 +165,14 @@ impl Agent<ChainClient, ChaCha8Rng> {
         maybe_seed: Option<u64>,
     ) -> Result<Self> {
         let seed = maybe_seed.unwrap_or(17);
-        let vault = IERC4626Hyperdrive::new(addresses.hyperdrive, client.clone())
+        let vault = IERC4626Hyperdrive::new(addresses.erc4626_hyperdrive, client.clone())
             .vault()
             .call()
             .await?;
         let vault = MockERC4626::new(vault, client.clone());
-        let hyperdrive = IHyperdrive::new(addresses.hyperdrive, client.clone());
+        // TODO: Eventually, the agent should be able to support several
+        // different pools simultaneously.
+        let hyperdrive = IHyperdrive::new(addresses.erc4626_hyperdrive, client.clone());
         Ok(Self {
             address: client.address(),
             provider: client.provider().clone(),

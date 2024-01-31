@@ -23,7 +23,7 @@ async fn main() -> Result<()> {
 
     // Pause the pool.
     println!("Pausing the pool...");
-    let hyperdrive = IERC4626Hyperdrive::new(chain.addresses().hyperdrive, client);
+    let hyperdrive = IERC4626Hyperdrive::new(chain.addresses().erc4626_hyperdrive, client);
     hyperdrive.pause(true).send().await?.await?;
 
     // Check that the pool is paused.
