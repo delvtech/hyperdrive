@@ -14,8 +14,8 @@ use hyperdrive_addresses::Addresses;
 use hyperdrive_math::State;
 use hyperdrive_wrappers::wrappers::{
     erc20_mintable::ERC20Mintable,
-    i_hyperdrive::{Checkpoint, IHyperdrive, IHyperdriveEvents, Options, PoolConfig},
     ierc4626_hyperdrive::IERC4626Hyperdrive,
+    ihyperdrive::{Checkpoint, IHyperdrive, IHyperdriveEvents, Options, PoolConfig},
     mock_erc4626::MockERC4626,
 };
 use rand::{Rng, SeedableRng};
