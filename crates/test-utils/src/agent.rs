@@ -178,7 +178,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
             provider: client.provider().clone(),
             hyperdrive: hyperdrive.clone(),
             vault,
-            base: ERC20Mintable::new(addresses.base, client),
+            base: ERC20Mintable::new(addresses.base_token, client),
             config: hyperdrive.get_pool_config().call().await?,
             wallet: Wallet::default(),
             rng: ChaCha8Rng::seed_from_u64(seed),

@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 pub struct Addresses {
     #[serde(alias = "baseToken")]
     #[serde(alias = "base_token_address")]
-    pub base: Address,
+    pub base_token: Address,
     #[serde(alias = "erc4626Hyperdrive")]
     #[serde(alias = "hyperdrive_address")]
     pub erc4626_hyperdrive: Address,

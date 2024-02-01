@@ -955,7 +955,7 @@ impl TestChain {
             .await?;
 
         Ok(Addresses {
-            base: base.address(),
+            base_token: base.address(),
             factory: factory.address(),
             erc4626_hyperdrive,
             steth_hyperdrive,
@@ -993,7 +993,7 @@ impl TestChain {
             let mut pairs = Vec::new();
 
             // Deploy the base token template.
-            let base = ERC20Mintable::new(addresses.base, client.clone());
+            let base = ERC20Mintable::new(addresses.base_token, client.clone());
             let name = base.name().call().await?;
             let symbol = base.symbol().call().await?;
             let decimals = base.decimals().call().await?;
@@ -1005,7 +1005,7 @@ impl TestChain {
             .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
-            pairs.push((addresses.base, base_template.address()));
+            pairs.push((addresses.base_token, base_template.address()));
 
             // Deploy the vault template.
             let vault = MockERC4626::new(vault_address, client.clone());
@@ -1077,7 +1077,7 @@ impl TestChain {
             // is equal to the `_pricePerVaultShare`.
             let etching_vault_template = EtchingVault::deploy(
                 client.clone(),
-                (addresses.base, config.initial_vault_share_price),
+                (addresses.base_token, config.initial_vault_share_price),
             )?
             .gas_price(DEFAULT_GAS_PRICE)
             .send()
