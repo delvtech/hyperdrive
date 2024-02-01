@@ -17,15 +17,10 @@ COPY ./.git/ ./.git/
 COPY ./contracts/ ./contracts/
 COPY ./crates/ ./crates/
 COPY ./lib/ ./lib/
-COPY ./script/ ./script/
 COPY ./test/ ./test/
 COPY ./Cargo.toml ./Cargo.toml
 COPY ./Cargo.lock ./Cargo.lock
 COPY ./foundry.toml ./foundry.toml
-
-# Copy the script used to run the migrations and set its permissions.
-COPY ./migrate.sh ./migrate.sh
-RUN chmod a+x ./migrate.sh
 
 # Install the dependencies and compile the contracts.
 RUN forge install && forge build
