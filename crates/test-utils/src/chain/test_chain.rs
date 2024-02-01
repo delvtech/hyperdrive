@@ -1162,9 +1162,9 @@ impl TestChain {
             ))
         } else {
             let anvil = Anvil::new()
-                .arg("--code-size-limit")
-                .arg("120000")
                 .arg("--disable-block-gas-limit")
+                .arg("--balance")
+                .arg("1000000")
                 .arg("--timestamp")
                 // NOTE: Anvil can't increase the time or set the time of the
                 // next block to a time in the past, so we set the genesis block
@@ -1173,7 +1173,7 @@ impl TestChain {
                 .arg("946684800")
                 .spawn();
             Ok((
-                Provider::<Http>::try_from(anvil.endpoint())?.interval(Duration::from_millis(1)),
+                Provider::<Http>::try_from(anvil.endpoint())?.interval(Duration::from_millis(2)),
                 Some(Arc::new(anvil)),
             ))
         }
@@ -1291,7 +1291,7 @@ mod tests {
         // Verify that the erc4626 pool config is correct.
         let hyperdrive = IHyperdrive::new(chain.addresses.erc4626_hyperdrive, client.clone());
         let config = hyperdrive.get_pool_config().call().await?;
-        assert_eq!(config.base_token, chain.addresses.base);
+        assert_eq!(config.base_token, chain.addresses.base_token);
         assert_eq!(
             config.minimum_share_reserves,
             test_chain_config.erc4626_hyperdrive_minimum_share_reserves

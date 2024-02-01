@@ -298,7 +298,7 @@ mod tests {
                 block_timestamp: 1697837314,
                 // Agent Context
                 addresses: Addresses {
-                    base: "0x5FbDB2315678afecb367f032d93F642f64180aa3".parse()?,
+                    base_token: "0x5FbDB2315678afecb367f032d93F642f64180aa3".parse()?,
                     erc4626_hyperdrive: "0xd8058efe0198ae9dD7D563e1b4938Dcbc86A1F81".parse()?,
                     steth_hyperdrive: Address::zero(),
                     factory: Address::zero(),
