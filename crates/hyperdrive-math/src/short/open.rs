@@ -82,16 +82,9 @@ mod tests {
 
     use ethers::types::U256;
     use eyre::Result;
-    use hyperdrive_wrappers::wrappers::{
-        i_hyperdrive::Checkpoint, mock_hyperdrive_math::MaxTradeParams,
-    };
+    use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::MaxTradeParams;
     use rand::{thread_rng, Rng};
-    use test_utils::{
-        agent::Agent,
-        chain::{Chain, TestChain, TestChainWithMocks},
-        constants::{FAST_FUZZ_RUNS, FUZZ_RUNS},
-    };
-    use tracing_test::traced_test;
+    use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};
 
     use super::*;
 

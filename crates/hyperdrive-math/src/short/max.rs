@@ -534,7 +534,7 @@ mod tests {
     use ethers::types::U256;
     use eyre::Result;
     use hyperdrive_wrappers::wrappers::{
-        i_hyperdrive::Checkpoint, mock_hyperdrive_math::MaxTradeParams,
+        ihyperdrive::Checkpoint, mock_hyperdrive_math::MaxTradeParams,
     };
     use rand::{thread_rng, Rng};
     use test_utils::{

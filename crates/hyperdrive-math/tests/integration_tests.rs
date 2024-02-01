@@ -3,7 +3,7 @@ use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
 use hyperdrive_math::{calculate_initial_bond_reserves, get_effective_share_reserves};
-use hyperdrive_wrappers::wrappers::i_hyperdrive::Checkpoint;
+use hyperdrive_wrappers::wrappers::ihyperdrive::Checkpoint;
 use rand::{thread_rng, Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use test_utils::{

@@ -14,8 +14,8 @@ use hyperdrive_addresses::Addresses;
 use hyperdrive_math::State;
 use hyperdrive_wrappers::wrappers::{
     erc20_mintable::ERC20Mintable,
-    i_hyperdrive::{Checkpoint, IHyperdrive, IHyperdriveEvents, Options, PoolConfig},
     ierc4626_hyperdrive::IERC4626Hyperdrive,
+    ihyperdrive::{Checkpoint, IHyperdrive, IHyperdriveEvents, Options, PoolConfig},
     mock_erc4626::MockERC4626,
 };
 use rand::{Rng, SeedableRng};
@@ -165,18 +165,20 @@ impl Agent<ChainClient, ChaCha8Rng> {
         maybe_seed: Option<u64>,
     ) -> Result<Self> {
         let seed = maybe_seed.unwrap_or(17);
-        let vault = IERC4626Hyperdrive::new(addresses.hyperdrive, client.clone())
+        let vault = IERC4626Hyperdrive::new(addresses.erc4626_hyperdrive, client.clone())
             .vault()
             .call()
             .await?;
         let vault = MockERC4626::new(vault, client.clone());
-        let hyperdrive = IHyperdrive::new(addresses.hyperdrive, client.clone());
+        // TODO: Eventually, the agent should be able to support several
+        // different pools simultaneously.
+        let hyperdrive = IHyperdrive::new(addresses.erc4626_hyperdrive, client.clone());
         Ok(Self {
             address: client.address(),
             provider: client.provider().clone(),
             hyperdrive: hyperdrive.clone(),
             vault,
-            base: ERC20Mintable::new(addresses.base, client),
+            base: ERC20Mintable::new(addresses.base_token, client),
             config: hyperdrive.get_pool_config().call().await?,
             wallet: Wallet::default(),
             rng: ChaCha8Rng::seed_from_u64(seed),

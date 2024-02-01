@@ -1,18 +1,26 @@
-### Foundry Image ###
+FROM ghcr.io/foundry-rs/foundry:master as builder
 
-FROM ghcr.io/foundry-rs/foundry:master
+# Install the Rust toolchain.
+RUN apk add clang lld curl build-base linux-headers git pkgconfig libressl-dev \
+    && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > rustup.sh \
+    && chmod +x ./rustup.sh \
+    && ./rustup.sh -y --default-toolchain nightly
 
+# Set the working directory to where the source code will live.
 WORKDIR /src
 
 # Use the production foundry profile.
 ENV FOUNDRY_PROFILE="production"
 
-# Copy the contract dependencies required to run the migration script.
+# Copy the dependencies required to run the migration script.
 COPY ./.git/ ./.git/
 COPY ./contracts/ ./contracts/
+COPY ./crates/ ./crates/
 COPY ./lib/ ./lib/
 COPY ./script/ ./script/
 COPY ./test/ ./test/
+COPY ./Cargo.toml ./Cargo.toml
+COPY ./Cargo.lock ./Cargo.lock
 COPY ./foundry.toml ./foundry.toml
 
 # Copy the script used to run the migrations and set its permissions.
@@ -22,10 +30,11 @@ RUN chmod a+x ./migrate.sh
 # Install the dependencies and compile the contracts.
 RUN forge install && forge build
 
+# Compile the migration script.
+Run source $HOME/.profile && cargo build -Z sparse-registry --bin migrate
+
 # Load the environment variables used in the migration script.
-ENV ETH_FROM=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
-ENV PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-ENV RPC_URL=http://localhost:8545
+ENV HYPERDRIVE_ETHEREUM_URL=http://localhost:8545
 ARG ADMIN
 ARG IS_COMPETITION_MODE
 ARG BASE_TOKEN_NAME
@@ -55,9 +64,18 @@ ARG STETH_HYPERDRIVE_TIME_STRETCH_APR
 # node and dump the state into the "./data" directory. At runtime, the consumer
 # can start anvil with the "--load-state ./data" flag to start up anvil with 
 # the post-migrations state.
-RUN anvil --dump-state ./data --balance 100000 & \
+RUN anvil --dump-state ./data & \
     ANVIL="$!" && \ 
     sleep 2 && \
-    ./migrate.sh && \
+    ./target/debug/migrate && \
     kill $ANVIL && \
     sleep 1s # HACK(jalextowle): Ensure that "./data" is written before exiting.
+
+FROM ghcr.io/foundry-rs/foundry:master
+
+# Set the working directory to where the source code will live.
+WORKDIR /src
+
+# Copy the data and artifacts from the builder stage.
+COPY --from=builder /src/data /src/data
+COPY --from=builder /src/artifacts /src/artifacts

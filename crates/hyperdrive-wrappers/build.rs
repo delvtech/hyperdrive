@@ -8,22 +8,49 @@ const TARGETS: &[&str] = &[
     // Interfaces
     "IERC20",
     "IERC4626Hyperdrive",
+    "IStETHHyperdrive",
     "IHyperdrive",
+    "IHyperdriveFactory",
     // Tokens
     "ERC20Mintable",
-    // Hyperdrive
+    "ERC20ForwarderFactory",
+    // Hyperdrive Factory
+    "HyperdriveFactory",
+    // ERC4626 Hyperdrive
     "ERC4626Hyperdrive",
+    "ERC4626HyperdriveCoreDeployer",
+    "ERC4626HyperdriveDeployerCoordinator",
     "ERC4626Target0",
     "ERC4626Target1",
     "ERC4626Target2",
     "ERC4626Target3",
     "ERC4626Target4",
+    "ERC4626Target0Deployer",
+    "ERC4626Target1Deployer",
+    "ERC4626Target2Deployer",
+    "ERC4626Target3Deployer",
+    "ERC4626Target4Deployer",
+    // stETH Hyperdrive
+    "StETHHyperdrive",
+    "StETHHyperdriveDeployerCoordinator",
+    "StETHHyperdriveCoreDeployer",
+    "StETHTarget0",
+    "StETHTarget1",
+    "StETHTarget2",
+    "StETHTarget3",
+    "StETHTarget4",
+    "StETHTarget0Deployer",
+    "StETHTarget1Deployer",
+    "StETHTarget2Deployer",
+    "StETHTarget3Deployer",
+    "StETHTarget4Deployer",
     // Test Contracts
     "ERC20Mintable",
     "EtchingVault",
     "MockERC4626",
     "MockFixedPointMath",
     "MockHyperdriveMath",
+    "MockLido",
     "MockLPMath",
     "MockYieldSpaceMath",
 ];
@@ -76,12 +103,30 @@ fn main() -> Result<()> {
     artifacts.sort_by(|a, b| a.1.cmp(&b.1));
     artifacts.dedup_by(|a, b| a.1.eq(&b.1));
     for (source, name) in artifacts {
+        let target = name
+            // Ensure that `StETH` is converted to `steth` in snake case.
+            .replace("StETH", "STETH")
+            // Ensure that `IHyperdrive` is converted to `ihyperdrive` in snake case.
+            .replace("IHyperdrive", "IHYPERDRIVE")
+            .to_snake_case();
+
         // Write the generated contract wrapper.
-        let target = name.to_snake_case();
         let target_file = generated.join(format!("{}.rs", target));
         Abigen::new(name, source)?
             .add_derive("serde::Serialize")?
             .add_derive("serde::Deserialize")?
+            // Alias the `IHyperdriveDeployerCoordinator.deploy()` to
+            // `deploy_hyperdrive()` to avoid conflicts with the builtin
+            // `deploy()` in the wrapper used to call the constructor.
+            .add_method_alias("deploy(bytes32,(address,address,bytes32,uint256,uint256,uint256,uint256,uint256,address,address,(uint256,uint256,uint256,uint256)),bytes,bytes32)", "deploy_hyperdrive")
+            // Alias the `IHyperdriveCoreDeployer.deploy()` to
+            // `deploy_hyperdrive()` to avoid conflicts with the builtin
+            // `deploy()` in the wrapper used to call the constructor.
+            .add_method_alias("deploy((address,address,bytes32,uint256,uint256,uint256,uint256,uint256,uint256,address,address,(uint256,uint256,uint256,uint256)),bytes,address,address,address,address,address,bytes32)", "deploy_hyperdrive")
+            // Alias the `IHyperdriveTarget.deploy()` to `deploy_target()`
+            // to avoid conflicts with the builtin `deploy()` in the wrapper
+            // used to call the constructor.
+            .add_method_alias("deploy((address,address,bytes32,uint256,uint256,uint256,uint256,uint256,uint256,address,address,(uint256,uint256,uint256,uint256)),bytes,bytes32)", "deploy_target")
             .generate()?
             .write_to_file(target_file)?;
 
