@@ -35,7 +35,6 @@ Run source $HOME/.profile && cargo build -Z sparse-registry --bin migrate
 
 # Load the environment variables used in the migration script.
 ENV HYPERDRIVE_ETHEREUM_URL=http://localhost:8545
-ENV PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 ARG ADMIN
 ARG IS_COMPETITION_MODE
 ARG BASE_TOKEN_NAME

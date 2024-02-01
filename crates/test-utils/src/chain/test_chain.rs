@@ -12,8 +12,10 @@ use ethers::{
     utils::AnvilInstance,
 };
 use eyre::{eyre, Result};
-use fixed_point_macros::uint256;
+use fixed_point::FixedPoint;
+use fixed_point_macros::{fixed, uint256};
 use hyperdrive_addresses::Addresses;
+use hyperdrive_math::get_time_stretch;
 use hyperdrive_wrappers::wrappers::{
     erc20_forwarder_factory::ERC20ForwarderFactory,
     erc20_mintable::ERC20Mintable,
@@ -35,6 +37,7 @@ use hyperdrive_wrappers::wrappers::{
         Fees as FactoryFees, HyperdriveFactory, HyperdriveFactoryEvents, PoolDeployConfig,
     },
     ierc4626_hyperdrive::IERC4626Hyperdrive,
+    ihyperdrive::{Fees, PoolConfig},
     mock_erc4626::MockERC4626,
     mock_fixed_point_math::MockFixedPointMath,
     mock_hyperdrive_math::MockHyperdriveMath,
@@ -54,7 +57,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use super::{dev_chain::MNEMONIC, Chain, ChainClient};
 use crate::{
     agent::{Agent, TxOptions},
-    constants::{DEFAULT_GAS_PRICE, MAYBE_ETHEREUM_URL},
+    constants::MAYBE_ETHEREUM_URL,
     crash_reports::{ActionType, CrashReport},
 };
 
@@ -271,19 +274,31 @@ impl TestChain {
         // Generate a set of accounts from the default mnemonic and fund them.
         let accounts = Self::fund_accounts(&provider, num_accounts).await?;
 
-        Self::new_with_accounts(accounts).await
+        // Deploy the Hyperdrive contracts.
+        let addresses = Self::test_deploy(provider.clone(), accounts[0].clone()).await?;
+
+        Ok(Self {
+            addresses,
+            accounts,
+            provider,
+            maybe_crash: None,
+            _maybe_anvil,
+        })
     }
 
-    pub async fn new_with_accounts(accounts: Vec<LocalWallet>) -> Result<Self> {
-        if accounts.is_empty() {
+    pub async fn new_with_factory(num_accounts: usize) -> Result<Self> {
+        if num_accounts == 0 {
             panic!("cannot create a test chain with zero accounts");
         }
 
         // Connect to the anvil node.
         let (provider, _maybe_anvil) = Self::connect().await?;
 
+        // Generate a set of accounts from the default mnemonic and fund them.
+        let accounts = Self::fund_accounts(&provider, num_accounts).await?;
+
         // Deploy the Hyperdrive contracts.
-        let addresses = Self::deploy(provider.clone(), accounts[0].clone()).await?;
+        let addresses = Self::full_deploy(provider.clone(), accounts[0].clone()).await?;
 
         Ok(Self {
             addresses,
@@ -434,7 +449,100 @@ impl TestChain {
     }
 
     /// Deploys a fresh instance of Hyperdrive.
-    async fn deploy(provider: Provider<Http>, signer: LocalWallet) -> Result<Addresses> {
+    async fn test_deploy(provider: Provider<Http>, signer: LocalWallet) -> Result<Addresses> {
+        // Deploy the base token and vault.
+        let client = Arc::new(SignerMiddleware::new(
+            provider.clone(),
+            signer.with_chain_id(provider.get_chainid().await?.low_u64()),
+        ));
+        let base = ERC20Mintable::deploy(
+            client.clone(),
+            (
+                "Base".to_string(),
+                "BASE".to_string(),
+                18_u8,
+                Address::zero(),
+                false,
+            ),
+        )?
+        .send()
+        .await?;
+        let vault = MockERC4626::deploy(
+            client.clone(),
+            (
+                base.address(),
+                "Mock ERC4626 Vault".to_string(),
+                "MOCK".to_string(),
+                uint256!(0.05e18),
+                Address::zero(),
+                false,
+            ),
+        )?
+        .send()
+        .await?;
+
+        // Deploy the Hyperdrive instance.
+        let config = PoolConfig {
+            base_token: base.address(),
+            linker_factory: Address::from_low_u64_be(1),
+            linker_code_hash: [1; 32],
+            initial_vault_share_price: uint256!(1e18),
+            minimum_share_reserves: uint256!(10e18),
+            minimum_transaction_amount: uint256!(0.001e18),
+            position_duration: U256::from(60 * 60 * 24 * 365), // 1 year
+            checkpoint_duration: U256::from(60 * 60 * 24),     // 1 day
+            time_stretch: get_time_stretch(fixed!(0.05e18), U256::from(60 * 60 * 24 * 365).into())
+                .into(), // time stretch for 5% rate
+            governance: client.address(),
+            fee_collector: client.address(),
+            fees: Fees {
+                curve: uint256!(0.05e18),
+                flat: uint256!(0.0005e18),
+                governance_lp: uint256!(0.15e18),
+                governance_zombie: uint256!(0.15e18),
+            },
+        };
+        let target0 = ERC4626Target0::deploy(client.clone(), (config.clone(), vault.address()))?
+            .send()
+            .await?;
+        let target1 = ERC4626Target1::deploy(client.clone(), (config.clone(), vault.address()))?
+            .send()
+            .await?;
+        let target2 = ERC4626Target2::deploy(client.clone(), (config.clone(), vault.address()))?
+            .send()
+            .await?;
+        let target3 = ERC4626Target3::deploy(client.clone(), (config.clone(), vault.address()))?
+            .send()
+            .await?;
+        let target4 = ERC4626Target4::deploy(client.clone(), (config.clone(), vault.address()))?
+            .send()
+            .await?;
+        let erc4626_hyperdrive = ERC4626Hyperdrive::deploy(
+            client.clone(),
+            (
+                config,
+                target0.address(),
+                target1.address(),
+                target2.address(),
+                target3.address(),
+                target4.address(),
+                vault.address(),
+            ),
+        )?
+        .send()
+        .await?;
+
+        Ok(Addresses {
+            base_token: base.address(),
+            erc4626_hyperdrive: erc4626_hyperdrive.address(),
+            steth_hyperdrive: Address::zero(),
+            factory: Address::zero(),
+        })
+    }
+
+    /// Deploys the full Hyperdrive system equipped with a Hyperdrive Factory,
+    /// an ERC4626Hyperdrive instance, and a StETHHyperdrive instance.
+    async fn full_deploy(provider: Provider<Http>, signer: LocalWallet) -> Result<Addresses> {
         // Set up an ethers client with the provider and signer.
         let client = Arc::new(SignerMiddleware::new(
             provider.clone(),
@@ -455,7 +563,6 @@ impl TestChain {
                 config.is_competition_mode,
             ),
         )?
-        .gas_price(DEFAULT_GAS_PRICE)
         .send()
         .await?;
         let vault = MockERC4626::deploy(
@@ -469,20 +576,15 @@ impl TestChain {
                 config.is_competition_mode,
             ),
         )?
-        .gas_price(DEFAULT_GAS_PRICE)
         .send()
         .await?;
         if config.is_competition_mode {
-            base.set_user_role(vault.address(), 1, true)
-                .gas_price(DEFAULT_GAS_PRICE)
-                .send()
-                .await?;
+            base.set_user_role(vault.address(), 1, true).send().await?;
             base.set_role_capability(
                 1,
                 keccak256("mint(uint256)".as_bytes())[0..4].try_into()?,
                 true,
             )
-            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
             base.set_role_capability(
@@ -490,7 +592,6 @@ impl TestChain {
                 keccak256("burn(uint256)".as_bytes())[0..4].try_into()?,
                 true,
             )
-            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
         }
@@ -506,7 +607,6 @@ impl TestChain {
                     config.is_competition_mode,
                 ),
             )?
-            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
             provider
@@ -520,7 +620,6 @@ impl TestChain {
                 .await?;
             lido.submit(Address::zero())
                 .value(uint256!(1e18))
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             lido
@@ -528,7 +627,6 @@ impl TestChain {
 
         // Deployer the ERC20 forwarder factory.
         let erc20_forwarder_factory = ERC20ForwarderFactory::deploy(client.clone(), ())?
-            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
 
@@ -566,7 +664,6 @@ impl TestChain {
                     erc20_forwarder_factory.erc20link_hash().await?,
                 ),),
             )?
-            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?
         };
@@ -574,27 +671,21 @@ impl TestChain {
         // Deploy the ERC4626Hyperdrive deployers and add them to the factory.
         let erc4626_deployer_coordinator = {
             let core_deployer = ERC4626HyperdriveCoreDeployer::deploy(client.clone(), ())?
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             let target0 = ERC4626Target0Deployer::deploy(client.clone(), ())?
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             let target1 = ERC4626Target1Deployer::deploy(client.clone(), ())?
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             let target2 = ERC4626Target2Deployer::deploy(client.clone(), ())?
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             let target3 = ERC4626Target3Deployer::deploy(client.clone(), ())?
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             let target4 = ERC4626Target4Deployer::deploy(client.clone(), ())?
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             ERC4626HyperdriveDeployerCoordinator::deploy(
@@ -608,24 +699,20 @@ impl TestChain {
                     target4.address(),
                 ),
             )?
-            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?
         };
         factory
             .add_deployer_coordinator(erc4626_deployer_coordinator.address())
-            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
 
         // Deploy and initialize an initial ERC4626Hyperdrive instance.
         let erc4626_hyperdrive = {
             base.mint_with_destination(client.address(), config.erc4626_hyperdrive_contribution)
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             base.approve(factory.address(), config.erc4626_hyperdrive_contribution)
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             let pool_config = PoolDeployConfig {
@@ -657,7 +744,6 @@ impl TestChain {
                     U256::from(0),
                     [0x01; 32],
                 )
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             factory
@@ -671,7 +757,6 @@ impl TestChain {
                     U256::from(1),
                     [0x01; 32],
                 )
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             factory
@@ -685,7 +770,6 @@ impl TestChain {
                     U256::from(2),
                     [0x01; 32],
                 )
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             factory
@@ -699,7 +783,6 @@ impl TestChain {
                     U256::from(3),
                     [0x01; 32],
                 )
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             factory
@@ -713,7 +796,6 @@ impl TestChain {
                     U256::from(4),
                     [0x01; 32],
                 )
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             let tx = factory
@@ -728,7 +810,6 @@ impl TestChain {
                     Vec::new().into(),
                     [0x01; 32],
                 )
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?
                 .await?
@@ -753,27 +834,21 @@ impl TestChain {
         let steth_deployer_coordinator = {
             let core_deployer =
                 StETHHyperdriveCoreDeployer::deploy(client.clone(), lido.address())?
-                    .gas_price(DEFAULT_GAS_PRICE)
                     .send()
                     .await?;
             let target0 = StETHTarget0Deployer::deploy(client.clone(), lido.address())?
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             let target1 = StETHTarget1Deployer::deploy(client.clone(), lido.address())?
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             let target2 = StETHTarget2Deployer::deploy(client.clone(), lido.address())?
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             let target3 = StETHTarget3Deployer::deploy(client.clone(), lido.address())?
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             let target4 = StETHTarget4Deployer::deploy(client.clone(), lido.address())?
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             StETHHyperdriveDeployerCoordinator::deploy(
@@ -788,13 +863,11 @@ impl TestChain {
                     lido.address(),
                 ),
             )?
-            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?
         };
         factory
             .add_deployer_coordinator(steth_deployer_coordinator.address())
-            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
 
@@ -839,7 +912,6 @@ impl TestChain {
                     U256::from(0),
                     [0x02; 32],
                 )
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             factory
@@ -853,7 +925,6 @@ impl TestChain {
                     U256::from(1),
                     [0x02; 32],
                 )
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             factory
@@ -867,7 +938,6 @@ impl TestChain {
                     U256::from(2),
                     [0x02; 32],
                 )
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             factory
@@ -881,7 +951,6 @@ impl TestChain {
                     U256::from(3),
                     [0x02; 32],
                 )
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             factory
@@ -895,7 +964,6 @@ impl TestChain {
                     U256::from(4),
                     [0x02; 32],
                 )
-                .gas_price(DEFAULT_GAS_PRICE)
                 .send()
                 .await?;
             let tx = factory
@@ -910,7 +978,6 @@ impl TestChain {
                     Vec::new().into(),
                     [0x02; 32],
                 )
-                .gas_price(DEFAULT_GAS_PRICE)
                 .value(config.steth_hyperdrive_contribution)
                 .send()
                 .await?
@@ -935,24 +1002,10 @@ impl TestChain {
         // Transfer ownership of the base token, factory, vault, and lido to the
         // admin address now that we're done minting tokens and updating the
         // configuration.
-        base.transfer_ownership(config.admin)
-            .gas_price(DEFAULT_GAS_PRICE)
-            .send()
-            .await?;
-        vault
-            .transfer_ownership(config.admin)
-            .gas_price(DEFAULT_GAS_PRICE)
-            .send()
-            .await?;
-        lido.transfer_ownership(config.admin)
-            .gas_price(DEFAULT_GAS_PRICE)
-            .send()
-            .await?;
-        factory
-            .update_governance(config.admin)
-            .gas_price(DEFAULT_GAS_PRICE)
-            .send()
-            .await?;
+        base.transfer_ownership(config.admin).send().await?;
+        vault.transfer_ownership(config.admin).send().await?;
+        lido.transfer_ownership(config.admin).send().await?;
+        factory.update_governance(config.admin).send().await?;
 
         Ok(Addresses {
             base_token: base.address(),
@@ -1002,7 +1055,6 @@ impl TestChain {
                 client.clone(),
                 (name, symbol, decimals, Address::zero(), is_competition_mode),
             )?
-            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
             pairs.push((addresses.base_token, base_template.address()));
@@ -1024,7 +1076,6 @@ impl TestChain {
                     is_competition_mode,
                 ),
             )?
-            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
             pairs.push((vault_address, vault_template.address()));
@@ -1033,7 +1084,6 @@ impl TestChain {
             let config = hyperdrive.get_pool_config().call().await?;
             let target0_template =
                 ERC4626Target0::deploy(client.clone(), (config.clone(), vault_address))?
-                    .gas_price(DEFAULT_GAS_PRICE)
                     .send()
                     .await?;
             pairs.push((target0_address, target0_template.address()));
@@ -1041,7 +1091,6 @@ impl TestChain {
             // Deploy the target1 template.
             let target1_template =
                 ERC4626Target1::deploy(client.clone(), (config.clone(), vault_address))?
-                    .gas_price(DEFAULT_GAS_PRICE)
                     .send()
                     .await?;
             pairs.push((target1_address, target1_template.address()));
@@ -1049,7 +1098,6 @@ impl TestChain {
             // Deploy the target2 template.
             let target2_template =
                 ERC4626Target2::deploy(client.clone(), (config.clone(), vault_address))?
-                    .gas_price(DEFAULT_GAS_PRICE)
                     .send()
                     .await?;
             pairs.push((target2_address, target2_template.address()));
@@ -1057,7 +1105,6 @@ impl TestChain {
             // Deploy the target3 template.
             let target3_template =
                 ERC4626Target3::deploy(client.clone(), (config.clone(), vault_address))?
-                    .gas_price(DEFAULT_GAS_PRICE)
                     .send()
                     .await?;
             pairs.push((target3_address, target3_template.address()));
@@ -1065,7 +1112,6 @@ impl TestChain {
             // Deploy the target4 template.
             let target4_template =
                 ERC4626Target4::deploy(client.clone(), (config.clone(), vault_address))?
-                    .gas_price(DEFAULT_GAS_PRICE)
                     .send()
                     .await?;
             pairs.push((target4_address, target4_template.address()));
@@ -1079,7 +1125,6 @@ impl TestChain {
                 client.clone(),
                 (addresses.base_token, config.initial_vault_share_price),
             )?
-            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
             let code = provider
@@ -1103,7 +1148,6 @@ impl TestChain {
                     Vec::<Address>::new(),
                 ),
             )?
-            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
             pairs.push((addresses.erc4626_hyperdrive, hyperdrive_template.address()));
@@ -1162,9 +1206,6 @@ impl TestChain {
             ))
         } else {
             let anvil = Anvil::new()
-                .arg("--disable-block-gas-limit")
-                .arg("--balance")
-                .arg("1000000")
                 .arg("--timestamp")
                 // NOTE: Anvil can't increase the time or set the time of the
                 // next block to a time in the past, so we set the genesis block
@@ -1173,7 +1214,7 @@ impl TestChain {
                 .arg("946684800")
                 .spawn();
             Ok((
-                Provider::<Http>::try_from(anvil.endpoint())?.interval(Duration::from_millis(2)),
+                Provider::<Http>::try_from(anvil.endpoint())?.interval(Duration::from_millis(1)),
                 Some(Arc::new(anvil)),
             ))
         }
@@ -1226,19 +1267,13 @@ impl TestChainWithMocks {
 
         // Deploy the mock contracts.
         let mock_fixed_point_math = MockFixedPointMath::deploy(client.clone(), ())?
-            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
         let mock_hyperdrive_math = MockHyperdriveMath::deploy(client.clone(), ())?
-            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
-        let mock_lp_math = MockLPMath::deploy(client.clone(), ())?
-            .gas_price(DEFAULT_GAS_PRICE)
-            .send()
-            .await?;
+        let mock_lp_math = MockLPMath::deploy(client.clone(), ())?.send().await?;
         let mock_yield_space_math = MockYieldSpaceMath::deploy(client.clone(), ())?
-            .gas_price(DEFAULT_GAS_PRICE)
             .send()
             .await?;
 
@@ -1282,7 +1317,7 @@ mod tests {
     #[tokio::test]
     async fn test_deploy() -> Result<()> {
         let test_chain_config = TestChainConfig::default();
-        let chain = TestChain::new(1).await?;
+        let chain = TestChain::new_with_factory(1).await?;
         let client = chain.client(chain.accounts()[0].clone()).await?;
 
         // Verify that the addresses are non-zero.

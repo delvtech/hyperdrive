@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[serde(default)]
 pub struct Addresses {
     #[serde(alias = "baseToken")]
     #[serde(alias = "base_token_address")]
