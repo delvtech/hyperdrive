@@ -26,6 +26,13 @@ impl State {
         let base_amount = base_amount.into();
         let long_amount =
             self.calculate_bonds_out_given_shares_in_down(base_amount / self.vault_share_price());
+        
+        let ending_spot_price = self.get_spot_price_after_long(long_amount);
+        let max_spot_price = self.get_max_spot_price();
+        if ending_spot_price > max_spot_price{
+            panic!("InsufficientLiquidity: Negative Interest");
+        }
+
         long_amount - self.open_long_curve_fees(base_amount)
     }
 
