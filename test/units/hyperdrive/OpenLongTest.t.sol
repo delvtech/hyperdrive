@@ -365,12 +365,20 @@ contract OpenLongTest is HyperdriveTest {
             (
                 uint256 eventMaturityTime,
                 uint256 eventBaseAmount,
-                uint256 eventSharePrice,
+                uint256 eventVaultShareAmount,
+                bool eventAsBase,
                 uint256 eventBondAmount
-            ) = abi.decode(log.data, (uint256, uint256, uint256, uint256));
+            ) = abi.decode(
+                    log.data,
+                    (uint256, uint256, uint256, bool, uint256)
+                );
             assertEq(eventMaturityTime, maturityTime);
             assertEq(eventBaseAmount, baseAmount);
-            assertEq(eventSharePrice, hyperdrive.getPoolInfo().vaultSharePrice);
+            assertEq(
+                eventVaultShareAmount,
+                baseAmount.divDown(hyperdrive.getPoolInfo().vaultSharePrice)
+            );
+            assertEq(eventAsBase, true);
             assertEq(eventBondAmount, bondAmount);
         }
 

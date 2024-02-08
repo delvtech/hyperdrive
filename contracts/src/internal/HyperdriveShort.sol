@@ -117,12 +117,14 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         _mint(assetId, _options.destination, bondAmount);
 
         // Emit an OpenShort event.
+        IHyperdrive.Options calldata options = _options;
         emit OpenShort(
-            _options.destination,
+            options.destination,
             assetId,
             maturityTime,
             baseDeposit,
-            vaultSharePrice,
+            baseDeposit.divDown(vaultSharePrice),
+            options.asBase,
             bondAmount
         );
 
@@ -223,12 +225,19 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // Emit a CloseShort event.
         uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
         uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
+        uint256 vaultSharePrice_ = vaultSharePrice; // Avoid stack too deep error.
+        IHyperdrive.Options calldata options = _options; // Avoid stack too deep error.
         emit CloseShort(
-            _options.destination,
+            options.destination,
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime),
             maturityTime,
             baseProceeds,
-            vaultSharePrice,
+            _convertToVaultSharesFromOption(
+                proceeds,
+                vaultSharePrice_,
+                options
+            ),
+            options.asBase,
             bondAmount
         );
 

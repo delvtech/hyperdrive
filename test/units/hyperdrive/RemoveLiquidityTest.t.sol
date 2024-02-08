@@ -281,12 +281,17 @@ contract RemoveLiquidityTest is HyperdriveTest {
         (
             uint256 lpShares,
             uint256 baseAmount,
-            uint256 vaultSharePrice,
+            uint256 vaultShareAmount,
+            bool asBase,
             uint256 withdrawalShares
-        ) = abi.decode(log.data, (uint256, uint256, uint256, uint256));
+        ) = abi.decode(log.data, (uint256, uint256, uint256, bool, uint256));
         assertEq(lpShares, expectedLpShares);
         assertEq(baseAmount, expectedBaseAmount);
-        assertEq(vaultSharePrice, hyperdrive.getPoolInfo().vaultSharePrice);
+        assertEq(
+            vaultShareAmount,
+            expectedBaseAmount.divDown(hyperdrive.getPoolInfo().vaultSharePrice)
+        );
+        assertEq(asBase, true);
         assertEq(withdrawalShares, expectedWithdrawalShares);
     }
 

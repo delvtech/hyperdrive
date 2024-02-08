@@ -107,7 +107,8 @@ abstract contract HyperdriveLP is
             _options.destination,
             lpShares,
             baseContribution,
-            vaultSharePrice,
+            vaultShares,
+            _options.asBase,
             _apr
         );
 
@@ -239,7 +240,8 @@ abstract contract HyperdriveLP is
             _options.destination,
             lpShares,
             baseContribution,
-            vaultSharePrice,
+            vaultShares,
+            _options.asBase,
             lpSharePrice
         );
     }
@@ -297,16 +299,16 @@ abstract contract HyperdriveLP is
         withdrawalShares = _lpShares - withdrawalSharesRedeemed;
 
         // Emit a RemoveLiquidity event.
-        uint256 baseProceeds = _convertToBaseFromOption(
-            proceeds,
-            vaultSharePrice,
-            _options
-        );
         emit RemoveLiquidity(
             _options.destination,
             _lpShares,
-            baseProceeds,
-            vaultSharePrice,
+            _convertToBaseFromOption(proceeds, vaultSharePrice, _options),
+            _convertToVaultSharesFromOption(
+                proceeds,
+                vaultSharePrice,
+                _options
+            ),
+            _options.asBase,
             uint256(withdrawalShares),
             _calculateLPSharePrice(vaultSharePrice)
         );
@@ -351,16 +353,16 @@ abstract contract HyperdriveLP is
         );
 
         // Emit a RedeemWithdrawalShares event.
-        uint256 baseProceeds = _convertToBaseFromOption(
-            proceeds,
-            vaultSharePrice,
-            _options
-        );
         emit RedeemWithdrawalShares(
             _options.destination,
             withdrawalSharesRedeemed,
-            baseProceeds,
-            vaultSharePrice
+            _convertToBaseFromOption(proceeds, vaultSharePrice, _options),
+            _convertToVaultSharesFromOption(
+                proceeds,
+                vaultSharePrice,
+                _options
+            ),
+            _options.asBase
         );
 
         return (proceeds, withdrawalSharesRedeemed);

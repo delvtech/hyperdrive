@@ -114,18 +114,21 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
 
         // Emit an OpenLong event.
         uint256 amount = _amount; // Avoid stack too deep error.
+        uint256 maturityTime_ = maturityTime; // Avoid stack too deep error.
+        uint256 bondProceeds_ = bondProceeds; // Avoid stack too deep error.
+        uint256 vaultSharePrice_ = vaultSharePrice; // Avoid stack too deep error.
         IHyperdrive.Options calldata options = _options; // Avoid stack too deep error.
-        uint256 _bondProceeds = bondProceeds; // Avoid stack too deep error.
         emit OpenLong(
-            _options.destination,
+            options.destination,
             assetId,
-            maturityTime,
-            _convertToBaseFromOption(amount, vaultSharePrice, options),
-            vaultSharePrice,
-            _bondProceeds
+            maturityTime_,
+            _convertToBaseFromOption(amount, vaultSharePrice_, options),
+            _convertToVaultSharesFromOption(amount, vaultSharePrice_, options),
+            options.asBase,
+            bondProceeds_
         );
 
-        return (maturityTime, _bondProceeds);
+        return (maturityTime, bondProceeds_);
     }
 
     /// @dev Closes a long position with a specified maturity time.
@@ -218,12 +221,19 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
 
         // Emit a CloseLong event.
         uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
+        uint256 vaultSharePrice_ = vaultSharePrice; // Avoid stack too deep error.
+        IHyperdrive.Options calldata options = _options; // Avoid stack too deep error.
         emit CloseLong(
-            _options.destination,
+            options.destination,
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             maturityTime,
             baseProceeds,
-            vaultSharePrice,
+            _convertToVaultSharesFromOption(
+                proceeds,
+                vaultSharePrice_,
+                options
+            ),
+            options.asBase,
             bondAmount
         );
 
