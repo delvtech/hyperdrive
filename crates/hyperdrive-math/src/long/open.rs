@@ -44,14 +44,14 @@ impl State {
     /// Gets the spot price after opening the long on the YieldSpace curve and
     /// before calculating the fees.
     pub fn get_spot_price_after_long(&self, base_amount: FixedPoint) -> FixedPoint {
-        let bond_amount = 
+        let bond_amount =
             self.calculate_bonds_out_given_shares_in_down(base_amount / self.vault_share_price());
         self.spot_price_after_long(base_amount, bond_amount)
     }
 
     fn spot_price_after_long(
-        &self, 
-        base_amount: FixedPoint, 
+        &self,
+        base_amount: FixedPoint,
         bond_amount: FixedPoint,
     ) -> FixedPoint {
         let mut state: State = self.clone();
