@@ -91,6 +91,36 @@ impl State {
             self.flat_fee(),
         )
     }
+
+    /// Gets the spot price after closing a short
+    pub fn get_spot_price_after_close_short<F: Into<FixedPoint>>(
+        &self,
+        bond_amount: F,
+        normalized_time_remaining: F,
+    ) -> FixedPoint {
+        let bond_amount = bond_amount.into();
+        let normalized_time_remaining = normalized_time_remaining.into();
+
+        // Calculate flat + curve
+        let share_amount =
+            self.calculate_close_short_flat_plus_curve(bond_amount, normalized_time_remaining);
+
+        let base_amount = share_amount * self.vault_share_price();
+        let bond_amount = bond_amount * normalized_time_remaining;
+
+        self.spot_price_after_close_short(base_amount, bond_amount)
+    }
+
+    fn spot_price_after_close_short(
+        &self,
+        base_amount: FixedPoint,
+        bond_amount: FixedPoint,
+    ) -> FixedPoint {
+        let mut state: State = self.clone();
+        state.info.bond_reserves -= bond_amount.into();
+        state.info.share_reserves += (base_amount / state.vault_share_price()).into();
+        state.get_spot_price()
+    }
 }
 
 #[cfg(test)]
