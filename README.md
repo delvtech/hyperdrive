@@ -37,8 +37,8 @@ To test the smart contracts, run `make test`.
 
 We have several linters. Solhint is a Solidity linter that checks for best
 practices and style, prettier is a Solidity formatter that checks for formatting
-and style, and cSpell is a spell checker. To run all three, run `yarn lint`.
-If you want to automatically format the code, run `yarn prettier`.
+and style, and cSpell is a spell checker. To run all three, run `make lint`.
+If you want to automatically format the code, run `make prettier`.
 
 ## Yield Sources
 
