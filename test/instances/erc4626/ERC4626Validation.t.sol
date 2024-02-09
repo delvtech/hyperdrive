@@ -287,7 +287,11 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             bytes32(uint256(0xfade))
         );
 
-        // Ensure minimumShareReserves were added, and lpTotalSupply increased
+        // Ensure that the decimals are set correctly.
+        assertEq(hyperdrive.decimals(), decimals);
+
+        // Ensure that the minimum share reserves was successfully capitalized
+        // and that the LP total supply was updated to the correct value.
         assertEq(
             hyperdrive.getPoolInfo().lpTotalSupply,
             hyperdrive.getPoolInfo().shareReserves - config.minimumShareReserves

@@ -406,6 +406,13 @@ abstract contract HyperdriveTarget0 is
         _revert(abi.encode(_perTokenApprovals[tokenId][account][spender]));
     }
 
+    /// @notice Gets the decimals of the MultiToken. This is the same as the
+    ///         decimals used by the base token.
+    /// @return The decimals of the MultiToken.
+    function decimals() external view virtual returns (uint8) {
+        _revert(abi.encode(_baseToken.decimals()));
+    }
+
     /// @notice Gets the name of a sub-token.
     /// @param tokenId The sub-token id.
     /// @return The name.

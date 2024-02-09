@@ -301,6 +301,9 @@ contract StETHHyperdriveTest is HyperdriveTest {
         );
         assertEq(address(bob).balance, bobBalanceBefore - contribution);
 
+        // Ensure that the decimals are set correctly.
+        assertEq(hyperdrive.decimals(), 18);
+
         // Ensure that Bob received the correct amount of LP tokens. He should
         // receive LP shares totaling the amount of shares that he contributed
         // minus the shares set aside for the minimum share reserves and the
