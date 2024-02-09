@@ -27,11 +27,11 @@ provider URLs.
 
 ## Build
 
-To build the smart contracts, run `yarn build`.
+To build the smart contracts, run `make build`.
 
 ## Test
 
-To test the smart contracts, run `yarn test`.
+To test the smart contracts, run `make test`.
 
 ## Lint
 
