@@ -27,11 +27,11 @@ impl State {
         let long_amount =
             self.calculate_bonds_out_given_shares_in_down(base_amount / self.vault_share_price());
 
-        // Throw an error if opening the long would result in negative interest
+        // Throw an error if opening the long would result in negative interest.
         let ending_spot_price = self.spot_price_after_long(base_amount, long_amount);
         let max_spot_price = self.get_max_spot_price();
         if ending_spot_price > max_spot_price {
-            // TODO would be nice to return a `Result` here instead of a panic
+            // TODO would be nice to return a `Result` here instead of a panic.
             panic!("InsufficientLiquidity: Negative Interest");
         }
 
