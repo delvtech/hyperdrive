@@ -5,6 +5,24 @@ use fixed_point_macros::fixed;
 use crate::{get_effective_share_reserves, State, YieldSpace};
 
 impl State {
+    /// Get's the pool's max spot price for closing a short
+    /// Since traders pay a curve fee when they close shorts on Hyperdrive,
+    /// it is possible for traders to receive a negative interest rate even
+    /// if curve's spot price is less than or equal to 1.
+    ///
+    /// Given the curve fee `phi_c` and the starting spot price `p_0`, the
+    /// maximum spot price is given by:
+    ///
+    /// p_max = 1 - phi_c * (1 - p_0)
+    ///
+    /// We underestimate the maximum spot price to be conservative.
+    pub fn get_close_short_max_spot_price(&self) -> FixedPoint {
+        fixed!(1e18)
+            - self
+                .curve_fee()
+                .mul_up(fixed!(1e18) - self.get_spot_price())
+    }
+
     /// Gets the minimum price that the pool can support.
     ///
     /// YieldSpace intersects the y-axis with a finite slope, so there is a

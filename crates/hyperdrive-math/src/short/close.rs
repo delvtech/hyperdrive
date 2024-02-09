@@ -75,16 +75,28 @@ impl State {
         let close_vault_share_price = close_vault_share_price.into();
         let normalized_time_remaining = normalized_time_remaining.into();
 
-        // Calculate flat + curve and subtract the fees from the trade.
-        let share_reserves_delta = self
-            .calculate_close_short_flat_plus_curve(bond_amount, normalized_time_remaining)
+        // Calculate flat + curve for the short.
+        let share_reserves_delta =
+            self.calculate_close_short_flat_plus_curve(bond_amount, normalized_time_remaining);
+
+        // Throw an error if closing the short would result in negative interest.
+        let bond_delta = bond_amount * normalized_time_remaining;
+        let ending_spot_price = self.spot_price_after_close_short(share_reserves_delta, bond_delta);
+        let max_spot_price = self.get_close_short_max_spot_price();
+        if ending_spot_price > max_spot_price {
+            // TODO would be nice to return a `Result` here instead of a panic.
+            panic!("InsufficientLiquidity: Negative Interest");
+        }
+
+        // Subtract the fees from the trade.
+        let share_reserves_delta_with_fees = share_reserves_delta
             + self.close_short_curve_fee(bond_amount, normalized_time_remaining)
             + self.close_short_flat_fee(bond_amount, normalized_time_remaining);
 
         // Calculate the share proceeds owed to the short.
         self.calculate_short_proceeds(
             bond_amount,
-            share_reserves_delta,
+            share_reserves_delta_with_fees,
             open_vault_share_price,
             close_vault_share_price,
             self.vault_share_price(),
@@ -102,23 +114,22 @@ impl State {
         let normalized_time_remaining = normalized_time_remaining.into();
 
         // Calculate flat + curve
-        let share_amount =
+        let share_delta =
             self.calculate_close_short_flat_plus_curve(bond_amount, normalized_time_remaining);
 
-        let base_amount = share_amount * self.vault_share_price();
-        let bond_amount = bond_amount * normalized_time_remaining;
+        let bond_delta = bond_amount * normalized_time_remaining;
 
-        self.spot_price_after_close_short(base_amount, bond_amount)
+        self.spot_price_after_close_short(share_delta, bond_delta)
     }
 
     fn spot_price_after_close_short(
         &self,
-        base_amount: FixedPoint,
+        share_amount: FixedPoint,
         bond_amount: FixedPoint,
     ) -> FixedPoint {
         let mut state: State = self.clone();
         state.info.bond_reserves -= bond_amount.into();
-        state.info.share_reserves += (base_amount / state.vault_share_price()).into();
+        state.info.share_reserves += share_amount.into();
         state.get_spot_price()
     }
 }
