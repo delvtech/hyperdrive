@@ -104,24 +104,25 @@ impl State {
         )
     }
 
-    /// Gets the spot price after closing a short
+    /// Gets the spot price after closing a short.
     pub fn calculate_spot_price_after_close_short<F: Into<FixedPoint>>(
         &self,
         bond_amount: F,
         normalized_time_remaining: F,
     ) -> FixedPoint {
+        // Calculate share and bond deltas from flat + curve.
         let bond_amount = bond_amount.into();
         let normalized_time_remaining = normalized_time_remaining.into();
-
-        // Calculate flat + curve
         let share_delta =
             self.calculate_close_short_flat_plus_curve(bond_amount, normalized_time_remaining);
-
         let bond_delta = bond_amount * normalized_time_remaining;
 
+        // Apply the deltas and return the new spot price.
         self.spot_price_after_close_short(share_delta, bond_delta)
     }
 
+    // Applies share and bond deltas to the pool's reserves as if a user closed a short and returns
+    // the spot price.
     fn spot_price_after_close_short(
         &self,
         share_amount: FixedPoint,
@@ -233,8 +234,8 @@ mod tests {
             let state = rng.gen::<State>();
             let in_ = rng.gen_range(fixed!(0)..=state.bond_reserves());
             let normalized_time_remaining = rng.gen_range(fixed!(0)..=fixed!(1e18));
-            let open_vault_share_price = rng.gen_range(fixed!(1e18)..=fixed!(2e18));
-            let close_vault_share_price = rng.gen_range(fixed!(1e18)..=fixed!(2e18));
+            let open_vault_share_price = rng.gen_range(fixed!(5e17)..=fixed!(10e18));
+            let close_vault_share_price = rng.gen_range(fixed!(5e17)..=fixed!(10e18));
             let actual = panic::catch_unwind(|| {
                 state.calculate_close_short(
                     in_,

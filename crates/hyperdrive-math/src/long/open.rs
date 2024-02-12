@@ -51,6 +51,8 @@ impl State {
         self.spot_price_after_long(base_amount, bond_amount)
     }
 
+    // Applies base and bond deltas to the pool's reserves as if a user opened a long and returns
+    // the spot price.
     fn spot_price_after_long(
         &self,
         base_amount: FixedPoint,
