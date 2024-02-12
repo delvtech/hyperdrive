@@ -82,7 +82,7 @@ impl State {
         // Throw an error if closing the short would result in negative interest.
         let bond_delta = bond_amount * normalized_time_remaining;
         let ending_spot_price = self.spot_price_after_close_short(share_reserves_delta, bond_delta);
-        let max_spot_price = self.get_close_short_max_spot_price();
+        let max_spot_price = self.calculate_close_short_max_spot_price();
         if ending_spot_price > max_spot_price {
             // TODO would be nice to return a `Result` here instead of a panic.
             panic!("InsufficientLiquidity: Negative Interest");
@@ -105,7 +105,7 @@ impl State {
     }
 
     /// Gets the spot price after closing a short
-    pub fn get_spot_price_after_close_short<F: Into<FixedPoint>>(
+    pub fn calculate_spot_price_after_close_short<F: Into<FixedPoint>>(
         &self,
         bond_amount: F,
         normalized_time_remaining: F,
