@@ -26,6 +26,15 @@ impl State {
         let base_amount = base_amount.into();
         let long_amount =
             self.calculate_bonds_out_given_shares_in_down(base_amount / self.vault_share_price());
+
+        // Throw an error if opening the long would result in negative interest.
+        let ending_spot_price = self.spot_price_after_long(base_amount, long_amount);
+        let max_spot_price = self.get_max_spot_price();
+        if ending_spot_price > max_spot_price {
+            // TODO would be nice to return a `Result` here instead of a panic.
+            panic!("InsufficientLiquidity: Negative Interest");
+        }
+
         long_amount - self.open_long_curve_fees(base_amount)
     }
 
@@ -36,12 +45,20 @@ impl State {
 
     /// Gets the spot price after opening the long on the YieldSpace curve and
     /// before calculating the fees.
-    pub fn get_spot_price_after_long(&self, long_amount: FixedPoint) -> FixedPoint {
+    pub fn get_spot_price_after_long(&self, base_amount: FixedPoint) -> FixedPoint {
+        let bond_amount =
+            self.calculate_bonds_out_given_shares_in_down(base_amount / self.vault_share_price());
+        self.spot_price_after_long(base_amount, bond_amount)
+    }
+
+    fn spot_price_after_long(
+        &self,
+        base_amount: FixedPoint,
+        bond_amount: FixedPoint,
+    ) -> FixedPoint {
         let mut state: State = self.clone();
-        state.info.bond_reserves -= state
-            .calculate_bonds_out_given_shares_in_down(long_amount / state.vault_share_price())
-            .into();
-        state.info.share_reserves += (long_amount / state.vault_share_price()).into();
+        state.info.bond_reserves -= bond_amount.into();
+        state.info.share_reserves += (base_amount / state.vault_share_price()).into();
         state.get_spot_price()
     }
 }
