@@ -221,4 +221,46 @@ mod tests {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn fuzz_calculate_close_short() -> Result<()> {
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_hyperdrive_math();
+
+        // Fuzz the rust and solidity implementations against each other.
+        let mut rng = thread_rng();
+        for _ in 0..*FAST_FUZZ_RUNS {
+            let state = rng.gen::<State>();
+            let in_ = rng.gen_range(fixed!(0)..=state.bond_reserves());
+            let normalized_time_remaining = rng.gen_range(fixed!(0)..=fixed!(1e18));
+            let open_vault_share_price = rng.gen_range(fixed!(1e18)..=fixed!(2e18));
+            let close_vault_share_price = rng.gen_range(fixed!(1e18)..=fixed!(2e18));
+            let actual = panic::catch_unwind(|| {
+                state.calculate_close_short(
+                    in_,
+                    open_vault_share_price,
+                    close_vault_share_price,
+                    normalized_time_remaining,
+                )
+            });
+            match mock
+                .calculate_close_short(
+                    state.effective_share_reserves().into(),
+                    state.bond_reserves().into(),
+                    in_.into(),
+                    normalized_time_remaining.into(),
+                    state.t().into(),
+                    state.c().into(),
+                    state.mu().into(),
+                )
+                .call()
+                .await
+            {
+                Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected.2)),
+                Err(_) => assert!(actual.is_err()),
+            }
+        }
+
+        Ok(())
+    }
 }
