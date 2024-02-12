@@ -9,7 +9,8 @@ interface IHyperdriveEvents is IMultiTokenEvents {
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
-        uint256 vaultSharePrice,
+        uint256 vaultShareAmount,
+        bool asBase,
         uint256 apr
     );
 
@@ -18,7 +19,8 @@ interface IHyperdriveEvents is IMultiTokenEvents {
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
-        uint256 vaultSharePrice,
+        uint256 vaultShareAmount,
+        bool asBase,
         uint256 lpSharePrice
     );
 
@@ -27,7 +29,8 @@ interface IHyperdriveEvents is IMultiTokenEvents {
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
-        uint256 vaultSharePrice,
+        uint256 vaultShareAmount,
+        bool asBase,
         uint256 withdrawalShareAmount,
         uint256 lpSharePrice
     );
@@ -37,7 +40,8 @@ interface IHyperdriveEvents is IMultiTokenEvents {
         address indexed provider,
         uint256 withdrawalShareAmount,
         uint256 baseAmount,
-        uint256 vaultSharePrice
+        uint256 vaultShareAmount,
+        bool asBase
     );
 
     /// @notice Emitted when a long position is opened.
@@ -46,7 +50,8 @@ interface IHyperdriveEvents is IMultiTokenEvents {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 vaultSharePrice,
+        uint256 vaultShareAmount,
+        bool asBase,
         uint256 bondAmount
     );
 
@@ -56,7 +61,8 @@ interface IHyperdriveEvents is IMultiTokenEvents {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 vaultSharePrice,
+        uint256 vaultShareAmount,
+        bool asBase,
         uint256 bondAmount
     );
 
@@ -66,7 +72,8 @@ interface IHyperdriveEvents is IMultiTokenEvents {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 vaultSharePrice,
+        uint256 vaultShareAmount,
+        bool asBase,
         uint256 bondAmount
     );
 
@@ -76,7 +83,8 @@ interface IHyperdriveEvents is IMultiTokenEvents {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 vaultSharePrice,
+        uint256 vaultShareAmount,
+        bool asBase,
         uint256 bondAmount
     );
 

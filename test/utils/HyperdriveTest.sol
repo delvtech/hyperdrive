@@ -991,11 +991,12 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
             (
                 uint256 eventLpAmount,
                 uint256 eventBaseAmount,
-                uint256 eventSharePrice,
+                uint256 eventShareAmount,
+                bool eventAsBase,
                 uint256 eventApr
             ) = abi.decode(
                     filteredLogs[0].data,
-                    (uint256, uint256, uint256, uint256)
+                    (uint256, uint256, uint256, bool, uint256)
                 );
             uint256 contribution_ = contribution;
             IHyperdrive hyperdrive_ = _hyperdrive;
@@ -1007,10 +1008,14 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 tolerance
             );
             assertEq(eventBaseAmount, contribution_);
-            assertEq(
-                eventSharePrice,
-                hyperdrive_.getPoolInfo().vaultSharePrice
+            assertApproxEqAbs(
+                eventShareAmount,
+                contribution_.divDown(
+                    hyperdrive_.getPoolInfo().vaultSharePrice
+                ),
+                1e5
             );
+            assertEq(eventAsBase, true);
             assertEq(eventApr, apr);
         }
     }

@@ -32,19 +32,6 @@ abstract contract HyperdriveTarget1 is
 
     /// LPs ///
 
-    /// @notice Allows the first LP to initialize the market with a target APR.
-    /// @param _contribution The amount of base to supply.
-    /// @param _apr The target APR.
-    /// @param _options The options that configure how the operation is settled.
-    /// @return lpShares The initial number of LP shares created.
-    function initialize(
-        uint256 _contribution,
-        uint256 _apr,
-        IHyperdrive.Options calldata _options
-    ) external payable returns (uint256 lpShares) {
-        return _initialize(_contribution, _apr, _options);
-    }
-
     /// @notice Allows LPs to supply liquidity for LP shares.
     /// @param _contribution The amount of base to supply.
     /// @param _minLpSharePrice The minimum LP share price the LP is willing

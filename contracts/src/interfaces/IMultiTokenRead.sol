@@ -2,6 +2,10 @@
 pragma solidity 0.8.20;
 
 interface IMultiTokenRead {
+    /// @notice Gets the decimals of the MultiToken.
+    /// @return The decimals of the MultiToken.
+    function decimals() external view returns (uint8);
+
     /// @notice Gets the name of the MultiToken.
     /// @return The name of the MultiToken.
     function name(uint256 id) external view returns (string memory);

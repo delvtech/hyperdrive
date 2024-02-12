@@ -67,4 +67,10 @@ contract StETHTarget0 is HyperdriveTarget0, StETHBase {
     function lido() external view returns (ILido) {
         _revert(abi.encode(_lido));
     }
+
+    /// @notice Returns the MultiToken's decimals.
+    /// @return The MultiToken's decimals.
+    function decimals() external pure override returns (uint8) {
+        _revert(abi.encode(uint8(18)));
+    }
 }
