@@ -63,6 +63,7 @@ interface IHyperdriveEvents is IMultiTokenEvents {
         uint256 baseAmount,
         uint256 vaultShareAmount,
         bool asBase,
+        uint256 baseProceeds,
         uint256 bondAmount
     );
 

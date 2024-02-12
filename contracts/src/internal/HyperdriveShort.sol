@@ -61,23 +61,18 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // backdate the bonds sold to the beginning of the checkpoint.
         // Note: All state deltas are derived from the external function input.
         uint256 maturityTime = latestCheckpoint + _positionDuration;
-        uint256 shareReservesDelta;
-        uint256 baseDeposit;
-        {
-            uint256 totalGovernanceFee;
-            (
-                baseDeposit,
-                shareReservesDelta,
-                totalGovernanceFee
-            ) = _calculateOpenShort(
+        (
+            uint256 baseDeposit,
+            uint256 shareReservesDelta,
+            uint256 totalGovernanceFee
+        ) = _calculateOpenShort(
                 _bondAmount,
                 vaultSharePrice,
                 openVaultSharePrice
             );
 
-            // Attribute the governance fees.
-            _governanceFeesAccrued += totalGovernanceFee;
-        }
+        // Attribute the governance fees.
+        _governanceFeesAccrued += totalGovernanceFee;
 
         // Take custody of the trader's deposit and ensure that the trader
         // doesn't pay more than their max deposit. The trader's deposit is
@@ -87,15 +82,15 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // Note: We don't check the maxDeposit against the output of deposit
         // because slippage from a deposit could cause a larger deposit taken
         // from the user to pass due to the shares being worth less after deposit.
-        uint256 traderDeposit = _convertToOptionFromBase(
+        uint256 shareDeposit = _convertToOptionFromBase(
             baseDeposit,
             vaultSharePrice,
             _options
         );
-        if (_maxDeposit < traderDeposit) {
+        if (_maxDeposit < shareDeposit) {
             revert IHyperdrive.OutputLimit();
         }
-        _deposit(traderDeposit, _options);
+        _deposit(shareDeposit, _options);
 
         // Apply the state updates caused by opening the short.
         // Note: Updating the state using the result using the
@@ -117,18 +112,26 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         _mint(assetId, _options.destination, bondAmount);
 
         // Emit an OpenShort event.
+        uint256 vaultSharePrice_ = vaultSharePrice;
         IHyperdrive.Options calldata options = _options;
         emit OpenShort(
             options.destination,
             assetId,
             maturityTime,
             baseDeposit,
-            baseDeposit.divDown(vaultSharePrice),
+            baseDeposit.divDown(vaultSharePrice_),
             options.asBase,
+            _convertToBaseFromOption(
+                // We add the governance fee to the share reserves delta since
+                // the user is responsible for paying the governance fee.
+                shareReservesDelta + totalGovernanceFee,
+                vaultSharePrice_,
+                options
+            ),
             bondAmount
         );
 
-        return (maturityTime, traderDeposit);
+        return (maturityTime, shareDeposit);
     }
 
     /// @dev Closes a short position with a specified maturity time.
