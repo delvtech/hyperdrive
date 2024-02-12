@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 mod long;
 mod lp;
 mod short;
@@ -8,6 +9,7 @@ use ethers::types::{Address, I256, U256};
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
 use hyperdrive_wrappers::wrappers::ihyperdrive::{Fees, PoolConfig, PoolInfo};
+pub use long::*;
 use rand::{
     distributions::{Distribution, Standard},
     Rng,
@@ -147,6 +149,10 @@ impl State {
 
     fn time_stretch(&self) -> FixedPoint {
         self.config.time_stretch.into()
+    }
+
+    fn checkpoint_duration(&self) -> FixedPoint {
+        self.config.checkpoint_duration.into()
     }
 
     fn initial_vault_share_price(&self) -> FixedPoint {

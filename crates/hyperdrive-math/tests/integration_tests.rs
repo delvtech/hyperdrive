@@ -212,7 +212,10 @@ pub async fn test_integration_get_max_long() -> Result<()> {
         // 3. Bob's budget is consumed.
         let max_spot_price = bob.get_state().await?.get_max_spot_price();
         let max_long = bob.get_max_long(None).await?;
-        let spot_price_after_long = bob.get_state().await?.get_spot_price_after_long(max_long);
+        let spot_price_after_long = bob
+            .get_state()
+            .await?
+            .calculate_spot_price_after_long(max_long);
         bob.open_long(max_long, None, None).await?;
         let is_max_price = max_spot_price - spot_price_after_long < fixed!(1e15);
         let is_solvency_consumed = {
