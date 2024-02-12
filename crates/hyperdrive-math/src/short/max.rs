@@ -16,7 +16,7 @@ impl State {
     /// p_max = 1 - phi_c * (1 - p_0)
     ///
     /// We underestimate the maximum spot price to be conservative.
-    pub fn get_close_short_max_spot_price(&self) -> FixedPoint {
+    pub fn calculate_close_short_max_spot_price(&self) -> FixedPoint {
         fixed!(1e18)
             - self
                 .curve_fee()

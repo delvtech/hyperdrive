@@ -52,7 +52,7 @@ impl State {
 
     /// Gets the spot price after opening the short on the YieldSpace curve and
     /// before calculating the fees.
-    pub fn get_spot_price_after_open_short(&self, bond_amount: FixedPoint) -> FixedPoint {
+    pub fn calculate_spot_price_after_open_short(&self, bond_amount: FixedPoint) -> FixedPoint {
         let shares_amount = self.calculate_shares_out_given_bonds_in_down(bond_amount);
         self.spot_price_after_open_short(shares_amount * self.vault_share_price(), bond_amount)
     }
