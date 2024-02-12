@@ -145,10 +145,6 @@ impl State {
         self.config.position_duration.into()
     }
 
-    fn checkpoint_duration(&self) -> FixedPoint {
-        self.config.checkpoint_duration.into()
-    }
-
     fn time_stretch(&self) -> FixedPoint {
         self.config.time_stretch.into()
     }
