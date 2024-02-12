@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 mod close;
 mod fees;
 mod max;
