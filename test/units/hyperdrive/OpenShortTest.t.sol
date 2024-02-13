@@ -394,10 +394,11 @@ contract OpenShortTest is HyperdriveTest {
                 uint256 eventBaseAmount,
                 uint256 eventVaultShareAmount,
                 bool eventAsBase,
+                uint256 eventBaseProceeds,
                 uint256 eventBondAmount
             ) = abi.decode(
                     log.data,
-                    (uint256, uint256, uint256, bool, uint256)
+                    (uint256, uint256, uint256, bool, uint256, uint256)
                 );
             assertEq(eventMaturityTime, maturityTime);
             assertEq(eventBaseAmount, basePaid);
@@ -406,6 +407,7 @@ contract OpenShortTest is HyperdriveTest {
                 basePaid.divDown(hyperdrive.getPoolInfo().vaultSharePrice)
             );
             assertEq(eventAsBase, true);
+            assertEq(eventBaseProceeds, shortAmount - basePaid);
             assertEq(eventBondAmount, shortAmount);
         }
 
