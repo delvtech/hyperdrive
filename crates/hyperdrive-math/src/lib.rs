@@ -1,3 +1,4 @@
+// unused imports are here to expose the modules at a higher level
 #![allow(unused_imports)]
 mod long;
 mod lp;
@@ -14,6 +15,7 @@ use rand::{
     distributions::{Distribution, Standard},
     Rng,
 };
+pub use short::*;
 pub use utils::*;
 pub use yield_space::YieldSpace;
 
