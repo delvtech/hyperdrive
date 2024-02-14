@@ -14,6 +14,7 @@ import { ETH } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { MockHyperdriveShort } from "contracts/test/MockHyperdriveShort.sol";
 
 interface IMockHyperdrive {
     function accrue(uint256 time, int256 apr) external;
@@ -256,7 +257,7 @@ abstract contract MockHyperdriveBase is HyperdriveBase {
     }
 }
 
-contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
+contract MockHyperdrive is Hyperdrive, MockHyperdriveBase, MockHyperdriveShort {
     using FixedPointMath for uint256;
 
     constructor(

@@ -6,11 +6,7 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { HyperdriveStorage } from "contracts/src/internal/HyperdriveStorage.sol";
 import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
 
-contract MockHyperdriveShort is HyperdriveShort {
-    constructor(
-        IHyperdrive.PoolConfig memory _config
-    ) HyperdriveStorage(_config) {}
-
+abstract contract MockHyperdriveShort is HyperdriveShort {
     /// @dev Calculate the pool reserve and trader deltas that result from
     ///      opening a short. This calculation includes trading fees.
     /// @param _bondAmount The amount of bonds being sold to open the short.
