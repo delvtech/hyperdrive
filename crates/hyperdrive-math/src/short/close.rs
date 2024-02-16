@@ -1,5 +1,4 @@
-use ethers::types::I256;
-use ethers::types::U256;
+use ethers::types::{I256, U256};
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 use std::convert::TryFrom;
