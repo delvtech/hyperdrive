@@ -1,7 +1,8 @@
+use std::convert::TryFrom;
+
 use ethers::types::{I256, U256};
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
-use std::convert::TryFrom;
 
 use crate::{State, YieldSpace};
 
@@ -161,8 +162,9 @@ mod tests {
 
     use eyre::Result;
     use hyperdrive_wrappers::wrappers::{
-        erc4626_hyperdrive::ERC4626Hyperdrive, mock_erc4626::MockERC4626,
-        mock_hyperdrive::MarketState, mock_hyperdrive::MockHyperdrive,
+        erc4626_hyperdrive::ERC4626Hyperdrive,
+        mock_erc4626::MockERC4626,
+        mock_hyperdrive::{MarketState, MockHyperdrive},
     };
     use rand::{thread_rng, Rng};
     use test_utils::{
