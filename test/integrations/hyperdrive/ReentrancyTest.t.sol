@@ -297,6 +297,7 @@ contract ReentrancyTest is HyperdriveTest {
             // the ETH receiver will receive a refund.
             DepositOverrides({
                 asBase: true,
+                destination: _trader,
                 depositAmount: CONTRIBUTION + 1,
                 minSharePrice: 0,
                 minSlippage: 0,
@@ -326,6 +327,7 @@ contract ReentrancyTest is HyperdriveTest {
             // the ETH receiver will receive a refund.
             DepositOverrides({
                 asBase: true,
+                destination: _trader,
                 depositAmount: CONTRIBUTION + 1,
                 minSharePrice: 0,
                 minSlippage: 0,
@@ -393,6 +395,7 @@ contract ReentrancyTest is HyperdriveTest {
             // the ETH receiver will receive a refund.
             DepositOverrides({
                 asBase: true,
+                destination: _trader,
                 depositAmount: BASE_PAID + 1,
                 minSharePrice: 0,
                 minSlippage: 0,
@@ -433,6 +436,7 @@ contract ReentrancyTest is HyperdriveTest {
             // ETH receiver will receive a refund.
             DepositOverrides({
                 asBase: true,
+                destination: _trader,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: BOND_AMOUNT * 2,
                 minSharePrice: 0,
@@ -452,6 +456,7 @@ contract ReentrancyTest is HyperdriveTest {
             BOND_AMOUNT,
             DepositOverrides({
                 asBase: true,
+                destination: _trader,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: BOND_AMOUNT * 2,
                 minSharePrice: 0,

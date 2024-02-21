@@ -70,7 +70,7 @@ contract InitializeTest is HyperdriveTest {
         );
     }
 
-    function test_initialize_success(
+    function test_initialize(
         uint256 initialVaultSharePrice,
         uint256 checkpointDuration,
         uint256 checkpointsPerTerm,
@@ -122,6 +122,33 @@ contract InitializeTest is HyperdriveTest {
                 MINIMUM_SHARE_RESERVES
         );
         assertEq(lpShares, hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice));
+    }
+
+    function test_initialize_destination() external {
+        // Alice initializes the pool and sends the lp shares to Celine.
+        uint256 fixedRate = 0.5e18;
+        uint256 contribution = 100_000_000e18;
+        uint256 lpShares = initialize(
+            alice,
+            fixedRate,
+            contribution,
+            DepositOverrides({
+                asBase: true,
+                destination: celine,
+                depositAmount: contribution,
+                minSharePrice: 0, // unused
+                minSlippage: 0, // unused
+                maxSlippage: type(uint256).max, // unused
+                extraData: new bytes(0) // unused
+            })
+        );
+
+        // Ensure that Celine was invoked in the event.
+        verifyInitializeEvent(celine, lpShares, contribution, fixedRate);
+
+        // Ensure that Celine received the LP shares.
+        assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
+        assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, celine), lpShares);
     }
 
     function verifyInitializeEvent(

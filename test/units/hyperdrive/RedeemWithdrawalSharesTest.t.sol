@@ -288,6 +288,7 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
             withdrawalShares,
             WithdrawalOverrides({
                 asBase: true,
+                destination: alice,
                 minSlippage: expectedSharePrice,
                 extraData: new bytes(0)
             })
@@ -317,6 +318,44 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
             baseToken.balanceOf(address(hyperdrive)),
             hyperdriveBaseBalanceBefore - baseProceeds
         );
+    }
+
+    function test_redeem_withdrawal_shares_destination() external {
+        // Initialize the pool.
+        uint256 lpShares = initialize(alice, 0.02e18, 500_000_000e18);
+
+        // Bob opens a large short.
+        uint256 shortAmount = HyperdriveUtils.calculateMaxShort(hyperdrive);
+        (uint256 maturityTime, ) = openShort(bob, shortAmount);
+
+        // Alice removes her liquidity.
+        (, uint256 withdrawalShares) = removeLiquidity(alice, lpShares);
+
+        // The term passes and no interest accrues.
+        advanceTime(POSITION_DURATION, 0);
+
+        // Bob closes his short.
+        closeShort(bob, maturityTime, shortAmount);
+
+        // Alice redeems her withdrawal shares and sends the proceeds to Celine.
+        (uint256 baseProceeds, uint256 sharesRedeemed) = redeemWithdrawalShares(
+            alice,
+            withdrawalShares,
+            WithdrawalOverrides({
+                asBase: true,
+                destination: celine,
+                minSlippage: 0,
+                extraData: new bytes(0)
+            })
+        );
+        assertGt(baseProceeds, 0);
+
+        // Ensure that a `RedeemWithdrawalShares` event was emitted.
+        verifyRedeemWithdrawalSharesEvent(celine, sharesRedeemed, baseProceeds);
+
+        // Ensure that Celine received the base proceeds.
+        assertEq(baseToken.balanceOf(alice), 0);
+        assertEq(baseToken.balanceOf(celine), baseProceeds);
     }
 
     function verifyRedeemWithdrawalSharesEvent(
