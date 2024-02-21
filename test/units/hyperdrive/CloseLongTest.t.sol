@@ -926,9 +926,9 @@ contract CloseLongTest is HyperdriveTest {
         // arguments.
         verifyCloseLongEvent(
             bob,
+            testCase.maturityTime,
             testCase.bondAmount,
-            testCase.baseProceeds,
-            testCase.maturityTime
+            testCase.baseProceeds
         );
 
         // Ensure that the correct amount of base was transferred.

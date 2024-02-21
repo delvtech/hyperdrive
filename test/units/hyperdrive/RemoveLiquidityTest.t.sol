@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-
 import { stdError } from "forge-std/StdError.sol";
 import { VmSafe } from "forge-std/Vm.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -121,7 +118,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
             alice,
             lpShares,
             WithdrawalOverrides({
-                asBase: false,
+                asBase: true,
                 destination: celine,
                 minSlippage: 0,
                 extraData: new bytes(0)
