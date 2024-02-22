@@ -883,4 +883,93 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             ) + hyperdrive.getPoolConfig().minimumShareReserves;
         assertEq(poolInfo.shareReserves, expectedShareReserves);
     }
+
+    function test_close_short_solvency_edge_fuzz(
+        uint256 apr,
+        uint256 timeStretchAPR,
+        uint256 timeToMaturity,
+        uint256 contribution
+    ) external {
+        // Normalize the test parameters.
+        apr = apr.normalizeToRange(0.01e18, 0.2e18);
+        timeStretchAPR = timeStretchAPR.normalizeToRange(0.01e18, 0.1e18);
+        timeToMaturity = timeToMaturity.normalizeToRange(0.1e18, 0.9e18);
+        contribution = contribution.normalizeToRange(500e18, 100_000_000e18);
+
+        // Run the test.
+        _test_close_short_solvency(
+            apr,
+            timeStretchAPR,
+            timeToMaturity,
+            contribution
+        );
+    }
+
+    function test_close_short_solvency_edge_cases() external {
+        // NOTE: This is the edge case that was used in the Spearbit issue.
+        uint256 apr = 0.1e18;
+        uint256 timeStretchAPR = 0.02e18;
+        uint256 timeToMaturity = 0.5e18;
+        uint256 contribution = 500e18;
+        _test_close_short_solvency(
+            apr,
+            timeStretchAPR,
+            timeToMaturity,
+            contribution
+        );
+    }
+
+    function _test_close_short_solvency(
+        uint256 apr,
+        uint256 timeStretchAPR,
+        uint256 timeToMaturity,
+        uint256 contribution
+    ) internal {
+        // Deploy the pool and initialize the market
+        deploy(alice, timeStretchAPR, 0, 0, 0, 0);
+        initialize(alice, apr, contribution);
+        contribution -= 2 * hyperdrive.getPoolConfig().minimumShareReserves;
+
+        // Open long and short positions that net out.
+        uint256 longBase = hyperdrive.calculateMaxLong();
+        (uint256 maturityTime, uint256 nettedBondAmount) = openLong(
+            celine,
+            longBase
+        );
+        openShort(celine, nettedBondAmount);
+        assertEq(
+            hyperdrive.balanceOf(
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+                celine
+            ),
+            hyperdrive.balanceOf(
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    maturityTime
+                ),
+                celine
+            )
+        );
+
+        // Open a max long that eats up any remaining liquidity that could be
+        // used to close the short.
+        longBase = hyperdrive.calculateMaxLong();
+        openLong(celine, longBase);
+
+        // Time passes without interest accruing.
+        uint256 timeAdvanced = POSITION_DURATION.mulDown(timeToMaturity);
+        advanceTime(timeAdvanced, int256(0));
+
+        // Celine closes her short. This should fail since the pool becomes
+        // insolvent if the short can be closed.
+        vm.expectRevert();
+        closeShort(celine, maturityTime, nettedBondAmount);
+
+        // The term passes without interest accruing.
+        advanceTime(POSITION_DURATION - timeAdvanced, int256(0));
+
+        // A checkpoint is minted which should succeed. This indicates that
+        // all of the longs and shorts could be closed.
+        hyperdrive.checkpoint(maturityTime);
+    }
 }

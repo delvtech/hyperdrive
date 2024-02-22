@@ -197,6 +197,15 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
                 nonNettedLongs
             );
 
+            // Ensure that the system is still solvent after closing the shorts.
+            // Closing shorts increases the share reserves, but it also
+            // increases the long exposure.
+            if (!_isSolvent(vaultSharePrice)) {
+                Errors.throwInsufficientLiquidityError(
+                    IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
+                );
+            }
+
             // Distribute the excess idle to the withdrawal pool.
             _distributeExcessIdle(vaultSharePrice);
         } else {
