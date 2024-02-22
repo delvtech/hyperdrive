@@ -373,7 +373,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
     /// @param _shareAmount The amount of shares being paid to open the long.
     /// @param _vaultSharePrice The current vault share price.
     /// @return shareReservesDelta The change in the share reserves.
-    /// @return bondProceeds The proceeds in bonds.
+    /// @return bondReservesDelta The change in the bond reserves.
     /// @return totalGovernanceFee The governance fee in shares.
     function _calculateOpenLong(
         uint256 _shareAmount,
@@ -383,13 +383,13 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         view
         returns (
             uint256 shareReservesDelta,
-            uint256 bondProceeds,
+            uint256 bondReservesDelta,
             uint256 totalGovernanceFee
         )
     {
         // Calculate the effect that opening the long should have on the pool's
         // reserves as well as the amount of bond the trader receives.
-        bondProceeds = HyperdriveMath.calculateOpenLong(
+        bondReservesDelta = HyperdriveMath.calculateOpenLong(
             _effectiveShareReserves(),
             _marketState.bondReserves,
             _shareAmount, // amountIn
@@ -409,7 +409,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         if (
             _isNegativeInterest(
                 _shareAmount,
-                bondProceeds,
+                bondReservesDelta,
                 HyperdriveMath.calculateOpenLongMaxSpotPrice(
                     spotPrice,
                     _curveFee,
@@ -433,9 +433,10 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
                 _vaultSharePrice
             );
 
-        // Calculate the number of bonds the trader receives. This is the amount
-        // of bonds the trader receives minus the fees.
-        bondProceeds -= curveFee;
+        // Calculate the impact of the curve fee on the bond reservse. The curve
+        // fee benefits the LPs by causing less bonds to be deducted from the
+        // bond reserves.
+        bondReservesDelta -= curveFee;
 
         // NOTE: Round down to underestimate the governance fee.
         //
@@ -459,7 +460,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         // shares = shares - shares
         shareReservesDelta = _shareAmount - totalGovernanceFee;
 
-        return (shareReservesDelta, bondProceeds, totalGovernanceFee);
+        return (shareReservesDelta, bondReservesDelta, totalGovernanceFee);
     }
 
     /// @dev Calculate the pool reserve and trader deltas that result from
