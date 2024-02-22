@@ -29,7 +29,7 @@ abstract contract HyperdriveCheckpoint is
 
     /// @dev Attempts to mint a checkpoint with the specified checkpoint time.
     /// @param _checkpointTime The time of the checkpoint to create.
-    function _checkpoint(uint256 _checkpointTime) internal {
+    function _checkpoint(uint256 _checkpointTime) internal nonReentrant {
         // If the checkpoint has already been set, return early.
         if (_checkpoints[_checkpointTime].vaultSharePrice != 0) {
             return;
