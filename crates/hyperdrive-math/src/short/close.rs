@@ -1,4 +1,4 @@
-use std::convert::TryFrom;
+use std::{convert::TryFrom, error::Error, fmt};
 
 use ethers::types::{I256, U256};
 use fixed_point::FixedPoint;
@@ -86,6 +86,8 @@ impl State {
         let bond_delta = bond_amount * normalized_time_remaining;
         let ending_spot_price = self.spot_price_after_close_short(share_reserves_delta, bond_delta);
         let max_spot_price = self.calculate_close_short_max_spot_price();
+
+        // TODO: if we support negative interest we'll need to remove this panic and support that path.
         if ending_spot_price > max_spot_price {
             // TODO would be nice to return a `Result` here instead of a panic.
             panic!("InsufficientLiquidity: Negative Interest");
@@ -138,21 +140,41 @@ impl State {
     }
 }
 
-// convert I256 to i128
-fn _i256_to_i128(value: I256) -> Result<i128, &'static str> {
-    // Define the bounds
+#[derive(Debug)]
+struct ConversionError {
+    details: String,
+}
+
+impl ConversionError {
+    fn new(msg: &str) -> ConversionError {
+        ConversionError {
+            details: msg.to_string(),
+        }
+    }
+}
+
+impl fmt::Display for ConversionError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.details)
+    }
+}
+
+impl Error for ConversionError {}
+
+// convert I256 to i128 if possible, otherwise, throw a ConversionError.
+fn _i256_to_i128(value: I256) -> Result<i128, ConversionError> {
     let min = I256::from(i128::MIN);
     let max = I256::from(i128::MAX);
 
-    // Check if the value is within the i128 range
     if value < min || value > max {
-        Err("Value out of i128 range")
+        Err(ConversionError::new("Value out of i128 range"))
     } else {
         // Since I256 does not directly support conversion to i128, we manually handle the conversion.
         // This approach relies on converting to u128 for the value and then casting to i128.
         // Ensure this logic aligns with how I256 stores and represents data, especially regarding sign.
-        let as_u128 = u128::try_from(value).map_err(|_| "Failed to convert to u128")?;
-        Ok(as_u128 as i128) // Cast to i128, which is safe within the checked bounds
+        let as_u128 =
+            u128::try_from(value).map_err(|_| ConversionError::new("Failed to convert to u128"))?;
+        Ok(as_u128 as i128)
     }
 }
 
@@ -255,7 +277,6 @@ mod tests {
     #[tokio::test]
     async fn fuzz_calculate_close_short_with_fees() -> Result<()> {
         let chain = TestChainWithMocks::new(1).await?;
-        // let mock = chain.mock_hyperdrive();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -282,16 +303,9 @@ mod tests {
                 )
             });
 
-            // print stuff for debugging
-            match result {
-                Ok(actual) => println!("actual: {:?}", actual), // Assuming `actual` implements Debug
-                Err(_) => println!("The function panicked"),
-            }
-
-            // Assuming `_i256_to_i128` is your conversion function that returns a `Result<i128, _>`
+            // If the share_adjustment conversion to i128 works then we'll update the market_state.  Otherwise we'll just skip the test.
             match _i256_to_i128(state.share_adjustment()) {
                 Ok(share_adjustment) => {
-                    // If conversion succeeds, proceed with setting up the market state
                     let market_state = MarketState {
                         share_reserves: state.share_reserves().into(),
                         bond_reserves: state.bond_reserves().into(),
@@ -309,7 +323,6 @@ mod tests {
 
                     // Sync states between actual and mock
                     let _ = mock.set_market_state(market_state).call().await;
-                    // Continue with the rest of the test
                 }
                 Err(_) => {
                     // If there's an error converting, skip the rest of the test
@@ -318,6 +331,9 @@ mod tests {
                 }
             }
 
+            // Attempt to simulate the closing of a short position using the mock contract, and
+            // compare the result with the expected output to validate the correctness of the
+            // implementation.
             match mock
                 .calculate_close_short(
                     in_.into(),
