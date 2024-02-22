@@ -389,7 +389,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
     {
         // Calculate the effect that opening the long should have on the pool's
         // reserves as well as the amount of bond the trader receives.
-        bondReservesDelta = HyperdriveMath.calculateOpenLong(
+        bondProceeds = HyperdriveMath.calculateOpenLong(
             _effectiveShareReserves(),
             _marketState.bondReserves,
             _shareAmount, // amountIn
@@ -409,7 +409,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         if (
             _isNegativeInterest(
                 _shareAmount,
-                bondReservesDelta,
+                bondProceeds,
                 HyperdriveMath.calculateOpenLongMaxSpotPrice(
                     spotPrice,
                     _curveFee,
@@ -433,7 +433,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
                 _vaultSharePrice
             );
 
-        // Calculate the impact of the curve fee on the bond reservse. The curve
+        // Calculate the impact of the curve fee on the bond reserves. The curve
         // fee benefits the LPs by causing less bonds to be deducted from the
         // bond reserves.
         bondReservesDelta -= curveFee;
