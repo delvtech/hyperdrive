@@ -104,6 +104,49 @@ contract RemoveLiquidityTest is HyperdriveTest {
         _test_remove_liquidity(testCase);
     }
 
+    function test_remove_liquidity_destination() external {
+        // Initialize the pool with a large amount of capital.
+        uint256 apr = 0.05e18;
+        uint256 contribution = 100_000_000e18;
+        uint256 lpShares = initialize(alice, apr, contribution);
+
+        // Bob opens a max short.
+        openShort(bob, hyperdrive.calculateMaxShort());
+
+        // Alice removes her liquidity and sends the proceeds to celine.
+        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
+            alice,
+            lpShares,
+            WithdrawalOverrides({
+                asBase: true,
+                destination: celine,
+                minSlippage: 0,
+                extraData: new bytes(0)
+            })
+        );
+        assertGt(withdrawalShares, 0);
+
+        // Ensure that the correct event was emitted.
+        verifyRemoveLiquidityEvent(
+            celine,
+            lpShares,
+            baseProceeds,
+            withdrawalShares
+        );
+
+        // Ensure that the proceeds were sent to celine.
+        assertEq(baseToken.balanceOf(alice), 0);
+        assertEq(baseToken.balanceOf(celine), baseProceeds);
+        assertEq(
+            hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, alice),
+            0
+        );
+        assertEq(
+            hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, celine),
+            withdrawalShares
+        );
+    }
+
     function test_remove_liquidity_long_trade() external {
         TestCase memory testCase = TestCase({
             initializer: alice,
@@ -238,6 +281,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
             // Ensure that the correct event was emitted.
             verifyRemoveLiquidityEvent(
+                alice,
                 testCase.initialLpShares,
                 testCase.initialLpBaseProceeds,
                 testCase.initialLpWithdrawalShares
@@ -268,6 +312,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
     }
 
     function verifyRemoveLiquidityEvent(
+        address destination,
         uint256 expectedLpShares,
         uint256 expectedBaseAmount,
         uint256 expectedWithdrawalShares
@@ -277,7 +322,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         );
         assertEq(logs.length, 1);
         VmSafe.Log memory log = logs[0];
-        assertEq(address(uint160(uint256(log.topics[1]))), alice);
+        assertEq(address(uint160(uint256(log.topics[1]))), destination);
         (
             uint256 lpShares,
             uint256 baseAmount,

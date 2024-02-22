@@ -519,6 +519,35 @@ contract AddLiquidityTest is HyperdriveTest {
         );
     }
 
+    function test_add_liquidity_destination() external {
+        // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, fixedRate, contribution);
+
+        // Bob adds liquidity and sends the LP shares to Celine.
+        uint256 lpShares = addLiquidity(
+            bob,
+            contribution,
+            DepositOverrides({
+                asBase: true,
+                destination: celine,
+                depositAmount: contribution,
+                minSharePrice: 0, // min lp share price of 0
+                minSlippage: 0, // min spot rate of 0
+                maxSlippage: type(uint256).max, // max spot rate of uint256 max
+                extraData: new bytes(0) // unused
+            })
+        );
+
+        // Ensure that the correct event was emitted.
+        verifyAddLiquidityEvent(celine, lpShares, contribution);
+
+        // Ensure that Celine received the LP shares.
+        assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, bob), 0);
+        assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, celine), lpShares);
+    }
+
     function verifyAddLiquidity(
         address lp,
         uint256 contribution
