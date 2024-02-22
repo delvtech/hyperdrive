@@ -523,6 +523,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // checking for reverts.
         DepositOverrides memory overrides = DepositOverrides({
             asBase: true,
+            destination: celine,
             depositAmount: testParams.contribution,
             minSharePrice: 0, // unused
             minSlippage: spotAPRBefore - 0.015e18, // min spot rate of .5%

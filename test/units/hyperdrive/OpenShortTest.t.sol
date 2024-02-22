@@ -180,6 +180,55 @@ contract OpenShortTest is HyperdriveTest {
         );
     }
 
+    function test_open_short_destination() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Short a small amount of bonds.
+        uint256 shortAmount = 10e18;
+        (uint256 maturityTime, uint256 basePaid) = openShort(
+            bob,
+            shortAmount,
+            DepositOverrides({
+                asBase: true,
+                destination: celine,
+                depositAmount: shortAmount,
+                minSharePrice: 0, // min vault share price of 0
+                minSlippage: shortAmount, // min bond proceeds of baseAmount
+                maxSlippage: type(uint256).max, // unused
+                extraData: new bytes(0) // unused
+            })
+        );
+
+        // Ensure that the correct event was emitted.
+        verifyOpenShortEvent(celine, maturityTime, shortAmount, basePaid);
+
+        // Ensure that the position was sent to celine.
+        assertEq(
+            hyperdrive.balanceOf(
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    maturityTime
+                ),
+                bob
+            ),
+            0
+        );
+        assertEq(
+            hyperdrive.balanceOf(
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    maturityTime
+                ),
+                celine
+            ),
+            shortAmount
+        );
+    }
+
     function test_open_short_with_small_amount() external {
         uint256 apr = 0.05e18;
 
@@ -243,6 +292,7 @@ contract OpenShortTest is HyperdriveTest {
         bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
         DepositOverrides memory depositOverrides = DepositOverrides({
             asBase: false,
+            destination: bob,
             depositAmount: bondAmount * 2,
             minSharePrice: 0,
             minSlippage: 0,
@@ -378,38 +428,7 @@ contract OpenShortTest is HyperdriveTest {
     ) internal {
         // Ensure that one `OpenShort` event was emitted with the correct
         // arguments.
-        {
-            VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
-                OpenShort.selector
-            );
-            assertEq(logs.length, 1);
-            VmSafe.Log memory log = logs[0];
-            assertEq(address(uint160(uint256(log.topics[1]))), bob);
-            assertEq(
-                uint256(log.topics[2]),
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime)
-            );
-            (
-                uint256 eventMaturityTime,
-                uint256 eventBaseAmount,
-                uint256 eventVaultShareAmount,
-                bool eventAsBase,
-                uint256 eventBaseProceeds,
-                uint256 eventBondAmount
-            ) = abi.decode(
-                    log.data,
-                    (uint256, uint256, uint256, bool, uint256, uint256)
-                );
-            assertEq(eventMaturityTime, maturityTime);
-            assertEq(eventBaseAmount, basePaid);
-            assertEq(
-                eventVaultShareAmount,
-                basePaid.divDown(hyperdrive.getPoolInfo().vaultSharePrice)
-            );
-            assertEq(eventAsBase, true);
-            assertEq(eventBaseProceeds, shortAmount - basePaid);
-            assertEq(eventBondAmount, shortAmount);
-        }
+        verifyOpenShortEvent(bob, maturityTime, shortAmount, basePaid);
 
         // Verify that Hyperdrive received the max loss and that Bob received
         // the short tokens.
@@ -490,5 +509,43 @@ contract OpenShortTest is HyperdriveTest {
             ),
             5
         );
+    }
+
+    function verifyOpenShortEvent(
+        address destination,
+        uint256 maturityTime,
+        uint256 shortAmount,
+        uint256 basePaid
+    ) internal {
+        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
+            OpenShort.selector
+        );
+        assertEq(logs.length, 1);
+        VmSafe.Log memory log = logs[0];
+        assertEq(address(uint160(uint256(log.topics[1]))), destination);
+        assertEq(
+            uint256(log.topics[2]),
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime)
+        );
+        (
+            uint256 eventMaturityTime,
+            uint256 eventBaseAmount,
+            uint256 eventVaultShareAmount,
+            bool eventAsBase,
+            uint256 eventBaseProceeds,
+            uint256 eventBondAmount
+        ) = abi.decode(
+                log.data,
+                (uint256, uint256, uint256, bool, uint256, uint256)
+            );
+        assertEq(eventMaturityTime, maturityTime);
+        assertEq(eventBaseAmount, basePaid);
+        assertEq(
+            eventVaultShareAmount,
+            basePaid.divDown(hyperdrive.getPoolInfo().vaultSharePrice)
+        );
+        assertEq(eventAsBase, true);
+        assertEq(eventBaseProceeds, shortAmount - basePaid);
+        assertEq(eventBondAmount, shortAmount);
     }
 }

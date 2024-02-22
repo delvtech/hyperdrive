@@ -168,6 +168,10 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
     struct DepositOverrides {
         // A boolean flag specifying whether or not the underlying should be used.
         bool asBase;
+        // The destination address.
+        address destination;
+        // The extra data to pass to the yield source.
+        bytes extraData;
         // The amount of tokens the action should prepare to deposit. Note that
         // the actual deposit amount will still be specified by the action being
         // called; however, this is the amount that will be minted as a
@@ -184,19 +188,19 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         // This is the slippage parameter that defines an upper bound on the
         // quantity being measured. It may not be used by some actions.
         uint256 maxSlippage;
-        // The extra data to pass to the yield source.
-        bytes extraData;
     }
 
     // Overrides for functions that initiate withdrawals.
     struct WithdrawalOverrides {
         // A boolean flag specifying whether or not the underlying should be used.
         bool asBase;
+        // The destination address.
+        address destination;
+        // The extra data to pass to the yield source.
+        bytes extraData;
         // This is the slippage parameter that defines a lower bound on the
         // quantity being measured.
         uint256 minSlippage;
-        // The extra data to pass to the yield source.
-        bytes extraData;
     }
 
     function initialize(
@@ -231,7 +235,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                     contribution,
                     apr,
                     IHyperdrive.Options({
-                        destination: lp,
+                        destination: overrides.destination,
                         asBase: overrides.asBase,
                         extraData: overrides.extraData
                     })
@@ -251,6 +255,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 contribution,
                 DepositOverrides({
                     asBase: true,
+                    destination: lp,
                     depositAmount: contribution,
                     minSharePrice: 0, // unused
                     minSlippage: 0, // unused
@@ -273,6 +278,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 contribution,
                 DepositOverrides({
                     asBase: asBase,
+                    destination: lp,
                     depositAmount: contribution,
                     minSharePrice: 0, // unused
                     minSlippage: 0, // unused
@@ -302,7 +308,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                     overrides.minSlippage, // min spot rate
                     overrides.maxSlippage, // max spot rate
                     IHyperdrive.Options({
-                        destination: lp,
+                        destination: overrides.destination,
                         asBase: overrides.asBase,
                         extraData: overrides.extraData
                     })
@@ -317,7 +323,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                     overrides.minSlippage, // min spot rate
                     overrides.maxSlippage, // max spot rate
                     IHyperdrive.Options({
-                        destination: lp,
+                        destination: overrides.destination,
                         asBase: overrides.asBase,
                         extraData: overrides.extraData
                     })
@@ -335,6 +341,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 contribution,
                 DepositOverrides({
                     asBase: true,
+                    destination: lp,
                     depositAmount: contribution,
                     minSharePrice: 0, // unused
                     minSlippage: 0, // min spot rate of 0
@@ -355,6 +362,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 contribution,
                 DepositOverrides({
                     asBase: asBase,
+                    destination: lp,
                     depositAmount: contribution,
                     minSharePrice: 0, // min lp share price of 0
                     minSlippage: 0, // min spot rate of 0
@@ -378,7 +386,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 shares,
                 overrides.minSlippage, // min lp share price
                 IHyperdrive.Options({
-                    destination: lp,
+                    destination: overrides.destination,
                     asBase: overrides.asBase,
                     extraData: overrides.extraData
                 })
@@ -395,6 +403,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 shares,
                 WithdrawalOverrides({
                     asBase: true,
+                    destination: lp,
                     minSlippage: 0, // min lp share price of 0
                     extraData: new bytes(0) // unused
                 })
@@ -412,6 +421,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 shares,
                 WithdrawalOverrides({
                     asBase: asBase,
+                    destination: lp,
                     minSlippage: 0, // min base proceeds of 0
                     extraData: new bytes(0) // unused
                 })
@@ -432,7 +442,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 shares,
                 overrides.minSlippage, // min output per share
                 IHyperdrive.Options({
-                    destination: lp,
+                    destination: overrides.destination,
                     asBase: overrides.asBase,
                     extraData: overrides.extraData
                 })
@@ -449,6 +459,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 shares,
                 WithdrawalOverrides({
                     asBase: true,
+                    destination: lp,
                     minSlippage: 0, // min output per share of 0
                     extraData: new bytes(0) // unused
                 })
@@ -466,6 +477,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 shares,
                 WithdrawalOverrides({
                     asBase: asBase,
+                    destination: lp,
                     minSlippage: 0, // min output per share of 0
                     extraData: new bytes(0) // unused
                 })
@@ -492,7 +504,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                     overrides.minSlippage, // min bond proceeds
                     overrides.minSharePrice, // min vault share price
                     IHyperdrive.Options({
-                        destination: trader,
+                        destination: overrides.destination,
                         asBase: overrides.asBase,
                         extraData: overrides.extraData
                     })
@@ -506,7 +518,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                     overrides.minSlippage, // min bond proceeds
                     overrides.minSharePrice, // min vault share price
                     IHyperdrive.Options({
-                        destination: trader,
+                        destination: overrides.destination,
                         asBase: overrides.asBase,
                         extraData: overrides.extraData
                     })
@@ -524,6 +536,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 baseAmount,
                 DepositOverrides({
                     asBase: true,
+                    destination: trader,
                     depositAmount: baseAmount,
                     minSharePrice: 0, // min vault share price of 0
                     minSlippage: baseAmount, // min bond proceeds of baseAmount
@@ -544,6 +557,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 baseAmount,
                 DepositOverrides({
                     asBase: asBase,
+                    destination: trader,
                     depositAmount: baseAmount,
                     minSharePrice: 0, // min vault share price of 0
                     minSlippage: baseAmount, // min bond proceeds of baseAmount
@@ -569,7 +583,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 bondAmount,
                 overrides.minSlippage, // min base proceeds
                 IHyperdrive.Options({
-                    destination: trader,
+                    destination: overrides.destination,
                     asBase: overrides.asBase,
                     extraData: overrides.extraData
                 })
@@ -587,6 +601,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 maturityTime,
                 bondAmount,
                 WithdrawalOverrides({
+                    destination: trader,
                     asBase: true,
                     minSlippage: 0, // min base proceeds of 0
                     extraData: new bytes(0) // unused
@@ -607,6 +622,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 bondAmount,
                 WithdrawalOverrides({
                     asBase: asBase,
+                    destination: trader,
                     minSlippage: 0, // min base proceeds of 0
                     extraData: new bytes(0) // unused
                 })
@@ -636,7 +652,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 overrides.maxSlippage, // max base payment
                 overrides.minSharePrice, // min vault share price
                 IHyperdrive.Options({
-                    destination: trader,
+                    destination: overrides.destination,
                     asBase: overrides.asBase,
                     extraData: overrides.extraData
                 })
@@ -649,7 +665,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 overrides.maxSlippage, // max base payment
                 overrides.minSharePrice, // min vault share price
                 IHyperdrive.Options({
-                    destination: trader,
+                    destination: overrides.destination,
                     asBase: overrides.asBase,
                     extraData: overrides.extraData
                 })
@@ -670,6 +686,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 bondAmount,
                 DepositOverrides({
                     asBase: true,
+                    destination: trader,
                     depositAmount: bondAmount,
                     minSharePrice: 0, // min vault share price of 0
                     minSlippage: 0, // unused
@@ -690,6 +707,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 bondAmount,
                 DepositOverrides({
                     asBase: asBase,
+                    destination: trader,
                     depositAmount: bondAmount,
                     minSharePrice: 0, // min vault share price of 0
                     minSlippage: 0, // unused
@@ -715,7 +733,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 bondAmount,
                 overrides.minSlippage, // min base proceeds
                 IHyperdrive.Options({
-                    destination: trader,
+                    destination: overrides.destination,
                     asBase: overrides.asBase,
                     extraData: overrides.extraData
                 })
@@ -734,6 +752,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 bondAmount,
                 WithdrawalOverrides({
                     asBase: true,
+                    destination: trader,
                     minSlippage: 0, // min base proceeds of 0
                     extraData: new bytes(0) // unused
                 })
@@ -753,6 +772,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 bondAmount,
                 WithdrawalOverrides({
                     asBase: asBase,
+                    destination: trader,
                     minSlippage: 0, // min base proceeds of 0
                     extraData: new bytes(0) // unused
                 })
