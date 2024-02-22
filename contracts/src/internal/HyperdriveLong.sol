@@ -540,6 +540,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             // pays a fee on the curve and flat parts of the trade. Most of the
             // fees go the LPs, but a portion goes to governance.
             uint256 curveFee;
+            uint256 governanceCurveFee;
             uint256 flatFee;
             uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
                 _effectiveShareReserves(),
@@ -547,22 +548,26 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
                 _initialVaultSharePrice,
                 _timeStretch
             );
+            uint256 vaultSharePrice = _vaultSharePrice; // avoid stack-too-deep
             (
                 curveFee, // shares
                 flatFee, // shares
-                ,
+                governanceCurveFee, // shares
                 totalGovernanceFee // shares
             ) = _calculateFeesGivenBonds(
                 _bondAmount,
                 timeRemaining,
                 spotPrice,
-                _vaultSharePrice
+                vaultSharePrice
             );
 
             // The curve fee (shares) is paid to the LPs, so we subtract it from
             // the share curve delta (shares) to prevent it from being debited
-            // from the reserves when the state is updated.
-            shareCurveDelta -= curveFee;
+            // from the reserves when the state is updated. The governance curve
+            // fee (shares) is paid to governance, so we add it back to the
+            // share curve delta (shares) to ensure that the governance fee
+            // isn't included in the share adjustment.
+            shareCurveDelta -= (curveFee - governanceCurveFee);
 
             // The trader pays the curve fee (shares) and flat fee (shares) to
             // the pool, so we debit them from the trader's share proceeds
