@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-
 import { stdError } from "forge-std/StdError.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -199,7 +196,7 @@ contract RoundTripTest is HyperdriveTest {
         // Ensure a feasible trade size.
         shortSize = shortSize.normalizeToRange(
             2 * MINIMUM_TRANSACTION_AMOUNT,
-            hyperdrive.calculateMaxShort() - MINIMUM_TRANSACTION_AMOUNT
+            hyperdrive.calculateMaxShort().mulDown(0.9e18)
         );
 
         // Get the poolInfo before opening the short.
@@ -279,6 +276,54 @@ contract RoundTripTest is HyperdriveTest {
 
         // Should be exact if out = in.
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
+    }
+
+    /// forge-config: default.fuzz.runs = 1000
+    function test_short_round_trip_immediately_with_fees(
+        uint256 fixedRate,
+        uint256 timeStretchFixedRate,
+        uint256 shortAmount
+    ) external {
+        // Ensure a feasible fixed rate.
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.50e18);
+
+        // Ensure a feasible time stretch fixed rate.
+        uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
+        uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(
+            lowerBound,
+            upperBound
+        );
+
+        // Deploy the pool and initialize the market
+        IHyperdrive.PoolConfig memory config = testConfig(
+            timeStretchFixedRate,
+            POSITION_DURATION
+        );
+        config.fees.curve = 0.01e18;
+        config.fees.governanceLP = 1e18;
+        deploy(alice, config);
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, fixedRate, contribution);
+
+        // Ensure a feasible trade size.
+        shortAmount = shortAmount.normalizeToRange(
+            2 * MINIMUM_TRANSACTION_AMOUNT,
+            hyperdrive.calculateMaxShort().mulDown(0.9e18)
+        );
+
+        // Bob opens a short position.
+        (uint256 maturityTime, ) = openShort(bob, shortAmount);
+
+        // Bob immediately closes his short position.
+        IHyperdrive.PoolInfo memory infoBefore = hyperdrive.getPoolInfo();
+        closeShort(bob, maturityTime, shortAmount);
+
+        // Ensure that the share adjustment wasn't changed.
+        assertEq(
+            hyperdrive.getPoolInfo().shareAdjustment,
+            infoBefore.shareAdjustment
+        );
     }
 
     /// forge-config: default.fuzz.runs = 1000
