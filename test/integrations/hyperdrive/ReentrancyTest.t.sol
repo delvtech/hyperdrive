@@ -103,6 +103,10 @@ contract ReentrancyTest is HyperdriveTest {
     /// Test ///
 
     function test_reentrancy() external {
+        // NOTE: The `checkpoint` function isn't used here because it doesn't
+        // invoke `_deposit` or `_withdraw`. It is included in the reentrant
+        // data to ensure that it can't be called in the middle of another
+        // Hyperdrive call.
         function(address, bytes memory) internal[]
             memory assertions = new function(address, bytes memory) internal[](
                 8
@@ -149,7 +153,7 @@ contract ReentrancyTest is HyperdriveTest {
         // Encode the reentrant data. We use reasonable values, but in practice,
         // the calls will fail immediately. With this in mind, the parameters
         // that are used aren't that important.
-        bytes[] memory data = new bytes[](8);
+        bytes[] memory data = new bytes[](9);
         data[0] = abi.encodeCall(
             hyperdrive.initialize,
             (
@@ -252,6 +256,7 @@ contract ReentrancyTest is HyperdriveTest {
                 })
             )
         );
+        data[8] = abi.encodeCall(hyperdrive.checkpoint, (block.timestamp));
 
         return data;
     }
@@ -297,6 +302,7 @@ contract ReentrancyTest is HyperdriveTest {
             // the ETH receiver will receive a refund.
             DepositOverrides({
                 asBase: true,
+                destination: _trader,
                 depositAmount: CONTRIBUTION + 1,
                 minSharePrice: 0,
                 minSlippage: 0,
@@ -326,6 +332,7 @@ contract ReentrancyTest is HyperdriveTest {
             // the ETH receiver will receive a refund.
             DepositOverrides({
                 asBase: true,
+                destination: _trader,
                 depositAmount: CONTRIBUTION + 1,
                 minSharePrice: 0,
                 minSlippage: 0,
@@ -393,6 +400,7 @@ contract ReentrancyTest is HyperdriveTest {
             // the ETH receiver will receive a refund.
             DepositOverrides({
                 asBase: true,
+                destination: _trader,
                 depositAmount: BASE_PAID + 1,
                 minSharePrice: 0,
                 minSlippage: 0,
@@ -433,6 +441,7 @@ contract ReentrancyTest is HyperdriveTest {
             // ETH receiver will receive a refund.
             DepositOverrides({
                 asBase: true,
+                destination: _trader,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: BOND_AMOUNT * 2,
                 minSharePrice: 0,
@@ -452,6 +461,7 @@ contract ReentrancyTest is HyperdriveTest {
             BOND_AMOUNT,
             DepositOverrides({
                 asBase: true,
+                destination: _trader,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: BOND_AMOUNT * 2,
                 minSharePrice: 0,

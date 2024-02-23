@@ -235,6 +235,49 @@ contract OpenLongTest is HyperdriveTest {
         );
     }
 
+    function test_open_long_destination() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pools with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Open a long and send the position to celine.
+        uint256 baseAmount = 10e18;
+        (uint256 maturityTime, uint256 bondAmount) = openLong(
+            bob,
+            baseAmount,
+            DepositOverrides({
+                asBase: true,
+                destination: celine,
+                depositAmount: baseAmount,
+                minSharePrice: 0, // min vault share price of 0
+                minSlippage: baseAmount, // min bond proceeds of baseAmount
+                maxSlippage: type(uint256).max, // unused
+                extraData: new bytes(0) // unused
+            })
+        );
+
+        // Ensure that the correct event was emitted.
+        verifyOpenLongEvent(celine, maturityTime, bondAmount, baseAmount);
+
+        // Ensure that the position was sent to celine.
+        assertEq(
+            hyperdrive.balanceOf(
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+                bob
+            ),
+            0
+        );
+        assertEq(
+            hyperdrive.balanceOf(
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+                celine
+            ),
+            bondAmount
+        );
+    }
+
     function test_open_long_with_small_amount() external {
         uint256 apr = 0.05e18;
 
@@ -351,36 +394,7 @@ contract OpenLongTest is HyperdriveTest {
     ) internal {
         // Ensure that one `OpenLong` event was emitted with the correct
         // arguments.
-        {
-            VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
-                OpenLong.selector
-            );
-            assertEq(logs.length, 1);
-            VmSafe.Log memory log = logs[0];
-            assertEq(address(uint160(uint256(log.topics[1]))), bob);
-            assertEq(
-                uint256(log.topics[2]),
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime)
-            );
-            (
-                uint256 eventMaturityTime,
-                uint256 eventBaseAmount,
-                uint256 eventVaultShareAmount,
-                bool eventAsBase,
-                uint256 eventBondAmount
-            ) = abi.decode(
-                    log.data,
-                    (uint256, uint256, uint256, bool, uint256)
-                );
-            assertEq(eventMaturityTime, maturityTime);
-            assertEq(eventBaseAmount, baseAmount);
-            assertEq(
-                eventVaultShareAmount,
-                baseAmount.divDown(hyperdrive.getPoolInfo().vaultSharePrice)
-            );
-            assertEq(eventAsBase, true);
-            assertEq(eventBondAmount, bondAmount);
-        }
+        verifyOpenLongEvent(bob, maturityTime, bondAmount, baseAmount);
 
         // Verify that the open long updated the state correctly.
         _verifyOpenLong(
@@ -516,5 +530,38 @@ contract OpenLongTest is HyperdriveTest {
             poolInfoBefore.shortsOutstanding
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
+    }
+
+    function verifyOpenLongEvent(
+        address destination,
+        uint256 maturityTime,
+        uint256 bondAmount,
+        uint256 baseAmount
+    ) internal {
+        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
+            OpenLong.selector
+        );
+        assertEq(logs.length, 1);
+        VmSafe.Log memory log = logs[0];
+        assertEq(address(uint160(uint256(log.topics[1]))), destination);
+        assertEq(
+            uint256(log.topics[2]),
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime)
+        );
+        (
+            uint256 eventMaturityTime,
+            uint256 eventBaseAmount,
+            uint256 eventVaultShareAmount,
+            bool eventAsBase,
+            uint256 eventBondAmount
+        ) = abi.decode(log.data, (uint256, uint256, uint256, bool, uint256));
+        assertEq(eventMaturityTime, maturityTime);
+        assertEq(eventBaseAmount, baseAmount);
+        assertEq(
+            eventVaultShareAmount,
+            baseAmount.divDown(hyperdrive.getPoolInfo().vaultSharePrice)
+        );
+        assertEq(eventAsBase, true);
+        assertEq(eventBondAmount, bondAmount);
     }
 }

@@ -291,6 +291,7 @@ abstract contract HyperdriveLP is
         // Redeem as many of the withdrawal shares as possible.
         uint256 withdrawalSharesRedeemed;
         (proceeds, withdrawalSharesRedeemed) = _redeemWithdrawalSharesInternal(
+            _options.destination,
             _lpShares,
             vaultSharePrice,
             _minOutputPerShare,
@@ -346,6 +347,7 @@ abstract contract HyperdriveLP is
 
         // Redeem as many of the withdrawal shares as possible.
         (proceeds, withdrawalSharesRedeemed) = _redeemWithdrawalSharesInternal(
+            msg.sender,
             _withdrawalShares,
             vaultSharePrice,
             _minOutputPerShare,
@@ -372,6 +374,7 @@ abstract contract HyperdriveLP is
     ///      withdrawal pool's proceeds. This function redeems the maximum
     ///      amount of the specified withdrawal shares given the amount of
     ///      withdrawal shares ready to withdraw.
+    /// @param _source The address that owns the withdrawal shares to redeem.
     /// @param _withdrawalShares The withdrawal shares to redeem.
     /// @param _sharePrice The share price.
     /// @param _minOutputPerShare The minimum amount of base the LP expects to
@@ -381,6 +384,7 @@ abstract contract HyperdriveLP is
     /// @return withdrawalSharesRedeemed The amount of withdrawal shares that
     ///         were redeemed.
     function _redeemWithdrawalSharesInternal(
+        address _source,
         uint256 _withdrawalShares,
         uint256 _sharePrice,
         uint256 _minOutputPerShare,
@@ -399,7 +403,7 @@ abstract contract HyperdriveLP is
         // We burn the shares from the user.
         _burn(
             AssetId._WITHDRAWAL_SHARE_ASSET_ID,
-            msg.sender,
+            _source,
             withdrawalSharesRedeemed
         );
 

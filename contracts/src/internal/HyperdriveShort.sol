@@ -649,5 +649,19 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
                 false
             );
         }
+
+        // Ensure that the ending spot price is less than 1.
+        if (
+            HyperdriveMath.calculateSpotPrice(
+                _effectiveShareReserves() + shareCurveDelta,
+                _marketState.bondReserves - bondReservesDelta,
+                _initialVaultSharePrice,
+                _timeStretch
+            ) > ONE
+        ) {
+            Errors.throwInsufficientLiquidityError(
+                IHyperdrive.InsufficientLiquidityReason.NegativeInterest
+            );
+        }
     }
 }
