@@ -6,6 +6,7 @@ import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveFactory } from "../interfaces/IHyperdriveFactory.sol";
 import { IHyperdriveDeployerCoordinator } from "../interfaces/IHyperdriveDeployerCoordinator.sol";
+import { ETH } from "../libraries/Constants.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 
@@ -631,7 +632,11 @@ contract HyperdriveFactory is IHyperdriveFactory {
 
         // Initialize the Hyperdrive instance.
         uint256 refund;
-        if (msg.value >= _contribution) {
+        if (address(_config.baseToken) == ETH) {
+            if (msg.value < _contribution) {
+                revert IHyperdriveFactory.InsufficientValue();
+            }
+
             // Only the contribution amount of ether will be passed to
             // Hyperdrive.
             refund = msg.value - _contribution;
