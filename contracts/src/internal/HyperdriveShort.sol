@@ -629,6 +629,20 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             // accounting updates.
             shareReservesDelta -= totalGovernanceFee;
 
+            // Ensure that the ending spot price is less than 1.
+            if (
+                HyperdriveMath.calculateSpotPrice(
+                    _effectiveShareReserves() + shareCurveDelta,
+                    _marketState.bondReserves - bondReservesDelta,
+                    _initialVaultSharePrice,
+                    _timeStretch
+                ) > ONE
+            ) {
+                Errors.throwInsufficientLiquidityError(
+                    IHyperdrive.InsufficientLiquidityReason.NegativeInterest
+                );
+            }
+
             // Adjust the computed proceeds and delta for negative interest.
             // We also compute the share adjustment delta at this step to ensure
             // that we don't break our AMM invariant when we account for negative
@@ -647,20 +661,6 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
                 openVaultSharePrice,
                 closeVaultSharePrice,
                 false
-            );
-        }
-
-        // Ensure that the ending spot price is less than 1.
-        if (
-            HyperdriveMath.calculateSpotPrice(
-                _effectiveShareReserves() + shareCurveDelta,
-                _marketState.bondReserves - bondReservesDelta,
-                _initialVaultSharePrice,
-                _timeStretch
-            ) > ONE
-        ) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive.InsufficientLiquidityReason.NegativeInterest
             );
         }
     }
