@@ -268,14 +268,14 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
     /// @return True if the share reserves are greater than the exposure plus
     ///         the minimum share reserves.
     function _isSolvent(uint256 _vaultSharePrice) internal view returns (bool) {
-        // NOTE: Round the lhs up and the rhs down to make the check more
+        // NOTE: Round the lhs down and the rhs up to make the check more
         // conservative.
         return
             int256(
-                (uint256(_marketState.shareReserves).mulUp(_vaultSharePrice))
+                (uint256(_marketState.shareReserves).mulDown(_vaultSharePrice))
             ) -
                 int128(_marketState.longExposure) >=
-            int256(_minimumShareReserves.mulDown(_vaultSharePrice));
+            int256(_minimumShareReserves.mulUp(_vaultSharePrice));
     }
 
     /// @dev Updates the global long exposure.
