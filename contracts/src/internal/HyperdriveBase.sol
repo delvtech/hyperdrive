@@ -285,8 +285,7 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         // The global long exposure is the sum of the non-netted longs in each
         // checkpoint. To update this value, we subtract the current value
         // (`_before.max(0)`) and add the new value (`_after.max(0)`).
-        int128 delta = (int256(_after.max(0)) - int256(_before.max(0)))
-            .toInt128();
+        int128 delta = (_after.max(0) - _before.max(0)).toInt128();
         if (delta > 0) {
             _marketState.longExposure += uint128(delta);
         } else if (delta < 0) {

@@ -77,7 +77,7 @@ library LPMath {
             // NOTE: Rounding down to avoid introducing dust into the
             // computation.
             shareAdjustment = int256(
-                uint256(shareReserves).mulDivDown(
+                shareReserves.mulDivDown(
                     uint256(_shareAdjustment),
                     _shareReserves
                 )
@@ -86,7 +86,7 @@ library LPMath {
             // NOTE: Rounding down to avoid introducing dust into the
             // computation.
             shareAdjustment = -int256(
-                uint256(shareReserves).mulDivDown(
+                shareReserves.mulDivDown(
                     uint256(-_shareAdjustment),
                     _shareReserves
                 )
