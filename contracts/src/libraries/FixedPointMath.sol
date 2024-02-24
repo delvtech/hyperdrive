@@ -50,7 +50,7 @@ library FixedPointMath {
     /// @param b Fixed point number in 1e18 format.
     /// @return Result of a / b rounded down.
     function divDown(uint256 a, uint256 b) internal pure returns (uint256) {
-        return (mulDivDown(a, 1e18, b)); // Equivalent to (a * 1e18) / b rounded down.
+        return (mulDivDown(a, ONE, b)); // Equivalent to (a * 1e18) / b rounded down.
     }
 
     /// @param x Fixed point number in 1e18 format.
@@ -84,14 +84,14 @@ library FixedPointMath {
     /// @param b Fixed point number in 1e18 format.
     /// @return The result of a * b rounded up.
     function mulUp(uint256 a, uint256 b) internal pure returns (uint256) {
-        return (mulDivUp(a, b, 1e18));
+        return (mulDivUp(a, b, ONE));
     }
 
     /// @param a Fixed point number in 1e18 format.
     /// @param b Fixed point number in 1e18 format.
     /// @return The result of a / b rounded up.
     function divUp(uint256 a, uint256 b) internal pure returns (uint256) {
-        return (mulDivUp(a, 1e18, b));
+        return (mulDivUp(a, ONE, b));
     }
 
     /// @dev Exponentiation (x^y) with unsigned 18 decimal fixed point base and exponent.
