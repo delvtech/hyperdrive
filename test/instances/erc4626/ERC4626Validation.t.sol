@@ -112,10 +112,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         config.feeCollector = factory.feeCollector();
         config.linkerFactory = factory.linkerFactory();
         config.linkerCodeHash = factory.linkerCodeHash();
-        config.timeStretch = HyperdriveMath.calculateTimeStretch(
-            FIXED_RATE,
-            POSITION_DURATION
-        );
+        config.timeStretch = 0;
         uint256 contribution = 7_500e18;
         vm.stopPrank();
         vm.startPrank(alice);
@@ -214,10 +211,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         config.feeCollector = factory.feeCollector();
         config.linkerFactory = factory.linkerFactory();
         config.linkerCodeHash = factory.linkerCodeHash();
-        config.timeStretch = HyperdriveMath.calculateTimeStretch(
-            FIXED_RATE,
-            POSITION_DURATION
-        );
+        config.timeStretch = 0;
         config.baseToken = underlyingToken;
         // Designed to ensure compatibility ../../contracts/src/instances/ERC4626Hyperdrive.sol#L122C1-L122C1
         config.minimumTransactionAmount = hyperdrive

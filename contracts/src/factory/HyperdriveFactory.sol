@@ -910,14 +910,16 @@ contract HyperdriveFactory is IHyperdriveFactory {
         );
 
         // Ensure that the linker factory, linker code hash, fee collector, and
-        // governance addresses and time stretch aren't set to the expected
-        // values. This ensures that the deployer is aware of the correct values.
+        // governance addresses are set to the expected values. This ensures
+        // that the deployer is aware of the correct values. The time stretch
+        // should be set to zero to signal that the deployer is aware that it
+        // will be overwritten.
         if (
             _config.linkerFactory != linkerFactory ||
             _config.linkerCodeHash != linkerCodeHash ||
             _config.feeCollector != feeCollector ||
             _config.governance != hyperdriveGovernance ||
-            _config.timeStretch != timeStretch
+            _config.timeStretch != 0
         ) {
             revert IHyperdriveFactory.InvalidDeployConfig();
         }

@@ -111,10 +111,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
                 minimumTransactionAmount: 1e15,
                 positionDuration: POSITION_DURATION,
                 checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: HyperdriveMath.calculateTimeStretch(
-                    FIXED_RATE,
-                    POSITION_DURATION
-                ),
+                timeStretch: 0,
                 governance: factory.hyperdriveGovernance(),
                 feeCollector: factory.feeCollector(),
                 fees: IHyperdrive.Fees({
@@ -232,10 +229,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
                 minimumTransactionAmount: 1e15,
                 positionDuration: POSITION_DURATION,
                 checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: HyperdriveMath.calculateTimeStretch(
-                    FIXED_RATE,
-                    POSITION_DURATION
-                ),
+                timeStretch: 0,
                 fees: IHyperdrive.Fees({
                     curve: 0,
                     flat: 0,

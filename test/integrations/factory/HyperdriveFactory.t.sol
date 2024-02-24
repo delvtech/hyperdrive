@@ -1433,10 +1433,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 minimumTransactionAmount: 1e15,
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
-                timeStretch: HyperdriveMath.calculateTimeStretch(
-                    0.05e18,
-                    365 days
-                ),
+                timeStretch: 0,
                 governance: factory.hyperdriveGovernance(),
                 feeCollector: factory.feeCollector(),
                 fees: IHyperdrive.Fees(0.01e18, 0.001e18, 0.15e18, 0.03e18),
@@ -2219,7 +2216,7 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             minimumTransactionAmount: 1e15,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
-            timeStretch: HyperdriveMath.calculateTimeStretch(APR, 365 days),
+            timeStretch: 0,
             governance: factory.hyperdriveGovernance(),
             feeCollector: factory.feeCollector(),
             fees: IHyperdrive.Fees(0.01e18, 0.001e18, 0.15e18, 0.03e18),

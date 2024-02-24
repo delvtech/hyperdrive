@@ -118,10 +118,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         config.feeCollector = factory.feeCollector();
         config.linkerFactory = factory.linkerFactory();
         config.linkerCodeHash = factory.linkerCodeHash();
-        config.timeStretch = HyperdriveMath.calculateTimeStretch(
-            FIXED_RATE,
-            POSITION_DURATION
-        );
+        config.timeStretch = 0;
         config.baseToken = underlyingToken;
         config.minimumTransactionAmount = 1e6;
         config.minimumShareReserves = 1e6;
