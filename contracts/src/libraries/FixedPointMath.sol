@@ -43,7 +43,7 @@ library FixedPointMath {
     /// @param b Fixed point number in 1e18 format.
     /// @return Result of a * b rounded down.
     function mulDown(uint256 a, uint256 b) internal pure returns (uint256) {
-        return (mulDivDown(a, b, 1e18));
+        return (mulDivDown(a, b, ONE));
     }
 
     /// @param a Fixed point number in 1e18 format.
