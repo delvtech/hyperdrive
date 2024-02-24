@@ -205,15 +205,15 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
                     IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
                 );
             }
-
-            // Distribute the excess idle to the withdrawal pool.
-            _distributeExcessIdle(vaultSharePrice);
         } else {
             // Apply the zombie close to the state and adjust the share proceeds
             // to account for negative interest that might have accrued to the
             // zombie share reserves.
             shareProceeds = _applyZombieClose(shareProceeds, vaultSharePrice);
         }
+
+        // Distribute the excess idle to the withdrawal pool.
+        _distributeExcessIdle(vaultSharePrice);
 
         // Withdraw the profit to the trader. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
