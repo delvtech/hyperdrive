@@ -102,11 +102,14 @@ interface IHyperdriveCore is IMultiTokenCore {
 
     /// @notice Allows an LP to burn shares and withdraw from the pool.
     /// @param _lpShares The LP shares to burn.
-    /// @param _minOutputPerShare The minimum amount of base per LP share that
-    ///        was redeemed.
+    /// @param _minOutputPerShare The minimum amount the LP expects to
+    ///        receive for each withdrawal share that is burned. The units of
+    ///        this quantity are either base or vault shares, depending on the
+    ///        value of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
     /// @return proceeds The amount the LP removing liquidity receives. The
-    ///         LP receives a proportional amount of the pool's idle capital
+    ///         units of this quantity are either base or vault shares,
+    ///         depending on the value of `_options.asBase`.
     /// @return withdrawalShares The base that the LP receives buys out some of
     ///         their LP shares, but it may not be sufficient to fully buy the
     ///         LP out. In this case, the LP receives withdrawal shares equal
@@ -123,10 +126,14 @@ interface IHyperdriveCore is IMultiTokenCore {
     ///      amount of the specified withdrawal shares given the amount of
     ///      withdrawal shares ready to withdraw.
     /// @param _withdrawalShares The withdrawal shares to redeem.
-    /// @param _minOutputPerShare The minimum amount of base the LP expects to
-    ///        receive for each withdrawal share that is burned.
+    /// @param _minOutputPerShare The minimum amount the LP expects to
+    ///        receive for each withdrawal share that is burned. The units of
+    ///        this quantity are either base or vault shares, depending on the
+    ///        value of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
-    /// @return proceeds The amount the LP received.
+    /// @return proceeds The amount the LP received. The units of this quantity
+    ///         are either base or vault shares, depending on the value of
+    ///         `_options.asBase`.
     /// @return withdrawalSharesRedeemed The amount of withdrawal shares that
     ///         were redeemed.
     function redeemWithdrawalShares(

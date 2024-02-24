@@ -87,8 +87,10 @@ abstract contract HyperdriveTarget1 is
     ///         maximum amount of the specified withdrawal shares given the
     ///         amount of withdrawal shares ready to withdraw.
     /// @param _withdrawalShares The withdrawal shares to redeem.
-    /// @param _minOutputPerShare The minimum amount of base the LP expects to
-    ///        receive for each withdrawal share that is burned.
+    /// @param _minOutputPerShare The minimum amount the LP expects to
+    ///        receive for each withdrawal share that is burned. The units of
+    ///        this quantity are either base or vault shares, depending on the
+    ///        value of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
     /// @return The amount the LP received.
     /// @return The amount of withdrawal shares that were redeemed.

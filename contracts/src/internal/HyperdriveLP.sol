@@ -248,8 +248,10 @@ abstract contract HyperdriveLP is
 
     /// @dev Allows an LP to burn shares and withdraw from the pool.
     /// @param _lpShares The LP shares to burn.
-    /// @param _minOutputPerShare The minimum amount of base per LP share that
-    ///        was redeemed.
+    /// @param _minOutputPerShare The minimum amount the LP expects to
+    ///        receive for each withdrawal share that is burned. The units of
+    ///        this quantity are either base or vault shares, depending on the
+    ///        value of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
     /// @return proceeds The amount the LP removing liquidity receives. The
     ///         LP receives a proportional amount of the pool's idle capital
@@ -322,8 +324,10 @@ abstract contract HyperdriveLP is
     ///      amount of the specified withdrawal shares given the amount of
     ///      withdrawal shares ready to withdraw.
     /// @param _withdrawalShares The withdrawal shares to redeem.
-    /// @param _minOutputPerShare The minimum amount of base the LP expects to
-    ///        receive for each withdrawal share that is burned.
+    /// @param _minOutputPerShare The minimum amount the LP expects to
+    ///        receive for each withdrawal share that is burned. The units of
+    ///        this quantity are either base or vault shares, depending on the
+    ///        value of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
     /// @return proceeds The amount the LP received.
     /// @return withdrawalSharesRedeemed The amount of withdrawal shares that
@@ -377,10 +381,14 @@ abstract contract HyperdriveLP is
     /// @param _source The address that owns the withdrawal shares to redeem.
     /// @param _withdrawalShares The withdrawal shares to redeem.
     /// @param _sharePrice The share price.
-    /// @param _minOutputPerShare The minimum amount of base the LP expects to
-    ///        receive for each withdrawal share that is burned.
+    /// @param _minOutputPerShare The minimum amount the LP expects to
+    ///        receive for each withdrawal share that is burned. The units of
+    ///        this quantity are either base or vault shares, depending on the
+    ///        value of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
-    /// @return proceeds The amount the LP received.
+    /// @return proceeds The amount the LP received. The units of this quantity
+    ///         are either base or vault shares, depending on the value of
+    ///         `_options.asBase`.
     /// @return withdrawalSharesRedeemed The amount of withdrawal shares that
     ///         were redeemed.
     function _redeemWithdrawalSharesInternal(
