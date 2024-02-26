@@ -480,6 +480,14 @@ library LPMath {
             return (0, 0);
         }
 
+        // Step 4: If the share proceeds are greater than or equal to the
+        // maximum share reserves delta that was previously calculated, then
+        // we can't distribute excess idle since we ruled out the possibility
+        // of paying out the full maximum share reserves delta in step 3.
+        if (shareProceeds >= maxShareReservesDelta) {
+            return (0, 0);
+        }
+
         // Step 5: Return the amount of withdrawal shares redeemed and the
         // share proceeds.
         return (withdrawalSharesRedeemed, shareProceeds);
@@ -561,16 +569,6 @@ library LPMath {
         uint256 lpTotalSupply = _params.activeLpTotalSupply +
             _params.withdrawalSharesTotalSupply;
 
-        // If the pool is net neutral, we can solve directly.
-        if (_params.netCurveTrade == 0) {
-            // NOTE: Round down since this is the final result.
-            return
-                _params.startingPresentValue.mulDivDown(
-                    _params.withdrawalSharesTotalSupply,
-                    lpTotalSupply
-                );
-        }
-
         // NOTE: Round the initial guess down to avoid overshooting.
         //
         // We make an initial guess for Newton's method by assuming that the
@@ -579,11 +577,17 @@ library LPMath {
         // withdrawal pool should receive more than this, but it's a good
         // starting point. The calculation is:
         //
-        // x_0 = (PV(0) / l) * w
+        // x_0 = w * (PV(0) / l)
         uint256 shareProceeds = _params.withdrawalSharesTotalSupply.mulDivDown(
             _params.startingPresentValue,
             lpTotalSupply
         );
+
+        // If the pool is net neutral, the initial guess is equal to the final
+        // result.
+        if (_params.netCurveTrade == 0) {
+            return shareProceeds;
+        }
 
         // If the net curve trade is positive, the pool is net long.
         if (_params.netCurveTrade > 0) {
