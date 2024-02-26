@@ -87,6 +87,10 @@ impl State {
         let ending_spot_price = self.spot_price_after_close_short(share_reserves_delta, bond_delta);
         let max_spot_price = self.calculate_close_short_max_spot_price();
 
+        // println!("ending_spot_price {}", ending_spot_price);
+        // println!("max_spot_price {}", max_spot_price);
+        println!();
+
         // TODO: if we support negative interest we'll need to remove this panic and support that path.
         if ending_spot_price > max_spot_price {
             // TODO would be nice to return a `Result` here instead of a panic.
@@ -138,37 +142,6 @@ impl State {
         state.info.share_reserves += share_amount.into();
         state.get_spot_price()
     }
-}
-
-fn _i256_to_i128_with_precision_loss(value: I256) -> i128 {
-    // Check if the original value is negative
-    let is_negative = value < I256::zero();
-
-    // Work with the absolute value to ensure it's positive
-    let abs_value = if is_negative { -value } else { value };
-
-    // Perform the conversion on the absolute value
-    let fixed_point_value = FixedPoint::from(abs_value);
-    let mut i128_value = _fixed_point_to_i128_with_loss(fixed_point_value);
-
-    // If the original value was negative, negate the result
-    if is_negative {
-        i128_value = -i128_value;
-    }
-
-    i128_value
-}
-
-fn _fixed_point_to_i128_with_loss(fixed_point_value: FixedPoint) -> i128 {
-    // This function now assumes fixed_point_value is always positive,
-    // so no changes are needed here if it only deals with the conversion logic.
-    let value_as_u256: U256 = fixed_point_value.into();
-    let scaling_factor = U256::exp10(18); // Adjust this scaling factor as needed
-    let scaled_value = value_as_u256 / scaling_factor;
-    let result_as_u128: u128 = scaled_value.as_u128();
-
-    // Since we're working with absolute values, no need to handle negatives here
-    result_as_u128 as i128
 }
 
 #[cfg(test)]
@@ -288,12 +261,6 @@ mod tests {
             let open_vault_share_price = rng.gen_range(fixed!(5e17)..=fixed!(10e18));
             let close_vault_share_price = rng.gen_range(fixed!(5e17)..=fixed!(10e18));
 
-            let share_adjustment = _i256_to_i128_with_precision_loss(state.share_adjustment());
-            let mut new_pool_info = state.info.clone();
-            new_pool_info.share_adjustment = I256::from(share_adjustment);
-            let mut state = state.clone();
-            state.info = new_pool_info;
-
             let result = panic::catch_unwind(|| {
                 state.calculate_close_short(
                     in_,
@@ -303,14 +270,20 @@ mod tests {
                 )
             });
 
-            // If the share_adjustment conversion to i128 works then we'll update the market_state.  Otherwise we'll just skip the test.
-            let share_adjustment = _i256_to_i128_with_precision_loss(state.share_adjustment());
+            let maxi128 = I256::from(FixedPoint::from(170141183460469231731687303715884105727));
+            let adjustment_over_max_i128 = state.share_adjustment() > maxi128;
+
+            if adjustment_over_max_i128 {
+                println!("state.share_adjustment {}", state.share_adjustment());
+                println!("adjustment_over_max_i128 {adjustment_over_max_i128}");
+            }
+
             let market_state = MarketState {
                 share_reserves: state.share_reserves().into(),
                 bond_reserves: state.bond_reserves().into(),
                 long_exposure: state.long_exposure().into(),
                 longs_outstanding: state.longs_outstanding().into(),
-                share_adjustment: share_adjustment,
+                share_adjustment: state.share_adjustment().as_i128(),
                 shorts_outstanding: state.shorts_outstanding().into(),
                 long_average_maturity_time: state.long_average_maturity_time().into(),
                 short_average_maturity_time: state.short_average_maturity_time().into(),
@@ -334,7 +307,9 @@ mod tests {
                 .call()
                 .await
             {
-                Ok(expected) => assert_eq!(result.unwrap(), FixedPoint::from(expected.2)),
+                Ok(expected) => {
+                    assert_eq!(result.unwrap(), FixedPoint::from(expected.2))
+                }
                 Err(_) => assert!(result.is_err()),
             }
         }
