@@ -3,7 +3,7 @@ name: Rust Test
 on:
   push:
   pull_request:
-  merge_groups:
+  merge_group:
 
 jobs:
   # Check if files in the /contracts, /test, /crates, or /lib directories or the

@@ -3,7 +3,7 @@ name: Solidity Lint
 on:
   push:
   pull_request:
-  merge_groups:
+  merge_group:
 
 jobs:
   detect-changes:
