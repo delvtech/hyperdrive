@@ -2,13 +2,15 @@ name: Rust Lint
 
 on:
   push:
-    branches:
-      - main
   pull_request:
-    branches:
-      - main
+  merge_groups:
 
 jobs:
+  detect-changes:
+    uses: ./.github/workflows/check_diff.yaml
+    with:
+      pattern: ^crates/\|^test/rust/\|^Cargo\.lock$\|^Cargo\.toml$\|^rustfmt\.toml$
+
   lint:
     name: rust lint
     runs-on: ubuntu-latest

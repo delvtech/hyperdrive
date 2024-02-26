@@ -2,13 +2,15 @@ name: Benchmark
 
 on:
   push:
-    branches:
-      - main
   pull_request:
-    branches:
-      - main
+  merge_groups:
 
 jobs:
+  detect-changes:
+    uses: ./.github/workflows/check_diff.yaml
+    with:
+      pattern: ^contracts/\|^test/\|^lib/\|^foundry\.toml$\|^python/gas_benchmarks\.py$
+
   benchmark:
     name: benchmark
     runs-on: ubuntu-latest
@@ -22,13 +24,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18.x
-
-      - name: install packages
-        uses: borales/actions-yarn@v4
-        with:
-          cmd: install # will run `yarn install` command
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # if needed
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1.0.10

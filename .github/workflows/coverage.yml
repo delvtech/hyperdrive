@@ -2,13 +2,15 @@ name: Code Coverage
 
 on:
   push:
-    branches:
-      - main
   pull_request:
-    branches:
-      - main
+  merge_groups:
 
 jobs:
+  detect-changes:
+    uses: ./.github/workflows/check_diff.yaml
+    with:
+      pattern: ^contracts/\|^test/\|^lib/\|^foundry\.toml$\|^lcov\.info$\|^package\.json$\|^yarn\.lock$
+
   coverage:
     name: coverage
     runs-on: ubuntu-latest
