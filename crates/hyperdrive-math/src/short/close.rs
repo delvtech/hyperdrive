@@ -140,42 +140,35 @@ impl State {
     }
 }
 
-#[derive(Debug)]
-struct ConversionError {
-    details: String,
+fn _i256_to_i128_with_precision_loss(value: I256) -> i128 {
+    // Check if the original value is negative
+    let is_negative = value < I256::zero();
+
+    // Work with the absolute value to ensure it's positive
+    let abs_value = if is_negative { -value } else { value };
+
+    // Perform the conversion on the absolute value
+    let fixed_point_value = FixedPoint::from(abs_value);
+    let mut i128_value = _fixed_point_to_i128_with_loss(fixed_point_value);
+
+    // If the original value was negative, negate the result
+    if is_negative {
+        i128_value = -i128_value;
+    }
+
+    i128_value
 }
 
-impl ConversionError {
-    fn new(msg: &str) -> ConversionError {
-        ConversionError {
-            details: msg.to_string(),
-        }
-    }
-}
+fn _fixed_point_to_i128_with_loss(fixed_point_value: FixedPoint) -> i128 {
+    // This function now assumes fixed_point_value is always positive,
+    // so no changes are needed here if it only deals with the conversion logic.
+    let value_as_u256: U256 = fixed_point_value.into();
+    let scaling_factor = U256::exp10(18); // Adjust this scaling factor as needed
+    let scaled_value = value_as_u256 / scaling_factor;
+    let result_as_u128: u128 = scaled_value.as_u128();
 
-impl fmt::Display for ConversionError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.details)
-    }
-}
-
-impl Error for ConversionError {}
-
-// convert I256 to i128 if possible, otherwise, throw a ConversionError.
-fn _i256_to_i128(value: I256) -> Result<i128, ConversionError> {
-    let min = I256::from(i128::MIN);
-    let max = I256::from(i128::MAX);
-
-    if value < min || value > max {
-        Err(ConversionError::new("Value out of i128 range"))
-    } else {
-        // Since I256 does not directly support conversion to i128, we manually handle the conversion.
-        // This approach relies on converting to u128 for the value and then casting to i128.
-        // Ensure this logic aligns with how I256 stores and represents data, especially regarding sign.
-        let as_u128 =
-            u128::try_from(value).map_err(|_| ConversionError::new("Failed to convert to u128"))?;
-        Ok(as_u128 as i128)
-    }
+    // Since we're working with absolute values, no need to handle negatives here
+    result_as_u128 as i128
 }
 
 #[cfg(test)]
@@ -294,6 +287,13 @@ mod tests {
             let normalized_time_remaining = rng.gen_range(fixed!(0)..=fixed!(1e18));
             let open_vault_share_price = rng.gen_range(fixed!(5e17)..=fixed!(10e18));
             let close_vault_share_price = rng.gen_range(fixed!(5e17)..=fixed!(10e18));
+
+            let share_adjustment = _i256_to_i128_with_precision_loss(state.share_adjustment());
+            let mut new_pool_info = state.info.clone();
+            new_pool_info.share_adjustment = I256::from(share_adjustment);
+            let mut state = state.clone();
+            state.info = new_pool_info;
+
             let result = panic::catch_unwind(|| {
                 state.calculate_close_short(
                     in_,
@@ -304,32 +304,23 @@ mod tests {
             });
 
             // If the share_adjustment conversion to i128 works then we'll update the market_state.  Otherwise we'll just skip the test.
-            match _i256_to_i128(state.share_adjustment()) {
-                Ok(share_adjustment) => {
-                    let market_state = MarketState {
-                        share_reserves: state.share_reserves().into(),
-                        bond_reserves: state.bond_reserves().into(),
-                        long_exposure: state.long_exposure().into(),
-                        longs_outstanding: state.longs_outstanding().into(),
-                        share_adjustment: share_adjustment,
-                        shorts_outstanding: state.shorts_outstanding().into(),
-                        long_average_maturity_time: state.long_average_maturity_time().into(),
-                        short_average_maturity_time: state.short_average_maturity_time().into(),
-                        is_initialized: true,
-                        is_paused: false,
-                        zombie_base_proceeds: 0,
-                        zombie_share_reserves: 0,
-                    };
-
-                    // Sync states between actual and mock
-                    let _ = mock.set_market_state(market_state).call().await;
-                }
-                Err(_) => {
-                    // If there's an error converting, skip the rest of the test
-                    eprintln!("Skipping test due to conversion error.");
-                    return Ok(()); // Return early to skip the test
-                }
-            }
+            let share_adjustment = _i256_to_i128_with_precision_loss(state.share_adjustment());
+            let market_state = MarketState {
+                share_reserves: state.share_reserves().into(),
+                bond_reserves: state.bond_reserves().into(),
+                long_exposure: state.long_exposure().into(),
+                longs_outstanding: state.longs_outstanding().into(),
+                share_adjustment: share_adjustment,
+                shorts_outstanding: state.shorts_outstanding().into(),
+                long_average_maturity_time: state.long_average_maturity_time().into(),
+                short_average_maturity_time: state.short_average_maturity_time().into(),
+                is_initialized: true,
+                is_paused: false,
+                zombie_base_proceeds: 0,
+                zombie_share_reserves: 0,
+            };
+            // Sync states between actual and mock
+            let _ = mock.set_market_state(market_state).call().await;
 
             // Attempt to simulate the closing of a short position using the mock contract, and
             // compare the result with the expected output to validate the correctness of the
