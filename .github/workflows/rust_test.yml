@@ -16,6 +16,8 @@ jobs:
   test:
     name: rust test
     runs-on: ubuntu-latest-m
+    needs: detect-changes
+    if: needs.detect-changes.outputs.changed == 'true'
     steps:
       - uses: actions/checkout@v3
         with:
