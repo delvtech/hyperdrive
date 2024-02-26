@@ -270,13 +270,11 @@ mod tests {
                 )
             });
 
+            // sanity check to make sure we aren't failing because of a conversion since
+            // share_adjustment in PoolInfo is a I256 and an i128 in MarketState
             let maxi128 = I256::from(FixedPoint::from(170141183460469231731687303715884105727));
             let adjustment_over_max_i128 = state.share_adjustment() > maxi128;
-
-            if adjustment_over_max_i128 {
-                println!("state.share_adjustment {}", state.share_adjustment());
-                println!("adjustment_over_max_i128 {adjustment_over_max_i128}");
-            }
+            assert!(!adjustment_over_max_i128);
 
             let market_state = MarketState {
                 share_reserves: state.share_reserves().into(),
