@@ -11,7 +11,7 @@ jobs:
   detect-changes:
     uses: ./.github/workflows/check_diff.yaml
     with:
-      pattern: ^contracts/\|^test/\|^crates/\|^lib/\|^foundry\.toml$\|^Cargo\.lock$\|^Cargo\.toml$
+      pattern: ^contracts/\|^test/\|^crates/\|^lib/\|^foundry\.toml$\|^Cargo\.lock$\|^Cargo\.toml$\|^\.github/workflows/rust_test\.yml$
 
   test:
     name: rust test

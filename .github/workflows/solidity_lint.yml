@@ -9,7 +9,7 @@ jobs:
   detect-changes:
     uses: ./.github/workflows/check_diff.yaml
     with:
-      pattern: ^contracts/\|^test/\|^lib/\|^foundry\.toml$\|^cSpell\.json$\|^package\.json$\|^yarn\.lock$\|^\.prettierrc$\|^\.prettierignore$\|^\.solhint\.json$
+      pattern: ^contracts/\|^test/\|^lib/\|^foundry\.toml$\|^cSpell\.json$\|^package\.json$\|^yarn\.lock$\|^\.prettierrc$\|^\.prettierignore$\|^\.solhint\.json$\|^\.github/workflows/solidity_lint\.yml$
 
   lint:
     name: solidity lint

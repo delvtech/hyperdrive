@@ -9,7 +9,7 @@ jobs:
   detect-changes:
     uses: ./.github/workflows/check_diff.yaml
     with:
-      pattern: ^contracts/\|^test/\|^lib/\|^foundry\.toml$
+      pattern: ^contracts/\|^test/\|^lib/\|^foundry\.toml$\|^\.github/workflows/solidity_test\.yml$
 
   test:
     name: solidity test

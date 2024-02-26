@@ -9,7 +9,7 @@ jobs:
   detect-changes:
     uses: ./.github/workflows/check_diff.yaml
     with:
-      pattern: ^contracts/\|^test/\|^lib/\|^foundry\.toml$\|^python/gas_benchmarks\.py$
+      pattern: ^contracts/\|^test/\|^lib/\|^foundry\.toml$\|^python/gas_benchmarks\.py$\|^\.github/workflows/benchmark\.yml$
 
   benchmark:
     name: benchmark

@@ -9,7 +9,7 @@ jobs:
   detect-changes:
     uses: ./.github/workflows/check_diff.yaml
     with:
-      pattern: ^contracts/\|^test/\|^lib/\|^foundry\.toml$\|^lcov\.info$\|^package\.json$\|^yarn\.lock$
+      pattern: ^contracts/\|^test/\|^lib/\|^foundry\.toml$\|^lcov\.info$\|^package\.json$\|^yarn\.lock$\|^\.github/workflows/coverage\.yml$
 
   coverage:
     name: coverage

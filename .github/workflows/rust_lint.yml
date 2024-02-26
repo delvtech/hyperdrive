@@ -9,7 +9,7 @@ jobs:
   detect-changes:
     uses: ./.github/workflows/check_diff.yaml
     with:
-      pattern: ^crates/\|^test/rust/\|^Cargo\.lock$\|^Cargo\.toml$\|^rustfmt\.toml$
+      pattern: ^crates/\|^test/rust/\|^Cargo\.lock$\|^Cargo\.toml$\|^rustfmt\.toml$\|^\.github/workflows/rust_lint\.yml$
 
   lint:
     name: rust lint
