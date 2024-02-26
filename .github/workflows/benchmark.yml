@@ -22,16 +22,10 @@ jobs:
     steps:
       # Install the dependencies.
       - uses: actions/checkout@v2
-      - name: install node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18.x
-
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1.0.10
         with:
           version: nightly
-
       - uses: actions/setup-python@v4
         with:
           python-version: "3.10"
