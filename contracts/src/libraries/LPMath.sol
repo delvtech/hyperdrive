@@ -821,12 +821,7 @@ library LPMath {
             return (0, false);
         }
 
-        // Calculate the net flat trade using the original reserves.
-        _params.presentValueParams.shareReserves = _params
-            .originalShareReserves;
-        _params.presentValueParams.shareAdjustment = _params
-            .originalShareAdjustment;
-        _params.presentValueParams.bondReserves = _params.originalBondReserves;
+        // Calculate the net flat trade.
         int256 netFlatTrade = calculateNetFlatTrade(_params.presentValueParams);
 
         // NOTE: Round up since this is the rhs of the final subtraction.
