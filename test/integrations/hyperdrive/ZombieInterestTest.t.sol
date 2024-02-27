@@ -74,6 +74,7 @@ contract ZombieInterestTest is HyperdriveTest {
         }
     }
 
+    /// forge-config: default.fuzz.runs = 1000
     function _test_zombie_interest_long_lp(
         uint256 variableRateParam,
         uint256 longTradeSizeParam,
@@ -304,6 +305,7 @@ contract ZombieInterestTest is HyperdriveTest {
         }
     }
 
+    /// forge-config: default.fuzz.runs = 1000
     function _test_zombie_interest_short_lp(
         uint256 variableRateParam,
         uint256 shortTradeSizeParam,

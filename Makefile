@@ -15,11 +15,18 @@ build-rust:
 
 ### Test ###
 
+SOLIDITY_HEAVY_TESTS = IntraCheckpointNettingTest|LPWithdrawalTest|ZombieInterestTest
+
 test: 
 	make test-sol && make test-rust
 
-test-sol:
-	forge test -vv
+test-sol-core:
+	forge test -vv --no-match-contract "$(SOLIDITY_HEAVY_TESTS)"
+
+# This job runs the heavier fuzz tests. Breaking these out onto a separate 
+# machine speeds up CI execution.
+test-sol-heavy:
+	forge test -vv --match-contract "$(SOLIDITY_HEAVY_TESTS)"
 
 test-rust:
 	cargo test --workspace --exclude hyperdrive-math && \
