@@ -274,7 +274,6 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
-            uint256 bondProceeds,
             uint256 totalGovernanceFee
         )
     {
