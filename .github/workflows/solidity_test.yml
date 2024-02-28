@@ -13,7 +13,7 @@ jobs:
 
   test-core:
     name: solidity test core
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-16core
     needs: detect-changes
     if: needs.detect-changes.outputs.changed == 'true'
     env:
@@ -35,7 +35,7 @@ jobs:
 
   test-heavy:
     name: solidity test lp withdrawal
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-16core
     needs: detect-changes
     if: needs.detect-changes.outputs.changed == 'true'
     env:
@@ -57,7 +57,7 @@ jobs:
 
   test-netting:
     name: solidity test netting
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-16core
     needs: detect-changes
     if: needs.detect-changes.outputs.changed == 'true'
     env:
@@ -79,7 +79,7 @@ jobs:
 
   test-zombie:
     name: solidity test zombie
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-16core
     needs: detect-changes
     if: needs.detect-changes.outputs.changed == 'true'
     env:
