@@ -15,23 +15,27 @@ build-rust:
 
 ### Test ###
 
-SOLIDITY_HEAVY_TESTS = LPWithdrawalTest|ZombieInterestTest
+SOLIDITY_LP_WITHDRAWAL_TESTS = LPWithdrawalTest
 SOLIDITY_NETTING_TESTS = IntraCheckpointNettingTest
+SOLIDITY_ZOMBIE_TESTS = ZombieInterestTest
 
 test: 
 	make test-sol && make test-rust
 
 test-sol-core:
-	forge test -vv --no-match-contract "$(SOLIDITY_HEAVY_TESTS)|$(SOLIDITY_NETTING_TESTS)"
+	forge test -vv --no-match-contract "$(SOLIDITY_LP_WITHDRAWAL_TESTS)|$(SOLIDITY_NETTING_TESTS)|$(SOLIDITY_ZOMBIE_TESTS)"
 
-# This job runs the heavier fuzz tests. Breaking these out onto a separate 
-# machine speeds up CI execution.
-test-sol-heavy:
-	forge test -vv --match-contract "$(SOLIDITY_HEAVY_TESTS)"
+# NOTE: Breaking these out onto a separate machine speeds up CI execution.
+test-sol-lp-withdrawal:
+	forge test -vv --match-contract "$(SOLIDITY_LP_WITHDRAWAL_TESTS)"
 
-# This job runs the netting tests.
+# NOTE: Breaking these out onto a separate machine speeds up CI execution.
 test-sol-netting:
 	forge test -vv --match-contract "$(SOLIDITY_NETTING_TESTS)"
+
+# NOTE: Breaking these out onto a separate machine speeds up CI execution.
+test-sol-zombie:
+	forge test -vv --match-contract "$(SOLIDITY_ZOMBIE_TESTS)"
 
 test-rust:
 	cargo test --workspace --exclude hyperdrive-math && \
