@@ -53,7 +53,7 @@ jobs:
           version: nightly
 
       - name: test
-        run: FOUNDRY_FUZZ_RUNS=10000 make test-sol-lp_withdrawal
+        run: FOUNDRY_FUZZ_RUNS=10000 make test-sol-lp-withdrawal
 
   test-netting:
     name: solidity test netting
