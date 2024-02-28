@@ -54,3 +54,25 @@ jobs:
 
       - name: test
         run: FOUNDRY_FUZZ_RUNS=10000 make test-sol-heavy
+
+  test-netting:
+    name: solidity test netting
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.changed == 'true'
+    env:
+      GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
+      MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: install foundry
+        uses: foundry-rs/foundry-toolchain@v1.0.10
+        with:
+          version: nightly
+
+      - name: test
+        run: FOUNDRY_FUZZ_RUNS=10000 make test-sol-netting
