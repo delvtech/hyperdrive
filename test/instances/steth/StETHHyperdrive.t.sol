@@ -105,15 +105,15 @@ contract StETHHyperdriveTest is HyperdriveTest {
         IHyperdrive.PoolDeployConfig memory config = IHyperdrive
             .PoolDeployConfig({
                 baseToken: IERC20(ETH),
-                linkerFactory: address(0),
-                linkerCodeHash: bytes32(0),
+                linkerFactory: factory.linkerFactory(),
+                linkerCodeHash: factory.linkerCodeHash(),
                 minimumShareReserves: 1e15,
                 minimumTransactionAmount: 1e15,
                 positionDuration: POSITION_DURATION,
                 checkpointDuration: CHECKPOINT_DURATION,
                 timeStretch: 0,
-                governance: address(0),
-                feeCollector: address(0),
+                governance: factory.hyperdriveGovernance(),
+                feeCollector: factory.feeCollector(),
                 fees: IHyperdrive.Fees({
                     curve: 0,
                     flat: 0,
@@ -221,10 +221,10 @@ contract StETHHyperdriveTest is HyperdriveTest {
         IHyperdrive.PoolDeployConfig memory config = IHyperdrive
             .PoolDeployConfig({
                 baseToken: IERC20(ETH),
-                governance: address(0),
-                feeCollector: address(0),
-                linkerFactory: address(0),
-                linkerCodeHash: bytes32(0),
+                governance: factory.hyperdriveGovernance(),
+                feeCollector: factory.feeCollector(),
+                linkerFactory: factory.linkerFactory(),
+                linkerCodeHash: factory.linkerCodeHash(),
                 minimumShareReserves: 1e15,
                 minimumTransactionAmount: 1e15,
                 positionDuration: POSITION_DURATION,

@@ -887,19 +887,6 @@ contract HyperdriveFactory is IHyperdriveFactory {
             revert IHyperdriveFactory.InvalidFees();
         }
 
-        // Ensure that the linker factory, linker code hash, fee collector, and
-        // governance addresses and time stretch aren't set. This ensures that
-        // the deployer isn't trying to set these values.
-        if (
-            _config.linkerFactory != address(0) ||
-            _config.linkerCodeHash != bytes32(0) ||
-            _config.feeCollector != address(0) ||
-            _config.governance != address(0) ||
-            _config.timeStretch != 0
-        ) {
-            revert IHyperdriveFactory.InvalidDeployConfig();
-        }
-
         // Ensure that specified fixed APR is within the minimum and maximum
         // fixed APRs.
         if (_fixedAPR < minFixedAPR || _fixedAPR > maxFixedAPR) {
@@ -921,6 +908,21 @@ contract HyperdriveFactory is IHyperdriveFactory {
             _timeStretchAPR,
             _config.positionDuration
         );
+
+        // Ensure that the linker factory, linker code hash, fee collector, and
+        // governance addresses are set to the expected values. This ensures
+        // that the deployer is aware of the correct values. The time stretch
+        // should be set to zero to signal that the deployer is aware that it
+        // will be overwritten.
+        if (
+            _config.linkerFactory != linkerFactory ||
+            _config.linkerCodeHash != linkerCodeHash ||
+            _config.feeCollector != feeCollector ||
+            _config.governance != hyperdriveGovernance ||
+            _config.timeStretch != 0
+        ) {
+            revert IHyperdriveFactory.InvalidDeployConfig();
+        }
 
         // Override the config values to the default values set by governance.
         // The factory assumes the governance role during deployment so that it

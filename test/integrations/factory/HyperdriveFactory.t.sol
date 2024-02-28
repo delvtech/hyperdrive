@@ -26,6 +26,7 @@ import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ETH } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockHyperdriveDeployer, MockHyperdriveTargetDeployer } from "contracts/test/MockHyperdriveDeployer.sol";
@@ -1433,11 +1434,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
                 timeStretch: 0,
-                governance: address(0),
-                feeCollector: address(0),
+                governance: factory.hyperdriveGovernance(),
+                feeCollector: factory.feeCollector(),
                 fees: IHyperdrive.Fees(0.01e18, 0.001e18, 0.15e18, 0.03e18),
-                linkerFactory: address(0),
-                linkerCodeHash: bytes32(0)
+                linkerFactory: factory.linkerFactory(),
+                linkerCodeHash: factory.linkerCodeHash()
             });
         vm.stopPrank();
         vm.startPrank(bob);
@@ -2013,12 +2014,12 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         }
 
         // Ensure than an instance can't be deployed with a linker factory that
-        // is set.
+        // is set incorrectly.
         {
             vm.stopPrank();
             vm.startPrank(bob);
             address oldLinkerFactory = config.linkerFactory;
-            config.linkerFactory = address(0xdeadbeef);
+            config.linkerFactory = alice;
             vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
             factory.deployAndInitialize(
                 bytes32(uint256(0xdeadbeef)),
@@ -2062,7 +2063,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             vm.stopPrank();
             vm.startPrank(bob);
             address oldFeeCollector = config.feeCollector;
-            config.feeCollector = address(0xdeadbeef);
+            config.feeCollector = alice;
             vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
             factory.deployAndInitialize(
                 bytes32(uint256(0xdeadbeef)),
@@ -2084,7 +2085,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             vm.stopPrank();
             vm.startPrank(bob);
             address oldGovernance = config.governance;
-            config.governance = address(0xdeadbeef);
+            config.governance = alice;
             vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
             factory.deployAndInitialize(
                 bytes32(uint256(0xdeadbeef)),
@@ -2216,11 +2217,11 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: 0,
-            governance: address(0),
-            feeCollector: address(0),
+            governance: factory.hyperdriveGovernance(),
+            feeCollector: factory.feeCollector(),
             fees: IHyperdrive.Fees(0.01e18, 0.001e18, 0.15e18, 0.03e18),
-            linkerFactory: address(0),
-            linkerCodeHash: bytes32(0)
+            linkerFactory: factory.linkerFactory(),
+            linkerCodeHash: factory.linkerCodeHash()
         });
 
         vm.stopPrank();
