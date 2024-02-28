@@ -65,7 +65,7 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         // NOTE: Some pools may require larger minimum transaction amounts to be
         // considered safe. This is just a sanity check.
         if (
-            _deployConfig.minimumShareReserves <
+            _deployConfig.minimumTransactionAmount <
             10 ** (_deployConfig.baseToken.decimals() - 4)
         ) {
             revert IHyperdriveDeployerCoordinator
