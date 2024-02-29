@@ -78,11 +78,9 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         // Note: All state deltas are derived from the output of the
         // deposit function.
         uint256 shareReservesDelta;
-        uint256 bondReservesDelta;
         uint256 totalGovernanceFee;
         (
             shareReservesDelta,
-            bondReservesDelta,
             bondProceeds,
             totalGovernanceFee
         ) = _calculateOpenLong(sharesDeposited, vaultSharePrice);
@@ -100,7 +98,6 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         _applyOpenLong(
             shareReservesDelta,
             bondProceeds,
-            bondReservesDelta,
             vaultSharePrice,
             maturityTime
         );
@@ -243,13 +240,11 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
     /// @dev Applies an open long to the state. This includes updating the
     ///      reserves and maintaining the reserve invariants.
     /// @param _shareReservesDelta The amount of shares paid to the curve.
-    /// @param _bondProceeds The amount of bonds purchased by the trader.
     /// @param _bondReservesDelta The amount of bonds sold by the curve.
     /// @param _vaultSharePrice The current vault share price.
     /// @param _maturityTime The maturity time of the long.
     function _applyOpenLong(
         uint256 _shareReservesDelta,
-        uint256 _bondProceeds,
         uint256 _bondReservesDelta,
         uint256 _vaultSharePrice,
         uint256 _maturityTime
@@ -262,7 +257,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             .updateWeightedAverage(
                 uint256(longsOutstanding_),
                 _maturityTime * 1e18, // scale up to fixed point scale
-                _bondProceeds,
+                _bondReservesDelta,
                 true
             )
             .toUint128();
@@ -271,7 +266,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         // longs outstanding.
         _marketState.shareReserves += _shareReservesDelta.toUint128();
         _marketState.bondReserves -= _bondReservesDelta.toUint128();
-        longsOutstanding_ += _bondProceeds.toUint128();
+        longsOutstanding_ += _bondReservesDelta.toUint128();
         _marketState.longsOutstanding = longsOutstanding_;
 
         // Update the global long exposure. Since we're opening a long, the
@@ -279,7 +274,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         int256 nonNettedLongs = _nonNettedLongs(_maturityTime);
         _updateLongExposure(
             nonNettedLongs,
-            nonNettedLongs + int256(_bondProceeds)
+            nonNettedLongs + int256(_bondReservesDelta)
         );
 
         // We need to check solvency because longs increase the system's exposure.
@@ -379,7 +374,6 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
     /// @param _vaultSharePrice The current vault share price.
     /// @return shareReservesDelta The change in the share reserves.
     /// @return bondReservesDelta The change in the bond reserves.
-    /// @return bondProceeds The proceeds in bonds.
     /// @return totalGovernanceFee The governance fee in shares.
     function _calculateOpenLong(
         uint256 _shareAmount,
@@ -390,7 +384,6 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
-            uint256 bondProceeds,
             uint256 totalGovernanceFee
         )
     {
@@ -440,22 +433,10 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
                 _vaultSharePrice
             );
 
-        // Calculate the number of bonds the trader receives.
-        // This is the amount of bonds the trader receives minus the fees.
-        bondProceeds = bondReservesDelta - curveFee;
-
-        // Calculate how many bonds to remove from the bondReserves.
-        // The bondReservesDelta represents how many bonds to remove
-        // This should be the number of bonds the trader receives plus
-        // the number of bonds we need to pay to governance.
-        // In other words, we want to keep the curveFee in the bondReserves;
-        // however, since the governanceCurveFee will be paid from the
-        // sharesReserves we don't need it removed from the bondReserves.
-        // bondProceeds and governanceCurveFee are already in bonds so no
-        // conversion is needed:
-        //
-        // bonds = bonds + bonds
-        bondReservesDelta = bondProceeds + governanceCurveFee;
+        // Calculate the impact of the curve fee on the bond reservse. The curve
+        // fee benefits the LPs by causing less bonds to be deducted from the
+        // bond reserves.
+        bondReservesDelta -= curveFee;
 
         // NOTE: Round down to underestimate the governance fee.
         //
@@ -479,12 +460,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         // shares = shares - shares
         shareReservesDelta = _shareAmount - totalGovernanceFee;
 
-        return (
-            shareReservesDelta,
-            bondReservesDelta,
-            bondProceeds,
-            totalGovernanceFee
-        );
+        return (shareReservesDelta, bondReservesDelta, totalGovernanceFee);
     }
 
     /// @dev Calculate the pool reserve and trader deltas that result from
@@ -540,6 +516,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             // pays a fee on the curve and flat parts of the trade. Most of the
             // fees go the LPs, but a portion goes to governance.
             uint256 curveFee;
+            uint256 governanceCurveFee;
             uint256 flatFee;
             uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
                 _effectiveShareReserves(),
@@ -547,22 +524,26 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
                 _initialVaultSharePrice,
                 _timeStretch
             );
+            uint256 vaultSharePrice = _vaultSharePrice; // avoid stack-too-deep
             (
                 curveFee, // shares
                 flatFee, // shares
-                ,
+                governanceCurveFee, // shares
                 totalGovernanceFee // shares
             ) = _calculateFeesGivenBonds(
                 _bondAmount,
                 timeRemaining,
                 spotPrice,
-                _vaultSharePrice
+                vaultSharePrice
             );
 
             // The curve fee (shares) is paid to the LPs, so we subtract it from
             // the share curve delta (shares) to prevent it from being debited
-            // from the reserves when the state is updated.
-            shareCurveDelta -= curveFee;
+            // from the reserves when the state is updated. The governance curve
+            // fee (shares) is paid to governance, so we add it back to the
+            // share curve delta (shares) to ensure that the governance fee
+            // isn't included in the share adjustment.
+            shareCurveDelta -= (curveFee - governanceCurveFee);
 
             // The trader pays the curve fee (shares) and flat fee (shares) to
             // the pool, so we debit them from the trader's share proceeds
