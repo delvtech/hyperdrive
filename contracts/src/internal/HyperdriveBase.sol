@@ -271,11 +271,9 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         // NOTE: Round the lhs down and the rhs up to make the check more
         // conservative.
         return
-            int256(
-                (uint256(_marketState.shareReserves).mulDown(_vaultSharePrice))
-            ) >=
-            int128(_marketState.longExposure) +
-                int256(_minimumShareReserves.mulUp(_vaultSharePrice));
+            uint256(_marketState.shareReserves).mulDown(_vaultSharePrice) >=
+            _marketState.longExposure +
+                _minimumShareReserves.mulUp(_vaultSharePrice);
     }
 
     /// @dev Updates the global long exposure.
