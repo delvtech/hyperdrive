@@ -255,7 +255,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             _marketState.longAverageMaturityTime
         )
             .updateWeightedAverage(
-                uint256(longsOutstanding_),
+                longsOutstanding_,
                 _maturityTime * ONE, // scale up to fixed point scale
                 _bondReservesDelta,
                 true
