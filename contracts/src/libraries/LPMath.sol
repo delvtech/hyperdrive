@@ -474,7 +474,8 @@ library LPMath {
         // anything.
         uint256 shareProceeds = calculateDistributeExcessIdleShareProceeds(
             _params,
-            originalEffectiveShareReserves
+            originalEffectiveShareReserves,
+            maxShareReservesDelta
         );
         if (shareProceeds == 0) {
             return (0, 0);
@@ -560,10 +561,14 @@ library LPMath {
     /// @param _params The parameters for the distribute excess idle calculation.
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
+    /// @param _maxShareReservesDelta The maximum change in the share reserves
+    ///        that can result from distributing excess idle. This provides an
+    ///        upper bound on the share proceeds returned from this calculation.
     /// @return The share proceeds to distribute to the withdrawal pool.
     function calculateDistributeExcessIdleShareProceeds(
         DistributeExcessIdleParams memory _params,
-        uint256 _originalEffectiveShareReserves
+        uint256 _originalEffectiveShareReserves,
+        uint256 _maxShareReservesDelta
     ) internal pure returns (uint256) {
         // Calculate the LP total supply.
         uint256 lpTotalSupply = _params.activeLpTotalSupply +
@@ -592,6 +597,10 @@ library LPMath {
         // If the net curve trade is positive, the pool is net long.
         if (_params.netCurveTrade > 0) {
             for (uint256 i = 0; i < SHARE_PROCEEDS_MAX_ITERATIONS; ) {
+                // Clamp the share proceeds to the max share reserves delta
+                // since values above this threshold are always invalid.
+                shareProceeds = shareProceeds.min(_maxShareReservesDelta);
+
                 // Simulate applying the share proceeds to the reserves and
                 // recalculate the present value.
                 (
@@ -624,15 +633,16 @@ library LPMath {
                 // amount of bonds that can be sold with this share proceeds, we
                 // can calculate the derivative using the derivative of
                 // `calculateSharesOutGivenBondsIn`.
+                DistributeExcessIdleParams memory params = _params; // avoid stack-too-deep
                 (uint256 maxBondAmount, bool success) = YieldSpaceMath
                     .calculateMaxSellBondsInSafe(
-                        _params.presentValueParams.shareReserves,
-                        _params.presentValueParams.shareAdjustment,
-                        _params.presentValueParams.bondReserves,
-                        _params.presentValueParams.minimumShareReserves,
+                        params.presentValueParams.shareReserves,
+                        params.presentValueParams.shareAdjustment,
+                        params.presentValueParams.bondReserves,
+                        params.presentValueParams.minimumShareReserves,
                         ONE - _params.presentValueParams.timeStretch,
-                        _params.presentValueParams.vaultSharePrice,
-                        _params.presentValueParams.initialVaultSharePrice
+                        params.presentValueParams.vaultSharePrice,
+                        params.presentValueParams.initialVaultSharePrice
                     );
                 if (!success) {
                     // NOTE: If the max bond amount couldn't be calculated, we
@@ -646,7 +656,7 @@ library LPMath {
                         derivative,
                         success
                     ) = calculateSharesOutGivenBondsInDerivativeSafe(
-                        _params,
+                        params,
                         _originalEffectiveShareReserves,
                         uint256(_params.netCurveTrade)
                     );
@@ -666,7 +676,7 @@ library LPMath {
                         shareProceeds,
                         success
                     ) = calculateDistributeExcessIdleShareProceedsNetLongEdgeCaseSafe(
-                        _params
+                        params
                     );
                     if (!success) {
                         // NOTE: Return 0 to indicate that the share proceeds
@@ -730,8 +740,8 @@ library LPMath {
                 // F(x) = PV(x) * l - PV(0) * (l - w)
                 int256 delta = int256(presentValue.mulDown(lpTotalSupply)) -
                     int256(
-                        _params.startingPresentValue.mulUp(
-                            _params.activeLpTotalSupply
+                        params.startingPresentValue.mulUp(
+                            params.activeLpTotalSupply
                         )
                     );
                 if (delta > 0) {
@@ -764,6 +774,10 @@ library LPMath {
         // Otherwise, the pool is net short.
         else {
             for (uint256 i = 0; i < SHARE_PROCEEDS_MAX_ITERATIONS; ) {
+                // Clamp the share proceeds to the max share reserves delta
+                // since values above this threshold are always invalid.
+                shareProceeds = shareProceeds.min(_maxShareReservesDelta);
+
                 // Simulate applying the share proceeds to the reserves and
                 // recalculate the present value.
                 (
@@ -792,10 +806,11 @@ library LPMath {
                     break;
                 }
 
-                // If the net curve trade is less than or equal to the maximum
-                // amount of bonds that can be sold with this share proceeds, we
-                // can calculate the derivative using the derivative of
-                // `calculateSharesOutGivenBondsIn`.
+                // Since the share proceeds are clamped to the max share
+                // reserves delta, we are always operating with the regime where
+                // the net curve trade is less than the maximum bond amount.
+                // With this in mind, we can calculate the derivative using the
+                // derivative of `calculateSharesOutGivenBondsIn`.
                 (
                     uint256 derivative,
                     bool success
