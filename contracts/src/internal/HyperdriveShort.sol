@@ -302,7 +302,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         )
             .updateWeightedAverage(
                 _marketState.shortsOutstanding,
-                _maturityTime * 1e18, // scale up to fixed point scale
+                _maturityTime * ONE, // scale up to fixed point scale
                 _bondAmount,
                 true
             )
@@ -360,7 +360,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         )
             .updateWeightedAverage(
                 shortsOutstanding_,
-                _maturityTime * 1e18, // scale up to fixed point scale
+                _maturityTime * ONE, // scale up to fixed point scale
                 _bondAmount,
                 false
             )

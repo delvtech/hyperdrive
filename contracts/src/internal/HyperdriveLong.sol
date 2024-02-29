@@ -5,7 +5,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 import { Errors } from "../libraries/Errors.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
@@ -256,7 +256,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         )
             .updateWeightedAverage(
                 uint256(longsOutstanding_),
-                _maturityTime * 1e18, // scale up to fixed point scale
+                _maturityTime * ONE, // scale up to fixed point scale
                 _bondReservesDelta,
                 true
             )
@@ -346,7 +346,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         )
             .updateWeightedAverage(
                 longsOutstanding,
-                _maturityTime * 1e18, // scale up to fixed point scale
+                _maturityTime * ONE, // scale up to fixed point scale
                 _bondAmount,
                 false
             )
