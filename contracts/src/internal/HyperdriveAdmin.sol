@@ -71,16 +71,16 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
     }
 
     /// @dev Allows governance to change the pauser status of an address.
-    /// @param who The address to change.
-    /// @param status The new pauser status.
-    function _setPauser(address who, bool status) internal {
+    /// @param _who The address to change.
+    /// @param _status The new pauser status.
+    function _setPauser(address _who, bool _status) internal {
         // Ensure that the sender is governance.
         if (msg.sender != _governance) {
             revert IHyperdrive.Unauthorized();
         }
 
         // Update the pauser status and emit an event.
-        _pausers[who] = status;
-        emit PauserUpdated(who);
+        _pausers[_who] = _status;
+        emit PauserUpdated(_who, _status);
     }
 }
