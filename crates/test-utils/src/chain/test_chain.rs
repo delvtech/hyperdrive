@@ -716,11 +716,11 @@ impl TestChain {
                 .send()
                 .await?;
             let pool_config = PoolDeployConfig {
-                governance: Address::zero(),
-                fee_collector: Address::zero(),
-                linker_factory: Address::zero(),
-                linker_code_hash: [0; 32],
-                time_stretch: U256::zero(),
+                governance: factory.hyperdrive_governance().call().await?,
+                fee_collector: factory.fee_collector().call().await?,
+                linker_factory: factory.linker_factory().call().await?,
+                linker_code_hash: factory.linker_code_hash().call().await?,
+                time_stretch: uint256!(0),
                 base_token: base.address(),
                 minimum_share_reserves: config.erc4626_hyperdrive_minimum_share_reserves,
                 minimum_transaction_amount: config.erc4626_hyperdrive_minimum_transaction_amount,
@@ -884,11 +884,11 @@ impl TestChain {
                 )
                 .await?;
             let pool_config = PoolDeployConfig {
-                governance: Address::zero(),
-                fee_collector: Address::zero(),
-                linker_factory: Address::zero(),
-                linker_code_hash: [0; 32],
-                time_stretch: U256::zero(),
+                governance: factory.hyperdrive_governance().call().await?,
+                fee_collector: factory.fee_collector().call().await?,
+                linker_factory: factory.linker_factory().call().await?,
+                linker_code_hash: factory.linker_code_hash().call().await?,
+                time_stretch: uint256!(0),
                 base_token: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE".parse()?,
                 minimum_share_reserves: config.steth_hyperdrive_minimum_share_reserves,
                 minimum_transaction_amount: config.steth_hyperdrive_minimum_transaction_amount,

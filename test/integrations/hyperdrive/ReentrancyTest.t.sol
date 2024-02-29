@@ -5,8 +5,8 @@ import { stdError } from "forge-std/StdError.sol";
 import { ReentrancyGuard } from "openzeppelin/utils/ReentrancyGuard.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { ETH } from "contracts/src/libraries/Constants.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { ETH } from "test/utils/Constants.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
 
