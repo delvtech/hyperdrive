@@ -7,6 +7,7 @@ import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IRocketStorage } from "../../interfaces/IRocketStorage.sol";
+import { IRocketTokenRETH } from "../../interfaces/IRocketTokenRETH.sol";
 import { RETHBase } from "./RETHBase.sol";
 
 /// @author DELV
