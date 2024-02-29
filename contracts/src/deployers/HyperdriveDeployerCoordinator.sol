@@ -5,6 +5,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveCoreDeployer } from "../interfaces/IHyperdriveCoreDeployer.sol";
 import { IHyperdriveDeployerCoordinator } from "../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IHyperdriveTargetDeployer } from "../interfaces/IHyperdriveTargetDeployer.sol";
+import { ONE } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title HyperdriveDeployerCoordinator
@@ -348,10 +349,10 @@ abstract contract HyperdriveDeployerCoordinator is
 
         // Ensure that the fees don't exceed 100%.
         if (
-            _deployConfig.fees.curve > 1e18 ||
-            _deployConfig.fees.flat > 1e18 ||
-            _deployConfig.fees.governanceLP > 1e18 ||
-            _deployConfig.fees.governanceZombie > 1e18
+            _deployConfig.fees.curve > ONE ||
+            _deployConfig.fees.flat > ONE ||
+            _deployConfig.fees.governanceLP > ONE ||
+            _deployConfig.fees.governanceZombie > ONE
         ) {
             revert IHyperdriveDeployerCoordinator.InvalidFeeAmounts();
         }

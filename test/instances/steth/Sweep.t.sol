@@ -11,13 +11,13 @@ import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { IStETHHyperdrive } from "contracts/src/interfaces/IStETHHyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { ETH } from "contracts/src/libraries/Constants.sol";
 import { ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockLido } from "contracts/test/MockLido.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
-import { ETH } from "test/utils/Constants.sol";
 
 contract SweepTest is BaseTest {
     ForwardingToken lidoForwarder;
