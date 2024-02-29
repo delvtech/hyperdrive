@@ -8,7 +8,7 @@ import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title StethHyperdrive
-/// @notice The base contract for the stETH Hyperdrive implementation.
+/// @notice The base contract for the ezETH Hyperdrive implementation.
 /// @dev Lido has it's own notion of shares to account for the accrual of
 ///      interest on the ether pooled in the Lido protocol. Instead of
 ///      maintaining a balance of shares, this integration can simply use Lido
@@ -16,13 +16,13 @@ import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract StETHBase is HyperdriveBase {
+abstract contract ezETHBase is HyperdriveBase {
     using FixedPointMath for uint256;
 
     /// @dev The Lido contract.
     ILido internal immutable _lido;
 
-    /// @notice Instantiates the stETH Hyperdrive base contract.
+    /// @notice Instantiates the ezETH Hyperdrive base contract.
     /// @param __lido The Lido contract.
     constructor(ILido __lido) {
         _lido = __lido;
@@ -35,7 +35,7 @@ abstract contract StETHBase is HyperdriveBase {
     ///          base or shares depending on the `asBase` option.
     /// @param _options The options that configure the deposit. The only option
     ///        used in this implementation is "asBase" which determines if
-    ///        the deposit is settled in ETH or stETH shares.
+    ///        the deposit is settled in ETH or ezETH shares.
     /// @return shares The amount of shares that represents the amount deposited.
     /// @return vaultSharePrice The current vault share price.
     function _deposit(
@@ -56,7 +56,7 @@ abstract contract StETHBase is HyperdriveBase {
             // Submit the provided ether to Lido to be deposited. The fee
             // collector address is passed as the referral address; however,
             // users can specify whatever referrer they'd like by depositing
-            // stETH instead of WETH.
+            // ezETH instead of WETH.
             shares = _lido.submit{ value: _amount }(_feeCollector);
 
             // Calculate the vault share price.
@@ -65,7 +65,7 @@ abstract contract StETHBase is HyperdriveBase {
             // Refund any ether that was sent to the contract.
             refund = msg.value;
 
-            // Transfer stETH shares into the contract.
+            // Transfer ezETH shares into the contract.
             _lido.transferSharesFrom(msg.sender, address(this), _amount);
 
             // Calculate the vault share price.
@@ -85,14 +85,14 @@ abstract contract StETHBase is HyperdriveBase {
     }
 
     /// @notice Processes a trader's withdrawal. This yield source only supports
-    ///         withdrawals in stETH shares.
+    ///         withdrawals in ezETH shares.
     /// @param _shares The amount of shares to withdraw from Hyperdrive.
     /// @param _sharePrice The share price.
     /// @param _options The options that configure the withdrawal. The options
     ///        used in this implementation are "destination" which specifies the
     ///        recipient of the withdrawal and "asBase" which determines
     ///        if the withdrawal is settled in base or vault shares. The "asBase"
-    ///        option must be false since stETH withdrawals aren't processed
+    ///        option must be false since ezETH withdrawals aren't processed
     ///        instantaneously. Users that want to withdraw can manage their
     ///        withdrawal separately.
     /// @return The amount of shares withdrawn from the yield source.
@@ -101,7 +101,7 @@ abstract contract StETHBase is HyperdriveBase {
         uint256 _sharePrice,
         IHyperdrive.Options calldata _options
     ) internal override returns (uint256) {
-        // stETH withdrawals aren't necessarily instantaneous. Users that want
+        // ezETH withdrawals aren't necessarily instantaneous. Users that want
         // to withdraw can manage their withdrawal separately.
         if (_options.asBase) {
             revert IHyperdrive.UnsupportedToken();
@@ -120,7 +120,7 @@ abstract contract StETHBase is HyperdriveBase {
             return 0;
         }
 
-        // Transfer the stETH shares to the destination.
+        // Transfer the ezETH shares to the destination.
         _lido.transferShares(_options.destination, _shares);
 
         return _shares;

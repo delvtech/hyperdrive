@@ -5,8 +5,8 @@ import { Hyperdrive } from "../../external/Hyperdrive.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { ILido } from "../../interfaces/ILido.sol";
-import { IStETHHyperdriveCore } from "../../interfaces/IStETHHyperdriveCore.sol";
-import { StETHBase } from "./StETHBase.sol";
+import { IezETHHyperdriveCore } from "../../interfaces/IezETHHyperdriveCore.sol";
+import { ezETHBase } from "./ezETHBase.sol";
 
 ///      ______  __                           _________      _____
 ///      ___  / / /____  ___________________________  /_________(_)__   ______
@@ -49,15 +49,15 @@ import { StETHBase } from "./StETHBase.sol";
 /// SSSSSSSS                                                                SSSSSSSS
 ///
 /// @author DELV
-/// @title StETHHyperdrive
-/// @notice A Hyperdrive instance that uses StETH as the yield source.
+/// @title ezETHHyperdrive
+/// @notice A Hyperdrive instance that uses ezETH as the yield source.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract StETHHyperdrive is IStETHHyperdriveCore, Hyperdrive, StETHBase {
+contract ezETHHyperdrive is IezETHHyperdriveCore, Hyperdrive, ezETHBase {
     address constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    /// @notice Instantiates Hyperdrive with StETH as the yield source.
+    /// @notice Instantiates Hyperdrive with ezETH as the yield source.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _target0 The target0 address.
     /// @param _target1 The target1 address.
@@ -75,7 +75,7 @@ contract StETHHyperdrive is IStETHHyperdriveCore, Hyperdrive, StETHBase {
         ILido _lido
     )
         Hyperdrive(_config, _target0, _target1, _target2, _target3, _target4)
-        StETHBase(_lido)
+        ezETHBase(_lido)
     {
         // Ensure that the base token address is properly configured.
         if (address(_config.baseToken) != ETH) {
@@ -83,7 +83,7 @@ contract StETHHyperdrive is IStETHHyperdriveCore, Hyperdrive, StETHBase {
         }
     }
 
-    /// @inheritdoc IStETHHyperdriveCore
+    /// @inheritdoc IezETHHyperdriveCore
     function sweep(IERC20) external {
         _delegate(target0);
     }

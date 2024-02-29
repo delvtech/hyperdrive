@@ -7,17 +7,17 @@ import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { ILido } from "../../interfaces/ILido.sol";
-import { StETHBase } from "./StETHBase.sol";
+import { ezETHBase } from "./ezETHBase.sol";
 
 /// @author DELV
-/// @title StETHTarget0
-/// @notice StETHHyperdrive's target0 logic contract. This contract contains
+/// @title ezETHTarget0
+/// @notice ezETHHyperdrive's target0 logic contract. This contract contains
 ///         all of the getters for Hyperdrive as well as some stateful
 ///         functions.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract StETHTarget0 is HyperdriveTarget0, StETHBase {
+contract ezETHTarget0 is HyperdriveTarget0, ezETHBase {
     using SafeERC20 for ERC20;
 
     /// @notice Initializes the target0 contract.
@@ -26,7 +26,7 @@ contract StETHTarget0 is HyperdriveTarget0, StETHBase {
     constructor(
         IHyperdrive.PoolConfig memory _config,
         ILido _lido
-    ) HyperdriveTarget0(_config) StETHBase(_lido) {}
+    ) HyperdriveTarget0(_config) ezETHBase(_lido) {}
 
     /// Extras ///
 
@@ -42,20 +42,20 @@ contract StETHTarget0 is HyperdriveTarget0, StETHBase {
             revert IHyperdrive.Unauthorized();
         }
 
-        // Ensure that thet target isn't the stETH token.
+        // Ensure that thet target isn't the ezETH token.
         if (address(_target) == address(_lido)) {
             revert IHyperdrive.UnsupportedToken();
         }
 
-        // Get Hyperdrive's balance of stETH tokens prior to sweeping.
-        uint256 stETHBalance = _lido.balanceOf(address(this));
+        // Get Hyperdrive's balance of ezETH tokens prior to sweeping.
+        uint256 ezETHBalance = _lido.balanceOf(address(this));
 
         // Transfer the entire balance of the sweep target to the fee collector.
         uint256 balance = _target.balanceOf(address(this));
         ERC20(address(_target)).safeTransfer(_feeCollector, balance);
 
-        // Ensure that the stETH balance hasn't changed.
-        if (_lido.balanceOf(address(this)) != stETHBalance) {
+        // Ensure that the ezETH balance hasn't changed.
+        if (_lido.balanceOf(address(this)) != ezETHBalance) {
             revert IHyperdrive.SweepFailed();
         }
     }
