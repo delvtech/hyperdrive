@@ -410,10 +410,9 @@ abstract contract HyperdriveLP is
         // NOTE: Round down to underestimate the share proceeds.
         //
         // The LP gets the pro-rata amount of the collected proceeds.
-        uint128 proceeds_ = _withdrawPool.proceeds;
         uint256 shareProceeds = withdrawalSharesRedeemed.mulDivDown(
-            uint128(proceeds_),
-            uint128(readyToWithdraw_)
+            _withdrawPool.proceeds,
+            readyToWithdraw_
         );
 
         // Apply the update to the withdrawal pool.
