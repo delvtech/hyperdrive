@@ -6,6 +6,7 @@ import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { ILido } from "../../interfaces/ILido.sol";
 import { IStETHHyperdriveCore } from "../../interfaces/IStETHHyperdriveCore.sol";
+import { ETH } from "../../libraries/Constants.sol";
 import { StETHBase } from "./StETHBase.sol";
 
 ///      ______  __                           _________      _____
@@ -55,8 +56,6 @@ import { StETHBase } from "./StETHBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract StETHHyperdrive is IStETHHyperdriveCore, Hyperdrive, StETHBase {
-    address constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-
     /// @notice Instantiates Hyperdrive with StETH as the yield source.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _target0 The target0 address.

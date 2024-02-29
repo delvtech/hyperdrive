@@ -10,9 +10,9 @@ import { HyperdriveTarget4 } from "contracts/src/external/HyperdriveTarget4.sol"
 import { HyperdriveBase } from "contracts/src/internal/HyperdriveBase.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { ETH } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { ETH } from "test/utils/Constants.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
 interface IMockHyperdrive {
@@ -274,7 +274,6 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
-            uint256 bondProceeds,
             uint256 totalGovernanceFee
         )
     {
