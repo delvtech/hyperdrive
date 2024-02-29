@@ -125,6 +125,7 @@ library LPMath {
         uint256 vaultSharePrice;
         uint256 initialVaultSharePrice;
         uint256 minimumShareReserves;
+        uint256 minimumTransactionAmount;
         uint256 timeStretch;
         uint256 longsOutstanding;
         uint256 longAverageTimeRemaining;
@@ -250,8 +251,10 @@ library LPMath {
             // If the max curve trade is greater than the net curve position,
             // then we can close the entire net curve position.
             if (maxCurveTrade >= netCurvePosition_) {
-                uint256 netCurveTrade = YieldSpaceMath
-                    .calculateSharesOutGivenBondsInDown(
+                // Calculate the net curve trade.
+                uint256 netCurveTrade;
+                (netCurveTrade, success) = YieldSpaceMath
+                    .calculateSharesOutGivenBondsInDownSafe(
                         effectiveShareReserves,
                         _params.bondReserves,
                         netCurvePosition_,
@@ -259,6 +262,21 @@ library LPMath {
                         _params.vaultSharePrice,
                         _params.initialVaultSharePrice
                     );
+
+                // If the net curve position is smaller than the minimum transaction
+                // amount and the trade fails, we mark it to 0. This prevents
+                // liveness problems when the net curve position is very small.
+                if (
+                    !success &&
+                    netCurvePosition_ < _params.minimumTransactionAmount
+                ) {
+                    return (0, true);
+                }
+                // Otherwise, we return a failure flag.
+                else if (!success) {
+                    return (0, false);
+                }
+
                 return (-int256(netCurveTrade), true);
             }
             // Otherwise, we can only close part of the net curve position.
@@ -299,19 +317,25 @@ library LPMath {
 
             // Calculate the maximum amount of bonds that can be bought on
             // YieldSpace.
-            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxBuyBondsOut(
-                effectiveShareReserves,
-                _params.bondReserves,
-                ONE - _params.timeStretch,
-                _params.vaultSharePrice,
-                _params.initialVaultSharePrice
-            );
+            (uint256 maxCurveTrade, bool success) = YieldSpaceMath
+                .calculateMaxBuyBondsOutSafe(
+                    effectiveShareReserves,
+                    _params.bondReserves,
+                    ONE - _params.timeStretch,
+                    _params.vaultSharePrice,
+                    _params.initialVaultSharePrice
+                );
+            if (!success) {
+                return (0, false);
+            }
 
             // If the max curve trade is greater than the net curve position,
             // then we can close the entire net curve position.
             if (maxCurveTrade >= netCurvePosition_) {
-                uint256 netCurveTrade = YieldSpaceMath
-                    .calculateSharesInGivenBondsOutUp(
+                // Calculate the net curve trade.
+                uint256 netCurveTrade;
+                (netCurveTrade, success) = YieldSpaceMath
+                    .calculateSharesInGivenBondsOutUpSafe(
                         effectiveShareReserves,
                         _params.bondReserves,
                         netCurvePosition_,
@@ -319,20 +343,41 @@ library LPMath {
                         _params.vaultSharePrice,
                         _params.initialVaultSharePrice
                     );
+
+                // If the net curve position is smaller than the minimum transaction
+                // amount and the trade fails, we mark it to 0. This prevents
+                // liveness problems when the net curve position is very small.
+                if (
+                    !success &&
+                    netCurvePosition_ < _params.minimumTransactionAmount
+                ) {
+                    return (0, true);
+                }
+                // Otherwise, we return a failure flag.
+                else if (!success) {
+                    return (0, false);
+                }
+
                 return (int256(netCurveTrade), true);
             }
             // Otherwise, we can only close part of the net curve position.
             // Since the spot price is equal to one after closing the entire net
             // curve position, we mark any remaining bonds to one.
             else {
-                uint256 maxSharePayment = YieldSpaceMath
-                    .calculateMaxBuySharesIn(
+                // Calculate the max share payment.
+                uint256 maxSharePayment;
+                (maxSharePayment, success) = YieldSpaceMath
+                    .calculateMaxBuySharesInSafe(
                         effectiveShareReserves,
                         _params.bondReserves,
                         ONE - _params.timeStretch,
                         _params.vaultSharePrice,
                         _params.initialVaultSharePrice
                     );
+                if (!success) {
+                    return (0, false);
+                }
+
                 return (
                     // NOTE: We round the difference down to underestimate the
                     // impact of closing the net curve position.
@@ -419,16 +464,23 @@ library LPMath {
         DistributeExcessIdleParams memory _params
     ) internal pure returns (uint256, uint256) {
         // Steps 1 and 2: Calculate the maximum amount the share reserves can be
-        // debited.
+        // debited. If the maximum share reserves delta can't be calculated,
+        // idle can't be distributed.
         uint256 originalEffectiveShareReserves = HyperdriveMath
             .calculateEffectiveShareReserves(
                 _params.originalShareReserves,
                 _params.originalShareAdjustment
             );
-        uint256 maxShareReservesDelta = calculateMaxShareReservesDelta(
-            _params,
-            originalEffectiveShareReserves
-        );
+        (
+            uint256 maxShareReservesDelta,
+            bool success
+        ) = calculateMaxShareReservesDeltaSafe(
+                _params,
+                originalEffectiveShareReserves
+            );
+        if (!success) {
+            return (0, 0);
+        }
 
         // Step 3: Calculate the amount of withdrawal shares that can be
         // redeemed given the maximum share reserves delta.  Otherwise, we
@@ -902,16 +954,31 @@ library LPMath {
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
     /// @return maxShareReservesDelta The upper bound on the share proceeds.
-    function calculateMaxShareReservesDelta(
+    /// @return success A flag indicating if the calculation succeeded.
+    function calculateMaxShareReservesDeltaSafe(
         DistributeExcessIdleParams memory _params,
         uint256 _originalEffectiveShareReserves
-    ) internal pure returns (uint256 maxShareReservesDelta) {
+    ) internal pure returns (uint256 maxShareReservesDelta, bool success) {
         // If the net curve position is zero or net long, then the maximum
         // share reserves delta is equal to the pool's idle.
         if (_params.netCurveTrade >= 0) {
-            return _params.idle;
+            return (_params.idle, true);
         }
         uint256 netCurveTrade = uint256(-_params.netCurveTrade);
+
+        // Calculate the max bond amount. If the calculation fails, we return a
+        // failure flag.
+        uint256 maxBondAmount;
+        (maxBondAmount, success) = YieldSpaceMath.calculateMaxBuyBondsOutSafe(
+            _originalEffectiveShareReserves,
+            _params.originalBondReserves,
+            ONE - _params.presentValueParams.timeStretch,
+            _params.presentValueParams.vaultSharePrice,
+            _params.presentValueParams.initialVaultSharePrice
+        );
+        if (!success) {
+            return (0, false);
+        }
 
         // We can solve for the maximum share reserves delta in one shot using
         // the fact that the maximum amount of bonds that can be purchased is
@@ -931,15 +998,7 @@ library LPMath {
         // s * y_out^max(z, y, zeta) - netCurveTrade = 0
         //                        =>
         // s = netCurveTrade / y_out^max(z, y, zeta)
-        uint256 maxScalingFactor = netCurveTrade.divUp(
-            YieldSpaceMath.calculateMaxBuyBondsOut(
-                _originalEffectiveShareReserves,
-                _params.originalBondReserves,
-                ONE - _params.presentValueParams.timeStretch,
-                _params.presentValueParams.vaultSharePrice,
-                _params.presentValueParams.initialVaultSharePrice
-            )
-        );
+        uint256 maxScalingFactor = netCurveTrade.divUp(maxBondAmount);
 
         // Using the maximum scaling factor, we can calculate the maximum share
         // reserves delta as:
@@ -950,15 +1009,16 @@ library LPMath {
                 ONE - maxScalingFactor
             );
         } else {
-            return 0;
+            // NOTE: If the max scaling factor is greater than one, the calculation
+            return (0, false);
         }
 
         // If the maximum share reserves delta is greater than the idle, then
         // the maximum share reserves delta is equal to the idle.
         if (maxShareReservesDelta > _params.idle) {
-            return _params.idle;
+            return (_params.idle, true);
         }
-        return maxShareReservesDelta;
+        return (maxShareReservesDelta, true);
     }
 
     /// @dev Calculates the derivative of `calculateSharesOutGivenBondsIn`. This

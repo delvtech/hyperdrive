@@ -226,6 +226,7 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
             vaultSharePrice: _vaultSharePrice,
             initialVaultSharePrice: _initialVaultSharePrice,
             minimumShareReserves: _minimumShareReserves,
+            minimumTransactionAmount: _minimumTransactionAmount,
             timeStretch: _timeStretch,
             longsOutstanding: _marketState.longsOutstanding,
             longAverageTimeRemaining: _calculateTimeRemainingScaled(

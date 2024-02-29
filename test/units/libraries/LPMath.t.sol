@@ -41,6 +41,7 @@ contract LPMathTest is HyperdriveTest {
                         timeStretch
                     ),
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: 1e18,
                     timeStretch: timeStretch,
@@ -72,6 +73,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: 1e18,
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 1e18,
@@ -110,6 +112,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: 1e18,
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 0,
@@ -142,6 +145,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: 1e18,
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 0,
                     longAverageTimeRemaining: 0,
@@ -180,6 +184,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: 1e18,
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 0,
                     longAverageTimeRemaining: 0,
@@ -212,6 +217,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: 1e18,
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 0.3e18,
@@ -241,6 +247,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: 1e18,
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 0,
@@ -284,6 +291,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: 1e18,
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 1e18,
@@ -327,6 +335,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: 1e18,
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 100_000e18,
                     longAverageTimeRemaining: 0.75e18,
@@ -383,6 +392,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: 1e18,
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 0.75e18,
@@ -442,6 +452,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: 1e18,
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 100_000e18,
                     longAverageTimeRemaining: 0.75e18,
@@ -458,20 +469,29 @@ contract LPMathTest is HyperdriveTest {
                 params.longsOutstanding.mulDown(
                     params.longAverageTimeRemaining
                 );
-            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxBuyBondsOut(
-                uint256(int256(params.shareReserves) - params.shareAdjustment),
-                params.bondReserves,
-                ONE - params.timeStretch,
-                params.vaultSharePrice,
-                params.initialVaultSharePrice
-            );
-            uint256 maxShareProceeds = YieldSpaceMath.calculateMaxBuySharesIn(
-                uint256(int256(params.shareReserves) - params.shareAdjustment),
-                params.bondReserves,
-                ONE - params.timeStretch,
-                params.vaultSharePrice,
-                params.initialVaultSharePrice
-            );
+            (uint256 maxCurveTrade, bool success) = YieldSpaceMath
+                .calculateMaxBuyBondsOutSafe(
+                    uint256(
+                        int256(params.shareReserves) - params.shareAdjustment
+                    ),
+                    params.bondReserves,
+                    ONE - params.timeStretch,
+                    params.vaultSharePrice,
+                    params.initialVaultSharePrice
+                );
+            assertEq(success, true);
+            uint256 maxShareProceeds;
+            (maxShareProceeds, success) = YieldSpaceMath
+                .calculateMaxBuySharesInSafe(
+                    uint256(
+                        int256(params.shareReserves) - params.shareAdjustment
+                    ),
+                    params.bondReserves,
+                    ONE - params.timeStretch,
+                    params.vaultSharePrice,
+                    params.initialVaultSharePrice
+                );
+            assertEq(success, true);
             params.shareReserves += maxShareProceeds;
             params.shareReserves += (netCurveTrade - maxCurveTrade).divDown(
                 params.vaultSharePrice
@@ -509,6 +529,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: 1e18,
                     minimumShareReserves: 1e18,
+                    minimumTransactionAmount: 1e18,
                     timeStretch: timeStretch,
                     longsOutstanding: 100_000e18,
                     longAverageTimeRemaining: 0.75e18,
@@ -525,20 +546,29 @@ contract LPMathTest is HyperdriveTest {
                 params.longsOutstanding.mulDown(
                     params.longAverageTimeRemaining
                 );
-            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxBuyBondsOut(
-                uint256(int256(params.shareReserves) - params.shareAdjustment),
-                params.bondReserves,
-                ONE - params.timeStretch,
-                params.vaultSharePrice,
-                params.initialVaultSharePrice
-            );
-            uint256 maxShareProceeds = YieldSpaceMath.calculateMaxBuySharesIn(
-                uint256(int256(params.shareReserves) - params.shareAdjustment),
-                params.bondReserves,
-                ONE - params.timeStretch,
-                params.vaultSharePrice,
-                params.initialVaultSharePrice
-            );
+            (uint256 maxCurveTrade, bool success) = YieldSpaceMath
+                .calculateMaxBuyBondsOutSafe(
+                    uint256(
+                        int256(params.shareReserves) - params.shareAdjustment
+                    ),
+                    params.bondReserves,
+                    ONE - params.timeStretch,
+                    params.vaultSharePrice,
+                    params.initialVaultSharePrice
+                );
+            assertEq(success, true);
+            uint256 maxShareProceeds;
+            (maxShareProceeds, success) = YieldSpaceMath
+                .calculateMaxBuySharesInSafe(
+                    uint256(
+                        int256(params.shareReserves) - params.shareAdjustment
+                    ),
+                    params.bondReserves,
+                    ONE - params.timeStretch,
+                    params.vaultSharePrice,
+                    params.initialVaultSharePrice
+                );
+            assertEq(success, true);
             params.shareReserves += maxShareProceeds;
             params.shareReserves += (netCurveTrade - maxCurveTrade).divDown(
                 params.vaultSharePrice
@@ -576,6 +606,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: 1e18,
                     minimumShareReserves: 1e18,
+                    minimumTransactionAmount: 1e18,
                     timeStretch: timeStretch,
                     longsOutstanding: 100_000e18,
                     longAverageTimeRemaining: 0.75e18,
@@ -592,20 +623,29 @@ contract LPMathTest is HyperdriveTest {
                 params.longsOutstanding.mulDown(
                     params.longAverageTimeRemaining
                 );
-            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxBuyBondsOut(
-                uint256(int256(params.shareReserves) - params.shareAdjustment),
-                params.bondReserves,
-                ONE - params.timeStretch,
-                params.vaultSharePrice,
-                params.initialVaultSharePrice
-            );
-            uint256 maxShareProceeds = YieldSpaceMath.calculateMaxBuySharesIn(
-                uint256(int256(params.shareReserves) - params.shareAdjustment),
-                params.bondReserves,
-                ONE - params.timeStretch,
-                params.vaultSharePrice,
-                params.initialVaultSharePrice
-            );
+            (uint256 maxCurveTrade, bool success) = YieldSpaceMath
+                .calculateMaxBuyBondsOutSafe(
+                    uint256(
+                        int256(params.shareReserves) - params.shareAdjustment
+                    ),
+                    params.bondReserves,
+                    ONE - params.timeStretch,
+                    params.vaultSharePrice,
+                    params.initialVaultSharePrice
+                );
+            assertEq(success, true);
+            uint256 maxShareProceeds;
+            (maxShareProceeds, success) = YieldSpaceMath
+                .calculateMaxBuySharesInSafe(
+                    uint256(
+                        int256(params.shareReserves) - params.shareAdjustment
+                    ),
+                    params.bondReserves,
+                    ONE - params.timeStretch,
+                    params.vaultSharePrice,
+                    params.initialVaultSharePrice
+                );
+            assertEq(success, true);
             params.shareReserves += maxShareProceeds;
             params.shareReserves += (netCurveTrade - maxCurveTrade).divDown(
                 params.vaultSharePrice
@@ -662,6 +702,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: initialVaultSharePrice,
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 0,
                     longAverageTimeRemaining: 0,
@@ -691,14 +732,15 @@ contract LPMathTest is HyperdriveTest {
                     originalShareAdjustment: shareAdjustment,
                     originalBondReserves: bondReserves
                 });
-            uint256 maxShareReservesDelta = lpMath
-                .calculateMaxShareReservesDelta(
+            (uint256 maxShareReservesDelta, bool success) = lpMath
+                .calculateMaxShareReservesDeltaSafe(
                     params,
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
                     )
                 );
+            assertEq(success, true);
 
             // The max share reserves delta is just the idle.
             assertEq(maxShareReservesDelta, params.idle);
@@ -726,6 +768,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: initialVaultSharePrice,
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 0.5e18,
@@ -755,14 +798,15 @@ contract LPMathTest is HyperdriveTest {
                     originalShareAdjustment: shareAdjustment,
                     originalBondReserves: bondReserves
                 });
-            uint256 maxShareReservesDelta = lpMath
-                .calculateMaxShareReservesDelta(
+            (uint256 maxShareReservesDelta, bool success) = lpMath
+                .calculateMaxShareReservesDeltaSafe(
                     params,
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
                     )
                 );
+            assertEq(success, true);
 
             // The max share reserves delta is just the idle.
             assertEq(maxShareReservesDelta, params.idle);
@@ -790,6 +834,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: initialVaultSharePrice,
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 0.5e18,
@@ -819,14 +864,15 @@ contract LPMathTest is HyperdriveTest {
                     originalShareAdjustment: shareAdjustment,
                     originalBondReserves: bondReserves
                 });
-            uint256 maxShareReservesDelta = lpMath
-                .calculateMaxShareReservesDelta(
+            (uint256 maxShareReservesDelta, bool success) = lpMath
+                .calculateMaxShareReservesDeltaSafe(
                     params,
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
                     )
                 );
+            assertEq(success, true);
 
             // The max share reserves delta is just the idle.
             assertEq(maxShareReservesDelta, params.idle);
@@ -855,6 +901,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: initialVaultSharePrice,
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 1_000_000e18,
                     longAverageTimeRemaining: 0.5e18,
@@ -884,14 +931,15 @@ contract LPMathTest is HyperdriveTest {
                     originalShareAdjustment: shareAdjustment,
                     originalBondReserves: bondReserves
                 });
-            uint256 maxShareReservesDelta = lpMath
-                .calculateMaxShareReservesDelta(
+            (uint256 maxShareReservesDelta, bool success) = lpMath
+                .calculateMaxShareReservesDeltaSafe(
                     params,
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
                     )
                 );
+            assertEq(success, true);
 
             // The max share reserves delta is just the idle.
             assertEq(maxShareReservesDelta, params.idle);
@@ -920,6 +968,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: initialVaultSharePrice,
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 0,
                     longAverageTimeRemaining: 0,
@@ -949,14 +998,15 @@ contract LPMathTest is HyperdriveTest {
                     originalShareAdjustment: shareAdjustment,
                     originalBondReserves: bondReserves
                 });
-            uint256 maxShareReservesDelta = lpMath
-                .calculateMaxShareReservesDelta(
+            (uint256 maxShareReservesDelta, bool success) = lpMath
+                .calculateMaxShareReservesDeltaSafe(
                     params,
                     HyperdriveMath.calculateEffectiveShareReserves(
                         shareReserves,
                         shareAdjustment
                     )
                 );
+            assertEq(success, true);
 
             // The max share reserves delta should have been calculated so that
             // the maximum amount of bonds can be purchased is close to the net
@@ -972,16 +1022,19 @@ contract LPMathTest is HyperdriveTest {
                 params.presentValueParams.minimumShareReserves,
                 -int256(maxShareReservesDelta)
             );
-            uint256 maxBondAmount = YieldSpaceMath.calculateMaxBuyBondsOut(
-                HyperdriveMath.calculateEffectiveShareReserves(
-                    params.presentValueParams.shareReserves,
-                    params.presentValueParams.shareAdjustment
-                ),
-                params.presentValueParams.bondReserves,
-                ONE - params.presentValueParams.timeStretch,
-                params.presentValueParams.vaultSharePrice,
-                params.presentValueParams.initialVaultSharePrice
-            );
+            uint256 maxBondAmount;
+            (maxBondAmount, success) = YieldSpaceMath
+                .calculateMaxBuyBondsOutSafe(
+                    HyperdriveMath.calculateEffectiveShareReserves(
+                        params.presentValueParams.shareReserves,
+                        params.presentValueParams.shareAdjustment
+                    ),
+                    params.presentValueParams.bondReserves,
+                    ONE - params.presentValueParams.timeStretch,
+                    params.presentValueParams.vaultSharePrice,
+                    params.presentValueParams.initialVaultSharePrice
+                );
+            assertEq(success, true);
             assertApproxEqAbs(
                 maxBondAmount,
                 params.presentValueParams.shortsOutstanding,
@@ -1024,6 +1077,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: initialVaultSharePrice,
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 0,
                     longAverageTimeRemaining: 0,
@@ -1118,6 +1172,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: initialVaultSharePrice,
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 50_000_000e18,
                     longAverageTimeRemaining: 1e18,
@@ -1212,6 +1267,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: initialVaultSharePrice,
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 0,
                     longAverageTimeRemaining: 0,
@@ -1321,6 +1377,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: initialVaultSharePrice,
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 0,
                     longAverageTimeRemaining: 0,
@@ -1416,6 +1473,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: initialVaultSharePrice,
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 50_000_000e18,
                     longAverageTimeRemaining: 1e18,
@@ -1511,6 +1569,7 @@ contract LPMathTest is HyperdriveTest {
                     vaultSharePrice: 2e18,
                     initialVaultSharePrice: initialVaultSharePrice,
                     minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 0,
                     longAverageTimeRemaining: 0,
