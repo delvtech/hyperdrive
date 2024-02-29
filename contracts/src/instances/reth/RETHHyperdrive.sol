@@ -74,7 +74,7 @@ contract RETHHyperdrive is IRETHHyperdriveCore, Hyperdrive, RETHBase {
         IRocketStorage __rocketStorage
     )
         Hyperdrive(_config, _target0, _target1, _target2, _target3, _target4)
-        RETHBase(_rocketStorage)
+        RETHBase(__rocketStorage)
     {
         // Ensure that the base token address is properly configured.
         if (address(_config.baseToken) != ETH) {
