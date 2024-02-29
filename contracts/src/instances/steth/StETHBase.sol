@@ -58,20 +58,17 @@ abstract contract StETHBase is HyperdriveBase {
             // users can specify whatever referrer they'd like by depositing
             // stETH instead of WETH.
             shares = _lido.submit{ value: _amount }(_feeCollector);
-
-            // Calculate the vault share price.
-            vaultSharePrice = _pricePerVaultShare();
         } else {
             // Refund any ether that was sent to the contract.
             refund = msg.value;
 
             // Transfer stETH shares into the contract.
-            _lido.transferSharesFrom(msg.sender, address(this), _amount);
-
-            // Calculate the vault share price.
             shares = _amount;
-            vaultSharePrice = _pricePerVaultShare();
+            _lido.transferSharesFrom(msg.sender, address(this), shares);
         }
+
+        // Calculate the vault share price.
+        vaultSharePrice = _pricePerVaultShare();
 
         // Return excess ether that was sent to the contract.
         if (refund > 0) {
