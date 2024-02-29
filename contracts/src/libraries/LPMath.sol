@@ -885,9 +885,6 @@ library LPMath {
         uint256 lpSharePriceAfter = _presentValue.divDown(
             _params.activeLpTotalSupply
         );
-        if (lpSharePriceAfter < lpSharePriceBefore) {
-            return false;
-        }
         return
             lpSharePriceAfter >= lpSharePriceBefore &&
             lpSharePriceAfter <=
