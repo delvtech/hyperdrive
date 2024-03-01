@@ -74,8 +74,7 @@ library LPMath {
         //                  =>
         // zeta_new = zeta_old * (z_new / z_old)
         if (_shareAdjustment >= 0) {
-            // NOTE: Rounding down to avoid introducing dust into the
-            // computation.
+            // NOTE: Rounding down to have a larger effective share reserves.
             shareAdjustment = int256(
                 shareReserves.mulDivDown(
                     uint256(_shareAdjustment),
@@ -83,10 +82,9 @@ library LPMath {
                 )
             );
         } else {
-            // NOTE: Rounding down to avoid introducing dust into the
-            // computation.
+            // NOTE: Rounding up to have a larger effective share reserves.
             shareAdjustment = -int256(
-                shareReserves.mulDivDown(
+                shareReserves.mulDivUp(
                     uint256(-_shareAdjustment),
                     _shareReserves
                 )
