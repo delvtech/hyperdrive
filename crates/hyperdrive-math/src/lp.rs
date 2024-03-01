@@ -66,29 +66,59 @@ impl State {
         // from the share reserves, so we negate the result.
         match net_curve_position.cmp(&int256!(0)) {
             Ordering::Greater => {
-                let max_curve_trade =
-                    self.calculate_max_sell_bonds_in(self.minimum_share_reserves());
+                let net_curve_position: FixedPoint = FixedPoint::from(net_curve_position);
+                let max_curve_trade = self
+                    .calculate_max_sell_bonds_in_safe(self.minimum_share_reserves())
+                    .unwrap();
                 if max_curve_trade >= net_curve_position.into() {
-                    -I256::from(
-                        self.calculate_shares_out_given_bonds_in_down(net_curve_position.into()),
-                    )
+                    match self
+                        .calculate_shares_out_given_bonds_in_down_safe(net_curve_position.into())
+                    {
+                        Ok(net_curve_trade) => -I256::from(net_curve_trade),
+                        Err(err) => {
+                            // If the net curve position is smaller than the
+                            // minimum transaction amount and the trade fails,
+                            // we mark it to 0. This prevents liveness problems
+                            // when the net curve position is very small.
+                            if net_curve_position < self.minimum_transaction_amount() {
+                                I256::zero()
+                            } else {
+                                panic!("net_curve_trade failure: {}", err);
+                            }
+                        }
+                    }
                 } else {
                     -I256::from(self.effective_share_reserves() - self.minimum_share_reserves())
                 }
             }
             Ordering::Less => {
-                let _net_curve_position: FixedPoint = FixedPoint::from(-net_curve_position);
-                let max_curve_trade = self.calculate_max_buy_bonds_out();
-                if max_curve_trade >= _net_curve_position {
-                    I256::from(self.calculate_shares_in_given_bonds_out_up(_net_curve_position))
+                let net_curve_position: FixedPoint = FixedPoint::from(-net_curve_position);
+                let max_curve_trade = self.calculate_max_buy_bonds_out_safe().unwrap();
+                if max_curve_trade >= net_curve_position {
+                    match self
+                        .calculate_shares_in_given_bonds_out_up_safe(net_curve_position.into())
+                    {
+                        Ok(net_curve_trade) => I256::from(net_curve_trade),
+                        Err(err) => {
+                            // If the net curve position is smaller than the
+                            // minimum transaction amount and the trade fails,
+                            // we mark it to 0. This prevents liveness problems
+                            // when the net curve position is very small.
+                            if net_curve_position < self.minimum_transaction_amount() {
+                                I256::zero()
+                            } else {
+                                panic!("net_curve_trade failure: {}", err);
+                            }
+                        }
+                    }
                 } else {
-                    let max_share_payment = self.calculate_max_buy_shares_in();
+                    let max_share_payment = self.calculate_max_buy_shares_in_safe().unwrap();
 
                     // NOTE: We round the difference down to underestimate the
                     // impact of closing the net curve position.
                     I256::from(
                         max_share_payment
-                            + (_net_curve_position - max_curve_trade)
+                            + (net_curve_position - max_curve_trade)
                                 .div_down(self.vault_share_price()),
                     )
                 }
@@ -152,6 +182,7 @@ mod tests {
                     vault_share_price: state.info.vault_share_price,
                     initial_vault_share_price: state.config.initial_vault_share_price,
                     minimum_share_reserves: state.config.minimum_share_reserves,
+                    minimum_transaction_amount: state.config.minimum_transaction_amount,
                     long_average_time_remaining: state
                         .time_remaining_scaled(
                             current_block_timestamp.into(),
@@ -213,6 +244,7 @@ mod tests {
                     vault_share_price: state.info.vault_share_price,
                     initial_vault_share_price: state.config.initial_vault_share_price,
                     minimum_share_reserves: state.config.minimum_share_reserves,
+                    minimum_transaction_amount: state.config.minimum_transaction_amount,
                     long_average_time_remaining: long_average_time_remaining.into(),
                     short_average_time_remaining: short_average_time_remaining.into(),
                     shorts_outstanding: state.shorts_outstanding().into(),
@@ -264,6 +296,7 @@ mod tests {
                     vault_share_price: state.info.vault_share_price,
                     initial_vault_share_price: state.config.initial_vault_share_price,
                     minimum_share_reserves: state.config.minimum_share_reserves,
+                    minimum_transaction_amount: state.config.minimum_transaction_amount,
                     long_average_time_remaining: long_average_time_remaining.into(),
                     short_average_time_remaining: short_average_time_remaining.into(),
                     shorts_outstanding: state.shorts_outstanding().into(),

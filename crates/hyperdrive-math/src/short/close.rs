@@ -26,7 +26,8 @@ impl State {
             // payment.
             //
             let curve_bonds_in = bond_amount * normalized_time_remaining;
-            self.calculate_shares_in_given_bonds_out_up(curve_bonds_in)
+            self.calculate_shares_in_given_bonds_out_up_safe(curve_bonds_in)
+                .unwrap()
         } else {
             fixed!(0)
         };
