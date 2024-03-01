@@ -26,9 +26,23 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
 
     /// Yield Source ///
 
-    /// @dev A YieldSource dependent check that prevents ether from being
-    ///      transferred to Hyperdrive instances that don't accept ether.
+    /// @dev A yield source dependent check that prevents ether from being
+    ///         transferred to Hyperdrive instances that don't accept ether.
     function _checkMessageValue() internal view virtual;
+
+    /// @dev A yield source dependent check that verifies that the provided
+    ///      options are valid. The default check is that the destination is
+    ///      non-zero to prevent users from accidentally transferring funds
+    ///      to the zero address. Custom integrations can override this to
+    ///      implement additional checks.
+    /// @param _options The provided options for the transaction.
+    function _checkOptions(
+        IHyperdrive.Options calldata _options
+    ) internal pure virtual {
+        if (_options.destination == address(0)) {
+            revert IHyperdrive.RestrictedZeroAddress();
+        }
+    }
 
     /// @dev Accepts a deposit from the user and commits it to the yield source.
     /// @param _amount The amount of capital to deposit. The units of this

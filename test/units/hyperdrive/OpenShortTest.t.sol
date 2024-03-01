@@ -69,6 +69,33 @@ contract OpenShortTest is HyperdriveTest {
         );
     }
 
+    function test_open_short_failure_destination_zero_address() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Attempt to open a short with the zero address as the  destination.
+        // This should fail.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 shortAmount = 10e18;
+        baseToken.mint(shortAmount);
+        baseToken.approve(address(hyperdrive), shortAmount);
+        vm.expectRevert(IHyperdrive.RestrictedZeroAddress.selector);
+        hyperdrive.openShort(
+            shortAmount,
+            type(uint256).max,
+            0,
+            IHyperdrive.Options({
+                destination: address(0),
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
     function test_open_short_failure_pause() external {
         uint256 apr = 0.05e18;
 
@@ -80,9 +107,12 @@ contract OpenShortTest is HyperdriveTest {
         vm.stopPrank();
         pause(true);
         vm.startPrank(bob);
+        uint256 shortAmount = 10e18;
+        baseToken.mint(shortAmount);
+        baseToken.approve(address(hyperdrive), shortAmount);
         vm.expectRevert(IHyperdrive.PoolIsPaused.selector);
         hyperdrive.openShort(
-            0,
+            shortAmount,
             type(uint256).max,
             0,
             IHyperdrive.Options({

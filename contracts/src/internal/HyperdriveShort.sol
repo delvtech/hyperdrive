@@ -41,8 +41,14 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         uint256 _minVaultSharePrice,
         IHyperdrive.Options calldata _options
     ) internal nonReentrant isNotPaused returns (uint256, uint256) {
-        // Check that the message value and base amount are valid.
+        // Check that the message value is valid.
         _checkMessageValue();
+
+        // Check that the provided options are valid.
+        _checkOptions(_options);
+
+        // Ensure that the bond amount is greater than or equal to the minimum
+        // transaction amount.
         if (_bondAmount < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
@@ -155,6 +161,11 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         uint256 _minOutput,
         IHyperdrive.Options calldata _options
     ) internal nonReentrant returns (uint256) {
+        // Check that the provided options are valid.
+        _checkOptions(_options);
+
+        // Ensure that the bond amount is greater than or equal to the minimum
+        // transaction amount.
         if (_bondAmount < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }

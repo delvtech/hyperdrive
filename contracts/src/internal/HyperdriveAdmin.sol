@@ -21,6 +21,9 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
     function _collectGovernanceFee(
         IHyperdrive.Options calldata _options
     ) internal nonReentrant returns (uint256 proceeds) {
+        // Check that the provided options are valid.
+        _checkOptions(_options);
+
         // Ensure that the destination is set to the fee collector.
         if (_options.destination != _feeCollector) {
             revert IHyperdrive.InvalidFeeDestination();
