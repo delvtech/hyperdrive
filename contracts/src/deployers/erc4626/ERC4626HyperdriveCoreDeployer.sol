@@ -36,7 +36,11 @@ contract ERC4626HyperdriveCoreDeployer is IHyperdriveCoreDeployer {
         address vault = abi.decode(_extraData, (address));
         return (
             address(
-                new ERC4626Hyperdrive{ salt: _salt }(
+                // NOTE: We hash the sender with the salt to prevent the
+                // front-running of deployments.
+                new ERC4626Hyperdrive{
+                    salt: keccak256(abi.encode(msg.sender, _salt))
+                }(
                     _config,
                     _target0,
                     _target1,

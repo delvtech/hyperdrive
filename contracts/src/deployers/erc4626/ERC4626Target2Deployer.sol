@@ -24,6 +24,13 @@ contract ERC4626Target2Deployer is IHyperdriveTargetDeployer {
         bytes32 _salt
     ) external returns (address) {
         IERC4626 vault = IERC4626(abi.decode(_extraData, (address)));
-        return address(new ERC4626Target2{ salt: _salt }(_config, vault));
+        return
+            address(
+                // NOTE: We hash the sender with the salt to prevent the
+                // front-running of deployments.
+                new ERC4626Target2{
+                    salt: keccak256(abi.encode(msg.sender, _salt))
+                }(_config, vault)
+            );
     }
 }

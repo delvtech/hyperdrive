@@ -268,14 +268,12 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
     /// @return True if the share reserves are greater than the exposure plus
     ///         the minimum share reserves.
     function _isSolvent(uint256 _vaultSharePrice) internal view returns (bool) {
-        // NOTE: Round the lhs up and the rhs down to make the check more
+        // NOTE: Round the lhs down and the rhs up to make the check more
         // conservative.
         return
-            int256(
-                (uint256(_marketState.shareReserves).mulUp(_vaultSharePrice))
-            ) -
-                int128(_marketState.longExposure) >=
-            int256(_minimumShareReserves.mulDown(_vaultSharePrice));
+            uint256(_marketState.shareReserves).mulDown(_vaultSharePrice) >=
+            _marketState.longExposure +
+                _minimumShareReserves.mulUp(_vaultSharePrice);
     }
 
     /// @dev Updates the global long exposure.
@@ -285,8 +283,7 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         // The global long exposure is the sum of the non-netted longs in each
         // checkpoint. To update this value, we subtract the current value
         // (`_before.max(0)`) and add the new value (`_after.max(0)`).
-        int128 delta = (int256(_after.max(0)) - int256(_before.max(0)))
-            .toInt128();
+        int128 delta = (_after.max(0) - _before.max(0)).toInt128();
         if (delta > 0) {
             _marketState.longExposure += uint128(delta);
         } else if (delta < 0) {

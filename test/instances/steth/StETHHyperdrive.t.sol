@@ -14,11 +14,11 @@ import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
+import { ETH } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { ETH } from "test/utils/Constants.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
@@ -105,15 +105,15 @@ contract StETHHyperdriveTest is HyperdriveTest {
         IHyperdrive.PoolDeployConfig memory config = IHyperdrive
             .PoolDeployConfig({
                 baseToken: IERC20(ETH),
-                linkerFactory: address(0),
-                linkerCodeHash: bytes32(0),
+                linkerFactory: factory.linkerFactory(),
+                linkerCodeHash: factory.linkerCodeHash(),
                 minimumShareReserves: 1e15,
                 minimumTransactionAmount: 1e15,
                 positionDuration: POSITION_DURATION,
                 checkpointDuration: CHECKPOINT_DURATION,
                 timeStretch: 0,
-                governance: address(0),
-                feeCollector: address(0),
+                governance: factory.hyperdriveGovernance(),
+                feeCollector: factory.feeCollector(),
                 fees: IHyperdrive.Fees({
                     curve: 0,
                     flat: 0,
@@ -221,10 +221,10 @@ contract StETHHyperdriveTest is HyperdriveTest {
         IHyperdrive.PoolDeployConfig memory config = IHyperdrive
             .PoolDeployConfig({
                 baseToken: IERC20(ETH),
-                governance: address(0),
-                feeCollector: address(0),
-                linkerFactory: address(0),
-                linkerCodeHash: bytes32(0),
+                governance: factory.hyperdriveGovernance(),
+                feeCollector: factory.feeCollector(),
+                linkerFactory: factory.linkerFactory(),
+                linkerCodeHash: factory.linkerCodeHash(),
                 minimumShareReserves: 1e15,
                 minimumTransactionAmount: 1e15,
                 positionDuration: POSITION_DURATION,

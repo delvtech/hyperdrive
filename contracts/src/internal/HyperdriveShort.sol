@@ -205,15 +205,15 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
                     IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
                 );
             }
-
-            // Distribute the excess idle to the withdrawal pool.
-            _distributeExcessIdle(vaultSharePrice);
         } else {
             // Apply the zombie close to the state and adjust the share proceeds
             // to account for negative interest that might have accrued to the
             // zombie share reserves.
             shareProceeds = _applyZombieClose(shareProceeds, vaultSharePrice);
         }
+
+        // Distribute the excess idle to the withdrawal pool.
+        _distributeExcessIdle(vaultSharePrice);
 
         // Withdraw the profit to the trader. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
@@ -302,7 +302,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         )
             .updateWeightedAverage(
                 _marketState.shortsOutstanding,
-                _maturityTime * 1e18, // scale up to fixed point scale
+                _maturityTime * ONE, // scale up to fixed point scale
                 _bondAmount,
                 true
             )
@@ -360,7 +360,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         )
             .updateWeightedAverage(
                 shortsOutstanding_,
-                _maturityTime * 1e18, // scale up to fixed point scale
+                _maturityTime * ONE, // scale up to fixed point scale
                 _bondAmount,
                 false
             )
@@ -629,6 +629,20 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             // accounting updates.
             shareReservesDelta -= totalGovernanceFee;
 
+            // Ensure that the ending spot price is less than 1.
+            if (
+                HyperdriveMath.calculateSpotPrice(
+                    _effectiveShareReserves() + shareCurveDelta,
+                    _marketState.bondReserves - bondReservesDelta,
+                    _initialVaultSharePrice,
+                    _timeStretch
+                ) > ONE
+            ) {
+                Errors.throwInsufficientLiquidityError(
+                    IHyperdrive.InsufficientLiquidityReason.NegativeInterest
+                );
+            }
+
             // Adjust the computed proceeds and delta for negative interest.
             // We also compute the share adjustment delta at this step to ensure
             // that we don't break our AMM invariant when we account for negative
@@ -647,20 +661,6 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
                 openVaultSharePrice,
                 closeVaultSharePrice,
                 false
-            );
-        }
-
-        // Ensure that the ending spot price is less than 1.
-        if (
-            HyperdriveMath.calculateSpotPrice(
-                _effectiveShareReserves() + shareCurveDelta,
-                _marketState.bondReserves - bondReservesDelta,
-                _initialVaultSharePrice,
-                _timeStretch
-            ) > ONE
-        ) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive.InsufficientLiquidityReason.NegativeInterest
             );
         }
     }
