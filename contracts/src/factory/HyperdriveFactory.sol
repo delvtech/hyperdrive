@@ -641,7 +641,9 @@ contract HyperdriveFactory is IHyperdriveFactory {
 
             // Only the contribution amount of ether will be passed to
             // Hyperdrive.
-            refund = msg.value - _contribution;
+            unchecked {
+                refund = msg.value - _contribution;
+            }
 
             // Initialize the Hyperdrive instance.
             hyperdrive.initialize{ value: _contribution }(
@@ -798,7 +800,9 @@ contract HyperdriveFactory is IHyperdriveFactory {
         // Return the range of instances.
         range = new address[](endIndex - startIndex + 1);
         for (uint256 i = startIndex; i <= endIndex; i++) {
-            range[i - startIndex] = _instances[i];
+            unchecked {
+                range[i - startIndex] = _instances[i];
+            }
         }
     }
 
@@ -838,7 +842,9 @@ contract HyperdriveFactory is IHyperdriveFactory {
         // Return the range of instances.
         range = new address[](endIndex - startIndex + 1);
         for (uint256 i = startIndex; i <= endIndex; i++) {
-            range[i - startIndex] = _deployerCoordinators[i];
+            unchecked {
+                range[i - startIndex] = _deployerCoordinators[i];
+            }
         }
     }
 

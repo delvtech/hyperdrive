@@ -160,7 +160,9 @@ abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
         }
 
         // Decrement from the source and supply.
-        _balanceOf[tokenID][from] -= amount;
+        unchecked {
+            _balanceOf[tokenID][from] -= amount;
+        }
         _totalSupply[tokenID] -= amount;
 
         // Emit an event to track burning.
