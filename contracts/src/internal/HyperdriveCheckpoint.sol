@@ -131,7 +131,7 @@ abstract contract HyperdriveCheckpoint is
                 maturedShortsAmount,
                 0,
                 shareProceeds,
-                int256(shareProceeds), // keep the effective share reserves constant
+                shareProceeds.toInt256(), // keep the effective share reserves constant
                 _checkpointTime
             );
 
@@ -194,7 +194,7 @@ abstract contract HyperdriveCheckpoint is
                 maturedLongsAmount,
                 0,
                 shareProceeds,
-                int256(shareProceeds), // keep the effective share reserves constant
+                shareProceeds.toInt256(), // keep the effective share reserves constant
                 checkpointTime
             );
 
@@ -219,7 +219,7 @@ abstract contract HyperdriveCheckpoint is
             // positions, we can reduce the long exposure for the matured
             // checkpoint to zero.
             _updateLongExposure(
-                int256(maturedLongsAmount) - int256(maturedShortsAmount),
+                maturedLongsAmount.toInt256() - maturedShortsAmount.toInt256(),
                 0
             );
 

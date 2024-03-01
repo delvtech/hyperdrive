@@ -202,7 +202,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             // number of non-netted longs increases by the bond amount.
             int256 nonNettedLongs = _nonNettedLongs(_maturityTime);
             _updateLongExposure(
-                nonNettedLongs - int256(_bondAmount),
+                nonNettedLongs - _bondAmount.toInt256(),
                 nonNettedLongs
             );
 
@@ -339,7 +339,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         int256 nonNettedLongs = _nonNettedLongs(_maturityTime);
         _updateLongExposure(
             nonNettedLongs,
-            nonNettedLongs - int256(_bondAmount)
+            nonNettedLongs - _bondAmount.toInt256()
         );
 
         // Opening a short decreases the system's exposure because the short's

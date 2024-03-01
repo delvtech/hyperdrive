@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { SafeCast } from "./SafeCast.sol";
 
 uint256 constant ONE = 1e18;
 
@@ -13,6 +14,7 @@ uint256 constant ONE = 1e18;
 ///                    particular legal or regulatory significance.
 library FixedPointMath {
     using FixedPointMath for uint256;
+    using SafeCast for uint256;
 
     uint256 internal constant MAX_UINT256 = 2 ** 256 - 1;
 
@@ -112,11 +114,11 @@ library FixedPointMath {
         // Using properties of logarithms we calculate x^y:
         // -> ln(x^y) = y * ln(x)
         // -> e^(y * ln(x)) = x^y
-        int256 y_int256 = int256(y); // solhint-disable-line var-name-mixedcase
+        int256 y_int256 = y.toInt256(); // solhint-disable-line var-name-mixedcase
 
         // Compute y*ln(x)
         // Any overflow for x will be caught in ln() in the initial bounds check
-        int256 lnx = ln(int256(x));
+        int256 lnx = ln(x.toInt256());
         int256 ylnx;
         assembly ("memory-safe") {
             ylnx := mul(y_int256, lnx)

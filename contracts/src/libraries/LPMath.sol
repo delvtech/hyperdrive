@@ -15,6 +15,7 @@ import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 ///                    particular legal or regulatory significance.
 library LPMath {
     using FixedPointMath for *;
+    using SafeCast for uint256;
 
     /// @dev The maximum number of iterations for the share proceeds calculation.
     uint256 internal constant SHARE_PROCEEDS_MAX_ITERATIONS = 4;
@@ -58,8 +59,8 @@ library LPMath {
 
         // Update the share reserves by applying the share reserves delta. We
         // ensure that our minimum share reserves invariant is still maintained.
-        int256 shareReserves_ = int256(_shareReserves) + _shareReservesDelta;
-        if (shareReserves_ < int256(_minimumShareReserves)) {
+        int256 shareReserves_ = _shareReserves.toInt256() + _shareReservesDelta;
+        if (shareReserves_ < _minimumShareReserves.toInt256()) {
             revert IHyperdrive.InvalidShareReserves();
         }
         shareReserves = uint256(shareReserves_);
@@ -75,20 +76,14 @@ library LPMath {
         // zeta_new = zeta_old * (z_new / z_old)
         if (_shareAdjustment >= 0) {
             // NOTE: Rounding down to have a larger effective share reserves.
-            shareAdjustment = int256(
-                shareReserves.mulDivDown(
-                    uint256(_shareAdjustment),
-                    _shareReserves
-                )
-            );
+            shareAdjustment = shareReserves
+                .mulDivDown(uint256(_shareAdjustment), _shareReserves)
+                .toInt256();
         } else {
             // NOTE: Rounding up to have a larger effective share reserves.
-            shareAdjustment = -int256(
-                shareReserves.mulDivUp(
-                    uint256(-_shareAdjustment),
-                    _shareReserves
-                )
-            );
+            shareAdjustment = -shareReserves
+                .mulDivUp(uint256(-_shareAdjustment), _shareReserves)
+                .toInt256();
         }
 
         // NOTE: Rounding down to avoid introducing dust into the computation.
@@ -176,10 +171,10 @@ library LPMath {
                 return (0, false);
             }
             presentValue =
-                int256(_params.shareReserves) +
+                _params.shareReserves.toInt256() +
                 netCurveTrade +
                 calculateNetFlatTrade(_params) -
-                int256(_params.minimumShareReserves);
+                _params.minimumShareReserves.toInt256();
         }
 
         // If the present value is negative, return a failure flag indicating
@@ -212,14 +207,14 @@ library LPMath {
         // compute the net curve position as:
         //
         // netCurveTrade = y_l * t_l - y_s * t_s.
-        int256 netCurvePosition = int256(
-            _params.longsOutstanding.mulUp(_params.longAverageTimeRemaining)
-        ) -
-            int256(
-                _params.shortsOutstanding.mulDown(
-                    _params.shortAverageTimeRemaining
-                )
-            );
+        int256 netCurvePosition = _params
+            .longsOutstanding
+            .mulUp(_params.longAverageTimeRemaining)
+            .toInt256() -
+            _params
+                .shortsOutstanding
+                .mulDown(_params.shortAverageTimeRemaining)
+                .toInt256();
         uint256 effectiveShareReserves = HyperdriveMath
             .calculateEffectiveShareReserves(
                 _params.shareReserves,
@@ -283,7 +278,7 @@ library LPMath {
                     return (0, false);
                 }
 
-                return (-int256(netCurveTrade), true);
+                return (-netCurveTrade.toInt256(), true);
             }
             // Otherwise, we can only close part of the net curve position.
             // Since the spot price is approximately zero after closing the
@@ -296,10 +291,8 @@ library LPMath {
                 // `effectiveShareReserves - minimumShareReserves`.
                 if (_params.shareAdjustment >= 0) {
                     return (
-                        -int256(
-                            effectiveShareReserves -
-                                _params.minimumShareReserves
-                        ),
+                        -(effectiveShareReserves - _params.minimumShareReserves)
+                            .toInt256(),
                         true
                     );
                 }
@@ -309,9 +302,8 @@ library LPMath {
                 // `shareReserves - minimumShareReserves`.
                 else {
                     return (
-                        -int256(
-                            _params.shareReserves - _params.minimumShareReserves
-                        ),
+                        -(_params.shareReserves - _params.minimumShareReserves)
+                            .toInt256(),
                         true
                     );
                 }
@@ -369,7 +361,7 @@ library LPMath {
                     return (0, false);
                 }
 
-                return (int256(netCurveTrade), true);
+                return (netCurveTrade.toInt256(), true);
             }
             // Otherwise, we can only close part of the net curve position.
             // Since the spot price is equal to one after closing the entire net
@@ -392,12 +384,10 @@ library LPMath {
                 return (
                     // NOTE: We round the difference down to underestimate the
                     // impact of closing the net curve position.
-                    int256(
-                        maxSharePayment +
-                            (netCurvePosition_ - maxCurveTrade).divDown(
-                                _params.vaultSharePrice
-                            )
-                    ),
+                    (maxSharePayment +
+                        (netCurvePosition_ - maxCurveTrade).divDown(
+                            _params.vaultSharePrice
+                        )).toInt256(),
                     true
                 );
             }
@@ -424,18 +414,18 @@ library LPMath {
         //
         // netFlatTrade = y_s * (1 - t_s) - y_l * (1 - t_l).
         return
-            int256(
+            (
                 _params.shortsOutstanding.mulDivDown(
                     ONE - _params.shortAverageTimeRemaining,
                     _params.vaultSharePrice
                 )
-            ) -
-            int256(
+            ).toInt256() -
+            (
                 _params.longsOutstanding.mulDivUp(
                     ONE - _params.longAverageTimeRemaining,
                     _params.vaultSharePrice
                 )
-            );
+            ).toInt256();
     }
 
     struct DistributeExcessIdleParams {
@@ -578,7 +568,7 @@ library LPMath {
             _params.originalShareAdjustment,
             _params.originalBondReserves,
             _params.presentValueParams.minimumShareReserves,
-            -int256(_shareReservesDelta)
+            -_shareReservesDelta.toInt256()
         );
         (uint256 endingPresentValue, bool success) = calculatePresentValueSafe(
             _params.presentValueParams
@@ -666,7 +656,7 @@ library LPMath {
                     _params.originalShareAdjustment,
                     _params.originalBondReserves,
                     _params.presentValueParams.minimumShareReserves,
-                    -int256(shareProceeds)
+                    -shareProceeds.toInt256()
                 );
                 uint256 presentValue = calculatePresentValue(
                     _params.presentValueParams
@@ -791,12 +781,11 @@ library LPMath {
                 // where our objective function `F(x)` is:
                 //
                 // F(x) = PV(x) * l - PV(0) * (l - w)
-                int256 delta = int256(presentValue.mulDown(lpTotalSupply)) -
-                    int256(
-                        params.startingPresentValue.mulUp(
-                            params.activeLpTotalSupply
-                        )
-                    );
+                int256 delta = presentValue.mulDown(lpTotalSupply).toInt256() -
+                    _params
+                        .startingPresentValue
+                        .mulUp(_params.activeLpTotalSupply)
+                        .toInt256();
                 if (delta > 0) {
                     // NOTE: Round the quotient down to avoid overshooting.
                     shareProceeds =
@@ -842,7 +831,7 @@ library LPMath {
                     _params.originalShareAdjustment,
                     _params.originalBondReserves,
                     _params.presentValueParams.minimumShareReserves,
-                    -int256(shareProceeds)
+                    -shareProceeds.toInt256()
                 );
                 uint256 presentValue = calculatePresentValue(
                     _params.presentValueParams
@@ -889,12 +878,11 @@ library LPMath {
                 // where our objective function `F(x)` is:
                 //
                 // F(x) = PV(x) * l - PV(0) * (l - w)
-                int256 delta = int256(presentValue.mulDown(lpTotalSupply)) -
-                    int256(
-                        _params.startingPresentValue.mulUp(
-                            _params.activeLpTotalSupply
-                        )
-                    );
+                int256 delta = presentValue.mulDown(lpTotalSupply).toInt256() -
+                    _params
+                        .startingPresentValue
+                        .mulUp(_params.activeLpTotalSupply)
+                        .toInt256();
                 if (delta > 0) {
                     // NOTE: Round the quotient down to avoid overshooting.
                     shareProceeds =

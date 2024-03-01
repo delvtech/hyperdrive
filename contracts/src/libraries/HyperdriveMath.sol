@@ -140,7 +140,7 @@ library HyperdriveMath {
         uint256 _shareReserves,
         int256 _shareAdjustment
     ) internal pure returns (uint256) {
-        int256 effectiveShareReserves = int256(_shareReserves) -
+        int256 effectiveShareReserves = _shareReserves.toInt256() -
             _shareAdjustment;
         if (effectiveShareReserves < 0) {
             Errors.throwInsufficientLiquidityError(
@@ -664,8 +664,8 @@ library HyperdriveMath {
             );
             // NOTE: Using unscaled `shareCurveDelta`.
             shareAdjustmentDelta =
-                int256(_shareReservesDelta) -
-                int256(_shareCurveDelta);
+                _shareReservesDelta.toInt256() -
+                _shareCurveDelta.toInt256();
             _shareCurveDelta = _shareCurveDelta.mulDivDown(
                 _closeVaultSharePrice,
                 _openVaultSharePrice
@@ -676,8 +676,8 @@ library HyperdriveMath {
             );
         } else {
             shareAdjustmentDelta =
-                int256(_shareReservesDelta) -
-                int256(_shareCurveDelta);
+                _shareReservesDelta.toInt256() -
+                _shareCurveDelta.toInt256();
         }
 
         return (

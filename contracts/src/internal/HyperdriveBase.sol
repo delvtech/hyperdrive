@@ -159,22 +159,15 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         // of longs and the amount of shorts with a given maturity time. If the
         // difference is negative, the amount of non-netted longs is zero.
         return
-            int256(
-                _totalSupply[
-                    AssetId.encodeAssetId(
-                        AssetId.AssetIdPrefix.Long,
-                        _maturityTime
-                    )
-                ]
-            ) -
-            int256(
-                _totalSupply[
-                    AssetId.encodeAssetId(
-                        AssetId.AssetIdPrefix.Short,
-                        _maturityTime
-                    )
-                ]
-            );
+            _totalSupply[
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime)
+            ].toInt256() -
+            _totalSupply[
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    _maturityTime
+                )
+            ].toInt256();
     }
 
     /// @dev Gets the distribute excess idle parameters from the current state.
@@ -206,16 +199,14 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
 
         // NOTE: For consistency with the present value calculation, we round
         // up the long side and round down the short side.
-        int256 netCurveTrade = int256(
-            presentValueParams.longsOutstanding.mulUp(
-                presentValueParams.longAverageTimeRemaining
-            )
-        ) -
-            int256(
-                presentValueParams.shortsOutstanding.mulDown(
-                    presentValueParams.shortAverageTimeRemaining
-                )
-            );
+        int256 netCurveTrade = presentValueParams
+            .longsOutstanding
+            .mulUp(presentValueParams.longAverageTimeRemaining)
+            .toInt256() -
+            presentValueParams
+                .shortsOutstanding
+                .mulDown(presentValueParams.shortAverageTimeRemaining)
+                .toInt256();
         params = LPMath.DistributeExcessIdleParams({
             presentValueParams: presentValueParams,
             startingPresentValue: startingPresentValue,

@@ -189,7 +189,7 @@ abstract contract HyperdriveLP is
 
             // Add the liquidity to the pool's reserves and calculate the new
             // present value.
-            _updateLiquidity(int256(shareContribution));
+            _updateLiquidity(shareContribution.toInt256());
             params.shareReserves = _marketState.shareReserves;
             params.shareAdjustment = _marketState.shareAdjustment;
             params.bondReserves = _marketState.bondReserves;
@@ -508,7 +508,7 @@ abstract contract HyperdriveLP is
         _withdrawPool.proceeds += shareProceeds.toUint128();
 
         // Remove the withdrawal pool proceeds from the reserves.
-        _updateLiquidity(-int256(shareProceeds));
+        _updateLiquidity(-shareProceeds.toInt256());
 
         return true;
     }
