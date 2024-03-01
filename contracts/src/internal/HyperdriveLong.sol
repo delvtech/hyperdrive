@@ -330,7 +330,9 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
                 IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
             );
         }
-        shareReserves -= _shareReservesDelta;
+        unchecked {
+            shareReserves -= _shareReservesDelta;
+        }
 
         // If the effective share reserves are decreasing, then we need to
         // verify that z - zeta >= z_min is satisfied.

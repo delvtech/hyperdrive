@@ -338,14 +338,18 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
 
         // Apply the updates to the zombie base proceeds and share reserves.
         if (baseProceeds < zombieBaseProceeds) {
-            zombieBaseProceeds -= baseProceeds;
+            unchecked {
+                zombieBaseProceeds -= baseProceeds;
+            }
         } else {
             zombieBaseProceeds = 0;
         }
         _marketState.zombieBaseProceeds = zombieBaseProceeds.toUint112();
         uint256 zombieShareReserves = _marketState.zombieShareReserves;
         if (_shareProceeds < zombieShareReserves) {
-            zombieShareReserves -= _shareProceeds;
+            unchecked {
+                zombieShareReserves -= _shareProceeds;
+            }
         } else {
             zombieShareReserves = 0;
         }
