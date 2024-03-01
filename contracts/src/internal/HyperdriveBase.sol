@@ -405,9 +405,7 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
             // k invariant.
             zombieInterestShares -= governanceZombieFeeCollected;
             _marketState.shareReserves += zombieInterestShares.toUint128();
-            _marketState.shareAdjustment += int128(
-                zombieInterestShares.toUint128()
-            );
+            _marketState.shareAdjustment += zombieInterestShares.toInt128();
 
             // After collecting the interest, the zombie base reserves are
             // equal to the zombie base proceeds.
