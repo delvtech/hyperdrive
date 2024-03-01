@@ -300,8 +300,8 @@ library YieldSpaceMath {
     /// @param t The time elapsed since the term's start.
     /// @param c The vault share price.
     /// @param mu The initial vault share price.
-    /// @return result The amount of shares the user receives
-    /// @return success A flag indicating if the calculation succeeded.
+    /// @return The amount of shares the user receives
+    /// @return A flag indicating if the calculation succeeded.
     function calculateSharesOutGivenBondsInDownSafe(
         uint256 ze,
         uint256 y,
@@ -309,7 +309,7 @@ library YieldSpaceMath {
         uint256 t,
         uint256 c,
         uint256 mu
-    ) internal pure returns (uint256 result, bool success) {
+    ) internal pure returns (uint256, bool) {
         // NOTE: We round k up to make the rhs of the equation larger.
         //
         // k = (c / µ) * (µ * ze)^(1 - t) + y^(1 - t)
@@ -337,11 +337,14 @@ library YieldSpaceMath {
         // ((k - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
         _z = _z.divUp(mu);
 
-        // Δz = ze - ((k - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t)) / µ
-        if (ze > _z) {
-            result = ze - _z;
+        // If ze is less than _z, we return a failure flag since the calculation
+        // underflowed.
+        if (ze < _z) {
+            return (0, false);
         }
-        success = true;
+
+        // Δz = ze - ((k - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t)) / µ
+        return (ze - _z, true);
     }
 
     /// @dev Calculates the share payment required to purchase the maximum

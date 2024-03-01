@@ -285,8 +285,8 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
     // This test shows that you can open/close long/shorts with extreme positive interest
     function test_netting_extreme_positive_interest_time_elapsed() external {
         uint256 initialVaultSharePrice = 0.5e18;
-        int256 variableInterest = 0.5e18;
-        uint256 timeElapsed = 15275477; //176 days bewteen each trade
+        int256 variableInterest = 0.3e18;
+        uint256 timeElapsed = 15275477; // 176 days between each trade
         uint256 tradeSize = 504168.031667365798150347e18;
         uint256 numTrades = 100;
 
