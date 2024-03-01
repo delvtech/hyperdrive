@@ -117,7 +117,7 @@ contract MockYieldSpaceMath {
         return (result1, result2);
     }
 
-    function calculateMaxSellBondsIn(
+    function calculateMaxSellBondsInSafe(
         uint256 z,
         int256 zeta,
         uint256 y,
@@ -125,11 +125,10 @@ contract MockYieldSpaceMath {
         uint256 t,
         uint256 c,
         uint256 mu
-    ) external pure returns (uint256) {
-        (uint256 result1, bool success) = YieldSpaceMath
+    ) external pure returns (uint256, bool) {
+        (uint256 result1, bool result2) = YieldSpaceMath
             .calculateMaxSellBondsInSafe(z, zeta, y, zMin, t, c, mu);
-        require(success, "MockYieldSpaceMath: calculateMaxSellBondsInSafe");
-        return result1;
+        return (result1, result2);
     }
 
     function kUp(

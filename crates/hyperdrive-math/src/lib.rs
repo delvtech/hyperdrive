@@ -161,6 +161,10 @@ impl State {
         self.config.minimum_share_reserves.into()
     }
 
+    fn minimum_transaction_amount(&self) -> FixedPoint {
+        self.config.minimum_transaction_amount.into()
+    }
+
     fn curve_fee(&self) -> FixedPoint {
         self.config.fees.curve.into()
     }
