@@ -54,7 +54,7 @@ contract CloseLongTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        uint256 lpShares = initialize(alice, fixedRate, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Open a long position.
         uint256 baseAmount = 30e18;
