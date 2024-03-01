@@ -305,14 +305,10 @@ abstract contract HyperdriveLP is
         withdrawalShares = _lpShares - withdrawalSharesRedeemed;
 
         // Emit a RemoveLiquidity event. If the LP share price calculation
-        // fails, we revert since this indicates that the ending present value
-        // can't be calculated after removing liquidity.
-        (uint256 lpSharePrice, bool status) = _calculateLPSharePriceSafe(
-            vaultSharePrice
-        );
-        if (!status) {
-            revert IHyperdrive.InvalidLPSharePrice();
-        }
+        // fails, we proceed in removing liquidity and just emit the LP share
+        // price as zero. This ensures that the system's liveness isn't impacted
+        // by temporarily being unable to calculate the present value.
+        (uint256 lpSharePrice, ) = _calculateLPSharePriceSafe(vaultSharePrice);
         emit RemoveLiquidity(
             _options.destination,
             _lpShares,
