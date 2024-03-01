@@ -263,9 +263,10 @@ library LPMath {
                         _params.initialVaultSharePrice
                     );
 
-                // If the net curve position is smaller than the minimum transaction
-                // amount and the trade fails, we mark it to 0. This prevents
-                // liveness problems when the net curve position is very small.
+                // If the net curve position is smaller than the minimum
+                // transaction amount and the trade fails, we mark it to 0. This
+                // prevents liveness problems when the net curve position is
+                // very small.
                 if (
                     !success &&
                     netCurvePosition_ < _params.minimumTransactionAmount
@@ -344,9 +345,10 @@ library LPMath {
                         _params.initialVaultSharePrice
                     );
 
-                // If the net curve position is smaller than the minimum transaction
-                // amount and the trade fails, we mark it to 0. This prevents
-                // liveness problems when the net curve position is very small.
+                // If the net curve position is smaller than the minimum
+                // transaction amount and the trade fails, we mark it to 0. This
+                // prevents liveness problems when the net curve position is
+                // very small.
                 if (
                     !success &&
                     netCurvePosition_ < _params.minimumTransactionAmount
