@@ -810,7 +810,7 @@ library LPMath {
                 // reserves delta, we are always operating with the regime where
                 // the net curve trade is less than the maximum bond amount.
                 // With this in mind, we can calculate the derivative using the
-                // derivative of `calculateSharesOutGivenBondsIn`.
+                // derivative of `calculateSharesInGivenBondsOut`.
                 (
                     uint256 derivative,
                     bool success
