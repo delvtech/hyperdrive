@@ -239,6 +239,10 @@ interface IHyperdrive is
     ///         price of the underlying yield source on deployment.
     error InvalidInitialVaultSharePrice();
 
+    /// @notice Thrown when the LP share price couldn't be calculated in a
+    ///         critical situation.
+    error InvalidLPSharePrice();
+
     /// @notice Thrown when update liquidity brings the share reserves below
     ///         the minimum share reserves.
     error InvalidShareReserves();
@@ -307,6 +311,10 @@ interface IHyperdrive is
     /// @notice Thrown when an asset is swept from the pool and one of the
     ///         pool's depository assets changes.
     error SweepFailed();
+
+    /// @notice Thrown when the distribute excess idle calculation fails due
+    ///         to the starting present value calculation failing.
+    error DistributeExcessIdleFailed();
 
     /// @notice Thrown when an ether transfer fails.
     error TransferFailed();
