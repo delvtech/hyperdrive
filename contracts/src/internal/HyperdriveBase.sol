@@ -461,7 +461,7 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         uint256 _spotPrice,
         uint256 _vaultSharePrice
     ) internal view returns (uint256 curveFee, uint256 governanceCurveFee) {
-        // NOTE: Round down to underestimate the curve fee.
+        // NOTE: Round up to overestimate the curve fee.
         //
         // Fixed Rate (r) = (value at maturity - purchase price)/(purchase price)
         //                = (1-p)/p
@@ -482,10 +482,10 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         //           = r * phi_curve * base/shares * shares
         //           = bonds/base * phi_curve * base
         //           = bonds * phi_curve
-        curveFee = (ONE.divDown(_spotPrice) - ONE)
-            .mulDown(_curveFee)
-            .mulDown(_vaultSharePrice)
-            .mulDown(_shareAmount);
+        curveFee = (ONE.divUp(_spotPrice) - ONE)
+            .mulUp(_curveFee)
+            .mulUp(_vaultSharePrice)
+            .mulUp(_shareAmount);
 
         // NOTE: Round down to underestimate the governance curve fee.
         //
@@ -521,7 +521,7 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
             uint256 totalGovernanceFee
         )
     {
-        // NOTE: Round down to underestimate the curve fee.
+        // NOTE: Round up to overestimate the curve fee.
         //
         // p (spot price) tells us how many base a bond is worth -> p = base/bonds
         // 1 - p tells us how many additional base a bond is worth at
@@ -536,9 +536,9 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         //           = (base * phi_curve * t) * (shares/base)
         //           = phi_curve * t * shares
         curveFee = _curveFee
-            .mulDown(ONE - _spotPrice)
-            .mulDown(_bondAmount)
-            .mulDivDown(_normalizedTimeRemaining, _vaultSharePrice);
+            .mulUp(ONE - _spotPrice)
+            .mulUp(_bondAmount)
+            .mulDivUp(_normalizedTimeRemaining, _vaultSharePrice);
 
         // NOTE: Round down to underestimate the governance curve fee.
         //
@@ -548,7 +548,7 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         //                    = shares * phi_gov
         governanceCurveFee = curveFee.mulDown(_governanceLPFee);
 
-        // NOTE: Round down to underestimate the flat fee.
+        // NOTE: Round up to overestimate the flat fee.
         //
         // The flat portion of the fee is taken from the matured bonds.
         // Since a matured bond is worth 1 base, it is appropriate to consider
@@ -558,11 +558,11 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         //          = (base * (1 - t) * phi_flat) / (base/shares)
         //          = (base * (1 - t) * phi_flat) * (shares/base)
         //          = shares * (1 - t) * phi_flat
-        uint256 flat = _bondAmount.mulDivDown(
+        uint256 flat = _bondAmount.mulDivUp(
             ONE - _normalizedTimeRemaining,
             _vaultSharePrice
         );
-        flatFee = flat.mulDown(_flatFee);
+        flatFee = flat.mulUp(_flatFee);
 
         // NOTE: Round down to underestimate the total governance fee.
         //
