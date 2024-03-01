@@ -1181,7 +1181,7 @@ library LPMath {
             k - inner,
             _params.presentValueParams.vaultSharePrice
         );
-        if (inner >= 0) {
+        if (inner >= ONE) {
             // NOTE: Round the exponent up since this rounds the result up.
             inner = inner.pow(
                 _params.presentValueParams.timeStretch.divUp(
