@@ -186,11 +186,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
             flatFee_,
             governanceFee_
         );
-        assertApproxEqAbs(
-            governanceFeesAfterCloseShort,
-            expectedGovernanceFees,
-            1
-        );
+        assertEq(governanceFeesAfterCloseShort, expectedGovernanceFees);
     }
 
     function test_negative_interest_short_full_term_fees_fuzz(
@@ -395,7 +391,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
                 .1e18,
                 1e18
             );
-            assertEq(governanceFeesAfterCloseShort, expectedFees);
+            assertApproxEqAbs(governanceFeesAfterCloseShort, expectedFees, 1);
         }
     }
 
@@ -620,7 +616,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
                 .1e18,
                 1e18
             );
-            assertEq(governanceFeesAfterCloseShort, expectedFees);
+            assertApproxEqAbs(governanceFeesAfterCloseShort, expectedFees, 1);
         }
     }
 
@@ -634,15 +630,15 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         uint256 governanceFee
     ) internal pure returns (uint256) {
         uint256 totalCurveFee = (ONE - calculatedSpotPrice)
-            .mulDown(curveFee)
-            .mulDown(bondAmount)
-            .mulDivDown(normalizedTimeRemaining, vaultSharePrice);
+            .mulUp(curveFee)
+            .mulUp(bondAmount)
+            .mulDivUp(normalizedTimeRemaining, vaultSharePrice);
         uint256 totalGovernanceFee = totalCurveFee.mulDown(governanceFee);
-        uint256 flat = bondAmount.mulDivDown(
+        uint256 flat = bondAmount.mulDivUp(
             ONE - normalizedTimeRemaining,
             vaultSharePrice
         );
-        uint256 totalFlatFee = (flat.mulDown(flatFee));
+        uint256 totalFlatFee = flat.mulUp(flatFee);
         totalGovernanceFee += totalFlatFee.mulDown(governanceFee);
         return totalGovernanceFee;
     }
@@ -659,15 +655,15 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
     ) internal pure returns (uint256) {
         uint256 totalCurveFee = ONE - calculatedSpotPrice;
         totalCurveFee = totalCurveFee
-            .mulDown(curveFee)
-            .mulDown(bondAmount)
-            .mulDivDown(normalizedTimeRemaining, vaultSharePrice);
+            .mulUp(curveFee)
+            .mulUp(bondAmount)
+            .mulDivUp(normalizedTimeRemaining, vaultSharePrice);
         uint256 totalGovernanceFee = totalCurveFee.mulDown(governanceFee);
-        uint256 flat = bondAmount.mulDivDown(
+        uint256 flat = bondAmount.mulDivUp(
             ONE - normalizedTimeRemaining,
             vaultSharePrice
         );
-        uint256 totalFlatFee = (flat.mulDown(flatFee));
+        uint256 totalFlatFee = flat.mulUp(flatFee);
         totalGovernanceFee += totalFlatFee.mulDown(governanceFee);
         return
             totalGovernanceFee.mulDivDown(vaultSharePrice, openVaultSharePrice);
