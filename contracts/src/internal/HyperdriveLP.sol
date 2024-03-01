@@ -379,6 +379,13 @@ abstract contract HyperdriveLP is
         uint256 vaultSharePrice = _pricePerVaultShare();
         _applyCheckpoint(_latestCheckpoint(), vaultSharePrice);
 
+        // Distribute the excess idle to the withdrawal pool. If the distribute
+        // excess idle calculation fails, we proceed with the calculation since
+        // LPs should be able to redeem their withdrawal shares for existing
+        // withdrawal proceeds regardless of whether or not idle could be
+        // distributed.
+        _distributeExcessIdleSafe(vaultSharePrice);
+
         // Redeem as many of the withdrawal shares as possible.
         (proceeds, withdrawalSharesRedeemed) = _redeemWithdrawalSharesInternal(
             msg.sender,
