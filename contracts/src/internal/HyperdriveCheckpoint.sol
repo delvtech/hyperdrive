@@ -223,18 +223,25 @@ abstract contract HyperdriveCheckpoint is
                 0
             );
 
-            // Distribute the excess idle to the withdrawal pool.
-            _distributeExcessIdle(_vaultSharePrice);
+            // Distribute the excess idle to the withdrawal pool. If the
+            // distribute excess idle calculation fails, we proceed with the
+            // calculation since checkpoints should be minted regardless of
+            // whether idle could be distributed.
+            _distributeExcessIdleSafe(_vaultSharePrice);
         }
 
         // Emit an event about the checkpoint creation that includes the LP
-        // share price.
+        // share price. If the LP share price calculation fails, we proceed in
+        // minting the checkpoint and just emit the LP share price as zero. This
+        // ensures that the system's liveness isn't impacted by temporarily not
+        // being able to calculate the present value.
+        (uint256 lpSharePrice, ) = _calculateLPSharePriceSafe(_vaultSharePrice);
         emit CreateCheckpoint(
             _checkpointTime,
             _vaultSharePrice,
             maturedShortsAmount,
             maturedLongsAmount,
-            _calculateLPSharePrice(_vaultSharePrice)
+            lpSharePrice
         );
 
         return _vaultSharePrice;
