@@ -683,10 +683,10 @@ library LPMath {
                     (
                         derivative,
                         success
-                    ) = calculateSharesOutGivenBondsInDerivativeSafe(
+                    ) = calculateSharesDeltaGivenBondsDeltaDerivativeSafe(
                         _params,
                         _originalEffectiveShareReserves,
-                        uint256(_params.netCurveTrade)
+                        _params.netCurveTrade
                     );
                     if (!success || derivative >= ONE) {
                         // NOTE: Return 0 to indicate that the share proceeds
@@ -792,14 +792,14 @@ library LPMath {
                 // If the net curve trade is less than or equal to the maximum
                 // amount of bonds that can be sold with this share proceeds, we
                 // can calculate the derivative using the derivative of
-                // `calculateSharesOutGivenBondsIn`.
+                // `calculateSharesInGivenBondsOut`.
                 (
                     uint256 derivative,
                     bool success
-                ) = calculateSharesInGivenBondsOutDerivativeSafe(
+                ) = calculateSharesDeltaGivenBondsDeltaDerivativeSafe(
                         _params,
                         _originalEffectiveShareReserves,
-                        uint256(-_params.netCurveTrade)
+                        _params.netCurveTrade
                     );
                 if (!success || derivative >= ONE) {
                     // NOTE: Return 0 to indicate that the share proceeds
@@ -1038,10 +1038,13 @@ library LPMath {
         return (maxShareReservesDelta, true);
     }
 
-    /// @dev Calculates the derivative of `calculateSharesOutGivenBondsIn`. This
-    ///      derivative is given by:
+    /// @dev Given a signed bond amount, this function calculates the negation
+    ///      of the derivative of `calculateSharesOutGivenBondsIn` when the
+    ///      bond amount is positive or the derivative of
+    ///      `calculateSharesInGivenBondsOut` when the bond amount is negative.
+    ///      In both cases, the calculation is given by:
     ///
-    ///      derivative = - (1 - zeta / z) * (
+    ///      derivative = (1 - zeta / z) * (
     ///          1 - (1 / c) * (
     ///              c * (mu * z_e(x)) ** -t_s +
     ///              (y / z_e) * y(x) ** -t_s  -
@@ -1051,20 +1054,51 @@ library LPMath {
     ///          ) ** (t_s / (1 - t_s))
     ///      )
     ///
-    ///      We round down to avoid overshooting the optimal solution in Newton's
-    ///      method (the derivative we use is 1 minus this derivative so this
-    ///      rounds the derivative up).
+    ///      This quantity is used in Newton's method to search for the optimal
+    ///      share proceeds. The derivative of the objective function F(x) is
+    ///      given by:
+    ///
+    ///      F'(x) = 1 - derivative
+    ///
+    ///      With this in mind, this function rounds its result down so that
+    ///      F'(x) is overestimated. Since F'(x) is in the denominator of
+    ///      Newton's method, overestimating F'(x) helps to avoid overshooting
+    ///      the optimal solution.
     /// @param _params The parameters for the calculation.
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
-    /// @param _bondAmount The amount of bonds to sell.
-    /// @return The derivative.
+    /// @param _bondAmount The amount of bonds that are being bought or sold.
+    /// @return The negation of the derivative of
+    ///         `calculateSharesOutGivenBondsIn` when the bond amount is
+    ///         positive or the derivative of `calculateSharesInGivenBondsOut`
+    ///         when the bond amount is negative.
     /// @return A flag indicating whether the derivative could be computed.
-    function calculateSharesOutGivenBondsInDerivativeSafe(
+    function calculateSharesDeltaGivenBondsDeltaDerivativeSafe(
         DistributeExcessIdleParams memory _params,
         uint256 _originalEffectiveShareReserves,
-        uint256 _bondAmount
+        int256 _bondAmount
     ) internal pure returns (uint256, bool) {
+        // Calculate the bond reserves after the bond amount is applied.
+        uint256 bondReserves;
+        if (_bondAmount >= 0) {
+            bondReserves =
+                _params.presentValueParams.bondReserves +
+                uint256(_bondAmount);
+        } else {
+            uint256 bondAmount = uint256(-_bondAmount);
+            if (bondAmount < _params.presentValueParams.bondReserves) {
+                unchecked {
+                    bondReserves =
+                        _params.presentValueParams.bondReserves -
+                        bondAmount;
+                }
+            } else {
+                // NOTE: Return a failure flag if calculating the bond reserves
+                // would underflow.
+                return (0, false);
+            }
+        }
+
         // NOTE: Round up since this is on the rhs of the final subtraction.
         //
         // derivative = c * (mu * z_e(x)) ** -t_s +
@@ -1092,9 +1126,7 @@ library LPMath {
             // NOTE: Round down to round the subtraction up.
             _params.originalBondReserves.divDown(
                 _originalEffectiveShareReserves.mulUp(
-                    (_params.presentValueParams.bondReserves + _bondAmount).pow(
-                        _params.presentValueParams.timeStretch
-                    )
+                    bondReserves.pow(_params.presentValueParams.timeStretch)
                 )
             );
 
@@ -1110,8 +1142,9 @@ library LPMath {
             _params.presentValueParams.vaultSharePrice,
             _params.presentValueParams.initialVaultSharePrice
         );
-        uint256 inner = (_params.presentValueParams.bondReserves + _bondAmount)
-            .pow(ONE - _params.presentValueParams.timeStretch);
+        uint256 inner = bondReserves.pow(
+            ONE - _params.presentValueParams.timeStretch
+        );
         if (k < inner) {
             // NOTE: In this case, we shouldn't proceed with distributing excess
             // idle since the derivative couldn't be computed.
@@ -1168,172 +1201,6 @@ library LPMath {
             if (rhs >= ONE) {
                 // NOTE: Return a failure flag if the calculation would
                 // underflow.
-                return (0, false);
-            }
-            unchecked {
-                rhs = ONE - rhs;
-            }
-            derivative = derivative.mulDown(rhs);
-        } else {
-            derivative = derivative.mulDown(
-                ONE +
-                    uint256(-_params.originalShareAdjustment).divDown(
-                        _params.originalShareReserves
-                    )
-            );
-        }
-
-        return (derivative, true);
-    }
-
-    /// @dev Calculates the derivative of `calculateSharesInGivenBondsOut`. This
-    ///      derivative is given by:
-    ///
-    ///      derivative = - (1 - zeta / z) * (
-    ///          (1 / c) * (
-    ///              c * (mu * z_e(x)) ** -t_s +
-    ///              (y / z_e) * y(x) ** -t_s  -
-    ///              (y / z_e) * (y(x) - dy) ** -t_s
-    ///          ) * (
-    ///              (mu / c) * (k(x) - (y(x) - dy) ** (1 - t_s))
-    ///          ) ** (t_s / (1 - t_s)) - 1
-    ///      )
-    ///
-    ///      We round down to avoid overshooting the optimal solution in
-    ///      Newton's method (the derivative we use is 1 minus this derivative
-    ///      so this rounds the derivative up).
-    /// @param _params The parameters for the calculation.
-    /// @param _originalEffectiveShareReserves The original effective share
-    ///        reserves.
-    /// @param _bondAmount The amount of bonds to sell.
-    /// @return The derivative.
-    /// @return A flag indicating whether the derivative could be computed.
-    function calculateSharesInGivenBondsOutDerivativeSafe(
-        DistributeExcessIdleParams memory _params,
-        uint256 _originalEffectiveShareReserves,
-        uint256 _bondAmount
-    ) internal pure returns (uint256, bool) {
-        // If the bond amount exceeds the bond reserves, we must return a
-        // failure flag.
-        if (_params.presentValueParams.bondReserves < _bondAmount) {
-            return (0, false);
-        }
-
-        // NOTE: Round up since this is on the rhs of the final subtraction.
-        //
-        // derivative = c * (mu * z_e(x)) ** -t_s +
-        //              (y / z_e) * (y(x)) ** -t_s -
-        //              (y / z_e) * (y(x) - dy) ** -t_s
-        uint256 effectiveShareReserves = HyperdriveMath
-            .calculateEffectiveShareReserves(
-                _params.presentValueParams.shareReserves,
-                _params.presentValueParams.shareAdjustment
-            );
-        uint256 derivative = _params.presentValueParams.vaultSharePrice.divUp(
-            _params
-                .presentValueParams
-                .initialVaultSharePrice
-                .mulDown(effectiveShareReserves)
-                .pow(_params.presentValueParams.timeStretch)
-        ) +
-            _params.originalBondReserves.divUp(
-                _originalEffectiveShareReserves.mulDown(
-                    _params.presentValueParams.bondReserves.pow(
-                        _params.presentValueParams.timeStretch
-                    )
-                )
-            );
-        // NOTE: Round down this rounds the subtraction up.
-        uint256 rhs = _params.originalBondReserves.divDown(
-            _originalEffectiveShareReserves.mulUp(
-                (_params.presentValueParams.bondReserves - _bondAmount).pow(
-                    _params.presentValueParams.timeStretch
-                )
-            )
-        );
-        if (derivative < rhs) {
-            return (0, false);
-        }
-        unchecked {
-            derivative -= rhs;
-        }
-
-        // NOTE: Round up since this is on the rhs of the final subtraction.
-        //
-        // inner = (
-        //             (mu / c) * (k(x) - (y(x) - dy) ** (1 - t_s))
-        //         ) ** (t_s / (1 - t_s))
-        uint256 k = YieldSpaceMath.kUp(
-            effectiveShareReserves,
-            _params.presentValueParams.bondReserves,
-            ONE - _params.presentValueParams.timeStretch,
-            _params.presentValueParams.vaultSharePrice,
-            _params.presentValueParams.initialVaultSharePrice
-        );
-        uint256 inner = (_params.presentValueParams.bondReserves - _bondAmount)
-            .pow(ONE - _params.presentValueParams.timeStretch);
-        if (k < inner) {
-            // NOTE: In this case, we shouldn't proceed with distributing excess
-            // idle since the derivative couldn't be computed.
-            return (0, false);
-        }
-        unchecked {
-            inner = k - inner;
-        }
-        inner = inner.mulDivUp(
-            _params.presentValueParams.initialVaultSharePrice,
-            _params.presentValueParams.vaultSharePrice
-        );
-        if (inner >= ONE) {
-            // NOTE: Round the exponent up since this rounds the result up.
-            inner = inner.pow(
-                _params.presentValueParams.timeStretch.divUp(
-                    ONE - _params.presentValueParams.timeStretch
-                )
-            );
-        } else {
-            // NOTE: Round the exponent down since this rounds the result up.
-            inner = inner.pow(
-                _params.presentValueParams.timeStretch.divDown(
-                    ONE - _params.presentValueParams.timeStretch
-                )
-            );
-        }
-
-        // NOTE: Round up since this is on the rhs of the final subtraction.
-        //
-        // derivative = (1 / c) * (
-        //                  c * (mu * z_e(x)) ** -t_s +
-        //                  (y / z_e) * y(x) ** -t_s  -
-        //                  (y / z_e) * (y(x) - dy) ** -t_s
-        //              ) * (
-        //                  (mu / c) * (k(x) - (y(x) - dy) ** (1 - t_s))
-        //              ) ** (t_s / (1 - t_s))
-        derivative = derivative.mulDivUp(
-            inner,
-            _params.presentValueParams.vaultSharePrice
-        );
-
-        // derivative = 1 - derivative
-        if (ONE >= derivative) {
-            unchecked {
-                derivative = ONE - derivative;
-            }
-        } else {
-            // NOTE: Small rounding errors can result in the derivative being
-            // slightly (on the order of a few wei) greater than 1. In this case,
-            // we return 0 since we should proceed with Newton's method.
-            return (0, true);
-        }
-
-        // NOTE: Round down to round the final result down.
-        //
-        // derivative = derivative * (1 - (zeta / z))
-        if (_params.originalShareAdjustment >= 0) {
-            rhs = uint256(_params.originalShareAdjustment).divUp(
-                _params.originalShareReserves
-            );
-            if (rhs >= ONE) {
                 return (0, false);
             }
             unchecked {
