@@ -239,6 +239,9 @@ interface IHyperdrive is
     ///         price of the underlying yield source on deployment.
     error InvalidInitialVaultSharePrice();
 
+    /// @notice Thrown when the present value calculation fails.
+    error InvalidPresentValue();
+
     /// @notice Thrown when update liquidity brings the share reserves below
     ///         the minimum share reserves.
     error InvalidShareReserves();
@@ -265,10 +268,6 @@ interface IHyperdrive is
     ///         than the minimum transaction amount. This protects traders and
     ///         LPs from losses of precision that can occur at small scales.
     error MinimumTransactionAmount();
-
-    /// @notice Thrown when the present value is negative. Whatever proceeded
-    ///         a negative present value should be reverted.
-    error NegativePresentValue();
 
     /// @notice Thrown when the present value prior to adding liquidity results in a
     ///         decrease in present value after liquidity. This is caused by a
