@@ -2,16 +2,22 @@ name: Rust Test
 
 on:
   push:
-    branches:
-      - main
   pull_request:
-    branches:
-      - main
+  merge_group:
 
 jobs:
+  # Check if files in the /contracts, /test, /crates, or /lib directories or the
+  # /foundry.toml, /Cargo.lock, or /Cargo.toml files were changed in this PR.
+  detect-changes:
+    uses: ./.github/workflows/check_diff.yaml
+    with:
+      pattern: ^contracts/\|^test/\|^crates/\|^lib/\|^foundry\.toml$\|^Cargo\.lock$\|^Cargo\.toml$\|^\.github/workflows/rust_test\.yml$
+
   test:
     name: rust test
     runs-on: ubuntu-latest-m
+    needs: detect-changes
+    if: needs.detect-changes.outputs.changed == 'true'
     steps:
       - uses: actions/checkout@v3
         with:

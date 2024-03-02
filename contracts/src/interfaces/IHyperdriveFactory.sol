@@ -95,6 +95,10 @@ interface IHyperdriveFactory {
     ///         underlying list.
     error EndIndexTooLarge();
 
+    /// @notice Thrown when a deployer provides an insufficient amount of base
+    ///         to initialize a payable Hyperdrive instance.
+    error InsufficientValue();
+
     /// @notice Thrown when the checkpoint duration supplied to `deployTarget`
     ///         or `deployAndInitialize` isn't a multiple of the checkpoint
     ///         duration resolution or isn't within the range specified by the
