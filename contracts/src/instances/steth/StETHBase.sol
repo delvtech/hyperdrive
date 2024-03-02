@@ -58,7 +58,7 @@ abstract contract StETHBase is HyperdriveBase {
             // Submit the provided ether to Lido to be deposited. The fee
             // collector address is passed as the referral address; however,
             // users can specify whatever referrer they'd like by depositing
-            // stETH instead of WETH.
+            // stETH instead of ETH.
             shares = _lido.submit{ value: _amount }(_feeCollector);
         } else {
             // Refund any ether that was sent to the contract.

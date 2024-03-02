@@ -15,7 +15,8 @@ interface IHyperdriveGovernedRegistry {
     /// @param _governance The new governance address.
     function updateGovernance(address _governance) external;
 
-    /// @notice Allows governance set arbitrary info for a Hyperdrive instance.
+    /// @notice Allows governance to set arbitrary info for a Hyperdrive
+    ///         instance.
     /// @param _hyperdriveInstance The Hyperdrive instance address.
     /// @param _data The uint256 value to be set to convey information about the
     ///        instance.
