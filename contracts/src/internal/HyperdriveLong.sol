@@ -23,7 +23,9 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
     using SafeCast for int256;
 
     /// @dev Opens a long position.
-    /// @param _amount The amount to open a long with.
+    /// @param _amount The amount of capital provided to open the long. The
+    ///        units of this quantity are either base or vault shares, depending
+    ///        on the value of `_options.asBase`.
     /// @param _minOutput The minimum number of bonds to receive.
     /// @param _minVaultSharePrice The minimum vault share price at which to
     ///        open the long. This allows traders to protect themselves from
@@ -31,7 +33,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
     ///        accrued.
     /// @param _options The options that configure how the trade is settled.
     /// @return maturityTime The maturity time of the bonds.
-    /// @return bondProceeds The amount of bonds the user received
+    /// @return bondProceeds The amount of bonds the user received.
     function _openLong(
         uint256 _amount,
         uint256 _minOutput,
@@ -86,7 +88,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         ) = _calculateOpenLong(sharesDeposited, vaultSharePrice);
 
         // Enforce the minimum user outputs.
-        if (_minOutput > bondProceeds) {
+        if (bondProceeds < _minOutput) {
             revert IHyperdrive.OutputLimit();
         }
 
@@ -119,7 +121,9 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             options.destination,
             assetId,
             maturityTime_,
+            // base deposit
             _convertToBaseFromOption(amount, vaultSharePrice_, options),
+            // vault shares deposit
             _convertToVaultSharesFromOption(amount, vaultSharePrice_, options),
             options.asBase,
             bondProceeds_
@@ -131,9 +135,13 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
     /// @dev Closes a long position with a specified maturity time.
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of longs to close.
-    /// @param _minOutput The minimum amount of base the trader will accept.
+    /// @param _minOutput The minimum proceeds the trader will accept. The units
+    ///        of this quantity are either base or vault shares, depending on
+    ///        the value of `_options.asBase`.
     /// @param _options The options that configure how the trade is settled.
-    /// @return The amount of underlying the user receives.
+    /// @return The proceeds the user receives. The units of this quantity are
+    ///         either base or vault shares, depending on the value of
+    ///         `_options.asBase`.
     function _closeLong(
         uint256 _maturityTime,
         uint256 _bondAmount,
@@ -202,17 +210,12 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         // Withdraw the profit to the trader.
         uint256 proceeds = _withdraw(shareProceeds, vaultSharePrice, _options);
 
-        // Enforce min user outputs.
-        // Note: We use the value that is returned from the
-        // withdraw to check against the minOutput because
-        // in the event of slippage on the withdraw, we want
-        // it to be caught be the minOutput check.
-        uint256 baseProceeds = _convertToBaseFromOption(
-            proceeds,
-            vaultSharePrice,
-            _options
-        );
-        if (_minOutput > baseProceeds) {
+        // Enforce the minimum user outputs.
+        //
+        // NOTE: We use the value that is returned from the withdraw to check
+        // against the minOutput because in the event of slippage on the
+        // withdraw, we want it to be caught be the minOutput check.
+        if (proceeds < _minOutput) {
             revert IHyperdrive.OutputLimit();
         }
 
@@ -224,7 +227,9 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             options.destination,
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             maturityTime,
-            baseProceeds,
+            // base proceeds
+            _convertToBaseFromOption(proceeds, vaultSharePrice_, options),
+            // vault shares proceeds
             _convertToVaultSharesFromOption(
                 proceeds,
                 vaultSharePrice_,

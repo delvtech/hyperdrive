@@ -27,7 +27,9 @@ abstract contract HyperdriveLP is
     using SafeCast for uint256;
 
     /// @dev Allows the first LP to initialize the market with a target APR.
-    /// @param _contribution The amount to supply.
+    /// @param _contribution The amount of capital to supply. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
     /// @param _apr The target APR.
     /// @param _options The options that configure how the operation is settled.
     /// @return lpShares The initial number of LP shares created.
@@ -116,12 +118,15 @@ abstract contract HyperdriveLP is
     }
 
     /// @dev Allows LPs to supply liquidity for LP shares.
-    /// @param _contribution The amount to supply.
+    /// @param _contribution The amount of capital to supply. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
     /// @param _minLpSharePrice The minimum LP share price the LP is willing
     ///        to accept for their shares. LPs incur negative slippage when
     ///        adding liquidity if there is a net curve position in the market,
     ///        so this allows LPs to protect themselves from high levels of
-    ///        slippage.
+    ///        slippage. The units of this quantity are either base or vault
+    ///        shares, depending on the value of `_options.asBase`.
     /// @param _minApr The minimum APR at which the LP is willing to supply.
     /// @param _maxApr The maximum APR at which the LP is willing to supply.
     /// @param _options The options that configure how the operation is settled.
@@ -152,7 +157,7 @@ abstract contract HyperdriveLP is
         }
 
         // Deposit for the user, this call also transfers from them
-        (uint256 vaultShares, uint256 vaultSharePrice) = _deposit(
+        (uint256 shareContribution, uint256 vaultSharePrice) = _deposit(
             _contribution,
             _options
         );
@@ -184,7 +189,7 @@ abstract contract HyperdriveLP is
 
             // Add the liquidity to the pool's reserves and calculate the new
             // present value.
-            _updateLiquidity(int256(vaultShares));
+            _updateLiquidity(int256(shareContribution));
             params.shareReserves = _marketState.shareReserves;
             params.shareAdjustment = _marketState.shareAdjustment;
             params.bondReserves = _marketState.bondReserves;
@@ -239,8 +244,10 @@ abstract contract HyperdriveLP is
         emit AddLiquidity(
             _options.destination,
             lpShares,
+            // base contribution
             baseContribution,
-            vaultShares,
+            // vault shares contribution
+            shareContribution,
             _options.asBase,
             lpSharePrice
         );
@@ -248,13 +255,14 @@ abstract contract HyperdriveLP is
 
     /// @dev Allows an LP to burn shares and withdraw from the pool.
     /// @param _lpShares The LP shares to burn.
-    /// @param _minOutputPerShare The minimum amount the LP expects to
-    ///        receive for each withdrawal share that is burned. The units of
-    ///        this quantity are either base or vault shares, depending on the
-    ///        value of `_options.asBase`.
+    /// @param _minOutputPerShare The minimum amount the LP expects to receive
+    ///        for each withdrawal share that is burned. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
     /// @return proceeds The amount the LP removing liquidity receives. The
-    ///         LP receives a proportional amount of the pool's idle capital
+    ///        units of this quantity are either base or vault shares, depending
+    ///        on the value of `_options.asBase`.
     /// @return withdrawalShares The base that the LP receives buys out some of
     ///         their LP shares, but it may not be sufficient to fully buy the
     ///         LP out. In this case, the LP receives withdrawal shares equal
@@ -305,7 +313,9 @@ abstract contract HyperdriveLP is
         emit RemoveLiquidity(
             _options.destination,
             _lpShares,
+            // base proceeds
             _convertToBaseFromOption(proceeds, vaultSharePrice, _options),
+            // vault shares proceeds
             _convertToVaultSharesFromOption(
                 proceeds,
                 vaultSharePrice,
@@ -329,7 +339,9 @@ abstract contract HyperdriveLP is
     ///        this quantity are either base or vault shares, depending on the
     ///        value of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
-    /// @return proceeds The amount the LP received.
+    /// @return proceeds The amount the LP received. The units of this quantity
+    ///        are either base or vault shares, depending on the value of
+    ///        `_options.asBase`.
     /// @return withdrawalSharesRedeemed The amount of withdrawal shares that
     ///         were redeemed.
     function _redeemWithdrawalShares(
@@ -362,7 +374,9 @@ abstract contract HyperdriveLP is
         emit RedeemWithdrawalShares(
             _options.destination,
             withdrawalSharesRedeemed,
+            // base proceeds
             _convertToBaseFromOption(proceeds, vaultSharePrice, _options),
+            // vault shares proceeds
             _convertToVaultSharesFromOption(
                 proceeds,
                 vaultSharePrice,
@@ -435,7 +449,7 @@ abstract contract HyperdriveLP is
         // NOTE: Round up to make the check more conservative.
         //
         // Enforce the minimum user output per share.
-        if (_minOutputPerShare.mulUp(withdrawalSharesRedeemed) > proceeds) {
+        if (proceeds < _minOutputPerShare.mulUp(withdrawalSharesRedeemed)) {
             revert IHyperdrive.OutputLimit();
         }
 

@@ -37,13 +37,14 @@ abstract contract ERC4626Base is HyperdriveBase {
     /// @notice Accepts a trader's deposit in either base or vault shares. If
     ///         the deposit is settled in base, the base is deposited into the
     ///         yield source immediately.
-    /// @param _amount The amount of token to transfer. It will be in either
-    ///          base or shares depending on the `asBase` option.
+    /// @param _amount The amount of token to transfer. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
     /// @param _options The options that configure the deposit. The only option
-    ///        used in this implementation is "asBase" which determines if
-    ///        the deposit is settled in base or vault shares.
-    /// @return sharesMinted The shares this deposit creates.
-    /// @return vaultSharePrice The vault share price at time of deposit.
+    ///        used in this implementation is `_options.asBase`, which
+    ///        determines if the deposit is settled in base or vault shares.
+    /// @return sharesMinted The amount deposited measured in vault shares.
+    /// @return vaultSharePrice The vault share price at the time of deposit.
     function _deposit(
         uint256 _amount,
         IHyperdrive.Options calldata _options
@@ -87,20 +88,21 @@ abstract contract ERC4626Base is HyperdriveBase {
     }
 
     /// @notice Processes a trader's withdrawal in either base or vault shares.
-    ///         If the withdrawal is settled in base, the base will need to be
-    ///         withdrawn from the yield source.
-    /// @param _shares The amount of shares to withdraw from Hyperdrive.
-    /// @param _sharePrice The share price.
+    ///         If the withdrawal is settled in base, the base is withdrawn from
+    ///         the yield source.
+    /// @param _shares The amount of vault shares to withdraw from Hyperdrive.
+    /// @param _vaultSharePrice The vault share price.
     /// @param _options The options that configure the withdrawal. The options
-    ///        used in this implementation are "destination" which specifies the
-    ///        recipient of the withdrawal and "asBase" which determines
-    ///        if the withdrawal is settled in base or vault shares.
-    /// @return amountWithdrawn The amount withdrawn from the yield source.
-    ///         it will be in either base or shares depending on the `asBase`
-    ///         option.
+    ///        used in this implementation are `_options.destination`, which
+    ///        specifies the recipient of the withdrawal, and `_options.asBase`,
+    ///        which determines if the withdrawal is settled in base or vault
+    ///        shares.
+    /// @return amountWithdrawn The proceeds of the withdrawal. The units of
+    ///         this quantity are vault shares since this yield source doesn't
+    ///         support withdrawals in base.
     function _withdraw(
         uint256 _shares,
-        uint256 _sharePrice,
+        uint256 _vaultSharePrice,
         IHyperdrive.Options calldata _options
     ) internal override returns (uint256 amountWithdrawn) {
         // NOTE: Round down to underestimate the base proceeds.
@@ -108,7 +110,7 @@ abstract contract ERC4626Base is HyperdriveBase {
         // Correct for any error that crept into the calculation of the share
         // amount by converting the shares to base and then back to shares
         // using the vault's share conversion logic.
-        uint256 baseAmount = _shares.mulDown(_sharePrice);
+        uint256 baseAmount = _shares.mulDown(_vaultSharePrice);
         _shares = _vault.convertToShares(baseAmount);
 
         // If we're withdrawing zero shares, short circuit and return 0.
