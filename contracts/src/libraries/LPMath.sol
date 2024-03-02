@@ -4,7 +4,6 @@ pragma solidity 0.8.20;
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { HyperdriveMath } from "./HyperdriveMath.sol";
-import { SafeCast } from "./SafeCast.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 
 /// @author DELV

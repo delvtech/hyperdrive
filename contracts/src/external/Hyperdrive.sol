@@ -6,7 +6,6 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveCore } from "../interfaces/IHyperdriveCore.sol";
 import { IMultiTokenCore } from "../interfaces/IMultiTokenCore.sol";
 import { HyperdriveAdmin } from "../internal/HyperdriveAdmin.sol";
-import { HyperdriveBase } from "../internal/HyperdriveBase.sol";
 import { HyperdriveCheckpoint } from "../internal/HyperdriveCheckpoint.sol";
 import { HyperdriveLong } from "../internal/HyperdriveLong.sol";
 import { HyperdriveLP } from "../internal/HyperdriveLP.sol";

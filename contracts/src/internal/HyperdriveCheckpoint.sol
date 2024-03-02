@@ -6,7 +6,6 @@ import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
-import { LPMath } from "../libraries/LPMath.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveLong } from "./HyperdriveLong.sol";
