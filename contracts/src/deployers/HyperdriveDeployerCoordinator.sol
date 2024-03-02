@@ -5,6 +5,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveCoreDeployer } from "../interfaces/IHyperdriveCoreDeployer.sol";
 import { IHyperdriveDeployerCoordinator } from "../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IHyperdriveTargetDeployer } from "../interfaces/IHyperdriveTargetDeployer.sol";
+import { ONE } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title HyperdriveDeployerCoordinator
@@ -144,6 +145,8 @@ abstract contract HyperdriveDeployerCoordinator is
         config.initialVaultSharePrice = deployment.initialSharePrice;
 
         // Deploy the Hyperdrive instance and add it to the deployment struct.
+        bytes32 deploymentId = _deploymentId; // Avoid stack too deep error
+        bytes32 salt = _salt; // Avoid stack too deep error
         address hyperdrive = IHyperdriveCoreDeployer(coreDeployer).deploy(
             config,
             _extraData,
@@ -152,7 +155,9 @@ abstract contract HyperdriveDeployerCoordinator is
             deployment.target2,
             deployment.target3,
             deployment.target4,
-            _salt
+            // NOTE: We hash the sender and deployment ID with the salt to
+            // prevent the front-running of deployments.
+            keccak256(abi.encode(msg.sender, deploymentId, salt))
         );
         _deployments[msg.sender][_deploymentId].hyperdrive = hyperdrive;
 
@@ -208,7 +213,9 @@ abstract contract HyperdriveDeployerCoordinator is
             target = IHyperdriveTargetDeployer(target0Deployer).deploy(
                 config_,
                 _extraData,
-                _salt
+                // NOTE: We hash the sender and deployment ID with the salt to
+                // prevent the front-running of deployments.
+                keccak256(abi.encode(msg.sender, _deploymentId, _salt))
             );
 
             // Store the deployment.
@@ -342,10 +349,10 @@ abstract contract HyperdriveDeployerCoordinator is
 
         // Ensure that the fees don't exceed 100%.
         if (
-            _deployConfig.fees.curve > 1e18 ||
-            _deployConfig.fees.flat > 1e18 ||
-            _deployConfig.fees.governanceLP > 1e18 ||
-            _deployConfig.fees.governanceZombie > 1e18
+            _deployConfig.fees.curve > ONE ||
+            _deployConfig.fees.flat > ONE ||
+            _deployConfig.fees.governanceLP > ONE ||
+            _deployConfig.fees.governanceZombie > ONE
         ) {
             revert IHyperdriveDeployerCoordinator.InvalidFeeAmounts();
         }

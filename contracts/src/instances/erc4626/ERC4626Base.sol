@@ -12,6 +12,9 @@ import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 /// @author DELV
 /// @title ERC4626Base
 /// @notice The base contract for the ERC4626 Hyperdrive implementation.
+/// @dev This Hyperdrive implementation is designed to work with standard
+///      ERC4626 vaults. Non-standard implementations may not work correctly
+///      and should be carefully checked.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.

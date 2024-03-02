@@ -285,15 +285,15 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         IHyperdrive.PoolDeployConfig memory config = IHyperdrive
             .PoolDeployConfig({
                 baseToken: dai,
-                linkerFactory: address(0),
-                linkerCodeHash: bytes32(0),
+                linkerFactory: factory.linkerFactory(),
+                linkerCodeHash: factory.linkerCodeHash(),
                 minimumShareReserves: ONE,
                 minimumTransactionAmount: 0.001e18,
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
                 timeStretch: 0,
-                governance: address(0),
-                feeCollector: address(0),
+                governance: factory.hyperdriveGovernance(),
+                feeCollector: factory.feeCollector(),
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
             });
         dai.approve(address(factory), type(uint256).max);
@@ -389,15 +389,15 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         IHyperdrive.PoolDeployConfig memory config = IHyperdrive
             .PoolDeployConfig({
                 baseToken: dai,
-                linkerFactory: address(0),
-                linkerCodeHash: bytes32(0),
+                linkerFactory: factory.linkerFactory(),
+                linkerCodeHash: factory.linkerCodeHash(),
                 minimumShareReserves: ONE,
                 minimumTransactionAmount: 0.001e18,
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
                 timeStretch: 0,
-                governance: address(0),
-                feeCollector: address(0),
+                governance: factory.hyperdriveGovernance(),
+                feeCollector: factory.feeCollector(),
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
             });
         dai.approve(address(factory), type(uint256).max);
