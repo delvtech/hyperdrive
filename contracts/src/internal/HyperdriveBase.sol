@@ -548,6 +548,8 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
     /// @return flatFee The flat fee. The fee is in terms of shares.
     /// @return governanceCurveFee The curve fee that goes to governance. The
     ///         fee is in terms of shares.
+    /// @return totalGovernanceFee The total fee that goes to governance. The
+    ///         fee is in terms of shares.
     function _calculateFeesGivenBonds(
         uint256 _bondAmount,
         uint256 _normalizedTimeRemaining,

@@ -198,6 +198,7 @@ library FixedPointMath {
     }
 
     /// @dev Computes ln(x) in 1e18 fixed point.
+    /// @dev Credit to Remco (https://github.com/recmo/experiment-solexp/blob/main/src/FixedPointMathLib.sol)
     /// @dev Reverts if x is negative
     /// @param x Fixed point number in 1e18 format.
     /// @return r Result of ln(x).
@@ -212,6 +213,9 @@ library FixedPointMath {
             // ln(x * C) = ln(x) + ln(C), we can simply do nothing here
             // and add ln(2**96 / 10**18) at the end.
 
+            // This step inlines the `ilog2` call in Remco's implementation:
+            // https://github.com/recmo/experiment-solexp/blob/bbc164fb5ec078cfccf3c71b521605106bfae00b/src/FixedPointMathLib.sol#L57-L68
+            //
             /// @solidity memory-safe-assembly
             assembly {
                 r := shl(7, lt(0xffffffffffffffffffffffffffffffff, x))
