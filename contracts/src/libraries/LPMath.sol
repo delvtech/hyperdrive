@@ -151,8 +151,11 @@ library LPMath {
 
     /// @dev Calculates the present value LPs capital in the pool and returns
     ///      a flag indicating whether the calculation succeeded or failed.
-    ///      This calculation underestimates the present value to avoid paying
-    ///      out more than the pool can afford.
+    ///      For the most part, this calculation underestimates the present
+    ///      value to avoid paying out more than the pool can afford; however,
+    ///      it adheres faithfully to the rounding utilized when positions are
+    ///      closed to accurately simulate the impact of closing the net curve
+    ///      position.
     /// @param _params The parameters for the present value calculation.
     /// @return The present value of the pool.
     /// @return A flag indicating whether the calculation succeeded or failed.
@@ -250,6 +253,9 @@ library LPMath {
             // If the max curve trade is greater than the net curve position,
             // then we can close the entire net curve position.
             if (maxCurveTrade >= netCurvePosition_) {
+                // NOTE: We round in the same direction as when closing longs
+                // to accurately estimate the impact of closing the net curve
+                // position.
                 uint256 netCurveTrade = YieldSpaceMath
                     .calculateSharesOutGivenBondsInDown(
                         effectiveShareReserves,
@@ -310,6 +316,9 @@ library LPMath {
             // If the max curve trade is greater than the net curve position,
             // then we can close the entire net curve position.
             if (maxCurveTrade >= netCurvePosition_) {
+                // NOTE: We round in the same direction as when closing shorts
+                // to accurately estimate the impact of closing the net curve
+                // position.
                 uint256 netCurveTrade = YieldSpaceMath
                     .calculateSharesInGivenBondsOutUp(
                         effectiveShareReserves,
