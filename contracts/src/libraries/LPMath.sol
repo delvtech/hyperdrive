@@ -77,7 +77,7 @@ library LPMath {
             // NOTE: Rounding down to avoid introducing dust into the
             // computation.
             shareAdjustment = int256(
-                uint256(shareReserves).mulDivDown(
+                shareReserves.mulDivDown(
                     uint256(_shareAdjustment),
                     _shareReserves
                 )
@@ -86,7 +86,7 @@ library LPMath {
             // NOTE: Rounding down to avoid introducing dust into the
             // computation.
             shareAdjustment = -int256(
-                uint256(shareReserves).mulDivDown(
+                shareReserves.mulDivDown(
                     uint256(-_shareAdjustment),
                     _shareReserves
                 )
@@ -885,9 +885,6 @@ library LPMath {
         uint256 lpSharePriceAfter = _presentValue.divDown(
             _params.activeLpTotalSupply
         );
-        if (lpSharePriceAfter < lpSharePriceBefore) {
-            return false;
-        }
         return
             lpSharePriceAfter >= lpSharePriceBefore &&
             lpSharePriceAfter <=
@@ -1184,7 +1181,7 @@ library LPMath {
             k - inner,
             _params.presentValueParams.vaultSharePrice
         );
-        if (inner >= 0) {
+        if (inner >= ONE) {
             // NOTE: Round the exponent up since this rounds the result up.
             inner = inner.pow(
                 _params.presentValueParams.timeStretch.divUp(

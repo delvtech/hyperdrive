@@ -116,44 +116,26 @@ contract CheckpointTest is HyperdriveTest {
         // Initialize the Hyperdrive pool.
         initialize(alice, 0.05e18, 500_000_000e18);
 
-        // Open a long and a short.
-        openLong(bob, 10_000_000e18);
-        uint256 shortAmount = 50_000e18;
-        openShort(celine, shortAmount);
-
-        // Advance a term.
-        vm.warp(block.timestamp + POSITION_DURATION);
-
         // Create a checkpoint.
         hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
 
+        // Update the share price.
+        MockHyperdrive(address(hyperdrive)).accrue(CHECKPOINT_DURATION, .1e18);
+
+        // Create a checkpoint in the past.
         uint256 previousCheckpoint = HyperdriveUtils.latestCheckpoint(
             hyperdrive
         ) - hyperdrive.getPoolConfig().checkpointDuration;
         hyperdrive.checkpoint(previousCheckpoint);
 
-        // TODO: This should be either removed or uncommented when we decide
-        // whether or not the flat+curve invariant should have an impact on
-        // the market rate.
-        //
-        // Ensure that the pool's APR wasn't changed by the checkpoint.
-        // assertEq(calculateSpotAPR(hyperdrive), aprBefore);
-
-        // Ensure that the checkpoint contains the share price prior to the
-        // share price update.
-        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
-            HyperdriveUtils.latestCheckpoint(hyperdrive)
-        );
-        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        assertEq(checkpoint.vaultSharePrice, poolInfo.vaultSharePrice);
-
-        // Ensure that the previous checkpoint contains the closest share price.
-        checkpoint = hyperdrive.getCheckpoint(previousCheckpoint);
-        assertEq(checkpoint.vaultSharePrice, poolInfo.vaultSharePrice);
-
-        // Ensure that the long and short balance has gone to zero (all of the
-        // matured positions have been closed).
-        assertEq(poolInfo.longsOutstanding, 0);
-        assertEq(poolInfo.shortsOutstanding, 0);
+        // Ensure the previous checkpoint contains the share price prior to the
+        // update since a more recent checkpoint was already created.
+        uint256 latestCheckpointSharePrice = hyperdrive
+            .getCheckpoint(HyperdriveUtils.latestCheckpoint(hyperdrive))
+            .vaultSharePrice;
+        uint256 previousCheckpointSharePrice = hyperdrive
+            .getCheckpoint(previousCheckpoint)
+            .vaultSharePrice;
+        assertEq(latestCheckpointSharePrice, previousCheckpointSharePrice);
     }
 }

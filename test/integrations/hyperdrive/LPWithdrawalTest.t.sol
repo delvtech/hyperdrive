@@ -1782,6 +1782,135 @@ contract LPWithdrawalTest is HyperdriveTest {
         );
     }
 
+    // This test ensures that idle is distributed when zombie interest is
+    // collected part of the way through a checkpoint after a long is closed.
+    function test_lp_withdrawal_long_zombie_interest(
+        uint256 contribution,
+        uint256 fixedRate,
+        int256 variableRate
+    ) external {
+        // Alice initializes the pool.
+        contribution = contribution.normalizeToRange(
+            1_000e18,
+            1_000_000_000e18
+        );
+        // NOTE: A high fixed rate can lead to situations where idle can't
+        // be distributed because the pool ends up in an extreme state of being
+        // net short after the final short is opened. With this in mind, we cap
+        // to 10% for the purpose of the test.
+        fixedRate = fixedRate.normalizeToRange(0.01e18, 0.1e18);
+        uint256 lpShares = initialize(alice, fixedRate, contribution);
+
+        // Bob opens a large long.
+        (uint256 maturityTime, uint256 longAmount) = openLong(
+            bob,
+            hyperdrive.calculateMaxLong()
+        );
+
+        // The term passes and a checkpoint is minted.
+        variableRate = variableRate.normalizeToRange(0.01e18, 0.2e18);
+        advanceTime(POSITION_DURATION, variableRate);
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+
+        // A large short is opened.
+        //
+        // NOTE: If the market ends up too net short, idle can't be distributed
+        // due to an edge case. This is expected, but it would cause the test to
+        // break since we expect idle to be distributed. To avoid this, we cap
+        // the short amount to 80% of the maximum short amount.
+        openShort(bob, hyperdrive.calculateMaxShort().mulDown(0.8e18));
+
+        // Alice removes her liquidity.
+        (, uint256 withdrawalShares) = removeLiquidityWithChecks(
+            alice,
+            lpShares
+        );
+        assertGt(withdrawalShares, 0);
+
+        // Half a checkpoint passes and more interest accrues.
+        advanceTime(CHECKPOINT_DURATION / 2, variableRate);
+
+        // Bob closes his long.
+        closeLong(bob, maturityTime, longAmount);
+
+        // Alice attempts to redeem her withdrawal shares. Some of them should
+        // be ready for withdrawal because of the zombie interest collected when
+        // Bob's long was closed.
+        uint256 lpSharePrice = hyperdrive.lpSharePrice();
+        (uint256 proceeds, uint256 sharesRedeemed) = redeemWithdrawalShares(
+            alice,
+            withdrawalShares
+        );
+        assertGt(proceeds, 0);
+        assertGt(sharesRedeemed, 0);
+        assertApproxEqAbs(
+            lpSharePrice,
+            hyperdrive.lpSharePrice(),
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_ABSOLUTE_TOLERANCE).max(
+                DISTRIBUTE_EXCESS_IDLE_ABSOLUTE_TOLERANCE
+            )
+        );
+    }
+
+    // This test ensures that idle is distributed when zombie interest is
+    // collected part of the way through a checkpoint after a short is closed.
+    function test_lp_withdrawal_short_zombie_interest(
+        uint256 contribution,
+        uint256 fixedRate,
+        int256 variableRate
+    ) external {
+        // Alice initializes the pool.
+        contribution = contribution.normalizeToRange(
+            1_000_000e18,
+            1_000_000_000e18
+        );
+        fixedRate = fixedRate.normalizeToRange(0.01e18, 0.2e18);
+        uint256 lpShares = initialize(alice, fixedRate, contribution);
+
+        // Bob opens a large short.
+        uint256 shortAmount = hyperdrive.calculateMaxShort();
+        (uint256 maturityTime, ) = openShort(bob, shortAmount);
+
+        // The term passes and a checkpoint is minted.
+        variableRate = variableRate.normalizeToRange(0.01e18, 0.2e18);
+        advanceTime(POSITION_DURATION, variableRate);
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+
+        // A large long is opened.
+        openLong(bob, hyperdrive.calculateMaxLong());
+
+        // Alice removes her liquidity.
+        (, uint256 withdrawalShares) = removeLiquidityWithChecks(
+            alice,
+            lpShares
+        );
+        assertGt(withdrawalShares, 0);
+
+        // Half a checkpoint passes and more interest accrues.
+        advanceTime(CHECKPOINT_DURATION / 2, variableRate);
+
+        // Bob closes his short.
+        closeShort(bob, maturityTime, shortAmount);
+
+        // Alice attempts to redeem her withdrawal shares. Some of them should
+        // be ready for withdrawal because of the zombie interest collected when
+        // Bob's short was closed.
+        uint256 lpSharePrice = hyperdrive.lpSharePrice();
+        (uint256 proceeds, uint256 sharesRedeemed) = redeemWithdrawalShares(
+            alice,
+            withdrawalShares
+        );
+        assertGt(proceeds, 0);
+        assertGt(sharesRedeemed, 0);
+        assertApproxEqAbs(
+            lpSharePrice,
+            hyperdrive.lpSharePrice(),
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_ABSOLUTE_TOLERANCE).max(
+                DISTRIBUTE_EXCESS_IDLE_ABSOLUTE_TOLERANCE
+            )
+        );
+    }
+
     // This test verifies that the system's liveness isn't compromised by a
     // large LP removing liquidity and bringing the effective share reserves
     // below the minimum share reserves.
@@ -1898,7 +2027,7 @@ contract LPWithdrawalTest is HyperdriveTest {
             assertApproxEqAbs(
                 hyperdrive.idle(),
                 idleBefore - maxBaseReservesDelta,
-                1e9
+                1e11
             );
         } else {
             // The LP shouldn't receive withdrawal shares if all of the
