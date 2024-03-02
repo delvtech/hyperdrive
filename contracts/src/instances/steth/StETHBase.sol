@@ -53,7 +53,9 @@ abstract contract StETHBase is HyperdriveBase {
 
             // If the user sent more ether than the amount specified, refund the
             // excess ether.
-            refund = msg.value - _amount;
+            unchecked {
+                refund = msg.value - _amount;
+            }
 
             // Submit the provided ether to Lido to be deposited. The fee
             // collector address is passed as the referral address; however,

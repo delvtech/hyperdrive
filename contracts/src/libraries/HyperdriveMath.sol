@@ -258,7 +258,9 @@ library HyperdriveMath {
         // interest proceeds, and the margin released.
         if (totalValue > _shareAmount) {
             // proceeds = (c1 / (c0 * c)) * dy - dz
-            shareProceeds = totalValue - _shareAmount;
+            unchecked {
+                shareProceeds = totalValue - _shareAmount;
+            }
         }
 
         return shareProceeds;
@@ -320,7 +322,9 @@ library HyperdriveMath {
         // interest proceeds, and the margin released.
         if (totalValue > _shareAmount) {
             // proceeds = (c1 / (c0 * c)) * dy - dz
-            shareProceeds = totalValue - _shareAmount;
+            unchecked {
+                shareProceeds = totalValue - _shareAmount;
+            }
         }
 
         return shareProceeds;
