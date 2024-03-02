@@ -5,7 +5,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 import { Errors } from "../libraries/Errors.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
@@ -189,15 +189,15 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
                 nonNettedLongs + int256(_bondAmount),
                 nonNettedLongs
             );
-
-            // Distribute the excess idle to the withdrawal pool.
-            _distributeExcessIdle(vaultSharePrice);
         } else {
             // Apply the zombie close to the state and adjust the share proceeds
             // to account for negative interest that might have accrued to the
             // zombie share reserves.
             shareProceeds = _applyZombieClose(shareProceeds, vaultSharePrice);
         }
+
+        // Distribute the excess idle to the withdrawal pool.
+        _distributeExcessIdle(vaultSharePrice);
 
         // Withdraw the profit to the trader.
         uint256 proceeds = _withdraw(shareProceeds, vaultSharePrice, _options);
@@ -255,8 +255,8 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             _marketState.longAverageMaturityTime
         )
             .updateWeightedAverage(
-                uint256(longsOutstanding_),
-                _maturityTime * 1e18, // scale up to fixed point scale
+                longsOutstanding_,
+                _maturityTime * ONE, // scale up to fixed point scale
                 _bondReservesDelta,
                 true
             )
@@ -346,7 +346,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         )
             .updateWeightedAverage(
                 longsOutstanding,
-                _maturityTime * 1e18, // scale up to fixed point scale
+                _maturityTime * ONE, // scale up to fixed point scale
                 _bondAmount,
                 false
             )

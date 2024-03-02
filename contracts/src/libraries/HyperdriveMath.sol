@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { Errors } from "./Errors.sol";
 import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { SafeCast } from "./SafeCast.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
@@ -150,7 +151,13 @@ library HyperdriveMath {
     ) internal pure returns (uint256) {
         int256 effectiveShareReserves = int256(_shareReserves) -
             _shareAdjustment;
-        require(effectiveShareReserves >= 0);
+        if (effectiveShareReserves < 0) {
+            Errors.throwInsufficientLiquidityError(
+                IHyperdrive
+                    .InsufficientLiquidityReason
+                    .InvalidEffectiveShareReserves
+            );
+        }
         return uint256(effectiveShareReserves);
     }
 
