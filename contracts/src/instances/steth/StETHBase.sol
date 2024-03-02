@@ -129,12 +129,7 @@ abstract contract StETHBase is HyperdriveBase {
     /// @dev Returns the current vault share price. We simply use Lido's
     ///      internal share price.
     /// @return price The current vault share price.
-    function _pricePerVaultShare()
-        internal
-        view
-        override
-        returns (uint256 price)
-    {
+    function _pricePerVaultShare() internal view override returns (uint256) {
         return _lido.getPooledEthByShares(ONE);
     }
 

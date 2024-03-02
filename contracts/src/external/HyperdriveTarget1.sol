@@ -42,14 +42,14 @@ abstract contract HyperdriveTarget1 is
     /// @param _minApr The minimum APR at which the LP is willing to supply.
     /// @param _maxApr The maximum APR at which the LP is willing to supply.
     /// @param _options The options that configure how the operation is settled.
-    /// @return lpShares The number of LP tokens created.
+    /// @return The number of LP tokens created.
     function addLiquidity(
         uint256 _contribution,
         uint256 _minLpSharePrice,
         uint256 _minApr,
         uint256 _maxApr,
         IHyperdrive.Options calldata _options
-    ) external payable returns (uint256 lpShares) {
+    ) external payable returns (uint256) {
         return
             _addLiquidity(
                 _contribution,

@@ -14,6 +14,7 @@
     "not-rely-on-time": "off",
     "no-inline-assembly": "off",
     "no-unused-import": "error",
+    "no-unused-vars": "error",
     "no-empty-blocks": "off",
     "no-complex-fallback": "off",
     "payable-fallback": "off",

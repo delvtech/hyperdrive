@@ -36,12 +36,12 @@ abstract contract HyperdriveTarget3 is
     /// @param _contribution The amount of base to supply.
     /// @param _apr The target APR.
     /// @param _options The options that configure how the operation is settled.
-    /// @return lpShares The initial number of LP shares created.
+    /// @return The initial number of LP shares created.
     function initialize(
         uint256 _contribution,
         uint256 _apr,
         IHyperdrive.Options calldata _options
-    ) external payable returns (uint256 lpShares) {
+    ) external payable returns (uint256) {
         return _initialize(_contribution, _apr, _options);
     }
 
@@ -54,14 +54,14 @@ abstract contract HyperdriveTarget3 is
     ///        This allows traders to protect themselves from opening a long in
     ///        a checkpoint where negative interest has accrued.
     /// @param _options The options that configure how the trade is settled.
-    /// @return maturityTime The maturity time of the bonds.
-    /// @return bondProceeds The amount of bonds the user received.
+    /// @return The maturity time of the bonds.
+    /// @return The amount of bonds the user received.
     function openLong(
         uint256 _baseAmount,
         uint256 _minOutput,
         uint256 _minVaultSharePrice,
         IHyperdrive.Options calldata _options
-    ) external payable returns (uint256 maturityTime, uint256 bondProceeds) {
+    ) external payable returns (uint256, uint256) {
         return
             _openLong(_baseAmount, _minOutput, _minVaultSharePrice, _options);
     }
