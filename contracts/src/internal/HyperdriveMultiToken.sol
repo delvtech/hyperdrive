@@ -230,7 +230,9 @@ abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
         }
 
         // Increment the signature nonce.
-        ++_nonces[owner];
+        unchecked {
+            ++_nonces[owner];
+        }
 
         // Set the state.
         _isApprovedForAll[owner][spender] = _approved;

@@ -288,7 +288,9 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
                 IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
             );
         }
-        shareReserves -= _shareReservesDelta;
+        unchecked {
+            shareReserves -= _shareReservesDelta;
+        }
 
         // The share reserves are decreased in this operation, so we need to
         // verify that our invariants that z >= z_min and z - zeta >= z_min
