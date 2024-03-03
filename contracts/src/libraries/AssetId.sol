@@ -78,7 +78,7 @@ library AssetId {
         } else if (prefix == AssetIdPrefix.Short) {
             _name = string(abi.encodePacked("Hyperdrive Short: ", _timestamp));
         } else if (prefix == AssetIdPrefix.WithdrawalShare) {
-            _name = string(abi.encodePacked("Hyperdrive Withdrawal Share"));
+            _name = "Hyperdrive Withdrawal Share";
         }
     }
 
@@ -97,7 +97,7 @@ library AssetId {
         } else if (prefix == AssetIdPrefix.Short) {
             _name = string(abi.encodePacked("HYPERDRIVE-SHORT:", _timestamp));
         } else if (prefix == AssetIdPrefix.WithdrawalShare) {
-            _name = string(abi.encodePacked("HYPERDRIVE-WS"));
+            _name = "HYPERDRIVE-WS";
         }
     }
 
@@ -115,14 +115,12 @@ library AssetId {
 
         // Loop through the integer and add each digit to the raw result,
         // starting at the end of the string and working towards the beginning.
-        rawResult[maxStringLength - 1] = bytes1(
-            uint8(uint256((_num % 10) + 48))
-        );
+        rawResult[maxStringLength - 1] = bytes1(uint8((_num % 10) + 48));
         _num /= 10;
         uint256 digits = 1;
         while (_num != 0) {
             rawResult[maxStringLength - digits - 1] = bytes1(
-                uint8(uint256((_num % 10) + 48))
+                uint8((_num % 10) + 48)
             );
             _num /= 10;
             digits++;
