@@ -32,37 +32,41 @@ abstract contract HyperdriveTarget3 is
 
     /// LPs ///
 
-    /// @notice Allows the first LP to initialize the market with a target APR.
-    /// @param _contribution The amount of base to supply.
+    /// @dev Allows the first LP to initialize the market with a target APR.
+    /// @param _contribution The amount of capital to supply. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
     /// @param _apr The target APR.
     /// @param _options The options that configure how the operation is settled.
-    /// @return lpShares The initial number of LP shares created.
+    /// @return The initial number of LP shares created.
     function initialize(
         uint256 _contribution,
         uint256 _apr,
         IHyperdrive.Options calldata _options
-    ) external payable returns (uint256 lpShares) {
+    ) external payable returns (uint256) {
         return _initialize(_contribution, _apr, _options);
     }
 
     /// Longs ///
 
-    /// @notice Opens a long position.
-    /// @param _baseAmount The amount of base to use when trading.
-    /// @param _minOutput The minium number of bonds to receive.
-    /// @param _minVaultSharePrice The minium share price at which to open the long.
-    ///        This allows traders to protect themselves from opening a long in
-    ///        a checkpoint where negative interest has accrued.
+    /// @dev Opens a long position.
+    /// @param _amount The amount of capital provided to open the long. The
+    ///        units of this quantity are either base or vault shares, depending
+    ///        on the value of `_options.asBase`.
+    /// @param _minOutput The minimum number of bonds to receive.
+    /// @param _minVaultSharePrice The minimum vault share price at which to
+    ///        open the long. This allows traders to protect themselves from
+    ///        opening a long in a checkpoint where negative interest has
+    ///        accrued.
     /// @param _options The options that configure how the trade is settled.
-    /// @return maturityTime The maturity time of the bonds.
-    /// @return bondProceeds The amount of bonds the user received.
+    /// @return The maturity time of the bonds.
+    /// @return The amount of bonds the user received.
     function openLong(
-        uint256 _baseAmount,
+        uint256 _amount,
         uint256 _minOutput,
         uint256 _minVaultSharePrice,
         IHyperdrive.Options calldata _options
-    ) external payable returns (uint256 maturityTime, uint256 bondProceeds) {
-        return
-            _openLong(_baseAmount, _minOutput, _minVaultSharePrice, _options);
+    ) external payable returns (uint256, uint256) {
+        return _openLong(_amount, _minOutput, _minVaultSharePrice, _options);
     }
 }

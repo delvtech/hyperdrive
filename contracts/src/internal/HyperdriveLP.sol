@@ -340,8 +340,8 @@ abstract contract HyperdriveLP is
     ///        value of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
     /// @return proceeds The amount the LP received. The units of this quantity
-    ///        are either base or vault shares, depending on the value of
-    ///        `_options.asBase`.
+    ///         are either base or vault shares, depending on the value of
+    ///         `_options.asBase`.
     /// @return withdrawalSharesRedeemed The amount of withdrawal shares that
     ///         were redeemed.
     function _redeemWithdrawalShares(

@@ -17,14 +17,14 @@ interface IHyperdriveCore is IMultiTokenCore {
     ///        opening a long in a checkpoint where negative interest has
     ///        accrued.
     /// @param _options The options that configure how the trade is settled.
-    /// @return maturityTime The maturity time of the bonds.
-    /// @return bondProceeds The amount of bonds the user received.
+    /// @return The maturity time of the bonds.
+    /// @return The amount of bonds the user received.
     function openLong(
         uint256 _amount,
         uint256 _minOutput,
         uint256 _minVaultSharePrice,
         IHyperdrive.Options calldata _options
-    ) external payable returns (uint256 maturityTime, uint256 bondProceeds);
+    ) external payable returns (uint256, uint256);
 
     /// @dev Closes a long position with a specified maturity time.
     /// @param _maturityTime The maturity time of the short.
@@ -90,12 +90,12 @@ interface IHyperdriveCore is IMultiTokenCore {
     ///        of `_options.asBase`.
     /// @param _apr The target APR.
     /// @param _options The options that configure how the operation is settled.
-    /// @return lpShares The initial number of LP shares created.
+    /// @return The initial number of LP shares created.
     function initialize(
         uint256 _contribution,
         uint256 _apr,
         IHyperdrive.Options calldata _options
-    ) external payable returns (uint256 lpShares);
+    ) external payable returns (uint256);
 
     /// @dev Allows LPs to supply liquidity for LP shares.
     /// @param _contribution The amount of capital to supply. The units of this
@@ -110,14 +110,14 @@ interface IHyperdriveCore is IMultiTokenCore {
     /// @param _minApr The minimum APR at which the LP is willing to supply.
     /// @param _maxApr The maximum APR at which the LP is willing to supply.
     /// @param _options The options that configure how the operation is settled.
-    /// @return lpShares The number of LP tokens created.
+    /// @return The number of LP tokens created.
     function addLiquidity(
         uint256 _contribution,
         uint256 _minLpSharePrice,
         uint256 _minApr,
         uint256 _maxApr,
         IHyperdrive.Options calldata _options
-    ) external payable returns (uint256 lpShares);
+    ) external payable returns (uint256);
 
     /// @dev Allows an LP to burn shares and withdraw from the pool.
     /// @param _lpShares The LP shares to burn.
@@ -126,19 +126,19 @@ interface IHyperdriveCore is IMultiTokenCore {
     ///        quantity are either base or vault shares, depending on the value
     ///        of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
-    /// @return proceeds The amount the LP removing liquidity receives. The
+    /// @return The amount the LP removing liquidity receives. The
     ///        units of this quantity are either base or vault shares, depending
     ///        on the value of `_options.asBase`.
-    /// @return withdrawalShares The base that the LP receives buys out some of
-    ///         their LP shares, but it may not be sufficient to fully buy the
-    ///         LP out. In this case, the LP receives withdrawal shares equal
-    ///         in value to the present value they are owed. As idle capital
-    ///         becomes available, the pool will buy back these shares.
+    /// @return The base that the LP receives buys out some of their LP shares,
+    ///         but it may not be sufficient to fully buy the LP out. In this
+    ///         case, the LP receives withdrawal shares equal in value to the
+    ///         present value they are owed. As idle capital becomes available,
+    ///         the pool will buy back these shares.
     function removeLiquidity(
         uint256 _lpShares,
         uint256 _minOutputPerShare,
         IHyperdrive.Options calldata _options
-    ) external returns (uint256 proceeds, uint256 withdrawalShares);
+    ) external returns (uint256, uint256);
 
     /// @dev Redeems withdrawal shares by giving the LP a pro-rata amount of the
     ///      withdrawal pool's proceeds. This function redeems the maximum
@@ -150,16 +150,15 @@ interface IHyperdriveCore is IMultiTokenCore {
     ///        this quantity are either base or vault shares, depending on the
     ///        value of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
-    /// @return proceeds The amount the LP received. The units of this quantity
-    ///        are either base or vault shares, depending on the value of
-    ///        `_options.asBase`.
-    /// @return withdrawalSharesRedeemed The amount of withdrawal shares that
-    ///         were redeemed.
+    /// @return The amount the LP received. The units of this quantity are
+    ///         either base or vault shares, depending on the value of
+    ///         `_options.asBase`.
+    /// @return The amount of withdrawal shares that were redeemed.
     function redeemWithdrawalShares(
         uint256 _withdrawalShares,
         uint256 _minOutputPerShare,
         IHyperdrive.Options calldata _options
-    ) external returns (uint256 proceeds, uint256 withdrawalSharesRedeemed);
+    ) external returns (uint256, uint256);
 
     /// Checkpoints ///
 

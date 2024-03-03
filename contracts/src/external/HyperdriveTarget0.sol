@@ -41,7 +41,9 @@ abstract contract HyperdriveTarget0 is
 
     /// @notice This function collects the governance fees accrued by the pool.
     /// @param _options The options that configure how the fees are settled.
-    /// @return proceeds The amount of base collected.
+    /// @return proceeds The governance fees collected. The units of this
+    ///         quantity are either base or vault shares, depending on the value
+    ///         of `_options.asBase`.
     function collectGovernanceFee(
         IHyperdrive.Options calldata _options
     ) external returns (uint256 proceeds) {

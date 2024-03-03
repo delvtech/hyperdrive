@@ -32,12 +32,16 @@ abstract contract HyperdriveTarget2 is
 
     /// Longs ///
 
-    /// @notice Closes a long position with a specified maturity time.
+    /// @dev Closes a long position with a specified maturity time.
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of longs to close.
-    /// @param _minOutput The minimum amount of base the trader will accept.
+    /// @param _minOutput The minimum proceeds the trader will accept. The units
+    ///        of this quantity are either base or vault shares, depending on
+    ///        the value of `_options.asBase`.
     /// @param _options The options that configure how the trade is settled.
-    /// @return The amount of underlying the user receives.
+    /// @return The proceeds the user receives. The units of this quantity are
+    ///         either base or vault shares, depending on the value of
+    ///         `_options.asBase`.
     function closeLong(
         uint256 _maturityTime,
         uint256 _bondAmount,
@@ -49,12 +53,16 @@ abstract contract HyperdriveTarget2 is
 
     /// Shorts ///
 
-    /// @notice Closes a short position with a specified maturity time.
+    /// @dev Closes a short position with a specified maturity time.
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of shorts to close.
-    /// @param _minOutput The minimum output of this trade.
+    /// @param _minOutput The minimum output of this trade. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
     /// @param _options The options that configure how the trade is settled.
-    /// @return The amount of base tokens produced by closing this short.
+    /// @return The proceeds of closing this short. The units of this quantity
+    ///         are either base or vault shares, depending on the value of
+    ///         `_options.asBase`.
     function closeShort(
         uint256 _maturityTime,
         uint256 _bondAmount,

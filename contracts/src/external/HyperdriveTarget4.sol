@@ -32,21 +32,25 @@ abstract contract HyperdriveTarget4 is
 
     /// Shorts ///
 
-    /// @notice Opens a short position.
+    /// @dev Opens a short position.
     /// @param _bondAmount The amount of bonds to short.
-    /// @param _maxDeposit The most the user expects to deposit for this trade
-    /// @param _minVaultSharePrice The minium share price at which to open the long.
-    ///        This allows traders to protect themselves from opening a long in
-    ///        a checkpoint where negative interest has accrued.
+    /// @param _maxDeposit The most the user expects to deposit for this trade.
+    ///        The units of this quantity are either base or vault shares,
+    ///        depending on the value of `_options.asBase`.
+    /// @param _minVaultSharePrice The minimum vault share price at which to open
+    ///        the short. This allows traders to protect themselves from opening
+    ///        a short in a checkpoint where negative interest has accrued.
     /// @param _options The options that configure how the trade is settled.
-    /// @return maturityTime The maturity time of the short.
-    /// @return traderDeposit The amount the user deposited for this trade.
+    /// @return The maturity time of the short.
+    /// @return The amount the user deposited for this trade. The units of this
+    ///         quantity are either base or vault shares, depending on the value
+    ///         of `_options.asBase`.
     function openShort(
         uint256 _bondAmount,
         uint256 _maxDeposit,
         uint256 _minVaultSharePrice,
         IHyperdrive.Options calldata _options
-    ) external payable returns (uint256 maturityTime, uint256 traderDeposit) {
+    ) external payable returns (uint256, uint256) {
         return
             _openShort(_bondAmount, _maxDeposit, _minVaultSharePrice, _options);
     }
