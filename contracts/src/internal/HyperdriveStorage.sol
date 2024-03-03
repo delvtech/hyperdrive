@@ -4,7 +4,6 @@ pragma solidity 0.8.20;
 import { ReentrancyGuard } from "openzeppelin/utils/ReentrancyGuard.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title HyperdriveStorage
@@ -13,8 +12,6 @@ import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveStorage is ReentrancyGuard {
-    using FixedPointMath for uint256;
-
     /// Tokens ///
 
     /// @dev The base asset.

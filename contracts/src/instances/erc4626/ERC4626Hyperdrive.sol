@@ -8,7 +8,6 @@ import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IERC4626HyperdriveCore } from "../../interfaces/IERC4626HyperdriveCore.sol";
-import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
 import { ERC4626Base } from "./ERC4626Base.sol";
 
 ///      ______  __                           _________      _____
@@ -58,7 +57,6 @@ import { ERC4626Base } from "./ERC4626Base.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ERC4626Hyperdrive is IERC4626HyperdriveCore, Hyperdrive, ERC4626Base {
-    using FixedPointMath for uint256;
     using SafeERC20 for ERC20;
 
     /// @notice Instantiates Hyperdrive with a ERC4626 vault as the yield source.
