@@ -631,7 +631,10 @@ library LPMath {
                         _params.presentValueParams.initialVaultSharePrice
                     );
                 if (!success) {
-                    break;
+                    // NOTE: If the max bond amount couldn't be calculated, we
+                    // can't continue the calculation. Return 0 to indicate that
+                    // the share proceeds couldn't be calculated.
+                    return 0;
                 }
                 uint256 derivative;
                 if (uint256(_params.netCurveTrade) <= maxBondAmount) {
@@ -650,8 +653,11 @@ library LPMath {
                     }
                     derivative = ONE - derivative;
                 }
-                // Otherwise, we can solve directly for the share proceeds.
+                // Otherwise, the objective becomes linear, and we can solve for
+                // the next step in Newton's method directly.
                 else {
+                    // Solve the objective function directly assuming that it is
+                    // linear with respect to the share proceeds.
                     (
                         shareProceeds,
                         success
@@ -663,7 +669,49 @@ library LPMath {
                         // couldn't be calculated.
                         return 0;
                     }
-                    return shareProceeds;
+
+                    // Simulate applying the share proceeds to the reserves and
+                    // recalculate the max bond amount.
+                    (
+                        _params.presentValueParams.shareReserves,
+                        _params.presentValueParams.shareAdjustment,
+                        _params.presentValueParams.bondReserves
+                    ) = calculateUpdateLiquidity(
+                        _params.originalShareReserves,
+                        _params.originalShareAdjustment,
+                        _params.originalBondReserves,
+                        _params.presentValueParams.minimumShareReserves,
+                        -int256(shareProceeds)
+                    );
+                    DistributeExcessIdleParams memory params = _params;
+                    (maxBondAmount, success) = YieldSpaceMath
+                        .calculateMaxSellBondsInSafe(
+                            params.presentValueParams.shareReserves,
+                            params.presentValueParams.shareAdjustment,
+                            params.presentValueParams.bondReserves,
+                            params.presentValueParams.minimumShareReserves,
+                            ONE - _params.presentValueParams.timeStretch,
+                            params.presentValueParams.vaultSharePrice,
+                            params.presentValueParams.initialVaultSharePrice
+                        );
+                    if (!success) {
+                        // NOTE: Return 0 to indicate that the share proceeds
+                        // couldn't be calculated.
+                        return 0;
+                    }
+
+                    // If the max bond amount is greater than or equal to the
+                    // net curve trade, then Newton's method has terminated since
+                    // proceeding to the next step would result in reaching the
+                    // same point.
+                    if (maxBondAmount >= uint256(_params.netCurveTrade)) {
+                        return shareProceeds;
+                    }
+                    // Otherwise, we continue to the next iteration of Newton's
+                    // method.
+                    else {
+                        continue;
+                    }
                 }
 
                 // NOTE: Round the delta down to avoid overshooting.
@@ -808,15 +856,46 @@ library LPMath {
         return shareProceeds;
     }
 
-    /// @dev When the pool is net long and we have begun to mark longs to zero,
-    ///      we can solve directly for the share proceeds as:
+    /// @dev One of the edge cases that occurs when using Newton's method for
+    ///      the share proceeds while distributing excess idle is when the net
+    ///      curve trade is larger than the max bond amount. In this case, the
+    ///      the present value simplifies to the following:
     ///
-    ///      shareProceeds = z - ((PV(0) / l) * (l - w) - net_f) / (zeta / z)
+    ///      PV(dz) = (z - dz) + net_c(dz) + net_f - z_min
+    ///             = (z - dz) - y_max_out(dz) + net_f - z_min
     ///
-    ///      This formula assumes that the share adjustment is positive.
-    ///      Otherwise, the calculation is undefined, and we return a failure
-    ///      flag. We round down to err on the side of the withdrawal pool
-    ///      receiving slightly less shares.
+    ///      There are two cases to evaluate:
+    ///
+    ///      (1) zeta > 0:
+    ///
+    ///          y_max_out(dz) = (z - dz) - zeta * ((z - dz) / z) - z_min
+    ///
+    ///          =>
+    ///
+    ///          PV(dz) = zeta * ((z - dz) / z) + net_f
+    ///
+    ///      (2) zeta <= 0:
+    ///
+    ///          y_max_out(dz) = (z - dz) - z_min
+    ///
+    ///          =>
+    ///
+    ///          PV(dz) = net_f
+    ///
+    ///      Since the present value is constant with respect to the share
+    ///      proceeds in case 2, Newton's method has achieved a stationary point
+    ///      and can't proceed. On the other hand, the present value is linear
+    ///      with respect to the share proceeds, and we can solve for the next
+    ///      step of Newton's method directly as follows:
+    ///
+    ///      PV(0) / l = PV(dz) / (l - w)
+    ///
+    ///      =>
+    ///
+    ///      dz = z - ((PV(0) / l) * (l - w) - net_f) / (zeta / z)
+    ///
+    ///      We round the share proceeds down to err on the side of the
+    ///      withdrawal pool receiving slightly less shares.
     /// @param _params The parameters for the calculation.
     /// @return The share proceeds.
     /// @return A flag indicating whether the calculation was successful.
