@@ -640,7 +640,7 @@ library LPMath {
                         params.presentValueParams.shareAdjustment,
                         params.presentValueParams.bondReserves,
                         params.presentValueParams.minimumShareReserves,
-                        ONE - _params.presentValueParams.timeStretch,
+                        ONE - params.presentValueParams.timeStretch,
                         params.presentValueParams.vaultSharePrice,
                         params.presentValueParams.initialVaultSharePrice
                     );
@@ -687,24 +687,23 @@ library LPMath {
                     // Simulate applying the share proceeds to the reserves and
                     // recalculate the max bond amount.
                     (
-                        _params.presentValueParams.shareReserves,
-                        _params.presentValueParams.shareAdjustment,
-                        _params.presentValueParams.bondReserves
+                        params.presentValueParams.shareReserves,
+                        params.presentValueParams.shareAdjustment,
+                        params.presentValueParams.bondReserves
                     ) = calculateUpdateLiquidity(
-                        _params.originalShareReserves,
-                        _params.originalShareAdjustment,
-                        _params.originalBondReserves,
-                        _params.presentValueParams.minimumShareReserves,
+                        params.originalShareReserves,
+                        params.originalShareAdjustment,
+                        params.originalBondReserves,
+                        params.presentValueParams.minimumShareReserves,
                         -int256(shareProceeds)
                     );
-                    DistributeExcessIdleParams memory params = _params;
                     (maxBondAmount, success) = YieldSpaceMath
                         .calculateMaxSellBondsInSafe(
                             params.presentValueParams.shareReserves,
                             params.presentValueParams.shareAdjustment,
                             params.presentValueParams.bondReserves,
                             params.presentValueParams.minimumShareReserves,
-                            ONE - _params.presentValueParams.timeStretch,
+                            ONE - params.presentValueParams.timeStretch,
                             params.presentValueParams.vaultSharePrice,
                             params.presentValueParams.initialVaultSharePrice
                         );
@@ -718,7 +717,7 @@ library LPMath {
                     // net curve trade, then Newton's method has terminated since
                     // proceeding to the next step would result in reaching the
                     // same point.
-                    if (maxBondAmount >= uint256(_params.netCurveTrade)) {
+                    if (maxBondAmount >= uint256(params.netCurveTrade)) {
                         return shareProceeds;
                     }
                     // Otherwise, we continue to the next iteration of Newton's
