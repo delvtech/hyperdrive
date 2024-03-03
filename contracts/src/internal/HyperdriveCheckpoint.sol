@@ -233,7 +233,7 @@ abstract contract HyperdriveCheckpoint is
         // Emit an event about the checkpoint creation that includes the LP
         // share price. If the LP share price calculation fails, we proceed in
         // minting the checkpoint and just emit the LP share price as zero. This
-        // ensures that the system's liveness isn't impacted by temporarilj
+        // ensures that the system's liveness isn't impacted by temporarily
         // being unable to calculate the present value.
         (uint256 lpSharePrice, ) = _calculateLPSharePriceSafe(_vaultSharePrice);
         emit CreateCheckpoint(
