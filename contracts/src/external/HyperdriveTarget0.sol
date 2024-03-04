@@ -44,7 +44,7 @@ abstract contract HyperdriveTarget0 is
     /// @return proceeds The amount of base collected.
     function collectGovernanceFee(
         IHyperdrive.Options calldata _options
-    ) external returns (uint256 proceeds) {
+    ) external returns (uint256) {
         return _collectGovernanceFee(_options);
     }
 

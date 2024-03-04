@@ -107,14 +107,14 @@ library HyperdriveMath {
     /// @param _initialVaultSharePrice The pool's initial vault share price.
     /// @param _positionDuration The amount of time until maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
-    /// @return apr The pool's spot APR.
+    /// @return The pool's spot APR.
     function calculateSpotAPR(
         uint256 _effectiveShareReserves,
         uint256 _bondReserves,
         uint256 _initialVaultSharePrice,
         uint256 _positionDuration,
         uint256 _timeStretch
-    ) internal pure returns (uint256 apr) {
+    ) internal pure returns (uint256) {
         // NOTE: Round down to underestimate the spot APR.
         //
         // We are interested calculating the fixed APR for the pool. The
@@ -175,15 +175,15 @@ library HyperdriveMath {
     /// @param _apr The pool's APR.
     /// @param _positionDuration The amount of time until maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
-    /// @return bondReserves The bond reserves (without adjustment) that make
-    ///         the pool have a specified APR.
+    /// @return The bond reserves (without adjustment) that make the pool have
+    ///         a specified APR.
     function calculateInitialBondReserves(
         uint256 _effectiveShareReserves,
         uint256 _initialVaultSharePrice,
         uint256 _apr,
         uint256 _positionDuration,
         uint256 _timeStretch
-    ) internal pure returns (uint256 bondReserves) {
+    ) internal pure returns (uint256) {
         // NOTE: Round down to underestimate the initial bond reserves.
         //
         // Normalize the time to maturity to fractions of a year since the
