@@ -31,6 +31,13 @@ contract StETHTarget0Deployer is IHyperdriveTargetDeployer {
         bytes memory, // unused extra data
         bytes32 _salt
     ) external override returns (address) {
-        return address(new StETHTarget0{ salt: _salt }(_config, lido));
+        return
+            address(
+                // NOTE: We hash the sender with the salt to prevent the
+                // front-running of deployments.
+                new StETHTarget0{
+                    salt: keccak256(abi.encode(msg.sender, _salt))
+                }(_config, lido)
+            );
     }
 }

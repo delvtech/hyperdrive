@@ -27,12 +27,14 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
     /// Yield Source ///
 
     /// @dev A YieldSource dependent check that prevents ether from being
-    ///         transferred to Hyperdrive instances that don't accept ether.
+    ///      transferred to Hyperdrive instances that don't accept ether.
     function _checkMessageValue() internal view virtual;
 
-    /// @dev Transfers base from the user and commits it to the yield source.
-    /// @param _amount The amount of base to deposit.
-    /// @param _options The options that configure how the withdrawal is
+    /// @dev Accepts a deposit from the user and commits it to the yield source.
+    /// @param _amount The amount of capital to deposit. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
+    /// @param _options The options that configure how the deposit is
     ///        settled. In particular, the currency used in the deposit is
     ///        specified here. Aside from those options, yield sources can
     ///        choose to implement additional options.
@@ -43,18 +45,20 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         IHyperdrive.Options calldata _options
     ) internal virtual returns (uint256 sharesMinted, uint256 vaultSharePrice);
 
-    /// @dev Withdraws shares from the yield source and sends the base
-    ///         released to the destination.
-    /// @param _shares The shares to withdraw from the yield source.
-    /// @param _sharePrice The share price.
+    /// @dev Withdraws shares from the yield source and sends the proceeds to
+    ///      the destination.
+    /// @param _shares The vault shares to withdraw from the yield source.
+    /// @param _vaultSharePrice The vault share price.
     /// @param _options The options that configure how the withdrawal is
     ///        settled. In particular, the destination and currency used in the
     ///        withdrawal are specified here. Aside from those options, yield
     ///        sources can choose to implement additional options.
-    /// @return amountWithdrawn The amount of base released by the withdrawal.
+    /// @return amountWithdrawn The proceeds of the withdrawal. The units of
+    ///        this quantity are either base or vault shares, depending on the
+    ///        value of `_options.asBase`.
     function _withdraw(
         uint256 _shares,
-        uint256 _sharePrice,
+        uint256 _vaultSharePrice,
         IHyperdrive.Options calldata _options
     ) internal virtual returns (uint256 amountWithdrawn);
 
@@ -268,14 +272,12 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
     /// @return True if the share reserves are greater than the exposure plus
     ///         the minimum share reserves.
     function _isSolvent(uint256 _vaultSharePrice) internal view returns (bool) {
-        // NOTE: Round the lhs up and the rhs down to make the check more
+        // NOTE: Round the lhs down and the rhs up to make the check more
         // conservative.
         return
-            int256(
-                (uint256(_marketState.shareReserves).mulUp(_vaultSharePrice))
-            ) -
-                int128(_marketState.longExposure) >=
-            int256(_minimumShareReserves.mulDown(_vaultSharePrice));
+            uint256(_marketState.shareReserves).mulDown(_vaultSharePrice) >=
+            _marketState.longExposure +
+                _minimumShareReserves.mulUp(_vaultSharePrice);
     }
 
     /// @dev Updates the global long exposure.
@@ -285,8 +287,7 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         // The global long exposure is the sum of the non-netted longs in each
         // checkpoint. To update this value, we subtract the current value
         // (`_before.max(0)`) and add the new value (`_after.max(0)`).
-        int128 delta = (int256(_after.max(0)) - int256(_before.max(0)))
-            .toInt128();
+        int128 delta = (_after.max(0) - _before.max(0)).toInt128();
         if (delta > 0) {
             _marketState.longExposure += uint128(delta);
         } else if (delta < 0) {

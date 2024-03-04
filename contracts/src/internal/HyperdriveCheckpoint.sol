@@ -59,7 +59,7 @@ abstract contract HyperdriveCheckpoint is
             ) {
                 uint256 closestVaultSharePrice = _checkpoints[time]
                     .vaultSharePrice;
-                if (time == latestCheckpoint) {
+                if (time == latestCheckpoint && closestVaultSharePrice == 0) {
                     closestVaultSharePrice = _pricePerVaultShare();
                 }
                 if (closestVaultSharePrice != 0) {
