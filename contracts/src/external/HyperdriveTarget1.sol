@@ -33,12 +33,15 @@ abstract contract HyperdriveTarget1 is
     /// LPs ///
 
     /// @notice Allows LPs to supply liquidity for LP shares.
-    /// @param _contribution The amount of base to supply.
+    /// @param _contribution The amount of capital to supply. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
     /// @param _minLpSharePrice The minimum LP share price the LP is willing
-    ///        to accept for their shares. LP's incur negative slippage when
+    ///        to accept for their shares. LPs incur negative slippage when
     ///        adding liquidity if there is a net curve position in the market,
     ///        so this allows LPs to protect themselves from high levels of
-    ///        slippage.
+    ///        slippage. The units of this quantity are either base or vault
+    ///        shares, depending on the value of `_options.asBase`.
     /// @param _minApr The minimum APR at which the LP is willing to supply.
     /// @param _maxApr The maximum APR at which the LP is willing to supply.
     /// @param _options The options that configure how the operation is settled.
@@ -49,7 +52,7 @@ abstract contract HyperdriveTarget1 is
         uint256 _minApr,
         uint256 _maxApr,
         IHyperdrive.Options calldata _options
-    ) external payable returns (uint256 lpShares) {
+    ) external payable returns (uint256) {
         return
             _addLiquidity(
                 _contribution,
@@ -62,13 +65,14 @@ abstract contract HyperdriveTarget1 is
 
     /// @notice Allows an LP to burn shares and withdraw from the pool.
     /// @param _lpShares The LP shares to burn.
-    /// @param _minOutput The minium amount of the base token to receive.
-    ///        NOTE: This value is likely to be less than the amount LP shares
-    ///        are worth. The remainder is in short and long withdraw shares
-    ///        which are hard to game the value of.
+    /// @param _minOutputPerShare The minimum amount the LP expects to receive
+    ///        for each withdrawal share that is burned. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
-    /// @return The amount the LP removing liquidity receives. The LP receives a
-    ///         proportional amount of the pool's idle capital.
+    /// @return The amount the LP removing liquidity receives. The
+    ///        units of this quantity are either base or vault shares, depending
+    ///        on the value of `_options.asBase`.
     /// @return The base that the LP receives buys out some of their LP shares,
     ///         but it may not be sufficient to fully buy the LP out. In this
     ///         case, the LP receives withdrawal shares equal in value to the
@@ -76,10 +80,10 @@ abstract contract HyperdriveTarget1 is
     ///         the pool will buy back these shares.
     function removeLiquidity(
         uint256 _lpShares,
-        uint256 _minOutput,
+        uint256 _minOutputPerShare,
         IHyperdrive.Options calldata _options
     ) external returns (uint256, uint256) {
-        return _removeLiquidity(_lpShares, _minOutput, _options);
+        return _removeLiquidity(_lpShares, _minOutputPerShare, _options);
     }
 
     /// @notice Redeems withdrawal shares by giving the LP a pro-rata amount of
@@ -87,10 +91,14 @@ abstract contract HyperdriveTarget1 is
     ///         maximum amount of the specified withdrawal shares given the
     ///         amount of withdrawal shares ready to withdraw.
     /// @param _withdrawalShares The withdrawal shares to redeem.
-    /// @param _minOutputPerShare The minimum amount of base the LP expects to
-    ///        receive for each withdrawal share that is burned.
+    /// @param _minOutputPerShare The minimum amount the LP expects to
+    ///        receive for each withdrawal share that is burned. The units of
+    ///        this quantity are either base or vault shares, depending on the
+    ///        value of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
-    /// @return The amount the LP received.
+    /// @return The amount the LP received. The units of this quantity are
+    ///         either base or vault shares, depending on the value of
+    ///         `_options.asBase`.
     /// @return The amount of withdrawal shares that were redeemed.
     function redeemWithdrawalShares(
         uint256 _withdrawalShares,
