@@ -27,12 +27,14 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
     /// Yield Source ///
 
     /// @dev A YieldSource dependent check that prevents ether from being
-    ///         transferred to Hyperdrive instances that don't accept ether.
+    ///      transferred to Hyperdrive instances that don't accept ether.
     function _checkMessageValue() internal view virtual;
 
-    /// @dev Transfers base from the user and commits it to the yield source.
-    /// @param _amount The amount of base to deposit.
-    /// @param _options The options that configure how the withdrawal is
+    /// @dev Accepts a deposit from the user and commits it to the yield source.
+    /// @param _amount The amount of capital to deposit. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
+    /// @param _options The options that configure how the deposit is
     ///        settled. In particular, the currency used in the deposit is
     ///        specified here. Aside from those options, yield sources can
     ///        choose to implement additional options.
@@ -43,18 +45,20 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         IHyperdrive.Options calldata _options
     ) internal virtual returns (uint256 sharesMinted, uint256 vaultSharePrice);
 
-    /// @dev Withdraws shares from the yield source and sends the base
-    ///         released to the destination.
-    /// @param _shares The shares to withdraw from the yield source.
-    /// @param _sharePrice The share price.
+    /// @dev Withdraws shares from the yield source and sends the proceeds to
+    ///      the destination.
+    /// @param _shares The vault shares to withdraw from the yield source.
+    /// @param _vaultSharePrice The vault share price.
     /// @param _options The options that configure how the withdrawal is
     ///        settled. In particular, the destination and currency used in the
     ///        withdrawal are specified here. Aside from those options, yield
     ///        sources can choose to implement additional options.
-    /// @return amountWithdrawn The amount of base released by the withdrawal.
+    /// @return amountWithdrawn The proceeds of the withdrawal. The units of
+    ///        this quantity are either base or vault shares, depending on the
+    ///        value of `_options.asBase`.
     function _withdraw(
         uint256 _shares,
-        uint256 _sharePrice,
+        uint256 _vaultSharePrice,
         IHyperdrive.Options calldata _options
     ) internal virtual returns (uint256 amountWithdrawn);
 
