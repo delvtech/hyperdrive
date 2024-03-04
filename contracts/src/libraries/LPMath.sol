@@ -144,7 +144,7 @@ library LPMath {
             _params
         );
         if (!success) {
-            revert IHyperdrive.NegativePresentValue();
+            revert IHyperdrive.InvalidPresentValue();
         }
         return presentValue;
     }
