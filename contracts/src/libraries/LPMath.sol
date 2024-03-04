@@ -962,17 +962,28 @@ library LPMath {
         uint256 _lpTotalSupply,
         uint256 _presentValue
     ) internal pure returns (bool) {
-        uint256 lpSharePriceBefore = _params.startingPresentValue.divDown(
-            _lpTotalSupply
-        );
-        uint256 lpSharePriceAfter = _presentValue.divDown(
-            _params.activeLpTotalSupply
-        );
         return
-            lpSharePriceAfter >= lpSharePriceBefore &&
-            lpSharePriceAfter <=
-            // NOTE: Round down to make the check stricter.
-            lpSharePriceBefore.mulDown(ONE + SHARE_PROCEEDS_MIN_TOLERANCE);
+            // Ensure that new LP share price is greater than or equal to the
+            // previous LP share price:
+            //
+            // PV_1 / l_1 >= PV_0 / l_0
+            //
+            // NOTE: Round the LHS down to make the check stricter.
+            _presentValue.divDown(_params.activeLpTotalSupply) >=
+            // NOTE: Round the RHS up to make the check stricter.
+            _params.startingPresentValue.divUp(_lpTotalSupply) &&
+            // Ensure that new LP share price is less than or equal to the
+            // previous LP share price plus the minimum tolerance:
+            //
+            // PV_1 / l_1 <= (PV_0 / l_0) * (1 + tolerance)
+            //
+            // NOTE: Round the LHS up to make the check stricter.
+            _presentValue.divUp(_params.activeLpTotalSupply) <=
+            // NOTE: Round the RHS down to make the check stricter.
+            (ONE + SHARE_PROCEEDS_MIN_TOLERANCE).mulDivDown(
+                _params.startingPresentValue,
+                _lpTotalSupply
+            );
     }
 
     /// @dev Calculates the upper bound on the share proceeds of distributing
@@ -1150,7 +1161,7 @@ library LPMath {
         );
 
         // derivative = 1 - derivative
-        if (ONE >= derivative) {
+        if (ONE > derivative) {
             derivative = ONE - derivative;
         } else {
             // NOTE: Small rounding errors can result in the derivative being
@@ -1295,7 +1306,7 @@ library LPMath {
         );
 
         // derivative = 1 - derivative
-        if (ONE >= derivative) {
+        if (ONE > derivative) {
             derivative = ONE - derivative;
         } else {
             // NOTE: Small rounding errors can result in the derivative being
