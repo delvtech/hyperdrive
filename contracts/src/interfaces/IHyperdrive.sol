@@ -331,6 +331,10 @@ interface IHyperdrive is
     ///         int128 scale.
     error UnsafeCastToInt128();
 
+    /// @notice Thrown when casting a value to a int256 that is outside of the
+    ///         int256 scale.
+    error UnsafeCastToInt256();
+
     /// @notice Thrown when an unsupported option is passed to a function or
     ///         a user attempts to sweep an invalid token. The options and sweep
     ///         targets that are supported vary between instances.
