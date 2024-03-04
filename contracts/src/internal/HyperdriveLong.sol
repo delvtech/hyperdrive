@@ -189,15 +189,15 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
                 nonNettedLongs + int256(_bondAmount),
                 nonNettedLongs
             );
-
-            // Distribute the excess idle to the withdrawal pool.
-            _distributeExcessIdle(vaultSharePrice);
         } else {
             // Apply the zombie close to the state and adjust the share proceeds
             // to account for negative interest that might have accrued to the
             // zombie share reserves.
             shareProceeds = _applyZombieClose(shareProceeds, vaultSharePrice);
         }
+
+        // Distribute the excess idle to the withdrawal pool.
+        _distributeExcessIdle(vaultSharePrice);
 
         // Withdraw the profit to the trader.
         uint256 proceeds = _withdraw(shareProceeds, vaultSharePrice, _options);
@@ -255,7 +255,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             _marketState.longAverageMaturityTime
         )
             .updateWeightedAverage(
-                uint256(longsOutstanding_),
+                longsOutstanding_,
                 _maturityTime * ONE, // scale up to fixed point scale
                 _bondReservesDelta,
                 true
