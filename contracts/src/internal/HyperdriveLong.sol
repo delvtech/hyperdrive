@@ -436,7 +436,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
                 _vaultSharePrice
             );
 
-        // Calculate the impact of the curve fee on the bond reservse. The curve
+        // Calculate the impact of the curve fee on the bond reserves. The curve
         // fee benefits the LPs by causing less bonds to be deducted from the
         // bond reserves.
         bondReservesDelta -= curveFee;
@@ -462,6 +462,23 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         //
         // shares = shares - shares
         shareReservesDelta = _shareAmount - totalGovernanceFee;
+
+        // Ensure that the ending spot price is less than or equal to one.
+        // Despite the fact that the earlier negative interest check should
+        // imply this, we perform this check out of an abundance of caution
+        // since the `pow` function is known to not be monotonic.
+        if (
+            HyperdriveMath.calculateSpotPrice(
+                _effectiveShareReserves() + shareReservesDelta,
+                _marketState.bondReserves - bondReservesDelta,
+                _initialVaultSharePrice,
+                _timeStretch
+            ) > ONE
+        ) {
+            Errors.throwInsufficientLiquidityError(
+                IHyperdrive.InsufficientLiquidityReason.NegativeInterest
+            );
+        }
 
         return (shareReservesDelta, bondReservesDelta, totalGovernanceFee);
     }
