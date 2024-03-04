@@ -35,6 +35,7 @@
         "solhint-plugin-prettier": "0.0.5"
     },
     "dependencies": {
+        "hardhat": "^2.20.1",
         "yarn": "^1.22.19"
     }
 }

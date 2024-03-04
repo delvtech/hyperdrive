@@ -18,7 +18,7 @@ import { RETHBase } from "./RETHBase.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract StETHTarget0 is HyperdriveTarget0, RETHBase {
+contract RETHTarget0 is HyperdriveTarget0, RETHBase {
     using SafeERC20 for ERC20;
 
     /// @notice Initializes the target0 contract.
