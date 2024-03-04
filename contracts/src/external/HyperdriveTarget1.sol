@@ -32,7 +32,7 @@ abstract contract HyperdriveTarget1 is
 
     /// LPs ///
 
-    /// @dev Allows LPs to supply liquidity for LP shares.
+    /// @notice Allows LPs to supply liquidity for LP shares.
     /// @param _contribution The amount of capital to supply. The units of this
     ///        quantity are either base or vault shares, depending on the value
     ///        of `_options.asBase`.
@@ -63,7 +63,7 @@ abstract contract HyperdriveTarget1 is
             );
     }
 
-    /// @dev Allows an LP to burn shares and withdraw from the pool.
+    /// @notice Allows an LP to burn shares and withdraw from the pool.
     /// @param _lpShares The LP shares to burn.
     /// @param _minOutputPerShare The minimum amount the LP expects to receive
     ///        for each withdrawal share that is burned. The units of this
@@ -86,10 +86,10 @@ abstract contract HyperdriveTarget1 is
         return _removeLiquidity(_lpShares, _minOutputPerShare, _options);
     }
 
-    /// @dev Redeems withdrawal shares by giving the LP a pro-rata amount of the
-    ///      withdrawal pool's proceeds. This function redeems the maximum
-    ///      amount of the specified withdrawal shares given the amount of
-    ///      withdrawal shares ready to withdraw.
+    /// @notice Redeems withdrawal shares by giving the LP a pro-rata amount of
+    ///         the withdrawal pool's proceeds. This function redeems the
+    ///         maximum amount of the specified withdrawal shares given the
+    ///         amount of withdrawal shares ready to withdraw.
     /// @param _withdrawalShares The withdrawal shares to redeem.
     /// @param _minOutputPerShare The minimum amount the LP expects to
     ///        receive for each withdrawal share that is burned. The units of

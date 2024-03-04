@@ -32,7 +32,7 @@ abstract contract HyperdriveTarget3 is
 
     /// LPs ///
 
-    /// @dev Allows the first LP to initialize the market with a target APR.
+    /// @notice Allows the first LP to initialize the market with a target APR.
     /// @param _contribution The amount of capital to supply. The units of this
     ///        quantity are either base or vault shares, depending on the value
     ///        of `_options.asBase`.
@@ -49,7 +49,7 @@ abstract contract HyperdriveTarget3 is
 
     /// Longs ///
 
-    /// @dev Opens a long position.
+    /// @notice Opens a long position.
     /// @param _amount The amount of capital provided to open the long. The
     ///        units of this quantity are either base or vault shares, depending
     ///        on the value of `_options.asBase`.

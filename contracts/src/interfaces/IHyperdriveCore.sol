@@ -7,7 +7,7 @@ import { IMultiTokenCore } from "./IMultiTokenCore.sol";
 interface IHyperdriveCore is IMultiTokenCore {
     /// Longs ///
 
-    /// @dev Opens a long position.
+    /// @notice Opens a long position.
     /// @param _amount The amount of capital provided to open the long. The
     ///        units of this quantity are either base or vault shares, depending
     ///        on the value of `_options.asBase`.
@@ -26,8 +26,8 @@ interface IHyperdriveCore is IMultiTokenCore {
         IHyperdrive.Options calldata _options
     ) external payable returns (uint256, uint256);
 
-    /// @dev Closes a long position with a specified maturity time.
-    /// @param _maturityTime The maturity time of the short.
+    /// @notice Closes a long position with a specified maturity time.
+    /// @param _maturityTime The maturity time of the long.
     /// @param _bondAmount The amount of longs to close.
     /// @param _minOutput The minimum proceeds the trader will accept. The units
     ///        of this quantity are either base or vault shares, depending on
@@ -45,7 +45,7 @@ interface IHyperdriveCore is IMultiTokenCore {
 
     /// Shorts ///
 
-    /// @dev Opens a short position.
+    /// @notice Opens a short position.
     /// @param _bondAmount The amount of bonds to short.
     /// @param _maxDeposit The most the user expects to deposit for this trade.
     ///        The units of this quantity are either base or vault shares,
@@ -65,7 +65,7 @@ interface IHyperdriveCore is IMultiTokenCore {
         IHyperdrive.Options calldata _options
     ) external payable returns (uint256, uint256);
 
-    /// @dev Closes a short position with a specified maturity time.
+    /// @notice Closes a short position with a specified maturity time.
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of shorts to close.
     /// @param _minOutput The minimum output of this trade. The units of this
@@ -84,7 +84,7 @@ interface IHyperdriveCore is IMultiTokenCore {
 
     /// LPs ///
 
-    /// @dev Allows the first LP to initialize the market with a target APR.
+    /// @notice Allows the first LP to initialize the market with a target APR.
     /// @param _contribution The amount of capital to supply. The units of this
     ///        quantity are either base or vault shares, depending on the value
     ///        of `_options.asBase`.
@@ -97,7 +97,7 @@ interface IHyperdriveCore is IMultiTokenCore {
         IHyperdrive.Options calldata _options
     ) external payable returns (uint256);
 
-    /// @dev Allows LPs to supply liquidity for LP shares.
+    /// @notice Allows LPs to supply liquidity for LP shares.
     /// @param _contribution The amount of capital to supply. The units of this
     ///        quantity are either base or vault shares, depending on the value
     ///        of `_options.asBase`.
@@ -119,7 +119,7 @@ interface IHyperdriveCore is IMultiTokenCore {
         IHyperdrive.Options calldata _options
     ) external payable returns (uint256);
 
-    /// @dev Allows an LP to burn shares and withdraw from the pool.
+    /// @notice Allows an LP to burn shares and withdraw from the pool.
     /// @param _lpShares The LP shares to burn.
     /// @param _minOutputPerShare The minimum amount the LP expects to receive
     ///        for each withdrawal share that is burned. The units of this
@@ -140,10 +140,10 @@ interface IHyperdriveCore is IMultiTokenCore {
         IHyperdrive.Options calldata _options
     ) external returns (uint256, uint256);
 
-    /// @dev Redeems withdrawal shares by giving the LP a pro-rata amount of the
-    ///      withdrawal pool's proceeds. This function redeems the maximum
-    ///      amount of the specified withdrawal shares given the amount of
-    ///      withdrawal shares ready to withdraw.
+    /// @notice Redeems withdrawal shares by giving the LP a pro-rata amount of
+    ///         the withdrawal pool's proceeds. This function redeems the
+    ///         maximum amount of the specified withdrawal shares given the
+    ///         amount of withdrawal shares ready to withdraw.
     /// @param _withdrawalShares The withdrawal shares to redeem.
     /// @param _minOutputPerShare The minimum amount the LP expects to
     ///        receive for each withdrawal share that is burned. The units of

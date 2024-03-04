@@ -160,8 +160,8 @@ abstract contract HyperdriveTarget0 is
         _batchTransferFrom(from, to, ids, values);
     }
 
-    /// @notice Allows a caller who is not the owner of an account to execute the
-    ///         functionality of 'approve' for all assets with the owner's
+    /// @notice Allows a caller who is not the owner of an account to execute
+    ///         the functionality of 'approve' for all assets with the owner's
     ///         signature.
     /// @param domainSeparator The EIP712 domain separator of the contract.
     /// @param permitTypeHash The EIP712 domain separator of the contract.

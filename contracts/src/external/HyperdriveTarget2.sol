@@ -32,8 +32,8 @@ abstract contract HyperdriveTarget2 is
 
     /// Longs ///
 
-    /// @dev Closes a long position with a specified maturity time.
-    /// @param _maturityTime The maturity time of the short.
+    /// @notice Closes a long position with a specified maturity time.
+    /// @param _maturityTime The maturity time of the long.
     /// @param _bondAmount The amount of longs to close.
     /// @param _minOutput The minimum proceeds the trader will accept. The units
     ///        of this quantity are either base or vault shares, depending on
@@ -53,7 +53,7 @@ abstract contract HyperdriveTarget2 is
 
     /// Shorts ///
 
-    /// @dev Closes a short position with a specified maturity time.
+    /// @notice Closes a short position with a specified maturity time.
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of shorts to close.
     /// @param _minOutput The minimum output of this trade. The units of this

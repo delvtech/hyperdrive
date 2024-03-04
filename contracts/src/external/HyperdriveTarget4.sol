@@ -32,7 +32,7 @@ abstract contract HyperdriveTarget4 is
 
     /// Shorts ///
 
-    /// @dev Opens a short position.
+    /// @notice Opens a short position.
     /// @param _bondAmount The amount of bonds to short.
     /// @param _maxDeposit The most the user expects to deposit for this trade.
     ///        The units of this quantity are either base or vault shares,

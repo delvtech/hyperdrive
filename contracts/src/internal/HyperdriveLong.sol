@@ -121,10 +121,8 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             options.destination,
             assetId,
             maturityTime_,
-            // base deposit
-            _convertToBaseFromOption(amount, vaultSharePrice_, options),
-            // vault shares deposit
-            _convertToVaultSharesFromOption(amount, vaultSharePrice_, options),
+            _convertToBaseFromOption(amount, vaultSharePrice_, options), // base deposit
+            _convertToVaultSharesFromOption(amount, vaultSharePrice_, options), // vault shares deposit
             options.asBase,
             bondProceeds_
         );
@@ -133,7 +131,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
     }
 
     /// @dev Closes a long position with a specified maturity time.
-    /// @param _maturityTime The maturity time of the short.
+    /// @param _maturityTime The maturity time of the long.
     /// @param _bondAmount The amount of longs to close.
     /// @param _minOutput The minimum proceeds the trader will accept. The units
     ///        of this quantity are either base or vault shares, depending on

@@ -13,7 +13,7 @@ import { HyperdriveBase } from "./HyperdriveBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
-    /// @notice This function collects the governance fees accrued by the pool.
+    /// @dev This function collects the governance fees accrued by the pool.
     /// @param _options The options that configure how the fees are settled.
     /// @return proceeds The governance fees collected. The units of this
     ///         quantity are either base or vault shares, depending on the value
