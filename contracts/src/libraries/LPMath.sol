@@ -1161,7 +1161,7 @@ library LPMath {
         );
 
         // derivative = 1 - derivative
-        if (ONE >= derivative) {
+        if (ONE > derivative) {
             derivative = ONE - derivative;
         } else {
             // NOTE: Small rounding errors can result in the derivative being
@@ -1306,7 +1306,7 @@ library LPMath {
         );
 
         // derivative = 1 - derivative
-        if (ONE >= derivative) {
+        if (ONE > derivative) {
             derivative = ONE - derivative;
         } else {
             // NOTE: Small rounding errors can result in the derivative being
