@@ -455,11 +455,11 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
     ) internal view returns (uint256, bool) {
         // Calculate the present value safely to prevent liveness problems. If
         // the calculation fails, we return 0.
-        (uint256 presentValueShares, bool status) = LPMath
+        (uint256 presentValueShares, bool success) = LPMath
             .calculatePresentValueSafe(
                 _getPresentValueParams(_vaultSharePrice)
             );
-        if (!status) {
+        if (!success) {
             return (0, false);
         }
 

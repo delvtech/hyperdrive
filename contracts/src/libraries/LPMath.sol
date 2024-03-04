@@ -184,8 +184,8 @@ library LPMath {
                 int256(_params.minimumShareReserves);
         }
 
-        // If the present value is negative, return a status code indicating the
-        // failure.
+        // If the present value is negative, return a failure flag indicating
+        // the failure.
         if (presentValue < 0) {
             return (0, false);
         }
@@ -1125,7 +1125,8 @@ library LPMath {
                 ONE - maxScalingFactor
             );
         } else {
-            // NOTE: If the max scaling factor is greater than one, the calculation
+            // NOTE: If the max scaling factor is greater than one, the
+            // calculation fails and we return a failure flag.
             return (0, false);
         }
 
