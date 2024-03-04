@@ -62,7 +62,7 @@ contract AdminTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(hyperdrive.getPoolConfig().governance);
         vm.expectEmit(true, true, true, true);
-        emit PauserUpdated(newPauser);
+        emit PauserUpdated(newPauser, true);
         hyperdrive.setPauser(newPauser, true);
 
         // Ensure that the pauser address was updated.
