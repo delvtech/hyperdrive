@@ -43,15 +43,11 @@ contract StETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     ) external returns (address) {
         return (
             address(
-                new StETHHyperdrive{ salt: _salt }(
-                    _config,
-                    target0,
-                    target1,
-                    target2,
-                    target3,
-                    target4,
-                    lido
-                )
+                // NOTE: We hash the sender with the salt to prevent the
+                // front-running of deployments.
+                new StETHHyperdrive{
+                    salt: keccak256(abi.encode(msg.sender, _salt))
+                }(_config, target0, target1, target2, target3, target4, lido)
             )
         );
     }
