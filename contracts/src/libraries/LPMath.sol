@@ -700,11 +700,10 @@ library LPMath {
                         return 0;
                     }
 
-                    // If the max bond amount is greater than or equal to the
-                    // net curve trade, then Newton's method has terminated since
-                    // proceeding to the next step would result in reaching the
-                    // same point.
-                    if (maxBondAmount >= uint256(_params.netCurveTrade)) {
+                    // If the max bond amount is less than the net curve trade,
+                    // then Newton's method has terminated since proceeding to
+                    // the next step would result in reaching the same point.
+                    if (maxBondAmount < uint256(_params.netCurveTrade)) {
                         return shareProceeds;
                     }
                     // Otherwise, we continue to the next iteration of Newton's
@@ -868,7 +867,7 @@ library LPMath {
     ///
     ///      (1) zeta > 0:
     ///
-    ///          y_max_out(dz) = (z - dz) - zeta * ((z - dz) / z) - z_min
+    ///          z_max_out(dz) = ((z - dz) / z) * (z - zeta) - z_min
     ///
     ///          =>
     ///
@@ -876,7 +875,7 @@ library LPMath {
     ///
     ///      (2) zeta <= 0:
     ///
-    ///          y_max_out(dz) = (z - dz) - z_min
+    ///          z_max_out(dz) = (z - dz) - z_min
     ///
     ///          =>
     ///
