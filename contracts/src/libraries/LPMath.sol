@@ -471,20 +471,16 @@ library LPMath {
         // Step 4: Solve for the share proceeds that hold the LP share price
         // invariant after all of the withdrawal shares are redeemed. If the
         // calculation returns a share proceeds of zero, we can't pay out
-        // anything.
+        // anything. Similarly, if the share proceeds are greater than or equal
+        // to the maximum share reserves delta that was previously calculated,
+        // then we can't distribute excess idle since we ruled out the
+        // possibility of paying out the full maximum share reserves delta in
+        // step 3.
         uint256 shareProceeds = calculateDistributeExcessIdleShareProceeds(
             _params,
             originalEffectiveShareReserves
         );
-        if (shareProceeds == 0) {
-            return (0, 0);
-        }
-
-        // Step 4: If the share proceeds are greater than or equal to the
-        // maximum share reserves delta that was previously calculated, then
-        // we can't distribute excess idle since we ruled out the possibility
-        // of paying out the full maximum share reserves delta in step 3.
-        if (shareProceeds >= maxShareReservesDelta) {
+        if (shareProceeds == 0 || shareProceeds >= maxShareReservesDelta) {
             return (0, 0);
         }
 
