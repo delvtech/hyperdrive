@@ -749,8 +749,8 @@ library LPMath {
                         return 0;
                     }
 
-                    // If the max bond amount is less or equal to the net curve
-                    // trade, then Newton's method has terminated since
+                    // If the max bond amount is less than or equal to the net
+                    // curve trade, then Newton's method has terminated since
                     // proceeding to the next step would result in reaching the
                     // same point.
                     if (maxBondAmount <= uint256(_params.netCurveTrade)) {
