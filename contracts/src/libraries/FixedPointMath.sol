@@ -191,11 +191,9 @@ library FixedPointMath {
             // * the 1e18 / 2**96 factor for base conversion.
             // We do this all at once, with an intermediate result in 2**213
             // basis, so the final right shift is always by a positive amount.
-            r = int256(
-                (uint256(r) *
-                    3822833074963236453042738258902158003155416615667) >>
-                    uint256(195 - k)
-            );
+            r = ((uint256(r) *
+                3822833074963236453042738258902158003155416615667) >>
+                uint256(195 - k)).toInt256();
         }
     }
 
@@ -230,7 +228,7 @@ library FixedPointMath {
             // ln(2^k * x) = k * ln(2) + ln(x)
             int256 k = r - 96;
             x <<= uint256(159 - k);
-            x = int256(uint256(x) >> 159);
+            x = (uint256(x) >> 159).toInt256();
 
             // Evaluate using a (8, 8)-term rational approximation.
             // p is made monic, we will multiply by a scale factor later.
