@@ -254,7 +254,7 @@ abstract contract HyperdriveLP is
             lpShares,
             baseContribution, // base contribution
             shareContribution, // vault shares contribution
-            _options.asBase,
+            options.asBase,
             lpSharePrice
         );
     }

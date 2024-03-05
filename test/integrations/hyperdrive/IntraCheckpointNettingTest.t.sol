@@ -880,7 +880,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
                     keccak256(reason),
                     keccak256(
                         abi.encodeWithSelector(
-                            IHyperdrive.NegativePresentValue.selector
+                            IHyperdrive.InvalidPresentValue.selector
                         )
                     )
                 );
