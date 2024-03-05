@@ -115,14 +115,11 @@ library AssetId {
 
         // Loop through the integer and add each digit to the raw result,
         // starting at the end of the string and working towards the beginning.
-        rawResult[maxStringLength - 1] = bytes1(uint8((_num % 10) + 48));
-        _num /= 10;
-        uint256 digits = 1;
-        while (_num != 0) {
+        uint256 digits = 0;
+        for (; _num != 0; _num /= 10) {
             rawResult[maxStringLength - digits - 1] = bytes1(
                 uint8((_num % 10) + 48)
             );
-            _num /= 10;
             digits++;
         }
 
