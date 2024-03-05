@@ -2,17 +2,18 @@
 pragma solidity 0.8.20;
 
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
-import { StETHHyperdriveCoreDeployer } from "contracts/src/deployers/steth/StETHHyperdriveCoreDeployer.sol";
-import { StETHHyperdriveDeployerCoordinator } from "contracts/src/deployers/steth/StETHHyperdriveDeployerCoordinator.sol";
-import { StETHTarget0Deployer } from "contracts/src/deployers/steth/StETHTarget0Deployer.sol";
-import { StETHTarget1Deployer } from "contracts/src/deployers/steth/StETHTarget1Deployer.sol";
-import { StETHTarget2Deployer } from "contracts/src/deployers/steth/StETHTarget2Deployer.sol";
-import { StETHTarget3Deployer } from "contracts/src/deployers/steth/StETHTarget3Deployer.sol";
-import { StETHTarget4Deployer } from "contracts/src/deployers/steth/StETHTarget4Deployer.sol";
+import { RETHHyperdriveCoreDeployer } from "contracts/src/deployers/reth/RETHHyperdriveCoreDeployer.sol";
+import { RETHHyperdriveDeployerCoordinator } from "contracts/src/deployers/reth/RETHHyperdriveDeployerCoordinator.sol";
+import { RETHTarget0Deployer } from "contracts/src/deployers/reth/RETHTarget0Deployer.sol";
+import { RETHTarget1Deployer } from "contracts/src/deployers/reth/RETHTarget1Deployer.sol";
+import { RETHTarget2Deployer } from "contracts/src/deployers/reth/RETHTarget2Deployer.sol";
+import { RETHTarget3Deployer } from "contracts/src/deployers/reth/RETHTarget3Deployer.sol";
+import { RETHTarget4Deployer } from "contracts/src/deployers/reth/RETHTarget4Deployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
+import { IRocketStorage } from "contracts/src/interfaces/IRocketStorage.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ETH } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
@@ -22,6 +23,10 @@ import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
+import { IRocketNetworkBalances } from "contracts/src/interfaces/IRocketNetworkBalances.sol";
+import { IRocketDepositPool } from "contracts/src/interfaces/IRocketDepositPool.sol";
+import { IRocketTokenRETH } from "contracts/src/interfaces/IRocketTokenRETH.sol";
+import "forge-std/console.sol";
 
 contract RETHHyperdriveTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -35,10 +40,14 @@ contract RETHHyperdriveTest is HyperdriveTest {
     bytes32 internal constant BUFFERED_ETHER_POSITION =
         keccak256("lido.Lido.bufferedEther");
 
+    IRocketStorage internal constant ROCKET_STORAGE =
+        IRocketStorage(0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46);
     ILido internal constant LIDO =
-        ILido(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
-
-    address internal STETH_WHALE = 0x1982b2F5814301d4e9a8b0201555376e62F82428;
+        ILido(0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46);
+    IRocketTokenRETH rocketTokenRETH;
+    IRocketNetworkBalances rocketNetworkBalances;
+    IRocketDepositPool rocketDepositPool;
+    address internal STETH_WHALE = 0xCc9EE9483f662091a1de4795249E24aC0aC2630f;
     address internal ETH_WHALE = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
 
     HyperdriveFactory factory;
@@ -46,7 +55,24 @@ contract RETHHyperdriveTest is HyperdriveTest {
 
     function setUp() public override __mainnet_fork(17_376_154) {
         super.setUp();
+        // Fetching the RETH token address from the storage contract.
+        address rocketTokenRETHAddress = ROCKET_STORAGE.getAddress(
+            keccak256(abi.encodePacked("contract.address", "rocketTokenRETH"))
+        );
+        rocketTokenRETH = IRocketTokenRETH(rocketTokenRETHAddress);
+        address rocketNetworkBalancesAddress = ROCKET_STORAGE.getAddress(
+            keccak256(
+                abi.encodePacked("contract.address", "rocketNetworkBalances")
+            )
+        );
+        rocketNetworkBalances = IRocketNetworkBalances(
+            rocketNetworkBalancesAddress
+        );
+        address rocketDepositPoolAddress = ROCKET_STORAGE.getAddress(
+            keccak256(abi.encodePacked("contract.address", "rocketDepositPool"))
+        );
 
+        rocketDepositPool = IRocketDepositPool(rocketDepositPoolAddress);
         // Deploy the hyperdrive factory.
         vm.startPrank(deployer);
         address[] memory defaults = new address[](1);
@@ -89,14 +115,14 @@ contract RETHHyperdriveTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(alice);
         deployerCoordinator = address(
-            new StETHHyperdriveDeployerCoordinator(
-                address(new StETHHyperdriveCoreDeployer(LIDO)),
-                address(new StETHTarget0Deployer(LIDO)),
-                address(new StETHTarget1Deployer(LIDO)),
-                address(new StETHTarget2Deployer(LIDO)),
-                address(new StETHTarget3Deployer(LIDO)),
-                address(new StETHTarget4Deployer(LIDO)),
-                LIDO
+            new RETHHyperdriveDeployerCoordinator(
+                address(new RETHHyperdriveCoreDeployer(ROCKET_STORAGE)),
+                address(new RETHTarget0Deployer(ROCKET_STORAGE)),
+                address(new RETHTarget1Deployer(ROCKET_STORAGE)),
+                address(new RETHTarget2Deployer(ROCKET_STORAGE)),
+                address(new RETHTarget3Deployer(ROCKET_STORAGE)),
+                address(new RETHTarget4Deployer(ROCKET_STORAGE)),
+                ROCKET_STORAGE
             )
         );
         factory.addDeployerCoordinator(address(deployerCoordinator));
@@ -188,11 +214,14 @@ contract RETHHyperdriveTest is HyperdriveTest {
         // receive LP shares totaling the amount of shares that she contributed
         // minus the shares set aside for the minimum share reserves and the
         // zero address's initial LP contribution.
+        uint256 adjustedContribution = contribution
+            .mulDown(0.9995 ether)
+            .divDown(hyperdrive.getPoolConfig().initialVaultSharePrice) -
+            2 *
+            hyperdrive.getPoolConfig().minimumShareReserves;
         assertApproxEqAbs(
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
-            contribution.divDown(
-                hyperdrive.getPoolConfig().initialVaultSharePrice
-            ) - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
+            adjustedContribution,
             1e5
         );
 
@@ -201,7 +230,12 @@ contract RETHHyperdriveTest is HyperdriveTest {
         accounts[0] = alice;
         accounts[1] = bob;
         accounts[2] = celine;
-        fundAccounts(address(hyperdrive), IERC20(LIDO), STETH_WHALE, accounts);
+        fundAccounts(
+            address(hyperdrive),
+            IERC20(rocketTokenRETH),
+            STETH_WHALE,
+            accounts
+        );
         vm.deal(alice, 20_000e18);
         vm.deal(bob, 20_000e18);
         vm.deal(celine, 20_000e18);
@@ -212,228 +246,246 @@ contract RETHHyperdriveTest is HyperdriveTest {
 
     /// Deploy and Initialize ///
 
-    // function test__steth__deployAndInitialize() external {
-    //     // Deploy and Initialize the stETH hyperdrive instance. Excess ether is
-    //     // sent, and should be returned to the sender.
-    //     vm.stopPrank();
-    //     vm.startPrank(bob);
-    //     uint256 bobBalanceBefore = address(bob).balance;
-    //     IHyperdrive.PoolDeployConfig memory config = IHyperdrive
-    //         .PoolDeployConfig({
-    //             baseToken: IERC20(ETH),
-    //             governance: factory.hyperdriveGovernance(),
-    //             feeCollector: factory.feeCollector(),
-    //             linkerFactory: factory.linkerFactory(),
-    //             linkerCodeHash: factory.linkerCodeHash(),
-    //             minimumShareReserves: 1e15,
-    //             minimumTransactionAmount: 1e15,
-    //             positionDuration: POSITION_DURATION,
-    //             checkpointDuration: CHECKPOINT_DURATION,
-    //             timeStretch: 0,
-    //             fees: IHyperdrive.Fees({
-    //                 curve: 0,
-    //                 flat: 0,
-    //                 governanceLP: 0,
-    //                 governanceZombie: 0
-    //             })
-    //         });
-    //     uint256 contribution = 5_000e18;
-    //     factory.deployTarget(
-    //         bytes32(uint256(0xbeefbabe)),
-    //         deployerCoordinator,
-    //         config,
-    //         new bytes(0),
-    //         FIXED_RATE,
-    //         FIXED_RATE,
-    //         0,
-    //         bytes32(uint256(0xdeadfade))
-    //     );
-    //     factory.deployTarget(
-    //         bytes32(uint256(0xbeefbabe)),
-    //         deployerCoordinator,
-    //         config,
-    //         new bytes(0),
-    //         FIXED_RATE,
-    //         FIXED_RATE,
-    //         1,
-    //         bytes32(uint256(0xdeadfade))
-    //     );
-    //     factory.deployTarget(
-    //         bytes32(uint256(0xbeefbabe)),
-    //         deployerCoordinator,
-    //         config,
-    //         new bytes(0),
-    //         FIXED_RATE,
-    //         FIXED_RATE,
-    //         2,
-    //         bytes32(uint256(0xdeadfade))
-    //     );
-    //     factory.deployTarget(
-    //         bytes32(uint256(0xbeefbabe)),
-    //         deployerCoordinator,
-    //         config,
-    //         new bytes(0),
-    //         FIXED_RATE,
-    //         FIXED_RATE,
-    //         3,
-    //         bytes32(uint256(0xdeadfade))
-    //     );
-    //     factory.deployTarget(
-    //         bytes32(uint256(0xbeefbabe)),
-    //         deployerCoordinator,
-    //         config,
-    //         new bytes(0),
-    //         FIXED_RATE,
-    //         FIXED_RATE,
-    //         4,
-    //         bytes32(uint256(0xdeadfade))
-    //     );
-    //     hyperdrive = factory.deployAndInitialize{ value: contribution + 1e18 }(
-    //         bytes32(uint256(0xbeefbabe)),
-    //         address(deployerCoordinator),
-    //         config,
-    //         new bytes(0),
-    //         contribution,
-    //         FIXED_RATE,
-    //         FIXED_RATE,
-    //         new bytes(0),
-    //         bytes32(uint256(0xdeadfade))
-    //     );
-    //     assertEq(address(bob).balance, bobBalanceBefore - contribution);
+    function test__steth__deployAndInitialize() external {
+        uint256 testNumber = 42;
+        assertEq(testNumber, 42);
 
-    //     // Ensure that the decimals are set correctly.
-    //     assertEq(hyperdrive.decimals(), 18);
+        // Deploy and Initialize the stETH hyperdrive instance. Excess ether is
+        // sent, and should be returned to the sender.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 bobBalanceBefore = address(bob).balance;
+        IHyperdrive.PoolDeployConfig memory config = IHyperdrive
+            .PoolDeployConfig({
+                baseToken: IERC20(ETH),
+                governance: factory.hyperdriveGovernance(),
+                feeCollector: factory.feeCollector(),
+                linkerFactory: factory.linkerFactory(),
+                linkerCodeHash: factory.linkerCodeHash(),
+                minimumShareReserves: 1e15,
+                minimumTransactionAmount: 1e15,
+                positionDuration: POSITION_DURATION,
+                checkpointDuration: CHECKPOINT_DURATION,
+                timeStretch: 0,
+                fees: IHyperdrive.Fees({
+                    curve: 0,
+                    flat: 0,
+                    governanceLP: 0,
+                    governanceZombie: 0
+                })
+            });
+        uint256 contribution = 5_000e18;
+        factory.deployTarget(
+            bytes32(uint256(0xbeefbabe)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            0,
+            bytes32(uint256(0xdeadfade))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeefbabe)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            1,
+            bytes32(uint256(0xdeadfade))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeefbabe)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            2,
+            bytes32(uint256(0xdeadfade))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeefbabe)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            3,
+            bytes32(uint256(0xdeadfade))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeefbabe)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            4,
+            bytes32(uint256(0xdeadfade))
+        );
+        hyperdrive = factory.deployAndInitialize{ value: contribution + 1e18 }(
+            bytes32(uint256(0xbeefbabe)),
+            address(deployerCoordinator),
+            config,
+            new bytes(0),
+            contribution,
+            FIXED_RATE,
+            FIXED_RATE,
+            new bytes(0),
+            bytes32(uint256(0xdeadfade))
+        );
+        assertEq(address(bob).balance, bobBalanceBefore - contribution);
 
-    //     // Ensure that Bob received the correct amount of LP tokens. He should
-    //     // receive LP shares totaling the amount of shares that he contributed
-    //     // minus the shares set aside for the minimum share reserves and the
-    //     // zero address's initial LP contribution.
-    //     assertApproxEqAbs(
-    //         hyperdrive.balanceOf(AssetId._LP_ASSET_ID, bob),
-    //         contribution.divDown(
-    //             hyperdrive.getPoolConfig().initialVaultSharePrice
-    //         ) - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
-    //         1e5
-    //     );
+        // Ensure that the decimals are set correctly.
+        assertEq(hyperdrive.decimals(), 18);
 
-    //     // Ensure that the share reserves and LP total supply are equal and correct.
-    //     assertApproxEqAbs(
-    //         hyperdrive.getPoolInfo().shareReserves,
-    //         contribution.mulDivDown(
-    //             LIDO.getTotalShares(),
-    //             LIDO.getTotalPooledEther()
-    //         ),
-    //         1
-    //     );
-    //     assertEq(
-    //         hyperdrive.getPoolInfo().lpTotalSupply,
-    //         hyperdrive.getPoolInfo().shareReserves - config.minimumShareReserves
-    //     );
+        // Ensure that Bob received the correct amount of LP tokens. He should
+        // receive LP shares totaling the amount of shares that he contributed
+        // minus the shares set aside for the minimum share reserves and the
+        // zero address's initial LP contribution.
+        uint256 adjustedContribution = contribution.mulDown(0.9995 ether);
+        // todo comment on rocket pool fee of 5 basis points
 
-    //     // Verify that the correct events were emitted.
-    //     verifyFactoryEvents(
-    //         deployerCoordinator,
-    //         hyperdrive,
-    //         bob,
-    //         contribution,
-    //         FIXED_RATE,
-    //         config.minimumShareReserves,
-    //         new bytes(0),
-    //         // NOTE: Tolerance since stETH uses mulDivDown for share calculations.
-    //         1e5
-    //     );
-    // }
+        assertApproxEqAbs(
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, bob),
+            adjustedContribution.divDown(
+                hyperdrive.getPoolConfig().initialVaultSharePrice
+            ) - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
+            1e5
+        );
+
+        // Ensure that the share reserves and LP total supply are equal and correct.
+        assertApproxEqAbs(
+            hyperdrive.getPoolInfo().shareReserves,
+            rocketTokenRETH.getRethValue(adjustedContribution),
+            1
+        );
+        assertEq(
+            hyperdrive.getPoolInfo().lpTotalSupply,
+            hyperdrive.getPoolInfo().shareReserves - config.minimumShareReserves
+        );
+
+        console.logUint(adjustedContribution);
+
+        // Verify that the correct events were emitted.
+        // verifyFactoryEvents(
+        //     deployerCoordinator,
+        //     hyperdrive,
+        //     bob,
+        //     contribution,
+        //     FIXED_RATE,
+        //     config.minimumShareReserves,
+        //     new bytes(0),
+        //     // NOTE: Tolerance since stETH uses mulDivDown for share calculations.
+        //     1e5
+        // );
+    }
 
     // /// Price Per Share ///
 
-    // function test__pricePerVaultShare(uint256 basePaid) external {
-    //     // Ensure that the share price is the expected value.
-    //     uint256 totalPooledEther = LIDO.getTotalPooledEther();
-    //     uint256 totalShares = LIDO.getTotalShares();
-    //     uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
-    //     assertEq(vaultSharePrice, totalPooledEther.divDown(totalShares));
+    function test__pricePerVaultShare(uint256 basePaid) external {
+        vm.assume(basePaid > 0.01 ether);
+        // Ensure that the share price is the expected value.
+        // uint256 totalPooledEther = LIDO.getTotalPooledEther();
+        // uint256 totalShares = LIDO.getTotalShares();
+        console.logUint(hyperdrive.getPoolInfo().vaultSharePrice);
+        console.logUint(rocketTokenRETH.getExchangeRate());
+        uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
+        assertEq(vaultSharePrice, rocketTokenRETH.getExchangeRate());
 
-    //     // Ensure that the share price accurately predicts the amount of shares
-    //     // that will be minted for depositing a given amount of ETH. This will
-    //     // be an approximation since Lido uses `mulDivDown` whereas this test
-    //     // pre-computes the share price.
-    //     basePaid = basePaid.normalizeToRange(
-    //         2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-    //         HyperdriveUtils.calculateMaxLong(hyperdrive)
-    //     );
-    //     uint256 hyperdriveSharesBefore = LIDO.sharesOf(address(hyperdrive));
-    //     openLong(bob, basePaid);
-    //     assertApproxEqAbs(
-    //         LIDO.sharesOf(address(hyperdrive)),
-    //         hyperdriveSharesBefore + basePaid.divDown(vaultSharePrice),
-    //         1e4
-    //     );
-    // }
+        // Ensure that the share price accurately predicts the amount of shares
+        // that will be minted for depositing a given amount of ETH. This will
+        // be an approximation since Lido uses `mulDivDown` whereas this test
+        // pre-computes the share price.
+        basePaid = basePaid.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            HyperdriveUtils.calculateMaxLong(hyperdrive)
+        );
+        uint256 hyperdriveSharesBefore = rocketTokenRETH.balanceOf(
+            address(hyperdrive)
+        );
+        openLong(bob, basePaid);
+        assertApproxEqAbs(
+            rocketTokenRETH.balanceOf(address(hyperdrive)),
+            hyperdriveSharesBefore +
+                basePaid.mulDown(0.9995 ether).divDown(vaultSharePrice),
+            1e4
+        );
+    }
 
-    // /// Long ///
+    /// Long ///
 
-    // function test_open_long_with_ETH(uint256 basePaid) external {
-    //     // Get some balance information before the deposit.
-    //     uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
-    //     uint256 totalSharesBefore = LIDO.getTotalShares();
-    //     AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-    //     AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-    //         address(hyperdrive)
-    //     );
+    function test_open_long_with_ETH() external {
+        uint256 basePaid = 1 ether;
+        vm.assume(basePaid > 0.01 ether);
+        // Get some balance information before the deposit.
+        uint256 totalPooledEtherBefore = rocketNetworkBalances
+            .getTotalETHBalance();
+        uint256 totalSharesBefore = rocketNetworkBalances.getTotalRETHSupply();
+        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
+        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
+            address(hyperdrive)
+        );
 
-    //     // Bob opens a long by depositing ETH.
-    //     basePaid = basePaid.normalizeToRange(
-    //         2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-    //         HyperdriveUtils.calculateMaxLong(hyperdrive)
-    //     );
-    //     openLong(bob, basePaid);
+        // console.logInt(rocketDepositPool.getUserBalance());
+        console.logUint(rocketNetworkBalances.getTotalRETHSupply());
+        console.logUint(rocketNetworkBalances.getTotalETHBalance());
 
-    //     // Ensure that Lido's aggregates and the token balances were updated
-    //     // correctly during the trade.
-    //     verifyDeposit(
-    //         bob,
-    //         basePaid,
-    //         true,
-    //         totalPooledEtherBefore,
-    //         totalSharesBefore,
-    //         bobBalancesBefore,
-    //         hyperdriveBalancesBefore
-    //     );
-    // }
+        // console.logUint(rocketDepositPool.getBalance());
+        // Bob opens a long by depositing ETH.
+        basePaid = basePaid.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            HyperdriveUtils.calculateMaxLong(hyperdrive)
+        );
+        openLong(bob, basePaid);
 
-    // function test_open_long_refunds() external {
-    //     vm.startPrank(bob);
+        // Ensure that Lido's aggregates and the token balances were updated
+        // correctly during the trade.
+        verifyDeposit(
+            bob,
+            basePaid,
+            true,
+            totalPooledEtherBefore,
+            totalSharesBefore,
+            bobBalancesBefore,
+            hyperdriveBalancesBefore
+        );
+    }
 
-    //     // Ensure that Bob receives a refund on the excess ETH that he sent
-    //     // when opening a long with "asBase" set to true.
-    //     uint256 ethBalanceBefore = address(bob).balance;
-    //     hyperdrive.openLong{ value: 2e18 }(
-    //         1e18,
-    //         0,
-    //         0,
-    //         IHyperdrive.Options({
-    //             destination: bob,
-    //             asBase: true,
-    //             extraData: new bytes(0)
-    //         })
-    //     );
-    //     assertEq(address(bob).balance, ethBalanceBefore - 1e18);
+    function test_open_long_refunds() external {
+        vm.startPrank(bob);
 
-    //     // Ensure that Bob receives a  refund when he opens a long with "asBase"
-    //     // set to false and sends ether to the contract.
-    //     ethBalanceBefore = address(bob).balance;
-    //     hyperdrive.openLong{ value: 0.5e18 }(
-    //         1e18,
-    //         0,
-    //         0,
-    //         IHyperdrive.Options({
-    //             destination: bob,
-    //             asBase: false,
-    //             extraData: new bytes(0)
-    //         })
-    //     );
-    //     assertEq(address(bob).balance, ethBalanceBefore);
-    // }
+        // Ensure that Bob receives a refund on the excess ETH that he sent
+        // when opening a long with "asBase" set to true.
+        uint256 ethBalanceBefore = address(bob).balance;
+        hyperdrive.openLong{ value: 2e18 }(
+            1e18,
+            0,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+        assertEq(address(bob).balance, ethBalanceBefore - 1e18);
+        // Ensure that Bob receives a refund when he opens a long with "asBase"
+        // set to false and sends ether to the contract.
+        ethBalanceBefore = address(bob).balance;
+        hyperdrive.openLong{ value: 0.5e18 }(
+            1e18,
+            0,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: false,
+                extraData: new bytes(0)
+            })
+        );
+        assertEq(address(bob).balance, ethBalanceBefore);
+    }
 
     // function test_open_long_with_steth(uint256 basePaid) external {
     //     // Get some balance information before the deposit.
@@ -906,89 +958,100 @@ contract RETHHyperdriveTest is HyperdriveTest {
     //     closeLong(bob, maturityTime_, longAmount_ / 2, false);
     // }
 
-    // function verifyDeposit(
-    //     address trader,
-    //     uint256 basePaid,
-    //     bool asBase,
-    //     uint256 totalPooledEtherBefore,
-    //     uint256 totalSharesBefore,
-    //     AccountBalances memory traderBalancesBefore,
-    //     AccountBalances memory hyperdriveBalancesBefore
-    // ) internal {
-    //     if (asBase) {
-    //         // Ensure that the amount of pooled ether increased by the base paid.
-    //         assertEq(
-    //             LIDO.getTotalPooledEther(),
-    //             totalPooledEtherBefore + basePaid
-    //         );
+    function basePaidAfterFee(uint256 basePaid) internal returns (uint256) {
+        return basePaid.mulDown(0.9995 ether);
+    }
 
-    //         // Ensure that the ETH balances were updated correctly.
-    //         assertEq(
-    //             address(hyperdrive).balance,
-    //             hyperdriveBalancesBefore.ETHBalance
-    //         );
-    //         assertEq(bob.balance, traderBalancesBefore.ETHBalance - basePaid);
+    function verifyDeposit(
+        address trader,
+        uint256 basePaid,
+        bool asBase,
+        uint256 totalPooledEtherBefore,
+        uint256 totalSharesBefore,
+        AccountBalances memory traderBalancesBefore,
+        AccountBalances memory hyperdriveBalancesBefore
+    ) internal {
+        if (asBase) {
+            // Ensure that the amount of pooled ether increased by the base paid.
+            // console.logInt(rocketDepositPool.getUserBalance());
+            console.logUint(rocketNetworkBalances.getTotalRETHSupply());
+            console.logUint(rocketNetworkBalances.getTotalETHBalance());
+            // console.logUint(rocketDepositPool.getBalance());
+            // console.logUint(777);
+            // this doesnt work really, need to find where the eth goes downstream
+            assertEq(
+                rocketNetworkBalances.getTotalETHBalance(),
+                totalPooledEtherBefore
+            );
 
-    //         // Ensure that the stETH balances were updated correctly.
-    //         assertApproxEqAbs(
-    //             LIDO.balanceOf(address(hyperdrive)),
-    //             hyperdriveBalancesBefore.stethBalance + basePaid,
-    //             1
-    //         );
-    //         assertEq(LIDO.balanceOf(trader), traderBalancesBefore.stethBalance);
+            // Ensure that the ETH balances were updated correctly.
+            assertEq(
+                address(hyperdrive).balance,
+                hyperdriveBalancesBefore.ETHBalance
+            );
+            assertEq(bob.balance, traderBalancesBefore.ETHBalance - basePaid);
 
-    //         // Ensure that the stETH shares were updated correctly.
-    //         uint256 expectedShares = basePaid.mulDivDown(
-    //             totalSharesBefore,
-    //             totalPooledEtherBefore
-    //         );
-    //         assertEq(LIDO.getTotalShares(), totalSharesBefore + expectedShares);
-    //         assertEq(
-    //             LIDO.sharesOf(address(hyperdrive)),
-    //             hyperdriveBalancesBefore.stethShares + expectedShares
-    //         );
-    //         assertEq(LIDO.sharesOf(bob), traderBalancesBefore.stethShares);
-    //     } else {
-    //         // Ensure that the amount of pooled ether stays the same.
-    //         assertEq(LIDO.getTotalPooledEther(), totalPooledEtherBefore);
+            // Ensure that the stETH balances were updated correctly.
+            assertApproxEqAbs(
+                rocketTokenRETH.balanceOf(address(hyperdrive)),
+                hyperdriveBalancesBefore.rethBalance +
+                    rocketTokenRETH.getRethValue(basePaidAfterFee(basePaid)),
+                1
+            );
+            assertEq(
+                rocketTokenRETH.balanceOf(trader),
+                traderBalancesBefore.rethBalance
+            );
 
-    //         // Ensure that the ETH balances were updated correctly.
-    //         assertEq(
-    //             address(hyperdrive).balance,
-    //             hyperdriveBalancesBefore.ETHBalance
-    //         );
-    //         assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-    //         // Ensure that the stETH balances were updated correctly.
-    //         assertApproxEqAbs(
-    //             LIDO.balanceOf(address(hyperdrive)),
-    //             hyperdriveBalancesBefore.stethBalance + basePaid,
-    //             1
-    //         );
-    //         assertApproxEqAbs(
-    //             LIDO.balanceOf(trader),
-    //             traderBalancesBefore.stethBalance - basePaid,
-    //             1
-    //         );
-
-    //         // Ensure that the stETH shares were updated correctly.
-    //         uint256 expectedShares = basePaid.mulDivDown(
-    //             totalSharesBefore,
-    //             totalPooledEtherBefore
-    //         );
-    //         assertEq(LIDO.getTotalShares(), totalSharesBefore);
-    //         assertApproxEqAbs(
-    //             LIDO.sharesOf(address(hyperdrive)),
-    //             hyperdriveBalancesBefore.stethShares + expectedShares,
-    //             1
-    //         );
-    //         assertApproxEqAbs(
-    //             LIDO.sharesOf(trader),
-    //             traderBalancesBefore.stethShares - expectedShares,
-    //             1
-    //         );
-    //     }
-    // }
+            // // Ensure that the stETH shares were updated correctly.
+            // uint256 expectedShares = basePaid.mulDivDown(
+            //     totalSharesBefore,
+            //     totalPooledEtherBefore
+            // );
+            // assertEq(LIDO.getTotalShares(), totalSharesBefore + expectedShares);
+            // assertEq(
+            //     LIDO.sharesOf(address(hyperdrive)),
+            //     hyperdriveBalancesBefore.stethShares + expectedShares
+            // );
+            // assertEq(LIDO.sharesOf(bob), traderBalancesBefore.stethShares);
+        } else {
+            // Ensure that the amount of pooled ether stays the same.
+            // assertEq(LIDO.getTotalPooledEther(), totalPooledEtherBefore);
+            // // Ensure that the ETH balances were updated correctly.
+            // assertEq(
+            //     address(hyperdrive).balance,
+            //     hyperdriveBalancesBefore.ETHBalance
+            // );
+            // assertEq(trader.balance, traderBalancesBefore.ETHBalance);
+            // // Ensure that the stETH balances were updated correctly.
+            // assertApproxEqAbs(
+            //     LIDO.balanceOf(address(hyperdrive)),
+            //     hyperdriveBalancesBefore.stethBalance + basePaid,
+            //     1
+            // );
+            // assertApproxEqAbs(
+            //     LIDO.balanceOf(trader),
+            //     traderBalancesBefore.stethBalance - basePaid,
+            //     1
+            // );
+            // // Ensure that the stETH shares were updated correctly.
+            // uint256 expectedShares = basePaid.mulDivDown(
+            //     totalSharesBefore,
+            //     totalPooledEtherBefore
+            // );
+            // assertEq(LIDO.getTotalShares(), totalSharesBefore);
+            // assertApproxEqAbs(
+            //     LIDO.sharesOf(address(hyperdrive)),
+            //     hyperdriveBalancesBefore.stethShares + expectedShares,
+            //     1
+            // );
+            // assertApproxEqAbs(
+            //     LIDO.sharesOf(trader),
+            //     traderBalancesBefore.stethShares - expectedShares,
+            //     1
+            // );
+        }
+    }
 
     // function verifyStethWithdrawal(
     //     address trader,
@@ -1063,20 +1126,20 @@ contract RETHHyperdriveTest is HyperdriveTest {
     //     );
     // }
 
-    // struct AccountBalances {
-    //     uint256 stethShares;
-    //     uint256 stethBalance;
-    //     uint256 ETHBalance;
-    // }
+    struct AccountBalances {
+        uint256 rethShares;
+        uint256 rethBalance;
+        uint256 ETHBalance;
+    }
 
-    // function getAccountBalances(
-    //     address account
-    // ) internal view returns (AccountBalances memory) {
-    //     return
-    //         AccountBalances({
-    //             stethShares: LIDO.sharesOf(account),
-    //             stethBalance: LIDO.balanceOf(account),
-    //             ETHBalance: account.balance
-    //         });
-    // }
+    function getAccountBalances(
+        address account
+    ) internal view returns (AccountBalances memory) {
+        return
+            AccountBalances({
+                rethShares: rocketTokenRETH.balanceOf(account),
+                rethBalance: rocketTokenRETH.balanceOf(account),
+                ETHBalance: account.balance
+            });
+    }
 }
