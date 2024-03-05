@@ -661,10 +661,8 @@ library LPMath {
                     break;
                 }
 
-                // If the net curve trade is less than or equal to the maximum
-                // amount of bonds that can be sold with this share proceeds, we
-                // can calculate the derivative using the derivative of
-                // `calculateSharesOutGivenBondsIn`.
+                // Calculate the max bond amount. If the calculation fails, we
+                // return a failure flag.
                 (uint256 maxBondAmount, bool success) = YieldSpaceMath
                     .calculateMaxSellBondsInSafe(
                         _params.presentValueParams.shareReserves,
@@ -678,6 +676,11 @@ library LPMath {
                 if (!success) {
                     break;
                 }
+
+                // If the net curve trade is less than or equal to the maximum
+                // amount of bonds that can be sold with this share proceeds, we
+                // can calculate the derivative using the derivative of
+                // `calculateSharesOutGivenBondsIn`.
                 uint256 derivative;
                 if (uint256(_params.netCurveTrade) <= maxBondAmount) {
                     (
