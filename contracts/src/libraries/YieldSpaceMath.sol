@@ -474,7 +474,14 @@ library YieldSpaceMath {
         // y' = (k - (c / mu) * (mu * zMin) ** (1 - tau)) ** (1 / (1 - tau)).
         uint256 ze = HyperdriveMath.calculateEffectiveShareReserves(z, zeta);
         uint256 k = kDown(ze, y, t, c, mu);
-        uint256 optimalY = k - c.mulDivUp(mu.mulUp(zMin).pow(t), mu);
+        uint256 rhs = c.mulDivUp(mu.mulUp(zMin).pow(t), mu);
+        if (k < rhs) {
+            return (0, false);
+        }
+        uint256 optimalY;
+        unchecked {
+            optimalY = k - rhs;
+        }
         if (optimalY >= ONE) {
             // Rounding the exponent down results in a smaller outcome.
             optimalY = optimalY.pow(ONE.divDown(t));
