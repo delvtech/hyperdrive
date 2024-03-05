@@ -1153,10 +1153,13 @@ library LPMath {
     ///      )
     ///
     ///      This quantity is used in Newton's method to search for the optimal
-    ///      share proceeds. The derivative of the objective function F(x) is
-    ///      given by:
+    ///      share proceeds. We can express the derivative of the objective
+    ///      function F(x) by the derivative -z_out'(x) this function returns:
     ///
-    ///      F'(x) = 1 - derivative
+    ///      -F'(x) = l * -PV'(x)
+    ///             = l * (1 - net_c'(x))
+    ///             = l * (1 + z_out'(x))
+    ///             = l * (1 - derivative)
     ///
     ///      With this in mind, this function rounds its result down so that
     ///      F'(x) is overestimated. Since F'(x) is in the denominator of
@@ -1297,10 +1300,13 @@ library LPMath {
     ///      )
     ///
     ///      This quantity is used in Newton's method to search for the optimal
-    ///      share proceeds. The derivative of the objective function F(x) is
-    ///      given by:
+    ///      share proceeds. We can express the derivative of the objective
+    ///      function F(x) by the derivative z_in'(x) this function returns:
     ///
-    ///      F'(x) = 1 - derivative
+    ///      -F'(x) = l * -PV'(x)
+    ///             = l * (1 - net_c'(x))
+    ///             = l * (1 - z_in'(x))
+    ///             = l * (1 - derivative)
     ///
     ///      With this in mind, this function rounds its result down so that
     ///      F'(x) is overestimated. Since F'(x) is in the denominator of
