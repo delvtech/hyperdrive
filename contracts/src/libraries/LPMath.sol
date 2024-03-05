@@ -616,9 +616,9 @@ library LPMath {
                     break;
                 }
 
-                // If the net curve trade is less than or equal to the maximum
-                // amount of bonds that can be sold with this share proceeds, we
-                // can calculate the derivative using the derivative of
+                // If the net curve trade is less than the maximum amount of
+                // bonds that can be sold with this share proceeds, we can
+                // calculate the derivative using the derivative of
                 // `calculateSharesOutGivenBondsIn`.
                 (uint256 maxBondAmount, bool success) = YieldSpaceMath
                     .calculateMaxSellBondsInSafe(
@@ -637,7 +637,7 @@ library LPMath {
                     return 0;
                 }
                 uint256 derivative;
-                if (uint256(_params.netCurveTrade) <= maxBondAmount) {
+                if (uint256(_params.netCurveTrade) < maxBondAmount) {
                     (
                         derivative,
                         success
@@ -700,10 +700,11 @@ library LPMath {
                         return 0;
                     }
 
-                    // If the max bond amount is less than the net curve trade,
-                    // then Newton's method has terminated since proceeding to
-                    // the next step would result in reaching the same point.
-                    if (maxBondAmount < uint256(_params.netCurveTrade)) {
+                    // If the max bond amount is less than or equal to the net
+                    // curve trade, then Newton's method has terminated since
+                    // proceeding to the next step would result in reaching the
+                    // same point.
+                    if (maxBondAmount <= uint256(_params.netCurveTrade)) {
                         return shareProceeds;
                     }
                     // Otherwise, we continue to the next iteration of Newton's
