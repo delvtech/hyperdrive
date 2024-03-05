@@ -31,12 +31,14 @@ abstract contract StETHBase is HyperdriveBase {
     /// Yield Source ///
 
     /// @dev Accepts a transfer from the user in base or the yield source token.
-    /// @param _amount The amount of token to transfer. It will be in either
-    ///          base or shares depending on the `asBase` option.
-    /// @param _options The options that configure the deposit. The only option
-    ///        used in this implementation is "asBase" which determines if
-    ///        the deposit is settled in ETH or stETH shares.
-    /// @return shares The amount of shares that represents the amount deposited.
+    /// @param _amount The amount of capital to deposit. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
+    /// @param _options The options that configure how the trade is settled. The
+    ///        only option used in this deposit implementation is
+    ///        `_options.asBase` which determines if the deposit is settled in
+    ///        ETH or stETH shares.
+    /// @return shares The amount of capital deposited measured in vault shares.
     /// @return vaultSharePrice The current vault share price.
     function _deposit(
         uint256 _amount,
@@ -58,20 +60,17 @@ abstract contract StETHBase is HyperdriveBase {
             // users can specify whatever referrer they'd like by depositing
             // stETH instead of WETH.
             shares = _lido.submit{ value: _amount }(_feeCollector);
-
-            // Calculate the vault share price.
-            vaultSharePrice = _pricePerVaultShare();
         } else {
             // Refund any ether that was sent to the contract.
             refund = msg.value;
 
             // Transfer stETH shares into the contract.
-            _lido.transferSharesFrom(msg.sender, address(this), _amount);
-
-            // Calculate the vault share price.
             shares = _amount;
-            vaultSharePrice = _pricePerVaultShare();
+            _lido.transferSharesFrom(msg.sender, address(this), shares);
         }
+
+        // Calculate the vault share price.
+        vaultSharePrice = _pricePerVaultShare();
 
         // Return excess ether that was sent to the contract.
         if (refund > 0) {
@@ -86,19 +85,21 @@ abstract contract StETHBase is HyperdriveBase {
 
     /// @notice Processes a trader's withdrawal. This yield source only supports
     ///         withdrawals in stETH shares.
-    /// @param _shares The amount of shares to withdraw from Hyperdrive.
-    /// @param _sharePrice The share price.
+    /// @param _shares The amount of vault shares to withdraw from Hyperdrive.
+    /// @param _vaultSharePrice The vault share price.
     /// @param _options The options that configure the withdrawal. The options
-    ///        used in this implementation are "destination" which specifies the
-    ///        recipient of the withdrawal and "asBase" which determines
-    ///        if the withdrawal is settled in base or vault shares. The "asBase"
-    ///        option must be false since stETH withdrawals aren't processed
-    ///        instantaneously. Users that want to withdraw can manage their
-    ///        withdrawal separately.
-    /// @return The amount of shares withdrawn from the yield source.
+    ///        used in this withdrawal implementation are `_options.destination`,
+    ///        which specifies the recipient of the withdrawal, and
+    ///        `_options.asBase`, which determines if the withdrawal is settled
+    ///        in ETH or stETH. The `_options.asBase` option must be false since
+    ///        stETH withdrawals aren't processed instantaneously. Users that
+    ///        want to withdraw can manage their withdrawal separately.
+    /// @return The proceeds of the withdrawal. The units of this quantity are
+    ///         vault shares since this yield source doesn't support withdrawals
+    ///         in base.
     function _withdraw(
         uint256 _shares,
-        uint256 _sharePrice,
+        uint256 _vaultSharePrice,
         IHyperdrive.Options calldata _options
     ) internal override returns (uint256) {
         // stETH withdrawals aren't necessarily instantaneous. Users that want
@@ -112,7 +113,7 @@ abstract contract StETHBase is HyperdriveBase {
         // Correct for any error that crept into the calculation of the share
         // amount by converting the shares to base and then back to shares
         // using the vault's share conversion logic.
-        uint256 baseAmount = _shares.mulDown(_sharePrice);
+        uint256 baseAmount = _shares.mulDown(_vaultSharePrice);
         _shares = _lido.getSharesByPooledEth(baseAmount);
 
         // If we're withdrawing zero shares, short circuit and return 0.

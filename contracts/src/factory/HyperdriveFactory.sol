@@ -789,7 +789,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
         if (startIndex > endIndex) {
             revert IHyperdriveFactory.InvalidIndexes();
         }
-        if (endIndex > _instances.length) {
+        if (endIndex >= _instances.length) {
             revert IHyperdriveFactory.EndIndexTooLarge();
         }
 
@@ -829,7 +829,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
         if (startIndex > endIndex) {
             revert IHyperdriveFactory.InvalidIndexes();
         }
-        if (endIndex > _deployerCoordinators.length) {
+        if (endIndex >= _deployerCoordinators.length) {
             revert IHyperdriveFactory.EndIndexTooLarge();
         }
 
