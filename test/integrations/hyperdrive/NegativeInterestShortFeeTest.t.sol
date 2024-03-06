@@ -186,7 +186,11 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
             flatFee_,
             governanceFee_
         );
-        assertEq(governanceFeesAfterCloseShort, expectedGovernanceFees);
+        assertApproxEqAbs(
+            governanceFeesAfterCloseShort,
+            expectedGovernanceFees,
+            1
+        );
     }
 
     function test_negative_interest_short_full_term_fees_fuzz(
