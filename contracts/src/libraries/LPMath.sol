@@ -711,8 +711,8 @@ library LPMath {
                     (
                         derivative,
                         success
-                    ) = calculateSharesOutGivenBondsInDerivativeSafe(
-                        params,
+                    ) = calculateSharesOutGivenBondsInDerivativeNegationSafe(
+                        _params,
                         _originalEffectiveShareReserves,
                         uint256(_params.netCurveTrade)
                     );
@@ -1138,10 +1138,11 @@ library LPMath {
         return (maxShareReservesDelta, true);
     }
 
-    /// @dev Calculates the derivative of `calculateSharesOutGivenBondsIn`. This
-    ///      derivative is given by:
+    /// @dev Calculates the negation of the derivative of
+    ///      `calculateSharesOutGivenBondsIn`. The negation of the derivative is
+    ///      given by:
     ///
-    ///      derivative = - (1 - zeta / z) * (
+    ///      derivative = (1 - zeta / z) * (
     ///          1 - (1 / c) * (
     ///              c * (mu * z_e(x)) ** -t_s +
     ///              (y / z_e) * y(x) ** -t_s  -
@@ -1151,16 +1152,26 @@ library LPMath {
     ///          ) ** (t_s / (1 - t_s))
     ///      )
     ///
-    ///      We round down to avoid overshooting the optimal solution in Newton's
-    ///      method (the derivative we use is 1 minus this derivative so this
-    ///      rounds the derivative up).
+    ///      This quantity is used in Newton's method to search for the optimal
+    ///      share proceeds. We can express the derivative of the objective
+    ///      function F(x) by the derivative -z_out'(x) this function returns:
+    ///
+    ///      -F'(x) = l * -PV'(x)
+    ///             = l * (1 - net_c'(x))
+    ///             = l * (1 + z_out'(x))
+    ///             = l * (1 - derivative)
+    ///
+    ///      With this in mind, this function rounds its result down so that
+    ///      F'(x) is overestimated. Since F'(x) is in the denominator of
+    ///      Newton's method, overestimating F'(x) helps to avoid overshooting
+    ///      the optimal solution.
     /// @param _params The parameters for the calculation.
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
     /// @param _bondAmount The amount of bonds to sell.
     /// @return The derivative.
     /// @return A flag indicating whether the derivative could be computed.
-    function calculateSharesOutGivenBondsInDerivativeSafe(
+    function calculateSharesOutGivenBondsInDerivativeNegationSafe(
         DistributeExcessIdleParams memory _params,
         uint256 _originalEffectiveShareReserves,
         uint256 _bondAmount
@@ -1288,9 +1299,19 @@ library LPMath {
     ///          ) ** (t_s / (1 - t_s)) - 1
     ///      )
     ///
-    ///      We round down to avoid overshooting the optimal solution in
-    ///      Newton's method (the derivative we use is 1 minus this derivative
-    ///      so this rounds the derivative up).
+    ///      This quantity is used in Newton's method to search for the optimal
+    ///      share proceeds. We can express the derivative of the objective
+    ///      function F(x) by the derivative z_in'(x) this function returns:
+    ///
+    ///      -F'(x) = l * -PV'(x)
+    ///             = l * (1 - net_c'(x))
+    ///             = l * (1 - z_in'(x))
+    ///             = l * (1 - derivative)
+    ///
+    ///      With this in mind, this function rounds its result down so that
+    ///      F'(x) is overestimated. Since F'(x) is in the denominator of
+    ///      Newton's method, overestimating F'(x) helps to avoid overshooting
+    ///      the optimal solution.
     /// @param _params The parameters for the calculation.
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
