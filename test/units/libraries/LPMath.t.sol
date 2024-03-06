@@ -1125,14 +1125,17 @@ contract LPMathTest is HyperdriveTest {
 
             // Calculate the share proceeds.
             MockLPMath lpMath_ = lpMath; // avoid stack-too-deep
+            (uint256 maxShareReservesDelta, bool success) = lpMath_
+                .calculateMaxShareReservesDeltaSafe(
+                    params,
+                    originalEffectiveShareReserves
+                );
+            assertEq(success, true);
             uint256 shareProceeds = lpMath_
                 .calculateDistributeExcessIdleShareProceeds(
                     params,
                     originalEffectiveShareReserves,
-                    lpMath_.calculateMaxShareReservesDelta(
-                        params,
-                        originalEffectiveShareReserves
-                    )
+                    maxShareReservesDelta
                 );
 
             // Calculate the ending LP share price.
@@ -1229,14 +1232,16 @@ contract LPMathTest is HyperdriveTest {
 
             // Calculate the share proceeds.
             MockLPMath lpMath_ = lpMath; // avoid stack-too-deep
+            (uint256 maxShareReservesDelta, bool success) = lpMath_
+                .calculateMaxShareReservesDeltaSafe(
+                    params,
+                    originalEffectiveShareReserves
+                );
             uint256 shareProceeds = lpMath_
                 .calculateDistributeExcessIdleShareProceeds(
                     params,
                     originalEffectiveShareReserves,
-                    lpMath_.calculateMaxShareReservesDelta(
-                        params,
-                        originalEffectiveShareReserves
-                    )
+                    maxShareReservesDelta
                 );
 
             // Calculate the ending LP share price.
@@ -1333,14 +1338,17 @@ contract LPMathTest is HyperdriveTest {
 
             // Calculate the share proceeds.
             MockLPMath lpMath_ = lpMath; // avoid stack-too-deep
+            (uint256 maxShareReservesDelta, bool success) = lpMath_
+                .calculateMaxShareReservesDeltaSafe(
+                    params,
+                    originalEffectiveShareReserves
+                );
+            assertEq(success, true);
             uint256 shareProceeds = lpMath_
                 .calculateDistributeExcessIdleShareProceeds(
                     params,
                     originalEffectiveShareReserves,
-                    lpMath_.calculateMaxShareReservesDelta(
-                        params,
-                        originalEffectiveShareReserves
-                    )
+                    maxShareReservesDelta
                 );
 
             // Calculate the ending LP share price.
