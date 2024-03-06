@@ -19,7 +19,7 @@ impl State {
             self.short_average_maturity_time().into(),
         );
 
-        let present_value: I256 = I256::from(self.share_reserves())
+        let present_value: I256 = I256::try_from(self.share_reserves()).unwrap()
             + self.calculate_net_curve_trade(
                 long_average_time_remaining,
                 short_average_time_remaining,
@@ -28,7 +28,7 @@ impl State {
                 long_average_time_remaining,
                 short_average_time_remaining,
             )
-            - I256::from(self.minimum_share_reserves());
+            - I256::try_from(self.minimum_share_reserves()).unwrap();
 
         if present_value < int256!(0) {
             panic!("Negative present value!");
@@ -55,11 +55,12 @@ impl State {
         //
         // netCurveTrade = y_l * t_l - y_s * t_s.
         let net_curve_position: I256 =
-            I256::from(self.longs_outstanding().mul_up(long_average_time_remaining))
-                - I256::from(
+            I256::try_from(self.longs_outstanding().mul_up(long_average_time_remaining)).unwrap()
+                - I256::try_from(
                     self.shorts_outstanding()
                         .mul_down(short_average_time_remaining),
-                );
+                )
+                .unwrap();
 
         // If the net curve position is positive, then the pool is net long.
         // Closing the net curve position results in the longs being paid out
@@ -74,7 +75,7 @@ impl State {
                     match self
                         .calculate_shares_out_given_bonds_in_down_safe(net_curve_position.into())
                     {
-                        Ok(net_curve_trade) => -I256::from(net_curve_trade),
+                        Ok(net_curve_trade) => --I256::try_from(net_curve_trade).unwrap(),
                         Err(err) => {
                             // If the net curve position is smaller than the
                             // minimum transaction amount and the trade fails,
@@ -88,7 +89,8 @@ impl State {
                         }
                     }
                 } else {
-                    -I256::from(self.effective_share_reserves() - self.minimum_share_reserves())
+                    -I256::try_from(self.effective_share_reserves() - self.minimum_share_reserves())
+                        .unwrap()
                 }
             }
             Ordering::Less => {
@@ -98,7 +100,7 @@ impl State {
                     match self
                         .calculate_shares_in_given_bonds_out_up_safe(net_curve_position.into())
                     {
-                        Ok(net_curve_trade) => I256::from(net_curve_trade),
+                        Ok(net_curve_trade) => I256::try_from(net_curve_trade).unwrap(),
                         Err(err) => {
                             // If the net curve position is smaller than the
                             // minimum transaction amount and the trade fails,
@@ -116,11 +118,12 @@ impl State {
 
                     // NOTE: We round the difference down to underestimate the
                     // impact of closing the net curve position.
-                    I256::from(
+                    I256::try_from(
                         max_share_payment
                             + (net_curve_position - max_curve_trade)
                                 .div_down(self.vault_share_price()),
                     )
+                    .unwrap()
                 }
             }
             Ordering::Equal => int256!(0),
@@ -138,13 +141,16 @@ impl State {
         //
         // Compute the net of the longs and shorts that will be traded flat and
         // apply this net to the reserves.
-        I256::from(self.shorts_outstanding().mul_div_down(
+        I256::try_from(self.shorts_outstanding().mul_div_down(
             fixed!(1e18) - short_average_time_remaining,
             self.vault_share_price(),
-        )) - I256::from(self.longs_outstanding().mul_div_up(
-            fixed!(1e18) - long_average_time_remaining,
-            self.vault_share_price(),
         ))
+        .unwrap()
+            - I256::try_from(self.longs_outstanding().mul_div_up(
+                fixed!(1e18) - long_average_time_remaining,
+                self.vault_share_price(),
+            ))
+            .unwrap()
     }
 }
 

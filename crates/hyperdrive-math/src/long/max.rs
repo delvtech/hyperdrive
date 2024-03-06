@@ -529,9 +529,9 @@ mod tests {
                 let value = rng.gen_range(fixed!(0)..=FixedPoint::from(I256::MAX));
                 let sign = rng.gen::<bool>();
                 if sign {
-                    -I256::from(value)
+                    -I256::try_from(value).unwrap()
                 } else {
-                    I256::from(value)
+                    I256::try_from(value).unwrap()
                 }
             };
             let actual =

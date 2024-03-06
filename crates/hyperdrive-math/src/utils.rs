@@ -27,9 +27,10 @@ pub fn get_time_stretch(rate: FixedPoint, position_duration: FixedPoint) -> Fixe
     // ) * timeStretch
     //
     // NOTE: Round down so that the output is an underestimate.
-    (FixedPoint::from(FixedPoint::ln(I256::from(
-        fixed!(1e18) + rate.mul_div_down(position_duration, seconds_in_a_year),
-    ))) / FixedPoint::from(FixedPoint::ln(I256::from(fixed!(1e18) + rate))))
+    (FixedPoint::from(FixedPoint::ln(
+        I256::try_from(fixed!(1e18) + rate.mul_div_down(position_duration, seconds_in_a_year))
+            .unwrap(),
+    )) / FixedPoint::from(FixedPoint::ln(I256::try_from(fixed!(1e18) + rate).unwrap())))
         * time_stretch
 }
 
@@ -37,7 +38,7 @@ pub fn get_effective_share_reserves(
     share_reserves: FixedPoint,
     share_adjustment: I256,
 ) -> FixedPoint {
-    let effective_share_reserves = I256::from(share_reserves) - share_adjustment;
+    let effective_share_reserves = I256::try_from(share_reserves).unwrap() - share_adjustment;
     if effective_share_reserves < I256::from(0) {
         panic!("effective share reserves cannot be negative");
     }
