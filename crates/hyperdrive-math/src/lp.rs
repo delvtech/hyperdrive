@@ -75,7 +75,7 @@ impl State {
                     match self
                         .calculate_shares_out_given_bonds_in_down_safe(net_curve_position.into())
                     {
-                        Ok(net_curve_trade) => --I256::try_from(net_curve_trade).unwrap(),
+                        Ok(net_curve_trade) => -I256::try_from(net_curve_trade).unwrap(),
                         Err(err) => {
                             // If the net curve position is smaller than the
                             // minimum transaction amount and the trade fails,
