@@ -256,7 +256,7 @@ impl State {
     /// exposure after opening a long with $x$ base as:
     ///
     /// \begin{aligned}
-    /// z(x) &= z_0 + \tfrac{x - g(x)}{c} - z_{min} \\
+    /// z(x) &= z_0 + \tfrac{x - g(x)}{c} \\
     /// e(x) &= e_0 + min(exposure_{c}, 0) + 2 \cdot y(x) - x + g(x) \\
     ///      &= e_0 + min(exposure_{c}, 0) + 2 \cdot p_r^{-1} \cdot x -
     ///             2 \cdot c(x) - x + g(x)
