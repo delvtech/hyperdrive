@@ -214,15 +214,27 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
                     IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
                 );
             }
+
+            // Distribute the excess idle to the withdrawal pool. If the
+            // distribute excess idle calculation fails, we revert to avoid
+            // putting the system in an unhealthy state after the trade is
+            // processed.
+            bool success = _distributeExcessIdleSafe(vaultSharePrice);
+            if (!success) {
+                revert IHyperdrive.DistributeExcessIdleFailed();
+            }
         } else {
             // Apply the zombie close to the state and adjust the share proceeds
             // to account for negative interest that might have accrued to the
             // zombie share reserves.
             shareProceeds = _applyZombieClose(shareProceeds, vaultSharePrice);
-        }
 
-        // Distribute the excess idle to the withdrawal pool.
-        _distributeExcessIdle(vaultSharePrice);
+            // Distribute the excess idle to the withdrawal pool. If the
+            // distribute excess idle calculation fails, we proceed with the
+            // calculation since traders should be able to close their positions
+            // at maturity regardless of whether idle could be distributed.
+            _distributeExcessIdleSafe(vaultSharePrice);
+        }
 
         // Withdraw the profit to the trader. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
@@ -341,8 +353,13 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             );
         }
 
-        // Distribute the excess idle to the withdrawal pool.
-        _distributeExcessIdle(_vaultSharePrice);
+        // Distribute the excess idle to the withdrawal pool. If the distribute
+        // excess idle calculation fails, we revert to avoid putting the system
+        // in an unhealthy state after the trade is processed.
+        bool success = _distributeExcessIdleSafe(_vaultSharePrice);
+        if (!success) {
+            revert IHyperdrive.DistributeExcessIdleFailed();
+        }
     }
 
     /// @dev Applies the trading deltas from a closed short to the reserves and

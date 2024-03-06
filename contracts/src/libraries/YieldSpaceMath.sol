@@ -101,7 +101,7 @@ library YieldSpaceMath {
     /// @param t The time elapsed since the term's start.
     /// @param c The vault share price.
     /// @param mu The initial vault share price.
-    /// @return The amount of shares the trader pays.
+    /// @return result The amount of shares the trader pays.
     function calculateSharesInGivenBondsOutUp(
         uint256 ze,
         uint256 y,
@@ -109,27 +109,61 @@ library YieldSpaceMath {
         uint256 t,
         uint256 c,
         uint256 mu
-    ) internal pure returns (uint256) {
+    ) internal pure returns (uint256 result) {
+        bool success;
+        (result, success) = calculateSharesInGivenBondsOutUpSafe(
+            ze,
+            y,
+            dy,
+            t,
+            c,
+            mu
+        );
+        if (!success) {
+            Errors.throwInsufficientLiquidityError(
+                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
+            );
+        }
+    }
+
+    /// @dev Calculates the amount of shares a user must provide the pool to
+    ///      receive a specified amount of bonds. This function returns a
+    ///      success flag instead of reverting. We overestimate the amount of
+    ///      shares in.
+    /// @param ze The effective share reserves.
+    /// @param y The bond reserves.
+    /// @param dy The amount of bonds paid to the trader.
+    /// @param t The time elapsed since the term's start.
+    /// @param c The vault share price.
+    /// @param mu The initial vault share price.
+    /// @return The amount of shares the trader pays.
+    /// @return A flag indicating if the calculation succeeded.
+    function calculateSharesInGivenBondsOutUpSafe(
+        uint256 ze,
+        uint256 y,
+        uint256 dy,
+        uint256 t,
+        uint256 c,
+        uint256 mu
+    ) internal pure returns (uint256, bool) {
         // NOTE: We round k up to make the lhs of the equation larger.
         //
         // k = (c / µ) * (µ * ze)^(1 - t) + y^(1 - t)
         uint256 k = kUp(ze, y, t, c, mu);
 
-        // If y < dy, we have no choice but to revert.
+        // If y < dy, we return a failure flag since the calculation would have
+        // underflowed.
         if (y < dy) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
-            );
+            return (0, false);
         }
 
         // (y - dy)^(1 - t)
         y = (y - dy).pow(t);
 
-        // If k < y, we have no choice but to revert.
+        // If k < y, we return a failure flag since the calculation would have
+        // underflowed.
         if (k < y) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
-            );
+            return (0, false);
         }
 
         // NOTE: We round _z up to make the lhs of the equation larger.
@@ -146,15 +180,14 @@ library YieldSpaceMath {
         // ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
         _z = _z.divUp(mu);
 
-        // If _z < ze, we have no choice but to revert.
+        // If _z < ze, we return a failure flag since the calculation would have
+        // underflowed.
         if (_z < ze) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
-            );
+            return (0, false);
         }
 
         // Δz = (((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ - ze
-        return _z - ze;
+        return (_z - ze, true);
     }
 
     /// @dev Calculates the amount of shares a user must provide the pool to
@@ -267,8 +300,8 @@ library YieldSpaceMath {
     /// @param t The time elapsed since the term's start.
     /// @param c The vault share price.
     /// @param mu The initial vault share price.
-    /// @return result The amount of shares the user receives
-    /// @return success A flag indicating if the calculation succeeded.
+    /// @return The amount of shares the user receives
+    /// @return A flag indicating if the calculation succeeded.
     function calculateSharesOutGivenBondsInDownSafe(
         uint256 ze,
         uint256 y,
@@ -276,7 +309,7 @@ library YieldSpaceMath {
         uint256 t,
         uint256 c,
         uint256 mu
-    ) internal pure returns (uint256 result, bool success) {
+    ) internal pure returns (uint256, bool) {
         // NOTE: We round k up to make the rhs of the equation larger.
         //
         // k = (c / µ) * (µ * ze)^(1 - t) + y^(1 - t)
@@ -304,28 +337,34 @@ library YieldSpaceMath {
         // ((k - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
         _z = _z.divUp(mu);
 
-        // Δz = ze - ((k - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t)) / µ
-        if (ze > _z) {
-            result = ze - _z;
+        // If ze is less than _z, we return a failure flag since the calculation
+        // underflowed.
+        if (ze < _z) {
+            return (0, false);
         }
-        success = true;
+
+        // Δz = ze - ((k - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t)) / µ
+        return (ze - _z, true);
     }
 
     /// @dev Calculates the share payment required to purchase the maximum
-    ///      amount of bonds from the pool.
+    ///      amount of bonds from the pool. This function returns a success flag
+    ///      instead of reverting. We round so that the max buy amount is
+    ///      underestimated.
     /// @param ze The effective share reserves.
     /// @param y The bond reserves.
     /// @param t The time elapsed since the term's start.
     /// @param c The vault share price.
     /// @param mu The initial vault share price.
     /// @return The share payment to purchase the maximum amount of bonds.
-    function calculateMaxBuySharesIn(
+    /// @return A flag indicating if the calculation succeeded.
+    function calculateMaxBuySharesInSafe(
         uint256 ze,
         uint256 y,
         uint256 t,
         uint256 c,
         uint256 mu
-    ) internal pure returns (uint256) {
+    ) internal pure returns (uint256, bool) {
         // We solve for the maximum buy using the constraint that the pool's
         // spot price can never exceed 1. We do this by noting that a spot price
         // of 1, ((mu * ze) / y) ** tau = 1, implies that mu * ze = y. This
@@ -347,12 +386,17 @@ library YieldSpaceMath {
         }
         optimalZe = optimalZe.divDown(mu);
 
-        // The optimal trade size is given by dz = ze' - ze.
-        return optimalZe - ze;
+        // The optimal trade size is given by dz = ze' - ze. If the calculation
+        // underflows, we return a failure flag.
+        if (optimalZe < ze) {
+            return (0, false);
+        }
+        return (optimalZe - ze, true);
     }
 
     /// @dev Calculates the maximum amount of bonds that can be purchased with
-    ///      the specified reserves. We round so that the max buy amount is
+    ///      the specified reserves. This function returns a success flag
+    ///      instead of reverting. We round so that the max buy amount is
     ///      underestimated.
     /// @param ze The effective share reserves.
     /// @param y The bond reserves.
@@ -360,13 +404,14 @@ library YieldSpaceMath {
     /// @param c The vault share price.
     /// @param mu The initial vault share price.
     /// @return The maximum amount of bonds that can be purchased.
-    function calculateMaxBuyBondsOut(
+    /// @return A flag indicating if the calculation succeeded.
+    function calculateMaxBuyBondsOutSafe(
         uint256 ze,
         uint256 y,
         uint256 t,
         uint256 c,
         uint256 mu
-    ) internal pure returns (uint256) {
+    ) internal pure returns (uint256, bool) {
         // We can use the same derivation as in `calculateMaxBuySharesIn` to
         // calculate the minimum bond reserves as:
         //
@@ -381,8 +426,12 @@ library YieldSpaceMath {
             optimalY = optimalY.pow(ONE.divDown(t));
         }
 
-        // The optimal trade size is given by dy = y - y'.
-        return y - optimalY;
+        // The optimal trade size is given by dy = y - y'. If the calculation
+        // underflows, we return a failure flag.
+        if (y < optimalY) {
+            return (0, false);
+        }
+        return (y - optimalY, true);
     }
 
     /// @dev Calculates the maximum amount of bonds that can be sold with the
@@ -425,7 +474,14 @@ library YieldSpaceMath {
         // y' = (k - (c / mu) * (mu * zMin) ** (1 - tau)) ** (1 / (1 - tau)).
         uint256 ze = HyperdriveMath.calculateEffectiveShareReserves(z, zeta);
         uint256 k = kDown(ze, y, t, c, mu);
-        uint256 optimalY = k - c.mulDivUp(mu.mulUp(zMin).pow(t), mu);
+        uint256 rhs = c.mulDivUp(mu.mulUp(zMin).pow(t), mu);
+        if (k < rhs) {
+            return (0, false);
+        }
+        uint256 optimalY;
+        unchecked {
+            optimalY = k - rhs;
+        }
         if (optimalY >= ONE) {
             // Rounding the exponent down results in a smaller outcome.
             optimalY = optimalY.pow(ONE.divDown(t));

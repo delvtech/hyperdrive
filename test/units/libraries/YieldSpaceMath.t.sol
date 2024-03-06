@@ -236,20 +236,24 @@ contract YieldSpaceMathTest is Test {
         );
 
         // Calculatethe share payment and bonds proceeds of the max buy.
-        uint256 maxDy = yieldSpaceMath.calculateMaxBuyBondsOut(
+        (uint256 maxDy, bool success) = yieldSpaceMath
+            .calculateMaxBuyBondsOutSafe(
+                shareReserves,
+                bondReserves,
+                1e18 - ONE.mulDown(timeStretch),
+                vaultSharePrice,
+                initialVaultSharePrice
+            );
+        assertEq(success, true);
+        uint256 maxDz;
+        (maxDz, success) = yieldSpaceMath.calculateMaxBuySharesInSafe(
             shareReserves,
             bondReserves,
             1e18 - ONE.mulDown(timeStretch),
             vaultSharePrice,
             initialVaultSharePrice
         );
-        uint256 maxDz = yieldSpaceMath.calculateMaxBuySharesIn(
-            shareReserves,
-            bondReserves,
-            1e18 - ONE.mulDown(timeStretch),
-            vaultSharePrice,
-            initialVaultSharePrice
-        );
+        assertEq(success, true);
 
         // Ensure that the maximum buy is a valid trade on this invariant and
         // that the ending spot price is close to 1.
