@@ -1237,6 +1237,7 @@ contract LPMathTest is HyperdriveTest {
                     params,
                     originalEffectiveShareReserves
                 );
+            assertEq(success, true);
             uint256 shareProceeds = lpMath_
                 .calculateDistributeExcessIdleShareProceeds(
                     params,
