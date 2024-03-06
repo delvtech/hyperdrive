@@ -24,6 +24,10 @@ impl State {
     }
 
     /// Gets the pool's solvency.
+    ///
+    /// $$
+    /// s = z - \tfrac{exposure}{c} - z_min
+    /// $$
     pub fn get_solvency(&self) -> FixedPoint {
         self.share_reserves()
             - self.long_exposure() / self.vault_share_price()
@@ -107,7 +111,7 @@ impl State {
             // numbers.
             //
             // Proceed to the next step of Newton's method. Once we have a
-            // candidate solution, we check to see if the pool is solvent if
+            // candidate solution, we check to see if the pool is solvent after
             // a long is opened with the candidate amount. If the pool isn't
             // solvent, then we're done.
             let maybe_derivative = self.solvency_after_long_derivative(max_base_amount);
@@ -157,7 +161,9 @@ impl State {
         //
         // y_t = (mu * z_t) * ((1 + curveFee * (1 / p_0 - 1) * (1 - flatFee)) / (1 - flatFee)) ** (1 / t_s)
         //
-        // We can use this formula to solve our YieldSpace invariant for z_t:
+        // Our equation for price is the inverse of that used by YieldSpace, which must be considered when
+        // deriving the invariant from the price equation.
+        // With this in mind, we can use this formula to solve our YieldSpace invariant for z_t:
         //
         // k = (c / mu) * (mu * z_t) ** (1 - t_s) +
         //     (
