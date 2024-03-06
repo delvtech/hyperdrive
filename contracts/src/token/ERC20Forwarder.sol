@@ -28,9 +28,6 @@ contract ERC20Forwarder is IERC20Forwarder {
     /// @notice A mapping from a user to their nonce for permit signatures.
     mapping(address user => uint256 nonce) public nonces;
 
-    /// @notice The EIP712 domain separator for this contract
-    bytes32 public immutable DOMAIN_SEPARATOR; // solhint-disable-line var-name-mixedcase
-
     /// @notice The EIP712 typehash for the permit struct used by this contract
     ///         to validate permit signatures.
     bytes32 public constant PERMIT_TYPEHASH =
@@ -47,21 +44,24 @@ contract ERC20Forwarder is IERC20Forwarder {
 
         // Load the initialization data from the factory.
         (token, tokenId) = factory.getDeployDetails();
+    }
 
-        // Computes the EIP712 domain separator which prevents user signed
-        // messages for this contract to be replayed in other contracts:
-        // https://eips.ethereum.org/EIPS/eip-712.
-        DOMAIN_SEPARATOR = keccak256(
-            abi.encode(
-                keccak256(
-                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-                ),
-                keccak256(bytes(token.name(tokenId))),
-                keccak256(bytes("1")),
-                block.chainid,
-                address(this)
-            )
-        );
+    /// @notice Computes the EIP712 domain separator which prevents user signed
+    ///         messages for this contract to be replayed in other contracts:
+    ///         https://eips.ethereum.org/EIPS/eip-712.
+    /// @return The EIP712 domain separator.
+    function domainSeparator() public view returns (bytes32) {
+        return
+            keccak256(
+                abi.encode(
+                    keccak256(
+                        "EIP712Domain(string version,uint256 chainId,address verifyingContract)"
+                    ),
+                    keccak256(bytes("1")),
+                    block.chainid,
+                    address(this)
+                )
+            );
     }
 
     /// @notice Returns the decimals for this ERC20 interface. Hyperdrive's
@@ -229,7 +229,7 @@ contract ERC20Forwarder is IERC20Forwarder {
         bytes32 structHash = keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                DOMAIN_SEPARATOR,
+                domainSeparator(),
                 keccak256(
                     abi.encode(
                         PERMIT_TYPEHASH,

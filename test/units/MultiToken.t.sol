@@ -72,7 +72,7 @@ contract MultiTokenTest is BaseTest {
         bytes32 structHash = keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                multiToken.DOMAIN_SEPARATOR(),
+                multiToken.domainSeparator(),
                 keccak256(
                     abi.encode(
                         PERMIT_TYPEHASH,
@@ -115,7 +115,7 @@ contract MultiTokenTest is BaseTest {
         bytes32 structHash = keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                multiToken.DOMAIN_SEPARATOR(),
+                multiToken.domainSeparator(),
                 keccak256(
                     abi.encode(
                         PERMIT_TYPEHASH,
@@ -156,7 +156,7 @@ contract MultiTokenTest is BaseTest {
         bytes32 structHash = keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                multiToken.DOMAIN_SEPARATOR(),
+                multiToken.domainSeparator(),
                 keccak256(
                     abi.encode(
                         PERMIT_TYPEHASH,
@@ -197,7 +197,7 @@ contract MultiTokenTest is BaseTest {
         bytes32 structHash = keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                multiToken.DOMAIN_SEPARATOR(),
+                multiToken.domainSeparator(),
                 keccak256(
                     abi.encode(
                         PERMIT_TYPEHASH,
@@ -277,7 +277,7 @@ contract MultiTokenTest is BaseTest {
         bytes32 structHash = keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                multiToken.DOMAIN_SEPARATOR(),
+                multiToken.domainSeparator(),
                 keccak256(
                     abi.encode(
                         PERMIT_TYPEHASH,
