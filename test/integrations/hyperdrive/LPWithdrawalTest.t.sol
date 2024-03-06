@@ -1971,15 +1971,17 @@ contract LPWithdrawalTest is HyperdriveTest {
         // Get the maximum share reserves delta prior to removing liquidity.
         LPMath.DistributeExcessIdleParams memory params = hyperdrive
             .getDistributeExcessIdleParams();
-        uint256 maxBaseReservesDelta = LPMath
-            .calculateMaxShareReservesDelta(
+        (uint256 maxShareReservesDelta, ) = LPMath
+            .calculateMaxShareReservesDeltaSafe(
                 params,
                 HyperdriveMath.calculateEffectiveShareReserves(
                     params.originalShareReserves,
                     params.originalShareAdjustment
                 )
-            )
-            .mulDown(hyperdrive.getPoolInfo().vaultSharePrice);
+            );
+        uint256 maxBaseReservesDelta = maxShareReservesDelta.mulDown(
+            hyperdrive.getPoolInfo().vaultSharePrice
+        );
 
         // Remove the liquidity.
         uint256 idleBefore = hyperdrive.idle();

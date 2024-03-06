@@ -123,6 +123,7 @@ library LPMath {
         uint256 vaultSharePrice;
         uint256 initialVaultSharePrice;
         uint256 minimumShareReserves;
+        uint256 minimumTransactionAmount;
         uint256 timeStretch;
         uint256 longsOutstanding;
         uint256 longAverageTimeRemaining;
@@ -142,15 +143,18 @@ library LPMath {
             _params
         );
         if (!success) {
-            revert IHyperdrive.NegativePresentValue();
+            revert IHyperdrive.InvalidPresentValue();
         }
         return presentValue;
     }
 
     /// @dev Calculates the present value LPs capital in the pool and returns
     ///      a flag indicating whether the calculation succeeded or failed.
-    ///      This calculation underestimates the present value to avoid paying
-    ///      out more than the pool can afford.
+    ///      For the most part, this calculation underestimates the present
+    ///      value to avoid paying out more than the pool can afford; however,
+    ///      it adheres faithfully to the rounding utilized when positions are
+    ///      closed to accurately simulate the impact of closing the net curve
+    ///      position.
     /// @param _params The parameters for the present value calculation.
     /// @return The present value of the pool.
     /// @return A flag indicating whether the calculation succeeded or failed.
@@ -178,8 +182,8 @@ library LPMath {
                 int256(_params.minimumShareReserves);
         }
 
-        // If the present value is negative, return a status code indicating the
-        // failure.
+        // If the present value is negative, return a failure flag indicating
+        // the failure.
         if (presentValue < 0) {
             return (0, false);
         }
@@ -248,8 +252,14 @@ library LPMath {
             // If the max curve trade is greater than the net curve position,
             // then we can close the entire net curve position.
             if (maxCurveTrade >= netCurvePosition_) {
-                uint256 netCurveTrade = YieldSpaceMath
-                    .calculateSharesOutGivenBondsInDown(
+                // NOTE: We round in the same direction as when closing longs
+                // to accurately estimate the impact of closing the net curve
+                // position.
+                //
+                // Calculate the net curve trade.
+                uint256 netCurveTrade;
+                (netCurveTrade, success) = YieldSpaceMath
+                    .calculateSharesOutGivenBondsInDownSafe(
                         effectiveShareReserves,
                         _params.bondReserves,
                         netCurvePosition_,
@@ -257,6 +267,22 @@ library LPMath {
                         _params.vaultSharePrice,
                         _params.initialVaultSharePrice
                     );
+
+                // If the net curve position is smaller than the minimum
+                // transaction amount and the trade fails, we mark it to 0. This
+                // prevents liveness problems when the net curve position is
+                // very small.
+                if (
+                    !success &&
+                    netCurvePosition_ < _params.minimumTransactionAmount
+                ) {
+                    return (0, true);
+                }
+                // Otherwise, we return a failure flag.
+                else if (!success) {
+                    return (0, false);
+                }
+
                 return (-int256(netCurveTrade), true);
             }
             // Otherwise, we can only close part of the net curve position.
@@ -297,19 +323,29 @@ library LPMath {
 
             // Calculate the maximum amount of bonds that can be bought on
             // YieldSpace.
-            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxBuyBondsOut(
-                effectiveShareReserves,
-                _params.bondReserves,
-                ONE - _params.timeStretch,
-                _params.vaultSharePrice,
-                _params.initialVaultSharePrice
-            );
+            (uint256 maxCurveTrade, bool success) = YieldSpaceMath
+                .calculateMaxBuyBondsOutSafe(
+                    effectiveShareReserves,
+                    _params.bondReserves,
+                    ONE - _params.timeStretch,
+                    _params.vaultSharePrice,
+                    _params.initialVaultSharePrice
+                );
+            if (!success) {
+                return (0, false);
+            }
 
             // If the max curve trade is greater than the net curve position,
             // then we can close the entire net curve position.
             if (maxCurveTrade >= netCurvePosition_) {
-                uint256 netCurveTrade = YieldSpaceMath
-                    .calculateSharesInGivenBondsOutUp(
+                // NOTE: We round in the same direction as when closing shorts
+                // to accurately estimate the impact of closing the net curve
+                // position.
+                //
+                // Calculate the net curve trade.
+                uint256 netCurveTrade;
+                (netCurveTrade, success) = YieldSpaceMath
+                    .calculateSharesInGivenBondsOutUpSafe(
                         effectiveShareReserves,
                         _params.bondReserves,
                         netCurvePosition_,
@@ -317,20 +353,42 @@ library LPMath {
                         _params.vaultSharePrice,
                         _params.initialVaultSharePrice
                     );
+
+                // If the net curve position is smaller than the minimum
+                // transaction amount and the trade fails, we mark it to 0. This
+                // prevents liveness problems when the net curve position is
+                // very small.
+                if (
+                    !success &&
+                    netCurvePosition_ < _params.minimumTransactionAmount
+                ) {
+                    return (0, true);
+                }
+                // Otherwise, we return a failure flag.
+                else if (!success) {
+                    return (0, false);
+                }
+
                 return (int256(netCurveTrade), true);
             }
             // Otherwise, we can only close part of the net curve position.
             // Since the spot price is equal to one after closing the entire net
             // curve position, we mark any remaining bonds to one.
             else {
-                uint256 maxSharePayment = YieldSpaceMath
-                    .calculateMaxBuySharesIn(
+                // Calculate the max share payment.
+                uint256 maxSharePayment;
+                (maxSharePayment, success) = YieldSpaceMath
+                    .calculateMaxBuySharesInSafe(
                         effectiveShareReserves,
                         _params.bondReserves,
                         ONE - _params.timeStretch,
                         _params.vaultSharePrice,
                         _params.initialVaultSharePrice
                     );
+                if (!success) {
+                    return (0, false);
+                }
+
                 return (
                     // NOTE: We round the difference down to underestimate the
                     // impact of closing the net curve position.
@@ -417,16 +475,23 @@ library LPMath {
         DistributeExcessIdleParams memory _params
     ) internal pure returns (uint256, uint256) {
         // Steps 1 and 2: Calculate the maximum amount the share reserves can be
-        // debited.
+        // debited. If the maximum share reserves delta can't be calculated,
+        // idle can't be distributed.
         uint256 originalEffectiveShareReserves = HyperdriveMath
             .calculateEffectiveShareReserves(
                 _params.originalShareReserves,
                 _params.originalShareAdjustment
             );
-        uint256 maxShareReservesDelta = calculateMaxShareReservesDelta(
-            _params,
-            originalEffectiveShareReserves
-        );
+        (
+            uint256 maxShareReservesDelta,
+            bool success
+        ) = calculateMaxShareReservesDeltaSafe(
+                _params,
+                originalEffectiveShareReserves
+            );
+        if (!success) {
+            return (0, 0);
+        }
 
         // Step 3: Calculate the amount of withdrawal shares that can be
         // redeemed given the maximum share reserves delta.  Otherwise, we
@@ -463,9 +528,18 @@ library LPMath {
         // anything.
         uint256 shareProceeds = calculateDistributeExcessIdleShareProceeds(
             _params,
-            originalEffectiveShareReserves
+            originalEffectiveShareReserves,
+            maxShareReservesDelta
         );
         if (shareProceeds == 0) {
+            return (0, 0);
+        }
+
+        // Step 4: If the share proceeds are greater than or equal to the
+        // maximum share reserves delta that was previously calculated, then
+        // we can't distribute excess idle since we ruled out the possibility
+        // of paying out the full maximum share reserves delta in step 3.
+        if (shareProceeds >= maxShareReservesDelta) {
             return (0, 0);
         }
 
@@ -541,24 +615,18 @@ library LPMath {
     /// @param _params The parameters for the distribute excess idle calculation.
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
+    /// @param _maxShareReservesDelta The maximum change in the share reserves
+    ///        that can result from distributing excess idle. This provides an
+    ///        upper bound on the share proceeds returned from this calculation.
     /// @return The share proceeds to distribute to the withdrawal pool.
     function calculateDistributeExcessIdleShareProceeds(
         DistributeExcessIdleParams memory _params,
-        uint256 _originalEffectiveShareReserves
+        uint256 _originalEffectiveShareReserves,
+        uint256 _maxShareReservesDelta
     ) internal pure returns (uint256) {
         // Calculate the LP total supply.
         uint256 lpTotalSupply = _params.activeLpTotalSupply +
             _params.withdrawalSharesTotalSupply;
-
-        // If the pool is net neutral, we can solve directly.
-        if (_params.netCurveTrade == 0) {
-            // NOTE: Round down since this is the final result.
-            return
-                _params.startingPresentValue.mulDivDown(
-                    _params.withdrawalSharesTotalSupply,
-                    lpTotalSupply
-                );
-        }
 
         // NOTE: Round the initial guess down to avoid overshooting.
         //
@@ -568,15 +636,25 @@ library LPMath {
         // withdrawal pool should receive more than this, but it's a good
         // starting point. The calculation is:
         //
-        // x_0 = (PV(0) / l) * w
+        // x_0 = w * (PV(0) / l)
         uint256 shareProceeds = _params.withdrawalSharesTotalSupply.mulDivDown(
             _params.startingPresentValue,
             lpTotalSupply
         );
 
+        // If the pool is net neutral, the initial guess is equal to the final
+        // result.
+        if (_params.netCurveTrade == 0) {
+            return shareProceeds;
+        }
+
         // If the net curve trade is positive, the pool is net long.
         if (_params.netCurveTrade > 0) {
             for (uint256 i = 0; i < SHARE_PROCEEDS_MAX_ITERATIONS; ) {
+                // Clamp the share proceeds to the max share reserves delta
+                // since values above this threshold are always invalid.
+                shareProceeds = shareProceeds.min(_maxShareReservesDelta);
+
                 // Simulate applying the share proceeds to the reserves and
                 // recalculate the present value.
                 (
@@ -609,25 +687,29 @@ library LPMath {
                 // amount of bonds that can be sold with this share proceeds, we
                 // can calculate the derivative using the derivative of
                 // `calculateSharesOutGivenBondsIn`.
+                DistributeExcessIdleParams memory params = _params; // avoid stack-too-deep
                 (uint256 maxBondAmount, bool success) = YieldSpaceMath
                     .calculateMaxSellBondsInSafe(
-                        _params.presentValueParams.shareReserves,
-                        _params.presentValueParams.shareAdjustment,
-                        _params.presentValueParams.bondReserves,
-                        _params.presentValueParams.minimumShareReserves,
-                        ONE - _params.presentValueParams.timeStretch,
-                        _params.presentValueParams.vaultSharePrice,
-                        _params.presentValueParams.initialVaultSharePrice
+                        params.presentValueParams.shareReserves,
+                        params.presentValueParams.shareAdjustment,
+                        params.presentValueParams.bondReserves,
+                        params.presentValueParams.minimumShareReserves,
+                        ONE - params.presentValueParams.timeStretch,
+                        params.presentValueParams.vaultSharePrice,
+                        params.presentValueParams.initialVaultSharePrice
                     );
                 if (!success) {
-                    break;
+                    // NOTE: If the max bond amount couldn't be calculated, we
+                    // can't continue the calculation. Return 0 to indicate that
+                    // the share proceeds couldn't be calculated.
+                    return 0;
                 }
                 uint256 derivative;
                 if (uint256(_params.netCurveTrade) <= maxBondAmount) {
                     (
                         derivative,
                         success
-                    ) = calculateSharesOutGivenBondsInDerivativeSafe(
+                    ) = calculateSharesOutGivenBondsInDerivativeNegationSafe(
                         _params,
                         _originalEffectiveShareReserves,
                         uint256(_params.netCurveTrade)
@@ -639,20 +721,64 @@ library LPMath {
                     }
                     derivative = ONE - derivative;
                 }
-                // Otherwise, we can solve directly for the share proceeds.
+                // Otherwise, the objective becomes linear, and we can solve for
+                // the next step in Newton's method directly.
                 else {
+                    // Solve the objective function directly assuming that it is
+                    // linear with respect to the share proceeds.
                     (
                         shareProceeds,
                         success
                     ) = calculateDistributeExcessIdleShareProceedsNetLongEdgeCaseSafe(
-                        _params
+                        params
                     );
                     if (!success) {
                         // NOTE: Return 0 to indicate that the share proceeds
                         // couldn't be calculated.
                         return 0;
                     }
-                    return shareProceeds;
+
+                    // Simulate applying the share proceeds to the reserves and
+                    // recalculate the max bond amount.
+                    (
+                        params.presentValueParams.shareReserves,
+                        params.presentValueParams.shareAdjustment,
+                        params.presentValueParams.bondReserves
+                    ) = calculateUpdateLiquidity(
+                        params.originalShareReserves,
+                        params.originalShareAdjustment,
+                        params.originalBondReserves,
+                        params.presentValueParams.minimumShareReserves,
+                        -int256(shareProceeds)
+                    );
+                    (maxBondAmount, success) = YieldSpaceMath
+                        .calculateMaxSellBondsInSafe(
+                            params.presentValueParams.shareReserves,
+                            params.presentValueParams.shareAdjustment,
+                            params.presentValueParams.bondReserves,
+                            params.presentValueParams.minimumShareReserves,
+                            ONE - params.presentValueParams.timeStretch,
+                            params.presentValueParams.vaultSharePrice,
+                            params.presentValueParams.initialVaultSharePrice
+                        );
+                    if (!success) {
+                        // NOTE: Return 0 to indicate that the share proceeds
+                        // couldn't be calculated.
+                        return 0;
+                    }
+
+                    // If the max bond amount is greater than or equal to the
+                    // net curve trade, then Newton's method has terminated since
+                    // proceeding to the next step would result in reaching the
+                    // same point.
+                    if (maxBondAmount >= uint256(params.netCurveTrade)) {
+                        return shareProceeds;
+                    }
+                    // Otherwise, we continue to the next iteration of Newton's
+                    // method.
+                    else {
+                        continue;
+                    }
                 }
 
                 // NOTE: Round the delta down to avoid overshooting.
@@ -667,8 +793,8 @@ library LPMath {
                 // F(x) = PV(x) * l - PV(0) * (l - w)
                 int256 delta = int256(presentValue.mulDown(lpTotalSupply)) -
                     int256(
-                        _params.startingPresentValue.mulUp(
-                            _params.activeLpTotalSupply
+                        params.startingPresentValue.mulUp(
+                            params.activeLpTotalSupply
                         )
                     );
                 if (delta > 0) {
@@ -701,6 +827,10 @@ library LPMath {
         // Otherwise, the pool is net short.
         else {
             for (uint256 i = 0; i < SHARE_PROCEEDS_MAX_ITERATIONS; ) {
+                // Clamp the share proceeds to the max share reserves delta
+                // since values above this threshold are always invalid.
+                shareProceeds = shareProceeds.min(_maxShareReservesDelta);
+
                 // Simulate applying the share proceeds to the reserves and
                 // recalculate the present value.
                 (
@@ -729,10 +859,11 @@ library LPMath {
                     break;
                 }
 
-                // If the net curve trade is less than or equal to the maximum
-                // amount of bonds that can be sold with this share proceeds, we
-                // can calculate the derivative using the derivative of
-                // `calculateSharesOutGivenBondsIn`.
+                // Since the share proceeds are clamped to the max share
+                // reserves delta, we are always operating with the regime where
+                // the net curve trade is less than the maximum bond amount.
+                // With this in mind, we can calculate the derivative using the
+                // derivative of `calculateSharesInGivenBondsOut`.
                 (
                     uint256 derivative,
                     bool success
@@ -797,15 +928,46 @@ library LPMath {
         return shareProceeds;
     }
 
-    /// @dev When the pool is net long and we have begun to mark longs to zero,
-    ///      we can solve directly for the share proceeds as:
+    /// @dev One of the edge cases that occurs when using Newton's method for
+    ///      the share proceeds while distributing excess idle is when the net
+    ///      curve trade is larger than the max bond amount. In this case, the
+    ///      the present value simplifies to the following:
     ///
-    ///      shareProceeds = z - ((PV(0) / l) * (l - w) - net_f) / (zeta / z)
+    ///      PV(dz) = (z - dz) + net_c(dz) + net_f - z_min
+    ///             = (z - dz) - y_max_out(dz) + net_f - z_min
     ///
-    ///      This formula assumes that the share adjustment is positive.
-    ///      Otherwise, the calculation is undefined, and we return a failure
-    ///      flag. We round down to err on the side of the withdrawal pool
-    ///      receiving slightly less shares.
+    ///      There are two cases to evaluate:
+    ///
+    ///      (1) zeta > 0:
+    ///
+    ///          y_max_out(dz) = (z - dz) - zeta * ((z - dz) / z) - z_min
+    ///
+    ///          =>
+    ///
+    ///          PV(dz) = zeta * ((z - dz) / z) + net_f
+    ///
+    ///      (2) zeta <= 0:
+    ///
+    ///          y_max_out(dz) = (z - dz) - z_min
+    ///
+    ///          =>
+    ///
+    ///          PV(dz) = net_f
+    ///
+    ///      Since the present value is constant with respect to the share
+    ///      proceeds in case 2, Newton's method has achieved a stationary point
+    ///      and can't proceed. On the other hand, the present value is linear
+    ///      with respect to the share proceeds, and we can solve for the next
+    ///      step of Newton's method directly as follows:
+    ///
+    ///      PV(0) / l = PV(dz) / (l - w)
+    ///
+    ///      =>
+    ///
+    ///      dz = z - ((PV(0) / l) * (l - w) - net_f) / (zeta / z)
+    ///
+    ///      We round the share proceeds down to err on the side of the
+    ///      withdrawal pool receiving slightly less shares.
     /// @param _params The parameters for the calculation.
     /// @return The share proceeds.
     /// @return A flag indicating whether the calculation was successful.
@@ -819,12 +981,7 @@ library LPMath {
             return (0, false);
         }
 
-        // Calculate the net flat trade using the original reserves.
-        _params.presentValueParams.shareReserves = _params
-            .originalShareReserves;
-        _params.presentValueParams.shareAdjustment = _params
-            .originalShareAdjustment;
-        _params.presentValueParams.bondReserves = _params.originalBondReserves;
+        // Calculate the net flat trade.
         int256 netFlatTrade = calculateNetFlatTrade(_params.presentValueParams);
 
         // NOTE: Round up since this is the rhs of the final subtraction.
@@ -877,17 +1034,28 @@ library LPMath {
         uint256 _lpTotalSupply,
         uint256 _presentValue
     ) internal pure returns (bool) {
-        uint256 lpSharePriceBefore = _params.startingPresentValue.divDown(
-            _lpTotalSupply
-        );
-        uint256 lpSharePriceAfter = _presentValue.divDown(
-            _params.activeLpTotalSupply
-        );
         return
-            lpSharePriceAfter >= lpSharePriceBefore &&
-            lpSharePriceAfter <=
-            // NOTE: Round down to make the check stricter.
-            lpSharePriceBefore.mulDown(ONE + SHARE_PROCEEDS_MIN_TOLERANCE);
+            // Ensure that new LP share price is greater than or equal to the
+            // previous LP share price:
+            //
+            // PV_1 / l_1 >= PV_0 / l_0
+            //
+            // NOTE: Round the LHS down to make the check stricter.
+            _presentValue.divDown(_params.activeLpTotalSupply) >=
+            // NOTE: Round the RHS up to make the check stricter.
+            _params.startingPresentValue.divUp(_lpTotalSupply) &&
+            // Ensure that new LP share price is less than or equal to the
+            // previous LP share price plus the minimum tolerance:
+            //
+            // PV_1 / l_1 <= (PV_0 / l_0) * (1 + tolerance)
+            //
+            // NOTE: Round the LHS up to make the check stricter.
+            _presentValue.divUp(_params.activeLpTotalSupply) <=
+            // NOTE: Round the RHS down to make the check stricter.
+            (ONE + SHARE_PROCEEDS_MIN_TOLERANCE).mulDivDown(
+                _params.startingPresentValue,
+                _lpTotalSupply
+            );
     }
 
     /// @dev Calculates the upper bound on the share proceeds of distributing
@@ -900,16 +1068,31 @@ library LPMath {
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
     /// @return maxShareReservesDelta The upper bound on the share proceeds.
-    function calculateMaxShareReservesDelta(
+    /// @return success A flag indicating if the calculation succeeded.
+    function calculateMaxShareReservesDeltaSafe(
         DistributeExcessIdleParams memory _params,
         uint256 _originalEffectiveShareReserves
-    ) internal pure returns (uint256 maxShareReservesDelta) {
+    ) internal pure returns (uint256 maxShareReservesDelta, bool success) {
         // If the net curve position is zero or net long, then the maximum
         // share reserves delta is equal to the pool's idle.
         if (_params.netCurveTrade >= 0) {
-            return _params.idle;
+            return (_params.idle, true);
         }
         uint256 netCurveTrade = uint256(-_params.netCurveTrade);
+
+        // Calculate the max bond amount. If the calculation fails, we return a
+        // failure flag.
+        uint256 maxBondAmount;
+        (maxBondAmount, success) = YieldSpaceMath.calculateMaxBuyBondsOutSafe(
+            _originalEffectiveShareReserves,
+            _params.originalBondReserves,
+            ONE - _params.presentValueParams.timeStretch,
+            _params.presentValueParams.vaultSharePrice,
+            _params.presentValueParams.initialVaultSharePrice
+        );
+        if (!success) {
+            return (0, false);
+        }
 
         // We can solve for the maximum share reserves delta in one shot using
         // the fact that the maximum amount of bonds that can be purchased is
@@ -929,15 +1112,7 @@ library LPMath {
         // s * y_out^max(z, y, zeta) - netCurveTrade = 0
         //                        =>
         // s = netCurveTrade / y_out^max(z, y, zeta)
-        uint256 maxScalingFactor = netCurveTrade.divUp(
-            YieldSpaceMath.calculateMaxBuyBondsOut(
-                _originalEffectiveShareReserves,
-                _params.originalBondReserves,
-                ONE - _params.presentValueParams.timeStretch,
-                _params.presentValueParams.vaultSharePrice,
-                _params.presentValueParams.initialVaultSharePrice
-            )
-        );
+        uint256 maxScalingFactor = netCurveTrade.divUp(maxBondAmount);
 
         // Using the maximum scaling factor, we can calculate the maximum share
         // reserves delta as:
@@ -948,21 +1123,24 @@ library LPMath {
                 ONE - maxScalingFactor
             );
         } else {
-            return 0;
+            // NOTE: If the max scaling factor is greater than one, the
+            // calculation fails and we return a failure flag.
+            return (0, false);
         }
 
         // If the maximum share reserves delta is greater than the idle, then
         // the maximum share reserves delta is equal to the idle.
         if (maxShareReservesDelta > _params.idle) {
-            return _params.idle;
+            return (_params.idle, true);
         }
-        return maxShareReservesDelta;
+        return (maxShareReservesDelta, true);
     }
 
-    /// @dev Calculates the derivative of `calculateSharesOutGivenBondsIn`. This
-    ///      derivative is given by:
+    /// @dev Calculates the negation of the derivative of
+    ///      `calculateSharesOutGivenBondsIn`. The negation of the derivative is
+    ///      given by:
     ///
-    ///      derivative = - (1 - zeta / z) * (
+    ///      derivative = (1 - zeta / z) * (
     ///          1 - (1 / c) * (
     ///              c * (mu * z_e(x)) ** -t_s +
     ///              (y / z_e) * y(x) ** -t_s  -
@@ -972,16 +1150,26 @@ library LPMath {
     ///          ) ** (t_s / (1 - t_s))
     ///      )
     ///
-    ///      We round down to avoid overshooting the optimal solution in Newton's
-    ///      method (the derivative we use is 1 minus this derivative so this
-    ///      rounds the derivative up).
+    ///      This quantity is used in Newton's method to search for the optimal
+    ///      share proceeds. We can express the derivative of the objective
+    ///      function F(x) by the derivative -z_out'(x) this function returns:
+    ///
+    ///      -F'(x) = l * -PV'(x)
+    ///             = l * (1 - net_c'(x))
+    ///             = l * (1 + z_out'(x))
+    ///             = l * (1 - derivative)
+    ///
+    ///      With this in mind, this function rounds its result down so that
+    ///      F'(x) is overestimated. Since F'(x) is in the denominator of
+    ///      Newton's method, overestimating F'(x) helps to avoid overshooting
+    ///      the optimal solution.
     /// @param _params The parameters for the calculation.
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
     /// @param _bondAmount The amount of bonds to sell.
     /// @return The derivative.
     /// @return A flag indicating whether the derivative could be computed.
-    function calculateSharesOutGivenBondsInDerivativeSafe(
+    function calculateSharesOutGivenBondsInDerivativeNegationSafe(
         DistributeExcessIdleParams memory _params,
         uint256 _originalEffectiveShareReserves,
         uint256 _bondAmount
@@ -1065,7 +1253,7 @@ library LPMath {
         );
 
         // derivative = 1 - derivative
-        if (ONE >= derivative) {
+        if (ONE > derivative) {
             derivative = ONE - derivative;
         } else {
             // NOTE: Small rounding errors can result in the derivative being
@@ -1109,9 +1297,19 @@ library LPMath {
     ///          ) ** (t_s / (1 - t_s)) - 1
     ///      )
     ///
-    ///      We round down to avoid overshooting the optimal solution in
-    ///      Newton's method (the derivative we use is 1 minus this derivative
-    ///      so this rounds the derivative up).
+    ///      This quantity is used in Newton's method to search for the optimal
+    ///      share proceeds. We can express the derivative of the objective
+    ///      function F(x) by the derivative z_in'(x) this function returns:
+    ///
+    ///      -F'(x) = l * -PV'(x)
+    ///             = l * (1 - net_c'(x))
+    ///             = l * (1 - z_in'(x))
+    ///             = l * (1 - derivative)
+    ///
+    ///      With this in mind, this function rounds its result down so that
+    ///      F'(x) is overestimated. Since F'(x) is in the denominator of
+    ///      Newton's method, overestimating F'(x) helps to avoid overshooting
+    ///      the optimal solution.
     /// @param _params The parameters for the calculation.
     /// @param _originalEffectiveShareReserves The original effective share
     ///        reserves.
@@ -1210,7 +1408,7 @@ library LPMath {
         );
 
         // derivative = 1 - derivative
-        if (ONE >= derivative) {
+        if (ONE > derivative) {
             derivative = ONE - derivative;
         } else {
             // NOTE: Small rounding errors can result in the derivative being

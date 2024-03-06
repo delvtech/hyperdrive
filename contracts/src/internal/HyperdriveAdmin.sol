@@ -15,7 +15,9 @@ import { HyperdriveBase } from "./HyperdriveBase.sol";
 abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
     /// @dev This function collects the governance fees accrued by the pool.
     /// @param _options The options that configure how the fees are settled.
-    /// @return proceeds The amount collected in units specified by _options.
+    /// @return proceeds The governance fees collected. The units of this
+    ///         quantity are either base or vault shares, depending on the value
+    ///         of `_options.asBase`.
     function _collectGovernanceFee(
         IHyperdrive.Options calldata _options
     ) internal nonReentrant returns (uint256 proceeds) {
@@ -71,16 +73,16 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
     }
 
     /// @dev Allows governance to change the pauser status of an address.
-    /// @param who The address to change.
-    /// @param status The new pauser status.
-    function _setPauser(address who, bool status) internal {
+    /// @param _who The address to change.
+    /// @param _status The new pauser status.
+    function _setPauser(address _who, bool _status) internal {
         // Ensure that the sender is governance.
         if (msg.sender != _governance) {
             revert IHyperdrive.Unauthorized();
         }
 
         // Update the pauser status and emit an event.
-        _pausers[who] = status;
-        emit PauserUpdated(who);
+        _pausers[_who] = _status;
+        emit PauserUpdated(_who, _status);
     }
 }

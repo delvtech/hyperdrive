@@ -108,21 +108,18 @@ library AssetId {
         uint256 _num
     ) internal pure returns (string memory result) {
         // We overallocate memory for the string. The maximum number of digits
-        // that a uint256 can hold is log_10(2 ^ 255) which is approximately
-        // 76.
-        uint256 maxStringLength = 77;
+        // that a uint256 can hold is log_10(2 ^ 256) which is approximately
+        // 77.06. We round up so that we have space for the last digit.
+        uint256 maxStringLength = 78;
         bytes memory rawResult = new bytes(maxStringLength);
 
         // Loop through the integer and add each digit to the raw result,
         // starting at the end of the string and working towards the beginning.
-        rawResult[maxStringLength - 1] = bytes1(uint8((_num % 10) + 48));
-        _num /= 10;
-        uint256 digits = 1;
-        while (_num != 0) {
+        uint256 digits = 0;
+        for (; _num != 0; _num /= 10) {
             rawResult[maxStringLength - digits - 1] = bytes1(
                 uint8((_num % 10) + 48)
             );
-            _num /= 10;
             digits++;
         }
 

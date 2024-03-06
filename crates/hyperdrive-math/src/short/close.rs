@@ -26,7 +26,8 @@ impl State {
             // payment.
             //
             let curve_bonds_in = bond_amount * normalized_time_remaining;
-            self.calculate_shares_in_given_bonds_out_up(curve_bonds_in)
+            self.calculate_shares_in_given_bonds_out_up_safe(curve_bonds_in)
+                .unwrap()
         } else {
             fixed!(0)
         };
@@ -61,7 +62,7 @@ impl State {
         }
     }
 
-    /// Gets the amount of shares the trader will receive after fees for closing a long
+    /// Gets the amount of shares the trader will receive after fees for closing a short
     pub fn calculate_close_short<F: Into<FixedPoint>>(
         &self,
         bond_amount: F,

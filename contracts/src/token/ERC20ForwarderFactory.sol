@@ -3,7 +3,6 @@ pragma solidity 0.8.20;
 
 import { IERC20Forwarder } from "../interfaces/IERC20Forwarder.sol";
 import { IERC20ForwarderFactory } from "../interfaces/IERC20ForwarderFactory.sol";
-import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IMultiToken } from "../interfaces/IMultiToken.sol";
 import { ERC20Forwarder } from "./ERC20Forwarder.sol";
 

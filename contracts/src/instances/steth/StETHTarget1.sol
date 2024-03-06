@@ -15,9 +15,9 @@ import { StETHBase } from "./StETHBase.sol";
 contract StETHTarget1 is HyperdriveTarget1, StETHBase {
     /// @notice Initializes the target1 contract.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _lido The Lido contract.
+    /// @param __lido The Lido contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        ILido _lido
-    ) HyperdriveTarget1(_config) StETHBase(_lido) {}
+        ILido __lido
+    ) HyperdriveTarget1(_config) StETHBase(__lido) {}
 }

@@ -679,14 +679,6 @@ contract HyperdriveFactory is IHyperdriveFactory {
             );
         }
 
-        // Refund any excess ether that was sent to this contract.
-        if (refund > 0) {
-            (bool success, ) = payable(msg.sender).call{ value: refund }("");
-            if (!success) {
-                revert IHyperdriveFactory.TransferFailed();
-            }
-        }
-
         // Set the default pausers and transfer the governance status to the
         // hyperdrive governance address.
         for (uint256 i = 0; i < _defaultPausers.length; ) {
@@ -696,6 +688,14 @@ contract HyperdriveFactory is IHyperdriveFactory {
             }
         }
         hyperdrive.setGovernance(hyperdriveGovernance);
+
+        // Refund any excess ether that was sent to this contract.
+        if (refund > 0) {
+            (bool success, ) = payable(msg.sender).call{ value: refund }("");
+            if (!success) {
+                revert IHyperdriveFactory.TransferFailed();
+            }
+        }
 
         return hyperdrive;
     }
@@ -789,7 +789,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
         if (startIndex > endIndex) {
             revert IHyperdriveFactory.InvalidIndexes();
         }
-        if (endIndex > _instances.length) {
+        if (endIndex >= _instances.length) {
             revert IHyperdriveFactory.EndIndexTooLarge();
         }
 
@@ -829,7 +829,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
         if (startIndex > endIndex) {
             revert IHyperdriveFactory.InvalidIndexes();
         }
-        if (endIndex > _deployerCoordinators.length) {
+        if (endIndex >= _deployerCoordinators.length) {
             revert IHyperdriveFactory.EndIndexTooLarge();
         }
 

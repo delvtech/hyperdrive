@@ -25,12 +25,16 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
     /// @dev Opens a short position.
     /// @param _bondAmount The amount of bonds to short.
     /// @param _maxDeposit The most the user expects to deposit for this trade.
+    ///        The units of this quantity are either base or vault shares,
+    ///        depending on the value of `_options.asBase`.
     /// @param _minVaultSharePrice The minimum vault share price at which to open
     ///        the short. This allows traders to protect themselves from opening
     ///        a short in a checkpoint where negative interest has accrued.
     /// @param _options The options that configure how the trade is settled.
     /// @return The maturity time of the short.
-    /// @return The amount the user deposited for this trade.
+    /// @return The amount the user deposited for this trade. The units of this
+    ///         quantity are either base or vault shares, depending on the value
+    ///         of `_options.asBase`.
     function _openShort(
         uint256 _bondAmount,
         uint256 _maxDeposit,
@@ -79,18 +83,19 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // equal to the proceeds that they would receive if they closed
         // immediately (without fees). Trader deposit is created to ensure that
         // the input to _deposit is denominated according to _options.
-        // Note: We don't check the maxDeposit against the output of deposit
+        //
+        // NOTE: We don't check the maxDeposit against the output of deposit
         // because slippage from a deposit could cause a larger deposit taken
         // from the user to pass due to the shares being worth less after deposit.
-        uint256 shareDeposit = _convertToOptionFromBase(
+        uint256 deposit = _convertToOptionFromBase(
             baseDeposit,
             vaultSharePrice,
             _options
         );
-        if (_maxDeposit < shareDeposit) {
+        if (_maxDeposit < deposit) {
             revert IHyperdrive.OutputLimit();
         }
-        _deposit(shareDeposit, _options);
+        _deposit(deposit, _options);
 
         // Apply the state updates caused by opening the short.
         // Note: Updating the state using the result using the
@@ -118,8 +123,8 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             options.destination,
             assetId,
             maturityTime,
-            baseDeposit,
-            baseDeposit.divDown(vaultSharePrice_),
+            baseDeposit, // base deposit
+            _convertToVaultSharesFromOption(deposit, vaultSharePrice_, options), // vault shares deposit
             options.asBase,
             _convertToBaseFromOption(
                 // We add the governance fee to the share reserves delta since
@@ -131,15 +136,19 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             bondAmount
         );
 
-        return (maturityTime, shareDeposit);
+        return (maturityTime, deposit);
     }
 
     /// @dev Closes a short position with a specified maturity time.
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of shorts to close.
-    /// @param _minOutput The minimum output of this trade.
+    /// @param _minOutput The minimum output of this trade. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
     /// @param _options The options that configure how the trade is settled.
-    /// @return The amount of base tokens produced by closing this short.
+    /// @return The proceeds of closing this short. The units of this quantity
+    ///         are either base or vault shares, depending on the value of
+    ///         `_options.asBase`.
     function _closeShort(
         uint256 _maturityTime,
         uint256 _bondAmount,
@@ -205,15 +214,27 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
                     IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
                 );
             }
+
+            // Distribute the excess idle to the withdrawal pool. If the
+            // distribute excess idle calculation fails, we revert to avoid
+            // putting the system in an unhealthy state after the trade is
+            // processed.
+            bool success = _distributeExcessIdleSafe(vaultSharePrice);
+            if (!success) {
+                revert IHyperdrive.DistributeExcessIdleFailed();
+            }
         } else {
             // Apply the zombie close to the state and adjust the share proceeds
             // to account for negative interest that might have accrued to the
             // zombie share reserves.
             shareProceeds = _applyZombieClose(shareProceeds, vaultSharePrice);
-        }
 
-        // Distribute the excess idle to the withdrawal pool.
-        _distributeExcessIdle(vaultSharePrice);
+            // Distribute the excess idle to the withdrawal pool. If the
+            // distribute excess idle calculation fails, we proceed with the
+            // calculation since traders should be able to close their positions
+            // at maturity regardless of whether idle could be distributed.
+            _distributeExcessIdleSafe(vaultSharePrice);
+        }
 
         // Withdraw the profit to the trader. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
@@ -221,16 +242,11 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         uint256 proceeds = _withdraw(shareProceeds, vaultSharePrice, _options);
 
         // Enforce the user's minimum output.
-        // Note: We use the value that is returned from the
-        // withdraw to check against the minOutput because
-        // in the event of slippage on the withdraw, we want
-        // it to be caught be the minOutput check.
-        uint256 baseProceeds = _convertToBaseFromOption(
-            proceeds,
-            vaultSharePrice,
-            _options
-        );
-        if (baseProceeds < _minOutput) {
+        //
+        // NOTE: We use the value that is returned from the withdraw to check
+        // against the minOutput because in the event of slippage on the
+        // withdraw, we want it to be caught be the minOutput check.
+        if (proceeds < _minOutput) {
             revert IHyperdrive.OutputLimit();
         }
 
@@ -243,7 +259,9 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             options.destination,
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime),
             maturityTime,
-            baseProceeds,
+            // base proceeds
+            _convertToBaseFromOption(proceeds, vaultSharePrice_, options),
+            // vault shares proceeds
             _convertToVaultSharesFromOption(
                 proceeds,
                 vaultSharePrice_,
@@ -335,8 +353,13 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             );
         }
 
-        // Distribute the excess idle to the withdrawal pool.
-        _distributeExcessIdle(_vaultSharePrice);
+        // Distribute the excess idle to the withdrawal pool. If the distribute
+        // excess idle calculation fails, we revert to avoid putting the system
+        // in an unhealthy state after the trade is processed.
+        bool success = _distributeExcessIdleSafe(_vaultSharePrice);
+        if (!success) {
+            revert IHyperdrive.DistributeExcessIdleFailed();
+        }
     }
 
     /// @dev Applies the trading deltas from a closed short to the reserves and

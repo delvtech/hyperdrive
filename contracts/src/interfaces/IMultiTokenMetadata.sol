@@ -9,6 +9,5 @@ interface IMultiTokenMetadata {
 
     /// @notice Gets the EIP712 domain separator of the MultiToken.
     /// @return The EIP712 domain separator of the MultiToken.
-    // solhint-disable func-name-mixedcase
-    function DOMAIN_SEPARATOR() external view returns (bytes32);
+    function domainSeparator() external view returns (bytes32);
 }

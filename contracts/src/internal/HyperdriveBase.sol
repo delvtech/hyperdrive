@@ -27,12 +27,14 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
     /// Yield Source ///
 
     /// @dev A YieldSource dependent check that prevents ether from being
-    ///         transferred to Hyperdrive instances that don't accept ether.
+    ///      transferred to Hyperdrive instances that don't accept ether.
     function _checkMessageValue() internal view virtual;
 
-    /// @dev Transfers base from the user and commits it to the yield source.
-    /// @param _amount The amount of base to deposit.
-    /// @param _options The options that configure how the withdrawal is
+    /// @dev Accepts a deposit from the user and commits it to the yield source.
+    /// @param _amount The amount of capital to deposit. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
+    /// @param _options The options that configure how the deposit is
     ///        settled. In particular, the currency used in the deposit is
     ///        specified here. Aside from those options, yield sources can
     ///        choose to implement additional options.
@@ -43,18 +45,20 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         IHyperdrive.Options calldata _options
     ) internal virtual returns (uint256 sharesMinted, uint256 vaultSharePrice);
 
-    /// @dev Withdraws shares from the yield source and sends the base
-    ///         released to the destination.
-    /// @param _shares The shares to withdraw from the yield source.
-    /// @param _sharePrice The share price.
+    /// @dev Withdraws shares from the yield source and sends the proceeds to
+    ///      the destination.
+    /// @param _shares The vault shares to withdraw from the yield source.
+    /// @param _vaultSharePrice The vault share price.
     /// @param _options The options that configure how the withdrawal is
     ///        settled. In particular, the destination and currency used in the
     ///        withdrawal are specified here. Aside from those options, yield
     ///        sources can choose to implement additional options.
-    /// @return amountWithdrawn The amount of base released by the withdrawal.
+    /// @return amountWithdrawn The proceeds of the withdrawal. The units of
+    ///        this quantity are either base or vault shares, depending on the
+    ///        value of `_options.asBase`.
     function _withdraw(
         uint256 _shares,
-        uint256 _sharePrice,
+        uint256 _vaultSharePrice,
         IHyperdrive.Options calldata _options
     ) internal virtual returns (uint256 amountWithdrawn);
 
@@ -176,18 +180,30 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
     /// @dev Gets the distribute excess idle parameters from the current state.
     /// @param _vaultSharePrice The current vault share price.
     /// @return params The distribute excess idle parameters.
-    function _getDistributeExcessIdleParams(
+    /// @return success A failure flag indicating if the calculation succeeded.
+    function _getDistributeExcessIdleParamsSafe(
         uint256 _idle,
         uint256 _withdrawalSharesTotalSupply,
         uint256 _vaultSharePrice
-    ) internal view returns (LPMath.DistributeExcessIdleParams memory params) {
+    )
+        internal
+        view
+        returns (LPMath.DistributeExcessIdleParams memory params, bool success)
+    {
+        // Calculate the starting present value. If this fails, we return a
+        // failure flag and proceed to avoid impacting checkpointing liveness.
         LPMath.PresentValueParams
             memory presentValueParams = _getPresentValueParams(
                 _vaultSharePrice
             );
-        uint256 startingPresentValue = LPMath.calculatePresentValue(
+        uint256 startingPresentValue;
+        (startingPresentValue, success) = LPMath.calculatePresentValueSafe(
             presentValueParams
         );
+        if (!success) {
+            return (params, false);
+        }
+
         // NOTE: For consistency with the present value calculation, we round
         // up the long side and round down the short side.
         int256 netCurveTrade = int256(
@@ -211,6 +227,7 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
             originalShareAdjustment: presentValueParams.shareAdjustment,
             originalBondReserves: presentValueParams.bondReserves
         });
+        success = true;
     }
 
     /// @dev Gets the present value parameters from the current state.
@@ -226,6 +243,7 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
             vaultSharePrice: _vaultSharePrice,
             initialVaultSharePrice: _initialVaultSharePrice,
             minimumShareReserves: _minimumShareReserves,
+            minimumTransactionAmount: _minimumTransactionAmount,
             timeStretch: _timeStretch,
             longsOutstanding: _marketState.longsOutstanding,
             longAverageTimeRemaining: _calculateTimeRemainingScaled(
@@ -427,25 +445,46 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         return idleShares;
     }
 
-    /// @dev Calculates the LP share price.
+    /// @dev Calculates the LP share price. If the LP share price can't be
+    ///      calculated, this function returns a failure flag.
     /// @param _vaultSharePrice The current vault share price.
-    /// @return lpSharePrice The LP share price in units of (base / lp shares).
-    function _calculateLPSharePrice(
+    /// @return The LP share price in units of (base / lp shares).
+    /// @return A flag indicating if the calculation succeeded.
+    function _calculateLPSharePriceSafe(
         uint256 _vaultSharePrice
-    ) internal view returns (uint256 lpSharePrice) {
+    ) internal view returns (uint256, bool) {
+        // Calculate the present value safely to prevent liveness problems. If
+        // the calculation fails, we return 0.
+        (uint256 presentValueShares, bool success) = LPMath
+            .calculatePresentValueSafe(
+                _getPresentValueParams(_vaultSharePrice)
+            );
+        if (!success) {
+            return (0, false);
+        }
+
         // NOTE: Round down to underestimate the LP share price.
+        //
+        // Calculate the present value in base and the LP total supply.
         uint256 presentValue = _vaultSharePrice > 0
-            ? LPMath
-                .calculatePresentValue(_getPresentValueParams(_vaultSharePrice))
-                .mulDown(_vaultSharePrice)
+            ? presentValueShares.mulDown(_vaultSharePrice)
             : 0;
         uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
             _totalSupply[AssetId._WITHDRAWAL_SHARE_ASSET_ID] -
             _withdrawPool.readyToWithdraw;
-        lpSharePrice = lpTotalSupply == 0
-            ? 0 // NOTE: Round down to underestimate the LP share price.
-            : presentValue.divDown(lpTotalSupply);
-        return lpSharePrice;
+
+        // If the LP total supply is zero, the LP share price can't be computed
+        // due to a divide-by-zero error.
+        if (lpTotalSupply == 0) {
+            return (0, false);
+        }
+
+        // NOTE: Round down to underestimate the LP share price.
+        //
+        // Calculate the LP share price.
+        uint256 lpSharePrice = presentValue.divDown(lpTotalSupply);
+
+        return (lpSharePrice, true);
     }
 
     /// @dev Calculates the fees that go to the LPs and governance.
