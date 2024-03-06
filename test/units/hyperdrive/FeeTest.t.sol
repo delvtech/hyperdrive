@@ -260,8 +260,8 @@ contract FeeTest is HyperdriveTest {
             POSITION_DURATION
         );
         uint256 expectedFeeSubtractedFromShareReserves = bondsPurchased
-            .mulDown(flatFee)
-            .mulDown(normalizedTimeRemaining);
+            .mulUp(flatFee)
+            .mulUp(normalizedTimeRemaining);
 
         // (Share Reserves Without Any Fees bc They All Went to Governance) + (10% Flat X 100% Governance Fees) - (Share Reserves With Flat Fee) = 0
         assertEq(
@@ -346,9 +346,9 @@ contract FeeTest is HyperdriveTest {
             uint256 expectedFeeSubtractedFromShareReserves = ONE - spotPrice;
             uint256 _curveFee = curveFee;
             expectedFeeSubtractedFromShareReserves = expectedFeeSubtractedFromShareReserves
-                .mulDown(_curveFee)
-                .mulDown(bondsPurchased)
-                .mulDown(normalizedTimeRemaining);
+                .mulUp(_curveFee)
+                .mulUp(bondsPurchased)
+                .mulUp(normalizedTimeRemaining);
 
             // actual curve fee from close long should equal the expected curve fee from close long
             assertEq(
