@@ -551,6 +551,60 @@ contract RETHHyperdriveTest is HyperdriveTest {
     //     );
     // }
 
+    function test_close_long_with_eth(
+        uint256 basePaid,
+        int256 variableRate
+    ) external {
+        // 0.01 ether is the minimum amount that can be deposited
+        // into Rocket Pool.
+        vm.assume(basePaid > 0.01 ether);
+        vm.assume(variableRate > 0);
+
+        // Accrue interest for a term to ensure that the share price is greater
+        // than one.
+        advanceTime(POSITION_DURATION, 0.05e18);
+        vm.startPrank(bob);
+
+        // Bob opens a long, paying with ether.
+        basePaid = basePaid.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            HyperdriveUtils.calculateMaxLong(hyperdrive)
+        );
+        (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
+
+        // The term passes and some interest accrues.
+        variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        advanceTime(POSITION_DURATION, variableRate);
+
+        // Get some balance information before the withdrawal.
+        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
+        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
+            address(hyperdrive)
+        );
+        uint256 totalRethSharesBefore = rocketTokenRETH.totalSupply();
+
+        // Bob closes his long with stETH as the target asset.
+        uint256 shareProceeds = closeLong(bob, maturityTime, longAmount, true);
+        uint256 baseProceeds = rocketTokenRETH.getEthValue(shareProceeds);
+
+        // Ensure Bob is credited the correct amount of bonds.
+        assertLe(baseProceeds, longAmount);
+        assertApproxEqAbs(baseProceeds, longAmount, 10);
+
+        // Ensure that Rocket Pool's aggregates and the token balances were updated
+        // correctly during the trade.
+        // verifyRETHWithdrawal(
+        //     bob,
+        //     shareProceeds,
+        //     true,
+        //     totalRethSharesBefore,
+        //     bobBalancesBefore,
+        //     hyperdriveBalancesBefore
+        // );
+
+        vm.stopPrank();
+    }
+
     function test_close_long_with_reth(
         uint256 basePaid,
         int256 variableRate
