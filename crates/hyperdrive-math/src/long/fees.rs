@@ -12,7 +12,6 @@ impl State {
     /// c(x) = \phi_{c} \cdot \left( \tfrac{1}{p} - 1 \right) \cdot x
     /// $$
     pub fn open_long_curve_fees(&self, base_amount: FixedPoint) -> FixedPoint {
-        // curve fee = ((1 / p) - 1) * phi_curve * dz
         self.curve_fee() * ((fixed!(1e18) / self.get_spot_price()) - fixed!(1e18)) * base_amount
     }
 
