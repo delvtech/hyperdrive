@@ -84,8 +84,8 @@ abstract contract Hyperdrive is
     ///         stateful functions.
     address public immutable target3;
 
-    /// @notice The target4 address. This is a logic contract that contains all
-    ///         some stateful functions.
+    /// @notice The target4 address. This is a logic contract that contains
+    ///         stateful functions.
     address public immutable target4;
 
     /// @notice The typehash used to calculate the EIP712 hash for `permitForAll`.
@@ -93,9 +93,6 @@ abstract contract Hyperdrive is
         keccak256(
             "PermitForAll(address owner,address spender,bool _approved,uint256 nonce,uint256 deadline)"
         );
-
-    /// @notice This contract's EIP712 domain separator.
-    bytes32 public immutable DOMAIN_SEPARATOR; // solhint-disable-line var-name-mixedcase
 
     /// @notice Instantiates a Hyperdrive pool.
     /// @param _config The configuration of the pool.
@@ -118,22 +115,6 @@ abstract contract Hyperdrive is
         target2 = _target2;
         target3 = _target3;
         target4 = _target4;
-
-        // NOTE: It's convenient to keep this in the `Hyperdrive.sol`
-        //       entry-point to avoiding issues with initializing the domain
-        //       separator with the contract address. If this is moved to one of
-        //       the targets, the domain separator will need to be computed
-        //       differently.
-        DOMAIN_SEPARATOR = keccak256(
-            abi.encode(
-                keccak256(
-                    "EIP712Domain(string version,uint256 chainId,address verifyingContract)"
-                ),
-                keccak256(bytes("1")),
-                block.chainid,
-                address(this)
-            )
-        );
     }
 
     /// @notice If we get to the fallback function, we make a read-only
@@ -354,7 +335,7 @@ abstract contract Hyperdrive is
             abi.encodeCall(
                 HyperdriveTarget0.permitForAll,
                 (
-                    DOMAIN_SEPARATOR,
+                    domainSeparator(),
                     PERMIT_TYPEHASH,
                     owner,
                     spender,
@@ -374,6 +355,26 @@ abstract contract Hyperdrive is
         assembly {
             return(add(result, 32), mload(result))
         }
+    }
+
+    /// EIP712
+
+    /// @notice Computes the EIP712 domain separator which prevents user signed
+    ///         messages for this contract to be replayed in other contracts:
+    ///         https://eips.ethereum.org/EIPS/eip-712.
+    /// @return The EIP712 domain separator.
+    function domainSeparator() public view returns (bytes32) {
+        return
+            keccak256(
+                abi.encode(
+                    keccak256(
+                        "EIP712Domain(string version,uint256 chainId,address verifyingContract)"
+                    ),
+                    keccak256(bytes("1")),
+                    block.chainid,
+                    address(this)
+                )
+            );
     }
 
     /// Helpers ///

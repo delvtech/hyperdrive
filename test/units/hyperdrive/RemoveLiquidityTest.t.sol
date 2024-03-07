@@ -48,6 +48,28 @@ contract RemoveLiquidityTest is HyperdriveTest {
         );
     }
 
+    function test_remove_liquidity_fail_destination_zero_address() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        uint256 lpShares = initialize(alice, apr, contribution);
+
+        // Alice attempts to remove 0 lp shares.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        vm.expectRevert(IHyperdrive.RestrictedZeroAddress.selector);
+        hyperdrive.removeLiquidity(
+            lpShares,
+            0,
+            IHyperdrive.Options({
+                destination: address(0),
+                asBase: false,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
     function test_remove_liquidity_fail_insufficient_shares() external {
         uint256 apr = 0.05e18;
 

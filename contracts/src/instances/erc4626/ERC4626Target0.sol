@@ -37,8 +37,8 @@ contract ERC4626Target0 is HyperdriveTarget0, ERC4626Base {
     ///      this in mind, we sweep the tokens to the fee collector address to
     ///      then redistribute to users.
     /// @dev WARN: It is unlikely but possible that there is a selector overlap
-    ///      with 'transferFrom'. Any integrating contracts should be checked
-    ///      for that, as it may result in an unexpected call from this address.
+    ///      with 'transfer'. Any integrating contracts should be checked for
+    ///      that, as it may result in an unexpected call from this address.
     /// @param _target The target token to sweep.
     function sweep(IERC20 _target) external {
         // Ensure that the sender is the fee collector or a pauser.

@@ -1116,14 +1116,26 @@ contract LPMathTest is HyperdriveTest {
                         params.withdrawalSharesTotalSupply
                 );
 
+            // Calculate the original effective share reserves.
+            uint256 originalEffectiveShareReserves = HyperdriveMath
+                .calculateEffectiveShareReserves(
+                    shareReserves,
+                    shareAdjustment
+                );
+
             // Calculate the share proceeds.
-            uint256 shareProceeds = lpMath
+            MockLPMath lpMath_ = lpMath; // avoid stack-too-deep
+            (uint256 maxShareReservesDelta, bool success) = lpMath_
+                .calculateMaxShareReservesDeltaSafe(
+                    params,
+                    originalEffectiveShareReserves
+                );
+            assertEq(success, true);
+            uint256 shareProceeds = lpMath_
                 .calculateDistributeExcessIdleShareProceeds(
                     params,
-                    HyperdriveMath.calculateEffectiveShareReserves(
-                        shareReserves,
-                        shareAdjustment
-                    )
+                    originalEffectiveShareReserves,
+                    maxShareReservesDelta
                 );
 
             // Calculate the ending LP share price.
@@ -1211,14 +1223,26 @@ contract LPMathTest is HyperdriveTest {
                         params.withdrawalSharesTotalSupply
                 );
 
+            // Calculate the original effective share reserves.
+            uint256 originalEffectiveShareReserves = HyperdriveMath
+                .calculateEffectiveShareReserves(
+                    shareReserves,
+                    shareAdjustment
+                );
+
             // Calculate the share proceeds.
-            uint256 shareProceeds = lpMath
+            MockLPMath lpMath_ = lpMath; // avoid stack-too-deep
+            (uint256 maxShareReservesDelta, bool success) = lpMath_
+                .calculateMaxShareReservesDeltaSafe(
+                    params,
+                    originalEffectiveShareReserves
+                );
+            assertEq(success, true);
+            uint256 shareProceeds = lpMath_
                 .calculateDistributeExcessIdleShareProceeds(
                     params,
-                    HyperdriveMath.calculateEffectiveShareReserves(
-                        shareReserves,
-                        shareAdjustment
-                    )
+                    originalEffectiveShareReserves,
+                    maxShareReservesDelta
                 );
 
             // Calculate the ending LP share price.
@@ -1306,14 +1330,26 @@ contract LPMathTest is HyperdriveTest {
                         params.withdrawalSharesTotalSupply
                 );
 
+            // Calculate the original effective share reserves.
+            uint256 originalEffectiveShareReserves = HyperdriveMath
+                .calculateEffectiveShareReserves(
+                    shareReserves,
+                    shareAdjustment
+                );
+
             // Calculate the share proceeds.
-            uint256 shareProceeds = lpMath
+            MockLPMath lpMath_ = lpMath; // avoid stack-too-deep
+            (uint256 maxShareReservesDelta, bool success) = lpMath_
+                .calculateMaxShareReservesDeltaSafe(
+                    params,
+                    originalEffectiveShareReserves
+                );
+            assertEq(success, true);
+            uint256 shareProceeds = lpMath_
                 .calculateDistributeExcessIdleShareProceeds(
                     params,
-                    HyperdriveMath.calculateEffectiveShareReserves(
-                        shareReserves,
-                        shareAdjustment
-                    )
+                    originalEffectiveShareReserves,
+                    maxShareReservesDelta
                 );
 
             // Calculate the ending LP share price.

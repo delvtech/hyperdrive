@@ -22,11 +22,11 @@ contract StETHTarget0 is HyperdriveTarget0, StETHBase {
 
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _lido The Lido contract.
+    /// @param __lido The Lido contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        ILido _lido
-    ) HyperdriveTarget0(_config) StETHBase(_lido) {}
+        ILido __lido
+    ) HyperdriveTarget0(_config) StETHBase(__lido) {}
 
     /// Extras ///
 
@@ -42,7 +42,7 @@ contract StETHTarget0 is HyperdriveTarget0, StETHBase {
             revert IHyperdrive.Unauthorized();
         }
 
-        // Ensure that thet target isn't the stETH token.
+        // Ensure that the target isn't the stETH token.
         if (address(_target) == address(_lido)) {
             revert IHyperdrive.UnsupportedToken();
         }

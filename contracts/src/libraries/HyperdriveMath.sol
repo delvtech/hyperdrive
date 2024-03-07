@@ -38,40 +38,31 @@ library HyperdriveMath {
         );
         timeStretch = ONE.divDown(timeStretch);
 
-        // If the position duration is 1 year, we can return the benchmark.
-        if (_positionDuration == 365 days) {
-            return timeStretch;
-        }
-
-        // Otherwise, we need to adjust the time stretch to account for the
-        // position duration. We do this by holding the reserve ratio constant
-        // and solving for the new time stretch directly.
+        // We know that the following simultaneous equations hold:
         //
-        // We can calculate the spot price at the target apr and position
-        // duration as:
+        // (1 + apr) * A ** timeStretch = 1
         //
-        // p = 1 / (1 + apr * (positionDuration / 365 days))
+        // and
         //
-        // We then calculate the benchmark reserve ratio, `ratio`, implied by
-        // the benchmark time stretch using the `calculateInitialBondReserves`
-        // function.
+        // (1 + apr * (positionDuration / 365 days)) * A ** targetTimeStretch = 1
         //
-        // We can then derive the adjusted time stretch using the spot price
-        // calculation:
+        // where A is the reserve ratio. We can solve these equations for the
+        // target time stretch as follows:
         //
-        // p = ratio ** timeStretch
-        //          =>
-        // timeStretch = ln(p) / ln(ratio)
-        uint256 targetSpotPrice = ONE.divDown(
-            ONE + _apr.mulDivDown(_positionDuration, 365 days)
-        );
-        uint256 benchmarkReserveRatio = ONE.divDown(
-            calculateInitialBondReserves(ONE, ONE, _apr, 365 days, timeStretch)
-        );
+        // targetTimeStretch = (
+        //     ln(1 + apr * (positionDuration / 365 days)) /
+        //     ln(1 + apr)
+        // ) * timeStretch
+        //
+        // NOTE: Round down so that the output is an underestimate.
         return
-            uint256(-int256(targetSpotPrice).ln()).divDown(
-                uint256(-int256(benchmarkReserveRatio).ln())
-            );
+            (
+                uint256(
+                    (ONE + _apr.mulDivDown(_positionDuration, 365 days))
+                        .toInt256()
+                        .ln()
+                ).divDown(uint256((ONE + _apr).toInt256().ln()))
+            ).mulDown(timeStretch);
     }
 
     /// @dev Calculates the spot price of bonds in terms of base. This
@@ -149,7 +140,7 @@ library HyperdriveMath {
         uint256 _shareReserves,
         int256 _shareAdjustment
     ) internal pure returns (uint256) {
-        int256 effectiveShareReserves = int256(_shareReserves) -
+        int256 effectiveShareReserves = _shareReserves.toInt256() -
             _shareAdjustment;
         if (effectiveShareReserves < 0) {
             Errors.throwInsufficientLiquidityError(
@@ -677,8 +668,8 @@ library HyperdriveMath {
             );
             // NOTE: Using unscaled `shareCurveDelta`.
             shareAdjustmentDelta =
-                int256(_shareReservesDelta) -
-                int256(_shareCurveDelta);
+                _shareReservesDelta.toInt256() -
+                _shareCurveDelta.toInt256();
             _shareCurveDelta = _shareCurveDelta.mulDivDown(
                 _closeVaultSharePrice,
                 _openVaultSharePrice
@@ -689,8 +680,8 @@ library HyperdriveMath {
             );
         } else {
             shareAdjustmentDelta =
-                int256(_shareReservesDelta) -
-                int256(_shareCurveDelta);
+                _shareReservesDelta.toInt256() -
+                _shareCurveDelta.toInt256();
         }
 
         return (

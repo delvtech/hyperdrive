@@ -21,6 +21,41 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         vm.recordLogs();
     }
 
+    function test_redeem_withdrawal_shares_failure_destination_zero_address()
+        external
+    {
+        // Initialize the pool.
+        uint256 lpShares = initialize(alice, 0.02e18, 500_000_000e18);
+
+        // Bob opens a large short.
+        uint256 shortAmount = HyperdriveUtils.calculateMaxShort(hyperdrive);
+        (uint256 maturityTime, ) = openShort(bob, shortAmount);
+
+        // Alice removes her liquidity.
+        (, uint256 withdrawalShares) = removeLiquidity(alice, lpShares);
+
+        // The term passes and no interest accrues.
+        advanceTime(POSITION_DURATION, 0);
+
+        // Bob closes his short.
+        closeShort(bob, maturityTime, shortAmount);
+
+        // Alice tries to redeem her withdrawal shares with the destination set
+        // to the zero address.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        vm.expectRevert(IHyperdrive.RestrictedZeroAddress.selector);
+        hyperdrive.redeemWithdrawalShares(
+            withdrawalShares,
+            0,
+            IHyperdrive.Options({
+                destination: address(0),
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
     function test_redeem_withdrawal_shares_failure_output_limit() external {
         // Initialize the pool.
         uint256 lpShares = initialize(alice, 0.02e18, 500_000_000e18);

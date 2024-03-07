@@ -128,7 +128,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
     mapping(address => bool) public isDeployerCoordinator;
 
     /// @notice A mapping from deployed Hyperdrive instances to the deployer
-    ///         coordintor that deployed them. This is useful for verifying
+    ///         coordinator that deployed them. This is useful for verifying
     ///         the bytecode that was used to deploy the instance.
     mapping(address instance => address deployCoordinator)
         public instancesToDeployerCoordinators;
@@ -482,15 +482,16 @@ contract HyperdriveFactory is IHyperdriveFactory {
         // Ensure that the max fees are each less than or equal to 100% and that
         // the max fees are each greater than or equal to the corresponding min
         // fee.
+        IHyperdrive.Fees memory minFees_ = _minFees;
         if (
             __maxFees.curve > ONE ||
             __maxFees.flat > ONE ||
             __maxFees.governanceLP > ONE ||
             __maxFees.governanceZombie > ONE ||
-            __maxFees.curve < _minFees.curve ||
-            __maxFees.flat < _minFees.flat ||
-            __maxFees.governanceLP < _minFees.governanceLP ||
-            __maxFees.governanceZombie < _minFees.governanceZombie
+            __maxFees.curve < minFees_.curve ||
+            __maxFees.flat < minFees_.flat ||
+            __maxFees.governanceLP < minFees_.governanceLP ||
+            __maxFees.governanceZombie < minFees_.governanceZombie
         ) {
             revert IHyperdriveFactory.InvalidMaxFees();
         }
@@ -507,11 +508,12 @@ contract HyperdriveFactory is IHyperdriveFactory {
     ) external onlyGovernance {
         // Ensure that the min fees are each less than or the corresponding max
         // fee.
+        IHyperdrive.Fees memory maxFees_ = _maxFees;
         if (
-            __minFees.curve > _maxFees.curve ||
-            __minFees.flat > _maxFees.flat ||
-            __minFees.governanceLP > _maxFees.governanceLP ||
-            __minFees.governanceZombie > _maxFees.governanceZombie
+            __minFees.curve > maxFees_.curve ||
+            __minFees.flat > maxFees_.flat ||
+            __minFees.governanceLP > maxFees_.governanceLP ||
+            __minFees.governanceZombie > maxFees_.governanceZombie
         ) {
             revert IHyperdriveFactory.InvalidMinFees();
         }
@@ -681,14 +683,6 @@ contract HyperdriveFactory is IHyperdriveFactory {
             );
         }
 
-        // Refund any excess ether that was sent to this contract.
-        if (refund > 0) {
-            (bool success, ) = payable(msg.sender).call{ value: refund }("");
-            if (!success) {
-                revert IHyperdriveFactory.TransferFailed();
-            }
-        }
-
         // Set the default pausers and transfer the governance status to the
         // hyperdrive governance address.
         for (uint256 i = 0; i < _defaultPausers.length; ) {
@@ -698,6 +692,14 @@ contract HyperdriveFactory is IHyperdriveFactory {
             }
         }
         hyperdrive.setGovernance(hyperdriveGovernance);
+
+        // Refund any excess ether that was sent to this contract.
+        if (refund > 0) {
+            (bool success, ) = payable(msg.sender).call{ value: refund }("");
+            if (!success) {
+                revert IHyperdriveFactory.TransferFailed();
+            }
+        }
 
         return hyperdrive;
     }

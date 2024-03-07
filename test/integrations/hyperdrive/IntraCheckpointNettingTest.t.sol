@@ -842,8 +842,64 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             // fast forward time, create checkpoints and accrue interest
             advanceTimeWithCheckpoints(timeElapsed, variableInterest);
 
+            // Bob attempts to add liquidity. If this fails, we record a flag
+            // and ensure that he can add liquidity after the short is opened.
+            bool addLiquiditySuccess;
+            vm.stopPrank();
+            vm.startPrank(celine);
+            uint256 contribution = 500_000_000e18;
+            baseToken.mint(contribution);
+            baseToken.approve(address(hyperdrive), contribution);
+            try
+                hyperdrive.addLiquidity(
+                    contribution,
+                    0, // min lp share price of 0
+                    0, // min spot rate of 0
+                    type(uint256).max, // max spot rate of uint256 max
+                    IHyperdrive.Options({
+                        destination: bob,
+                        asBase: true,
+                        extraData: new bytes(0) // unused
+                    })
+                )
+            returns (uint256 lpShares) {
+                // Adding liquidity succeeded, so we don't need to check again.
+                addLiquiditySuccess = true;
+
+                // Immediately remove the liquidity to avoid interfering with
+                // the remaining test.
+                removeLiquidity(bob, lpShares);
+            } catch (bytes memory reason) {
+                // Adding liquidity failed, so we need to try again after
+                // opening a short.
+                addLiquiditySuccess = true;
+
+                // Ensure that the failure was caused by the present value
+                // calculation failing.
+                assertEq(
+                    keccak256(reason),
+                    keccak256(
+                        abi.encodeWithSelector(
+                            IHyperdrive.InvalidPresentValue.selector
+                        )
+                    )
+                );
+            }
+
+            // Open a short position.
             (uint256 maturityTimeShort, ) = openShort(bob, bondAmount);
             shortMaturityTimes[i] = maturityTimeShort;
+
+            // If adding liquidity failed, we try again to ensure that the LP
+            // can add liquidity when the pool is net neutral.
+            if (!addLiquiditySuccess) {
+                // Attempt to add liquidity. This should succeed.
+                uint256 lpShares = addLiquidity(bob, contribution);
+
+                // Immediately remove the liquidity to avoid interfering with
+                // the remaining test.
+                removeLiquidity(bob, lpShares);
+            }
         }
         removeLiquidity(alice, aliceLpShares);
 

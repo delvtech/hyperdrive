@@ -131,7 +131,7 @@ abstract contract HyperdriveCheckpoint is
                 maturedShortsAmount,
                 0,
                 shareProceeds,
-                int256(shareProceeds), // keep the effective share reserves constant
+                shareProceeds.toInt256(), // keep the effective share reserves constant
                 _checkpointTime
             );
 
@@ -194,7 +194,7 @@ abstract contract HyperdriveCheckpoint is
                 maturedLongsAmount,
                 0,
                 shareProceeds,
-                int256(shareProceeds), // keep the effective share reserves constant
+                shareProceeds.toInt256(), // keep the effective share reserves constant
                 checkpointTime
             );
 
@@ -219,7 +219,7 @@ abstract contract HyperdriveCheckpoint is
             // positions, we can reduce the long exposure for the matured
             // checkpoint to zero.
             _updateLongExposure(
-                int256(maturedLongsAmount) - int256(maturedShortsAmount),
+                maturedLongsAmount.toInt256() - maturedShortsAmount.toInt256(),
                 0
             );
 
@@ -233,7 +233,7 @@ abstract contract HyperdriveCheckpoint is
         // Emit an event about the checkpoint creation that includes the LP
         // share price. If the LP share price calculation fails, we proceed in
         // minting the checkpoint and just emit the LP share price as zero. This
-        // ensures that the system's liveness isn't impacted by temporarilj
+        // ensures that the system's liveness isn't impacted by temporarily
         // being unable to calculate the present value.
         (uint256 lpSharePrice, ) = _calculateLPSharePriceSafe(_vaultSharePrice);
         emit CreateCheckpoint(

@@ -41,7 +41,9 @@ abstract contract HyperdriveTarget0 is
 
     /// @notice This function collects the governance fees accrued by the pool.
     /// @param _options The options that configure how the fees are settled.
-    /// @return proceeds The amount of base collected.
+    /// @return proceeds The governance fees collected. The units of this
+    ///         quantity are either base or vault shares, depending on the value
+    ///         of `_options.asBase`.
     function collectGovernanceFee(
         IHyperdrive.Options calldata _options
     ) external returns (uint256 proceeds) {
@@ -134,8 +136,8 @@ abstract contract HyperdriveTarget0 is
     /// @param tokenID The asset to approve the use of.
     /// @param operator The address who will be able to use the tokens.
     /// @param amount The max tokens the approved person can use, setting to
-    ///        uint256.max will cause the value to never decrement [saving gas
-    ///        on transfer].
+    ///        uint256.max will cause the value to never decrement (saving gas
+    ///        on transfer).
     function setApproval(
         uint256 tokenID,
         address operator,
@@ -158,8 +160,8 @@ abstract contract HyperdriveTarget0 is
         _batchTransferFrom(from, to, ids, values);
     }
 
-    /// @notice Allows a caller who is not the owner of an account to execute the
-    ///         functionality of 'approve' for all assets with the owner's
+    /// @notice Allows a caller who is not the owner of an account to execute
+    ///         the functionality of 'approve' for all assets with the owner's
     ///         signature.
     /// @param domainSeparator The EIP712 domain separator of the contract.
     /// @param permitTypeHash The EIP712 domain separator of the contract.

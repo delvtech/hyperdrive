@@ -126,7 +126,7 @@ contract ERC20ERC20ForwarderFactoryTest is BaseTest {
             keccak256(
                 abi.encodePacked(
                     "\x19\x01",
-                    forwarder.DOMAIN_SEPARATOR(),
+                    forwarder.domainSeparator(),
                     keccak256(
                         abi.encode(
                             PERMIT_TYPEHASH,
@@ -162,7 +162,7 @@ contract ERC20ERC20ForwarderFactoryTest is BaseTest {
             keccak256(
                 abi.encodePacked(
                     "\x19\x01",
-                    forwarder.DOMAIN_SEPARATOR(),
+                    forwarder.domainSeparator(),
                     keccak256(
                         abi.encode(
                             PERMIT_TYPEHASH,
@@ -199,7 +199,7 @@ contract ERC20ERC20ForwarderFactoryTest is BaseTest {
             keccak256(
                 abi.encodePacked(
                     "\x19\x01",
-                    forwarder.DOMAIN_SEPARATOR(),
+                    forwarder.domainSeparator(),
                     keccak256(
                         abi.encode(
                             PERMIT_TYPEHASH,
@@ -229,7 +229,7 @@ contract ERC20ERC20ForwarderFactoryTest is BaseTest {
             keccak256(
                 abi.encodePacked(
                     "\x19\x01",
-                    forwarder.DOMAIN_SEPARATOR(),
+                    forwarder.domainSeparator(),
                     keccak256(
                         abi.encode(
                             PERMIT_TYPEHASH,
@@ -276,7 +276,7 @@ contract ERC20ERC20ForwarderFactoryTest is BaseTest {
             keccak256(
                 abi.encodePacked(
                     "\x19\x01",
-                    forwarder.DOMAIN_SEPARATOR(),
+                    forwarder.domainSeparator(),
                     keccak256(
                         abi.encode(
                             PERMIT_TYPEHASH,
@@ -316,7 +316,7 @@ contract ERC20ERC20ForwarderFactoryTest is BaseTest {
             keccak256(
                 abi.encodePacked(
                     "\x19\x01",
-                    forwarder.DOMAIN_SEPARATOR(),
+                    forwarder.domainSeparator(),
                     keccak256(
                         abi.encode(
                             PERMIT_TYPEHASH,
@@ -357,7 +357,7 @@ contract ERC20ERC20ForwarderFactoryTest is BaseTest {
             keccak256(
                 abi.encodePacked(
                     "\x19\x01",
-                    forwarder.DOMAIN_SEPARATOR(),
+                    forwarder.domainSeparator(),
                     keccak256(
                         abi.encode(
                             PERMIT_TYPEHASH,
@@ -407,7 +407,7 @@ contract ERC20ERC20ForwarderFactoryTest is BaseTest {
         bytes32 structHash = keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                multiToken.DOMAIN_SEPARATOR(),
+                multiToken.domainSeparator(),
                 keccak256(
                     abi.encode(
                         MULTITOKEN_PERMIT_TYPEHASH,

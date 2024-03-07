@@ -32,6 +32,7 @@ abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
         if (msg.sender != _deriveForwarderAddress(tokenID)) {
             revert IHyperdrive.InvalidERC20Bridge();
         }
+
         // Execute the following function.
         _;
     }
@@ -80,8 +81,9 @@ abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
         address caller
     ) internal {
         // Checks for inconsistent addresses.
-        if (from == address(0) || to == address(0))
+        if (from == address(0) || to == address(0)) {
             revert IHyperdrive.RestrictedZeroAddress();
+        }
 
         // If the transaction sender is calling no need for further validation.
         if (caller != from) {
@@ -251,7 +253,7 @@ abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
         // Get the salt which is used by the deploying contract.
         bytes32 salt = keccak256(abi.encode(address(this), tokenId));
 
-        // Preform the hash which determines the address of a create2 deployment.
+        // Perform the hash which determines the address of a create2 deployment.
         bytes32 addressBytes = keccak256(
             abi.encodePacked(
                 bytes1(0xff),

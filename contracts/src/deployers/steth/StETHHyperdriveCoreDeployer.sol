@@ -16,7 +16,7 @@ contract StETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     /// @notice The Lido contract.
     ILido public immutable lido;
 
-    /// @notice Instanstiates the core deployer.
+    /// @notice Instantiates the core deployer.
     /// @param _lido The Lido contract.
     constructor(ILido _lido) {
         lido = _lido;
