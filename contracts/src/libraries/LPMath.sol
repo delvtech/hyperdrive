@@ -791,12 +791,11 @@ library LPMath {
             // with Newton's method. This is given by:
             //
             // x_n+1 = x_n - F(x_n) / F'(x_n)
-            int256 delta = int256(presentValue.mulDown(lpTotalSupply)) -
-                int256(
-                    _params.startingPresentValue.mulUp(
-                        _params.activeLpTotalSupply
-                    )
-                );
+            int256 delta = presentValue.mulDown(lpTotalSupply).toInt256() -
+                _params
+                    .startingPresentValue
+                    .mulUp(_params.activeLpTotalSupply)
+                    .toInt256();
             if (delta > 0) {
                 // NOTE: Round the quotient down to avoid overshooting.
                 shareProceeds =
@@ -1220,7 +1219,7 @@ library LPMath {
         //
         // derivative = derivative * (1 - (zeta / z))
         if (_params.originalShareAdjustment >= 0) {
-            uint256 rhs = uint256(_params.originalShareAdjustment).divUp(
+            rhs = uint256(_params.originalShareAdjustment).divUp(
                 _params.originalShareReserves
             );
             if (rhs >= ONE) {
