@@ -71,14 +71,15 @@ impl Distribution<State> for Standard {
             long_exposure: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
             share_adjustment: {
                 if rng.gen() {
-                    -I256::from(rng.gen_range(fixed!(0)..=fixed!(100_000e18)))
+                    -I256::try_from(rng.gen_range(fixed!(0)..=fixed!(100_000e18))).unwrap()
                 } else {
                     // We generate values that satisfy `z - zeta >= z_min`,
                     // so `z - z_min >= zeta`.
-                    I256::from(rng.gen_range(
+                    I256::try_from(rng.gen_range(
                         fixed!(0)
                             ..(share_reserves - FixedPoint::from(config.minimum_share_reserves)),
                     ))
+                    .unwrap()
                 }
             },
             long_average_maturity_time: rng

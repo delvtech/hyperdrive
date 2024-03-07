@@ -200,7 +200,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             // number of non-netted longs decreases by the bond amount.
             int256 nonNettedLongs = _nonNettedLongs(maturityTime);
             _updateLongExposure(
-                nonNettedLongs + int256(_bondAmount),
+                nonNettedLongs + _bondAmount.toInt256(),
                 nonNettedLongs
             );
 
@@ -297,7 +297,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         int256 nonNettedLongs = _nonNettedLongs(_maturityTime);
         _updateLongExposure(
             nonNettedLongs,
-            nonNettedLongs + int256(_bondReservesDelta)
+            nonNettedLongs + _bondReservesDelta.toInt256()
         );
 
         // We need to check solvency because longs increase the system's exposure.
@@ -353,7 +353,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         int256 shareAdjustment = _marketState.shareAdjustment;
         shareAdjustment -= _shareAdjustmentDelta;
         if (
-            int256(_shareReservesDelta) > _shareAdjustmentDelta &&
+            _shareReservesDelta.toInt256() > _shareAdjustmentDelta &&
             HyperdriveMath.calculateEffectiveShareReserves(
                 shareReserves,
                 shareAdjustment

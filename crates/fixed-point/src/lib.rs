@@ -3,7 +3,8 @@ use std::{
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Shr, Sub, SubAssign},
 };
 
-use ethers::types::{I256, U256};
+use ethers::types::{Sign, I256, U256};
+use eyre::{eyre, Error, Result};
 use fixed_point_macros::{fixed, int256, uint256};
 use rand::{
     distributions::{
@@ -80,9 +81,12 @@ impl From<FixedPoint> for U256 {
     }
 }
 
-impl From<FixedPoint> for I256 {
-    fn from(f: FixedPoint) -> I256 {
-        I256::from_raw(f.0)
+impl TryFrom<FixedPoint> for I256 {
+    type Error = Error;
+
+    fn try_from(f: FixedPoint) -> Result<I256> {
+        I256::checked_from_sign_and_abs(Sign::Positive, f.0)
+            .ok_or(eyre!("fixed-point: failed to convert {} to I256", f))
     }
 }
 
@@ -189,11 +193,11 @@ impl FixedPoint {
         // Using properties of logarithms we calculate x^y:
         // -> ln(x^y) = y * ln(x)
         // -> e^(y * ln(x)) = x^y
-        let y_int256 = I256::from(y);
+        let y_int256 = I256::try_from(y).unwrap();
 
         // Compute y*ln(x)
         // Any overflow for x will be caught in _ln() in the initial bounds check
-        let lnx: I256 = Self::ln(I256::from(self));
+        let lnx: I256 = Self::ln(I256::from_raw(self.0));
         let mut ylnx: I256 = y_int256.wrapping_mul(lnx);
         ylnx = ylnx.wrapping_div(int256!(1e18));
 
@@ -703,7 +707,7 @@ mod tests {
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
-            let x: I256 = rng.gen_range(fixed!(0)..=fixed!(1e18)).into();
+            let x: I256 = I256::try_from(rng.gen_range(fixed!(0)..=fixed!(1e18))).unwrap();
             let actual = panic::catch_unwind(|| FixedPoint::ln(x));
             match mock.ln(x).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), expected),
@@ -722,7 +726,8 @@ mod tests {
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
-            let x: I256 = rng.gen::<FixedPoint>().into();
+            let x: I256 =
+                I256::try_from(rng.gen_range(fixed!(0)..FixedPoint::from(I256::MAX))).unwrap();
             let actual = panic::catch_unwind(|| FixedPoint::exp(x));
             match mock.exp(x).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), expected),
@@ -741,7 +746,7 @@ mod tests {
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
-            let x: I256 = rng.gen_range(fixed!(0)..=fixed!(1e18)).into();
+            let x: I256 = I256::try_from(rng.gen_range(fixed!(0)..=fixed!(1e18))).unwrap();
             let actual = panic::catch_unwind(|| FixedPoint::ln(x));
             match mock.ln(x).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), expected),
@@ -760,7 +765,8 @@ mod tests {
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
-            let x: I256 = rng.gen::<FixedPoint>().into();
+            let x: I256 =
+                I256::try_from(rng.gen_range(fixed!(0)..FixedPoint::from(I256::MAX))).unwrap();
             let actual = panic::catch_unwind(|| FixedPoint::ln(x));
             match mock.ln(x).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), expected),
