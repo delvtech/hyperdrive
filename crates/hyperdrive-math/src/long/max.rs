@@ -274,7 +274,7 @@ impl State {
     /// to calculate the approximate ending solvency of:
     ///
     /// $$
-    /// s(x) \approx z(x) - \tfrac{e(x)}{c} - z_{min}
+    /// s(x) \approx z(x) - \tfrac{e(x) - min(exposure_{c}, 0)}{c} - z_{min}
     /// $$
     ///
     /// If we let the initial solvency be given by $s_0$, we can solve for

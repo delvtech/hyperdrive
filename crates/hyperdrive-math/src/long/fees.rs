@@ -35,7 +35,7 @@ impl State {
         bond_amount: FixedPoint,
         normalized_time_remaining: FixedPoint,
     ) -> FixedPoint {
-        // ((1 - p) * phi_curve * d_y * t) / c
+        // curveFee = ((1 - p) * phi_curve * d_y * t) / c
         self.curve_fee()
             * (fixed!(1e18) - self.get_spot_price())
             * bond_amount.mul_div_down(normalized_time_remaining, self.vault_share_price())
@@ -48,7 +48,7 @@ impl State {
         bond_amount: FixedPoint,
         normalized_time_remaining: FixedPoint,
     ) -> FixedPoint {
-        // flat fee = (d_y * (1 - t) * phi_flat) / c
+        // flatFee = (d_y * (1 - t) * phi_flat) / c
         bond_amount.mul_div_down(
             fixed!(1e18) - normalized_time_remaining,
             self.vault_share_price(),
