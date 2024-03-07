@@ -630,40 +630,50 @@ library LPMath {
             lpTotalSupply
         );
 
-        // If the net curve trade is positive, the pool is net long.
-        if (_params.netCurveTrade > 0) {
-            for (uint256 i = 0; i < SHARE_PROCEEDS_MAX_ITERATIONS; ) {
-                // Simulate applying the share proceeds to the reserves and
-                // recalculate the present value.
-                (
-                    _params.presentValueParams.shareReserves,
-                    _params.presentValueParams.shareAdjustment,
-                    _params.presentValueParams.bondReserves
-                ) = calculateUpdateLiquidity(
-                    _params.originalShareReserves,
-                    _params.originalShareAdjustment,
-                    _params.originalBondReserves,
-                    _params.presentValueParams.minimumShareReserves,
-                    -int256(shareProceeds)
-                );
-                uint256 presentValue = calculatePresentValue(
-                    _params.presentValueParams
-                );
+        // Proceed with Newton's method. The objective function, `F(x)`, is
+        // given by:
+        //
+        // F(x) = PV(x) * l - PV(0) * (l - w)
+        //
+        // Newton's method will terminate as soon as the current iteration is
+        // within the minimum tolerance or the maximum number of iterations has
+        // been reached.
+        for (uint256 i = 0; i < SHARE_PROCEEDS_MAX_ITERATIONS; ) {
+            // Simulate applying the share proceeds to the reserves and
+            // recalculate the present value.
+            (
+                _params.presentValueParams.shareReserves,
+                _params.presentValueParams.shareAdjustment,
+                _params.presentValueParams.bondReserves
+            ) = calculateUpdateLiquidity(
+                _params.originalShareReserves,
+                _params.originalShareAdjustment,
+                _params.originalBondReserves,
+                _params.presentValueParams.minimumShareReserves,
+                -int256(shareProceeds)
+            );
+            uint256 presentValue = calculatePresentValue(
+                _params.presentValueParams
+            );
 
-                // Short-circuit if we are within the minimum tolerance.
-                if (
-                    shouldShortCircuitDistributeExcessIdleShareProceeds(
-                        _params,
-                        presentValue,
-                        lpTotalSupply
-                    )
-                ) {
-                    break;
-                }
+            // Short-circuit if we are within the minimum tolerance.
+            if (
+                shouldShortCircuitDistributeExcessIdleShareProceeds(
+                    _params,
+                    presentValue,
+                    lpTotalSupply
+                )
+            ) {
+                break;
+            }
 
+            // If the pool is net long, we can solve for the next iteration of
+            // Newton's method directly when the net curve trade is greater than
+            // or equal to the max bond amount.
+            if (_params.netCurveTrade > 0) {
                 // Calculate the max bond amount. If the calculation fails, we
                 // return a failure flag.
-                (uint256 maxBondAmount, bool success) = YieldSpaceMath
+                (uint256 maxBondAmount, bool success_) = YieldSpaceMath
                     .calculateMaxSellBondsInSafe(
                         _params.presentValueParams.shareReserves,
                         _params.presentValueParams.shareAdjustment,
@@ -673,191 +683,89 @@ library LPMath {
                         _params.presentValueParams.vaultSharePrice,
                         _params.presentValueParams.initialVaultSharePrice
                     );
-                if (!success) {
-                    break;
+                if (!success_) {
+                    // NOTE: Return 0 to indicate that the share proceeds
+                    // couldn't be calculated.
+                    return 0;
                 }
 
-                // If the net curve trade is less than or equal to the maximum
-                // amount of bonds that can be sold with this share proceeds, we
-                // can calculate the derivative using the derivative of
-                // `calculateSharesOutGivenBondsIn`.
-                uint256 derivative;
-                if (uint256(_params.netCurveTrade) <= maxBondAmount) {
-                    (
-                        derivative,
-                        success
-                    ) = calculateSharesDeltaGivenBondsDeltaDerivativeSafe(
-                        _params,
-                        _originalEffectiveShareReserves,
-                        _params.netCurveTrade
-                    );
-                    if (!success || derivative >= ONE) {
-                        // NOTE: Return 0 to indicate that the share proceeds
-                        // couldn't be calculated.
-                        return 0;
-                    }
-                    unchecked {
-                        derivative = ONE - derivative;
-                    }
-                }
-                // Otherwise, we can solve directly for the share proceeds.
-                else {
+                // If the net curve trade is greater than or equal to the max
+                // bond amount, we can solve directly for the share proceeds.
+                if (uint256(_params.netCurveTrade) >= maxBondAmount) {
                     (
                         shareProceeds,
-                        success
+                        success_
                     ) = calculateDistributeExcessIdleShareProceedsNetLongEdgeCaseSafe(
                         _params
                     );
-                    if (!success) {
+                    if (!success_) {
                         // NOTE: Return 0 to indicate that the share proceeds
                         // couldn't be calculated.
                         return 0;
                     }
                     return shareProceeds;
                 }
+            }
 
-                // NOTE: Round the delta down to avoid overshooting.
-                //
-                // We calculate the updated share proceeds `x_n+1` by proceeding
-                // with Newton's method. This is given by:
-                //
-                // x_n+1 = x_n - F(x_n) / F'(x_n)
-                //
-                // where our objective function `F(x)` is:
-                //
-                // F(x) = PV(x) * l - PV(0) * (l - w)
-                int256 delta = int256(presentValue.mulDown(lpTotalSupply)) -
-                    int256(
-                        _params.startingPresentValue.mulUp(
-                            _params.activeLpTotalSupply
-                        )
-                    );
-                if (delta > 0) {
-                    // NOTE: Round the quotient down to avoid overshooting.
-                    shareProceeds =
-                        shareProceeds +
-                        uint256(delta).divDown(derivative.mulUp(lpTotalSupply));
-                } else if (delta < 0) {
-                    // NOTE: Round the quotient down to avoid overshooting.
-                    uint256 delta_ = uint256(-delta).divDown(
-                        derivative.mulUp(lpTotalSupply)
-                    );
-                    if (delta_ < shareProceeds) {
-                        unchecked {
-                            shareProceeds = shareProceeds - delta_;
-                        }
-                    } else {
-                        // NOTE: Returning 0 to indicate that the share proceeds
-                        // couldn't be calculated.
-                        return 0;
+            // We calculate the derivative of F(x) using the derivative of
+            // `calculateSharesOutGivenBondsIn` when the pool is net long or
+            // the derivative of `calculateSharesInGivenBondsOut`. when the pool
+            // is net short.
+            (
+                uint256 derivative,
+                bool success
+            ) = calculateSharesDeltaGivenBondsDeltaDerivativeSafe(
+                    _params,
+                    _originalEffectiveShareReserves,
+                    _params.netCurveTrade
+                );
+            if (!success || derivative >= ONE) {
+                // NOTE: Return 0 to indicate that the share proceeds
+                // couldn't be calculated.
+                return 0;
+            }
+            unchecked {
+                derivative = ONE - derivative;
+            }
+
+            // NOTE: Round the delta down to avoid overshooting.
+            //
+            // We calculate the updated share proceeds `x_n+1` by proceeding
+            // with Newton's method. This is given by:
+            //
+            // x_n+1 = x_n - F(x_n) / F'(x_n)
+            int256 delta = int256(presentValue.mulDown(lpTotalSupply)) -
+                int256(
+                    _params.startingPresentValue.mulUp(
+                        _params.activeLpTotalSupply
+                    )
+                );
+            if (delta > 0) {
+                // NOTE: Round the quotient down to avoid overshooting.
+                shareProceeds =
+                    shareProceeds +
+                    uint256(delta).divDown(derivative).divDown(lpTotalSupply);
+            } else if (delta < 0) {
+                // NOTE: Round the quotient down to avoid overshooting.
+                uint256 delta_ = uint256(-delta).divDown(derivative).divDown(
+                    lpTotalSupply
+                );
+                if (delta_ < shareProceeds) {
+                    unchecked {
+                        shareProceeds = shareProceeds - delta_;
                     }
                 } else {
-                    break;
-                }
-
-                // Increment the loop counter.
-                unchecked {
-                    ++i;
-                }
-            }
-        }
-        // Otherwise, the pool is net short.
-        else {
-            for (uint256 i = 0; i < SHARE_PROCEEDS_MAX_ITERATIONS; ) {
-                // Simulate applying the share proceeds to the reserves and
-                // recalculate the present value.
-                (
-                    _params.presentValueParams.shareReserves,
-                    _params.presentValueParams.shareAdjustment,
-                    _params.presentValueParams.bondReserves
-                ) = calculateUpdateLiquidity(
-                    _params.originalShareReserves,
-                    _params.originalShareAdjustment,
-                    _params.originalBondReserves,
-                    _params.presentValueParams.minimumShareReserves,
-                    -int256(shareProceeds)
-                );
-                uint256 presentValue = calculatePresentValue(
-                    _params.presentValueParams
-                );
-
-                // Short-circuit if we are within the minimum tolerance.
-                if (
-                    shouldShortCircuitDistributeExcessIdleShareProceeds(
-                        _params,
-                        presentValue,
-                        lpTotalSupply
-                    )
-                ) {
-                    break;
-                }
-
-                // If the net curve trade is less than or equal to the maximum
-                // amount of bonds that can be sold with this share proceeds, we
-                // can calculate the derivative using the derivative of
-                // `calculateSharesInGivenBondsOut`.
-                (
-                    uint256 derivative,
-                    bool success
-                ) = calculateSharesDeltaGivenBondsDeltaDerivativeSafe(
-                        _params,
-                        _originalEffectiveShareReserves,
-                        _params.netCurveTrade
-                    );
-                if (!success || derivative >= ONE) {
-                    // NOTE: Return 0 to indicate that the share proceeds
+                    // NOTE: Returning 0 to indicate that the share proceeds
                     // couldn't be calculated.
                     return 0;
                 }
-                unchecked {
-                    derivative = ONE - derivative;
-                }
+            } else {
+                break;
+            }
 
-                // NOTE: Round the delta down to avoid overshooting.
-                //
-                // We calculate the updated share proceeds `x_n+1` by proceeding
-                // with Newton's method. This is given by:
-                //
-                // x_n+1 = x_n - F(x_n) / F'(x_n)
-                //
-                // where our objective function `F(x)` is:
-                //
-                // F(x) = PV(x) * l - PV(0) * (l - w)
-                int256 delta = int256(presentValue.mulDown(lpTotalSupply)) -
-                    int256(
-                        _params.startingPresentValue.mulUp(
-                            _params.activeLpTotalSupply
-                        )
-                    );
-                if (delta > 0) {
-                    // NOTE: Round the quotient down to avoid overshooting.
-                    shareProceeds =
-                        shareProceeds +
-                        uint256(delta).divDown(derivative).divDown(
-                            lpTotalSupply
-                        );
-                } else if (delta < 0) {
-                    // NOTE: Round the quotient down to avoid overshooting.
-                    uint256 delta_ = uint256(-delta)
-                        .divDown(derivative)
-                        .divDown(lpTotalSupply);
-                    if (delta_ < shareProceeds) {
-                        unchecked {
-                            shareProceeds = shareProceeds - delta_;
-                        }
-                    } else {
-                        // NOTE: Returning 0 to indicate that the share proceeds
-                        // couldn't be calculated.
-                        return 0;
-                    }
-                } else {
-                    break;
-                }
-
-                // Increment the loop counter.
-                unchecked {
-                    ++i;
-                }
+            // Increment the loop counter.
+            unchecked {
+                ++i;
             }
         }
 
