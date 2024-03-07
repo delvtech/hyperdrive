@@ -136,8 +136,8 @@ abstract contract HyperdriveTarget0 is
     /// @param tokenID The asset to approve the use of.
     /// @param operator The address who will be able to use the tokens.
     /// @param amount The max tokens the approved person can use, setting to
-    ///        uint256.max will cause the value to never decrement [saving gas
-    ///        on transfer].
+    ///        uint256.max will cause the value to never decrement (saving gas
+    ///        on transfer).
     function setApproval(
         uint256 tokenID,
         address operator,

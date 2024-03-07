@@ -37,9 +37,10 @@ abstract contract HyperdriveTarget4 is
     /// @param _maxDeposit The most the user expects to deposit for this trade.
     ///        The units of this quantity are either base or vault shares,
     ///        depending on the value of `_options.asBase`.
-    /// @param _minVaultSharePrice The minimum vault share price at which to open
-    ///        the short. This allows traders to protect themselves from opening
-    ///        a short in a checkpoint where negative interest has accrued.
+    /// @param _minVaultSharePrice The minimum vault share price at which to
+    ///        open the short. This allows traders to protect themselves from
+    ///        opening a short in a checkpoint where negative interest has
+    ///        accrued.
     /// @param _options The options that configure how the trade is settled.
     /// @return The maturity time of the short.
     /// @return The amount the user deposited for this trade. The units of this

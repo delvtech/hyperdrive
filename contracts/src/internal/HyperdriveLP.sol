@@ -214,7 +214,7 @@ abstract contract HyperdriveLP is
             // The LP shares minted to the LP is derived by solving for the
             // change in LP shares that preserves the ratio of present value to
             // total LP shares. This ensures that LPs are fairly rewarded for
-            // adding liquidity.This is given by:
+            // adding liquidity. This is given by:
             //
             // PV0 / l0 = PV1 / (l0 + dl) => dl = ((PV1 - PV0) * l0) / PV0
             lpShares = (endingPresentValue - startingPresentValue).mulDivDown(
