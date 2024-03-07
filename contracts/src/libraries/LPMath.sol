@@ -709,7 +709,9 @@ library LPMath {
                         // couldn't be calculated.
                         return 0;
                     }
-                    derivative = ONE - derivative;
+                    unchecked {
+                        derivative = ONE - derivative;
+                    }
                 }
                 // Otherwise, the objective becomes linear, and we can solve for
                 // the next step in Newton's method directly.
@@ -797,7 +799,9 @@ library LPMath {
                         derivative.mulUp(lpTotalSupply)
                     );
                     if (delta_ < shareProceeds) {
-                        shareProceeds = shareProceeds - delta_;
+                        unchecked {
+                            shareProceeds = shareProceeds - delta_;
+                        }
                     } else {
                         // NOTE: Returning 0 to indicate that the share proceeds
                         // couldn't be calculated.
@@ -866,7 +870,9 @@ library LPMath {
                     // couldn't be calculated.
                     return 0;
                 }
-                derivative = ONE - derivative;
+                unchecked {
+                    derivative = ONE - derivative;
+                }
 
                 // NOTE: Round the delta down to avoid overshooting.
                 //
@@ -896,7 +902,9 @@ library LPMath {
                         .divDown(derivative)
                         .divDown(lpTotalSupply);
                     if (delta_ < shareProceeds) {
-                        shareProceeds = shareProceeds - delta_;
+                        unchecked {
+                            shareProceeds = shareProceeds - delta_;
+                        }
                     } else {
                         // NOTE: Returning 0 to indicate that the share proceeds
                         // couldn't be calculated.
@@ -975,23 +983,22 @@ library LPMath {
         // NOTE: Round up since this is the rhs of the final subtraction.
         //
         // rhs = (PV(0) / l) * (l - w) - net_f
-        uint256 rhs;
+        uint256 rhs = _params.startingPresentValue.mulDivUp(
+            _params.activeLpTotalSupply,
+            _params.activeLpTotalSupply + _params.withdrawalSharesTotalSupply
+        );
         if (netFlatTrade >= 0) {
-            rhs =
-                _params.startingPresentValue.mulDivUp(
-                    _params.activeLpTotalSupply,
-                    _params.activeLpTotalSupply +
-                        _params.withdrawalSharesTotalSupply
-                ) -
-                uint256(netFlatTrade);
+            if (uint256(netFlatTrade) < rhs) {
+                unchecked {
+                    rhs -= uint256(netFlatTrade);
+                }
+            } else {
+                // NOTE: Return a failure flag if computing the rhs would
+                // underflow.
+                return (0, false);
+            }
         } else {
-            rhs =
-                _params.startingPresentValue.mulDivUp(
-                    _params.activeLpTotalSupply,
-                    _params.activeLpTotalSupply +
-                        _params.withdrawalSharesTotalSupply
-                ) +
-                uint256(-netFlatTrade);
+            rhs += uint256(-netFlatTrade);
         }
 
         // NOTE: Round up since this is the rhs of the final subtraction.
@@ -1003,7 +1010,12 @@ library LPMath {
         );
 
         // share proceeds = z - rhs
-        return (_params.originalShareReserves - rhs, true);
+        if (_params.originalShareReserves < rhs) {
+            return (0, false);
+        }
+        unchecked {
+            return (_params.originalShareReserves - rhs, true);
+        }
     }
 
     /// @dev Checks to see if we should short-circuit the iterative calculation
@@ -1107,8 +1119,11 @@ library LPMath {
         //
         // maxShareReservesDelta = z * (1 - s)
         if (maxScalingFactor <= ONE) {
-            maxShareReservesDelta = _params.originalShareReserves.mulDown(
-                ONE - maxScalingFactor
+            unchecked {
+                maxShareReservesDelta = ONE - maxScalingFactor;
+            }
+            maxShareReservesDelta = maxShareReservesDelta.mulDown(
+                _params.originalShareReserves
             );
         } else {
             // NOTE: If the max scaling factor is greater than one, the
@@ -1214,8 +1229,11 @@ library LPMath {
             // idle since the derivative couldn't be computed.
             return (0, false);
         }
-        inner = _params.presentValueParams.initialVaultSharePrice.mulDivUp(
-            k - inner,
+        unchecked {
+            inner = k - inner;
+        }
+        inner = inner.mulDivUp(
+            _params.presentValueParams.initialVaultSharePrice,
             _params.presentValueParams.vaultSharePrice
         );
         if (inner >= ONE) {
@@ -1242,7 +1260,9 @@ library LPMath {
 
         // derivative = 1 - derivative
         if (ONE > derivative) {
-            derivative = ONE - derivative;
+            unchecked {
+                derivative = ONE - derivative;
+            }
         } else {
             // NOTE: Small rounding errors can result in the derivative being
             // slightly (on the order of a few wei) greater than 1. In this case,
@@ -1254,12 +1274,18 @@ library LPMath {
         //
         // derivative = derivative * (1 - (zeta / z))
         if (_params.originalShareAdjustment >= 0) {
-            derivative = derivative.mulDown(
-                ONE -
-                    uint256(_params.originalShareAdjustment).divUp(
-                        _params.originalShareReserves
-                    )
+            uint256 rhs = uint256(_params.originalShareAdjustment).divUp(
+                _params.originalShareReserves
             );
+            if (rhs >= ONE) {
+                // NOTE: Return a failure flag if the calculation would
+                // underflow.
+                return (0, false);
+            }
+            unchecked {
+                rhs = ONE - rhs;
+            }
+            derivative = derivative.mulDown(rhs);
         } else {
             derivative = derivative.mulDown(
                 ONE +
@@ -1309,6 +1335,12 @@ library LPMath {
         uint256 _originalEffectiveShareReserves,
         uint256 _bondAmount
     ) internal pure returns (uint256, bool) {
+        // If the bond amount exceeds the bond reserves, we must return a
+        // failure flag.
+        if (_params.presentValueParams.bondReserves < _bondAmount) {
+            return (0, false);
+        }
+
         // NOTE: Round up since this is on the rhs of the final subtraction.
         //
         // derivative = c * (mu * z_e(x)) ** -t_s +
@@ -1332,15 +1364,21 @@ library LPMath {
                         _params.presentValueParams.timeStretch
                     )
                 )
-            ) -
-            // NOTE: Round down this rounds the subtraction up.
-            _params.originalBondReserves.divDown(
-                _originalEffectiveShareReserves.mulUp(
-                    (_params.presentValueParams.bondReserves - _bondAmount).pow(
-                        _params.presentValueParams.timeStretch
-                    )
-                )
             );
+        // NOTE: Round down this rounds the subtraction up.
+        uint256 rhs = _params.originalBondReserves.divDown(
+            _originalEffectiveShareReserves.mulUp(
+                (_params.presentValueParams.bondReserves - _bondAmount).pow(
+                    _params.presentValueParams.timeStretch
+                )
+            )
+        );
+        if (derivative < rhs) {
+            return (0, false);
+        }
+        unchecked {
+            derivative -= rhs;
+        }
 
         // NOTE: Round up since this is on the rhs of the final subtraction.
         //
@@ -1361,8 +1399,11 @@ library LPMath {
             // idle since the derivative couldn't be computed.
             return (0, false);
         }
-        inner = _params.presentValueParams.initialVaultSharePrice.mulDivUp(
-            k - inner,
+        unchecked {
+            inner = k - inner;
+        }
+        inner = inner.mulDivUp(
+            _params.presentValueParams.initialVaultSharePrice,
             _params.presentValueParams.vaultSharePrice
         );
         if (inner >= ONE) {
@@ -1397,7 +1438,9 @@ library LPMath {
 
         // derivative = 1 - derivative
         if (ONE > derivative) {
-            derivative = ONE - derivative;
+            unchecked {
+                derivative = ONE - derivative;
+            }
         } else {
             // NOTE: Small rounding errors can result in the derivative being
             // slightly (on the order of a few wei) greater than 1. In this case,
@@ -1409,12 +1452,16 @@ library LPMath {
         //
         // derivative = derivative * (1 - (zeta / z))
         if (_params.originalShareAdjustment >= 0) {
-            derivative = derivative.mulDown(
-                ONE -
-                    uint256(_params.originalShareAdjustment).divUp(
-                        _params.originalShareReserves
-                    )
+            rhs = uint256(_params.originalShareAdjustment).divUp(
+                _params.originalShareReserves
             );
+            if (rhs >= ONE) {
+                return (0, false);
+            }
+            unchecked {
+                rhs = ONE - rhs;
+            }
+            derivative = derivative.mulDown(rhs);
         } else {
             derivative = derivative.mulDown(
                 ONE +

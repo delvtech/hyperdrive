@@ -71,7 +71,9 @@ abstract contract HyperdriveLP is
         if (shareContribution < 2 * _minimumShareReserves) {
             revert IHyperdrive.BelowMinimumContribution();
         }
-        lpShares = shareContribution - 2 * _minimumShareReserves;
+        unchecked {
+            lpShares = shareContribution - 2 * _minimumShareReserves;
+        }
 
         // Set the initialized state to true.
         _marketState.isInitialized = true;

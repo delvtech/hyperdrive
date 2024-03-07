@@ -160,7 +160,9 @@ abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
         }
 
         // Decrement from the source and supply.
-        _balanceOf[tokenID][from] -= amount;
+        unchecked {
+            _balanceOf[tokenID][from] -= amount;
+        }
         _totalSupply[tokenID] -= amount;
 
         // Emit an event to track burning.
@@ -230,7 +232,9 @@ abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
         }
 
         // Increment the signature nonce.
-        ++_nonces[owner];
+        unchecked {
+            ++_nonces[owner];
+        }
 
         // Set the state.
         _isApprovedForAll[owner][spender] = _approved;

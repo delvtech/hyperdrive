@@ -72,7 +72,10 @@ library YieldSpaceMath {
         // NOTE: We round _y up to make the rhs of the equation larger.
         //
         // (k - (c / µ) * (µ * (ze + dz))^(1 - t))^(1 / (1 - t))
-        uint256 _y = k - ze;
+        uint256 _y;
+        unchecked {
+            _y = k - ze;
+        }
         if (_y >= ONE) {
             // Rounding up the exponent results in a larger result.
             _y = _y.pow(ONE.divUp(t));
@@ -89,7 +92,9 @@ library YieldSpaceMath {
         }
 
         // Δy = y - (k - (c / µ) * (µ * (ze + dz))^(1 - t))^(1 / (1 - t))
-        return y - _y;
+        unchecked {
+            return y - _y;
+        }
     }
 
     /// @dev Calculates the amount of shares a user must provide the pool to
@@ -158,7 +163,10 @@ library YieldSpaceMath {
         }
 
         // (y - dy)^(1 - t)
-        y = (y - dy).pow(t);
+        unchecked {
+            y -= dy;
+        }
+        y = y.pow(t);
 
         // If k < y, we return a failure flag since the calculation would have
         // underflowed.
@@ -169,7 +177,11 @@ library YieldSpaceMath {
         // NOTE: We round _z up to make the lhs of the equation larger.
         //
         // ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))
-        uint256 _z = (k - y).mulDivUp(mu, c);
+        uint256 _z;
+        unchecked {
+            _z = k - y;
+        }
+        _z = _z.mulDivUp(mu, c);
         if (_z >= ONE) {
             // Rounding up the exponent results in a larger result.
             _z = _z.pow(ONE.divUp(t));
@@ -187,7 +199,9 @@ library YieldSpaceMath {
         }
 
         // Δz = (((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ - ze
-        return (_z - ze, true);
+        unchecked {
+            return (_z - ze, true);
+        }
     }
 
     /// @dev Calculates the amount of shares a user must provide the pool to
@@ -221,7 +235,10 @@ library YieldSpaceMath {
         }
 
         // (y - dy)^(1 - t)
-        y = (y - dy).pow(t);
+        unchecked {
+            y -= dy;
+        }
+        y = y.pow(t);
 
         // If k < y, we have no choice but to revert.
         if (k < y) {
@@ -233,7 +250,11 @@ library YieldSpaceMath {
         // NOTE: We round _z down to make the lhs of the equation smaller.
         //
         // _z = ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))
-        uint256 _z = (k - y).mulDivDown(mu, c);
+        uint256 _z;
+        unchecked {
+            _z = k - y;
+        }
+        _z = _z.mulDivDown(mu, c);
         if (_z >= ONE) {
             // Rounding down the exponent results in a smaller result.
             _z = _z.pow(ONE.divDown(t));
@@ -252,7 +273,9 @@ library YieldSpaceMath {
         }
 
         // Δz = (((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ - ze
-        return _z - ze;
+        unchecked {
+            return _z - ze;
+        }
     }
 
     /// @dev Calculates the amount of shares a user will receive from the pool
@@ -326,7 +349,11 @@ library YieldSpaceMath {
         // NOTE: We round _z up to make the rhs of the equation larger.
         //
         // ((k - (y + dy)^(1 - t)) / (c / µ))^(1 / (1 - t)))
-        uint256 _z = (k - y).mulDivUp(mu, c);
+        uint256 _z;
+        unchecked {
+            _z = k - y;
+        }
+        _z = _z.mulDivUp(mu, c);
         if (_z >= ONE) {
             // Rounding the exponent up results in a larger outcome.
             _z = _z.pow(ONE.divUp(t));
@@ -344,7 +371,9 @@ library YieldSpaceMath {
         }
 
         // Δz = ze - ((k - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t)) / µ
-        return (ze - _z, true);
+        unchecked {
+            return (ze - _z, true);
+        }
     }
 
     /// @dev Calculates the share payment required to purchase the maximum
@@ -391,7 +420,9 @@ library YieldSpaceMath {
         if (optimalZe < ze) {
             return (0, false);
         }
-        return (optimalZe - ze, true);
+        unchecked {
+            return (optimalZe - ze, true);
+        }
     }
 
     /// @dev Calculates the maximum amount of bonds that can be purchased with
@@ -431,7 +462,9 @@ library YieldSpaceMath {
         if (y < optimalY) {
             return (0, false);
         }
-        return (y - optimalY, true);
+        unchecked {
+            return (y - optimalY, true);
+        }
     }
 
     /// @dev Calculates the maximum amount of bonds that can be sold with the
@@ -495,7 +528,9 @@ library YieldSpaceMath {
         if (optimalY < y) {
             return (0, false);
         }
-        return (optimalY - y, true);
+        unchecked {
+            return (optimalY - y, true);
+        }
     }
 
     /// @dev Calculates the YieldSpace invariant k. This invariant is given by:
