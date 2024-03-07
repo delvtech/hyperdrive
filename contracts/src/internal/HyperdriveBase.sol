@@ -262,7 +262,7 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
     }
 
     /// @dev Checks if any of the bonds the trader purchased on the curve
-    ///      were purchased above price of 1 base per bonds.
+    ///      were purchased above the price of 1 base per bonds.
     /// @param _shareCurveDelta The amount of shares the trader pays the curve.
     /// @param _bondCurveDelta The amount of bonds the trader receives from the
     ///        curve.
@@ -403,7 +403,7 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
                 .divUp(_vaultSharePrice)
                 .toUint128();
 
-            // NOTE: Round down to underestimate the zombhie interest given to
+            // NOTE: Round down to underestimate the zombie interest given to
             // the LPs and governance.
             //
             // Calculate and collect the governance fee.
@@ -536,7 +536,7 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         // NOTE: Round down to underestimate the governance curve fee.
         //
         // We leave the governance fee in terms of bonds:
-        // governanceCurveFee = curve_fee * p * phi_gov
+        // governanceCurveFee = curve_fee * phi_gov
         //                    = bonds * phi_gov
         governanceCurveFee = curveFee.mulDown(_governanceLPFee);
     }
@@ -551,6 +551,8 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
     /// @return curveFee The curve fee. The fee is in terms of shares.
     /// @return flatFee The flat fee. The fee is in terms of shares.
     /// @return governanceCurveFee The curve fee that goes to governance. The
+    ///         fee is in terms of shares.
+    /// @return totalGovernanceFee The total fee that goes to governance. The
     ///         fee is in terms of shares.
     function _calculateFeesGivenBonds(
         uint256 _bondAmount,

@@ -7,16 +7,19 @@ interface IMultiTokenRead {
     function decimals() external view returns (uint8);
 
     /// @notice Gets the name of the MultiToken.
+    /// @param tokenId The sub-token ID.
     /// @return The name of the MultiToken.
-    function name(uint256 id) external view returns (string memory);
+    function name(uint256 tokenId) external view returns (string memory);
 
     /// @notice Gets the symbol of the MultiToken.
+    /// @param tokenId The sub-token ID.
     /// @return The symbol of the MultiToken.
-    function symbol(uint256 id) external view returns (string memory);
+    function symbol(uint256 tokenId) external view returns (string memory);
 
     /// @notice Gets the total supply of the MultiToken.
+    /// @param tokenId The sub-token ID.
     /// @return The total supply of the MultiToken.
-    function totalSupply(uint256 id) external view returns (uint256);
+    function totalSupply(uint256 tokenId) external view returns (uint256);
 
     /// @notice Gets the approval-for-all status of a spender on behalf of an
     ///         owner.

@@ -84,8 +84,8 @@ abstract contract Hyperdrive is
     ///         stateful functions.
     address public immutable target3;
 
-    /// @notice The target4 address. This is a logic contract that contains all
-    ///         some stateful functions.
+    /// @notice The target4 address. This is a logic contract that contains
+    ///         stateful functions.
     address public immutable target4;
 
     /// @notice The typehash used to calculate the EIP712 hash for `permitForAll`.

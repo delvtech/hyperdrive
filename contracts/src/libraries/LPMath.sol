@@ -442,7 +442,7 @@ library LPMath {
 
     /// @dev Calculates the amount of withdrawal shares that can be redeemed and
     ///      the share proceeds the withdrawal pool should receive given the
-    ///      pool's current idle liquidity. We use the following algorith to
+    ///      pool's current idle liquidity. We use the following algorithm to
     ///      ensure that the withdrawal pool receives the correct amount of
     ///      shares to (1) preserve the LP share price and (2) pay out as much
     ///      of the idle liquidity as possible to the withdrawal pool:
@@ -575,10 +575,10 @@ library LPMath {
         );
 
         // If the present value calculation failed or if the ending present
-        // value is greater than the starting present value, we short-circuit to
-        // avoid distributing excess idle. This edge-case can occur when the
-        // share reserves is very close to the minimum share reserves with a
-        // large value of k.
+        // value is greater than or equal to the starting present value, we
+        // short-circuit to avoid distributing excess idle. This edge-case can
+        // occur when the share reserves is very close to the minimum share
+        // reserves with a large value of k.
         if (!success || endingPresentValue >= _params.startingPresentValue) {
             return 0;
         }

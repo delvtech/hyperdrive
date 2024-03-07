@@ -16,7 +16,7 @@ contract StETHTarget2Deployer is IHyperdriveTargetDeployer {
     /// @notice The Lido contract.
     ILido public immutable lido;
 
-    /// @notice Instanstiates the target2 deployer.
+    /// @notice Instantiates the target2 deployer.
     /// @param _lido The Lido contract.
     constructor(ILido _lido) {
         lido = _lido;

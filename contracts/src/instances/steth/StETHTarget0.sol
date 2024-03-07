@@ -42,7 +42,7 @@ contract StETHTarget0 is HyperdriveTarget0, StETHBase {
             revert IHyperdrive.Unauthorized();
         }
 
-        // Ensure that thet target isn't the stETH token.
+        // Ensure that the target isn't the stETH token.
         if (address(_target) == address(_lido)) {
             revert IHyperdrive.UnsupportedToken();
         }

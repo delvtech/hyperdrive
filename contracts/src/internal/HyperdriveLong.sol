@@ -57,7 +57,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             _options
         );
 
-        // Enforce the minimum user outputs and the mininum vault share price.
+        // Enforce the minimum user outputs and the minimum vault share price.
         //
         // NOTE: We use the value that is returned from the deposit to check
         // against the minimum transaction amount because in the event of
