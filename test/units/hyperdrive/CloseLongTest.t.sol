@@ -50,6 +50,32 @@ contract CloseLongTest is HyperdriveTest {
         );
     }
 
+    function test_close_long_failure_destination_zero_address() external {
+        // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, fixedRate, contribution);
+
+        // Open a long position.
+        uint256 baseAmount = 30e18;
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
+
+        // Alice attempts to set the destination to the zero address.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        vm.expectRevert(IHyperdrive.RestrictedZeroAddress.selector);
+        hyperdrive.closeLong(
+            maturityTime,
+            bondAmount,
+            0,
+            IHyperdrive.Options({
+                destination: address(0),
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
     function test_close_long_failure_invalid_amount() external {
         // Initialize the pool with a large amount of capital.
         uint256 fixedRate = 0.05e18;

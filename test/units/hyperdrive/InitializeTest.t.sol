@@ -70,6 +70,28 @@ contract InitializeTest is HyperdriveTest {
         );
     }
 
+    function test_initialize_failure_destination_zero_address() external {
+        uint256 fixedRate = 0.5e18;
+        uint256 contribution = 1000.0e18;
+
+        // Attempt to initialize the pool with the zero address as the
+        // destination. This should fail.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        baseToken.mint(contribution);
+        baseToken.approve(address(hyperdrive), contribution);
+        vm.expectRevert(IHyperdrive.RestrictedZeroAddress.selector);
+        hyperdrive.initialize(
+            contribution,
+            fixedRate,
+            IHyperdrive.Options({
+                destination: address(0),
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
     function test_initialize(
         uint256 initialVaultSharePrice,
         uint256 checkpointDuration,
