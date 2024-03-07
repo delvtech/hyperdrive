@@ -72,6 +72,32 @@ contract OpenLongTest is HyperdriveTest {
         );
     }
 
+    function test_open_long_failure_destination_zero_address() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Attempt to purchase bonds with zero base. This should fail.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 basePaid = 10e18;
+        baseToken.mint(bob, basePaid);
+        baseToken.approve(address(hyperdrive), basePaid);
+        vm.expectRevert(IHyperdrive.RestrictedZeroAddress.selector);
+        hyperdrive.openLong(
+            basePaid,
+            0,
+            0,
+            IHyperdrive.Options({
+                destination: address(0),
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
     function test_open_long_failure_pause() external {
         uint256 apr = 0.05e18;
 

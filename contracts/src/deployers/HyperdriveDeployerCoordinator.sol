@@ -199,7 +199,7 @@ abstract contract HyperdriveDeployerCoordinator is
             // Get the initial share price and the hashes of the config and extra
             // data.
             uint256 initialSharePrice = _getInitialVaultSharePrice(_extraData);
-            bytes32 configHash = keccak256(abi.encode(_deployConfig));
+            bytes32 configHash_ = keccak256(abi.encode(_deployConfig));
             bytes32 extraDataHash = keccak256(_extraData);
 
             // Convert the deploy config into the pool config and set the initial
@@ -219,7 +219,7 @@ abstract contract HyperdriveDeployerCoordinator is
             );
 
             // Store the deployment.
-            _deployments[msg.sender][_deploymentId].configHash = configHash;
+            _deployments[msg.sender][_deploymentId].configHash = configHash_;
             _deployments[msg.sender][_deploymentId]
                 .extraDataHash = extraDataHash;
             _deployments[msg.sender][_deploymentId]
@@ -231,15 +231,13 @@ abstract contract HyperdriveDeployerCoordinator is
 
         // Ensure that the deployment is not a fresh deployment. We can check
         // this by ensuring that the config hash is set.
-        if (_deployments[msg.sender][_deploymentId].configHash == bytes32(0)) {
+        bytes32 configHash = _deployments[msg.sender][_deploymentId].configHash;
+        if (configHash == bytes32(0)) {
             revert IHyperdriveDeployerCoordinator.DeploymentDoesNotExist();
         }
 
         // Ensure that the provided config matches the config hash.
-        if (
-            keccak256(abi.encode(_deployConfig)) !=
-            _deployments[msg.sender][_deploymentId].configHash
-        ) {
+        if (keccak256(abi.encode(_deployConfig)) != configHash) {
             revert IHyperdriveDeployerCoordinator.MismatchedConfig();
         }
 

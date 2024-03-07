@@ -41,6 +41,9 @@ abstract contract HyperdriveLP is
         // Check that the message value and base amount are valid.
         _checkMessageValue();
 
+        // Check that the provided options are valid.
+        _checkOptions(_options);
+
         // Ensure that the pool hasn't been initialized yet.
         if (_marketState.isInitialized) {
             revert IHyperdrive.PoolAlreadyInitialized();
@@ -138,8 +141,14 @@ abstract contract HyperdriveLP is
         uint256 _maxApr,
         IHyperdrive.Options calldata _options
     ) internal nonReentrant isNotPaused returns (uint256 lpShares) {
-        // Check that the message value and base amount are valid.
+        // Check that the message value is valid.
         _checkMessageValue();
+
+        // Check that the provided options are valid.
+        _checkOptions(_options);
+
+        // Ensure that the contribution is greater than or equal to the minimum
+        // transaction amount.
         if (_contribution < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
@@ -283,6 +292,11 @@ abstract contract HyperdriveLP is
         nonReentrant
         returns (uint256 proceeds, uint256 withdrawalShares)
     {
+        // Check that the provided options are valid.
+        _checkOptions(_options);
+
+        // Ensure that the amount of LP shares to remove is greater than or
+        // equal to the minimum transaction amount.
         if (_lpShares < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
@@ -358,6 +372,9 @@ abstract contract HyperdriveLP is
         nonReentrant
         returns (uint256 proceeds, uint256 withdrawalSharesRedeemed)
     {
+        // Check that the provided options are valid.
+        _checkOptions(_options);
+
         // Perform a checkpoint.
         uint256 vaultSharePrice = _pricePerVaultShare();
         _applyCheckpoint(_latestCheckpoint(), vaultSharePrice);

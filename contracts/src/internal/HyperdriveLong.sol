@@ -48,6 +48,9 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         // Check that the message value is valid.
         _checkMessageValue();
 
+        // Check that the provided options are valid.
+        _checkOptions(_options);
+
         // Deposit the user's input amount.
         (uint256 sharesDeposited, uint256 vaultSharePrice) = _deposit(
             _amount,
@@ -146,6 +149,11 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         uint256 _minOutput,
         IHyperdrive.Options calldata _options
     ) internal nonReentrant returns (uint256) {
+        // Check that the provided options are valid.
+        _checkOptions(_options);
+
+        // Ensure that the bond amount is greater than or equal to the minimum
+        // transaction amount.
         if (_bondAmount < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
