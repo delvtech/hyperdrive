@@ -784,7 +784,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
         vm.startPrank(bob);
 
         // Ensure that Bob receives a refund on the excess ETH that he sent
-        // when opening a long with "asBase" set to true.
+        // when opening a short with "asBase" set to true.
         uint256 ethBalanceBefore = address(bob).balance;
         (, uint256 basePaid) = hyperdrive.openShort{ value: 2e18 }(
             1e18,
@@ -798,7 +798,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
         );
         assertEq(address(bob).balance, ethBalanceBefore - basePaid);
 
-        // Ensure that Bob receives a  refund when he opens a long with "asBase"
+        // Ensure that Bob receives a refund when he opens a short with "asBase"
         // set to false and sends ether to the contract.
         ethBalanceBefore = address(bob).balance;
         hyperdrive.openShort{ value: 0.5e18 }(
