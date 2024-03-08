@@ -34,11 +34,6 @@ contract RETHHyperdriveTest is HyperdriveTest {
 
     uint256 internal constant FIXED_RATE = 0.05e18;
 
-    // The Lido storage location that tracks buffered ether reserves. We can
-    // simulate the accrual of interest by updating this value.
-    bytes32 internal constant BUFFERED_ETHER_POSITION =
-        keccak256("network.balance.total");
-
     IRocketStorage internal constant ROCKET_STORAGE =
         IRocketStorage(0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46);
 
@@ -390,7 +385,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
 
         // Ensure that the share price accurately predicts the amount of shares
         // that will be minted for depositing a given amount of ETH. This will
-        // be an approximation since Lido uses `mulDivDown` whereas this test
+        // be an approximation since Rocket Pool uses `mulDivDown` whereas this test
         // pre-computes the share price.
         basePaid = basePaid.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
@@ -841,7 +836,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
         assertLe(baseProceeds, expectedBaseProceeds + 10);
         assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 100);
 
-        // Ensure that Lido's aggregates and the token balances were updated
+        // Ensure that Rocket Pool's aggregates and the token balances were updated
         // correctly during the trade.
         verifyRethWithdrawal(
             bob,
@@ -852,150 +847,6 @@ contract RETHHyperdriveTest is HyperdriveTest {
             hyperdriveBalancesBefore
         );
     }
-
-    // function test_attack_long_steth() external {
-    //     // Get some balance information before the deposit.
-    //     LIDO.sharesOf(address(hyperdrive));
-
-    //     // Bob opens a long by depositing ETH.
-    //     uint256 basePaid = HyperdriveUtils.calculateMaxLong(hyperdrive);
-    //     (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
-
-    //     // Get some balance information before the withdrawal.
-    //     uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
-    //     uint256 totalSharesBefore = LIDO.getTotalShares();
-    //     AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-    //     AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-    //         address(hyperdrive)
-    //     );
-
-    //     // Bob closes his long with stETH as the target asset.
-    //     uint256 shareProceeds = closeLong(bob, maturityTime, longAmount, false);
-    //     uint256 baseProceeds = shareProceeds.mulDivDown(
-    //         LIDO.getTotalPooledEther(),
-    //         LIDO.getTotalShares()
-    //     );
-
-    //     // Ensure that Lido's aggregates and the token balances were updated
-    //     // correctly during the trade.
-    //     verifyStethWithdrawal(
-    //         bob,
-    //         baseProceeds,
-    //         totalPooledEtherBefore,
-    //         totalSharesBefore,
-    //         bobBalancesBefore,
-    //         hyperdriveBalancesBefore
-    //     );
-    // }
-
-    // function test__DOSStethHyperdriveCloseLong() external {
-    //     //###########################################################################"
-    //     //#### TEST: Denial of Service when LIDO's `TotalPooledEther` decreases. ####"
-    //     //###########################################################################"
-
-    //     // Ensure that the share price is the expected value.
-    //     uint256 totalPooledEther = LIDO.getTotalPooledEther();
-    //     uint256 totalShares = LIDO.getTotalShares();
-    //     uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
-    //     assertEq(vaultSharePrice, totalPooledEther.divDown(totalShares));
-
-    //     // Ensure that the share price accurately predicts the amount of shares
-    //     // that will be minted for depositing a given amount of ETH. This will
-    //     // be an approximation since Lido uses `mulDivDown` whereas this test
-    //     // pre-computes the share price.
-    //     uint256 basePaid = HyperdriveUtils.calculateMaxLong(hyperdrive) / 10;
-    //     uint256 hyperdriveSharesBefore = LIDO.sharesOf(address(hyperdrive));
-
-    //     // Bob calls openLong()
-    //     (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
-    //     // Bob paid basePaid == ", basePaid);
-    //     // Bob received longAmount == ", longAmount);
-    //     assertApproxEqAbs(
-    //         LIDO.sharesOf(address(hyperdrive)),
-    //         hyperdriveSharesBefore + basePaid.divDown(vaultSharePrice),
-    //         1e4
-    //     );
-
-    //     // Get some balance information before the withdrawal.
-    //     uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
-    //     uint256 totalSharesBefore = LIDO.getTotalShares();
-    //     AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-    //     AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-    //         address(hyperdrive)
-    //     );
-    //     uint256 snapshotId = vm.snapshot();
-
-    //     // Taking a Snapshot of the state
-    //     // Bob closes his long with stETH as the target asset.
-    //     uint256 shareProceeds = closeLong(
-    //         bob,
-    //         maturityTime,
-    //         longAmount / 2,
-    //         false
-    //     );
-    //     uint256 baseProceeds = shareProceeds.mulDivDown(
-    //         LIDO.getTotalPooledEther(),
-    //         LIDO.getTotalShares()
-    //     );
-
-    //     // Ensure that Lido's aggregates and the token balances were updated
-    //     // correctly during the trade.
-    //     verifyStethWithdrawal(
-    //         bob,
-    //         baseProceeds,
-    //         totalPooledEtherBefore,
-    //         totalSharesBefore,
-    //         bobBalancesBefore,
-    //         hyperdriveBalancesBefore
-    //     );
-    //     // # Reverting to the saved state Snapshot #\n");
-    //     vm.revertTo(snapshotId);
-
-    //     // # Manipulating Lido's totalPooledEther : removing only 1e18
-    //     bytes32 balanceBefore = vm.load(
-    //         address(LIDO),
-    //         bytes32(
-    //             0xa66d35f054e68143c18f32c990ed5cb972bb68a68f500cd2dd3a16bbf3686483
-    //         )
-    //     );
-    //     // LIDO.CL_BALANCE_POSITION Before: ", uint(balanceBefore));
-    //     uint(LIDO.getTotalPooledEther());
-    //     hyperdrive.balanceOf(
-    //         AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
-    //         bob
-    //     );
-    //     vm.store(
-    //         address(LIDO),
-    //         bytes32(
-    //             uint256(
-    //                 0xa66d35f054e68143c18f32c990ed5cb972bb68a68f500cd2dd3a16bbf3686483
-    //             )
-    //         ),
-    //         bytes32(uint256(balanceBefore) - 1e18)
-    //     );
-
-    //     // Avoid Stack too deep
-    //     uint256 maturityTime_ = maturityTime;
-    //     uint256 longAmount_ = longAmount;
-
-    //     vm.load(
-    //         address(LIDO),
-    //         bytes32(
-    //             uint256(
-    //                 0xa66d35f054e68143c18f32c990ed5cb972bb68a68f500cd2dd3a16bbf3686483
-    //             )
-    //         )
-    //     );
-
-    //     // Bob closes his long with stETH as the target asset.
-    //     hyperdrive.balanceOf(
-    //         AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime_),
-    //         bob
-    //     );
-
-    //     // The fact that this doesn't revert means that it works
-    //     closeLong(bob, maturityTime_, longAmount_ / 2, false);
-    // }
 
     function basePaidAfterFee(
         uint256 basePaid
@@ -1136,25 +987,16 @@ contract RETHHyperdriveTest is HyperdriveTest {
         vm.warp(block.timestamp + timeDelta);
 
         // Accrue interest in RocketPool. Since the share price is given by
-        // `getTotalPooledEther() / getTotalShares()`, we can simulate the
+        // `getTotalETHBalance() / getTotalRETHBalance()`, we can simulate the
         // accrual of interest by multiplying the total pooled ether by the
         // variable rate plus one.
-        uint256 bufferedEther = variableRate >= 0
-            ? rocketNetworkBalances.getTotalETHBalance().mulDown(
-                uint256(variableRate + 1e18)
-            )
-            : rocketNetworkBalances.getTotalETHBalance().mulDown(
-                uint256(variableRate + 1e18)
-            );
+        uint256 bufferedEther = rocketNetworkBalances
+            .getTotalETHBalance()
+            .mulDown(uint256(variableRate + 1e18));
         ROCKET_STORAGE.setUint(
             keccak256("network.balance.total"),
             bufferedEther
         );
-        // vm.store(
-        //     address(ROCKET_STORAGE),
-        //     BUFFERED_ETHER_POSITION,
-        //     bytes32(bufferedEther)
-        // );
         vm.stopPrank();
     }
 
