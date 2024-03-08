@@ -1,6 +1,5 @@
-pragma solidity >0.5.0 <0.9.0;
-
-// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity 0.8.20;
 
 interface IRocketDepositPool {
     function getBalance() external view returns (uint256);
