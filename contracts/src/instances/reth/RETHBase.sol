@@ -118,12 +118,14 @@ abstract contract RETHBase is HyperdriveBase {
     ///        used in this implementation are "destination" which specifies the
     ///        recipient of the withdrawal and "asBase" which determines
     ///        if the withdrawal is settled in base or vault shares.
-    /// @return The amount of shares withdrawn from the yield source.
+    /// @return amountWithdrawn The amount withdrawn from the yield source.
+    ///         it will be in either base or shares depending on the `asBase`
+    ///         option.
     function _withdraw(
         uint256 _shares,
         uint256 _sharePrice,
         IHyperdrive.Options calldata _options
-    ) internal override returns (uint256) {
+    ) internal override returns (uint256 amountWithdrawn) {
         // Fetching the RETH token address from the storage contract.
         address rocketTokenRETHAddress = _rocketStorage.getAddress(
             keccak256(abi.encodePacked("contract.address", "rocketTokenRETH"))
@@ -163,12 +165,13 @@ abstract contract RETHBase is HyperdriveBase {
             if (!success) {
                 revert IHyperdrive.TransferFailed();
             }
+
+            amountWithdrawn = ethAmount;
         } else {
             // Transfer the RETH shares to the destination.
             rocketTokenRETH.transfer(_options.destination, _shares);
+            amountWithdrawn = _shares;
         }
-
-        return _shares;
     }
 
     /// @dev Returns the current vault share price. We simply use Rocket Pool's
