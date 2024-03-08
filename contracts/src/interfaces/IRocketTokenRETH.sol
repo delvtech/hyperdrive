@@ -1,6 +1,6 @@
-pragma solidity >0.5.0 <0.9.0;
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity 0.8.20;
 
-// SPDX-License-Identifier: GPL-3.0-only
 import { IERC20 } from "./IERC20.sol";
 
 interface IRocketTokenRETH is IERC20 {
