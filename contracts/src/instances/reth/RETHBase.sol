@@ -7,6 +7,7 @@ import { IRocketDepositPool } from "../../interfaces/IRocketDepositPool.sol";
 import { IRocketTokenRETH } from "../../interfaces/IRocketTokenRETH.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
+import "forge-std/console.sol";
 
 /// @author DELV
 /// @title RETHHyperdrive
@@ -194,4 +195,7 @@ abstract contract RETHBase is HyperdriveBase {
     /// @dev We override the message value check since this integration is
     ///      payable.
     function _checkMessageValue() internal pure override {}
+
+    // Function to receive Ether. msg.data must be empty
+    receive() external payable {}
 }
