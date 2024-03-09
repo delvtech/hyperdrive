@@ -12,7 +12,6 @@ impl State {
     /// c(x) = \phi_{c} \cdot \left( \tfrac{1}{p} - 1 \right) \cdot x
     /// $$
     pub fn open_long_curve_fees(&self, base_amount: FixedPoint) -> FixedPoint {
-        // curve fee = ((1 / p) - 1) * phi_curve * dz
         self.curve_fee() * ((fixed!(1e18) / self.get_spot_price()) - fixed!(1e18)) * base_amount
     }
 
@@ -36,7 +35,7 @@ impl State {
         bond_amount: FixedPoint,
         normalized_time_remaining: FixedPoint,
     ) -> FixedPoint {
-        // ((1 - p) * phi_curve * d_y * t) / c
+        // curve_fee = ((1 - p) * phi_curve * d_y * t) / c
         self.curve_fee()
             * (fixed!(1e18) - self.get_spot_price())
             * bond_amount.mul_div_down(normalized_time_remaining, self.vault_share_price())
@@ -49,7 +48,7 @@ impl State {
         bond_amount: FixedPoint,
         normalized_time_remaining: FixedPoint,
     ) -> FixedPoint {
-        // flat fee = (d_y * (1 - t) * phi_flat) / c
+        // flat_fee = (d_y * (1 - t) * phi_flat) / c
         bond_amount.mul_div_down(
             fixed!(1e18) - normalized_time_remaining,
             self.vault_share_price(),
