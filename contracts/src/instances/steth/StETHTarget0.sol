@@ -28,38 +28,6 @@ contract StETHTarget0 is HyperdriveTarget0, StETHBase {
         ILido __lido
     ) HyperdriveTarget0(_config) StETHBase(__lido) {}
 
-    /// Extras ///
-
-    /// @notice Transfers the contract's balance of a target token to the fee
-    ///         collector address.
-    /// @dev WARN: It is unlikely but possible that there is a selector overlap
-    ///      with 'transferFrom'. Any integrating contracts should be checked
-    ///      for that, as it may result in an unexpected call from this address.
-    /// @param _target The target token to sweep.
-    function sweep(IERC20 _target) external {
-        // Ensure that the sender is the fee collector or a pauser.
-        if (msg.sender != _feeCollector && !_pausers[msg.sender]) {
-            revert IHyperdrive.Unauthorized();
-        }
-
-        // Ensure that the target isn't the stETH token.
-        if (address(_target) == address(_lido)) {
-            revert IHyperdrive.UnsupportedToken();
-        }
-
-        // Get Hyperdrive's balance of stETH tokens prior to sweeping.
-        uint256 stETHBalance = _lido.balanceOf(address(this));
-
-        // Transfer the entire balance of the sweep target to the fee collector.
-        uint256 balance = _target.balanceOf(address(this));
-        ERC20(address(_target)).safeTransfer(_feeCollector, balance);
-
-        // Ensure that the stETH balance hasn't changed.
-        if (_lido.balanceOf(address(this)) != stETHBalance) {
-            revert IHyperdrive.SweepFailed();
-        }
-    }
-
     /// Getters ///
 
     /// @notice Returns the Lido contract.

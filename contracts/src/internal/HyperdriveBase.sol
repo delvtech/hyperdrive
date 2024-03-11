@@ -211,6 +211,15 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         uint256 _baseAmount
     ) internal view virtual returns (uint256 shareAmount);
 
+    /// @dev Gets the total amount of base held by the pool.
+    /// @return baseAmount The total amount of base.
+    function _totalBase() internal view virtual returns (uint256 baseAmount);
+
+    /// @dev Gets the total amount of shares held by the pool in the yield
+    ///      source.
+    /// @return shareAmount The total amount of shares.
+    function _totalShares() internal view virtual returns (uint256 shareAmount);
+
     /// Pause ///
 
     /// @dev Blocks a function execution if the contract is paused.

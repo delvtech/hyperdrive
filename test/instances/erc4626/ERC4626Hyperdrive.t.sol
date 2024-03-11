@@ -134,6 +134,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             timeStretch: ONE.divDown(22.186877016851916266e18),
             governance: alice,
             feeCollector: bob,
+            sweepCollector: celine,
             fees: IHyperdrive.Fees(0, 0, 0, 0)
         });
         address target0 = address(new ERC4626Target0(config, pool));

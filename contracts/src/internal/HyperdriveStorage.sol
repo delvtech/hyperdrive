@@ -77,8 +77,15 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
 
     /// Admin ///
 
+    // FIXME: Add a setter.
+    //
     /// @dev The address which collects governance fees.
-    address internal immutable _feeCollector;
+    address internal _feeCollector;
+
+    // FIXME: Add a setter.
+    //
+    /// @dev The address which collects swept tokens.
+    address internal _sweepCollector;
 
     /// @dev The address that can pause the contract.
     address internal _governance;
@@ -159,8 +166,9 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
         _linkerFactory = _config.linkerFactory;
         _linkerCodeHash = _config.linkerCodeHash;
 
-        // Initialize the governance and fee collector.
+        // Initialize governance, the fee collector, and the sweep collector.
         _governance = _config.governance;
         _feeCollector = _config.feeCollector;
+        _sweepCollector = _config.sweepCollector;
     }
 }

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
+import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
@@ -13,6 +16,8 @@ import { HyperdriveBase } from "./HyperdriveBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
+    using SafeERC20 for ERC20;
+
     /// @dev This function collects the governance fees accrued by the pool.
     /// @param _options The options that configure how the fees are settled.
     /// @return proceeds The governance fees collected. The units of this
@@ -87,5 +92,39 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
         // Update the pauser status and emit an event.
         _pausers[_who] = _status;
         emit PauserUpdated(_who, _status);
+    }
+
+    /// @dev Transfers the contract's balance of a target token to the sweep
+    ///      collector address.
+    /// @dev WARN: It is unlikely but possible that there is a selector overlap
+    ///      with 'transfer'. Any integrating contracts should be checked
+    ///      for that, as it may result in an unexpected call from this address.
+    /// @param _target The target token to sweep.
+    function _sweep(IERC20 _target) internal nonReentrant {
+        // Ensure that the sender is the fee collector or a pauser.
+        if (
+            !_pausers[msg.sender] &&
+            msg.sender != _sweepCollector &&
+            msg.sender != _governance
+        ) {
+            revert IHyperdrive.Unauthorized();
+        }
+
+        // Gets the Hyperdrive's balance of base and vault shares prior to
+        // sweeping.
+        uint256 baseBalance = _totalBase();
+        uint256 shareBalance = _totalShares();
+
+        // Transfer the entire balance of the sweep target to the sweep
+        // collector.
+        uint256 balance = _target.balanceOf(address(this));
+        ERC20(address(_target)).safeTransfer(_sweepCollector, balance);
+
+        // Ensure that the base and vault shares balance hasn't changed.
+        if (_totalBase() != baseBalance || _totalShares() != shareBalance) {
+            revert IHyperdrive.SweepFailed();
+        }
+
+        emit Sweep(_sweepCollector, address(_target));
     }
 }

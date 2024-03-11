@@ -121,6 +121,8 @@ interface IHyperdrive is
         address governance;
         /// @dev The address which collects governance fees
         address feeCollector;
+        /// @dev The address which collects swept tokens.
+        address sweepCollector;
         /// @dev The fees applied to trades.
         IHyperdrive.Fees fees;
     }

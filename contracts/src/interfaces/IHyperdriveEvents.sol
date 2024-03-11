@@ -109,4 +109,7 @@ interface IHyperdriveEvents is IMultiTokenEvents {
 
     /// @notice Emitted when the pause status is updated.
     event PauseStatusUpdated(bool isPaused);
+
+    /// @notice Emitted when tokens are swept.
+    event Sweep(address indexed collector, address indexed target);
 }
