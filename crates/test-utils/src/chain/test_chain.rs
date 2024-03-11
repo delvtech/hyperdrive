@@ -493,8 +493,9 @@ impl TestChain {
             checkpoint_duration: U256::from(60 * 60 * 24),     // 1 day
             time_stretch: get_time_stretch(fixed!(0.05e18), U256::from(60 * 60 * 24 * 365).into())
                 .into(), // time stretch for 5% rate
-            governance: client.address(),
             fee_collector: client.address(),
+            sweep_collector: client.address(),
+            governance: client.address(),
             fees: Fees {
                 curve: uint256!(0.05e18),
                 flat: uint256!(0.0005e18),
@@ -639,6 +640,7 @@ impl TestChain {
                     config.admin,       // hyperdrive governance
                     vec![config.admin], // default pausers
                     config.admin,       // fee collector
+                    config.admin,       // sweep collector
                     config.factory_checkpoint_duration_resolution,
                     config.factory_min_checkpoint_duration,
                     config.factory_max_checkpoint_duration,
@@ -716,8 +718,9 @@ impl TestChain {
                 .send()
                 .await?;
             let pool_config = PoolDeployConfig {
-                governance: factory.hyperdrive_governance().call().await?,
                 fee_collector: factory.fee_collector().call().await?,
+                sweep_collector: factory.sweep_collector().call().await?,
+                governance: factory.hyperdrive_governance().call().await?,
                 linker_factory: factory.linker_factory().call().await?,
                 linker_code_hash: factory.linker_code_hash().call().await?,
                 time_stretch: uint256!(0),
@@ -884,8 +887,9 @@ impl TestChain {
                 )
                 .await?;
             let pool_config = PoolDeployConfig {
-                governance: factory.hyperdrive_governance().call().await?,
                 fee_collector: factory.fee_collector().call().await?,
+                sweep_collector: factory.sweep_collector().call().await?,
+                governance: factory.hyperdrive_governance().call().await?,
                 linker_factory: factory.linker_factory().call().await?,
                 linker_code_hash: factory.linker_code_hash().call().await?,
                 time_stretch: uint256!(0),

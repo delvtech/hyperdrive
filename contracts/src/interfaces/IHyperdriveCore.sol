@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { IERC20 } from "./IERC20.sol";
 import { IHyperdrive } from "./IHyperdrive.sol";
 import { IMultiTokenCore } from "./IMultiTokenCore.sol";
 
@@ -182,6 +183,14 @@ interface IHyperdriveCore is IMultiTokenCore {
     /// @param _status True to pause all deposits and false to unpause them.
     function pause(bool _status) external;
 
+    /// @notice Allows governance to transfer the fee collector role.
+    /// @param _who The new fee collector address.
+    function setFeeCollector(address _who) external;
+
+    /// @notice Allows governance to transfer the sweep collector role.
+    /// @param _who The new sweep collector address.
+    function setSweepCollector(address _who) external;
+
     /// @notice Allows governance to transfer the governance role.
     /// @param _who The new governance address.
     function setGovernance(address _who) external;
@@ -190,4 +199,12 @@ interface IHyperdriveCore is IMultiTokenCore {
     /// @param who The address to change.
     /// @param status The new pauser status.
     function setPauser(address who, bool status) external;
+
+    /// @notice Transfers the contract's balance of a target token to the fee
+    ///         collector address.
+    /// @dev WARN: It is unlikely but possible that there is a selector overlap
+    ///      with 'transferFrom'. Any integrating contracts should be checked
+    ///      for that, as it may result in an unexpected call from this address.
+    /// @param _target The target token to sweep.
+    function sweep(IERC20 _target) external;
 }

@@ -137,4 +137,22 @@ abstract contract ERC4626Base is HyperdriveBase {
     ) internal view override returns (uint256) {
         return _vault.convertToShares(_baseAmount);
     }
+
+    /// @dev Gets the total amount of base held by the pool.
+    /// @return baseAmount The total amount of base.
+    function _totalBase() internal view override returns (uint256) {
+        return _baseToken.balanceOf(address(this));
+    }
+
+    /// @dev Gets the total amount of shares held by the pool in the yield
+    ///      source.
+    /// @return shareAmount The total amount of shares.
+    function _totalShares()
+        internal
+        view
+        override
+        returns (uint256 shareAmount)
+    {
+        return _vault.balanceOf(address(this));
+    }
 }

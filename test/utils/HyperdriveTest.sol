@@ -158,6 +158,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 ),
                 governance: governance,
                 feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 fees: fees
             });
     }

@@ -26,6 +26,10 @@ interface IHyperdriveFactory {
     /// @notice Emitted when the fee collector used in new deployments is updated.
     event FeeCollectorUpdated(address indexed newFeeCollector);
 
+    /// @notice Emitted when the sweep collector used in new deployments is
+    ///         updated.
+    event SweepCollectorUpdated(address indexed newSweepCollector);
+
     /// @notice Emitted when the factory's governance is updated.
     event GovernanceUpdated(address indexed governance);
 
