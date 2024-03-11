@@ -77,13 +77,9 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
 
     /// Admin ///
 
-    // FIXME: Add a setter.
-    //
     /// @dev The address which collects governance fees.
     address internal _feeCollector;
 
-    // FIXME: Add a setter.
-    //
     /// @dev The address which collects swept tokens.
     address internal _sweepCollector;
 

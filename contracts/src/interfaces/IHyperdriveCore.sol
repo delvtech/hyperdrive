@@ -183,6 +183,14 @@ interface IHyperdriveCore is IMultiTokenCore {
     /// @param _status True to pause all deposits and false to unpause them.
     function pause(bool _status) external;
 
+    /// @notice Allows governance to transfer the fee collector role.
+    /// @param _who The new fee collector address.
+    function setFeeCollector(address _who) external;
+
+    /// @notice Allows governance to transfer the sweep collector role.
+    /// @param _who The new sweep collector address.
+    function setSweepCollector(address _who) external;
+
     /// @notice Allows governance to transfer the governance role.
     /// @param _who The new governance address.
     function setGovernance(address _who) external;

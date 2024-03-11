@@ -36,6 +36,9 @@ contract HyperdriveFactory is IHyperdriveFactory {
     /// @notice The fee collector used when new instances are deployed.
     address public feeCollector;
 
+    /// @notice The sweep collector used when new instances are deployed.
+    address public sweepCollector;
+
     /// @notice The resolution for the checkpoint duration. Every checkpoint
     ///         duration must be a multiple of this resolution.
     uint256 public checkpointDurationResolution;
@@ -86,6 +89,8 @@ contract HyperdriveFactory is IHyperdriveFactory {
         address[] defaultPausers;
         /// @dev The recipient of governance fees from new deployments.
         address feeCollector;
+        /// @dev The recipient of swept tokens from new deployments.
+        address sweepCollector;
         /// @dev The resolution for the checkpoint duration.
         uint256 checkpointDurationResolution;
         /// @dev The minimum checkpoint duration that can be used in new
@@ -246,6 +251,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
         governance = _factoryConfig.governance;
         hyperdriveGovernance = _factoryConfig.hyperdriveGovernance;
         feeCollector = _factoryConfig.feeCollector;
+        sweepCollector = _factoryConfig.sweepCollector;
         _defaultPausers = _factoryConfig.defaultPausers;
         linkerFactory = _factoryConfig.linkerFactory;
         linkerCodeHash = _factoryConfig.linkerCodeHash;
@@ -301,6 +307,15 @@ contract HyperdriveFactory is IHyperdriveFactory {
     function updateFeeCollector(address _feeCollector) external onlyGovernance {
         feeCollector = _feeCollector;
         emit FeeCollectorUpdated(_feeCollector);
+    }
+
+    /// @notice Allows governance to change the sweep collector address.
+    /// @param _sweepCollector The new sweep collector address.
+    function updateSweepCollector(
+        address _sweepCollector
+    ) external onlyGovernance {
+        sweepCollector = _sweepCollector;
+        emit SweepCollectorUpdated(_sweepCollector);
     }
 
     /// @notice Allows governance to change the checkpoint duration resolution.
@@ -926,6 +941,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
             _config.linkerFactory != linkerFactory ||
             _config.linkerCodeHash != linkerCodeHash ||
             _config.feeCollector != feeCollector ||
+            _config.sweepCollector != sweepCollector ||
             _config.governance != hyperdriveGovernance ||
             _config.timeStretch != 0
         ) {
@@ -939,6 +955,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
         _config.linkerFactory = linkerFactory;
         _config.linkerCodeHash = linkerCodeHash;
         _config.feeCollector = feeCollector;
+        _config.sweepCollector = sweepCollector;
         _config.governance = address(this);
         _config.timeStretch = timeStretch;
     }

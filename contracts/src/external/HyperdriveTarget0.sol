@@ -57,6 +57,18 @@ abstract contract HyperdriveTarget0 is
         _pause(_status);
     }
 
+    /// @notice Allows governance to change the fee collector.
+    /// @param _who The new fee collector address.
+    function setFeeCollector(address _who) external {
+        _setFeeCollector(_who);
+    }
+
+    /// @notice Allows governance to change the sweep collector.
+    /// @param _who The new sweep collector address.
+    function setSweepCollector(address _who) external {
+        _setSweepCollector(_who);
+    }
+
     /// @notice Allows governance to change governance.
     /// @param _who The new governance address.
     function setGovernance(address _who) external {

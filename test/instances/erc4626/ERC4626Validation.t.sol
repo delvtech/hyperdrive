@@ -74,7 +74,8 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: celine,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,

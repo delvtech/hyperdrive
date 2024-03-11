@@ -39,8 +39,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
     event DefaultPausersUpdated(address[] newDefaultPausers);
 
-    event FeeCollectorUpdated(address indexed newFeeCollector);
-
     event DeployerCoordinatorAdded(address indexed deployerCoordinator);
 
     event DeployerCoordinatorRemoved(address indexed deployerCoordinator);
@@ -87,7 +85,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             .FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: celine,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -129,7 +128,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: bob,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 30 minutes,
@@ -157,7 +157,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: bob,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 1.5 hours,
@@ -185,7 +186,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: bob,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -213,7 +215,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: bob,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -238,7 +241,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: bob,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -264,7 +268,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: bob,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -289,7 +294,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: bob,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -315,7 +321,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: bob,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -340,7 +347,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: bob,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -365,7 +373,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: bob,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -390,7 +399,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: bob,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -415,7 +425,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: bob,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -440,7 +451,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: bob,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -465,7 +477,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: bob,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -490,7 +503,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: bob,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -515,7 +529,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: bob,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -539,7 +554,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             .FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: celine,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -683,6 +699,26 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         emit FeeCollectorUpdated(newFeeCollector);
         factory.updateFeeCollector(newFeeCollector);
         assertEq(factory.feeCollector(), newFeeCollector);
+    }
+
+    function test_updateSweepCollector() external {
+        address newSweepCollector = address(0xdeadbeef);
+
+        // Ensure that the sweep collector can't be updated by someone other
+        // than the current governance.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
+        factory.updateSweepCollector(newSweepCollector);
+
+        // Ensure that the sweep collector was updated successfully and that the
+        // correct event was emitted.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        vm.expectEmit(true, true, true, true);
+        emit SweepCollectorUpdated(newSweepCollector);
+        factory.updateSweepCollector(newSweepCollector);
+        assertEq(factory.sweepCollector(), newSweepCollector);
     }
 
     function test_updateCheckpointDurationResolution() external {
@@ -1434,8 +1470,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
                 timeStretch: 0,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 governance: factory.hyperdriveGovernance(),
-                feeCollector: factory.feeCollector(),
                 fees: IHyperdrive.Fees(0.01e18, 0.001e18, 0.15e18, 0.03e18),
                 linkerFactory: factory.linkerFactory(),
                 linkerCodeHash: factory.linkerCodeHash()
@@ -2014,7 +2051,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         }
 
         // Ensure than an instance can't be deployed with a linker factory that
-        // is set incorrectly.
+        // is set incorrectly incorrectly.
         {
             vm.stopPrank();
             vm.startPrank(bob);
@@ -2036,7 +2073,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         }
 
         // Ensure than an instance can't be deployed with a linker code hash
-        // that is set.
+        // that is set incorrectly.
         {
             vm.stopPrank();
             vm.startPrank(bob);
@@ -2058,7 +2095,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         }
 
         // Ensure than an instance can't be deployed with a fee collector that
-        // is set.
+        // is set incorrectly.
         {
             vm.stopPrank();
             vm.startPrank(bob);
@@ -2079,8 +2116,30 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             config.feeCollector = oldFeeCollector;
         }
 
+        // Ensure than an instance can't be deployed with a sweep collector that
+        // is set incorrectly.
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            address oldSweepCollector = config.sweepCollector;
+            config.sweepCollector = alice;
+            vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
+            factory.deployAndInitialize(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.05e18,
+                0.05e18,
+                new bytes(0),
+                bytes32(uint256(0xdeadbabe))
+            );
+            config.sweepCollector = oldSweepCollector;
+        }
+
         // Ensure than an instance can't be deployed with a governance address
-        // that is set.
+        // that is set incorrectly.
         {
             vm.stopPrank();
             vm.startPrank(bob);
@@ -2181,7 +2240,8 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: celine,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -2217,8 +2277,9 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: 0,
+            feeCollector: feeCollector,
+            sweepCollector: sweepCollector,
             governance: factory.hyperdriveGovernance(),
-            feeCollector: factory.feeCollector(),
             fees: IHyperdrive.Fees(0.01e18, 0.001e18, 0.15e18, 0.03e18),
             linkerFactory: factory.linkerFactory(),
             linkerCodeHash: factory.linkerCodeHash()
@@ -2766,7 +2827,8 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: celine,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -2942,7 +3004,8 @@ contract HyperdriveFactoryAddHyperdriveFactoryTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: celine,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -3046,7 +3109,8 @@ contract HyperdriveFactoryRemoveInstanceTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: celine,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,

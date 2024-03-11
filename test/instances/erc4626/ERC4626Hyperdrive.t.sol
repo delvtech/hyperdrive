@@ -89,7 +89,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: celine,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -295,6 +296,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 timeStretch: 0,
                 governance: factory.hyperdriveGovernance(),
                 feeCollector: factory.feeCollector(),
+                sweepCollector: factory.sweepCollector(),
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
             });
         dai.approve(address(factory), type(uint256).max);
@@ -399,6 +401,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 timeStretch: 0,
                 governance: factory.hyperdriveGovernance(),
                 feeCollector: factory.feeCollector(),
+                sweepCollector: factory.sweepCollector(),
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
             });
         dai.approve(address(factory), type(uint256).max);

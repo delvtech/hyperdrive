@@ -254,6 +254,16 @@ abstract contract Hyperdrive is
     }
 
     /// @inheritdoc IHyperdriveCore
+    function setFeeCollector(address) external {
+        _delegate(target0);
+    }
+
+    /// @inheritdoc IHyperdriveCore
+    function setSweepCollector(address) external {
+        _delegate(target0);
+    }
+
+    /// @inheritdoc IHyperdriveCore
     function setGovernance(address) external {
         _delegate(target0);
     }

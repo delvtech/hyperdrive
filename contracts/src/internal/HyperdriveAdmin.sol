@@ -67,6 +67,32 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
         emit PauseStatusUpdated(_status);
     }
 
+    /// @dev Allows governance to transfer the fee collector role.
+    /// @param _who The new fee collector.
+    function _setFeeCollector(address _who) internal {
+        // Ensure that the sender is governance.
+        if (msg.sender != _governance) {
+            revert IHyperdrive.Unauthorized();
+        }
+
+        // Update the governance address and emit an event.
+        _feeCollector = _who;
+        emit FeeCollectorUpdated(_who);
+    }
+
+    /// @dev Allows governance to transfer the sweep collector role.
+    /// @param _who The new fee collector.
+    function _setSweepCollector(address _who) internal {
+        // Ensure that the sender is governance.
+        if (msg.sender != _governance) {
+            revert IHyperdrive.Unauthorized();
+        }
+
+        // Update the sweep collector address and emit an event.
+        _sweepCollector = _who;
+        emit SweepCollectorUpdated(_who);
+    }
+
     /// @dev Allows governance to transfer the governance role.
     /// @param _who The new governance address.
     function _setGovernance(address _who) internal {
