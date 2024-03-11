@@ -677,8 +677,11 @@ contract StETHHyperdriveTest is HyperdriveTest {
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
         vm.deal(bob, balanceBefore - basePaid);
 
+        // NOTE: The variable rate must be greater than 0 since the unsupported
+        // check is only triggered if the shares amount is non-zero.
+        //
         // The term passes and interest accrues.
-        variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        variableRate = variableRate.normalizeToRange(0.01e18, 2.5e18);
         advanceTime(POSITION_DURATION, variableRate);
 
         // Bob attempts to close his short with ETH as the target asset. This
