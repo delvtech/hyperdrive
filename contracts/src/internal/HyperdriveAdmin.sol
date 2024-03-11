@@ -127,7 +127,7 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
     ///      for that, as it may result in an unexpected call from this address.
     /// @param _target The target token to sweep.
     function _sweep(IERC20 _target) internal nonReentrant {
-        // Ensure that the sender is the fee collector or a pauser.
+        // Ensure that the caller is authorized to sweep tokens.
         if (
             !_pausers[msg.sender] &&
             msg.sender != _sweepCollector &&

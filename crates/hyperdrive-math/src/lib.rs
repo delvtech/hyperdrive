@@ -33,6 +33,7 @@ impl Distribution<State> for Standard {
             linker_code_hash: [0; 32],
             governance: Address::zero(),
             fee_collector: Address::zero(),
+            sweep_collector: Address::zero(),
             fees: Fees {
                 curve: rng.gen_range(fixed!(0.0001e18)..=fixed!(0.2e18)).into(),
                 flat: rng.gen_range(fixed!(0.0001e18)..=fixed!(0.2e18)).into(),
