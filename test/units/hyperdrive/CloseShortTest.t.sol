@@ -903,7 +903,13 @@ contract CloseShortTest is HyperdriveTest {
         );
 
         // Ensure that the correct event was emitted.
-        verifyCloseShortEvent(celine, maturityTime, shortAmount, baseProceeds);
+        verifyCloseShortEvent(
+            bob,
+            celine,
+            maturityTime,
+            shortAmount,
+            baseProceeds
+        );
 
         // Ensure that the proceeds were sent to Celine.
         assertEq(baseToken.balanceOf(bob), 0);
@@ -924,6 +930,7 @@ contract CloseShortTest is HyperdriveTest {
         // Ensure that one `CloseShort` event was emitted with the correct
         // arguments.
         verifyCloseShortEvent(
+            bob,
             bob,
             testCase.maturityTime,
             testCase.bondAmount,
@@ -1069,6 +1076,7 @@ contract CloseShortTest is HyperdriveTest {
     }
 
     function verifyCloseShortEvent(
+        address trader,
         address destination,
         uint256 maturityTime,
         uint256 bondAmount,
@@ -1081,9 +1089,10 @@ contract CloseShortTest is HyperdriveTest {
         );
         assertEq(logs.length, 1);
         VmSafe.Log memory log = logs[0];
-        assertEq(address(uint160(uint256(log.topics[1]))), destination);
+        assertEq(address(uint160(uint256(log.topics[1]))), trader);
+        assertEq(address(uint160(uint256(log.topics[2]))), destination);
         assertEq(
-            uint256(log.topics[2]),
+            uint256(log.topics[3]),
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime)
         );
         (

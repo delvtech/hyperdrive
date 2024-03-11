@@ -27,6 +27,7 @@ interface IHyperdriveEvents is IMultiTokenEvents {
     /// @notice Emitted when an LP removes liquidity from the Hyperdrive pool.
     event RemoveLiquidity(
         address indexed provider,
+        address indexed destination,
         uint256 lpAmount,
         uint256 baseAmount,
         uint256 vaultShareAmount,
@@ -38,6 +39,7 @@ interface IHyperdriveEvents is IMultiTokenEvents {
     /// @notice Emitted when an LP redeems withdrawal shares.
     event RedeemWithdrawalShares(
         address indexed provider,
+        address indexed destination,
         uint256 withdrawalShareAmount,
         uint256 baseAmount,
         uint256 vaultShareAmount,
@@ -70,6 +72,7 @@ interface IHyperdriveEvents is IMultiTokenEvents {
     /// @notice Emitted when a long position is closed.
     event CloseLong(
         address indexed trader,
+        address indexed destination,
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
@@ -81,6 +84,7 @@ interface IHyperdriveEvents is IMultiTokenEvents {
     /// @notice Emitted when a short position is closed.
     event CloseShort(
         address indexed trader,
+        address indexed destination,
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,

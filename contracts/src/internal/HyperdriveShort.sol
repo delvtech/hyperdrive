@@ -267,7 +267,8 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         uint256 vaultSharePrice_ = vaultSharePrice; // Avoid stack too deep error.
         IHyperdrive.Options calldata options = _options; // Avoid stack too deep error.
         emit CloseShort(
-            options.destination,
+            msg.sender, // trader
+            options.destination, // destination
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime),
             maturityTime,
             // base proceeds
