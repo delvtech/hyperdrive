@@ -3,7 +3,7 @@ pragma solidity 0.8.20;
 
 import { HyperdriveTarget1 } from "../../external/HyperdriveTarget1.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { ILido } from "../../interfaces/ILido.sol";
+import { IRestakeManager } from "../../interfaces/IRestakeManager.sol";
 import { ezETHBase } from "./ezETHBase.sol";
 
 /// @author DELV
@@ -15,9 +15,9 @@ import { ezETHBase } from "./ezETHBase.sol";
 contract ezETHTarget1 is HyperdriveTarget1, ezETHBase {
     /// @notice Initializes the target1 contract.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _lido The Lido contract.
+    /// @param _restakeManager The Renzo contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        ILido _lido
-    ) HyperdriveTarget1(_config) ezETHBase(_lido) {}
+        IRestakeManager _restakeManager
+    ) HyperdriveTarget1(_config) ezETHBase(_restakeManager) {}
 }

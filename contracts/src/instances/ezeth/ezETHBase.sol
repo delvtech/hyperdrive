@@ -2,30 +2,27 @@
 pragma solidity 0.8.20;
 
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { ILido } from "../../interfaces/ILido.sol";
+import { IRestakeManager } from "../../interfaces/IRestakeManager.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 
 /// @author DELV
-/// @title StethHyperdrive
+/// @title esETH Base Contract
 /// @notice The base contract for the ezETH Hyperdrive implementation.
-/// @dev Lido has it's own notion of shares to account for the accrual of
-///      interest on the ether pooled in the Lido protocol. Instead of
-///      maintaining a balance of shares, this integration can simply use Lido
-///      shares directly.
+/// @dev
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract ezETHBase is HyperdriveBase {
     using FixedPointMath for uint256;
 
-    /// @dev The Lido contract.
-    ILido internal immutable _lido;
+    /// @dev The Renzo entrypoint contract.
+    IRestakeManager internal immutable _restakeManager;
 
     /// @notice Instantiates the ezETH Hyperdrive base contract.
-    /// @param __lido The Lido contract.
-    constructor(ILido __lido) {
-        _lido = __lido;
+    /// @param __restakeManager The Renzo Restakemanager contract.
+    constructor(IRestakeManager __restakeManager) {
+        _restakeManager = __restakeManager;
     }
 
     /// Yield Source ///
@@ -53,11 +50,11 @@ abstract contract ezETHBase is HyperdriveBase {
             // excess ether.
             refund = msg.value - _amount;
 
-            // Submit the provided ether to Lido to be deposited. The fee
+            // Submit the provided ether to Renzo to be deposited. The fee
             // collector address is passed as the referral address; however,
             // users can specify whatever referrer they'd like by depositing
             // ezETH instead of WETH.
-            shares = _lido.submit{ value: _amount }(_feeCollector);
+            _restakeManager.depositETH{ value: _amount }(_feeCollector);
 
             // Calculate the vault share price.
             vaultSharePrice = _pricePerVaultShare();
@@ -66,7 +63,11 @@ abstract contract ezETHBase is HyperdriveBase {
             refund = msg.value;
 
             // Transfer ezETH shares into the contract.
-            _lido.transferSharesFrom(msg.sender, address(this), _amount);
+            _restakeManager.transferSharesFrom(
+                msg.sender,
+                address(this),
+                _amount
+            );
 
             // Calculate the vault share price.
             shares = _amount;
@@ -113,7 +114,7 @@ abstract contract ezETHBase is HyperdriveBase {
         // amount by converting the shares to base and then back to shares
         // using the vault's share conversion logic.
         uint256 baseAmount = _shares.mulDown(_sharePrice);
-        _shares = _lido.getSharesByPooledEth(baseAmount);
+        _shares = _restakeManager.getSharesByPooledEth(baseAmount);
 
         // If we're withdrawing zero shares, short circuit and return 0.
         if (_shares == 0) {
@@ -121,13 +122,12 @@ abstract contract ezETHBase is HyperdriveBase {
         }
 
         // Transfer the ezETH shares to the destination.
-        _lido.transferShares(_options.destination, _shares);
+        _restakeManager.transferShares(_options.destination, _shares);
 
         return _shares;
     }
 
-    /// @dev Returns the current vault share price. We simply use Lido's
-    ///      internal share price.
+    /// @dev Returns the current vault share price.
     /// @return price The current vault share price.
     function _pricePerVaultShare()
         internal
@@ -135,7 +135,7 @@ abstract contract ezETHBase is HyperdriveBase {
         override
         returns (uint256 price)
     {
-        return _lido.getPooledEthByShares(ONE);
+        return _restakeManager.getPooledEthByShares(ONE);
     }
 
     /// @dev We override the message value check since this integration is

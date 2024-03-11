@@ -6,7 +6,7 @@ import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
-import { ILido } from "../../interfaces/ILido.sol";
+import { IRestakeManager } from "../../interfaces/IRestakeManager.sol";
 import { ezETHBase } from "./ezETHBase.sol";
 
 /// @author DELV
@@ -22,11 +22,11 @@ contract ezETHTarget0 is HyperdriveTarget0, ezETHBase {
 
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _lido The Lido contract.
+    /// @param _restakeManager The Renzo contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        ILido _lido
-    ) HyperdriveTarget0(_config) ezETHBase(_lido) {}
+        IRestakeManager _restakeManager
+    ) HyperdriveTarget0(_config) ezETHBase(_restakeManager) {}
 
     /// Extras ///
 
@@ -43,19 +43,19 @@ contract ezETHTarget0 is HyperdriveTarget0, ezETHBase {
         }
 
         // Ensure that thet target isn't the ezETH token.
-        if (address(_target) == address(_lido)) {
+        if (address(_target) == address(_restakeManager)) {
             revert IHyperdrive.UnsupportedToken();
         }
 
         // Get Hyperdrive's balance of ezETH tokens prior to sweeping.
-        uint256 ezETHBalance = _lido.balanceOf(address(this));
+        uint256 ezETHBalance = _restakeManager.balanceOf(address(this));
 
         // Transfer the entire balance of the sweep target to the fee collector.
         uint256 balance = _target.balanceOf(address(this));
         ERC20(address(_target)).safeTransfer(_feeCollector, balance);
 
         // Ensure that the ezETH balance hasn't changed.
-        if (_lido.balanceOf(address(this)) != ezETHBalance) {
+        if (_restakeManager.balanceOf(address(this)) != ezETHBalance) {
             revert IHyperdrive.SweepFailed();
         }
     }
@@ -65,7 +65,7 @@ contract ezETHTarget0 is HyperdriveTarget0, ezETHBase {
     /// @notice Returns the Lido contract.
     /// @return lido The Lido contract.
     function lido() external view returns (ILido) {
-        _revert(abi.encode(_lido));
+        _revert(abi.encode(_restakeManager));
     }
 
     /// @notice Returns the MultiToken's decimals.
