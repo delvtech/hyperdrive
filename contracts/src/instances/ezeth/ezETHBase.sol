@@ -14,7 +14,7 @@ import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract ezETHBase is HyperdriveBase {
+abstract contract EzETHBase is HyperdriveBase {
     using FixedPointMath for uint256;
 
     /// @dev The Renzo entrypoint contract.

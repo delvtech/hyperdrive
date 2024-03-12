@@ -6,7 +6,7 @@ import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IRestakeManager } from "../../interfaces/IRestakeManager.sol";
 import { IezETHHyperdriveCore } from "../../interfaces/IezETHHyperdriveCore.sol";
-import { ezETHBase } from "./ezETHBase.sol";
+import { EzETHBase } from "./EzETHBase.sol";
 
 ///      ______  __                           _________      _____
 ///      ___  / / /____  ___________________________  /_________(_)__   ______
@@ -49,12 +49,12 @@ import { ezETHBase } from "./ezETHBase.sol";
 /// SSSSSSSS                                                                SSSSSSSS
 ///
 /// @author DELV
-/// @title ezETHHyperdrive
+/// @title EzETHHyperdrive
 /// @notice A Hyperdrive instance that uses ezETH as the yield source.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract ezETHHyperdrive is IezETHHyperdriveCore, Hyperdrive, ezETHBase {
+contract EzETHHyperdrive is IezETHHyperdriveCore, Hyperdrive, EzETHBase {
     address constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     /// @notice Instantiates Hyperdrive with ezETH as the yield source.
@@ -76,7 +76,7 @@ contract ezETHHyperdrive is IezETHHyperdriveCore, Hyperdrive, ezETHBase {
         IRestakeManager _restakeManager
     )
         Hyperdrive(_config, _target0, _target1, _target2, _target3, _target4)
-        ezETHBase(_restakeManager)
+        EzETHBase(_restakeManager)
     {
         // Ensure that the base token address is properly configured.
         if (address(_config.baseToken) != ETH) {
