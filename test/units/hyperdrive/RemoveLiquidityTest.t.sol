@@ -150,6 +150,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Ensure that the correct event was emitted.
         verifyRemoveLiquidityEvent(
+            alice,
             celine,
             lpShares,
             baseProceeds,
@@ -304,6 +305,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
             // Ensure that the correct event was emitted.
             verifyRemoveLiquidityEvent(
                 alice,
+                alice,
                 testCase.initialLpShares,
                 testCase.initialLpBaseProceeds,
                 testCase.initialLpWithdrawalShares
@@ -334,6 +336,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
     }
 
     function verifyRemoveLiquidityEvent(
+        address trader,
         address destination,
         uint256 expectedLpShares,
         uint256 expectedBaseAmount,
@@ -344,7 +347,8 @@ contract RemoveLiquidityTest is HyperdriveTest {
         );
         assertEq(logs.length, 1);
         VmSafe.Log memory log = logs[0];
-        assertEq(address(uint160(uint256(log.topics[1]))), destination);
+        assertEq(address(uint160(uint256(log.topics[1]))), trader);
+        assertEq(address(uint160(uint256(log.topics[2]))), destination);
         (
             uint256 lpShares,
             uint256 baseAmount,
