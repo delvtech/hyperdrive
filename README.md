@@ -48,7 +48,7 @@ The current suggested way of integrating your yield source with hyperdrive is th
 
 # Disclaimer
 
-This project is a work-in-progress.  The language used in this code and documentation is not intended to, and does not, have any particular financial, legal, or regulatory significance.
+The language used in this code and documentation is not intended to, and does not, have any particular financial, legal, or regulatory significance.
 
 ---
 
