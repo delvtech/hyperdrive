@@ -4,7 +4,6 @@ pragma solidity 0.8.20;
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
-import { IRETHHyperdriveCore } from "../../interfaces/IRETHHyperdriveCore.sol";
 import { ETH } from "../../libraries/Constants.sol";
 import { IRocketStorage } from "../../interfaces/IRocketStorage.sol";
 import { RETHBase } from "./RETHBase.sol";
@@ -55,7 +54,7 @@ import { RETHBase } from "./RETHBase.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract RETHHyperdrive is IRETHHyperdriveCore, Hyperdrive, RETHBase {
+contract RETHHyperdrive is Hyperdrive, RETHBase {
     /// @notice Instantiates Hyperdrive with RETH as the yield source.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _target0 The target0 address.
@@ -80,10 +79,5 @@ contract RETHHyperdrive is IRETHHyperdriveCore, Hyperdrive, RETHBase {
         if (address(_config.baseToken) != ETH) {
             revert IHyperdrive.InvalidBaseToken();
         }
-    }
-
-    /// @inheritdoc IRETHHyperdriveCore
-    function sweep(IERC20) external {
-        _delegate(target0);
     }
 }
