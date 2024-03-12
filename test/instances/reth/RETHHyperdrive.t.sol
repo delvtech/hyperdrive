@@ -80,6 +80,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
                 governance: alice,
                 hyperdriveGovernance: bob,
                 feeCollector: celine,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -137,6 +138,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
                 timeStretch: 0,
                 governance: factory.hyperdriveGovernance(),
                 feeCollector: factory.feeCollector(),
+                sweepCollector: factory.sweepCollector(),
                 fees: IHyperdrive.Fees({
                     curve: 0,
                     flat: 0,
@@ -255,6 +257,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
                 baseToken: IERC20(ETH),
                 governance: factory.hyperdriveGovernance(),
                 feeCollector: factory.feeCollector(),
+                sweepCollector: factory.sweepCollector(),
                 linkerFactory: factory.linkerFactory(),
                 linkerCodeHash: factory.linkerCodeHash(),
                 minimumShareReserves: 1e15,
