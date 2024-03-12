@@ -12,6 +12,7 @@ import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IRocketPoolDAOProtocolSettingsDeposit } from "contracts/src/interfaces/IRocketPoolDAOProtocolSettingsDeposit.sol";
 import { IRocketDepositPool } from "contracts/src/interfaces/IRocketDepositPool.sol";
 import { IRocketNetworkBalances } from "contracts/src/interfaces/IRocketNetworkBalances.sol";
 import { IRocketStorage } from "contracts/src/interfaces/IRocketStorage.sol";
@@ -853,8 +854,25 @@ contract RETHHyperdriveTest is HyperdriveTest {
 
     function basePaidAfterFee(
         uint256 basePaid
-    ) internal pure returns (uint256) {
-        return basePaid.mulDown(0.9995 ether);
+    ) internal view returns (uint256 depositNet) {
+        address rocketDAOProtocolSettingsDepositAddress = ROCKET_STORAGE
+            .getAddress(
+                keccak256(
+                    abi.encodePacked(
+                        "contract.address",
+                        "rocketDAOProtocolSettingsDeposit"
+                    )
+                )
+            );
+        IRocketPoolDAOProtocolSettingsDeposit rocketDAOProtocolSettingsDeposit = IRocketPoolDAOProtocolSettingsDeposit(
+                rocketDAOProtocolSettingsDepositAddress
+            );
+
+        uint256 depositFee = basePaid.mulDown(
+            rocketDAOProtocolSettingsDeposit.getDepositFee()
+        );
+
+        depositNet = basePaid - depositFee;
     }
 
     function verifyDeposit(
