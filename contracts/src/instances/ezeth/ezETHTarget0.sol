@@ -62,9 +62,9 @@ contract ezETHTarget0 is HyperdriveTarget0, ezETHBase {
 
     /// Getters ///
 
-    /// @notice Returns the Lido contract.
-    /// @return lido The Lido contract.
-    function lido() external view returns (ILido) {
+    /// @notice Returns the Renzo contract.
+    /// @return _restakeManager The Renzo contract.
+    function renzo() external view returns (IRestakeManager) {
         _revert(abi.encode(_restakeManager));
     }
 

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IRestakeManager } from "../../interfaces/IRestakeManager.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
@@ -19,10 +20,14 @@ abstract contract ezETHBase is HyperdriveBase {
     /// @dev The Renzo entrypoint contract.
     IRestakeManager internal immutable _restakeManager;
 
+    /// @dev The ezETH token contract.
+    IERC20 internal immutable _ezETH;
+
     /// @notice Instantiates the ezETH Hyperdrive base contract.
     /// @param __restakeManager The Renzo Restakemanager contract.
     constructor(IRestakeManager __restakeManager) {
         _restakeManager = __restakeManager;
+        _ezETH = _restakeManager.ezETH;
     }
 
     /// Yield Source ///
@@ -50,11 +55,9 @@ abstract contract ezETHBase is HyperdriveBase {
             // excess ether.
             refund = msg.value - _amount;
 
-            // Submit the provided ether to Renzo to be deposited. The fee
-            // collector address is passed as the referral address; however,
-            // users can specify whatever referrer they'd like by depositing
-            // ezETH instead of WETH.
-            _restakeManager.depositETH{ value: _amount }(_feeCollector);
+            // Submit the provided ether to Renzo to be deposited.
+            // a referrer id can be put in here
+            _restakeManager.depositETH{ value: _amount }();
 
             // Calculate the vault share price.
             vaultSharePrice = _pricePerVaultShare();
@@ -63,11 +66,7 @@ abstract contract ezETHBase is HyperdriveBase {
             refund = msg.value;
 
             // Transfer ezETH shares into the contract.
-            _restakeManager.transferSharesFrom(
-                msg.sender,
-                address(this),
-                _amount
-            );
+            _ezETH.transferFrom(msg.sender, address(this), _amount);
 
             // Calculate the vault share price.
             shares = _amount;
@@ -108,21 +107,13 @@ abstract contract ezETHBase is HyperdriveBase {
             revert IHyperdrive.UnsupportedToken();
         }
 
-        // NOTE: Round down to underestimate the base proceeds.
-        //
-        // Correct for any error that crept into the calculation of the share
-        // amount by converting the shares to base and then back to shares
-        // using the vault's share conversion logic.
-        uint256 baseAmount = _shares.mulDown(_sharePrice);
-        _shares = _restakeManager.getSharesByPooledEth(baseAmount);
-
         // If we're withdrawing zero shares, short circuit and return 0.
         if (_shares == 0) {
             return 0;
         }
 
         // Transfer the ezETH shares to the destination.
-        _restakeManager.transferShares(_options.destination, _shares);
+        _restakeManager.transfer(_options.destination, _shares);
 
         return _shares;
     }
@@ -135,7 +126,11 @@ abstract contract ezETHBase is HyperdriveBase {
         override
         returns (uint256 price)
     {
-        return _restakeManager.getPooledEthByShares(ONE);
+        (, , uint256 totalTVL) = _restakeManager.calculateTVLS();
+        uint256 ezETHSupply = _ezETH.totalSupply();
+
+        // Price in ETH per ezETH, does not include eigenlayer points.
+        return totalTVL.mulDown(ezETHSupply);
     }
 
     /// @dev We override the message value check since this integration is
