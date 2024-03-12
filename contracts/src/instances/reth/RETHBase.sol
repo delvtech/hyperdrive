@@ -10,7 +10,7 @@ import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title RETHHyperdrive
-/// @notice The base contract for the RETH Hyperdrive implementation.
+/// @notice The base contract for the rETH Hyperdrive implementation.
 /// @dev Rocket Pool has it's own notion of shares to account for the accrual of
 ///      interest on the ether pooled in the Rocket Pool protocol. Instead of
 ///      maintaining a balance of shares, this integration can simply use Rocket Pool
@@ -24,10 +24,10 @@ abstract contract RETHBase is HyperdriveBase {
     /// @dev The Rocket Pool storage contract.
     IRocketStorage internal immutable _rocketStorage;
 
-    /// @dev The Rocket Token RETH contract.
+    /// @dev The Rocket Token rETH contract.
     IRocketTokenRETH internal immutable _rocketTokenReth;
 
-    /// @notice Instantiates the RETH Hyperdrive base contract.
+    /// @notice Instantiates the rETH Hyperdrive base contract.
     /// @param __rocketStorage The Rocket Pool storage contract.
     constructor(IRocketStorage __rocketStorage) {
         _rocketStorage = __rocketStorage;
