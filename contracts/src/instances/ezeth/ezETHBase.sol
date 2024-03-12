@@ -32,90 +32,69 @@ abstract contract EzETHBase is HyperdriveBase {
 
     /// Yield Source ///
 
-    /// @dev Accepts a transfer from the user in base or the yield source token.
-    /// @param _amount The amount of token to transfer. It will be in either
-    ///          base or shares depending on the `asBase` option.
-    /// @param _options The options that configure the deposit. The only option
-    ///        used in this implementation is "asBase" which determines if
-    ///        the deposit is settled in ETH or ezETH shares.
-    /// @return shares The amount of shares that represents the amount deposited.
-    /// @return vaultSharePrice The current vault share price.
-    function _deposit(
-        uint256 _amount,
-        IHyperdrive.Options calldata _options
-    ) internal override returns (uint256 shares, uint256 vaultSharePrice) {
-        uint256 refund;
-        if (_options.asBase) {
-            // Ensure that sufficient ether was provided.
-            if (msg.value < _amount) {
-                revert IHyperdrive.TransferFailed();
-            }
-
-            // If the user sent more ether than the amount specified, refund the
-            // excess ether.
-            refund = msg.value - _amount;
-
-            // Submit the provided ether to Renzo to be deposited.
-            // a referrer id can be put in here
-            _restakeManager.depositETH{ value: _amount }();
-
-            // Calculate the vault share price.
-            vaultSharePrice = _pricePerVaultShare();
-        } else {
-            // Refund any ether that was sent to the contract.
-            refund = msg.value;
-
-            // Transfer ezETH shares into the contract.
-            _ezETH.transferFrom(msg.sender, address(this), _amount);
-
-            // Calculate the vault share price.
-            shares = _amount;
-            vaultSharePrice = _pricePerVaultShare();
+    /// @dev Accepts a transfer from the user in base token.
+    /// @param _baseAmount The base amount to deposit.
+    /// @return sharesMinted The shares that were minted in the deposit.
+    /// @return refund The amount of ETH to refund. This should be zero for
+    ///         yield sources that don't accept ETH.
+    function _depositWithBase(
+        uint256 _baseAmount,
+        bytes calldata
+    ) internal override returns (uint256 sharesMinted, uint256 refund) {
+        // Ensure that sufficient ether was provided.
+        if (msg.value < _baseAmount) {
+            revert IHyperdrive.TransferFailed();
         }
 
-        // Return excess ether that was sent to the contract.
-        if (refund > 0) {
-            (bool success, ) = payable(msg.sender).call{ value: refund }("");
-            if (!success) {
-                revert IHyperdrive.TransferFailed();
-            }
+        // If the user sent more ether than the amount specified, refund the
+        // excess ether.
+        unchecked {
+            refund = msg.value - _baseAmount;
         }
 
-        return (shares, vaultSharePrice);
+        uint256 balanceBefore = _ezETH.balanceOf(address(this));
+        // Submit the provided ether to Renzo to be deposited.
+        // a referrer id can be put in here
+        _restakeManager.depositETH{ value: _baseAmount }();
+        uint256 balanceAfter = _ezETH.balanceOf(address(this));
+        sharesMinted = balanceAfter - balanceBefore;
+
+        return (sharesMinted, refund);
     }
 
-    /// @notice Processes a trader's withdrawal. This yield source only supports
-    ///         withdrawals in ezETH shares.
-    /// @param _shares The amount of shares to withdraw from Hyperdrive.
-    /// @param _sharePrice The share price.
-    /// @param _options The options that configure the withdrawal. The options
-    ///        used in this implementation are "destination" which specifies the
-    ///        recipient of the withdrawal and "asBase" which determines
-    ///        if the withdrawal is settled in base or vault shares. The "asBase"
-    ///        option must be false since ezETH withdrawals aren't processed
-    ///        instantaneously. Users that want to withdraw can manage their
-    ///        withdrawal separately.
-    /// @return The amount of shares withdrawn from the yield source.
-    function _withdraw(
-        uint256 _shares,
-        uint256 _sharePrice,
-        IHyperdrive.Options calldata _options
-    ) internal override returns (uint256) {
+    /// @dev Process a deposit in vault shares.
+    /// @param _shareAmount The vault shares amount to deposit.
+    function _depositWithShares(
+        uint256 _shareAmount,
+        bytes calldata // unused
+    ) internal override {
+        // Transfer ezETH shares into the contract.
+        _ezETH.transferFrom(msg.sender, address(this), _shareAmount);
+    }
+
+    /// @dev Process a withdrawal in base and send the proceeds to the
+    ///      destination.
+    function _withdrawWithBase(
+        uint256, // unused
+        address, // unused
+        bytes calldata // unused
+    ) internal pure override returns (uint256) {
         // ezETH withdrawals aren't necessarily instantaneous. Users that want
         // to withdraw can manage their withdrawal separately.
-        if (_options.asBase) {
-            revert IHyperdrive.UnsupportedToken();
-        }
+        revert IHyperdrive.UnsupportedToken();
+    }
 
-        // If we're withdrawing zero shares, short circuit and return 0.
-        if (_shares == 0) {
-            return 0;
-        }
-
-        // Transfer the ezETH shares to the destination.
-        _restakeManager.transfer(_options.destination, _shares);
-
-        return _shares;
+    /// @dev Process a withdrawal in vault shares and send the proceeds to the
+    ///      destination.
+    /// @param _shareAmount The amount of vault shares to withdraw.
+    /// @param _destination The destination of the withdrawal.
+    function _withdrawWithShares(
+        uint256 _shareAmount,
+        address _destination,
+        bytes calldata // unused
+    ) internal override {
+        // Transfer the stETH shares to the destination.
+        _ezETH.transfer(_destination, _shareAmount);
     }
 
     /// @dev Returns the current vault share price.
@@ -129,8 +108,34 @@ abstract contract EzETHBase is HyperdriveBase {
         (, , uint256 totalTVL) = _restakeManager.calculateTVLS();
         uint256 ezETHSupply = _ezETH.totalSupply();
 
-        // Price in ETH per ezETH, does not include eigenlayer points.
+        // Price in ETH / ezETH, does not include eigenlayer points.
         return totalTVL.mulDown(ezETHSupply);
+    }
+
+    /// @dev Convert an amount of vault shares to an amount of base.
+    /// @param _shareAmount The vault shares amount.
+    /// @return baseAmount The base amount.
+    function _convertToBase(
+        uint256 _shareAmount
+    ) internal view override returns (uint256) {
+        return _shareAmount.mulDown(_pricePerVaultShare());
+    }
+
+    /// @dev Convert an amount of base to an amount of vault shares.
+    /// @param _baseAmount The base amount.
+    /// @return shareAmount The vault shares amount.
+    function _convertToShares(
+        uint256 _baseAmount
+    ) internal view override returns (uint256) {
+        return _baseAmount.divDown(_pricePerVaultShare());
+    }
+
+    /// @dev Gets the total amount of base held by the pool.
+    /// @return baseAmount The total amount of base.
+    function _totalBase() internal pure override returns (uint256) {
+        // NOTE: Since ETH is the base token and can't be swept, we can safely
+        // return zero.
+        return 0;
     }
 
     /// @dev We override the message value check since this integration is
