@@ -20,6 +20,9 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @notice The Rocket Storage contract.
     IRocketStorage public immutable rocketStorage;
 
+    /// @dev The Rocket Token RETH contract.
+    IRocketTokenRETH internal immutable rocketTokenReth;
+
     /// @notice Instantiates the deployer coordinator.
     /// @param _coreDeployer The core deployer.
     /// @param _target0Deployer The target0 deployer.
@@ -47,6 +50,12 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         )
     {
         rocketStorage = _rocketStorage;
+
+        // Fetching the RETH token address from the storage contract.
+        address rocketTokenRethAddress = _rocketStorage.getAddress(
+            keccak256(abi.encodePacked("contract.address", "rocketTokenRETH"))
+        );
+        rocketTokenReth = IRocketTokenRETH(rocketTokenRethAddress);
     }
 
     /// @notice Checks the pool configuration to ensure that it is valid.
@@ -67,7 +76,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
 
         // Ensure that the minimum transaction amount are equal to 1e15. This
         // value has been tested to prevent precision issues.
-        if (_deployConfig.minimumTransactionAmount != 0.01 ether) {
+        if (_deployConfig.minimumTransactionAmount != 1e16) {
             revert IHyperdriveDeployerCoordinator
                 .InvalidMinimumTransactionAmount();
         }
@@ -78,15 +87,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     function _getInitialVaultSharePrice(
         bytes memory // unused extra data
     ) internal view override returns (uint256) {
-        // Fetching the RETH token address from the storage contract.
-        address rocketTokenRETHAddress = rocketStorage.getAddress(
-            keccak256(abi.encodePacked("contract.address", "rocketTokenRETH"))
-        );
-        IRocketTokenRETH rocketTokenRETH = IRocketTokenRETH(
-            rocketTokenRETHAddress
-        );
-
         // Returns the value of one RETH token in ETH.
-        return rocketTokenRETH.getExchangeRate();
+        return rocketTokenReth.getExchangeRate();
     }
 }

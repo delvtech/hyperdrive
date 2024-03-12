@@ -7,7 +7,6 @@ import { IRocketDepositPool } from "../../interfaces/IRocketDepositPool.sol";
 import { IRocketTokenRETH } from "../../interfaces/IRocketTokenRETH.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
-import "forge-std/console.sol";
 
 /// @author DELV
 /// @title RETHHyperdrive
@@ -25,7 +24,7 @@ abstract contract RETHBase is HyperdriveBase {
     /// @dev The Rocket Pool storage contract.
     IRocketStorage internal immutable _rocketStorage;
 
-    /// @dev The Rocket Token ETH contract.
+    /// @dev The Rocket Token RETH contract.
     IRocketTokenRETH internal immutable _rocketTokenReth;
 
     /// @notice Instantiates the RETH Hyperdrive base contract.
@@ -112,7 +111,6 @@ abstract contract RETHBase is HyperdriveBase {
         (bool success, ) = payable(_destination).call{ value: amountWithdrawn }(
             ""
         );
-
         if (!success) {
             revert IHyperdrive.TransferFailed();
         }
