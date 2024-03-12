@@ -46,8 +46,7 @@ The current suggested way of integrating your yield source with hyperdrive is th
 
 # Disclaimer
 
-The language used in this codebase is for coding convenience only, and is not
-intended to, and does not, have any particular legal or regulatory significance.
+This project is a work-in-progress.  The language used in this code and documentation is not intended to, and does not, have any particular financial, legal, or regulatory significance.
 
 ---
 
@@ -56,7 +55,5 @@ Copyright © 2024  DELV
 Licensed under the Apache License, Version 2.0 (the "OSS License").
 
 By accessing or using this code, you signify that you have read, understand and agree to be bound by and to comply with the [OSS License](http://www.apache.org/licenses/LICENSE-2.0) and [DELV's Terms of Service](https://elementfi.s3.us-east-2.amazonaws.com/element-finance-terms-of-service.pdf). If you do not agree to those terms, you are prohibited from accessing or using this code.
-
-This project is a work-in-progress.  The language used in this code and documentation is not intended to, and does not, have any particular financial, legal, or regulatory significance.
 
 Unless required by applicable law or agreed to in writing, software distributed under the OSS License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the OSS License and the DELV Terms of Service for the specific language governing permissions and limitations.
