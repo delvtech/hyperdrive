@@ -334,7 +334,7 @@ abstract contract HyperdriveLP is
         // by temporarily being unable to calculate the present value.
         (uint256 lpSharePrice, ) = _calculateLPSharePriceSafe(vaultSharePrice);
         emit RemoveLiquidity(
-            msg.sender, // trader
+            msg.sender, // provider
             _options.destination, // destination
             _lpShares,
             _convertToBaseFromOption(proceeds, vaultSharePrice, _options), // base proceeds
@@ -393,7 +393,7 @@ abstract contract HyperdriveLP is
 
         // Emit a RedeemWithdrawalShares event.
         emit RedeemWithdrawalShares(
-            msg.sender, // trader
+            msg.sender, // provider
             _options.destination, // destination
             withdrawalSharesRedeemed,
             _convertToBaseFromOption(proceeds, vaultSharePrice, _options), // base proceeds
