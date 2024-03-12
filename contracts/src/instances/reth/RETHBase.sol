@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { IRocketStorage } from "../../interfaces/IRocketStorage.sol";
-import { IRocketDepositPool } from "../../interfaces/IRocketDepositPool.sol";
-import { IRocketTokenRETH } from "../../interfaces/IRocketTokenRETH.sol";
-import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
+import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
+import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IRocketDepositPool } from "../../interfaces/IRocketDepositPool.sol";
+import { IRocketStorage } from "../../interfaces/IRocketStorage.sol";
+import { IRocketTokenRETH } from "../../interfaces/IRocketTokenRETH.sol";
 
 /// @author DELV
 /// @title RETHHyperdrive
@@ -98,14 +98,13 @@ abstract contract RETHBase is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override returns (uint256 amountWithdrawn) {
-        // The RETH token contract does not return the ether amount
-        // that is burned in exchange for RETH, so this value has to be
-        // fetched manually.
-        amountWithdrawn = _rocketTokenReth.getEthValue(_shareAmount);
-
         // Burning RETH shares in exchange for ether.
         // Ether proceeds are credited to this contract.
         _rocketTokenReth.burn(_shareAmount);
+
+        // Amount of ETH that was withdrawn from the yield source and
+        // will be sent to the destination address.
+        amountWithdrawn = address(this).balance;
 
         // Return withdrawn ether to the destination.
         (bool success, ) = payable(_destination).call{ value: amountWithdrawn }(
@@ -171,6 +170,12 @@ abstract contract RETHBase is HyperdriveBase {
     ///      payable.
     function _checkMessageValue() internal pure override {}
 
-    // Function to receive Ether. msg.data must be empty
-    receive() external payable {}
+    /// @dev Allows ether to be received only from the Rocket Pool rETH
+    ///      token contract. Supports withdrawing as ethers from this
+    ///      yield source.
+    receive() external payable {
+        if (msg.sender != address(_rocketTokenReth)) {
+            revert IHyperdrive.TransferFailed();
+        }
+    }
 }
