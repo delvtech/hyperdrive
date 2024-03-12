@@ -37,7 +37,7 @@ contract EzETHTarget0Deployer is IHyperdriveTargetDeployer {
                 // front-running of deployments.
                 new EzETHTarget0{
                     salt: keccak256(abi.encode(msg.sender, _salt))
-                }(_config, lido)
+                }(_config, restakeManager)
             );
     }
 }

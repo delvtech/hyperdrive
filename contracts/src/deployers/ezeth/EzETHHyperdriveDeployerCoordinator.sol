@@ -48,7 +48,7 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         )
     {
         restakeManager = _restakeManager;
-        (bool success, bytes memory data) = address(restakeManager).call(
+        (, bytes memory data) = address(restakeManager).call(
             abi.encodeWithSignature("ezETH()")
         );
         ezETH = abi.decode(data, (IERC20));

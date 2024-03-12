@@ -47,7 +47,15 @@ contract EzETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
                 // front-running of deployments.
                 new EzETHHyperdrive{
                     salt: keccak256(abi.encode(msg.sender, _salt))
-                }(_config, target0, target1, target2, target3, target4, lido)
+                }(
+                    _config,
+                    target0,
+                    target1,
+                    target2,
+                    target3,
+                    target4,
+                    restakeManager
+                )
             )
         );
     }

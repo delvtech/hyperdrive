@@ -4,7 +4,6 @@ pragma solidity 0.8.20;
 import { EzETHTarget1 } from "../../instances/ezeth/EzETHTarget1.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDeployer.sol";
-import { ILido } from "../../interfaces/ILido.sol";
 
 /// @author DELV
 /// @title EzETHTarget1Deployer
@@ -37,7 +36,7 @@ contract EzETHTarget1Deployer is IHyperdriveTargetDeployer {
                 // front-running of deployments.
                 new EzETHTarget1{
                     salt: keccak256(abi.encode(msg.sender, _salt))
-                }(_config, lido)
+                }(_config, restakeManager)
             );
     }
 }
