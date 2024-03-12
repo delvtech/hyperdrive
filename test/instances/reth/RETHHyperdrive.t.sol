@@ -48,7 +48,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
     function setUp() public override __mainnet_fork(17_376_154) {
         super.setUp();
 
-        // Fetching the RETH token contract address from storage.
+        // Fetching the rETH token contract address from storage.
         address rocketTokenRETHAddress = ROCKET_STORAGE.getAddress(
             keccak256(abi.encodePacked("contract.address", "rocketTokenRETH"))
         );
@@ -222,7 +222,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
             1e5
         );
 
-        // Fund the test accounts with RETH and ETH.
+        // Fund the test accounts with rETH and ETH.
         address[] memory accounts = new address[](3);
         accounts[0] = alice;
         accounts[1] = bob;
@@ -247,7 +247,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
     /// Deploy and Initialize ///
 
     function test__reth__deployAndInitialize() external {
-        // Deploy and Initialize the RETH hyperdrive instance. Excess ether is
+        // Deploy and Initialize the rETH hyperdrive instance. Excess ether is
         // sent, and should be returned to the sender.
         vm.stopPrank();
         vm.startPrank(bob);
@@ -594,7 +594,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
         );
         uint256 totalRethSupplyBefore = rocketTokenRETH.totalSupply();
 
-        // Bob closes his long with RETH as the target asset.
+        // Bob closes his long with rETH as the target asset.
         uint256 shareProceeds = closeLong(bob, maturityTime, longAmount, false);
         uint256 baseProceeds = rocketTokenRETH.getEthValue(shareProceeds);
 
@@ -764,7 +764,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
             address(hyperdrive)
         );
 
-        // Bob closes his short with RETH as the target asset. Bob's proceeds
+        // Bob closes his short with rETH as the target asset. Bob's proceeds
         // should be the variable interest that accrued on the shorted bonds.
         uint256 expectedBaseProceeds = shortAmount.mulDivDown(
             hyperdrive.getPoolInfo().vaultSharePrice - startingVaultSharePrice,
@@ -877,7 +877,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
                 basePaidAfterFee(amount)
             );
 
-            // Ensure that the RETH balances were updated correctly.
+            // Ensure that the rETH balances were updated correctly.
             assertApproxEqAbs(
                 rocketTokenRETH.balanceOf(address(hyperdrive)),
                 hyperdriveBalancesBefore.rethBalance + sharesMinted,
@@ -902,7 +902,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
             );
             assertEq(trader.balance, traderBalancesBefore.ETHBalance);
 
-            // Ensure that the RETH balances were updated correctly.
+            // Ensure that the rETH balances were updated correctly.
             assertApproxEqAbs(
                 rocketTokenRETH.balanceOf(address(hyperdrive)),
                 hyperdriveBalancesBefore.rethBalance + amount,
@@ -930,7 +930,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
         if (asBase) {
             uint256 amountAsShares = rocketTokenRETH.getRethValue(amount);
 
-            // Ensure the total amount of RETH were updated correctly.
+            // Ensure the total amount of rETH were updated correctly.
             assertApproxEqAbs(
                 rocketTokenRETH.totalSupply(),
                 totalRethSupplyBefore - amountAsShares,
@@ -944,7 +944,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
             );
             assertEq(trader.balance, traderBalancesBefore.ETHBalance + amount);
 
-            // Ensure the RETH balances were updated correctly.
+            // Ensure the rETH balances were updated correctly.
             assertApproxEqAbs(
                 rocketTokenRETH.balanceOf(address(hyperdrive)),
                 hyperdriveBalancesBefore.rethBalance - amountAsShares,
@@ -955,7 +955,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
                 traderBalancesBefore.rethBalance
             );
         } else {
-            // Ensure the total amount of RETH stays the same.
+            // Ensure the total amount of rETH stays the same.
             assertEq(rocketTokenRETH.totalSupply(), totalRethSupplyBefore);
 
             // Ensure that the ETH balances were updated correctly.
@@ -965,7 +965,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
             );
             assertEq(trader.balance, traderBalancesBefore.ETHBalance);
 
-            // Ensure the RETH balances were updated correctly.
+            // Ensure the rETH balances were updated correctly.
             assertApproxEqAbs(
                 rocketTokenRETH.balanceOf(address(hyperdrive)),
                 hyperdriveBalancesBefore.rethBalance - amount,
@@ -1010,7 +1010,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
     function test_advanced_time() external {
         vm.stopPrank();
 
-        // Store the old RETH exchange rate.
+        // Store the old rETH exchange rate.
         uint256 oldRate = rocketTokenRETH.getExchangeRate();
 
         // Advance time and accrue interest.
