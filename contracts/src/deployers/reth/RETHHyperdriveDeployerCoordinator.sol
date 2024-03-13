@@ -58,6 +58,39 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         rocketTokenReth = IRocketTokenRETH(rocketTokenRethAddress);
     }
 
+    /// @dev Prepares the coordinator for initialization by drawing funds from
+    ///      the LP, if necessary.
+    /// @param _hyperdrive The Hyperdrive instance that is being initialized.
+    /// @param _lp The LP that is initializing the pool.
+    /// @param _contribution The amount of capital to supply. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
+    /// @param _options The options that configure how the initialization is
+    ///        settled.
+    /// @return value The value that should be sent in the initialize
+    ///         transaction.
+    function _prepareInitialize(
+        IHyperdrive _hyperdrive,
+        address _lp,
+        uint256 _contribution,
+        IHyperdrive.Options memory _options
+    ) internal override returns (uint256 value) {
+        // If base is the deposit asset, revert because depositing as base
+        // is not supported for the rETH integration.
+        if (_options.asBase) {
+            revert IHyperdrive.UnsupportedToken();
+        }
+        // Otherwise, transfer vault shares from the LP and approve the
+        // Hyperdrive pool.
+        rocketTokenReth.transferFrom(_lp, address(this), _contribution);
+        rocketTokenReth.approve(address(_hyperdrive), _contribution);
+
+        return value;
+    }
+
+    /// @dev Allows the contract to receive ether.
+    function _checkMessageValue() internal view override {}
+
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     function _checkPoolConfig(
