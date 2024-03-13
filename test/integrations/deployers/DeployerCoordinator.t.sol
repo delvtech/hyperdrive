@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { IERC4626Hyperdrive } from "contracts/src/interfaces/IERC4626Hyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { HyperdriveDeployerCoordinator } from "contracts/src/deployers/HyperdriveDeployerCoordinator.sol";
@@ -18,6 +19,7 @@ import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
 
 contract MockHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+    bool internal _checkMessageValueStatus = true;
     bool internal _checkPoolConfigStatus = true;
 
     constructor(
@@ -38,8 +40,43 @@ contract MockHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         )
     {}
 
+    function setCheckMessageValueStatus(bool _status) external {
+        _checkMessageValueStatus = _status;
+    }
+
     function setCheckPoolConfigStatus(bool _status) external {
         _checkPoolConfigStatus = _status;
+    }
+
+    function _prepareInitialize(
+        IHyperdrive _hyperdrive,
+        address _lp,
+        uint256 _contribution,
+        IHyperdrive.Options memory _options
+    ) internal override returns (uint256) {
+        // If base is the deposit asset, transfer base from the LP and approve
+        // the Hyperdrive pool.
+        if (_options.asBase) {
+            IERC20 baseToken = IERC20(_hyperdrive.baseToken());
+            baseToken.transferFrom(_lp, address(this), _contribution);
+            baseToken.approve(address(_hyperdrive), _contribution);
+        }
+        // Otherwise, transfer vault shares from the LP and approve the
+        // Hyperdrive pool.
+        else {
+            IERC20 vault = IERC4626Hyperdrive(address(_hyperdrive)).vault();
+            vault.transferFrom(_lp, address(this), _contribution);
+            vault.approve(address(_hyperdrive), _contribution);
+        }
+
+        return 0;
+    }
+
+    function _checkMessageValue() internal view override {
+        require(
+            _checkMessageValueStatus,
+            "MockDeployerCoordinator: invalid message value"
+        );
     }
 
     function _checkPoolConfig(
@@ -58,6 +95,7 @@ contract MockHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     }
 }
 
+// FIXME: Add tests for initialize
 contract DeployerCoordinatorTest is HyperdriveTest {
     using Lib for *;
 

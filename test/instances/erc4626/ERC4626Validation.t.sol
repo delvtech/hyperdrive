@@ -121,7 +121,10 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         factory.addDeployerCoordinator(deployerCoordinator);
 
         // Set approval to allow initial contribution to factory
-        underlyingToken.approve(address(factory), type(uint256).max);
+        underlyingToken.approve(
+            address(deployerCoordinator),
+            type(uint256).max
+        );
 
         // Deploy and set hyperdrive instance
         factory.deployTarget(
@@ -182,7 +185,11 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             contribution,
             FIXED_RATE,
             FIXED_RATE,
-            new bytes(0),
+            IHyperdrive.Options({
+                asBase: true,
+                destination: alice,
+                extraData: new bytes(0)
+            }),
             bytes32(uint256(0xdeadbabe))
         );
 
@@ -284,7 +291,11 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             contribution,
             FIXED_RATE,
             FIXED_RATE,
-            new bytes(0),
+            IHyperdrive.Options({
+                asBase: true,
+                destination: alice,
+                extraData: new bytes(0)
+            }),
             bytes32(uint256(0xfade))
         );
 
@@ -305,6 +316,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             alice,
             contribution,
             FIXED_RATE,
+            true,
             config.minimumShareReserves,
             extraData,
             1e5

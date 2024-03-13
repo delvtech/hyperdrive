@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
+import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IERC4626Hyperdrive } from "../../interfaces/IERC4626Hyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
@@ -14,6 +17,8 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+    using SafeERC20 for ERC20;
+
     /// @notice Instantiates the deployer coordinator.
     /// @param _coreDeployer The core deployer.
     /// @param _target0Deployer The target0 deployer.
@@ -38,6 +43,53 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _target4Deployer
         )
     {}
+
+    /// @dev Prepares the coordinator for initialization by drawing funds from
+    ///      the LP, if necessary.
+    /// @param _hyperdrive The Hyperdrive instance that is being initialized.
+    /// @param _lp The LP that is initializing the pool.
+    /// @param _contribution The amount of capital to supply. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
+    /// @param _options The options that configure how the initialization is
+    ///        settled.
+    /// @return The value that should be sent in the initialize transaction.
+    function _prepareInitialize(
+        IHyperdrive _hyperdrive,
+        address _lp,
+        uint256 _contribution,
+        IHyperdrive.Options memory _options
+    ) internal override returns (uint256) {
+        // If base is the deposit asset, transfer base from the LP and approve
+        // the Hyperdrive pool.
+        if (_options.asBase) {
+            address baseToken = _hyperdrive.baseToken();
+            ERC20(baseToken).safeTransferFrom(
+                _lp,
+                address(this),
+                _contribution
+            );
+            ERC20(baseToken).forceApprove(address(_hyperdrive), _contribution);
+        }
+        // Otherwise, transfer vault shares from the LP and approve the
+        // Hyperdrive pool.
+        else {
+            address vault = address(
+                IERC4626Hyperdrive(address(_hyperdrive)).vault()
+            );
+            ERC20(vault).safeTransferFrom(_lp, address(this), _contribution);
+            ERC20(vault).forceApprove(address(_hyperdrive), _contribution);
+        }
+
+        return 0;
+    }
+
+    /// @dev Prevents the contract from receiving ether.
+    function _checkMessageValue() internal view override {
+        if (msg.value != 0) {
+            revert IHyperdriveDeployerCoordinator.NotPayable();
+        }
+    }
 
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
