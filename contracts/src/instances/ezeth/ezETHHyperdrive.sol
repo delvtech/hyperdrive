@@ -54,7 +54,7 @@ import { EzETHBase } from "./EzETHBase.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract EzETHHyperdrive is IezETHHyperdriveCore, Hyperdrive, EzETHBase {
+contract EzETHHyperdrive is Hyperdrive, EzETHBase {
     address constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     /// @notice Instantiates Hyperdrive with ezETH as the yield source.
@@ -73,19 +73,15 @@ contract EzETHHyperdrive is IezETHHyperdriveCore, Hyperdrive, EzETHBase {
         address _target2,
         address _target3,
         address _target4,
-        IRestakeManager _restakeManager
+        IRestakeManager _restakeManager,
+        IERC20 _ezETH
     )
         Hyperdrive(_config, _target0, _target1, _target2, _target3, _target4)
-        EzETHBase(_restakeManager)
+        EzETHBase(_restakeManager, _ezETH)
     {
         // Ensure that the base token address is properly configured.
         if (address(_config.baseToken) != ETH) {
             revert IHyperdrive.InvalidBaseToken();
         }
-    }
-
-    /// @inheritdoc IezETHHyperdriveCore
-    function sweep(IERC20) external {
-        _delegate(target0);
     }
 }

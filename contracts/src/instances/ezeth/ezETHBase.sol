@@ -8,7 +8,7 @@ import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 
 /// @author DELV
-/// @title esETH Base Contract
+/// @title ezETH Base Contract
 /// @notice The base contract for the ezETH Hyperdrive implementation.
 /// @dev
 /// @custom:disclaimer The language used in this code is for coding convenience
@@ -25,9 +25,14 @@ abstract contract EzETHBase is HyperdriveBase {
 
     /// @notice Instantiates the ezETH Hyperdrive base contract.
     /// @param __restakeManager The Renzo Restakemanager contract.
-    constructor(IRestakeManager __restakeManager) {
+    constructor(IRestakeManager __restakeManager, IERC20 __ezETH) {
         _restakeManager = __restakeManager;
-        _ezETH = _restakeManager.ezETH;
+        _ezETH = __ezETH;
+        // TODO: see if we can get this to work so we don't need to pass in __ezETH
+        // (, bytes memory data) = address(__restakeManager).call(
+        //     abi.encodeWithSignature("ezETH()")
+        // );
+        // _ezETH = abi.decode(data, (IERC20));
     }
 
     /// Yield Source ///
@@ -97,28 +102,19 @@ abstract contract EzETHBase is HyperdriveBase {
         _ezETH.transfer(_destination, _shareAmount);
     }
 
-    /// @dev Returns the current vault share price.
-    /// @return price The current vault share price.
-    function _pricePerVaultShare()
-        internal
-        view
-        override
-        returns (uint256 price)
-    {
-        (, , uint256 totalTVL) = _restakeManager.calculateTVLS();
-        uint256 ezETHSupply = _ezETH.totalSupply();
-
-        // Price in ETH / ezETH, does not include eigenlayer points.
-        return totalTVL.mulDown(ezETHSupply);
-    }
-
     /// @dev Convert an amount of vault shares to an amount of base.
     /// @param _shareAmount The vault shares amount.
     /// @return baseAmount The base amount.
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
-        return _shareAmount.mulDown(_pricePerVaultShare());
+        (, , uint256 totalTVL) = _restakeManager.calculateTVLs();
+        uint256 ezETHSupply = _ezETH.totalSupply();
+
+        // Price in ETH / ezETH, does not include eigenlayer points.
+        uint256 sharePrice = totalTVL.divDown(ezETHSupply);
+
+        return _shareAmount.mulDown(sharePrice);
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
@@ -127,7 +123,13 @@ abstract contract EzETHBase is HyperdriveBase {
     function _convertToShares(
         uint256 _baseAmount
     ) internal view override returns (uint256) {
-        return _baseAmount.divDown(_pricePerVaultShare());
+        (, , uint256 totalTVL) = _restakeManager.calculateTVLs();
+        uint256 ezETHSupply = _ezETH.totalSupply();
+
+        // Price in ETH / ezETH, does not include eigenlayer points.
+        uint256 sharePrice = totalTVL.divDown(ezETHSupply);
+
+        return _baseAmount.divDown(sharePrice);
     }
 
     /// @dev Gets the total amount of base held by the pool.
@@ -136,6 +138,18 @@ abstract contract EzETHBase is HyperdriveBase {
         // NOTE: Since ETH is the base token and can't be swept, we can safely
         // return zero.
         return 0;
+    }
+
+    /// @dev Gets the total amount of shares held by the pool in the yield
+    ///      source.
+    /// @return shareAmount The total amount of shares.
+    function _totalShares()
+        internal
+        view
+        override
+        returns (uint256 shareAmount)
+    {
+        return _ezETH.balanceOf(address(this));
     }
 
     /// @dev We override the message value check since this integration is

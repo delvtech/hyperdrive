@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { IERC20 } from "../../interfaces/IERC20.sol";
 import { HyperdriveTarget1 } from "../../external/HyperdriveTarget1.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IRestakeManager } from "../../interfaces/IRestakeManager.sol";
@@ -18,6 +19,7 @@ contract EzETHTarget1 is HyperdriveTarget1, EzETHBase {
     /// @param _restakeManager The Renzo contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        IRestakeManager _restakeManager
-    ) HyperdriveTarget1(_config) EzETHBase(_restakeManager) {}
+        IRestakeManager _restakeManager,
+        IERC20 _ezETH
+    ) HyperdriveTarget1(_config) EzETHBase(_restakeManager, _ezETH) {}
 }
