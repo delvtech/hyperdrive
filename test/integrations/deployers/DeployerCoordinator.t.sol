@@ -95,7 +95,6 @@ contract MockHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     }
 }
 
-// FIXME: Add tests for initialize
 contract DeployerCoordinatorTest is HyperdriveTest {
     using FixedPointMath for *;
     using Lib for *;
