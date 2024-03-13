@@ -10,8 +10,8 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 
 /// @author DELV
 /// @title EzETHHyperdriveDeployerCoordinator
-/// @notice The deployer coordinator for the EzETHHyperdrive implementation.
 /// @custom:disclaimer The language used in this code is for coding convenience
+/// @notice The deployer coordinator for the EzETHHyperdrive implementation.
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
@@ -19,6 +19,7 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
 
     /// @notice The Renzo contract.
     IRestakeManager public immutable restakeManager;
+    /// @notice the ezETH token contract.
     IERC20 public immutable ezETH;
 
     /// @notice Instantiates the deployer coordinator.
@@ -29,6 +30,7 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target3Deployer The target3 deployer.
     /// @param _target4Deployer The target4 deployer.
     /// @param _restakeManager The Renzo contract.
+    /// @param _ezETH The ezETH token contract.
     constructor(
         address _coreDeployer,
         address _target0Deployer,
@@ -36,7 +38,8 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _target2Deployer,
         address _target3Deployer,
         address _target4Deployer,
-        IRestakeManager _restakeManager
+        IRestakeManager _restakeManager,
+        IERC20 _ezETH
     )
         HyperdriveDeployerCoordinator(
             _coreDeployer,
@@ -48,10 +51,12 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         )
     {
         restakeManager = _restakeManager;
-        (, bytes memory data) = address(restakeManager).call(
-            abi.encodeWithSignature("ezETH()")
-        );
-        ezETH = abi.decode(data, (IERC20));
+        // TODO: try to get this to work
+        // (, bytes memory data) = address(restakeManager).call(
+        //     abi.encodeWithSignature("ezETH()")
+        // );
+        // ezETH = abi.decode(data, (IERC20));
+        ezETH = _ezETH;
     }
 
     /// @notice Checks the pool configuration to ensure that it is valid.
@@ -84,11 +89,10 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         bytes memory // unused extra data
     ) internal view override returns (uint256) {
         // Return ezETH's current vault share price.
-
         (, , uint256 totalTVL) = restakeManager.calculateTVLs();
         uint256 ezETHSupply = ezETH.totalSupply();
 
         // Price in ETH / ezETH, does not include eigenlayer points.
-        return totalTVL.mulDown(ezETHSupply);
+        return totalTVL.divDown(ezETHSupply);
     }
 }

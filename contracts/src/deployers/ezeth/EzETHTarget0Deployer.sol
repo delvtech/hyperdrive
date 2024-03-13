@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { IERC20 } from "../../interfaces/IERC20.sol";
 import { EzETHTarget0 } from "../../instances/ezeth/EzETHTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDeployer.sol";
@@ -15,11 +16,15 @@ import { IRestakeManager } from "../../interfaces/IRestakeManager.sol";
 contract EzETHTarget0Deployer is IHyperdriveTargetDeployer {
     /// @notice The Renzo contract.
     IRestakeManager public immutable restakeManager;
+    /// @notice the ezETH token contract.
+    IERC20 public immutable ezETH;
 
-    /// @notice Instantiates the target0 deployer.
+    /// @notice Instantiates the core deployer.
     /// @param _restakeManager The Renzo contract.
-    constructor(IRestakeManager _restakeManager) {
+    /// @param _ezETH The ezETH token contract.
+    constructor(IRestakeManager _restakeManager, IERC20 _ezETH) {
         restakeManager = _restakeManager;
+        ezETH = _ezETH;
     }
 
     /// @notice Deploys a target0 instance with the given parameters.
@@ -37,7 +42,7 @@ contract EzETHTarget0Deployer is IHyperdriveTargetDeployer {
                 // front-running of deployments.
                 new EzETHTarget0{
                     salt: keccak256(abi.encode(msg.sender, _salt))
-                }(_config, restakeManager)
+                }(_config, restakeManager, ezETH)
             );
     }
 }
