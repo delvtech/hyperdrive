@@ -208,7 +208,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         int256 variableRate
     ) public virtual;
 
-    function test_deployAndInitialize() external {
+    function test_deployAndInitialize_asBase() external {
         vm.startPrank(alice);
 
         IHyperdrive.PoolDeployConfig memory config = testDeployConfig(
@@ -229,7 +229,10 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             .getPoolConfig()
             .minimumShareReserves;
         uint256 contribution = 10_000 * 10 ** decimals;
-        underlyingToken.approve(address(factory), type(uint256).max);
+        underlyingToken.approve(
+            address(deployerCoordinator),
+            type(uint256).max
+        );
 
         // Deploy a new hyperdrive instance
         bytes memory extraData = abi.encode(address(token));
