@@ -32,11 +32,11 @@ abstract contract RETHBase is HyperdriveBase {
     constructor(IRocketStorage __rocketStorage) {
         _rocketStorage = __rocketStorage;
 
-        // Fetching the RETH token address from the storage contract.
-        address rocketTokenRETHAddress = _rocketStorage.getAddress(
+        // Fetching the rETH token address from the storage contract.
+        address rocketTokenRethAddress = _rocketStorage.getAddress(
             keccak256(abi.encodePacked("contract.address", "rocketTokenRETH"))
         );
-        _rocketTokenReth = IRocketTokenRETH(rocketTokenRETHAddress);
+        _rocketTokenReth = IRocketTokenRETH(rocketTokenRethAddress);
     }
 
     /// Yield Source ///
@@ -44,38 +44,10 @@ abstract contract RETHBase is HyperdriveBase {
     function _depositWithBase(
         uint256 _baseAmount,
         bytes calldata // unused
-    ) internal override returns (uint256 sharesMinted, uint256 refund) {
-        // Ensure that sufficient ether was provided.
-        if (msg.value < _baseAmount) {
-            revert IHyperdrive.TransferFailed();
-        }
-
-        // If the user sent more ether than the amount specified, refund the
-        // excess ether.
-        unchecked {
-            refund = msg.value - _baseAmount;
-        }
-
-        // Fetching the Rocket Deposit Pool address from the storage contract.
-        address rocketDepositPoolAddress = _rocketStorage.getAddress(
-            keccak256(abi.encodePacked("contract.address", "rocketDepositPool"))
-        );
-        IRocketDepositPool rocketDepositPool = IRocketDepositPool(
-            rocketDepositPoolAddress
-        );
-
-        // The Deposit Pool's deposit function does not return a value, so the net
-        // RETH minted needs to be calculated manually.
-        uint256 rethBalanceBefore = _rocketTokenReth.balanceOf(address(this));
-
-        // Submit the provided ether to Rocket Pool to be deposited.
-        rocketDepositPool.deposit{ value: _baseAmount }();
-
-        // Calculate the net shares minted.
-        uint256 rethBalanceAfter = _rocketTokenReth.balanceOf(address(this));
-        sharesMinted = rethBalanceAfter - rethBalanceBefore;
-
-        return (sharesMinted, refund);
+    ) internal pure override returns (uint256, uint256) {
+        // Deposits with ETH is not supported because of accounting
+        // issues due to the Rocket Pool deposit fee.
+        revert IHyperdrive.UnsupportedToken();
     }
 
     /// @dev Process a deposit in vault shares.
@@ -84,7 +56,7 @@ abstract contract RETHBase is HyperdriveBase {
         uint256 _shareAmount,
         bytes calldata // unused
     ) internal override {
-        // Transfer RETH shares into the contract.
+        // Transfer rETH shares into the contract.
         _rocketTokenReth.transferFrom(msg.sender, address(this), _shareAmount);
     }
 
@@ -98,7 +70,7 @@ abstract contract RETHBase is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override returns (uint256 amountWithdrawn) {
-        // Burning RETH shares in exchange for ether.
+        // Burning rETH shares in exchange for ether.
         // Ether proceeds are credited to this contract.
         _rocketTokenReth.burn(_shareAmount);
 
@@ -124,7 +96,7 @@ abstract contract RETHBase is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override {
-        // Transfer the RETH shares to the destination.
+        // Transfer the rETH shares to the destination.
         _rocketTokenReth.transfer(_destination, _shareAmount);
     }
 
