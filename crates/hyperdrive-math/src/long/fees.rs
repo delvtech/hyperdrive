@@ -1,5 +1,8 @@
+
+use ethers::types::U256;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
+
 
 use crate::State;
 
@@ -33,8 +36,8 @@ impl State {
     pub fn close_long_curve_fee(
         &self,
         bond_amount: FixedPoint,
-        maturity_time: FixedPoint,
-        current_time: FixedPoint
+        maturity_time: U256,
+        current_time: U256 
     ) -> FixedPoint {
         let normalized_time_remaining = self.calculate_time_remaining(maturity_time, current_time);
         // curve_fee = ((1 - p) * phi_curve * d_y * t) / c
@@ -48,8 +51,8 @@ impl State {
     pub fn close_long_flat_fee(
         &self,
         bond_amount: FixedPoint,
-        maturity_time: FixedPoint,
-        current_time: FixedPoint
+        maturity_time: U256,
+        current_time:U256 
     ) -> FixedPoint {
         let normalized_time_remaining = self.calculate_time_remaining(maturity_time, current_time);
         // flat_fee = (d_y * (1 - t) * phi_flat) / c
@@ -61,12 +64,12 @@ impl State {
 
     fn calculate_time_remaining(
         &self,
-        maturity_time: FixedPoint,
-        current_time: FixedPoint
+        maturity_time: U256,
+        current_time: U256 
     ) -> FixedPoint {
-        let latest_checkpoint = self.get_latest_checkpoint(current_time); 
+        let latest_checkpoint = self.to_checkpoint(current_time); 
         let time_remaining = if maturity_time > latest_checkpoint {
-            maturity_time - latest_checkpoint
+            fixed!(maturity_time - latest_checkpoint)
         } else {
             fixed!(0)
         };
@@ -77,12 +80,4 @@ impl State {
         time_remaining
     }
 
-    /// Gets the most recent checkpoint time.
-    /// @return latestCheckpoint The latest checkpoint.
-    fn get_latest_checkpoint(
-        &self,
-        current_time: FixedPoint,
-    ) -> FixedPoint {
-        current_time - (current_time % self.checkpoint_duration())
-    }
 }
