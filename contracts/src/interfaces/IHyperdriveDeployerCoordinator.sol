@@ -22,6 +22,14 @@ interface IHyperdriveDeployerCoordinator {
     ///         after it has already been deployed.
     error HyperdriveAlreadyDeployed();
 
+    /// @notice Thrown when a user attempts to initialize a hyperdrive contract
+    ///         before is has been deployed.
+    error HyperdriveIsNotDeployed();
+
+    /// @notice Thrown when a deployer provides an insufficient amount of base
+    ///         to initialize a payable Hyperdrive instance.
+    error InsufficientValue();
+
     /// @notice Thrown when the checkpoint duration specified is zero.
     error InvalidCheckpointDuration();
 
@@ -56,9 +64,16 @@ interface IHyperdriveDeployerCoordinator {
     ///         extra data hash.
     error MismatchedExtraData();
 
+    /// @notice Thrown when ether is sent to an instance that doesn't accept
+    ///         ether as a deposit asset.
+    error NotPayable();
+
     /// @notice Thrown when a user attempts to deploy a target contract after
     ///         it has already been deployed.
     error TargetAlreadyDeployed();
+
+    /// @notice Thrown when an ether transfer fails.
+    error TransferFailed();
 
     /// Functions ///
 
@@ -91,4 +106,24 @@ interface IHyperdriveDeployerCoordinator {
         uint256 _targetIndex,
         bytes32 _salt
     ) external returns (address);
+
+    /// @notice Initializes a pool that was deployed by this coordinator.
+    /// @dev This function utilizes several helper functions that provide
+    ///      flexibility to implementations.
+    /// @param _deploymentId The ID of the deployment.
+    /// @param _lp The LP that is initializing the pool.
+    /// @param _contribution The amount of capital to supply. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
+    /// @param _apr The target APR.
+    /// @param _options The options that configure how the initialization is
+    ///        settled.
+    /// @return lpShares The initial number of LP shares created.
+    function initialize(
+        bytes32 _deploymentId,
+        address _lp,
+        uint256 _contribution,
+        uint256 _apr,
+        IHyperdrive.Options memory _options
+    ) external payable returns (uint256 lpShares);
 }

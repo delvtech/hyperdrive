@@ -130,7 +130,10 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         factory.addDeployerCoordinator(deployerCoordinator);
 
         // Set approval to allow initial contribution to factory.
-        underlyingToken.approve(address(factory), type(uint256).max);
+        underlyingToken.approve(
+            address(deployerCoordinator),
+            type(uint256).max
+        );
 
         // Deploy and set hyperdrive instance.
         bytes memory extraData = abi.encode(address(token));
@@ -192,7 +195,11 @@ contract UsdcERC4626 is ERC4626ValidationTest {
             contribution,
             FIXED_RATE,
             FIXED_RATE,
-            new bytes(0),
+            IHyperdrive.Options({
+                asBase: true,
+                destination: alice,
+                extraData: new bytes(0)
+            }),
             bytes32(uint256(0xdeadfade))
         );
 

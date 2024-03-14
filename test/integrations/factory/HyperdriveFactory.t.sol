@@ -1547,7 +1547,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.02e18,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
         }
@@ -1572,7 +1576,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.02e18,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
             config.checkpointDuration = oldCheckpointDuration;
@@ -1598,7 +1606,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.02e18,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
             config.checkpointDuration = oldCheckpointDuration;
@@ -1622,7 +1634,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.02e18,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
             config.checkpointDuration = oldCheckpointDuration;
@@ -1648,7 +1664,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.02e18,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
             config.positionDuration = oldPositionDuration;
@@ -1674,7 +1694,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.02e18,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
             config.positionDuration = oldPositionDuration;
@@ -1698,7 +1722,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.02e18,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
             config.positionDuration = oldPositionDuration;
@@ -1719,7 +1747,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 fixedAPR,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
         }
@@ -1739,7 +1771,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 fixedAPR,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
         }
@@ -1761,7 +1797,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.001e18,
                 0.004e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
         }
@@ -1780,7 +1820,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.02e18,
                 0.006e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
         }
@@ -1802,7 +1846,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.02e18,
                 0.019e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
         }
@@ -1824,7 +1872,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.003e18,
                 0.011e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
         }
@@ -1843,7 +1895,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.012e18,
                 0.025e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
         }
@@ -1865,7 +1921,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.3e18,
                 0.31e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
         }
@@ -1886,7 +1946,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.05e18,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
             config.fees.curve = oldCurveFee;
@@ -1908,7 +1972,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.05e18,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
             config.fees.curve = oldCurveFee;
@@ -1930,7 +1998,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.05e18,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
             config.fees.flat = oldFlatFee;
@@ -1952,7 +2024,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.05e18,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
             config.fees.flat = oldFlatFee;
@@ -1974,7 +2050,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.05e18,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
             config.fees.governanceLP = oldGovernanceLPFee;
@@ -1996,7 +2076,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.05e18,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
             config.fees.governanceLP = oldGovernanceLPFee;
@@ -2020,7 +2104,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.05e18,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
             config.fees.governanceZombie = oldGovernanceZombieFee;
@@ -2044,7 +2132,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.05e18,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
             config.fees.governanceZombie = oldGovernanceZombieFee;
@@ -2066,7 +2158,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.05e18,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
             config.linkerFactory = oldLinkerFactory;
@@ -2088,7 +2184,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.05e18,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
             config.linkerCodeHash = oldLinkerCodeHash;
@@ -2110,7 +2210,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.05e18,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
             config.feeCollector = oldFeeCollector;
@@ -2132,7 +2236,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.05e18,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
             config.sweepCollector = oldSweepCollector;
@@ -2154,29 +2262,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 10_000e18,
                 0.05e18,
                 0.05e18,
-                new bytes(0),
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
                 bytes32(uint256(0xdeadbabe))
             );
             config.governance = oldGovernance;
-        }
-
-        // Ensure that an instance can't be deployed with an invalid message
-        // value.
-        {
-            vm.stopPrank();
-            vm.startPrank(bob);
-            vm.expectRevert(IHyperdriveFactory.InsufficientValue.selector);
-            factory.deployAndInitialize{ value: 5_000e18 }(
-                bytes32(uint256(0xdeadbeef)),
-                deployerCoordinator,
-                config,
-                extraData,
-                10_000e18,
-                0.05e18,
-                0.05e18,
-                new bytes(0),
-                bytes32(uint256(0xdeadbabe))
-            );
         }
     }
 }
@@ -2325,14 +2418,14 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
     }
 
     function _deployInstance(
-        address deployerUser,
+        address deployer,
         address pool
     ) internal returns (IHyperdrive) {
-        deal(address(dai), deployerUser, CONTRIBUTION);
+        deal(address(dai), deployer, CONTRIBUTION);
 
-        vm.startPrank(deployerUser);
+        vm.startPrank(deployer);
 
-        dai.approve(address(factory), CONTRIBUTION);
+        dai.approve(address(deployerCoordinator), CONTRIBUTION);
 
         deploymentId = keccak256(abi.encode(deploymentId));
         salt = keccak256(abi.encode(salt));
@@ -2395,7 +2488,11 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             CONTRIBUTION,
             APR,
             APR,
-            new bytes(0),
+            IHyperdrive.Options({
+                asBase: true,
+                destination: deployer,
+                extraData: new bytes(0)
+            }),
             salt
         );
 
@@ -2438,12 +2535,17 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
 
         // 1. Charlie deploys factory with yDAI as yield source, hyperdrive deployer 1.
 
-        dai.approve(address(factory), CONTRIBUTION);
+        dai.approve(address(deployerCoordinator), CONTRIBUTION);
 
         assertEq(dai.balanceOf(charlie), CONTRIBUTION);
         assertEq(dai.balanceOf(address(pool1)), 0);
 
         bytes memory extraData = abi.encode(address(pool1));
+        IHyperdrive.Options memory options = IHyperdrive.Options({
+            asBase: true,
+            destination: charlie,
+            extraData: new bytes(0)
+        });
         factory.deployTarget(
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
@@ -2502,7 +2604,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             CONTRIBUTION,
             APR,
             APR,
-            new bytes(0),
+            options,
             bytes32(uint256(0xdeadbabe))
         );
 
@@ -2525,6 +2627,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             charlie,
             CONTRIBUTION,
             APR,
+            true,
             config.minimumShareReserves,
             extraData,
             0
@@ -2541,7 +2644,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
 
         deal(address(dai), charlie, CONTRIBUTION);
 
-        dai.approve(address(factory), CONTRIBUTION);
+        dai.approve(address(deployerCoordinator1), CONTRIBUTION);
 
         extraData = abi.encode(address(pool2));
         factory.deployTarget(
@@ -2602,7 +2705,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             CONTRIBUTION,
             APR,
             APR,
-            new bytes(0),
+            options,
             bytes32(uint256(0xbabe))
         );
 
@@ -2625,6 +2728,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             charlie,
             CONTRIBUTION,
             APR,
+            true,
             config.minimumShareReserves,
             extraData,
             0
@@ -2645,12 +2749,13 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
 
         vm.startPrank(dan);
 
-        dai.approve(address(factory), CONTRIBUTION);
+        dai.approve(address(deployerCoordinator), CONTRIBUTION);
 
         assertEq(dai.balanceOf(dan), CONTRIBUTION);
         assertEq(dai.balanceOf(address(pool2)), CONTRIBUTION); // From Charlie
 
         extraData = abi.encode(address(pool2));
+        options.destination = dan;
         factory.deployTarget(
             bytes32(uint256(0xbeef)),
             deployerCoordinator,
@@ -2709,7 +2814,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             CONTRIBUTION,
             APR,
             APR,
-            new bytes(0),
+            options,
             bytes32(uint256(0xdead))
         );
 
@@ -2732,6 +2837,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             dan,
             CONTRIBUTION,
             APR,
+            true,
             config.minimumShareReserves,
             extraData,
             0

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
-import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveFactory } from "../interfaces/IHyperdriveFactory.sol";
 import { IHyperdriveDeployerCoordinator } from "../interfaces/IHyperdriveDeployerCoordinator.sol";
@@ -19,7 +17,11 @@ import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 ///                    particular legal or regulatory significance.
 contract HyperdriveFactory is IHyperdriveFactory {
     using FixedPointMath for uint256;
-    using SafeERC20 for ERC20;
+
+    /// @dev Locks the receive function. This can be used to prevent stuck ether
+    ///      from ending up in the contract but still allowing refunds to be
+    ///      received.
+    bool private isReceiveLocked = true;
 
     /// @notice The governance address that updates the factory's configuration.
     address public governance;
@@ -265,6 +267,14 @@ contract HyperdriveFactory is IHyperdriveFactory {
             revert IHyperdriveFactory.Unauthorized();
         }
         _;
+    }
+
+    /// @notice Allows ether to be sent to the contract. This is gated by a lock
+    ///         to prevent ether from becoming stuck in the contract.
+    receive() external payable {
+        if (isReceiveLocked) {
+            revert IHyperdriveFactory.ReceiveLocked();
+        }
     }
 
     /// @notice Allows governance to transfer the governance role.
@@ -594,7 +604,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
     /// @param _contribution The contribution amount in base to the pool.
     /// @param _fixedAPR The fixed APR used to initialize the pool.
     /// @param _timeStretchAPR The time stretch APR used to initialize the pool.
-    /// @param _initializeExtraData The extra data for the `initialize` call.
+    /// @param _options The options for the `initialize` call.
     /// @param _salt The create2 salt to use for the deployment.
     /// @return The hyperdrive address deployed.
     function deployAndInitialize(
@@ -605,7 +615,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
         uint256 _contribution,
         uint256 _fixedAPR,
         uint256 _timeStretchAPR,
-        bytes memory _initializeExtraData,
+        IHyperdrive.Options memory _options,
         bytes32 _salt
     ) external payable returns (IHyperdrive) {
         // Ensure that the deployer coordinator has been registered.
@@ -648,55 +658,19 @@ contract HyperdriveFactory is IHyperdriveFactory {
         isInstance[address(hyperdrive)] = true;
 
         // Initialize the Hyperdrive instance.
-        uint256 refund;
-        if (address(_config.baseToken) == ETH) {
-            if (msg.value < _contribution) {
-                revert IHyperdriveFactory.InsufficientValue();
-            }
-
-            // Only the contribution amount of ether will be passed to
-            // Hyperdrive.
-            unchecked {
-                refund = msg.value - _contribution;
-            }
-
-            // Initialize the Hyperdrive instance.
-            hyperdrive.initialize{ value: _contribution }(
-                _contribution,
-                _fixedAPR,
-                IHyperdrive.Options({
-                    destination: msg.sender,
-                    asBase: true,
-                    extraData: _initializeExtraData
-                })
-            );
-        } else {
-            // None of the provided ether is used for the contribution.
-            refund = msg.value;
-
-            // Transfer the contribution to this contract and set an approval
-            // on Hyperdrive to prepare for initialization.
-            ERC20(address(_config.baseToken)).safeTransferFrom(
-                msg.sender,
-                address(this),
-                _contribution
-            );
-            ERC20(address(_config.baseToken)).forceApprove(
-                address(hyperdrive),
-                _contribution
-            );
-
-            // Initialize the Hyperdrive instance.
-            hyperdrive.initialize(
-                _contribution,
-                _fixedAPR,
-                IHyperdrive.Options({
-                    destination: msg.sender,
-                    asBase: true,
-                    extraData: _initializeExtraData
-                })
-            );
-        }
+        isReceiveLocked = false;
+        IHyperdriveDeployerCoordinator(_deployerCoordinator).initialize{
+            value: msg.value
+        }(
+            // NOTE: We hash the deployer's address into the deployment ID
+            // to prevent their deployment from being front-run.
+            keccak256(abi.encode(msg.sender, _deploymentId)),
+            msg.sender,
+            _contribution,
+            _fixedAPR,
+            _options
+        );
+        isReceiveLocked = true;
 
         // Set the default pausers and transfer the governance status to the
         // hyperdrive governance address.
@@ -709,6 +683,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
         hyperdrive.setGovernance(hyperdriveGovernance);
 
         // Refund any excess ether that was sent to this contract.
+        uint256 refund = address(this).balance;
         if (refund > 0) {
             (bool success, ) = payable(msg.sender).call{ value: refund }("");
             if (!success) {

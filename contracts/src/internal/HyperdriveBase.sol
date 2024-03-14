@@ -180,7 +180,7 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
     ) internal virtual;
 
     /// @dev A yield source dependent check that prevents ether from being
-    ///         transferred to Hyperdrive instances that don't accept ether.
+    ///      transferred to Hyperdrive instances that don't accept ether.
     function _checkMessageValue() internal view virtual;
 
     /// @dev A yield source dependent check that verifies that the provided

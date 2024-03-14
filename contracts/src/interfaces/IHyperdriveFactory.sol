@@ -99,10 +99,6 @@ interface IHyperdriveFactory {
     ///         underlying list.
     error EndIndexTooLarge();
 
-    /// @notice Thrown when a deployer provides an insufficient amount of base
-    ///         to initialize a payable Hyperdrive instance.
-    error InsufficientValue();
-
     /// @notice Thrown when the checkpoint duration supplied to `deployTarget`
     ///         or `deployAndInitialize` isn't a multiple of the checkpoint
     ///         duration resolution or isn't within the range specified by the
@@ -200,6 +196,10 @@ interface IHyperdriveFactory {
     ///         time stretch APRs or doesn't satisfy the lower and upper safe
     ///         bounds implied by the fixed APR.
     error InvalidTimeStretchAPR();
+
+    /// @notice Thrown when ether is sent to the factory when `receive` is
+    ///         locked.
+    error ReceiveLocked();
 
     /// @notice Thrown when an ether transfer fails.
     error TransferFailed();
