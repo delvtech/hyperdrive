@@ -413,7 +413,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
-        vm.expectRevert(IHyperdrive.TransferFailed.selector);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openLong{ value: basePaid }(
             basePaid,
             0,
@@ -469,7 +469,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
 
         // Ensure that the refund fails when Bob sends excess ETH
         // when opening a long with "asBase" set to true.
-        vm.expectRevert(IHyperdrive.TransferFailed.selector);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openLong{ value: 2e18 }(
             1e18,
             0,
@@ -486,7 +486,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
         uint256 sharesPaid = 1e18;
         uint256 ethBalanceBefore = address(bob).balance;
         rocketTokenRETH.approve(address(hyperdrive), sharesPaid);
-        vm.expectRevert(IHyperdrive.TransferFailed.selector);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openLong{ value: 0.5e18 }(
             sharesPaid,
             0,
@@ -631,7 +631,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         vm.deal(bob, shortAmount);
-        vm.expectRevert(IHyperdrive.TransferFailed.selector);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openShort{ value: shortAmount }(
             shortAmount,
             shortAmount,
@@ -688,7 +688,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
 
         // Ensure that the refund fails when Bob sends excess ETH
         // when opening a short with "asBase" set to true.
-        vm.expectRevert(IHyperdrive.TransferFailed.selector);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openShort{ value: 2e18 }(
             1e18,
             1e18,
@@ -705,7 +705,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
         uint256 sharesPaid = 1e18;
         uint256 ethBalanceBefore = address(bob).balance;
         rocketTokenRETH.approve(address(hyperdrive), sharesPaid);
-        vm.expectRevert(IHyperdrive.TransferFailed.selector);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openShort{ value: 1e18 }(
             sharesPaid,
             sharesPaid,

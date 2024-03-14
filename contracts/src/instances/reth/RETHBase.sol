@@ -141,7 +141,7 @@ abstract contract RETHBase is HyperdriveBase {
     /// @dev Disallows the contract to receive ether, when opening positions.
     function _checkMessageValue() internal view override {
         if (msg.value > 0) {
-            revert IHyperdrive.TransferFailed();
+            revert IHyperdrive.NotPayable();
         }
     }
 
