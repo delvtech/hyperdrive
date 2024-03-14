@@ -48,7 +48,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
     function setUp() public override __mainnet_fork(19_429_100) {
         super.setUp();
 
-        // Fund the test accounts with LsETH and ETH.
+        // Fund the test accounts with lsETH and ETH.
         address[] memory accounts = new address[](3);
         accounts[0] = alice;
         accounts[1] = bob;
@@ -338,11 +338,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         );
 
         // Ensure that the share reserves and LP total supply are equal and correct.
-        assertApproxEqAbs(
-            hyperdrive.getPoolInfo().shareReserves,
-            contribution,
-            1
-        );
+        assertEq(hyperdrive.getPoolInfo().shareReserves, contribution);
         assertEq(
             hyperdrive.getPoolInfo().lpTotalSupply,
             hyperdrive.getPoolInfo().shareReserves - config.minimumShareReserves
@@ -358,8 +354,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
             false,
             config.minimumShareReserves,
             new bytes(0),
-            // NOTE: Tolerance since rETH uses mulDivDown for share calculations.
-            1e5
+            0
         );
     }
 
@@ -540,7 +535,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         vm.startPrank(bob);
 
         // Calculate the maximum amount of basePaid we can test. The limit is
-        // either the max long that Hyperdrive can open or the amount of RETH
+        // either the max long that Hyperdrive can open or the amount of lsETH
         // tokens the trader has.
         uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
         uint256 maxEthAmount = RIVER.underlyingBalanceFromShares(
@@ -659,7 +654,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         // Ensure that the refund fails when Bob sends excess ETH
         // when opening a short with "asBase" set to true.
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-        (, uint256 basePaid) = hyperdrive.openShort{ value: 2e18 }(
+        hyperdrive.openShort{ value: 2e18 }(
             1e18,
             1e18,
             0,
@@ -688,7 +683,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         assertEq(address(bob).balance, ethBalanceBefore);
     }
 
-    function testFail_close_short_with_eth(
+    function test_close_short_with_eth(
         uint256 shortAmount,
         int256 variableRate
     ) external {
@@ -703,38 +698,14 @@ contract LsETHHyperdriveTest is HyperdriveTest {
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         RIVER.approve(address(hyperdrive), shortAmount);
-        (uint256 maturityTime, uint256 sharesPaid) = openShort(
-            bob,
-            shortAmount,
-            false
-        );
+        (uint256 maturityTime, ) = openShort(bob, shortAmount, false);
 
-        // The term passes and interest accrues.
-        uint256 startingVaultSharePrice = hyperdrive
-            .getPoolInfo()
-            .vaultSharePrice;
-        // todo ask alex if this value is 0 test case does not
-        // fail bc we are withdrawing 0 shares so no error
-        // but this works when we are closing short as shares
-        // even if no interset accrual
+        // TODO ask alex about 0 interest rate problem
+        // Bob attempts to close the short after the position
+        // duration for ETH.
         variableRate = variableRate.normalizeToRange(1e18, 2.5e18);
         advanceTime(POSITION_DURATION, variableRate);
-
-        // Get some balance information before closing the short.
-        // uint256 totalLsetSupplyBefore = RIVER.totalSupply();
-        // AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        // AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-        //     address(hyperdrive)
-        // );
-
-        // Bob closes his short with rETH as the target asset. Bob's proceeds
-        // should be the variable interest that accrued on the shorted bonds.
-        // uint256 expectedBaseProceeds = shortAmount.mulDivDown(
-        //     hyperdrive.getPoolInfo().vaultSharePrice - startingVaultSharePrice,
-        //     startingVaultSharePrice
-        // );
-
-        // vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         hyperdrive.closeShort(
             maturityTime,
             shortAmount,
@@ -745,18 +716,6 @@ contract LsETHHyperdriveTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
-
-        // assertLe(baseProceeds, expectedBaseProceeds);
-        // assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 100);
-
-        // verifyLsethWithdrawal(
-        //     bob,
-        //     baseProceeds,
-        //     true,
-        //     totalRethSupplyBefore,
-        //     bobBalancesBefore,
-        //     hyperdriveBalancesBefore
-        // );
     }
 
     function test_close_short_with_lseth(
@@ -774,11 +733,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         RIVER.approve(address(hyperdrive), shortAmount);
-        (uint256 maturityTime, uint256 sharesPaid) = openShort(
-            bob,
-            shortAmount,
-            false
-        );
+        (uint256 maturityTime, ) = openShort(bob, shortAmount, false);
 
         // The term passes and interest accrues.
         uint256 startingVaultSharePrice = hyperdrive
@@ -810,7 +765,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         assertLe(baseProceeds, expectedBaseProceeds + 10);
         assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 100);
 
-        // Ensure that Rocket Pool's aggregates and the token balances were updated
+        // Ensure that River aggregates and the token balances were updated
         // correctly during the trade.
         verifyLsethWithdrawal(
             bob,
@@ -841,15 +796,13 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         assertEq(trader.balance, traderBalancesBefore.ETHBalance);
 
         // Ensure that the lsETH balances were updated correctly.
-        assertApproxEqAbs(
+        assertEq(
             RIVER.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.lsethBalance + amount,
-            1
+            hyperdriveBalancesBefore.lsethBalance + amount
         );
-        assertApproxEqAbs(
+        assertEq(
             RIVER.balanceOf(trader),
-            traderBalancesBefore.lsethBalance - amount,
-            1
+            traderBalancesBefore.lsethBalance - amount
         );
 
         // Ensure the total supply was updated correctly.
@@ -868,7 +821,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
             revert IHyperdrive.UnsupportedToken();
         }
 
-        // Ensure the total amount of rETH stays the same.
+        // Ensure the total amount of lsETH stays the same.
         assertEq(RIVER.totalSupply(), totalLsethSupplyBefore);
 
         // Ensure that the ETH balances were updated correctly.
@@ -878,16 +831,14 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         );
         assertEq(trader.balance, traderBalancesBefore.ETHBalance);
 
-        // Ensure the rETH balances were updated correctly.
-        assertApproxEqAbs(
+        // Ensure the lsETH balances were updated correctly.
+        assertEq(
             RIVER.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.lsethBalance - amount,
-            1
+            hyperdriveBalancesBefore.lsethBalance - amount
         );
-        assertApproxEqAbs(
+        assertEq(
             RIVER.balanceOf(address(trader)),
-            traderBalancesBefore.lsethBalance + amount,
-            1
+            traderBalancesBefore.lsethBalance + amount
         );
     }
 
