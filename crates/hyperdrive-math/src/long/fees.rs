@@ -33,8 +33,10 @@ impl State {
     pub fn close_long_curve_fee(
         &self,
         bond_amount: FixedPoint,
-        normalized_time_remaining: FixedPoint,
+        maturity_time: FixedPoint,
+        current_time: FixedPoint
     ) -> FixedPoint {
+        let normalized_time_remaining = self.calculate_time_remaining(maturity_time, current_time);
         // curve_fee = ((1 - p) * phi_curve * d_y * t) / c
         self.curve_fee()
             * (fixed!(1e18) - self.get_spot_price())
@@ -46,12 +48,41 @@ impl State {
     pub fn close_long_flat_fee(
         &self,
         bond_amount: FixedPoint,
-        normalized_time_remaining: FixedPoint,
+        maturity_time: FixedPoint,
+        current_time: FixedPoint
     ) -> FixedPoint {
+        let normalized_time_remaining = self.calculate_time_remaining(maturity_time, current_time);
         // flat_fee = (d_y * (1 - t) * phi_flat) / c
         bond_amount.mul_div_down(
             fixed!(1e18) - normalized_time_remaining,
             self.vault_share_price(),
         ) * self.flat_fee()
+    }
+
+    fn calculate_time_remaining(
+        &self,
+        maturity_time: FixedPoint,
+        current_time: FixedPoint
+    ) -> FixedPoint {
+        let latest_checkpoint = self.get_latest_checkpoint(current_time); 
+        let time_remaining = if maturity_time > latest_checkpoint {
+            maturity_time - latest_checkpoint
+        } else {
+            fixed!(0)
+        };
+
+        // NOTE: Round down to underestimate the time remaining.
+        let time_remaining = time_remaining.div_down(self.position_duration());
+
+        time_remaining
+    }
+
+    /// Gets the most recent checkpoint time.
+    /// @return latestCheckpoint The latest checkpoint.
+    fn get_latest_checkpoint(
+        &self,
+        current_time: FixedPoint,
+    ) -> FixedPoint {
+        current_time - (current_time % self.checkpoint_duration())
     }
 }
