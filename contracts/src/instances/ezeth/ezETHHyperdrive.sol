@@ -73,11 +73,10 @@ contract EzETHHyperdrive is Hyperdrive, EzETHBase {
         address _target2,
         address _target3,
         address _target4,
-        IRestakeManager _restakeManager,
-        IERC20 _ezETH
+        IRestakeManager _restakeManager
     )
         Hyperdrive(_config, _target0, _target1, _target2, _target3, _target4)
-        EzETHBase(_restakeManager, _ezETH)
+        EzETHBase(_restakeManager)
     {
         // Ensure that the base token address is properly configured.
         if (address(_config.baseToken) != ETH) {

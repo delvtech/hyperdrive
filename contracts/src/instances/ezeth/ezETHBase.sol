@@ -25,14 +25,12 @@ abstract contract EzETHBase is HyperdriveBase {
 
     /// @notice Instantiates the ezETH Hyperdrive base contract.
     /// @param __restakeManager The Renzo Restakemanager contract.
-    constructor(IRestakeManager __restakeManager, IERC20 __ezETH) {
+    constructor(IRestakeManager __restakeManager) {
         _restakeManager = __restakeManager;
-        _ezETH = __ezETH;
-        // TODO: see if we can get this to work so we don't need to pass in __ezETH
-        // (, bytes memory data) = address(__restakeManager).call(
-        //     abi.encodeWithSignature("ezETH()")
-        // );
-        // _ezETH = abi.decode(data, (IERC20));
+        (, bytes memory data) = address(__restakeManager).call(
+            abi.encodeWithSignature("ezETH()")
+        );
+        _ezETH = IERC20(abi.decode(data, (address)));
     }
 
     /// Yield Source ///
@@ -44,7 +42,7 @@ abstract contract EzETHBase is HyperdriveBase {
     ///         yield sources that don't accept ETH.
     function _depositWithBase(
         uint256 _baseAmount,
-        bytes calldata
+        bytes calldata // unused
     ) internal override returns (uint256 sharesMinted, uint256 refund) {
         // Ensure that sufficient ether was provided.
         if (msg.value < _baseAmount) {

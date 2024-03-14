@@ -19,7 +19,6 @@ contract EzETHTarget1 is HyperdriveTarget1, EzETHBase {
     /// @param _restakeManager The Renzo contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        IRestakeManager _restakeManager,
-        IERC20 _ezETH
-    ) HyperdriveTarget1(_config) EzETHBase(_restakeManager, _ezETH) {}
+        IRestakeManager _restakeManager
+    ) HyperdriveTarget1(_config) EzETHBase(_restakeManager) {}
 }

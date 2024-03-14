@@ -19,7 +19,7 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
 
     /// @notice The Renzo contract.
     IRestakeManager public immutable restakeManager;
-    /// @notice the ezETH token contract.
+    /// @notice The ezETH token contract.
     IERC20 public immutable ezETH;
 
     /// @notice Instantiates the deployer coordinator.
@@ -30,7 +30,6 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target3Deployer The target3 deployer.
     /// @param _target4Deployer The target4 deployer.
     /// @param _restakeManager The Renzo contract.
-    /// @param _ezETH The ezETH token contract.
     constructor(
         address _coreDeployer,
         address _target0Deployer,
@@ -38,8 +37,7 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _target2Deployer,
         address _target3Deployer,
         address _target4Deployer,
-        IRestakeManager _restakeManager,
-        IERC20 _ezETH
+        IRestakeManager _restakeManager
     )
         HyperdriveDeployerCoordinator(
             _coreDeployer,
@@ -51,13 +49,50 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         )
     {
         restakeManager = _restakeManager;
-        // TODO: try to get this to work
-        // (, bytes memory data) = address(restakeManager).call(
-        //     abi.encodeWithSignature("ezETH()")
-        // );
-        // ezETH = abi.decode(data, (IERC20));
-        ezETH = _ezETH;
+        (, bytes memory data) = address(restakeManager).call(
+            abi.encodeWithSignature("ezETH()")
+        );
+        ezETH = IERC20(abi.decode(data, (address)));
     }
+
+    /// @dev Prepares the coordinator for initialization by drawing funds from
+    ///      the LP, if necessary.
+    /// @param _hyperdrive The Hyperdrive instance that is being initialized.
+    /// @param _lp The LP that is initializing the pool.
+    /// @param _contribution The amount of capital to supply. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
+    /// @param _options The options that configure how the initialization is
+    ///        settled.
+    /// @return value The value that should be sent in the initialize
+    ///         transaction.
+    function _prepareInitialize(
+        IHyperdrive _hyperdrive,
+        address _lp,
+        uint256 _contribution,
+        IHyperdrive.Options memory _options
+    ) internal override returns (uint256 value) {
+        // If base is the deposit asset, ensure that enough ether was sent to
+        // the contract and return the amount of ether that should be sent for
+        // the contribution.
+        if (_options.asBase) {
+            if (msg.value < _contribution) {
+                revert IHyperdriveDeployerCoordinator.InsufficientValue();
+            }
+            value = _contribution;
+        }
+        // Otherwise, transfer vault shares from the LP and approve the
+        // Hyperdrive pool.
+        else {
+            ezETH.transferFrom(_lp, address(this), _contribution);
+            ezETH.approve(address(_hyperdrive), _contribution);
+        }
+
+        return value;
+    }
+
+    /// @dev Allows the contract to receive ether.
+    function _checkMessageValue() internal view override {}
 
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.

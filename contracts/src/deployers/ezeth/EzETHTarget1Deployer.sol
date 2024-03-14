@@ -16,15 +16,11 @@ import { IRestakeManager } from "../../interfaces/IRestakeManager.sol";
 contract EzETHTarget1Deployer is IHyperdriveTargetDeployer {
     /// @notice The Renzo contract.
     IRestakeManager public immutable restakeManager;
-    /// @notice the ezETH token contract.
-    IERC20 public immutable ezETH;
 
     /// @notice Instantiates the core deployer.
     /// @param _restakeManager The Renzo contract.
-    /// @param _ezETH The ezETH token contract.
-    constructor(IRestakeManager _restakeManager, IERC20 _ezETH) {
+    constructor(IRestakeManager _restakeManager) {
         restakeManager = _restakeManager;
-        ezETH = _ezETH;
     }
 
     /// @notice Deploys a target1 instance with the given parameters.
@@ -42,7 +38,7 @@ contract EzETHTarget1Deployer is IHyperdriveTargetDeployer {
                 // front-running of deployments.
                 new EzETHTarget1{
                     salt: keccak256(abi.encode(msg.sender, _salt))
-                }(_config, restakeManager, ezETH)
+                }(_config, restakeManager)
             );
     }
 }

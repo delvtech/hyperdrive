@@ -21,10 +21,12 @@ contract EzETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
 
     /// @notice Instantiates the core deployer.
     /// @param _restakeManager The Renzo contract.
-    /// @param _ezETH The ezETH token contract.
-    constructor(IRestakeManager _restakeManager, IERC20 _ezETH) {
+    constructor(IRestakeManager _restakeManager) {
         restakeManager = _restakeManager;
-        ezETH = _ezETH;
+        (, bytes memory data) = address(_restakeManager).call(
+            abi.encodeWithSignature("ezETH()")
+        );
+        ezETH = IERC20(abi.decode(data, (address)));
     }
 
     /// @notice Deploys a Hyperdrive instance with the given parameters.
@@ -59,8 +61,7 @@ contract EzETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
                     target2,
                     target3,
                     target4,
-                    restakeManager,
-                    ezETH
+                    restakeManager
                 )
             )
         );
