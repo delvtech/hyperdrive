@@ -80,6 +80,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         if (_options.asBase) {
             revert IHyperdrive.UnsupportedToken();
         }
+
         // Otherwise, transfer vault shares from the LP and approve the
         // Hyperdrive pool.
         rocketTokenReth.transferFrom(_lp, address(this), _contribution);
@@ -88,8 +89,12 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         return value;
     }
 
-    /// @dev Allows the contract to receive ether.
-    function _checkMessageValue() internal view override {}
+    /// @dev Disallows the contract to receive ether.
+    function _checkMessageValue() internal view override {
+        if (msg.value > 0) {
+            revert IHyperdrive.TransferFailed();
+        }
+    }
 
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.

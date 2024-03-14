@@ -42,7 +42,7 @@ abstract contract RETHBase is HyperdriveBase {
     /// Yield Source ///
 
     function _depositWithBase(
-        uint256 _baseAmount,
+        uint256, // unused
         bytes calldata // unused
     ) internal pure override returns (uint256, uint256) {
         // Deposits with ETH is not supported because of accounting
