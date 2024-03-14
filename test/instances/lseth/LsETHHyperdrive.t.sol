@@ -391,29 +391,28 @@ contract LsETHHyperdriveTest is HyperdriveTest {
 
     /// Price Per Share ///
 
-    //     function test_pricePerVaultShare(uint256 basePaid) external {
-    //         // Ensure the share prices are equal upon market inception.
-    //         uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
-    //         assertEq(vaultSharePrice, rocketTokenRETH.getExchangeRate());
+    function test_pricePerVaultShare() external {
+        uint256 basePaid = 1 ether;
+        // Ensure the share prices are equal upon market inception.
+        uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
+        assertEq(vaultSharePrice, RIVER.underlyingBalanceFromShares(1e18));
 
-    //         // Ensure that the share price accurately predicts the amount of shares
-    //         // that will be minted for depositing a given amount of rETH.
-    //         vm.startPrank(bob);
-    //         basePaid = basePaid.normalizeToRange(
-    //             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-    //             HyperdriveUtils.calculateMaxLong(hyperdrive)
-    //         );
-    //         uint256 hyperdriveSharesBefore = rocketTokenRETH.balanceOf(
-    //             address(hyperdrive)
-    //         );
-    //         uint256 sharesPaid = rocketTokenRETH.getRethValue(basePaid);
-    //         rocketTokenRETH.approve(address(hyperdrive), sharesPaid);
-    //         openLong(bob, sharesPaid, false);
-    //         assertEq(
-    //             rocketTokenRETH.balanceOf(address(hyperdrive)),
-    //             hyperdriveSharesBefore + sharesPaid
-    //         );
-    //     }
+        // Ensure that the share price accurately predicts the amount of shares
+        // that will be minted for depositing a given amount of rETH.
+        vm.startPrank(bob);
+        basePaid = basePaid.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            HyperdriveUtils.calculateMaxLong(hyperdrive)
+        );
+        uint256 hyperdriveSharesBefore = RIVER.balanceOf(address(hyperdrive));
+        uint256 sharesPaid = RIVER.sharesFromUnderlyingBalance(basePaid);
+        RIVER.approve(address(hyperdrive), sharesPaid);
+        openLong(bob, sharesPaid, false);
+        assertEq(
+            RIVER.balanceOf(address(hyperdrive)),
+            hyperdriveSharesBefore + sharesPaid
+        );
+    }
 
     //     // /// Long ///
 

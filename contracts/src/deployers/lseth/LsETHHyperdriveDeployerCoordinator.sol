@@ -112,6 +112,6 @@ contract LsETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         bytes memory // unused extra data
     ) internal view override returns (uint256) {
         // Return LsETH's current vault share price.
-        return river.sharesFromUnderlyingBalance(ONE);
+        return river.underlyingBalanceFromShares(ONE);
     }
 }
