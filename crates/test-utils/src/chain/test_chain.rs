@@ -34,7 +34,7 @@ use hyperdrive_wrappers::wrappers::{
     erc4626_target4_deployer::ERC4626Target4Deployer,
     etching_vault::EtchingVault,
     hyperdrive_factory::{
-        Fees as FactoryFees, HyperdriveFactory, HyperdriveFactoryEvents, PoolDeployConfig,
+        Fees as FactoryFees, HyperdriveFactory, HyperdriveFactoryEvents, Options, PoolDeployConfig,
     },
     ierc4626_hyperdrive::IERC4626Hyperdrive,
     ihyperdrive::{Fees, PoolConfig},
@@ -810,7 +810,11 @@ impl TestChain {
                     config.erc4626_hyperdrive_contribution,
                     config.erc4626_hyperdrive_fixed_apr,
                     config.erc4626_hyperdrive_time_stretch_apr,
-                    Vec::new().into(),
+                    Options {
+                        as_base: true,
+                        destination: client.address(),
+                        extra_data: Vec::new().into(),
+                    },
                     [0x01; 32],
                 )
                 .send()
@@ -979,7 +983,11 @@ impl TestChain {
                     config.steth_hyperdrive_contribution,
                     config.steth_hyperdrive_fixed_apr,
                     config.steth_hyperdrive_time_stretch_apr,
-                    Vec::new().into(),
+                    Options {
+                        as_base: true,
+                        destination: client.address(),
+                        extra_data: Vec::new().into(),
+                    },
                     [0x02; 32],
                 )
                 .value(config.steth_hyperdrive_contribution)
