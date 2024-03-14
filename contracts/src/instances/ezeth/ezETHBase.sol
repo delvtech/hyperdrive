@@ -96,7 +96,7 @@ abstract contract EzETHBase is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override {
-        // Transfer the stETH shares to the destination.
+        // Transfer the ezETH shares to the destination.
         _ezETH.transfer(_destination, _shareAmount);
     }
 
