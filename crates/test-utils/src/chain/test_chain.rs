@@ -714,9 +714,12 @@ impl TestChain {
             base.mint_with_destination(client.address(), config.erc4626_hyperdrive_contribution)
                 .send()
                 .await?;
-            base.approve(factory.address(), config.erc4626_hyperdrive_contribution)
-                .send()
-                .await?;
+            base.approve(
+                erc4626_deployer_coordinator.address(),
+                config.erc4626_hyperdrive_contribution,
+            )
+            .send()
+            .await?;
             let pool_config = PoolDeployConfig {
                 fee_collector: factory.fee_collector().call().await?,
                 sweep_collector: factory.sweep_collector().call().await?,
