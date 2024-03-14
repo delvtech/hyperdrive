@@ -60,27 +60,23 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         uint256 _contribution,
         IHyperdrive.Options memory _options
     ) internal override returns (uint256) {
-        // If base is the deposit asset, transfer base from the LP and approve
-        // the Hyperdrive pool.
+        // If base is the deposit asset, the initialization will be paid in the
+        // base token.
+        address token;
         if (_options.asBase) {
-            address baseToken = _hyperdrive.baseToken();
-            ERC20(baseToken).safeTransferFrom(
-                _lp,
-                address(this),
-                _contribution
-            );
-            ERC20(baseToken).forceApprove(address(_hyperdrive), _contribution);
+            token = _hyperdrive.baseToken();
         }
-        // Otherwise, transfer vault shares from the LP and approve the
-        // Hyperdrive pool.
+        // Otherwise, the initialization will be paid in vault shares.
         else {
-            address vault = address(
-                IERC4626Hyperdrive(address(_hyperdrive)).vault()
-            );
-            ERC20(vault).safeTransferFrom(_lp, address(this), _contribution);
-            ERC20(vault).forceApprove(address(_hyperdrive), _contribution);
+            token = address(IERC4626Hyperdrive(address(_hyperdrive)).vault());
         }
 
+        // Take custody of the contribution and approve Hyperdrive to pull the
+        // tokens.
+        ERC20(token).safeTransferFrom(_lp, address(this), _contribution);
+        ERC20(token).forceApprove(address(_hyperdrive), _contribution);
+
+        // NOTE: Return zero since this yield source isn't payable.
         return 0;
     }
 
