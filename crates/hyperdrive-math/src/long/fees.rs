@@ -69,7 +69,7 @@ impl State {
     ) -> FixedPoint {
         let latest_checkpoint = self.to_checkpoint(current_time); 
         let time_remaining = if maturity_time > latest_checkpoint {
-            fixed!(maturity_time - latest_checkpoint)
+            FixedPoint::from(maturity_time - latest_checkpoint)
         } else {
             fixed!(0)
         };
