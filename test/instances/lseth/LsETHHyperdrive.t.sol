@@ -700,9 +700,9 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         RIVER.approve(address(hyperdrive), shortAmount);
         (uint256 maturityTime, ) = openShort(bob, shortAmount, false);
 
-        // TODO ask alex about 0 interest rate problem
         // Bob attempts to close the short after the position
-        // duration for ETH.
+        // duration for ETH. The interest rate range is limited because
+        // the test case not fail when there is zero accrued interest.
         variableRate = variableRate.normalizeToRange(1e18, 2.5e18);
         advanceTime(POSITION_DURATION, variableRate);
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
