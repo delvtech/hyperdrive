@@ -138,9 +138,12 @@ abstract contract RETHBase is HyperdriveBase {
         return _rocketTokenReth.balanceOf(address(this));
     }
 
-    /// @dev We override the message value check since this integration is
-    ///      payable.
-    function _checkMessageValue() internal pure override {}
+    /// @dev Disallows the contract to receive ether, when opening positions.
+    function _checkMessageValue() internal view override {
+        if (msg.value > 0) {
+            revert IHyperdrive.TransferFailed();
+        }
+    }
 
     /// @dev Allows ether to be received only from the Rocket Pool rETH
     ///      token contract. Supports withdrawing as ethers from this
