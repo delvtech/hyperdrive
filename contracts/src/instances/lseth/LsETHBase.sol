@@ -31,12 +31,11 @@ abstract contract LsETHBase is HyperdriveBase {
     /// Yield Source ///
 
     /// @dev Accepts a deposit from the user in base.
-    /// @param _baseAmount The base amount to deposit.
     /// @return sharesMinted The shares that were minted in the deposit.
     /// @return refund The amount of ETH to refund. This should be zero for
     ///         yield sources that don't accept ETH.
     function _depositWithBase(
-        uint256 _baseAmount,
+        uint256, // unused
         bytes calldata // unused
     ) internal pure override returns (uint256, uint256) {
         revert IHyperdrive.UnsupportedToken();
