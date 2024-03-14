@@ -1,18 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-// import "../state/river/DailyCommittableLimits.sol";
-
-// import "./components/IConsensusLayerDepositManager.1.sol";
-// import "./components/IOracleManager.1.sol";
 import { ISharesManagerV1 } from "./ISharesManagerV1.sol";
-
-// import "./components/IUserDepositManager.1.sol";
 
 /// @title River Interface (v1)
 /// @author Kiln
 /// @notice The main system interface
-// interface IRiverV1 is IConsensusLayerDepositManagerV1, IUserDepositManagerV1, ISharesManagerV1, IOracleManagerV1 {
 interface IRiverV1 is ISharesManagerV1 {
     /// @notice Funds have been pulled from the Execution Layer Fee Recipient
     /// @param amount The amount pulled

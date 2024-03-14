@@ -13,11 +13,11 @@ import { LsETHHyperdrive } from "../../instances/lseth/LsETHHyperdrive.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract LsETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
-    /// @dev The Lido contract.
+    /// @dev The lsETH contract.
     IRiverV1 internal immutable _river;
 
     /// @notice Instantiates the core deployer.
-    /// @param __river The Lido contract.
+    /// @param __river The lsETH contract.
     constructor(IRiverV1 __river) {
         _river = __river;
     }

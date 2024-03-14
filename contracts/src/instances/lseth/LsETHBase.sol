@@ -7,11 +7,11 @@ import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 
 /// @author DELV
-/// @title StethHyperdrive
-/// @notice The base contract for the stETH Hyperdrive implementation.
-/// @dev Lido has it's own notion of shares to account for the accrual of
-///      interest on the ether pooled in the Lido protocol. Instead of
-///      maintaining a balance of shares, this integration can simply use Lido
+/// @title LsETHHyperdrive
+/// @notice The base contract for the lsETH Hyperdrive implementation.
+/// @dev River has it's own notion of shares to account for the accrual of
+///      interest on the ether pooled in the River protocol. Instead of
+///      maintaining a balance of shares, this integration can simply use River's
 ///      shares directly.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
@@ -19,10 +19,10 @@ import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 abstract contract LsETHBase is HyperdriveBase {
     using FixedPointMath for uint256;
 
-    /// @dev The Lido contract.
+    /// @dev The lsETH contract.
     IRiverV1 internal immutable _river;
 
-    /// @notice Instantiates the stETH Hyperdrive base contract.
+    /// @notice Instantiates the lsETH Hyperdrive base contract.
     /// @param __river The lsETH contract.
     constructor(IRiverV1 __river) {
         _river = __river;
@@ -47,7 +47,7 @@ abstract contract LsETHBase is HyperdriveBase {
         uint256 _shareAmount,
         bytes calldata // unused
     ) internal override {
-        // Transfer stETH shares into the contract.
+        // Transfer lsETH shares into the contract.
         _river.transferFrom(msg.sender, address(this), _shareAmount);
     }
 
@@ -58,7 +58,7 @@ abstract contract LsETHBase is HyperdriveBase {
         address, // unused
         bytes calldata // unused
     ) internal pure override returns (uint256) {
-        // stETH withdrawals aren't necessarily instantaneous. Users that want
+        // lsETH withdrawals aren't necessarily instantaneous. Users that want
         // to withdraw can manage their withdrawal separately.
         revert IHyperdrive.UnsupportedToken();
     }
@@ -72,7 +72,7 @@ abstract contract LsETHBase is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override {
-        // Transfer the stETH shares to the destination.
+        // Transfer the lsETH shares to the destination.
         _river.transfer(_destination, _shareAmount);
     }
 

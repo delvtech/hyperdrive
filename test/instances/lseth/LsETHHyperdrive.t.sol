@@ -229,8 +229,8 @@ contract LsETHHyperdriveTest is HyperdriveTest {
 
     /// Deploy and Initialize ///
 
-    function test__reth__deployAndInitialize() external {
-        // Deploy and Initialize the rETH hyperdrive instance. Excess ether is
+    function test__lseth__deployAndInitialize() external {
+        // Deploy and Initialize the lsETH hyperdrive instance. Excess ether is
         // sent, and should be returned to the sender.
         vm.stopPrank();
         vm.startPrank(bob);

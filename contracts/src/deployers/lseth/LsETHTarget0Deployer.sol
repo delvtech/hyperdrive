@@ -13,11 +13,11 @@ import { IRiverV1 } from "../../interfaces/lseth/IRiverV1.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract LsETHTarget0Deployer is IHyperdriveTargetDeployer {
-    /// @dev The Lido contract.
+    /// @dev The lsETH contract.
     IRiverV1 internal immutable _river;
 
     /// @notice Instantiates the target0 deployer.
-    /// @param __river The Lido contract.
+    /// @param __river The lsETH contract.
     constructor(IRiverV1 __river) {
         _river = __river;
     }

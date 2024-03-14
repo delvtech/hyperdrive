@@ -16,7 +16,7 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 contract LsETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     using FixedPointMath for uint256;
 
-    /// @dev The Lido contract.
+    /// @dev The lsETH contract.
     IRiverV1 internal immutable river;
 
     /// @notice Instantiates the deployer coordinator.
@@ -26,7 +26,7 @@ contract LsETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
     /// @param _target4Deployer The target4 deployer.
-    /// @param _river The Lido contract.
+    /// @param _river The lsETH contract.
     constructor(
         address _coreDeployer,
         address _target0Deployer,
@@ -65,13 +65,11 @@ contract LsETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         uint256 _contribution,
         IHyperdrive.Options memory _options
     ) internal override returns (uint256 value) {
-        // If base is the deposit asset, ensure that enough ether was sent to
-        // the contract and return the amount of ether that should be sent for
-        // the contribution.
+        // Depositing as base is disallowed.
         if (_options.asBase) {
             revert IHyperdrive.UnsupportedToken();
         }
-        // Otherwise, transfer vault shares from the LP and approve the
+        // Transfer vault shares from the LP and approve the
         // Hyperdrive pool.
         river.transferFrom(_lp, address(this), _contribution);
         river.approve(address(_hyperdrive), _contribution);
