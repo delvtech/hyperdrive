@@ -62,7 +62,7 @@ contract LsETHHyperdrive is Hyperdrive, LsETHBase {
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
     /// @param _target4 The target4 address.
-    /// @param _river The Lido contract.
+    /// @param _river The lsETH contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         address _target0,

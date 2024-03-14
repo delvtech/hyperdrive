@@ -22,19 +22,13 @@ contract LsETHTarget0 is HyperdriveTarget0, LsETHBase {
 
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param __river The Lido contract.
+    /// @param __river The lsETH contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         IRiverV1 __river
     ) HyperdriveTarget0(_config) LsETHBase(__river) {}
 
     /// Getters ///
-
-    // /// @notice Returns the Lido contract.
-    // /// @return lido The Lido contract.
-    // function lido() external view returns (ILido) {
-    //     _revert(abi.encode(_lido));
-    // }
 
     /// @notice Returns the MultiToken's decimals.
     /// @return The MultiToken's decimals.

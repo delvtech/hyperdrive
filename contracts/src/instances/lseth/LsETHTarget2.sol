@@ -15,7 +15,7 @@ import { LsETHBase } from "./LsETHBase.sol";
 contract LsETHTarget2 is HyperdriveTarget2, LsETHBase {
     /// @notice Initializes the target2 contract.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param __river The Lido contract.
+    /// @param __river The lsETH contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         IRiverV1 __river

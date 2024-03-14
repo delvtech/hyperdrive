@@ -23,7 +23,7 @@ abstract contract LsETHBase is HyperdriveBase {
     IRiverV1 internal immutable _river;
 
     /// @notice Instantiates the stETH Hyperdrive base contract.
-    /// @param __river The Lido contract.
+    /// @param __river The lsETH contract.
     constructor(IRiverV1 __river) {
         _river = __river;
     }
