@@ -7,36 +7,6 @@ import { IERC20 } from "../IERC20.sol";
 /// @author Kiln
 /// @notice This interface exposes methods to handle the shares of the depositor and the ERC20 interface
 interface ISharesManagerV1 is IERC20 {
-    /// @notice Emitted when the total supply is changed
-    event SetTotalSupply(uint256 totalSupply);
-
-    /// @notice Balance too low to perform operation
-    error BalanceTooLow();
-
-    /// @notice Allowance too low to perform operation
-    /// @param _from Account where funds are sent from
-    /// @param _operator Account attempting the transfer
-    /// @param _allowance Current allowance
-    /// @param _value Requested transfer value in shares
-    error AllowanceTooLow(
-        address _from,
-        address _operator,
-        uint256 _allowance,
-        uint256 _value
-    );
-
-    /// @notice Invalid empty transfer
-    error NullTransfer();
-
-    /// @notice Invalid transfer recipients
-    /// @param _from Account sending the funds in the invalid transfer
-    /// @param _to Account receiving the funds in the invalid transfer
-    error UnauthorizedTransfer(address _from, address _to);
-
-    /// @notice Retrieve the decimal count
-    /// @return The decimal count
-    function decimals() external pure returns (uint8);
-
     /// @notice Retrieve the total token supply
     /// @return The total supply in shares
     function totalSupply() external view returns (uint256);
@@ -69,15 +39,6 @@ interface ISharesManagerV1 is IERC20 {
     /// @return The amount of shares worth the underlying asset amopunt
     function sharesFromUnderlyingBalance(
         uint256 _underlyingAssetAmount
-    ) external view returns (uint256);
-
-    /// @notice Retrieve the allowance value for a spender
-    /// @param _owner Address that issued the allowance
-    /// @param _spender Address that received the allowance
-    /// @return The allowance in shares for a given spender
-    function allowance(
-        address _owner,
-        address _spender
     ) external view returns (uint256);
 
     /// @notice Performs a transfer from the message sender to the provided account

@@ -16,7 +16,7 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 contract LsETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     using FixedPointMath for uint256;
 
-    /// @dev The lsETH contract.
+    /// @dev The LsETH contract.
     IRiverV1 internal immutable river;
 
     /// @notice Instantiates the deployer coordinator.
@@ -26,7 +26,7 @@ contract LsETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
     /// @param _target4Deployer The target4 deployer.
-    /// @param _river The lsETH contract.
+    /// @param _river The LsETH contract.
     constructor(
         address _coreDeployer,
         address _target0Deployer,

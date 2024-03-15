@@ -47,7 +47,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
     function setUp() public override __mainnet_fork(19_429_100) {
         super.setUp();
 
-        // Fund the test accounts with lsETH and ETH.
+        // Fund the test accounts with LsETH and ETH.
         address[] memory accounts = new address[](3);
         accounts[0] = alice;
         accounts[1] = bob;
@@ -223,7 +223,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
     /// Deploy and Initialize ///
 
     function test__lseth__deployAndInitialize() external {
-        // Deploy and Initialize the lsETH hyperdrive instance.
+        // Deploy and Initialize the LsETH hyperdrive instance.
         vm.stopPrank();
         vm.startPrank(bob);
         uint256 bobBalanceBefore = address(bob).balance;
@@ -357,7 +357,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         assertEq(vaultSharePrice, RIVER.underlyingBalanceFromShares(1e18));
 
         // Ensure that the share price accurately predicts the amount of shares
-        // that will be minted for depositing a given amount of lsETH.
+        // that will be minted for depositing a given amount of LsETH.
         vm.startPrank(bob);
         basePaid = basePaid.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
@@ -405,14 +405,14 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         );
 
         // Calculate the maximum amount of basePaid we can test. The limit is
-        // either the max long that Hyperdrive can open or the amount of lsETH
+        // either the max long that Hyperdrive can open or the amount of LsETH
         // tokens the trader has.
         uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
         uint256 maxEthAmount = RIVER.underlyingBalanceFromShares(
             RIVER.balanceOf(bob)
         );
 
-        // Bob opens a long by depositing lsETH.
+        // Bob opens a long by depositing LsETH.
         vm.startPrank(bob);
         basePaid = basePaid.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
@@ -480,14 +480,14 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         vm.startPrank(bob);
 
         // Calculate the maximum amount of basePaid we can test. The limit is
-        // either the max long that Hyperdrive can open or the amount of lsETH
+        // either the max long that Hyperdrive can open or the amount of LsETH
         // tokens the trader has.
         uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
         uint256 maxEthAmount = RIVER.underlyingBalanceFromShares(
             RIVER.balanceOf(bob)
         );
 
-        // Bob opens a long, paying with lsETH.
+        // Bob opens a long, paying with LsETH.
         basePaid = basePaid.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
             maxLongAmount > maxEthAmount ? maxEthAmount : maxLongAmount
@@ -528,14 +528,14 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         vm.startPrank(bob);
 
         // Calculate the maximum amount of basePaid we can test. The limit is
-        // either the max long that Hyperdrive can open or the amount of lsETH
+        // either the max long that Hyperdrive can open or the amount of LsETH
         // tokens the trader has.
         uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
         uint256 maxEthAmount = RIVER.underlyingBalanceFromShares(
             RIVER.balanceOf(bob)
         );
 
-        // Bob opens a long by depositing lsETH.
+        // Bob opens a long by depositing LsETH.
         basePaid = basePaid.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
             maxLongAmount > maxEthAmount ? maxEthAmount : maxLongAmount
@@ -559,7 +559,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         );
         uint256 totalLsethSupplyBefore = RIVER.totalSupply();
 
-        // Bob closes his long with lsETH as the target asset.
+        // Bob closes his long with LsETH as the target asset.
         uint256 shareProceeds = closeLong(bob, maturityTime, longAmount, false);
         uint256 baseProceeds = RIVER.underlyingBalanceFromShares(shareProceeds);
 
@@ -610,7 +610,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
             address(hyperdrive)
         );
 
-        // Bob opens a short by depositing lsETH.
+        // Bob opens a short by depositing LsETH.
         vm.startPrank(bob);
         shortAmount = shortAmount.normalizeToRange(
             100 * hyperdrive.getPoolConfig().minimumTransactionAmount,
@@ -685,7 +685,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         // than one.
         advanceTime(POSITION_DURATION, 0.05e18);
 
-        // Bob opens a short by depositing lsETH.
+        // Bob opens a short by depositing LsETH.
         vm.startPrank(bob);
         shortAmount = shortAmount.normalizeToRange(
             100 * hyperdrive.getPoolConfig().minimumTransactionAmount,
@@ -720,7 +720,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         // than one.
         advanceTime(POSITION_DURATION, 0.05e18);
 
-        // Bob opens a short by depositing lsETH.
+        // Bob opens a short by depositing LsETH.
         vm.startPrank(bob);
         shortAmount = shortAmount.normalizeToRange(
             100 * hyperdrive.getPoolConfig().minimumTransactionAmount,
@@ -743,7 +743,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
             address(hyperdrive)
         );
 
-        // Bob closes his short with lsETH as the target asset. Bob's proceeds
+        // Bob closes his short with LsETH as the target asset. Bob's proceeds
         // should be the variable interest that accrued on the shorted bonds.
         uint256 expectedBaseProceeds = shortAmount.mulDivDown(
             hyperdrive.getPoolInfo().vaultSharePrice - startingVaultSharePrice,
@@ -790,7 +790,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         );
         assertEq(trader.balance, traderBalancesBefore.ETHBalance);
 
-        // Ensure that the lsETH balances were updated correctly.
+        // Ensure that the LsETH balances were updated correctly.
         assertEq(
             RIVER.balanceOf(address(hyperdrive)),
             hyperdriveBalancesBefore.lsethBalance + amount
@@ -816,7 +816,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
             revert IHyperdrive.NotPayable();
         }
 
-        // Ensure the total amount of lsETH stays the same.
+        // Ensure the total amount of LsETH stays the same.
         assertEq(RIVER.totalSupply(), totalLsethSupplyBefore);
 
         // Ensure that the ETH balances were updated correctly.
@@ -826,7 +826,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         );
         assertEq(trader.balance, traderBalancesBefore.ETHBalance);
 
-        // Ensure the lsETH balances were updated correctly.
+        // Ensure the LsETH balances were updated correctly.
         assertEq(
             RIVER.balanceOf(address(hyperdrive)),
             hyperdriveBalancesBefore.lsethBalance - amount
@@ -869,7 +869,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
     function test_advanced_time() external {
         vm.stopPrank();
 
-        // Store the old lsETH exchange rate.
+        // Store the old LsETH exchange rate.
         uint256 oldRate = RIVER.underlyingBalanceFromShares(1e18);
 
         // Advance time and accrue interest.

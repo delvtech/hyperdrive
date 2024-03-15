@@ -13,7 +13,7 @@ import { IRiverV1 } from "../../interfaces/lseth/IRiverV1.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract LsETHTarget3Deployer is IHyperdriveTargetDeployer {
-    /// @dev The lsETH contract.
+    /// @dev The LsETH contract.
     IRiverV1 internal immutable _river;
 
     /// @notice Instantiates the target3 deployer.

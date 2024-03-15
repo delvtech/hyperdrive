@@ -8,7 +8,7 @@ import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title LsETHHyperdrive
-/// @notice The base contract for the lsETH Hyperdrive implementation.
+/// @notice The base contract for the LsETH Hyperdrive implementation.
 /// @dev River has it's own notion of shares to account for the accrual of
 ///      interest on the ether pooled in the River protocol. Instead of
 ///      maintaining a balance of shares, this integration can simply use River's
@@ -19,11 +19,11 @@ import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 abstract contract LsETHBase is HyperdriveBase {
     using FixedPointMath for uint256;
 
-    /// @dev The lsETH contract.
+    /// @dev The LsETH contract.
     IRiverV1 internal immutable _river;
 
-    /// @notice Instantiates the lsETH Hyperdrive base contract.
-    /// @param __river The lsETH contract.
+    /// @notice Instantiates the LsETH Hyperdrive base contract.
+    /// @param __river The LsETH contract.
     constructor(IRiverV1 __river) {
         _river = __river;
     }
@@ -44,7 +44,7 @@ abstract contract LsETHBase is HyperdriveBase {
         uint256 _shareAmount,
         bytes calldata // unused
     ) internal override {
-        // Transfer lsETH shares into the contract.
+        // Transfer LsETH shares into the contract.
         _river.transferFrom(msg.sender, address(this), _shareAmount);
     }
 
@@ -54,7 +54,7 @@ abstract contract LsETHBase is HyperdriveBase {
         address, // unused
         bytes calldata // unused
     ) internal pure override returns (uint256) {
-        // lsETH withdrawals aren't necessarily instantaneous. Users that want
+        // LsETH withdrawals aren't necessarily instantaneous. Users that want
         // to withdraw can manage their withdrawal separately.
         revert IHyperdrive.UnsupportedToken();
     }
@@ -68,7 +68,7 @@ abstract contract LsETHBase is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override {
-        // Transfer the lsETH shares to the destination.
+        // Transfer the LsETH shares to the destination.
         _river.transfer(_destination, _shareAmount);
     }
 
