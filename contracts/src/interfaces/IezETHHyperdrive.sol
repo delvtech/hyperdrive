@@ -2,12 +2,12 @@
 pragma solidity 0.8.20;
 
 import { IHyperdrive } from "./IHyperdrive.sol";
-import { IezETHHyperdriveCore } from "./IezETHHyperdriveCore.sol";
-import { IezETHHyperdriveRead } from "./IezETHHyperdriveRead.sol";
+import { IEzETHHyperdriveCore } from "./IEzETHHyperdriveCore.sol";
+import { IEzETHHyperdriveRead } from "./IEzETHHyperdriveRead.sol";
 
 // prettier-ignore
-interface IezETHHyperdrive is
+interface IEzETHHyperdrive is
     IHyperdrive,
-    IezETHHyperdriveRead,
-    IezETHHyperdriveCore
+    IEzETHHyperdriveRead,
+    IEzETHHyperdriveCore
 {}

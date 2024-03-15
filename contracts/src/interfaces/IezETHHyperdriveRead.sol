@@ -2,10 +2,10 @@
 pragma solidity 0.8.20;
 
 import { IHyperdriveRead } from "./IHyperdriveRead.sol";
-import { ILido } from "./ILido.sol";
+import { IRestakeManager } from "./IRestakeManager.sol";
 
-interface IezETHHyperdriveRead is IHyperdriveRead {
-    /// @notice Gets the Lido contract used as this pool's yield source.
-    /// @return The Lido contract.
-    function lido() external view returns (ILido);
+interface IEzETHHyperdriveRead is IHyperdriveRead {
+    /// @notice Gets the Renzo contract used as this pool's yield source.
+    /// @return The renzo contract.
+    function renzo() external view returns (IRestakeManager);
 }

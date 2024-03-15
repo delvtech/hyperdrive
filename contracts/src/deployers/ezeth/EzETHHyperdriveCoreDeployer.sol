@@ -16,17 +16,11 @@ import { EzETHHyperdrive } from "../../instances/ezeth/EzETHHyperdrive.sol";
 contract EzETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     /// @notice The Renzo contract.
     IRestakeManager public immutable restakeManager;
-    /// @notice the ezETH token contract.
-    IERC20 public immutable ezETH;
 
     /// @notice Instantiates the core deployer.
     /// @param _restakeManager The Renzo contract.
     constructor(IRestakeManager _restakeManager) {
         restakeManager = _restakeManager;
-        (, bytes memory data) = address(_restakeManager).call(
-            abi.encodeWithSignature("ezETH()")
-        );
-        ezETH = IERC20(abi.decode(data, (address)));
     }
 
     /// @notice Deploys a Hyperdrive instance with the given parameters.

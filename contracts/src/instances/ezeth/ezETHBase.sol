@@ -10,7 +10,10 @@ import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 /// @author DELV
 /// @title ezETH Base Contract
 /// @notice The base contract for the ezETH Hyperdrive implementation.
-/// @dev
+/// @dev ezETH shares are held separately in the ezETH token contract.  The
+///      value of those tokens w.r.t. ETH are found by calling the
+///      RestakeManager's calculateTVL for the total pooled ETH value and
+///      dividing by the totalSupply of ezETH.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
@@ -27,10 +30,7 @@ abstract contract EzETHBase is HyperdriveBase {
     /// @param __restakeManager The Renzo Restakemanager contract.
     constructor(IRestakeManager __restakeManager) {
         _restakeManager = __restakeManager;
-        (, bytes memory data) = address(__restakeManager).call(
-            abi.encodeWithSignature("ezETH()")
-        );
-        _ezETH = IERC20(abi.decode(data, (address)));
+        _ezETH = IERC20(__restakeManager.ezETH());
     }
 
     /// Yield Source ///
@@ -55,9 +55,10 @@ abstract contract EzETHBase is HyperdriveBase {
             refund = msg.value - _baseAmount;
         }
 
+        // Submit the provided ether to Renzo to be deposited.  sharesMinted is
+        // calculated by simply by grabbing the difference in the balance of
+        // ezETH before and after ETH is deposited to the RestakeManager.
         uint256 balanceBefore = _ezETH.balanceOf(address(this));
-        // Submit the provided ether to Renzo to be deposited.
-        // a referrer id can be put in here
         _restakeManager.depositETH{ value: _baseAmount }();
         uint256 balanceAfter = _ezETH.balanceOf(address(this));
         sharesMinted = balanceAfter - balanceBefore;

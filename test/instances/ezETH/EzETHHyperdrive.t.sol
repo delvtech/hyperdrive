@@ -34,16 +34,15 @@ contract EzETHHyperdriveTest is HyperdriveTest {
     // The Renzo main entrypoint contract to stake ETH and receive ezETH.
     IRestakeManager internal constant RESTAKE_MANAGER =
         IRestakeManager(0x74a09653A083691711cF8215a6ab074BB4e99ef5);
+
     // The ezETH token contract.
     IERC20 internal constant EZETH =
         IERC20(0xbf5495Efe5DB9ce00f80364C8B423567e58d2110);
+
     // Renzo's DepositQueue contract called from RestakeManager.  Used to
     // simulate interest.
     IDepositQueue DEPOSIT_QUEUE =
         IDepositQueue(0xf2F305D14DCD8aaef887E0428B3c9534795D0d60);
-
-    HyperdriveFactory factory;
-    address deployerCoordinator;
 
     // Renzo's restaking protocol was launch Dec, 2023 and their use of
     // oracles makes it difficult to test on a mainnet fork without heavy
@@ -53,6 +52,9 @@ contract EzETHHyperdriveTest is HyperdriveTest {
     address internal ETH_WHALE = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
     address internal EZETH_WHALE = 0x40C0d1fbcB0A43A62ca7A241E7A42ca58EeF96eb;
     uint256 internal constant STARTING_BLOCK = 19119544;
+
+    HyperdriveFactory factory;
+    address deployerCoordinator;
 
     function setUp() public override __mainnet_fork(STARTING_BLOCK) {
         super.setUp();
@@ -340,11 +342,11 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         );
 
         // Ensure that the share reserves and LP total supply are equal and correct.
-        (, , uint256 totalTVL) = RESTAKE_MANAGER.calculateTVLs();
+        (, uint256 totalPooledEther, uint256 totalShares) = getSharePrice();
 
         assertApproxEqAbs(
             hyperdrive.getPoolInfo().shareReserves,
-            contribution.mulDivDown(EZETH.totalSupply(), totalTVL),
+            contribution.mulDivDown(totalShares, totalPooledEther),
             // TODO: verify tolerance OK
             1e6 // was 1
         );
@@ -369,22 +371,16 @@ contract EzETHHyperdriveTest is HyperdriveTest {
     }
 
     function test__ezeth_interest_and_advance_time() external {
-        // Ensure that advancing time accrues interest like we expect.
-        (, , uint256 totalTVLBefore) = RESTAKE_MANAGER.calculateTVLs();
-        uint256 ezETHSupplyBefore = EZETH.totalSupply();
-        uint256 sharePriceBefore = totalTVLBefore.divDown(ezETHSupplyBefore);
-
-        advanceTime(POSITION_DURATION_2_WEEKS, 0.05e18);
-
-        (, , uint256 totalTVLAfter) = RESTAKE_MANAGER.calculateTVLs();
-        uint256 ezETHSupplyAfter = EZETH.totalSupply();
-        uint256 sharePriceAfter = totalTVLAfter.divDown(ezETHSupplyAfter);
-
+        // hand calculated value sanity check
         uint256 positionAdjustedInterestRate = uint256(0.05e18).mulDivDown(
             POSITION_DURATION_2_WEEKS,
             365 days
         );
-        // hand calculated value sanity check
+
+        // Ensure that advancing time accrues interest like we expect.
+        (uint256 sharePriceBefore, , ) = getSharePrice();
+        advanceTime(POSITION_DURATION_2_WEEKS, 0.05e18);
+        (uint256 sharePriceAfter, , ) = getSharePrice();
         assertEq(positionAdjustedInterestRate, 0.002054794520547945e18);
         assertEq(
             sharePriceBefore.mulDown(1e18 + positionAdjustedInterestRate),
@@ -397,11 +393,8 @@ contract EzETHHyperdriveTest is HyperdriveTest {
     function test__pricePerVaultShare(uint256 basePaid) external {
         // Ensure that the share price is the expected value.
 
-        (, , uint256 totalTVL) = RESTAKE_MANAGER.calculateTVLs();
-        uint256 ezETHSupply = EZETH.totalSupply();
-
         // Price in ETH / ezETH, does not include eigenlayer points.
-        uint256 sharePrice = totalTVL.divDown(ezETHSupply);
+        (uint256 sharePrice, , ) = getSharePrice();
         uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
         assertEq(vaultSharePrice, sharePrice);
 
@@ -425,8 +418,11 @@ contract EzETHHyperdriveTest is HyperdriveTest {
 
     function test_open_long_with_ETH(uint256 basePaid) external {
         // Get some balance information before the deposit.
-        (, , uint256 totalPooledEtherBefore) = RESTAKE_MANAGER.calculateTVLs();
-        uint256 totalSharesBefore = EZETH.totalSupply();
+        (
+            ,
+            uint256 totalPooledEtherBefore,
+            uint256 totalSharesBefore
+        ) = getSharePrice();
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
@@ -488,8 +484,11 @@ contract EzETHHyperdriveTest is HyperdriveTest {
 
     function test_open_long_with_ezeth(uint256 basePaid) external {
         // Get some balance information before the deposit.
-        (, , uint256 totalPooledEtherBefore) = RESTAKE_MANAGER.calculateTVLs();
-        uint256 totalSharesBefore = EZETH.totalSupply();
+        (
+            ,
+            uint256 totalPooledEtherBefore,
+            uint256 totalSharesBefore
+        ) = getSharePrice();
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
@@ -503,8 +502,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             bobsBalance
         );
 
-        (, , uint256 totalPooledEther) = RESTAKE_MANAGER.calculateTVLs();
-        uint256 totalShares = EZETH.totalSupply();
+        (, uint256 totalPooledEther, uint256 totalShares) = getSharePrice();
         uint256 sharesPaid = basePaid.mulDivDown(totalShares, totalPooledEther);
         openLong(bob, sharesPaid, false);
 
@@ -566,8 +564,11 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         advanceTime(POSITION_DURATION_2_WEEKS, variableRate);
 
         // Get some balance information before the withdrawal.
-        (, , uint256 totalPooledEtherBefore) = RESTAKE_MANAGER.calculateTVLs();
-        uint256 totalSharesBefore = EZETH.totalSupply();
+        (
+            ,
+            uint256 totalPooledEtherBefore,
+            uint256 totalSharesBefore
+        ) = getSharePrice();
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
@@ -575,8 +576,11 @@ contract EzETHHyperdriveTest is HyperdriveTest {
 
         // Bob closes his long with ezETH as the target asset.
         uint256 shareProceeds = closeLong(bob, maturityTime, longAmount, false);
-        (, , uint256 totalPooledEtherAfter) = RESTAKE_MANAGER.calculateTVLs();
-        uint256 totalSharesAfter = EZETH.totalSupply();
+        (
+            ,
+            uint256 totalPooledEtherAfter,
+            uint256 totalSharesAfter
+        ) = getSharePrice();
         uint256 baseProceeds = shareProceeds.mulDivDown(
             totalPooledEtherAfter,
             totalSharesAfter
@@ -604,8 +608,11 @@ contract EzETHHyperdriveTest is HyperdriveTest {
 
     function test_open_short_with_ETH(uint256 shortAmount) external {
         // Get some balance information before the deposit.
-        (, , uint256 totalPooledEtherBefore) = RESTAKE_MANAGER.calculateTVLs();
-        uint256 totalSharesBefore = EZETH.totalSupply();
+        (
+            ,
+            uint256 totalPooledEtherBefore,
+            uint256 totalSharesBefore
+        ) = getSharePrice();
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
@@ -648,8 +655,11 @@ contract EzETHHyperdriveTest is HyperdriveTest {
 
     function test_open_short_with_ezeth(uint256 shortAmount) external {
         // Get some balance information before the deposit.
-        (, , uint256 totalPooledEtherBefore) = RESTAKE_MANAGER.calculateTVLs();
-        uint256 totalSharesBefore = EZETH.totalSupply();
+        (
+            ,
+            uint256 totalPooledEtherBefore,
+            uint256 totalSharesBefore
+        ) = getSharePrice();
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
@@ -661,8 +671,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         (, uint256 sharesPaid) = openShort(bob, shortAmount, false);
-        (, , uint256 totalPooledEther) = RESTAKE_MANAGER.calculateTVLs();
-        uint256 totalShares = EZETH.totalSupply();
+        (, uint256 totalPooledEther, uint256 totalShares) = getSharePrice();
         uint256 basePaid = sharesPaid.mulDivDown(totalPooledEther, totalShares);
 
         // Ensure that the amount of base paid by the short is reasonable.
@@ -788,8 +797,11 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         advanceTime(POSITION_DURATION_2_WEEKS, variableRate);
 
         // Get some balance information before closing the short.
-        (, , uint256 totalPooledEtherBefore) = RESTAKE_MANAGER.calculateTVLs();
-        uint256 totalSharesBefore = EZETH.totalSupply();
+        (
+            ,
+            uint256 totalPooledEtherBefore,
+            uint256 totalSharesBefore
+        ) = getSharePrice();
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
@@ -807,8 +819,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             shortAmount,
             false
         );
-        (, , uint256 totalPooledEther) = RESTAKE_MANAGER.calculateTVLs();
-        uint256 totalShares = EZETH.totalSupply();
+        (, uint256 totalPooledEther, uint256 totalShares) = getSharePrice();
         uint256 baseProceeds = shareProceeds.mulDivDown(
             totalPooledEther,
             totalShares
@@ -838,8 +849,11 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
 
         // Get some balance information before the withdrawal.
-        (, , uint256 totalPooledEtherBefore) = RESTAKE_MANAGER.calculateTVLs();
-        uint256 totalSharesBefore = EZETH.totalSupply();
+        (
+            ,
+            uint256 totalPooledEtherBefore,
+            uint256 totalSharesBefore
+        ) = getSharePrice();
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
@@ -847,8 +861,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
 
         // Bob closes his long with ezETH as the target asset.
         uint256 shareProceeds = closeLong(bob, maturityTime, longAmount, false);
-        (, , uint256 totalPooledEther) = RESTAKE_MANAGER.calculateTVLs();
-        uint256 totalShares = EZETH.totalSupply();
+        (, uint256 totalPooledEther, uint256 totalShares) = getSharePrice();
         uint256 baseProceeds = shareProceeds.mulDivDown(
             totalPooledEther,
             totalShares
@@ -877,7 +890,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
     ) internal {
         if (asBase) {
             // Ensure that the amount of pooled ether increased by the base paid.
-            (, , uint256 totalPooledEther) = RESTAKE_MANAGER.calculateTVLs();
+            (, uint256 totalPooledEther, ) = getSharePrice();
             assertEq(totalPooledEther, totalPooledEtherBefore + basePaid);
 
             // Ensure that the ETH balances were updated correctly.
@@ -921,7 +934,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             assertEq(EZETH.balanceOf(bob), traderBalancesBefore.ezethBalance);
         } else {
             // Ensure that the amount of pooled ether stays the same.
-            (, , uint256 totalPooledEther) = RESTAKE_MANAGER.calculateTVLs();
+            (, uint256 totalPooledEther, ) = getSharePrice();
             assertEq(totalPooledEther, totalPooledEtherBefore);
 
             // Ensure that the ETH balances were updated correctly.
@@ -930,21 +943,6 @@ contract EzETHHyperdriveTest is HyperdriveTest {
                 hyperdriveBalancesBefore.ETHBalance
             );
             assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-            // TODO: remove these?
-            // ezETH doesn't have shares/balance like steth does
-            // Ensure that the ezETH balances were updated correctly.
-            // assertApproxEqAbs(
-            //     EZETH.balanceOf(address(hyperdrive)),
-            //     hyperdriveBalancesBefore.ezethBalance + basePaid,
-            //     1
-            // );
-            // ezETH doesn't have shares/balance like steth does
-            // assertApproxEqAbs(
-            //     EZETH.balanceOf(trader),
-            //     traderBalancesBefore.ezethBalance - basePaid,
-            //     1
-            // );
 
             // Ensure that the ezETH shares were updated correctly.
             uint256 expectedShares = basePaid.mulDivDown(
@@ -974,8 +972,8 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         AccountBalances memory hyperdriveBalancesBefore
     ) internal {
         // Ensure that the total pooled ether and shares stays the same.
-        (, , uint256 totalPooledEth) = RESTAKE_MANAGER.calculateTVLs();
-        assertEq(totalPooledEth, totalPooledEtherBefore);
+        (, uint256 totalPooledEther, ) = getSharePrice();
+        assertEq(totalPooledEther, totalPooledEtherBefore);
         assertApproxEqAbs(EZETH.totalSupply(), totalSharesBefore, 1);
 
         // Ensure that the ETH balances were updated correctly.
@@ -984,20 +982,6 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             hyperdriveBalancesBefore.ETHBalance
         );
         assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-        // TODO: remove these?
-        // ezETH doesn't have shares/balance like steth does
-        // Ensure that the ezETH balances were updated correctly.
-        // assertApproxEqAbs(
-        //     EZETH.balanceOf(address(hyperdrive)),
-        //     hyperdriveBalancesBefore.ezethBalance - baseProceeds,
-        //     1
-        // );
-        // assertApproxEqAbs(
-        //     EZETH.balanceOf(trader),
-        //     traderBalancesBefore.ezethBalance + baseProceeds,
-        //     1
-        // );
 
         // Ensure that the ezETH shares were updated correctly.
         uint256 expectedShares = baseProceeds.mulDivDown(
@@ -1037,7 +1021,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         //
         //  Since the ezETHSupply is held constant when we advanceTime.
 
-        (, , uint256 totalTVLBefore) = RESTAKE_MANAGER.calculateTVLs();
+        (, uint256 totalTVLBefore, ) = getSharePrice();
         vm.warp(block.timestamp + timeDelta);
 
         // Accrue interest in Renzo. Since the share price is given by
@@ -1049,7 +1033,6 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             365 days
         );
         uint256 ethToAdd = totalTVLBefore.mulDown(adjustedVariableRate);
-
         if (variableRate >= 0) {
             vm.startPrank(address(RESTAKE_MANAGER));
             vm.deal(address(RESTAKE_MANAGER), ethToAdd);
@@ -1077,5 +1060,19 @@ contract EzETHHyperdriveTest is HyperdriveTest {
                 ezethBalance: EZETH.balanceOf(account),
                 ETHBalance: account.balance
             });
+    }
+
+    function getSharePrice()
+        internal
+        view
+        returns (
+            uint256 sharePrice,
+            uint256 totalPooledEther,
+            uint256 totalShares
+        )
+    {
+        (, , totalPooledEther) = RESTAKE_MANAGER.calculateTVLs();
+        totalShares = EZETH.totalSupply();
+        sharePrice = totalPooledEther.divDown(totalShares);
     }
 }

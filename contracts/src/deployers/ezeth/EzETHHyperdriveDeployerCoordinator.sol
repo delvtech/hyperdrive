@@ -19,6 +19,7 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
 
     /// @notice The Renzo contract.
     IRestakeManager public immutable restakeManager;
+
     /// @notice The ezETH token contract.
     IERC20 public immutable ezETH;
 
@@ -49,10 +50,7 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         )
     {
         restakeManager = _restakeManager;
-        (, bytes memory data) = address(restakeManager).call(
-            abi.encodeWithSignature("ezETH()")
-        );
-        ezETH = IERC20(abi.decode(data, (address)));
+        ezETH = IERC20(_restakeManager.ezETH());
     }
 
     /// @dev Prepares the coordinator for initialization by drawing funds from

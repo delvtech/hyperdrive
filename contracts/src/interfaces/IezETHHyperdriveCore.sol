@@ -4,7 +4,7 @@ pragma solidity 0.8.20;
 import { IERC20 } from "./IERC20.sol";
 import { IHyperdriveCore } from "./IHyperdriveCore.sol";
 
-interface IezETHHyperdriveCore is IHyperdriveCore {
+interface IEzETHHyperdriveCore is IHyperdriveCore {
     /// @notice Transfers the contract's balance of a target token to the fee
     ///         collector address.
     /// @dev WARN: It is unlikely but possible that there is a selector overlap
