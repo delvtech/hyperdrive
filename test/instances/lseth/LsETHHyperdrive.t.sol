@@ -1,19 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
+import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { ETH } from "contracts/src/libraries/Constants.sol";
-import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IRiverV1 } from "contracts/src/interfaces/lseth/IRiverV1.sol";
-import { Lib } from "test/utils/Lib.sol";
 import { LsETHHyperdriveCoreDeployer } from "contracts/src/deployers/lseth/LsETHHyperdriveCoreDeployer.sol";
 import { LsETHHyperdriveDeployerCoordinator } from "contracts/src/deployers/lseth/LsETHHyperdriveDeployerCoordinator.sol";
 import { LsETHTarget0Deployer } from "contracts/src/deployers/lseth/LsETHTarget0Deployer.sol";
@@ -21,8 +11,17 @@ import { LsETHTarget1Deployer } from "contracts/src/deployers/lseth/LsETHTarget1
 import { LsETHTarget2Deployer } from "contracts/src/deployers/lseth/LsETHTarget2Deployer.sol";
 import { LsETHTarget3Deployer } from "contracts/src/deployers/lseth/LsETHTarget3Deployer.sol";
 import { LsETHTarget4Deployer } from "contracts/src/deployers/lseth/LsETHTarget4Deployer.sol";
-import { stdStorage, StdStorage } from "forge-std/Test.sol";
-import "forge-std/console.sol";
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IRiverV1 } from "contracts/src/interfaces/lseth/IRiverV1.sol";
+import { AssetId } from "contracts/src/libraries/AssetId.sol";
+import { ETH } from "contracts/src/libraries/Constants.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
+import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract LsETHHyperdriveTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -53,15 +52,10 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         accounts[0] = alice;
         accounts[1] = bob;
         accounts[2] = celine;
+        fundAccounts(address(hyperdrive), IERC20(RIVER), LSETH_WHALE, accounts);
         fundAccounts(
             address(hyperdrive),
-            IERC20(0x8c1BEd5b9a0928467c9B1341Da1D7BD5e10b6549),
-            LSETH_WHALE,
-            accounts
-        );
-        fundAccounts(
-            address(hyperdrive),
-            IERC20(0x8c1BEd5b9a0928467c9B1341Da1D7BD5e10b6549),
+            IERC20(RIVER),
             LSETH_WHALE_2,
             accounts
         );
@@ -217,10 +211,9 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         // receive LP shares totaling the amount of shares that she contributed
         // minus the shares set aside for the minimum share reserves and the
         // zero address's initial LP contribution.
-        assertApproxEqAbs(
+        assertEq(
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
-            contribution - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
-            1e5
+            contribution - 2 * hyperdrive.getPoolConfig().minimumShareReserves
         );
 
         // Start recording event logs.
@@ -230,8 +223,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
     /// Deploy and Initialize ///
 
     function test__lseth__deployAndInitialize() external {
-        // Deploy and Initialize the lsETH hyperdrive instance. Excess ether is
-        // sent, and should be returned to the sender.
+        // Deploy and Initialize the lsETH hyperdrive instance.
         vm.stopPrank();
         vm.startPrank(bob);
         uint256 bobBalanceBefore = address(bob).balance;
@@ -331,10 +323,9 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         // receive LP shares totaling the amount of shares that he contributed
         // minus the shares set aside for the minimum share reserves and the
         // zero address's initial LP contribution.
-        assertApproxEqAbs(
+        assertEq(
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, bob),
-            contribution - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
-            1e5
+            contribution - 2 * hyperdrive.getPoolConfig().minimumShareReserves
         );
 
         // Ensure that the share reserves and LP total supply are equal and correct.
@@ -392,7 +383,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
-        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openLong{ value: basePaid }(
             basePaid,
             0,
@@ -446,9 +437,9 @@ contract LsETHHyperdriveTest is HyperdriveTest {
     function test_open_long_refunds() external {
         vm.startPrank(bob);
 
-        // Ensure that the refund fails when Bob sends excess ETH
-        // when opening a long with "asBase" set to true.
-        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        // Ensure that the call fails when he opens a long with "asBase"
+        // set to true and sends ether to the contract.
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openLong{ value: 2e18 }(
             1e18,
             0,
@@ -460,12 +451,13 @@ contract LsETHHyperdriveTest is HyperdriveTest {
             })
         );
 
-        // Ensure that Bob receives a refund when he opens a long with "asBase"
-        // set to false and sends ETH to the contract.
+        // Ensure that the call fails when he opens a long with "asBase"
+        // set to false and sends ether to the contract.
         uint256 sharesPaid = 1e18;
         uint256 ethBalanceBefore = address(bob).balance;
         RIVER.approve(address(hyperdrive), sharesPaid);
-        hyperdrive.openLong{ value: 0.5e18 }(
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
+        hyperdrive.openLong{ value: sharesPaid }(
             sharesPaid,
             0,
             0,
@@ -512,6 +504,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
         advanceTime(POSITION_DURATION, variableRate);
 
+        // Bob closes the long with ETH as the target asset.
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         hyperdrive.closeLong(
             maturityTime,
@@ -596,7 +589,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         vm.deal(bob, shortAmount);
-        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openShort{ value: shortAmount }(
             shortAmount,
             shortAmount,
@@ -651,9 +644,9 @@ contract LsETHHyperdriveTest is HyperdriveTest {
     function test_open_short_refunds() external {
         vm.startPrank(bob);
 
-        // Ensure that the refund fails when Bob sends excess ETH
-        // when opening a short with "asBase" set to true.
-        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        // Ensure that the refund fails when he opens a short with "asBase"
+        // set to true and sends ether to the contract.
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openShort{ value: 2e18 }(
             1e18,
             1e18,
@@ -665,12 +658,13 @@ contract LsETHHyperdriveTest is HyperdriveTest {
             })
         );
 
-        // Ensure that Bob receives a refund when he opens a short with "asBase"
-        // set to false and sends ETH to the contract.
+        // Ensure that the refund fails when he opens a short with "asBase"
+        // set to false and sends ether to the contract.
         uint256 sharesPaid = 1e18;
         uint256 ethBalanceBefore = address(bob).balance;
         RIVER.approve(address(hyperdrive), sharesPaid);
-        hyperdrive.openShort(
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
+        hyperdrive.openShort{ value: sharesPaid }(
             sharesPaid,
             sharesPaid,
             0,
@@ -703,7 +697,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         // Bob attempts to close the short after the position
         // duration for ETH. The interest rate range is limited because
         // the test case not fail when there is zero accrued interest.
-        variableRate = variableRate.normalizeToRange(1e18, 2.5e18);
+        variableRate = variableRate.normalizeToRange(0.01e18, 2.5e18);
         advanceTime(POSITION_DURATION, variableRate);
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         hyperdrive.closeShort(
@@ -739,7 +733,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         uint256 startingVaultSharePrice = hyperdrive
             .getPoolInfo()
             .vaultSharePrice;
-        variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        variableRate = variableRate.normalizeToRange(0.01e18, 2.5e18);
         advanceTime(POSITION_DURATION, variableRate);
 
         // Get some balance information before closing the short.
@@ -786,8 +780,9 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         AccountBalances memory hyperdriveBalancesBefore
     ) internal {
         if (asBase) {
-            revert IHyperdrive.UnsupportedToken();
+            revert IHyperdrive.NotPayable();
         }
+
         // Ensure that the ether balances were updated correctly.
         assertEq(
             address(hyperdrive).balance,
@@ -818,7 +813,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         AccountBalances memory hyperdriveBalancesBefore
     ) internal {
         if (asBase) {
-            revert IHyperdrive.UnsupportedToken();
+            revert IHyperdrive.NotPayable();
         }
 
         // Ensure the total amount of lsETH stays the same.

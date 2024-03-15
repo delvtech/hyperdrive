@@ -30,10 +30,7 @@ abstract contract LsETHBase is HyperdriveBase {
 
     /// Yield Source ///
 
-    /// @dev Accepts a deposit from the user in base.
-    /// @return sharesMinted The shares that were minted in the deposit.
-    /// @return refund The amount of ETH to refund. This should be zero for
-    ///         yield sources that don't accept ETH.
+    /// @dev Deposits as base asset not supported for this integration.
     function _depositWithBase(
         uint256, // unused
         bytes calldata // unused
@@ -51,8 +48,7 @@ abstract contract LsETHBase is HyperdriveBase {
         _river.transferFrom(msg.sender, address(this), _shareAmount);
     }
 
-    /// @dev Process a withdrawal in base and send the proceeds to the
-    ///      destination.
+    /// @dev Withdrawals as base asset not supported for this integration.
     function _withdrawWithBase(
         uint256, // unused
         address, // unused
@@ -77,8 +73,12 @@ abstract contract LsETHBase is HyperdriveBase {
     }
 
     /// @dev We override the message value check since this integration is
-    ///      payable.
-    function _checkMessageValue() internal pure override {}
+    ///      not payable.
+    function _checkMessageValue() internal view override {
+        if (msg.value > 0) {
+            revert IHyperdrive.NotPayable();
+        }
+    }
 
     /// @dev Convert an amount of vault shares to an amount of base.
     /// @param _shareAmount The vault shares amount.

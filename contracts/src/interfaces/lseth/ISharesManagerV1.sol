@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "../IERC20.sol";
 
 /// @title Shares Manager Interface (v1)
 /// @author Kiln
@@ -32,14 +32,6 @@ interface ISharesManagerV1 is IERC20 {
     /// @param _from Account sending the funds in the invalid transfer
     /// @param _to Account receiving the funds in the invalid transfer
     error UnauthorizedTransfer(address _from, address _to);
-
-    /// @notice Retrieve the token name
-    /// @return The token name
-    function name() external pure returns (string memory);
-
-    /// @notice Retrieve the token symbol
-    /// @return The token symbol
-    function symbol() external pure returns (string memory);
 
     /// @notice Retrieve the decimal count
     /// @return The decimal count
@@ -111,22 +103,4 @@ interface ISharesManagerV1 is IERC20 {
     /// @param _value The allowed amount in shares, will override previous value
     /// @return True if success
     function approve(address _spender, uint256 _value) external returns (bool);
-
-    /// @notice Increase allowance to another account
-    /// @param _spender Spender that receives the allowance
-    /// @param _additionalValue Amount of shares to add
-    /// @return True if success
-    function increaseAllowance(
-        address _spender,
-        uint256 _additionalValue
-    ) external returns (bool);
-
-    /// @notice Decrease allowance to another account
-    /// @param _spender Spender that receives the allowance
-    /// @param _subtractableValue Amount of shares to subtract
-    /// @return True if success
-    function decreaseAllowance(
-        address _spender,
-        uint256 _subtractableValue
-    ) external returns (bool);
 }
