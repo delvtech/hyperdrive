@@ -6,7 +6,7 @@ import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
-import { IRestakeManager } from "../../interfaces/IRestakeManager.sol";
+import { IRestakeManager } from "../../interfaces/IRenzo.sol";
 import { EzETHBase } from "./EzETHBase.sol";
 
 /// @author DELV

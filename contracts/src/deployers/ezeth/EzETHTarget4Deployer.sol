@@ -5,7 +5,7 @@ import { IERC20 } from "../../interfaces/IERC20.sol";
 import { EzETHTarget4 } from "../../instances/ezeth/EzETHTarget4.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDeployer.sol";
-import { IRestakeManager } from "../../interfaces/IRestakeManager.sol";
+import { IRestakeManager } from "../../interfaces/IRenzo.sol";
 
 /// @author DELV
 /// @title EzETHTarget4Deployer

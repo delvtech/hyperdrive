@@ -2,7 +2,7 @@
 pragma solidity 0.8.20;
 
 import { IHyperdriveRead } from "./IHyperdriveRead.sol";
-import { IRestakeManager } from "./IRestakeManager.sol";
+import { IRestakeManager } from "./IRenzo.sol";
 
 interface IEzETHHyperdriveRead is IHyperdriveRead {
     /// @notice Gets the Renzo contract used as this pool's yield source.

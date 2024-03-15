@@ -4,7 +4,7 @@ pragma solidity 0.8.20;
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
-import { IRestakeManager } from "../../interfaces/IRestakeManager.sol";
+import { IRestakeManager } from "../../interfaces/IRenzo.sol";
 import { EzETHBase } from "./EzETHBase.sol";
 
 ///      ______  __                           _________      _____

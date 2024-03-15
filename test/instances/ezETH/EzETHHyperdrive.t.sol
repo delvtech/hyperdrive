@@ -12,9 +12,8 @@ import { EzETHTarget4Deployer } from "contracts/src/deployers/ezeth/EzETHTarget4
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IRestakeManager } from "contracts/src/interfaces/IRestakeManager.sol";
-import { IRenzoOracle } from "contracts/src/interfaces/IRenzoOracle.sol";
-import { IDepositQueue } from "contracts/src/interfaces/IDepositQueue.sol";
+import { IRestakeManager } from "contracts/src/interfaces/IRenzo.sol";
+import { IRenzoOracle, IDepositQueue } from "contracts/src/interfaces/IRenzo.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ETH } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";

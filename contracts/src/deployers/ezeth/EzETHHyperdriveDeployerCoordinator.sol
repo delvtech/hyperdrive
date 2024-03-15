@@ -4,7 +4,7 @@ pragma solidity 0.8.20;
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
-import { IRestakeManager } from "../../interfaces/IRestakeManager.sol";
+import { IRestakeManager } from "../../interfaces/IRenzo.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
