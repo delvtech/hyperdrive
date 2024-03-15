@@ -31,32 +31,28 @@ contract EzETHHyperdriveTest is HyperdriveTest {
 
     uint256 internal constant FIXED_RATE = 0.05e18;
 
+    // The Renzo main entrypoint contract to stake ETH and receive ezETH.
     IRestakeManager internal constant RESTAKE_MANAGER =
         IRestakeManager(0x74a09653A083691711cF8215a6ab074BB4e99ef5);
+    // The ezETH token contract.
     IERC20 internal constant EZETH =
         IERC20(0xbf5495Efe5DB9ce00f80364C8B423567e58d2110);
+    // Renzo's DepositQueue contract called from RestakeManager.  Used to
+    // simulate interest.
     IDepositQueue DEPOSIT_QUEUE =
         IDepositQueue(0xf2F305D14DCD8aaef887E0428B3c9534795D0d60);
-    address ORACLE = 0x5a12796f7e7EBbbc8a402667d266d2e65A814042;
-
-    address internal ETH_WHALE = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
 
     HyperdriveFactory factory;
     address deployerCoordinator;
 
+    // Renzo's restaking protocol was launch Dec, 2023 and their use of
+    // oracles makes it difficult to test on a mainnet fork without heavy
+    // mocking.  To test with their deployed code we use a shorter position
+    // duration.
     uint256 internal constant POSITION_DURATION_2_WEEKS = 15 days;
-
-    // works, pendles address with a lot of eth, only a few days ago.
-    // address internal EZETH_WHALE = 0x22E12A50e3ca49FB183074235cB1db84Fe4C716D;
-    // uint256 internal constant STARTING_BLOCK = 19_422_267;
-
-    // works 209 ezETH, 44 days ago
+    address internal ETH_WHALE = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
     address internal EZETH_WHALE = 0x40C0d1fbcB0A43A62ca7A241E7A42ca58EeF96eb;
     uint256 internal constant STARTING_BLOCK = 19119544;
-
-    // doesn't work 25 ezETH, 63 days ago
-    // address internal EZETH_WHALE = 0x5Bf7d1A222327fA2477A74103ae4065171abA0a8;
-    // uint256 internal constant STARTING_BLOCK = 18983692;
 
     function setUp() public override __mainnet_fork(STARTING_BLOCK) {
         super.setUp();
@@ -373,6 +369,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
     }
 
     function test__ezeth_interest_and_advance_time() external {
+        // Ensure that advancing time accrues interest like we expect.
         (, , uint256 totalTVLBefore) = RESTAKE_MANAGER.calculateTVLs();
         uint256 ezETHSupplyBefore = EZETH.totalSupply();
         uint256 sharePriceBefore = totalTVLBefore.divDown(ezETHSupplyBefore);
@@ -473,7 +470,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         );
         assertEq(address(bob).balance, ethBalanceBefore - 1e18);
 
-        // Ensure that Bob receives a  refund when he opens a long with "asBase"
+        // Ensure that Bob receives a refund when he opens a long with "asBase"
         // set to false and sends ether to the contract.
         ethBalanceBefore = address(bob).balance;
         hyperdrive.openLong{ value: 0.5e18 }(
@@ -504,7 +501,6 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
             // bob's balance is well below the max long, so we clip to that.
             bobsBalance
-            // HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
 
         (, , uint256 totalPooledEther) = RESTAKE_MANAGER.calculateTVLs();
@@ -589,7 +585,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         // Ensuse that Bob received approximately the bond amount but wasn't
         // overpaid.
         // TODO: make sure this is OK.  There is a lot of rounding that happens in calculateTVLs
-        // assertLe(baseProceeds, longAmount + 2);
+        assertLe(baseProceeds, longAmount + 1e5);
         assertApproxEqAbs(baseProceeds, longAmount, 1e5); // was 10
 
         // Ensure that Renzo's aggregates and the token balances were updated
