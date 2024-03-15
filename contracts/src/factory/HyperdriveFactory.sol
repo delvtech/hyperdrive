@@ -118,8 +118,20 @@ contract HyperdriveFactory is IHyperdriveFactory {
         ///      deployments.
         uint256 maxTimeStretchAPR;
         /// @dev The lower bound on the fees that can be used in new deployments.
+        /// @dev Most of the fee parameters are used unmodified; however, the
+        ///      flat fee parameter is interpreted as the minimum annualized
+        ///      flat fee. This allows deployers to specify a smaller flat fee
+        ///      than the minimum for terms shorter than a year and ensures that
+        ///      they specify a larger flat fee than the minimum for terms
+        ///      longer than a year.
         IHyperdrive.Fees minFees;
         /// @dev The upper bound on the fees that can be used in new deployments.
+        /// @dev Most of the fee parameters are used unmodified; however, the
+        ///      flat fee parameter is interpreted as the minimum annualized
+        ///      flat fee. This ensures that deployers specify a smaller flat
+        ///      fee than the maximum for terms shorter than a year and allows
+        ///      deployers to specify a larger flat fee than the maximum for
+        ///      terms longer than a year.
         IHyperdrive.Fees maxFees;
         /// @dev The address of the linker factory.
         address linkerFactory;
@@ -871,14 +883,20 @@ contract HyperdriveFactory is IHyperdriveFactory {
             revert IHyperdriveFactory.InvalidPositionDuration();
         }
 
-        // Ensure that the specified fees are within the minimum and maximum fees.
+        // Ensure that the specified fees are within the minimum and maximum
+        // fees. The flat fee is annualized so that it is consistent across all
+        // term lengths.
         if (
             _config.fees.curve > _maxFees.curve ||
-            _config.fees.flat > _maxFees.flat ||
+            // NOTE: Round down to make the check stricter.
+            _config.fees.flat.mulDivDown(365 days, _config.positionDuration) >
+            _maxFees.flat ||
             _config.fees.governanceLP > _maxFees.governanceLP ||
             _config.fees.governanceZombie > _maxFees.governanceZombie ||
             _config.fees.curve < _minFees.curve ||
-            _config.fees.flat < _minFees.flat ||
+            // NOTE: Round up to make the check stricter.
+            _config.fees.flat.mulDivUp(365 days, _config.positionDuration) <
+            _minFees.flat ||
             _config.fees.governanceLP < _minFees.governanceLP ||
             _config.fees.governanceZombie < _minFees.governanceZombie
         ) {

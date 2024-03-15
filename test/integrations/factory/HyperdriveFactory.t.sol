@@ -35,6 +35,8 @@ import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
 contract HyperdriveFactoryTest is HyperdriveTest {
+    using FixedPointMath for *;
+
     HyperdriveFactory internal factory;
 
     event DefaultPausersUpdated(address[] newDefaultPausers);
@@ -1477,59 +1479,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 linkerFactory: factory.linkerFactory(),
                 linkerCodeHash: factory.linkerCodeHash()
             });
-        vm.stopPrank();
-        vm.startPrank(bob);
         bytes memory extraData = new bytes(0);
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            0.05e18,
-            0.05e18,
-            0,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            0.05e18,
-            0.05e18,
-            1,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            0.05e18,
-            0.05e18,
-            2,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            0.05e18,
-            0.05e18,
-            3,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            extraData,
-            0.05e18,
-            0.05e18,
-            4,
-            bytes32(uint256(0xdeadbabe))
-        );
+        _deployTargets(deployerCoordinator, config, 0.05e18, 0.05e18);
 
         // Ensure that an instance can't be deployed with a coordinator that
         // hasn't been added.
@@ -1982,55 +1933,169 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             config.fees.curve = oldCurveFee;
         }
 
-        // Ensure than an instance can't be deployed with a flat fee greater
-        // than the maximum flat fee.
+        // Ensure than an instance can't be deployed with an annualized flat
+        // fee greater than the maximum flat fee when the position duration is
+        // less than a year.
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 oldPositionDuration = config.positionDuration;
+            config.positionDuration = 180 days;
+            uint256 oldFlatFee = config.fees.flat;
+            config.fees.flat =
+                factory.maxFees().flat.mulDivDown(180 days, 365 days) +
+                1;
+            bytes32 deploymentId = keccak256(
+                abi.encode(factory.getNumberOfInstances())
+            );
+            vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
+            factory.deployTarget(
+                deploymentId,
+                deployerCoordinator,
+                config,
+                extraData,
+                0.05e18,
+                0.05e18,
+                0,
+                deploymentId
+            );
+            config.positionDuration = oldPositionDuration;
+            config.fees.flat = oldFlatFee;
+        }
+
+        // Ensure than an instance can't be deployed with an annualized flat
+        // fee greater than the maximum flat fee when the position duration is
+        // equal to a year.
         {
             vm.stopPrank();
             vm.startPrank(bob);
             uint256 oldFlatFee = config.fees.flat;
             config.fees.flat = factory.maxFees().flat + 1;
+            bytes32 deploymentId = keccak256(
+                abi.encode(factory.getNumberOfInstances())
+            );
             vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
-            factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+            factory.deployTarget(
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
-                10_000e18,
                 0.05e18,
                 0.05e18,
-                IHyperdrive.Options({
-                    asBase: true,
-                    destination: bob,
-                    extraData: new bytes(0)
-                }),
-                bytes32(uint256(0xdeadbabe))
+                0,
+                deploymentId
             );
             config.fees.flat = oldFlatFee;
         }
 
-        // Ensure than an instance can't be deployed with a flat fee less
-        // than the minimum flat fee.
+        // Ensure than an instance can't be deployed with an annualized flat
+        // fee greater than the maximum flat fee when the position duration is
+        // greater than a year.
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 oldPositionDuration = config.positionDuration;
+            config.positionDuration = 365 days * 2;
+            uint256 oldFlatFee = config.fees.flat;
+            config.fees.flat = (factory.maxFees().flat + 1) * 2;
+            bytes32 deploymentId = keccak256(
+                abi.encode(factory.getNumberOfInstances())
+            );
+            vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
+            factory.deployTarget(
+                deploymentId,
+                deployerCoordinator,
+                config,
+                extraData,
+                0.05e18,
+                0.05e18,
+                0,
+                deploymentId
+            );
+            config.positionDuration = oldPositionDuration;
+            config.fees.flat = oldFlatFee;
+        }
+
+        // Ensure than an instance can't be deployed with an annualized flat
+        // fee less than the minimum flat fee when the position duration is
+        // less than a year.
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 oldPositionDuration = config.positionDuration;
+            config.positionDuration = 180 days;
+            uint256 oldFlatFee = config.fees.flat;
+            config.fees.flat =
+                factory.minFees().flat.mulDivDown(180 days, 365 days) -
+                1;
+            bytes32 deploymentId = keccak256(
+                abi.encode(factory.getNumberOfInstances())
+            );
+            vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
+            factory.deployTarget(
+                deploymentId,
+                deployerCoordinator,
+                config,
+                extraData,
+                0.05e18,
+                0.05e18,
+                0,
+                deploymentId
+            );
+            config.positionDuration = oldPositionDuration;
+            config.fees.flat = oldFlatFee;
+        }
+
+        // Ensure than an instance can't be deployed with an annualized flat
+        // fee less than the minimum flat fee when the position duration is
+        // equal to a year.
         {
             vm.stopPrank();
             vm.startPrank(bob);
             uint256 oldFlatFee = config.fees.flat;
             config.fees.flat = factory.minFees().flat - 1;
+            bytes32 deploymentId = keccak256(
+                abi.encode(factory.getNumberOfInstances())
+            );
             vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
-            factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+            factory.deployTarget(
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
-                10_000e18,
                 0.05e18,
                 0.05e18,
-                IHyperdrive.Options({
-                    asBase: true,
-                    destination: bob,
-                    extraData: new bytes(0)
-                }),
-                bytes32(uint256(0xdeadbabe))
+                0,
+                deploymentId
             );
+            config.fees.flat = oldFlatFee;
+        }
+
+        // Ensure than an instance can't be deployed with an annualized flat
+        // fee less than the minimum flat fee when the position duration is
+        // greater than a year.
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 oldPositionDuration = config.positionDuration;
+            config.positionDuration = 365 days * 2;
+            uint256 oldFlatFee = config.fees.flat;
+            config.fees.flat = (factory.minFees().flat - 1) * 2;
+            bytes32 deploymentId = keccak256(
+                abi.encode(factory.getNumberOfInstances())
+            );
+            vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
+            factory.deployTarget(
+                deploymentId,
+                deployerCoordinator,
+                config,
+                extraData,
+                0.05e18,
+                0.05e18,
+                0,
+                deploymentId
+            );
+            config.positionDuration = oldPositionDuration;
             config.fees.flat = oldFlatFee;
         }
 
@@ -2271,6 +2336,68 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             );
             config.governance = oldGovernance;
         }
+    }
+
+    function _deployTargets(
+        address deployerCoordinator,
+        IHyperdrive.PoolDeployConfig memory config,
+        uint256 fixedAPR,
+        uint256 timeStretchAPR
+    ) internal returns (bytes32 deploymentId) {
+        deploymentId = keccak256(abi.encode(factory.getNumberOfInstances()));
+        bytes memory extraData = new bytes(0);
+        factory.deployTarget(
+            deploymentId,
+            deployerCoordinator,
+            config,
+            extraData,
+            fixedAPR,
+            timeStretchAPR,
+            0,
+            deploymentId
+        );
+        factory.deployTarget(
+            deploymentId,
+            deployerCoordinator,
+            config,
+            extraData,
+            fixedAPR,
+            timeStretchAPR,
+            1,
+            deploymentId
+        );
+        factory.deployTarget(
+            deploymentId,
+            deployerCoordinator,
+            config,
+            extraData,
+            fixedAPR,
+            timeStretchAPR,
+            2,
+            deploymentId
+        );
+        factory.deployTarget(
+            deploymentId,
+            deployerCoordinator,
+            config,
+            extraData,
+            fixedAPR,
+            timeStretchAPR,
+            3,
+            deploymentId
+        );
+        factory.deployTarget(
+            deploymentId,
+            deployerCoordinator,
+            config,
+            extraData,
+            fixedAPR,
+            timeStretchAPR,
+            4,
+            deploymentId
+        );
+
+        return deploymentId;
     }
 }
 
