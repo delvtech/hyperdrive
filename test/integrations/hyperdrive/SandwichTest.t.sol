@@ -61,7 +61,7 @@ contract SandwichTest is HyperdriveTest {
 
     function test_sandwich_long_trade(uint256 apr, uint256 tradeSize) external {
         // limit the fuzz testing to variableRate's less than or equal to 50%
-        apr = apr.normalizeToRange(.01e18, .5e18);
+        apr = apr.normalizeToRange(0.01e18, 0.5e18);
 
         // ensure a feasible trade size
         tradeSize = tradeSize.normalizeToRange(1_000e18, 50_000_000e18 - 1e18);
@@ -134,10 +134,59 @@ contract SandwichTest is HyperdriveTest {
         uint256 tradeAmount,
         uint256 sandwichAmount
     ) external {
+        _test_sandwich_short_trade(
+            fixedRate,
+            contribution,
+            tradeAmount,
+            sandwichAmount
+        );
+    }
+
+    function test_sandwich_short_trade_edge_cases() external {
+        // This test caused the sandwich test to fail because the sandwiching
+        // short made a small profit when the curve fee was 0. This was fixed
+        // by increasing the curve fee to 0.0001e18.
+        {
+            uint256 fixedRate = 998962223204933958;
+            uint256 contribution = 2042272226342949092412748848311668432195895990698578471431773993;
+            uint256 tradeAmount = 1000475753853052421;
+            uint256 sandwichAmount = 8174;
+            _test_sandwich_short_trade(
+                fixedRate,
+                contribution,
+                tradeAmount,
+                sandwichAmount
+            );
+        }
+
+        // This test caused the sandwich test to fail because the sandwiching
+        // short made a small profit when the curve fee was 0. This was fixed
+        // by increasing the curve fee to 0.0001e18.
+        {
+            uint256 fixedRate = 998000000000000060407;
+            uint256 contribution = 759073715388587821013812734928096154771786292308418320735217;
+            uint256 tradeAmount = 87494182301843377180327349;
+            uint256 sandwichAmount = 22746;
+            _test_sandwich_short_trade(
+                fixedRate,
+                contribution,
+                tradeAmount,
+                sandwichAmount
+            );
+        }
+    }
+
+    function _test_sandwich_short_trade(
+        uint256 fixedRate,
+        uint256 contribution,
+        uint256 tradeAmount,
+        uint256 sandwichAmount
+    ) internal {
         IHyperdrive.PoolConfig memory config = testConfig(
             0.05e18,
             POSITION_DURATION
         );
+        config.fees.curve = 0.0001e18;
         deploy(alice, config);
         fixedRate = fixedRate.normalizeToRange(0.001e18, 1e18);
         contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
