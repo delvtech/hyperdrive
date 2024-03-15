@@ -5,7 +5,6 @@ import { Hyperdrive } from "../../external/Hyperdrive.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IRestakeManager } from "../../interfaces/IRestakeManager.sol";
-import { IEzETHHyperdriveCore } from "../../interfaces/IEzETHHyperdriveCore.sol";
 import { EzETHBase } from "./EzETHBase.sol";
 
 ///      ______  __                           _________      _____
