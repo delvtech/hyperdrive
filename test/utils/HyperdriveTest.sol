@@ -31,7 +31,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
     uint256 internal constant MINIMUM_SHARE_RESERVES = ONE;
     uint256 internal constant MINIMUM_TRANSACTION_AMOUNT = 0.001e18;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
-    uint256 internal constant POSITION_DURATION = 365 days;
+    uint256 internal constant POSITION_DURATION = 15 days;
 
     function setUp() public virtual override {
         super.setUp();

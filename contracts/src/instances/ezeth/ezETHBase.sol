@@ -4,6 +4,7 @@ pragma solidity 0.8.20;
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IRestakeManager } from "../../interfaces/IRestakeManager.sol";
+import { IRenzoOracle } from "../../interfaces/IRenzoOracle.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 
@@ -26,11 +27,18 @@ abstract contract EzETHBase is HyperdriveBase {
     /// @dev The ezETH token contract.
     IERC20 internal immutable _ezETH;
 
+    /// @dev The Renzo Oracle contract.
+    IRenzoOracle internal immutable _renzoOracle;
+
+    /// @dev Error for zero total supply or total pooled ether.
+    error InvalidZeroInput();
+
     /// @notice Instantiates the ezETH Hyperdrive base contract.
     /// @param __restakeManager The Renzo Restakemanager contract.
     constructor(IRestakeManager __restakeManager) {
         _restakeManager = __restakeManager;
         _ezETH = IERC20(__restakeManager.ezETH());
+        _renzoOracle = IRenzoOracle(__restakeManager.renzoOracle());
     }
 
     /// Yield Source ///
@@ -107,13 +115,18 @@ abstract contract EzETHBase is HyperdriveBase {
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
+        // Get the total TVL priced in ETH from restakeManager
         (, , uint256 totalTVL) = _restakeManager.calculateTVLs();
-        uint256 ezETHSupply = _ezETH.totalSupply();
 
-        // Price in ETH / ezETH, does not include eigenlayer points.
-        uint256 sharePrice = totalTVL.divDown(ezETHSupply);
+        // Get the total supply of the ezETH token
+        uint256 totalSupply = _ezETH.totalSupply();
 
-        return _shareAmount.mulDown(sharePrice);
+        return
+            _renzoOracle.calculateRedeemAmount(
+                _shareAmount,
+                totalSupply,
+                totalTVL
+            );
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
@@ -122,13 +135,18 @@ abstract contract EzETHBase is HyperdriveBase {
     function _convertToShares(
         uint256 _baseAmount
     ) internal view override returns (uint256) {
+        // Get the total TVL priced in ETH from restakeManager
         (, , uint256 totalTVL) = _restakeManager.calculateTVLs();
-        uint256 ezETHSupply = _ezETH.totalSupply();
 
-        // Price in ETH / ezETH, does not include eigenlayer points.
-        uint256 sharePrice = totalTVL.divDown(ezETHSupply);
+        // Get the total supply of the ezETH token
+        uint256 totalSupply = _ezETH.totalSupply();
 
-        return _baseAmount.divDown(sharePrice);
+        return
+            _renzoOracle.calculateMintAmount(
+                totalTVL,
+                _baseAmount,
+                totalSupply
+            );
     }
 
     /// @dev Gets the total amount of base held by the pool.

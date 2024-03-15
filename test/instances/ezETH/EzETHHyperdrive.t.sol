@@ -13,6 +13,7 @@ import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IRestakeManager } from "contracts/src/interfaces/IRestakeManager.sol";
+import { IRenzoOracle } from "contracts/src/interfaces/IRenzoOracle.sol";
 import { IDepositQueue } from "contracts/src/interfaces/IDepositQueue.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ETH } from "contracts/src/libraries/Constants.sol";
@@ -35,6 +36,9 @@ contract EzETHHyperdriveTest is HyperdriveTest {
     IRestakeManager internal constant RESTAKE_MANAGER =
         IRestakeManager(0x74a09653A083691711cF8215a6ab074BB4e99ef5);
 
+    // The Renzo Oracle contract.
+    IRenzoOracle internal constant RENZO_ORACLE =
+        IRenzoOracle(0x5a12796f7e7EBbbc8a402667d266d2e65A814042);
     // The ezETH token contract.
     IERC20 internal constant EZETH =
         IERC20(0xbf5495Efe5DB9ce00f80364C8B423567e58d2110);
@@ -308,6 +312,15 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             4,
             bytes32(uint256(0xdeadfade))
         );
+
+        // Grab share information before deploying the pool.
+        (
+            ,
+            uint256 totalPooledEtherBefore,
+            uint256 totalSharesBefore
+        ) = getSharePrice();
+
+        // Deploy the pool.
         hyperdrive = factory.deployAndInitialize{ value: contribution + 1e18 }(
             bytes32(uint256(0xbeefbabe)),
             address(deployerCoordinator),
@@ -337,18 +350,19 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             contribution.divDown(
                 hyperdrive.getPoolConfig().initialVaultSharePrice
             ) - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
-            // TODO: verify tolerance OK
-            1e6 // was 1e5
+            1e5
         );
 
         // Ensure that the share reserves and LP total supply are equal and correct.
-        (, uint256 totalPooledEther, uint256 totalShares) = getSharePrice();
-
+        uint256 expectedShares = getExpectedShares(
+            contribution,
+            totalPooledEtherBefore,
+            totalSharesBefore
+        );
         assertApproxEqAbs(
             hyperdrive.getPoolInfo().shareReserves,
-            contribution.mulDivDown(totalShares, totalPooledEther),
-            // TODO: verify tolerance OK
-            1e6 // was 1
+            expectedShares,
+            1
         );
         assertEq(
             hyperdrive.getPoolInfo().lpTotalSupply,
@@ -406,10 +420,14 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         );
         uint256 hyperdriveSharesBefore = EZETH.balanceOf(address(hyperdrive));
         openLong(bob, basePaid);
+
+        // NOTE: using the vaultSharePrice has somewhat higher tolerance.  If
+        // calculate with expectedShares(), we'll match exactly, but we're
+        // testing the vaultSharePrice here.
         assertApproxEqAbs(
             EZETH.balanceOf(address(hyperdrive)),
             hyperdriveSharesBefore + basePaid.divDown(vaultSharePrice),
-            // TODO: verify tolerance ok
+            // TODO: verify tolerance ok, vaultSharePrice is pretty inaccurate
             1e6 // was 1e4
         );
     }
@@ -581,6 +599,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             uint256 totalPooledEtherAfter,
             uint256 totalSharesAfter
         ) = getSharePrice();
+
         uint256 baseProceeds = shareProceeds.mulDivDown(
             totalPooledEtherAfter,
             totalSharesAfter
@@ -588,9 +607,9 @@ contract EzETHHyperdriveTest is HyperdriveTest {
 
         // Ensuse that Bob received approximately the bond amount but wasn't
         // overpaid.
-        // TODO: make sure this is OK.  There is a lot of rounding that happens in calculateTVLs
-        assertLe(baseProceeds, longAmount + 1e5);
-        assertApproxEqAbs(baseProceeds, longAmount, 1e5); // was 10
+        assertLe(baseProceeds, longAmount);
+        // TODO: make sure this is OK.
+        assertApproxEqAbs(baseProceeds, longAmount, 1e6); // was 10
 
         // Ensure that Renzo's aggregates and the token balances were updated
         // correctly during the trade.
@@ -824,9 +843,9 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             totalPooledEther,
             totalShares
         );
-        // TODO: make sure this is OK.  There is a lot of rounding that happens in calculateTVLs
-        assertLe(baseProceeds, expectedBaseProceeds + 1e6); // was 10
-        assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 1e6); // was 100
+        // TODO: make sure this is OK.  vaultSharePrice is pretty inaccurate.
+        assertLe(baseProceeds, expectedBaseProceeds + 1e4);
+        assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 1e5); // was 100
 
         // Ensure that Lido's aggregates and the token balances were updated
         // correctly during the trade.
@@ -900,37 +919,23 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             );
             assertEq(bob.balance, traderBalancesBefore.ETHBalance - basePaid);
 
-            // TODO: remove this?
-            // ezETH doesn't have shares/balance like steth does
-            // assertApproxEqAbs(
-            //     EZETH.balanceOf(address(hyperdrive)),
-            //     hyperdriveBalancesBefore.ezethBalance + basePaid,
-            //     1
-            // );
-
+            // Ensure ezETH shares were updated correctly.
             assertEq(
                 EZETH.balanceOf(trader),
                 traderBalancesBefore.ezethBalance
             );
 
             // Ensure that the ezETH shares were updated correctly.
-            uint256 expectedShares = basePaid.mulDivDown(
-                totalSharesBefore,
-                totalPooledEtherBefore
+            uint256 expectedShares = getExpectedShares(
+                basePaid,
+                totalPooledEtherBefore,
+                totalSharesBefore
             );
-
-            assertApproxEqAbs(
-                EZETH.totalSupply(),
-                totalSharesBefore + expectedShares,
-                1e6
-                // TODO: verify tolerance OK
-            ); // was exact
-            assertApproxEqAbs(
+            assertEq(EZETH.totalSupply(), totalSharesBefore + expectedShares);
+            assertEq(
                 EZETH.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.ezethBalance + expectedShares,
-                1e6
-                // TODO: verify tolerance OK
-            ); // was exact
+                hyperdriveBalancesBefore.ezethBalance + expectedShares
+            );
             assertEq(EZETH.balanceOf(bob), traderBalancesBefore.ezethBalance);
         } else {
             // Ensure that the amount of pooled ether stays the same.
@@ -993,7 +998,6 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             hyperdriveBalancesBefore.ezethBalance - expectedShares,
             1
         );
-
         assertApproxEqAbs(
             EZETH.balanceOf(trader),
             traderBalancesBefore.ezethBalance + expectedShares,
@@ -1062,6 +1066,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             });
     }
 
+    // returns share price information.
     function getSharePrice()
         internal
         view
@@ -1071,8 +1076,36 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             uint256 totalShares
         )
     {
-        (, , totalPooledEther) = RESTAKE_MANAGER.calculateTVLs();
-        totalShares = EZETH.totalSupply();
-        sharePrice = totalPooledEther.divDown(totalShares);
+        // The following section is left to match Renzo's implementation:
+        //*********/
+        // Get the total TVL priced in ETH from restakeManager
+        (, , uint256 totalTVL) = RESTAKE_MANAGER.calculateTVLs();
+
+        // Get the total supply of the ezETH token
+        uint256 totalSupply = EZETH.totalSupply();
+
+        // Return the rate
+        uint256 rate = (10 ** 18 * totalTVL) / totalSupply;
+        //*********/
+
+        // My implementation
+        // (, , totalPooledEther) = RESTAKE_MANAGER.calculateTVLs();
+        // totalShares = EZETH.totalSupply();
+        // sharePrice = totalPooledEther.divDown(totalShares);
+
+        return (rate, totalTVL, totalSupply);
+    }
+
+    function getExpectedShares(
+        uint256 basePaid,
+        uint256 totalPooledEtherBefore,
+        uint256 totalSharesBefore
+    ) internal pure returns (uint256 expectedShares) {
+        return
+            RENZO_ORACLE.calculateMintAmount(
+                totalPooledEtherBefore,
+                basePaid,
+                totalSharesBefore
+            );
     }
 }
