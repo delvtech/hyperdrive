@@ -1023,8 +1023,9 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         uint256 timeDelta, // assume a position duration jump
         int256 variableRate // annual variable rate
     ) internal override {
-        // Advance the time by a position duration and accrue interest.  We adjust the variable rate to the
-        // position duration and multiply the TVL to get interest:
+        // Advance the time by a position duration and accrue interest.  We
+        // adjust the variable rate to the position duration and multiply the
+        // TVL to get interest:
         //
         //  sharePriceBefore * adjustedVariableRate = sharePriceAfter
         //
