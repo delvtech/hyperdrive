@@ -217,7 +217,7 @@ impl Default for TestChainConfig {
             erc4626_hyperdrive_position_duration: U256::from(60 * 60 * 24 * 7), // 7 days
             erc4626_hyperdrive_checkpoint_duration: U256::from(60 * 60),        // 1 hour
             erc4626_hyperdrive_curve_fee: uint256!(0.01e18),
-            erc4626_hyperdrive_flat_fee: uint256!(0.0005e18),
+            erc4626_hyperdrive_flat_fee: uint256!(0.0005e18) / uint256!(52), // 0.05% APR
             erc4626_hyperdrive_governance_lp_fee: uint256!(0.15e18),
             erc4626_hyperdrive_governance_zombie_fee: uint256!(0.03e18),
             // steth hyperdrive configuration
@@ -229,7 +229,7 @@ impl Default for TestChainConfig {
             steth_hyperdrive_position_duration: U256::from(60 * 60 * 24 * 7), // 7 days
             steth_hyperdrive_checkpoint_duration: U256::from(60 * 60),        // 1 hour
             steth_hyperdrive_curve_fee: uint256!(0.01e18),
-            steth_hyperdrive_flat_fee: uint256!(0.0005e18),
+            steth_hyperdrive_flat_fee: uint256!(0.0005e18) / uint256!(52), // 0.05% APR
             steth_hyperdrive_governance_lp_fee: uint256!(0.15e18),
             steth_hyperdrive_governance_zombie_fee: uint256!(0.03e18),
         }
