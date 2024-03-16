@@ -3,8 +3,7 @@ pragma solidity 0.8.20;
 
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { IRestakeManager } from "../../interfaces/IRenzo.sol";
-import { IRenzoOracle } from "../../interfaces/IRenzo.sol";
+import { IRestakeManager, IRenzoOracle } from "../../interfaces/IRenzo.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 
