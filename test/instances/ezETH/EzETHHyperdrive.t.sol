@@ -190,7 +190,12 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             4,
             bytes32(uint256(0xdeadbabe))
         );
-        hyperdrive = factory.deployAndInitialize{ value: contribution }(
+
+        // Depositing with ETH is not allow for this pool so we need to get
+        // some ezETH for the deployer first.
+        RESTAKE_MANAGER.depositETH{ value: 2 * contribution }();
+
+        hyperdrive = factory.deployAndInitialize(
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
@@ -199,7 +204,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             FIXED_RATE,
             FIXED_RATE,
             IHyperdrive.Options({
-                asBase: true,
+                asBase: false,
                 destination: alice,
                 extraData: new bytes(0)
             }),
@@ -319,7 +324,8 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             uint256 totalSharesBefore
         ) = getSharePrice();
 
-        // Deploy the pool.
+        // Ensure that using base to deploy and initialize is not allowed.
+        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         hyperdrive = factory.deployAndInitialize{ value: contribution + 1e18 }(
             bytes32(uint256(0xbeefbabe)),
             address(deployerCoordinator),
@@ -330,6 +336,26 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             FIXED_RATE,
             IHyperdrive.Options({
                 asBase: true,
+                destination: bob,
+                extraData: new bytes(0)
+            }),
+            bytes32(uint256(0xdeadfade))
+        );
+
+        // Get some ezETH for the deployer.
+        RESTAKE_MANAGER.depositETH{ value: 2 * contribution }();
+
+        // Deploy the pool.
+        hyperdrive = factory.deployAndInitialize{ value: contribution + 1e18 }(
+            bytes32(uint256(0xbeefbabe)),
+            address(deployerCoordinator),
+            config,
+            new bytes(0),
+            contribution,
+            FIXED_RATE,
+            FIXED_RATE,
+            IHyperdrive.Options({
+                asBase: false,
                 destination: bob,
                 extraData: new bytes(0)
             }),

@@ -70,14 +70,9 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         uint256 _contribution,
         IHyperdrive.Options memory _options
     ) internal override returns (uint256 value) {
-        // If base is the deposit asset, ensure that enough ether was sent to
-        // the contract and return the amount of ether that should be sent for
-        // the contribution.
+        // Depositing as base is disallowed.
         if (_options.asBase) {
-            if (msg.value < _contribution) {
-                revert IHyperdriveDeployerCoordinator.InsufficientValue();
-            }
-            value = _contribution;
+            revert IHyperdrive.UnsupportedToken();
         }
         // Otherwise, transfer vault shares from the LP and approve the
         // Hyperdrive pool.
