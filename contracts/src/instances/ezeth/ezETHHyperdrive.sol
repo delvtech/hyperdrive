@@ -6,6 +6,7 @@ import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IRestakeManager } from "../../interfaces/IRenzo.sol";
 import { EzETHBase } from "./EzETHBase.sol";
+import { ETH } from "../../libraries/Constants.sol";
 
 ///      ______  __                           _________      _____
 ///      ___  / / /____  ___________________________  /_________(_)__   ______
@@ -54,8 +55,6 @@ import { EzETHBase } from "./EzETHBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract EzETHHyperdrive is Hyperdrive, EzETHBase {
-    address constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-
     /// @notice Instantiates Hyperdrive with ezETH as the yield source.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _target0 The target0 address.

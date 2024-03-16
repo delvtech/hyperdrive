@@ -426,8 +426,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         assertApproxEqAbs(
             EZETH.balanceOf(address(hyperdrive)),
             hyperdriveSharesBefore + basePaid.divDown(vaultSharePrice),
-            // TODO: verify tolerance ok, vaultSharePrice is pretty inaccurate
-            1e6 // was 1e4
+            1e6
         );
     }
 
@@ -607,8 +606,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         // Ensuse that Bob received approximately the bond amount but wasn't
         // overpaid.
         assertLe(baseProceeds, longAmount);
-        // TODO: make sure this is OK.
-        assertApproxEqAbs(baseProceeds, longAmount, 1e6); // was 10
+        assertApproxEqAbs(baseProceeds, longAmount, 1e6);
 
         // Ensure that Renzo's aggregates and the token balances were updated
         // correctly during the trade.
@@ -842,9 +840,8 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             totalPooledEther,
             totalShares
         );
-        // TODO: make sure this is OK.  vaultSharePrice is pretty inaccurate.
         assertLe(baseProceeds, expectedBaseProceeds + 1e4);
-        assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 1e5); // was 100
+        assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 1e5);
 
         // Ensure that Lido's aggregates and the token balances were updated
         // correctly during the trade.
@@ -1075,24 +1072,20 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             uint256 totalShares
         )
     {
-        // The following section is left to match Renzo's implementation:
-        //*********/
-        // Get the total TVL priced in ETH from restakeManager
+        // Get the total TVL priced in ETH from restakeManager.
         (, , uint256 totalTVL) = RESTAKE_MANAGER.calculateTVLs();
 
-        // Get the total supply of the ezETH token
+        // Get the total supply of the ezETH token.
         uint256 totalSupply = EZETH.totalSupply();
 
-        // Return the rate
-        uint256 rate = (10 ** 18 * totalTVL) / totalSupply;
-        //*********/
+        // Calculate the share price.
+        sharePrice = RENZO_ORACLE.calculateRedeemAmount(
+            ONE,
+            totalSupply,
+            totalTVL
+        );
 
-        // My implementation
-        // (, , totalPooledEther) = RESTAKE_MANAGER.calculateTVLs();
-        // totalShares = EZETH.totalSupply();
-        // sharePrice = totalPooledEther.divDown(totalShares);
-
-        return (rate, totalTVL, totalSupply);
+        return (sharePrice, totalTVL, totalSupply);
     }
 
     function getExpectedShares(

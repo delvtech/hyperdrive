@@ -63,7 +63,7 @@ abstract contract EzETHBase is HyperdriveBase {
             refund = msg.value - _baseAmount;
         }
 
-        // Submit the provided ether to Renzo to be deposited.  sharesMinted is
+        // Submit the provided ether to Renzo to be deposited.  `sharesMinted` is
         // calculated by simply by grabbing the difference in the balance of
         // ezETH before and after ETH is deposited to the RestakeManager.
         uint256 balanceBefore = _ezETH.balanceOf(address(this));
