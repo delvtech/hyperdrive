@@ -433,35 +433,19 @@ contract EzETHHyperdriveTest is HyperdriveTest {
     /// Long ///
 
     function test_open_long_with_ETH(uint256 basePaid) external {
-        // Get some balance information before the deposit.
-        (
-            ,
-            uint256 totalPooledEtherBefore,
-            uint256 totalSharesBefore
-        ) = getSharePrice();
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-
         // Bob opens a long by depositing ETH.
         basePaid = basePaid.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
-        openLong(bob, basePaid);
 
-        // Ensure that Renzo's aggregates and the token balances were updated
-        // correctly during the trade.
-        verifyDeposit(
-            bob,
-            basePaid,
-            true,
-            totalPooledEtherBefore,
-            totalSharesBefore,
-            bobBalancesBefore,
-            hyperdriveBalancesBefore
-        );
+        // Ensure that we get an UnsupportedToken error.  Opening positions
+        // with ETH are not allowed right now.  There is a great enough
+        // precision loss when minting ezeth that warrants some investigation
+        // before we can turn this on.  Until then, we can zap ezeth into the
+        // pool.
+        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        openLong(bob, basePaid);
     }
 
     function test_open_long_refunds() external {
@@ -623,50 +607,20 @@ contract EzETHHyperdriveTest is HyperdriveTest {
     // /// Short ///
 
     function test_open_short_with_ETH(uint256 shortAmount) external {
-        // Get some balance information before the deposit.
-        (
-            ,
-            uint256 totalPooledEtherBefore,
-            uint256 totalSharesBefore
-        ) = getSharePrice();
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-
         // Bob opens a short by depositing ETH.
         shortAmount = shortAmount.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
-        uint256 balanceBefore = bob.balance;
+
+        // Ensure that we get an UnsupportedToken error.  Opening positions
+        // with ETH are not allowed right now.  There is a great enough
+        // precision loss when minting ezeth that warrants some investigation
+        // before we can turn this on.  Until then, we can zap ezeth into the
+        // pool.
         vm.deal(bob, shortAmount);
-        (, uint256 basePaid) = openShort(bob, shortAmount);
-        vm.deal(bob, balanceBefore - basePaid);
-
-        // Ensure that the amount of base paid by the short is reasonable.
-        uint256 realizedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
-            shortAmount - basePaid,
-            shortAmount,
-            1e18
-        );
-        assertGt(basePaid, 0);
-        assertGe(
-            realizedRate,
-            FIXED_RATE.mulDown(POSITION_DURATION_2_WEEKS.divDown(365 days))
-        );
-
-        // Ensure that Renzo's aggregates and the token balances were updated
-        // correctly during the trade.
-        verifyDeposit(
-            bob,
-            basePaid,
-            true,
-            totalPooledEtherBefore,
-            totalSharesBefore,
-            bobBalancesBefore,
-            hyperdriveBalancesBefore
-        );
+        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        openShort(bob, shortAmount);
     }
 
     function test_open_short_with_ezeth(uint256 shortAmount) external {
@@ -681,7 +635,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             address(hyperdrive)
         );
 
-        // Bob opens a short by depositing ETH.
+        // Bob opens a short by depositing ezETH.
         shortAmount = shortAmount.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
             HyperdriveUtils.calculateMaxShort(hyperdrive)

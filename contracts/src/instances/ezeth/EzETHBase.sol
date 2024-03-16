@@ -43,34 +43,12 @@ abstract contract EzETHBase is HyperdriveBase {
     /// Yield Source ///
 
     /// @dev Accepts a transfer from the user in base token.
-    /// @param _baseAmount The base amount to deposit.
-    /// @return sharesMinted The shares that were minted in the deposit.
-    /// @return refund The amount of ETH to refund. This should be zero for
-    ///         yield sources that don't accept ETH.
     function _depositWithBase(
-        uint256 _baseAmount,
+        uint256, // _baseAmount unused
         bytes calldata // unused
-    ) internal override returns (uint256 sharesMinted, uint256 refund) {
-        // Ensure that sufficient ether was provided.
-        if (msg.value < _baseAmount) {
-            revert IHyperdrive.TransferFailed();
-        }
-
-        // If the user sent more ether than the amount specified, refund the
-        // excess ether.
-        unchecked {
-            refund = msg.value - _baseAmount;
-        }
-
-        // Submit the provided ether to Renzo to be deposited.  `sharesMinted` is
-        // calculated by simply by grabbing the difference in the balance of
-        // ezETH before and after ETH is deposited to the RestakeManager.
-        uint256 balanceBefore = _ezETH.balanceOf(address(this));
-        _restakeManager.depositETH{ value: _baseAmount }();
-        uint256 balanceAfter = _ezETH.balanceOf(address(this));
-        sharesMinted = balanceAfter - balanceBefore;
-
-        return (sharesMinted, refund);
+    ) internal pure override returns (uint256, uint256) {
+        // Price calculations are too inaccurate
+        revert IHyperdrive.UnsupportedToken();
     }
 
     /// @dev Process a deposit in vault shares.
