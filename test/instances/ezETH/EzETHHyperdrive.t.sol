@@ -738,7 +738,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         hyperdrive.openShort{ value: shortAmount }(
             shortAmount,
-            0,
+            shortAmount,
             0,
             IHyperdrive.Options({
                 destination: bob,
