@@ -92,6 +92,8 @@ interface IHyperdrive is
         address governance;
         /// @dev The address which collects governance fees
         address feeCollector;
+        /// @dev The address which collects swept tokens.
+        address sweepCollector;
         /// @dev The fees applied to trades.
         IHyperdrive.Fees fees;
     }
@@ -121,6 +123,8 @@ interface IHyperdrive is
         address governance;
         /// @dev The address which collects governance fees
         address feeCollector;
+        /// @dev The address which collects swept tokens.
+        address sweepCollector;
         /// @dev The fees applied to trades.
         IHyperdrive.Fees fees;
     }
@@ -239,6 +243,13 @@ interface IHyperdrive is
     ///         price of the underlying yield source on deployment.
     error InvalidInitialVaultSharePrice();
 
+    /// @notice Thrown when the LP share price couldn't be calculated in a
+    ///         critical situation.
+    error InvalidLPSharePrice();
+
+    /// @notice Thrown when the present value calculation fails.
+    error InvalidPresentValue();
+
     /// @notice Thrown when update liquidity brings the share reserves below
     ///         the minimum share reserves.
     error InvalidShareReserves();
@@ -265,10 +276,6 @@ interface IHyperdrive is
     ///         than the minimum transaction amount. This protects traders and
     ///         LPs from losses of precision that can occur at small scales.
     error MinimumTransactionAmount();
-
-    /// @notice Thrown when the present value is negative. Whatever proceeded
-    ///         a negative present value should be reverted.
-    error NegativePresentValue();
 
     /// @notice Thrown when the present value prior to adding liquidity results in a
     ///         decrease in present value after liquidity. This is caused by a
@@ -308,6 +315,10 @@ interface IHyperdrive is
     ///         pool's depository assets changes.
     error SweepFailed();
 
+    /// @notice Thrown when the distribute excess idle calculation fails due
+    ///         to the starting present value calculation failing.
+    error DistributeExcessIdleFailed();
+
     /// @notice Thrown when an ether transfer fails.
     error TransferFailed();
 
@@ -331,6 +342,10 @@ interface IHyperdrive is
     /// @notice Thrown when casting a value to a int128 that is outside of the
     ///         int128 scale.
     error UnsafeCastToInt128();
+
+    /// @notice Thrown when casting a value to a int256 that is outside of the
+    ///         int256 scale.
+    error UnsafeCastToInt256();
 
     /// @notice Thrown when an unsupported option is passed to a function or
     ///         a user attempts to sweep an invalid token. The options and sweep

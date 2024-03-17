@@ -904,6 +904,16 @@ contract HyperdriveMathTest is HyperdriveTest {
             115763819684266577237839082600338781403556286119250692248603493285535482011337,
             0
         );
+
+        // This is an edge case where the present value couldn't be calculated
+        // due to a tiny net curve trade.
+        _test__calculateMaxLong(
+            3988,
+            370950184595018764582435593,
+            10660,
+            999000409571,
+            1000000000012659
+        );
     }
 
     function test__calculateMaxLong__fuzz(

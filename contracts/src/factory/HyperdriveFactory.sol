@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
-import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveFactory } from "../interfaces/IHyperdriveFactory.sol";
 import { IHyperdriveDeployerCoordinator } from "../interfaces/IHyperdriveDeployerCoordinator.sol";
@@ -19,7 +17,11 @@ import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 ///                    particular legal or regulatory significance.
 contract HyperdriveFactory is IHyperdriveFactory {
     using FixedPointMath for uint256;
-    using SafeERC20 for ERC20;
+
+    /// @dev Locks the receive function. This can be used to prevent stuck ether
+    ///      from ending up in the contract but still allowing refunds to be
+    ///      received.
+    bool private isReceiveLocked = true;
 
     /// @notice The governance address that updates the factory's configuration.
     address public governance;
@@ -35,6 +37,9 @@ contract HyperdriveFactory is IHyperdriveFactory {
 
     /// @notice The fee collector used when new instances are deployed.
     address public feeCollector;
+
+    /// @notice The sweep collector used when new instances are deployed.
+    address public sweepCollector;
 
     /// @notice The resolution for the checkpoint duration. Every checkpoint
     ///         duration must be a multiple of this resolution.
@@ -86,6 +91,8 @@ contract HyperdriveFactory is IHyperdriveFactory {
         address[] defaultPausers;
         /// @dev The recipient of governance fees from new deployments.
         address feeCollector;
+        /// @dev The recipient of swept tokens from new deployments.
+        address sweepCollector;
         /// @dev The resolution for the checkpoint duration.
         uint256 checkpointDurationResolution;
         /// @dev The minimum checkpoint duration that can be used in new
@@ -128,7 +135,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
     mapping(address => bool) public isDeployerCoordinator;
 
     /// @notice A mapping from deployed Hyperdrive instances to the deployer
-    ///         coordintor that deployed them. This is useful for verifying
+    ///         coordinator that deployed them. This is useful for verifying
     ///         the bytecode that was used to deploy the instance.
     mapping(address instance => address deployCoordinator)
         public instancesToDeployerCoordinators;
@@ -246,6 +253,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
         governance = _factoryConfig.governance;
         hyperdriveGovernance = _factoryConfig.hyperdriveGovernance;
         feeCollector = _factoryConfig.feeCollector;
+        sweepCollector = _factoryConfig.sweepCollector;
         _defaultPausers = _factoryConfig.defaultPausers;
         linkerFactory = _factoryConfig.linkerFactory;
         linkerCodeHash = _factoryConfig.linkerCodeHash;
@@ -259,6 +267,14 @@ contract HyperdriveFactory is IHyperdriveFactory {
             revert IHyperdriveFactory.Unauthorized();
         }
         _;
+    }
+
+    /// @notice Allows ether to be sent to the contract. This is gated by a lock
+    ///         to prevent ether from becoming stuck in the contract.
+    receive() external payable {
+        if (isReceiveLocked) {
+            revert IHyperdriveFactory.ReceiveLocked();
+        }
     }
 
     /// @notice Allows governance to transfer the governance role.
@@ -301,6 +317,15 @@ contract HyperdriveFactory is IHyperdriveFactory {
     function updateFeeCollector(address _feeCollector) external onlyGovernance {
         feeCollector = _feeCollector;
         emit FeeCollectorUpdated(_feeCollector);
+    }
+
+    /// @notice Allows governance to change the sweep collector address.
+    /// @param _sweepCollector The new sweep collector address.
+    function updateSweepCollector(
+        address _sweepCollector
+    ) external onlyGovernance {
+        sweepCollector = _sweepCollector;
+        emit SweepCollectorUpdated(_sweepCollector);
     }
 
     /// @notice Allows governance to change the checkpoint duration resolution.
@@ -482,15 +507,16 @@ contract HyperdriveFactory is IHyperdriveFactory {
         // Ensure that the max fees are each less than or equal to 100% and that
         // the max fees are each greater than or equal to the corresponding min
         // fee.
+        IHyperdrive.Fees memory minFees_ = _minFees;
         if (
             __maxFees.curve > ONE ||
             __maxFees.flat > ONE ||
             __maxFees.governanceLP > ONE ||
             __maxFees.governanceZombie > ONE ||
-            __maxFees.curve < _minFees.curve ||
-            __maxFees.flat < _minFees.flat ||
-            __maxFees.governanceLP < _minFees.governanceLP ||
-            __maxFees.governanceZombie < _minFees.governanceZombie
+            __maxFees.curve < minFees_.curve ||
+            __maxFees.flat < minFees_.flat ||
+            __maxFees.governanceLP < minFees_.governanceLP ||
+            __maxFees.governanceZombie < minFees_.governanceZombie
         ) {
             revert IHyperdriveFactory.InvalidMaxFees();
         }
@@ -507,11 +533,12 @@ contract HyperdriveFactory is IHyperdriveFactory {
     ) external onlyGovernance {
         // Ensure that the min fees are each less than or the corresponding max
         // fee.
+        IHyperdrive.Fees memory maxFees_ = _maxFees;
         if (
-            __minFees.curve > _maxFees.curve ||
-            __minFees.flat > _maxFees.flat ||
-            __minFees.governanceLP > _maxFees.governanceLP ||
-            __minFees.governanceZombie > _maxFees.governanceZombie
+            __minFees.curve > maxFees_.curve ||
+            __minFees.flat > maxFees_.flat ||
+            __minFees.governanceLP > maxFees_.governanceLP ||
+            __minFees.governanceZombie > maxFees_.governanceZombie
         ) {
             revert IHyperdriveFactory.InvalidMinFees();
         }
@@ -577,7 +604,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
     /// @param _contribution The contribution amount in base to the pool.
     /// @param _fixedAPR The fixed APR used to initialize the pool.
     /// @param _timeStretchAPR The time stretch APR used to initialize the pool.
-    /// @param _initializeExtraData The extra data for the `initialize` call.
+    /// @param _options The options for the `initialize` call.
     /// @param _salt The create2 salt to use for the deployment.
     /// @return The hyperdrive address deployed.
     function deployAndInitialize(
@@ -588,7 +615,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
         uint256 _contribution,
         uint256 _fixedAPR,
         uint256 _timeStretchAPR,
-        bytes memory _initializeExtraData,
+        IHyperdrive.Options memory _options,
         bytes32 _salt
     ) external payable returns (IHyperdrive) {
         // Ensure that the deployer coordinator has been registered.
@@ -631,61 +658,19 @@ contract HyperdriveFactory is IHyperdriveFactory {
         isInstance[address(hyperdrive)] = true;
 
         // Initialize the Hyperdrive instance.
-        uint256 refund;
-        if (address(_config.baseToken) == ETH) {
-            if (msg.value < _contribution) {
-                revert IHyperdriveFactory.InsufficientValue();
-            }
-
-            // Only the contribution amount of ether will be passed to
-            // Hyperdrive.
-            refund = msg.value - _contribution;
-
-            // Initialize the Hyperdrive instance.
-            hyperdrive.initialize{ value: _contribution }(
-                _contribution,
-                _fixedAPR,
-                IHyperdrive.Options({
-                    destination: msg.sender,
-                    asBase: true,
-                    extraData: _initializeExtraData
-                })
-            );
-        } else {
-            // None of the provided ether is used for the contribution.
-            refund = msg.value;
-
-            // Transfer the contribution to this contract and set an approval
-            // on Hyperdrive to prepare for initialization.
-            ERC20(address(_config.baseToken)).safeTransferFrom(
-                msg.sender,
-                address(this),
-                _contribution
-            );
-            ERC20(address(_config.baseToken)).forceApprove(
-                address(hyperdrive),
-                _contribution
-            );
-
-            // Initialize the Hyperdrive instance.
-            hyperdrive.initialize(
-                _contribution,
-                _fixedAPR,
-                IHyperdrive.Options({
-                    destination: msg.sender,
-                    asBase: true,
-                    extraData: _initializeExtraData
-                })
-            );
-        }
-
-        // Refund any excess ether that was sent to this contract.
-        if (refund > 0) {
-            (bool success, ) = payable(msg.sender).call{ value: refund }("");
-            if (!success) {
-                revert IHyperdriveFactory.TransferFailed();
-            }
-        }
+        isReceiveLocked = false;
+        IHyperdriveDeployerCoordinator(_deployerCoordinator).initialize{
+            value: msg.value
+        }(
+            // NOTE: We hash the deployer's address into the deployment ID
+            // to prevent their deployment from being front-run.
+            keccak256(abi.encode(msg.sender, _deploymentId)),
+            msg.sender,
+            _contribution,
+            _fixedAPR,
+            _options
+        );
+        isReceiveLocked = true;
 
         // Set the default pausers and transfer the governance status to the
         // hyperdrive governance address.
@@ -696,6 +681,15 @@ contract HyperdriveFactory is IHyperdriveFactory {
             }
         }
         hyperdrive.setGovernance(hyperdriveGovernance);
+
+        // Refund any excess ether that was sent to this contract.
+        uint256 refund = address(this).balance;
+        if (refund > 0) {
+            (bool success, ) = payable(msg.sender).call{ value: refund }("");
+            if (!success) {
+                revert IHyperdriveFactory.TransferFailed();
+            }
+        }
 
         return hyperdrive;
     }
@@ -796,7 +790,9 @@ contract HyperdriveFactory is IHyperdriveFactory {
         // Return the range of instances.
         range = new address[](endIndex - startIndex + 1);
         for (uint256 i = startIndex; i <= endIndex; i++) {
-            range[i - startIndex] = _instances[i];
+            unchecked {
+                range[i - startIndex] = _instances[i];
+            }
         }
     }
 
@@ -836,7 +832,9 @@ contract HyperdriveFactory is IHyperdriveFactory {
         // Return the range of instances.
         range = new address[](endIndex - startIndex + 1);
         for (uint256 i = startIndex; i <= endIndex; i++) {
-            range[i - startIndex] = _deployerCoordinators[i];
+            unchecked {
+                range[i - startIndex] = _deployerCoordinators[i];
+            }
         }
     }
 
@@ -918,6 +916,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
             _config.linkerFactory != linkerFactory ||
             _config.linkerCodeHash != linkerCodeHash ||
             _config.feeCollector != feeCollector ||
+            _config.sweepCollector != sweepCollector ||
             _config.governance != hyperdriveGovernance ||
             _config.timeStretch != 0
         ) {
@@ -931,6 +930,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
         _config.linkerFactory = linkerFactory;
         _config.linkerCodeHash = linkerCodeHash;
         _config.feeCollector = feeCollector;
+        _config.sweepCollector = sweepCollector;
         _config.governance = address(this);
         _config.timeStretch = timeStretch;
     }

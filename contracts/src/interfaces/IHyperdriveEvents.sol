@@ -27,6 +27,7 @@ interface IHyperdriveEvents is IMultiTokenEvents {
     /// @notice Emitted when an LP removes liquidity from the Hyperdrive pool.
     event RemoveLiquidity(
         address indexed provider,
+        address indexed destination,
         uint256 lpAmount,
         uint256 baseAmount,
         uint256 vaultShareAmount,
@@ -38,6 +39,7 @@ interface IHyperdriveEvents is IMultiTokenEvents {
     /// @notice Emitted when an LP redeems withdrawal shares.
     event RedeemWithdrawalShares(
         address indexed provider,
+        address indexed destination,
         uint256 withdrawalShareAmount,
         uint256 baseAmount,
         uint256 vaultShareAmount,
@@ -70,6 +72,7 @@ interface IHyperdriveEvents is IMultiTokenEvents {
     /// @notice Emitted when a long position is closed.
     event CloseLong(
         address indexed trader,
+        address indexed destination,
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
@@ -81,11 +84,13 @@ interface IHyperdriveEvents is IMultiTokenEvents {
     /// @notice Emitted when a short position is closed.
     event CloseShort(
         address indexed trader,
+        address indexed destination,
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
         uint256 vaultShareAmount,
         bool asBase,
+        uint256 basePayment,
         uint256 bondAmount
     );
 
@@ -101,12 +106,21 @@ interface IHyperdriveEvents is IMultiTokenEvents {
     /// @notice Emitted when governance fees are collected.
     event CollectGovernanceFee(address indexed collector, uint256 fees);
 
+    /// @notice Emitted when the fee collector address is updated.
+    event FeeCollectorUpdated(address indexed newFeeCollector);
+
+    /// @notice Emitted when the sweep collector address is updated.
+    event SweepCollectorUpdated(address indexed newSweepCollector);
+
     /// @notice Emitted when the governance address is updated.
     event GovernanceUpdated(address indexed newGovernance);
 
     /// @notice Emitted when a pauser is updated.
-    event PauserUpdated(address indexed newPauser);
+    event PauserUpdated(address indexed newPauser, bool status);
 
     /// @notice Emitted when the pause status is updated.
     event PauseStatusUpdated(bool isPaused);
+
+    /// @notice Emitted when tokens are swept.
+    event Sweep(address indexed collector, address indexed target);
 }

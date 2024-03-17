@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { SafeCast } from "./SafeCast.sol";
 
 uint256 constant ONE = 1e18;
 
@@ -13,6 +14,7 @@ uint256 constant ONE = 1e18;
 ///                    particular legal or regulatory significance.
 library FixedPointMath {
     using FixedPointMath for uint256;
+    using SafeCast for uint256;
 
     uint256 internal constant MAX_UINT256 = 2 ** 256 - 1;
 
@@ -112,11 +114,11 @@ library FixedPointMath {
         // Using properties of logarithms we calculate x^y:
         // -> ln(x^y) = y * ln(x)
         // -> e^(y * ln(x)) = x^y
-        int256 y_int256 = int256(y); // solhint-disable-line var-name-mixedcase
+        int256 y_int256 = y.toInt256(); // solhint-disable-line var-name-mixedcase
 
         // Compute y*ln(x)
         // Any overflow for x will be caught in ln() in the initial bounds check
-        int256 lnx = ln(int256(x));
+        int256 lnx = ln(x.toInt256());
         int256 ylnx;
         assembly ("memory-safe") {
             ylnx := mul(y_int256, lnx)
@@ -189,16 +191,15 @@ library FixedPointMath {
             // * the 1e18 / 2**96 factor for base conversion.
             // We do this all at once, with an intermediate result in 2**213
             // basis, so the final right shift is always by a positive amount.
-            r = int256(
-                (uint256(r) *
-                    3822833074963236453042738258902158003155416615667) >>
-                    uint256(195 - k)
-            );
+            r = ((uint256(r) *
+                3822833074963236453042738258902158003155416615667) >>
+                uint256(195 - k)).toInt256();
         }
     }
 
     /// @dev Computes ln(x) in 1e18 fixed point.
-    /// @dev Reverts if x is negative
+    /// @dev Credit to Remco (https://github.com/recmo/experiment-solexp/blob/main/src/FixedPointMathLib.sol)
+    /// @dev Reverts if x is negative or zero.
     /// @param x Fixed point number in 1e18 format.
     /// @return r Result of ln(x).
     function ln(int256 x) internal pure returns (int256 r) {
@@ -212,6 +213,9 @@ library FixedPointMath {
             // ln(x * C) = ln(x) + ln(C), we can simply do nothing here
             // and add ln(2**96 / 10**18) at the end.
 
+            // This step inlines the `ilog2` call in Remco's implementation:
+            // https://github.com/recmo/experiment-solexp/blob/bbc164fb5ec078cfccf3c71b521605106bfae00b/src/FixedPointMathLib.sol#L57-L68
+            //
             /// @solidity memory-safe-assembly
             assembly {
                 r := shl(7, lt(0xffffffffffffffffffffffffffffffff, x))
@@ -224,11 +228,11 @@ library FixedPointMath {
                 r := or(r, lt(0x1, shr(r, x)))
             }
 
-            // Reduce range of x to (1, 2) * 2**96
+            // Reduce range of x to [1, 2) * 2**96
             // ln(2^k * x) = k * ln(2) + ln(x)
             int256 k = r - 96;
             x <<= uint256(159 - k);
-            x = int256(uint256(x) >> 159);
+            x = (uint256(x) >> 159).toInt256();
 
             // Evaluate using a (8, 8)-term rational approximation.
             // p is made monic, we will multiply by a scale factor later.

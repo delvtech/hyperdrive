@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveRead } from "../interfaces/IHyperdriveRead.sol";
 import { HyperdriveAdmin } from "../internal/HyperdriveAdmin.sol";
@@ -41,7 +42,9 @@ abstract contract HyperdriveTarget0 is
 
     /// @notice This function collects the governance fees accrued by the pool.
     /// @param _options The options that configure how the fees are settled.
-    /// @return proceeds The amount of base collected.
+    /// @return proceeds The governance fees collected. The units of this
+    ///         quantity are either base or vault shares, depending on the value
+    ///         of `_options.asBase`.
     function collectGovernanceFee(
         IHyperdrive.Options calldata _options
     ) external returns (uint256 proceeds) {
@@ -52,6 +55,18 @@ abstract contract HyperdriveTarget0 is
     /// @param _status True to pause all deposits and false to unpause them.
     function pause(bool _status) external {
         _pause(_status);
+    }
+
+    /// @notice Allows governance to change the fee collector.
+    /// @param _who The new fee collector address.
+    function setFeeCollector(address _who) external {
+        _setFeeCollector(_who);
+    }
+
+    /// @notice Allows governance to change the sweep collector.
+    /// @param _who The new sweep collector address.
+    function setSweepCollector(address _who) external {
+        _setSweepCollector(_who);
     }
 
     /// @notice Allows governance to change governance.
@@ -65,6 +80,16 @@ abstract contract HyperdriveTarget0 is
     /// @param status The new pauser status.
     function setPauser(address who, bool status) external {
         _setPauser(who, status);
+    }
+
+    /// @notice Transfers the contract's balance of a target token to the sweep
+    ///         collector address.
+    /// @dev WARN: It is unlikely but possible that there is a selector overlap
+    ///      with 'transfer'. Any integrating contracts should be checked
+    ///      for that, as it may result in an unexpected call from this address.
+    /// @param _target The target token to sweep.
+    function sweep(IERC20 _target) external {
+        _sweep(_target);
     }
 
     /// MultiToken ///
@@ -134,8 +159,8 @@ abstract contract HyperdriveTarget0 is
     /// @param tokenID The asset to approve the use of.
     /// @param operator The address who will be able to use the tokens.
     /// @param amount The max tokens the approved person can use, setting to
-    ///        uint256.max will cause the value to never decrement [saving gas
-    ///        on transfer].
+    ///        uint256.max will cause the value to never decrement (saving gas
+    ///        on transfer).
     function setApproval(
         uint256 tokenID,
         address operator,
@@ -158,8 +183,8 @@ abstract contract HyperdriveTarget0 is
         _batchTransferFrom(from, to, ids, values);
     }
 
-    /// @notice Allows a caller who is not the owner of an account to execute the
-    ///         functionality of 'approve' for all assets with the owner's
+    /// @notice Allows a caller who is not the owner of an account to execute
+    ///         the functionality of 'approve' for all assets with the owner's
     ///         signature.
     /// @param domainSeparator The EIP712 domain separator of the contract.
     /// @param permitTypeHash The EIP712 domain separator of the contract.
@@ -260,6 +285,7 @@ abstract contract HyperdriveTarget0 is
                     timeStretch: _timeStretch,
                     governance: _governance,
                     feeCollector: _feeCollector,
+                    sweepCollector: _sweepCollector,
                     fees: IHyperdrive.Fees(
                         _curveFee,
                         _flatFee,

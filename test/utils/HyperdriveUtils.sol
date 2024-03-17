@@ -1393,6 +1393,7 @@ library HyperdriveUtils {
                 vaultSharePrice: poolInfo.vaultSharePrice,
                 initialVaultSharePrice: poolConfig.initialVaultSharePrice,
                 minimumShareReserves: poolConfig.minimumShareReserves,
+                minimumTransactionAmount: poolConfig.minimumTransactionAmount,
                 timeStretch: poolConfig.timeStretch,
                 longsOutstanding: poolInfo.longsOutstanding,
                 longAverageTimeRemaining: calculateTimeRemaining(

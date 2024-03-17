@@ -28,50 +28,6 @@ contract ERC4626Target0 is HyperdriveTarget0, ERC4626Base {
         IERC4626 __vault
     ) HyperdriveTarget0(_config) ERC4626Base(__vault) {}
 
-    /// Extras ///
-
-    /// @notice Transfers the contract's balance of a target token to the fee
-    ///         collector address.
-    /// @dev Some yield sources (e.g. Morpho) pay rewards directly to this
-    ///      contract, but we can't handle distributing them internally. With
-    ///      this in mind, we sweep the tokens to the fee collector address to
-    ///      then redistribute to users.
-    /// @dev WARN: It is unlikely but possible that there is a selector overlap
-    ///      with 'transferFrom'. Any integrating contracts should be checked
-    ///      for that, as it may result in an unexpected call from this address.
-    /// @param _target The target token to sweep.
-    function sweep(IERC20 _target) external {
-        // Ensure that the sender is the fee collector or a pauser.
-        if (msg.sender != _feeCollector && !_pausers[msg.sender]) {
-            revert IHyperdrive.Unauthorized();
-        }
-
-        // Ensure that the target isn't the base or vault token.
-        if (
-            address(_target) == address(_baseToken) ||
-            address(_target) == address(_vault)
-        ) {
-            revert IHyperdrive.UnsupportedToken();
-        }
-
-        // Get Hyperdrive's balance of the base and vault tokens prior to
-        // sweeping.
-        uint256 baseBalance = _baseToken.balanceOf(address(this));
-        uint256 vaultBalance = _vault.balanceOf(address(this));
-
-        // Transfer the entire balance of the sweep target to the fee collector.
-        uint256 balance = _target.balanceOf(address(this));
-        ERC20(address(_target)).safeTransfer(_feeCollector, balance);
-
-        // Ensure that the base and vault balances haven't changed.
-        if (
-            _baseToken.balanceOf(address(this)) != baseBalance ||
-            _vault.balanceOf(address(this)) != vaultBalance
-        ) {
-            revert IHyperdrive.SweepFailed();
-        }
-    }
-
     /// Getters ///
 
     /// @notice Gets the ERC4626 compatible vault used as this pool's yield

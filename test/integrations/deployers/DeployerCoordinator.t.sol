@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { IERC4626Hyperdrive } from "contracts/src/interfaces/IERC4626Hyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { HyperdriveDeployerCoordinator } from "contracts/src/deployers/HyperdriveDeployerCoordinator.sol";
@@ -11,13 +12,14 @@ import { ERC4626Target1Deployer } from "contracts/src/deployers/erc4626/ERC4626T
 import { ERC4626Target2Deployer } from "contracts/src/deployers/erc4626/ERC4626Target2Deployer.sol";
 import { ERC4626Target3Deployer } from "contracts/src/deployers/erc4626/ERC4626Target3Deployer.sol";
 import { ERC4626Target4Deployer } from "contracts/src/deployers/erc4626/ERC4626Target4Deployer.sol";
-import { ONE } from "contracts/src/libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockERC4626 } from "contracts/test/MockERC4626.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
 
 contract MockHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+    bool internal _checkMessageValueStatus = true;
     bool internal _checkPoolConfigStatus = true;
 
     constructor(
@@ -38,8 +40,43 @@ contract MockHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         )
     {}
 
+    function setCheckMessageValueStatus(bool _status) external {
+        _checkMessageValueStatus = _status;
+    }
+
     function setCheckPoolConfigStatus(bool _status) external {
         _checkPoolConfigStatus = _status;
+    }
+
+    function _prepareInitialize(
+        IHyperdrive _hyperdrive,
+        address _lp,
+        uint256 _contribution,
+        IHyperdrive.Options memory _options
+    ) internal override returns (uint256) {
+        // If base is the deposit asset, transfer base from the LP and approve
+        // the Hyperdrive pool.
+        if (_options.asBase) {
+            IERC20 baseToken = IERC20(_hyperdrive.baseToken());
+            baseToken.transferFrom(_lp, address(this), _contribution);
+            baseToken.approve(address(_hyperdrive), _contribution);
+        }
+        // Otherwise, transfer vault shares from the LP and approve the
+        // Hyperdrive pool.
+        else {
+            IERC20 vault = IERC4626Hyperdrive(address(_hyperdrive)).vault();
+            vault.transferFrom(_lp, address(this), _contribution);
+            vault.approve(address(_hyperdrive), _contribution);
+        }
+
+        return 0;
+    }
+
+    function _checkMessageValue() internal view override {
+        require(
+            _checkMessageValueStatus,
+            "MockDeployerCoordinator: invalid message value"
+        );
     }
 
     function _checkPoolConfig(
@@ -59,6 +96,7 @@ contract MockHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
 }
 
 contract DeployerCoordinatorTest is HyperdriveTest {
+    using FixedPointMath for *;
     using Lib for *;
 
     bytes32 constant DEPLOYMENT_ID = bytes32(uint256(0xdeadbeef));
@@ -77,7 +115,7 @@ contract DeployerCoordinatorTest is HyperdriveTest {
         // data.
         vm.stopPrank();
         vm.startPrank(alice);
-        ERC20Mintable baseToken = new ERC20Mintable(
+        baseToken = new ERC20Mintable(
             "Base Token",
             "BASE",
             18,
@@ -437,5 +475,139 @@ contract DeployerCoordinatorTest is HyperdriveTest {
         assertEq(deployment.target3, targets[3]);
         assertEq(deployment.target4, targets[4]);
         assertEq(deployment.hyperdrive, hyperdrive);
+    }
+
+    function test_initialize_failure_hyperdriveIsNotDeployed() external {
+        // Deploy all of the target instances.
+        for (uint256 i = 0; i < 5; i++) {
+            coordinator.deployTarget(DEPLOYMENT_ID, config, extraData, i, SALT);
+        }
+
+        // Initialization should fail since the hyperdrive instance isn't
+        // deployed.
+        uint256 contribution = 100_000e18;
+        vm.expectRevert(
+            IHyperdriveDeployerCoordinator.HyperdriveIsNotDeployed.selector
+        );
+        coordinator.initialize(
+            DEPLOYMENT_ID,
+            msg.sender,
+            contribution,
+            0.05e18,
+            IHyperdrive.Options({
+                asBase: true,
+                destination: msg.sender,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
+    function test_initialize_failure_checkMessageValue() external {
+        // Deploy all of the target instances.
+        for (uint256 i = 0; i < 5; i++) {
+            coordinator.deployTarget(DEPLOYMENT_ID, config, extraData, i, SALT);
+        }
+
+        // Deploy a Hyperdrive instance.
+        address hyperdrive = coordinator.deploy(
+            DEPLOYMENT_ID,
+            config,
+            extraData,
+            SALT
+        );
+
+        // Initialization should fail if `_checkMessageValue` fails.
+        coordinator.setCheckMessageValueStatus(false);
+        uint256 contribution = 100_000e18;
+        baseToken.mint(contribution);
+        baseToken.approve(hyperdrive, contribution);
+        vm.expectRevert();
+        coordinator.initialize(
+            DEPLOYMENT_ID,
+            msg.sender,
+            contribution,
+            0.05e18,
+            IHyperdrive.Options({
+                asBase: true,
+                destination: msg.sender,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
+    function test_initialize_success_asBase() external {
+        // Deploy all of the target instances.
+        for (uint256 i = 0; i < 5; i++) {
+            coordinator.deployTarget(DEPLOYMENT_ID, config, extraData, i, SALT);
+        }
+
+        // Deploy a Hyperdrive instance.
+        IHyperdrive hyperdrive = IHyperdrive(
+            coordinator.deploy(DEPLOYMENT_ID, config, extraData, SALT)
+        );
+
+        // Initialization should succeed.
+        vm.startPrank(alice);
+        uint256 contribution = 100_000e18;
+        baseToken.mint(contribution);
+        baseToken.approve(address(coordinator), contribution);
+        uint256 lpShares = coordinator.initialize(
+            DEPLOYMENT_ID,
+            alice,
+            contribution,
+            0.05e18,
+            IHyperdrive.Options({
+                asBase: true,
+                destination: alice,
+                extraData: new bytes(0)
+            })
+        );
+
+        // Ensure the initializer received the correct amount of LP shares.
+        assertEq(
+            lpShares,
+            contribution.divDown(
+                hyperdrive.getPoolConfig().initialVaultSharePrice
+            ) - 2 * hyperdrive.getPoolConfig().minimumShareReserves
+        );
+    }
+
+    function test_initialize_success_asShares() external {
+        // Deploy all of the target instances.
+        for (uint256 i = 0; i < 5; i++) {
+            coordinator.deployTarget(DEPLOYMENT_ID, config, extraData, i, SALT);
+        }
+
+        // Deploy a Hyperdrive instance.
+        IHyperdrive hyperdrive = IHyperdrive(
+            coordinator.deploy(DEPLOYMENT_ID, config, extraData, SALT)
+        );
+
+        // Initialization should succeed.
+        vm.startPrank(alice);
+        uint256 contribution = 100_000e18;
+        baseToken.mint(contribution);
+        baseToken.approve(address(vault), contribution);
+        uint256 contributionShares = vault.deposit(contribution, alice);
+        vault.approve(address(coordinator), contributionShares);
+        uint256 lpShares = coordinator.initialize(
+            DEPLOYMENT_ID,
+            alice,
+            contributionShares,
+            0.05e18,
+            IHyperdrive.Options({
+                asBase: false,
+                destination: alice,
+                extraData: new bytes(0)
+            })
+        );
+
+        // Ensure the initializer received the correct amount of LP shares.
+        assertEq(
+            lpShares,
+            contributionShares -
+                2 *
+                hyperdrive.getPoolConfig().minimumShareReserves
+        );
     }
 }

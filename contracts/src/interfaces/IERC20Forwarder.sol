@@ -63,8 +63,7 @@ interface IERC20Forwarder is IERC20 {
 
     /// @notice The EIP712 domain separator for this contract.
     /// @return The domain separator.
-    // solhint-disable-next-line func-name-mixedcase
-    function DOMAIN_SEPARATOR() external view returns (bytes32);
+    function domainSeparator() external view returns (bytes32);
 
     /// @notice The EIP712 typehash for the permit struct used by this contract.
     /// @return The permit typehash.

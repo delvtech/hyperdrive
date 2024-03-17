@@ -50,6 +50,32 @@ contract CloseLongTest is HyperdriveTest {
         );
     }
 
+    function test_close_long_failure_destination_zero_address() external {
+        // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, fixedRate, contribution);
+
+        // Open a long position.
+        uint256 baseAmount = 30e18;
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
+
+        // Alice attempts to set the destination to the zero address.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        vm.expectRevert(IHyperdrive.RestrictedZeroAddress.selector);
+        hyperdrive.closeLong(
+            maturityTime,
+            bondAmount,
+            0,
+            IHyperdrive.Options({
+                destination: address(0),
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
     function test_close_long_failure_invalid_amount() external {
         // Initialize the pool with a large amount of capital.
         uint256 fixedRate = 0.05e18;
@@ -904,7 +930,13 @@ contract CloseLongTest is HyperdriveTest {
         );
 
         // Ensure that the correct event was emitted.
-        verifyCloseLongEvent(celine, maturityTime, bondAmount, baseProceeds);
+        verifyCloseLongEvent(
+            bob,
+            celine,
+            maturityTime,
+            bondAmount,
+            baseProceeds
+        );
 
         // Ensure that the proceeds were sent to Celine.
         assertEq(baseToken.balanceOf(bob), 0);
@@ -925,6 +957,7 @@ contract CloseLongTest is HyperdriveTest {
         // Ensure that one `CloseLong` event was emitted with the correct
         // arguments.
         verifyCloseLongEvent(
+            bob,
             bob,
             testCase.maturityTime,
             testCase.bondAmount,
@@ -1048,6 +1081,7 @@ contract CloseLongTest is HyperdriveTest {
     }
 
     function verifyCloseLongEvent(
+        address trader,
         address destination,
         uint256 maturityTime,
         uint256 bondAmount,
@@ -1058,9 +1092,10 @@ contract CloseLongTest is HyperdriveTest {
         );
         assertEq(logs.length, 1);
         VmSafe.Log memory log = logs[0];
-        assertEq(address(uint160(uint256(log.topics[1]))), destination);
+        assertEq(address(uint160(uint256(log.topics[1]))), trader);
+        assertEq(address(uint160(uint256(log.topics[2]))), destination);
         assertEq(
-            uint256(log.topics[2]),
+            uint256(log.topics[3]),
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime)
         );
         (

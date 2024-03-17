@@ -25,6 +25,52 @@ contract AdminTest is HyperdriveTest {
         assert(hyperdrive.getMarketState().isPaused);
     }
 
+    function test_setFeeCollector_failure_unauthorized() external {
+        // Ensure that an unauthorized user cannot set the fee collector
+        // address.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        hyperdrive.setFeeCollector(alice);
+    }
+
+    function test_setFeeCollector_success() external {
+        address newFeeCollector = alice;
+
+        // Ensure that governance can set the fee collector address.
+        vm.stopPrank();
+        vm.startPrank(hyperdrive.getPoolConfig().governance);
+        vm.expectEmit(true, true, true, true);
+        emit FeeCollectorUpdated(newFeeCollector);
+        hyperdrive.setFeeCollector(newFeeCollector);
+
+        // Ensure that the fee collector address was updated.
+        assertEq(hyperdrive.getPoolConfig().feeCollector, newFeeCollector);
+    }
+
+    function test_setSweepCollector_failure_unauthorized() external {
+        // Ensure that an unauthorized user cannot set the sweep collector
+        // address.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        hyperdrive.setSweepCollector(alice);
+    }
+
+    function test_setSweepCollector_success() external {
+        address newSweepCollector = alice;
+
+        // Ensure that governance can set the sweep collector address.
+        vm.stopPrank();
+        vm.startPrank(hyperdrive.getPoolConfig().governance);
+        vm.expectEmit(true, true, true, true);
+        emit SweepCollectorUpdated(newSweepCollector);
+        hyperdrive.setSweepCollector(newSweepCollector);
+
+        // Ensure that the governance address was updated.
+        assertEq(hyperdrive.getPoolConfig().sweepCollector, newSweepCollector);
+    }
+
     function test_setGovernance_failure_unauthorized() external {
         // Ensure that an unauthorized user cannot set the governance address.
         vm.stopPrank();
@@ -62,7 +108,7 @@ contract AdminTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(hyperdrive.getPoolConfig().governance);
         vm.expectEmit(true, true, true, true);
-        emit PauserUpdated(newPauser);
+        emit PauserUpdated(newPauser, true);
         hyperdrive.setPauser(newPauser, true);
 
         // Ensure that the pauser address was updated.

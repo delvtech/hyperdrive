@@ -21,6 +21,41 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         vm.recordLogs();
     }
 
+    function test_redeem_withdrawal_shares_failure_destination_zero_address()
+        external
+    {
+        // Initialize the pool.
+        uint256 lpShares = initialize(alice, 0.02e18, 500_000_000e18);
+
+        // Bob opens a large short.
+        uint256 shortAmount = HyperdriveUtils.calculateMaxShort(hyperdrive);
+        (uint256 maturityTime, ) = openShort(bob, shortAmount);
+
+        // Alice removes her liquidity.
+        (, uint256 withdrawalShares) = removeLiquidity(alice, lpShares);
+
+        // The term passes and no interest accrues.
+        advanceTime(POSITION_DURATION, 0);
+
+        // Bob closes his short.
+        closeShort(bob, maturityTime, shortAmount);
+
+        // Alice tries to redeem her withdrawal shares with the destination set
+        // to the zero address.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        vm.expectRevert(IHyperdrive.RestrictedZeroAddress.selector);
+        hyperdrive.redeemWithdrawalShares(
+            withdrawalShares,
+            0,
+            IHyperdrive.Options({
+                destination: address(0),
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
     function test_redeem_withdrawal_shares_failure_output_limit() external {
         // Initialize the pool.
         uint256 lpShares = initialize(alice, 0.02e18, 500_000_000e18);
@@ -94,7 +129,12 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         assertEq(sharesRedeemed, withdrawalShares);
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.
-        verifyRedeemWithdrawalSharesEvent(alice, sharesRedeemed, baseProceeds);
+        verifyRedeemWithdrawalSharesEvent(
+            alice,
+            alice,
+            sharesRedeemed,
+            baseProceeds
+        );
 
         // Ensure that all of the withdrawal shares were burned.
         assertEq(hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID), 0);
@@ -153,7 +193,12 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         assertApproxEqAbs(sharesRedeemed, withdrawalShares / 2, 1);
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.
-        verifyRedeemWithdrawalSharesEvent(alice, sharesRedeemed, baseProceeds);
+        verifyRedeemWithdrawalSharesEvent(
+            alice,
+            alice,
+            sharesRedeemed,
+            baseProceeds
+        );
 
         // Ensure that the base proceeds were transferred.
         assertEq(
@@ -177,7 +222,12 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         assertApproxEqAbs(sharesRedeemed, withdrawalShares / 2, 1);
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.
-        verifyRedeemWithdrawalSharesEvent(alice, sharesRedeemed, baseProceeds);
+        verifyRedeemWithdrawalSharesEvent(
+            alice,
+            alice,
+            sharesRedeemed,
+            baseProceeds
+        );
 
         // Ensure that all of the withdrawal shares were burned.
         assertEq(hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID), 0);
@@ -238,6 +288,7 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.
         verifyRedeemWithdrawalSharesEvent(
+            alice,
             alice,
             sharesRedeemed,
             withdrawalSharesProceeds
@@ -302,7 +353,12 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         assertEq(sharesRedeemed, withdrawalShares);
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.
-        verifyRedeemWithdrawalSharesEvent(alice, sharesRedeemed, baseProceeds);
+        verifyRedeemWithdrawalSharesEvent(
+            alice,
+            alice,
+            sharesRedeemed,
+            baseProceeds
+        );
 
         // Ensure that all of the withdrawal shares were burned.
         assertEq(hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID), 0);
@@ -351,7 +407,12 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         assertGt(baseProceeds, 0);
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.
-        verifyRedeemWithdrawalSharesEvent(celine, sharesRedeemed, baseProceeds);
+        verifyRedeemWithdrawalSharesEvent(
+            alice,
+            celine,
+            sharesRedeemed,
+            baseProceeds
+        );
 
         // Ensure that Celine received the base proceeds.
         assertEq(baseToken.balanceOf(alice), 0);
@@ -360,6 +421,7 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
 
     function verifyRedeemWithdrawalSharesEvent(
         address provider,
+        address destination,
         uint256 expectedSharesRedeemed,
         uint256 expectedBaseProceeds
     ) internal {
@@ -369,6 +431,7 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         assertEq(logs.length, 1);
         VmSafe.Log memory log = logs[0];
         assertEq(address(uint160(uint256(log.topics[1]))), provider);
+        assertEq(address(uint160(uint256(log.topics[2]))), destination);
         (uint256 sharesRedeemed, uint256 baseProceeds) = abi.decode(
             log.data,
             (uint256, uint256)

@@ -40,33 +40,82 @@ abstract contract MockHyperdriveBase is HyperdriveBase {
 
     uint256 internal totalShares;
 
-    function _deposit(
-        uint256 amount,
-        IHyperdrive.Options calldata options
+    /// @dev Accepts a deposit from the user in base.
+    /// @param _baseAmount The base amount to deposit.
+    /// @return The shares that were minted in the deposit.
+    /// @return The amount of ETH to refund. Since this yield source isn't
+    ///         payable, this is always zero.
+    function _depositWithBase(
+        uint256 _baseAmount,
+        bytes calldata // unused
     ) internal override returns (uint256, uint256) {
-        // Calculate the base amount of the deposit.
+        // Calculate the total amount of assets.
         uint256 assets;
         if (address(_baseToken) == ETH) {
             assets = address(this).balance;
         } else {
             assets = _baseToken.balanceOf(address(this));
         }
-        uint256 baseAmount = options.asBase
-            ? amount
-            : amount.mulDivDown(assets, totalShares);
 
         // Transfer the specified amount of funds from the trader. If the trader
         // overpaid, we return the excess amount.
         bool success = true;
+        uint256 refund;
+        if (address(_baseToken) == ETH) {
+            if (msg.value < _baseAmount) {
+                revert IHyperdrive.TransferFailed();
+            }
+            refund = msg.value - _baseAmount;
+        } else {
+            success = _baseToken.transferFrom(
+                msg.sender,
+                address(this),
+                _baseAmount
+            );
+        }
+        if (!success) {
+            revert IHyperdrive.TransferFailed();
+        }
+
+        // Increase the total shares and return with the amount of shares minted
+        // and the current share price.
+        if (totalShares == 0) {
+            totalShares = _baseAmount.divDown(_initialVaultSharePrice);
+            return (totalShares, refund);
+        } else {
+            uint256 newShares = _baseAmount.mulDivDown(totalShares, assets);
+            totalShares += newShares;
+            return (newShares, refund);
+        }
+    }
+
+    /// @dev Process a deposit in vault shares.
+    /// @param _shareAmount The vault shares amount to deposit.
+    function _depositWithShares(
+        uint256 _shareAmount,
+        bytes calldata // unused
+    ) internal override {
+        // Calculate the base amount of the deposit.
+        uint256 baseAmount = _convertToBase(_shareAmount);
+
+        // Increase the total shares and return with the amount of shares minted
+        // and the current share price.
+        if (totalShares == 0) {
+            totalShares = baseAmount.divDown(_initialVaultSharePrice);
+        } else {
+            uint256 newShares = _convertToShares(baseAmount);
+            totalShares += newShares;
+        }
+
+        // Transfer the specified amount of funds from the trader. If the trader
+        // overpaid, we return the excess amount.
+        bool success = true;
+        uint256 refund;
         if (address(_baseToken) == ETH) {
             if (msg.value < baseAmount) {
                 revert IHyperdrive.TransferFailed();
             }
-            if (msg.value > baseAmount) {
-                (success, ) = payable(msg.sender).call{
-                    value: msg.value - baseAmount
-                }("");
-            }
+            refund = msg.value - baseAmount;
         } else {
             success = _baseToken.transferFrom(
                 msg.sender,
@@ -77,84 +126,71 @@ abstract contract MockHyperdriveBase is HyperdriveBase {
         if (!success) {
             revert IHyperdrive.TransferFailed();
         }
-
-        // Increase the total shares and return with the amount of shares minted
-        // and the current share price.
-        if (totalShares == 0) {
-            totalShares = amount.divDown(_initialVaultSharePrice);
-            return (totalShares, _initialVaultSharePrice);
-        } else {
-            uint256 newShares = amount.mulDivDown(totalShares, assets);
-            totalShares += newShares;
-            return (newShares, _pricePerVaultShare());
-        }
     }
 
-    function _withdraw(
-        uint256 shares,
-        uint256 sharePrice,
-        IHyperdrive.Options calldata options
-    ) internal override returns (uint256 withdrawValue) {
-        // Get the total amount of assets held in the pool.
-        uint256 assets;
-        if (address(_baseToken) == ETH) {
-            assets = address(this).balance;
-        } else {
-            assets = _baseToken.balanceOf(address(this));
-        }
-
-        // Correct for any error that crept into the calculation of the share
-        // amount by converting the shares to base and then back to shares
-        // using the vault's share conversion logic.
-        uint256 baseAmount = shares.mulDown(sharePrice);
-        shares = baseAmount.mulDivDown(totalShares, assets);
-
+    /// @dev Process a withdrawal in base and send the proceeds to the
+    ///      destination.
+    /// @param _shareAmount The amount of vault shares to withdraw.
+    /// @param _destination The destination of the withdrawal.
+    /// @return amountWithdrawn The amount of base withdrawn.
+    function _withdrawWithBase(
+        uint256 _shareAmount,
+        address _destination,
+        bytes calldata // unused
+    ) internal override returns (uint256 amountWithdrawn) {
         // If the shares to withdraw is greater than the total shares, we clamp
         // to the total shares.
-        shares = shares > totalShares ? totalShares : shares;
+        _shareAmount = _shareAmount > totalShares ? totalShares : _shareAmount;
 
         // Calculate the base proceeds.
-        withdrawValue = totalShares != 0
-            ? shares.mulDivDown(assets, totalShares)
-            : 0;
+        uint256 withdrawValue = _convertToBase(_shareAmount);
 
         // Transfer the base proceeds to the destination and burn the shares.
-        totalShares -= shares;
+        totalShares -= _shareAmount;
         bool success;
         if (address(_baseToken) == ETH) {
-            (success, ) = payable(options.destination).call{
-                value: withdrawValue
-            }("");
+            (success, ) = payable(_destination).call{ value: withdrawValue }(
+                ""
+            );
         } else {
-            success = _baseToken.transfer(options.destination, withdrawValue);
+            success = _baseToken.transfer(_destination, withdrawValue);
         }
         if (!success) {
             revert IHyperdrive.TransferFailed();
         }
-        withdrawValue = options.asBase
-            ? withdrawValue
-            : withdrawValue.divDown(_pricePerVaultShare());
 
         return withdrawValue;
     }
 
-    function _pricePerVaultShare()
-        internal
-        view
-        override
-        returns (uint256 vaultSharePrice)
-    {
-        // Get the total amount of base held in Hyperdrive.
-        uint256 assets;
-        if (address(_baseToken) == ETH) {
-            assets = address(this).balance;
-        } else {
-            assets = _baseToken.balanceOf(address(this));
-        }
+    /// @dev Process a withdrawal in vault shares and send the proceeds to the
+    ///      destination.
+    /// @param _shareAmount The amount of vault shares to withdraw.
+    /// @param _destination The destination of the withdrawal.
+    function _withdrawWithShares(
+        uint256 _shareAmount,
+        address _destination,
+        bytes calldata // unused
+    ) internal override {
+        // If the shares to withdraw is greater than the total shares, we clamp
+        // to the total shares.
+        _shareAmount = _shareAmount > totalShares ? totalShares : _shareAmount;
 
-        // The share price is the total amount of base divided by the total
-        // amount of shares.
-        vaultSharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
+        // Calculate the base proceeds.
+        uint256 withdrawValue = _convertToBase(_shareAmount);
+
+        // Transfer the base proceeds to the destination and burn the shares.
+        totalShares -= _shareAmount;
+        bool success;
+        if (address(_baseToken) == ETH) {
+            (success, ) = payable(_destination).call{ value: withdrawValue }(
+                ""
+            );
+        } else {
+            success = _baseToken.transfer(_destination, withdrawValue);
+        }
+        if (!success) {
+            revert IHyperdrive.TransferFailed();
+        }
     }
 
     // This overrides checkMessageValue to serve the dual purpose of making
@@ -164,6 +200,59 @@ abstract contract MockHyperdriveBase is HyperdriveBase {
         if (address(_baseToken) != ETH && msg.value > 0) {
             revert IHyperdrive.NotPayable();
         }
+    }
+
+    /// @dev Convert an amount of vault shares to an amount of base.
+    /// @param _shareAmount The vault shares amount.
+    /// @return The base amount.
+    function _convertToBase(
+        uint256 _shareAmount
+    ) internal view override returns (uint256) {
+        // Get the total amount of base held in Hyperdrive.
+        uint256 assets;
+        if (address(_baseToken) == ETH) {
+            assets = address(this).balance;
+        } else {
+            assets = _baseToken.balanceOf(address(this));
+        }
+
+        return
+            totalShares != 0 ? _shareAmount.mulDivDown(assets, totalShares) : 0;
+    }
+
+    /// @dev Convert an amount of base to an amount of vault shares.
+    /// @param _baseAmount The base amount.
+    /// @return The vault shares amount.
+    function _convertToShares(
+        uint256 _baseAmount
+    ) internal view override returns (uint256) {
+        // Get the total amount of base held in Hyperdrive.
+        uint256 assets;
+        if (address(_baseToken) == ETH) {
+            assets = address(this).balance;
+        } else {
+            assets = _baseToken.balanceOf(address(this));
+        }
+
+        return _baseAmount.mulDivDown(totalShares, assets);
+    }
+
+    /// @dev Gets the total amount of base held by the pool.
+    /// @return baseAmount The total amount of base.
+    function _totalBase() internal view override returns (uint256) {
+        return _baseToken.balanceOf(address(this));
+    }
+
+    /// @dev Gets the total amount of shares held by the pool in the yield
+    ///      source.
+    /// @return shareAmount The total amount of shares.
+    function _totalShares()
+        internal
+        view
+        override
+        returns (uint256 shareAmount)
+    {
+        return _convertToShares(_totalBase());
     }
 }
 

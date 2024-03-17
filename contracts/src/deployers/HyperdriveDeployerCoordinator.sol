@@ -199,7 +199,7 @@ abstract contract HyperdriveDeployerCoordinator is
             // Get the initial share price and the hashes of the config and extra
             // data.
             uint256 initialSharePrice = _getInitialVaultSharePrice(_extraData);
-            bytes32 configHash = keccak256(abi.encode(_deployConfig));
+            bytes32 configHash_ = keccak256(abi.encode(_deployConfig));
             bytes32 extraDataHash = keccak256(_extraData);
 
             // Convert the deploy config into the pool config and set the initial
@@ -219,7 +219,7 @@ abstract contract HyperdriveDeployerCoordinator is
             );
 
             // Store the deployment.
-            _deployments[msg.sender][_deploymentId].configHash = configHash;
+            _deployments[msg.sender][_deploymentId].configHash = configHash_;
             _deployments[msg.sender][_deploymentId]
                 .extraDataHash = extraDataHash;
             _deployments[msg.sender][_deploymentId]
@@ -231,15 +231,13 @@ abstract contract HyperdriveDeployerCoordinator is
 
         // Ensure that the deployment is not a fresh deployment. We can check
         // this by ensuring that the config hash is set.
-        if (_deployments[msg.sender][_deploymentId].configHash == bytes32(0)) {
+        bytes32 configHash = _deployments[msg.sender][_deploymentId].configHash;
+        if (configHash == bytes32(0)) {
             revert IHyperdriveDeployerCoordinator.DeploymentDoesNotExist();
         }
 
         // Ensure that the provided config matches the config hash.
-        if (
-            keccak256(abi.encode(_deployConfig)) !=
-            _deployments[msg.sender][_deploymentId].configHash
-        ) {
+        if (keccak256(abi.encode(_deployConfig)) != configHash) {
             revert IHyperdriveDeployerCoordinator.MismatchedConfig();
         }
 
@@ -314,6 +312,63 @@ abstract contract HyperdriveDeployerCoordinator is
         return target;
     }
 
+    /// @notice Initializes a pool that was deployed by this coordinator.
+    /// @dev This function utilizes several helper functions that provide
+    ///      flexibility to implementations.
+    /// @param _deploymentId The ID of the deployment.
+    /// @param _lp The LP that is initializing the pool.
+    /// @param _contribution The amount of capital to supply. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
+    /// @param _apr The target APR.
+    /// @param _options The options that configure how the initialization is
+    ///        settled.
+    /// @return lpShares The initial number of LP shares created.
+    function initialize(
+        bytes32 _deploymentId,
+        address _lp,
+        uint256 _contribution,
+        uint256 _apr,
+        IHyperdrive.Options memory _options
+    ) external payable returns (uint256 lpShares) {
+        // Check that the message value is valid.
+        _checkMessageValue();
+
+        // Ensure that the instance has been fully deployed.
+        IHyperdrive hyperdrive = IHyperdrive(
+            _deployments[msg.sender][_deploymentId].hyperdrive
+        );
+        if (address(hyperdrive) == address(0)) {
+            revert IHyperdriveDeployerCoordinator.HyperdriveIsNotDeployed();
+        }
+
+        // Prepare for initialization by drawing funds from the user.
+        uint256 value = _prepareInitialize(
+            hyperdrive,
+            _lp,
+            _contribution,
+            _options
+        );
+
+        // Initialize the deployment.
+        lpShares = hyperdrive.initialize{ value: value }(
+            _contribution,
+            _apr,
+            _options
+        );
+
+        // Refund any excess ether that was sent.
+        uint256 refund = msg.value - value;
+        if (refund > 0) {
+            (bool success, ) = payable(msg.sender).call{ value: refund }("");
+            if (!success) {
+                revert IHyperdriveDeployerCoordinator.TransferFailed();
+            }
+        }
+
+        return lpShares;
+    }
+
     /// @notice Gets the deployment specified by the deployer and deployment ID.
     /// @param _deployer The deployer.
     /// @param _deploymentId The deployment ID.
@@ -324,6 +379,28 @@ abstract contract HyperdriveDeployerCoordinator is
     ) external view returns (Deployment memory) {
         return _deployments[_deployer][_deploymentId];
     }
+
+    /// @dev Prepares the coordinator for initialization by drawing funds from
+    ///      the LP, if necessary.
+    /// @param _hyperdrive The Hyperdrive instance that is being initialized.
+    /// @param _lp The LP that is initializing the pool.
+    /// @param _contribution The amount of capital to supply. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
+    /// @param _options The options that configure how the initialization is
+    ///        settled.
+    /// @return value The value that should be sent in the initialize
+    ///         transaction.
+    function _prepareInitialize(
+        IHyperdrive _hyperdrive,
+        address _lp,
+        uint256 _contribution,
+        IHyperdrive.Options memory _options
+    ) internal virtual returns (uint256 value);
+
+    /// @dev A yield source dependent check that prevents ether from being
+    ///      transferred to Hyperdrive instances that don't accept ether.
+    function _checkMessageValue() internal view virtual;
 
     /// @dev Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.

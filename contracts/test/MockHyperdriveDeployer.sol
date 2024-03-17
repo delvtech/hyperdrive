@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IHyperdriveTargetDeployer } from "contracts/src/interfaces/IHyperdriveTargetDeployer.sol";
 import { MockHyperdrive } from "./MockHyperdrive.sol";
 
 contract MockHyperdriveDeployer is IHyperdriveDeployerCoordinator {
+    mapping(address => mapping(bytes32 => address)) internal _deployments;
+
     function deploy(
-        bytes32,
+        bytes32 _deploymentId,
         IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory,
         bytes32
@@ -30,7 +33,11 @@ contract MockHyperdriveDeployer is IHyperdriveDeployerCoordinator {
         _config.fees = _deployConfig.fees;
         _config.initialVaultSharePrice = 1e18; // TODO: Make setter
 
-        return (address(new MockHyperdrive(_config)));
+        // Deploy Hyperdrive and record the address.
+        address hyperdrive = address(new MockHyperdrive(_config));
+        _deployments[msg.sender][_deploymentId] = hyperdrive;
+
+        return hyperdrive;
     }
 
     // HACK: This function doesn't return anything because MockHyperdrive
@@ -43,6 +50,22 @@ contract MockHyperdriveDeployer is IHyperdriveDeployerCoordinator {
         bytes32
     ) external pure returns (address target) {
         return address(0);
+    }
+
+    function initialize(
+        bytes32 _deploymentId,
+        address _lp,
+        uint256 _contribution,
+        uint256 _apr,
+        IHyperdrive.Options memory _options
+    ) external payable returns (uint256) {
+        IHyperdrive hyperdrive = IHyperdrive(
+            _deployments[msg.sender][_deploymentId]
+        );
+        IERC20 baseToken = IERC20(hyperdrive.baseToken());
+        baseToken.transferFrom(_lp, address(this), _contribution);
+        baseToken.approve(address(hyperdrive), _contribution);
+        return hyperdrive.initialize(_contribution, _apr, _options);
     }
 }
 

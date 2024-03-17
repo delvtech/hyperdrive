@@ -30,115 +30,109 @@ abstract contract StETHBase is HyperdriveBase {
 
     /// Yield Source ///
 
-    /// @dev Accepts a transfer from the user in base or the yield source token.
-    /// @param _amount The amount of token to transfer. It will be in either
-    ///          base or shares depending on the `asBase` option.
-    /// @param _options The options that configure the deposit. The only option
-    ///        used in this implementation is "asBase" which determines if
-    ///        the deposit is settled in ETH or stETH shares.
-    /// @return shares The amount of shares that represents the amount deposited.
-    /// @return vaultSharePrice The current vault share price.
-    function _deposit(
-        uint256 _amount,
-        IHyperdrive.Options calldata _options
-    ) internal override returns (uint256 shares, uint256 vaultSharePrice) {
-        uint256 refund;
-        if (_options.asBase) {
-            // Ensure that sufficient ether was provided.
-            if (msg.value < _amount) {
-                revert IHyperdrive.TransferFailed();
-            }
-
-            // If the user sent more ether than the amount specified, refund the
-            // excess ether.
-            refund = msg.value - _amount;
-
-            // Submit the provided ether to Lido to be deposited. The fee
-            // collector address is passed as the referral address; however,
-            // users can specify whatever referrer they'd like by depositing
-            // stETH instead of WETH.
-            shares = _lido.submit{ value: _amount }(_feeCollector);
-
-            // Calculate the vault share price.
-            vaultSharePrice = _pricePerVaultShare();
-        } else {
-            // Refund any ether that was sent to the contract.
-            refund = msg.value;
-
-            // Transfer stETH shares into the contract.
-            _lido.transferSharesFrom(msg.sender, address(this), _amount);
-
-            // Calculate the vault share price.
-            shares = _amount;
-            vaultSharePrice = _pricePerVaultShare();
+    /// @dev Accepts a deposit from the user in base.
+    /// @param _baseAmount The base amount to deposit.
+    /// @return sharesMinted The shares that were minted in the deposit.
+    /// @return refund The amount of ETH to refund. This should be zero for
+    ///         yield sources that don't accept ETH.
+    function _depositWithBase(
+        uint256 _baseAmount,
+        bytes calldata // unused
+    ) internal override returns (uint256 sharesMinted, uint256 refund) {
+        // Ensure that sufficient ether was provided.
+        if (msg.value < _baseAmount) {
+            revert IHyperdrive.TransferFailed();
         }
 
-        // Return excess ether that was sent to the contract.
-        if (refund > 0) {
-            (bool success, ) = payable(msg.sender).call{ value: refund }("");
-            if (!success) {
-                revert IHyperdrive.TransferFailed();
-            }
+        // If the user sent more ether than the amount specified, refund the
+        // excess ether.
+        unchecked {
+            refund = msg.value - _baseAmount;
         }
 
-        return (shares, vaultSharePrice);
+        // Submit the provided ether to Lido to be deposited. The fee
+        // collector address is passed as the referral address; however,
+        // users can specify whatever referrer they'd like by depositing
+        // stETH instead of ETH.
+        sharesMinted = _lido.submit{ value: _baseAmount }(_feeCollector);
+
+        return (sharesMinted, refund);
     }
 
-    /// @notice Processes a trader's withdrawal. This yield source only supports
-    ///         withdrawals in stETH shares.
-    /// @param _shares The amount of shares to withdraw from Hyperdrive.
-    /// @param _sharePrice The share price.
-    /// @param _options The options that configure the withdrawal. The options
-    ///        used in this implementation are "destination" which specifies the
-    ///        recipient of the withdrawal and "asBase" which determines
-    ///        if the withdrawal is settled in base or vault shares. The "asBase"
-    ///        option must be false since stETH withdrawals aren't processed
-    ///        instantaneously. Users that want to withdraw can manage their
-    ///        withdrawal separately.
-    /// @return The amount of shares withdrawn from the yield source.
-    function _withdraw(
-        uint256 _shares,
-        uint256 _sharePrice,
-        IHyperdrive.Options calldata _options
-    ) internal override returns (uint256) {
+    /// @dev Process a deposit in vault shares.
+    /// @param _shareAmount The vault shares amount to deposit.
+    function _depositWithShares(
+        uint256 _shareAmount,
+        bytes calldata // unused
+    ) internal override {
+        // Transfer stETH shares into the contract.
+        _lido.transferSharesFrom(msg.sender, address(this), _shareAmount);
+    }
+
+    /// @dev Process a withdrawal in base and send the proceeds to the
+    ///      destination.
+    function _withdrawWithBase(
+        uint256, // unused
+        address, // unused
+        bytes calldata // unused
+    ) internal pure override returns (uint256) {
         // stETH withdrawals aren't necessarily instantaneous. Users that want
         // to withdraw can manage their withdrawal separately.
-        if (_options.asBase) {
-            revert IHyperdrive.UnsupportedToken();
-        }
-
-        // NOTE: Round down to underestimate the base proceeds.
-        //
-        // Correct for any error that crept into the calculation of the share
-        // amount by converting the shares to base and then back to shares
-        // using the vault's share conversion logic.
-        uint256 baseAmount = _shares.mulDown(_sharePrice);
-        _shares = _lido.getSharesByPooledEth(baseAmount);
-
-        // If we're withdrawing zero shares, short circuit and return 0.
-        if (_shares == 0) {
-            return 0;
-        }
-
-        // Transfer the stETH shares to the destination.
-        _lido.transferShares(_options.destination, _shares);
-
-        return _shares;
+        revert IHyperdrive.UnsupportedToken();
     }
 
-    /// @dev Returns the current vault share price. We simply use Lido's
-    ///      internal share price.
-    /// @return price The current vault share price.
-    function _pricePerVaultShare()
-        internal
-        view
-        override
-        returns (uint256 price)
-    {
-        return _lido.getPooledEthByShares(ONE);
+    /// @dev Process a withdrawal in vault shares and send the proceeds to the
+    ///      destination.
+    /// @param _shareAmount The amount of vault shares to withdraw.
+    /// @param _destination The destination of the withdrawal.
+    function _withdrawWithShares(
+        uint256 _shareAmount,
+        address _destination,
+        bytes calldata // unused
+    ) internal override {
+        // Transfer the stETH shares to the destination.
+        _lido.transferShares(_destination, _shareAmount);
     }
 
     /// @dev We override the message value check since this integration is
     ///      payable.
     function _checkMessageValue() internal pure override {}
+
+    /// @dev Convert an amount of vault shares to an amount of base.
+    /// @param _shareAmount The vault shares amount.
+    /// @return baseAmount The base amount.
+    function _convertToBase(
+        uint256 _shareAmount
+    ) internal view override returns (uint256) {
+        return _lido.getPooledEthByShares(_shareAmount);
+    }
+
+    /// @dev Convert an amount of base to an amount of vault shares.
+    /// @param _baseAmount The base amount.
+    /// @return shareAmount The vault shares amount.
+    function _convertToShares(
+        uint256 _baseAmount
+    ) internal view override returns (uint256) {
+        return _lido.getSharesByPooledEth(_baseAmount);
+    }
+
+    /// @dev Gets the total amount of base held by the pool.
+    /// @return baseAmount The total amount of base.
+    function _totalBase() internal pure override returns (uint256) {
+        // NOTE: Since ETH is the base token and can't be swept, we can safely
+        // return zero.
+        return 0;
+    }
+
+    /// @dev Gets the total amount of shares held by the pool in the yield
+    ///      source.
+    /// @return shareAmount The total amount of shares.
+    function _totalShares()
+        internal
+        view
+        override
+        returns (uint256 shareAmount)
+    {
+        return _lido.sharesOf(address(this));
+    }
 }

@@ -9,53 +9,36 @@ pub fn get_time_stretch(rate: FixedPoint, position_duration: FixedPoint) -> Fixe
     let time_stretch = fixed!(5.24592e18)
         / (fixed!(0.04665e18) * FixedPoint::from(U256::from(rate) * uint256!(100)));
     let time_stretch = fixed!(1e18) / time_stretch;
-    // if the position duration is 1 year, we can return the benchmark
-    if position_duration == seconds_in_a_year {
-        return time_stretch;
-    }
 
-    // Otherwise, we need to adjust the time stretch to account for the
-    // position duration. We do this by holding the reserve ratio constant
-    // and solving for the new time stretch directly.
+    // We know that the following simultaneous equations hold:
     //
-    // We can calculate the spot price at the target apr and position
-    // duration as:
+    // (1 + apr) * A ** timeStretch = 1
     //
-    // p = 1 / (1 + apr * (positionDuration / 365 days))
+    // and
     //
-    // We then calculate the benchmark reserve ratio, `ratio`, implied by
-    // the benchmark time stretch using the `calculateInitialBondReserves`
-    // function.
+    // (1 + apr * (positionDuration / 365 days)) * A ** targetTimeStretch = 1
     //
-    // We can then derive the adjusted time stretch using the spot price
-    // calculation:
+    // where A is the reserve ratio. We can solve these equations for the
+    // target time stretch as follows:
     //
-    // p = ratio ** timeStretch
-    //          =>
-    // timeStretch = ln(p) / ln(ratio)
-    let target_spot_price =
-        fixed!(1e18) / (fixed!(1e18) + rate.mul_div_down(position_duration, seconds_in_a_year));
-    let benchmark_reserve_ratio = fixed!(1e18)
-        / calculate_initial_bond_reserves(
-            fixed!(1e18),
-            fixed!(1e18),
-            rate,
-            seconds_in_a_year,
-            time_stretch,
-        );
-    // target spot price and benchmark reserve ratio will have negative ln,
-    // but since we are dividing them we can cast to positive before converting types
-    // TODO: implement FixedPoint `neg` pub fn to support "-"
-    let new_time_stretch = FixedPoint::from(-FixedPoint::ln(I256::from(target_spot_price)))
-        / FixedPoint::from(-FixedPoint::ln(I256::from(benchmark_reserve_ratio)));
-    new_time_stretch
+    // targetTimeStretch = (
+    //     ln(1 + apr * (positionDuration / 365 days)) /
+    //     ln(1 + apr)
+    // ) * timeStretch
+    //
+    // NOTE: Round down so that the output is an underestimate.
+    (FixedPoint::from(FixedPoint::ln(
+        I256::try_from(fixed!(1e18) + rate.mul_div_down(position_duration, seconds_in_a_year))
+            .unwrap(),
+    )) / FixedPoint::from(FixedPoint::ln(I256::try_from(fixed!(1e18) + rate).unwrap())))
+        * time_stretch
 }
 
 pub fn get_effective_share_reserves(
     share_reserves: FixedPoint,
     share_adjustment: I256,
 ) -> FixedPoint {
-    let effective_share_reserves = I256::from(share_reserves) - share_adjustment;
+    let effective_share_reserves = I256::try_from(share_reserves).unwrap() - share_adjustment;
     if effective_share_reserves < I256::from(0) {
         panic!("effective share reserves cannot be negative");
     }

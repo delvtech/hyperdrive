@@ -48,6 +48,28 @@ contract RemoveLiquidityTest is HyperdriveTest {
         );
     }
 
+    function test_remove_liquidity_fail_destination_zero_address() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        uint256 lpShares = initialize(alice, apr, contribution);
+
+        // Alice attempts to remove 0 lp shares.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        vm.expectRevert(IHyperdrive.RestrictedZeroAddress.selector);
+        hyperdrive.removeLiquidity(
+            lpShares,
+            0,
+            IHyperdrive.Options({
+                destination: address(0),
+                asBase: false,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
     function test_remove_liquidity_fail_insufficient_shares() external {
         uint256 apr = 0.05e18;
 
@@ -128,6 +150,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Ensure that the correct event was emitted.
         verifyRemoveLiquidityEvent(
+            alice,
             celine,
             lpShares,
             baseProceeds,
@@ -282,6 +305,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
             // Ensure that the correct event was emitted.
             verifyRemoveLiquidityEvent(
                 alice,
+                alice,
                 testCase.initialLpShares,
                 testCase.initialLpBaseProceeds,
                 testCase.initialLpWithdrawalShares
@@ -312,6 +336,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
     }
 
     function verifyRemoveLiquidityEvent(
+        address trader,
         address destination,
         uint256 expectedLpShares,
         uint256 expectedBaseAmount,
@@ -322,7 +347,8 @@ contract RemoveLiquidityTest is HyperdriveTest {
         );
         assertEq(logs.length, 1);
         VmSafe.Log memory log = logs[0];
-        assertEq(address(uint160(uint256(log.topics[1]))), destination);
+        assertEq(address(uint160(uint256(log.topics[1]))), trader);
+        assertEq(address(uint160(uint256(log.topics[2]))), destination);
         (
             uint256 lpShares,
             uint256 baseAmount,

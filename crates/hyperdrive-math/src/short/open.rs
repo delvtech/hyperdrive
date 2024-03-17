@@ -123,9 +123,9 @@ mod tests {
             let checkpoint_exposure = {
                 let value = rng.gen_range(fixed!(0)..=fixed!(10_000_000e18));
                 if rng.gen() {
-                    -I256::from(value)
+                    -I256::try_from(value).unwrap()
                 } else {
-                    I256::from(value)
+                    I256::try_from(value).unwrap()
                 }
             };
             let max_iterations = 7;

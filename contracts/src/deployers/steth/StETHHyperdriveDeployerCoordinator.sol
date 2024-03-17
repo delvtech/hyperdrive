@@ -48,6 +48,49 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         lido = _lido;
     }
 
+    /// @dev Prepares the coordinator for initialization by drawing funds from
+    ///      the LP, if necessary.
+    /// @param _hyperdrive The Hyperdrive instance that is being initialized.
+    /// @param _lp The LP that is initializing the pool.
+    /// @param _contribution The amount of capital to supply. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
+    /// @param _options The options that configure how the initialization is
+    ///        settled.
+    /// @return value The value that should be sent in the initialize
+    ///         transaction.
+    function _prepareInitialize(
+        IHyperdrive _hyperdrive,
+        address _lp,
+        uint256 _contribution,
+        IHyperdrive.Options memory _options
+    ) internal override returns (uint256 value) {
+        // If base is the deposit asset, ensure that enough ether was sent to
+        // the contract and return the amount of ether that should be sent for
+        // the contribution.
+        if (_options.asBase) {
+            if (msg.value < _contribution) {
+                revert IHyperdriveDeployerCoordinator.InsufficientValue();
+            }
+            value = _contribution;
+        }
+        // Otherwise, transfer vault shares from the LP and approve the
+        // Hyperdrive pool.
+        else {
+            uint256 approvalAmount = lido.transferSharesFrom(
+                _lp,
+                address(this),
+                _contribution
+            );
+            lido.approve(address(_hyperdrive), approvalAmount);
+        }
+
+        return value;
+    }
+
+    /// @dev Allows the contract to receive ether.
+    function _checkMessageValue() internal view override {}
+
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     function _checkPoolConfig(

@@ -27,7 +27,9 @@ abstract contract HyperdriveLP is
     using SafeCast for uint256;
 
     /// @dev Allows the first LP to initialize the market with a target APR.
-    /// @param _contribution The amount to supply.
+    /// @param _contribution The amount of capital to supply. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
     /// @param _apr The target APR.
     /// @param _options The options that configure how the operation is settled.
     /// @return lpShares The initial number of LP shares created.
@@ -39,6 +41,9 @@ abstract contract HyperdriveLP is
         // Check that the message value and base amount are valid.
         _checkMessageValue();
 
+        // Check that the provided options are valid.
+        _checkOptions(_options);
+
         // Ensure that the pool hasn't been initialized yet.
         if (_marketState.isInitialized) {
             revert IHyperdrive.PoolAlreadyInitialized();
@@ -46,7 +51,7 @@ abstract contract HyperdriveLP is
 
         // Deposit the users contribution and get the amount of shares that
         // their contribution was worth.
-        (uint256 vaultShares, uint256 vaultSharePrice) = _deposit(
+        (uint256 shareContribution, uint256 vaultSharePrice) = _deposit(
             _contribution,
             _options
         );
@@ -63,20 +68,22 @@ abstract contract HyperdriveLP is
         // LP supply will always be greater than or equal to the minimum share
         // reserves, which is helping for preventing donation attacks and other
         // numerical issues.
-        if (vaultShares < 2 * _minimumShareReserves) {
+        if (shareContribution < 2 * _minimumShareReserves) {
             revert IHyperdrive.BelowMinimumContribution();
         }
-        lpShares = vaultShares - 2 * _minimumShareReserves;
+        unchecked {
+            lpShares = shareContribution - 2 * _minimumShareReserves;
+        }
 
         // Set the initialized state to true.
         _marketState.isInitialized = true;
 
         // Update the reserves. The bond reserves are calculated so that the
         // pool is initialized with the target APR.
-        _marketState.shareReserves = vaultShares.toUint128();
+        _marketState.shareReserves = shareContribution.toUint128();
         _marketState.bondReserves = HyperdriveMath
             .calculateInitialBondReserves(
-                vaultShares,
+                shareContribution,
                 _initialVaultSharePrice,
                 _apr,
                 _positionDuration,
@@ -106,8 +113,8 @@ abstract contract HyperdriveLP is
         emit Initialize(
             _options.destination,
             lpShares,
-            baseContribution,
-            vaultShares,
+            baseContribution, // base contribution
+            shareContribution, // vault shares contribution
             _options.asBase,
             _apr
         );
@@ -116,12 +123,15 @@ abstract contract HyperdriveLP is
     }
 
     /// @dev Allows LPs to supply liquidity for LP shares.
-    /// @param _contribution The amount to supply.
+    /// @param _contribution The amount of capital to supply. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
     /// @param _minLpSharePrice The minimum LP share price the LP is willing
     ///        to accept for their shares. LPs incur negative slippage when
     ///        adding liquidity if there is a net curve position in the market,
     ///        so this allows LPs to protect themselves from high levels of
-    ///        slippage.
+    ///        slippage. The units of this quantity are either base or vault
+    ///        shares, depending on the value of `_options.asBase`.
     /// @param _minApr The minimum APR at which the LP is willing to supply.
     /// @param _maxApr The maximum APR at which the LP is willing to supply.
     /// @param _options The options that configure how the operation is settled.
@@ -133,8 +143,14 @@ abstract contract HyperdriveLP is
         uint256 _maxApr,
         IHyperdrive.Options calldata _options
     ) internal nonReentrant isNotPaused returns (uint256 lpShares) {
-        // Check that the message value and base amount are valid.
+        // Check that the message value is valid.
         _checkMessageValue();
+
+        // Check that the provided options are valid.
+        _checkOptions(_options);
+
+        // Ensure that the contribution is greater than or equal to the minimum
+        // transaction amount.
         if (_contribution < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
@@ -152,7 +168,7 @@ abstract contract HyperdriveLP is
         }
 
         // Deposit for the user, this call also transfers from them
-        (uint256 vaultShares, uint256 vaultSharePrice) = _deposit(
+        (uint256 shareContribution, uint256 vaultSharePrice) = _deposit(
             _contribution,
             _options
         );
@@ -184,7 +200,7 @@ abstract contract HyperdriveLP is
 
             // Add the liquidity to the pool's reserves and calculate the new
             // present value.
-            _updateLiquidity(int256(vaultShares));
+            _updateLiquidity(shareContribution.toInt256());
             params.shareReserves = _marketState.shareReserves;
             params.shareAdjustment = _marketState.shareAdjustment;
             params.bondReserves = _marketState.bondReserves;
@@ -200,7 +216,7 @@ abstract contract HyperdriveLP is
             // The LP shares minted to the LP is derived by solving for the
             // change in LP shares that preserves the ratio of present value to
             // total LP shares. This ensures that LPs are fairly rewarded for
-            // adding liquidity.This is given by:
+            // adding liquidity. This is given by:
             //
             // PV0 / l0 = PV1 / (l0 + dl) => dl = ((PV1 - PV0) * l0) / PV0
             lpShares = (endingPresentValue - startingPresentValue).mulDivDown(
@@ -224,35 +240,46 @@ abstract contract HyperdriveLP is
         // Mint LP shares to the supplier.
         _mint(AssetId._LP_ASSET_ID, _options.destination, lpShares);
 
-        // Distribute the excess idle to the withdrawal pool.
-        _distributeExcessIdle(vaultSharePrice);
+        // Distribute the excess idle to the withdrawal pool. If the distribute
+        // excess idle calculation fails, we revert to avoid allowing the system
+        // to enter an unhealthy state. A failure indicates that the present
+        // value can't be calculated.
+        bool success = _distributeExcessIdleSafe(vaultSharePrice);
+        if (!success) {
+            revert IHyperdrive.DistributeExcessIdleFailed();
+        }
 
         // Emit an AddLiquidity event.
         uint256 lpSharePrice = lpTotalSupply == 0
             ? 0 // NOTE: We always round the LP share price down for consistency.
             : startingPresentValue.divDown(lpTotalSupply);
+        uint256 contribution = _contribution; // avoid stack-too-deep
         uint256 baseContribution = _convertToBaseFromOption(
-            _contribution,
+            contribution,
             vaultSharePrice,
             _options
         );
+        IHyperdrive.Options calldata options = _options; // avoid stack-too-deep
         emit AddLiquidity(
-            _options.destination,
+            options.destination,
             lpShares,
-            baseContribution,
-            vaultShares,
-            _options.asBase,
+            baseContribution, // base contribution
+            shareContribution, // vault shares contribution
+            options.asBase,
             lpSharePrice
         );
     }
 
     /// @dev Allows an LP to burn shares and withdraw from the pool.
     /// @param _lpShares The LP shares to burn.
-    /// @param _minOutputPerShare The minimum amount of base per LP share that
-    ///        was redeemed.
+    /// @param _minOutputPerShare The minimum amount the LP expects to receive
+    ///        for each withdrawal share that is burned. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
     /// @return proceeds The amount the LP removing liquidity receives. The
-    ///         LP receives a proportional amount of the pool's idle capital
+    ///        units of this quantity are either base or vault shares, depending
+    ///        on the value of `_options.asBase`.
     /// @return withdrawalShares The base that the LP receives buys out some of
     ///         their LP shares, but it may not be sufficient to fully buy the
     ///         LP out. In this case, the LP receives withdrawal shares equal
@@ -267,6 +294,11 @@ abstract contract HyperdriveLP is
         nonReentrant
         returns (uint256 proceeds, uint256 withdrawalShares)
     {
+        // Check that the provided options are valid.
+        _checkOptions(_options);
+
+        // Ensure that the amount of LP shares to remove is greater than or
+        // equal to the minimum transaction amount.
         if (_lpShares < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
@@ -285,9 +317,6 @@ abstract contract HyperdriveLP is
             _lpShares
         );
 
-        // Distribute excess idle to the withdrawal pool.
-        _distributeExcessIdle(vaultSharePrice);
-
         // Redeem as many of the withdrawal shares as possible.
         uint256 withdrawalSharesRedeemed;
         (proceeds, withdrawalSharesRedeemed) = _redeemWithdrawalSharesInternal(
@@ -299,19 +328,24 @@ abstract contract HyperdriveLP is
         );
         withdrawalShares = _lpShares - withdrawalSharesRedeemed;
 
-        // Emit a RemoveLiquidity event.
+        // Emit a RemoveLiquidity event. If the LP share price calculation
+        // fails, we proceed in removing liquidity and just emit the LP share
+        // price as zero. This ensures that the system's liveness isn't impacted
+        // by temporarily being unable to calculate the present value.
+        (uint256 lpSharePrice, ) = _calculateLPSharePriceSafe(vaultSharePrice);
         emit RemoveLiquidity(
-            _options.destination,
+            msg.sender, // provider
+            _options.destination, // destination
             _lpShares,
-            _convertToBaseFromOption(proceeds, vaultSharePrice, _options),
+            _convertToBaseFromOption(proceeds, vaultSharePrice, _options), // base proceeds
             _convertToVaultSharesFromOption(
                 proceeds,
                 vaultSharePrice,
                 _options
-            ),
+            ), // vault shares proceeds
             _options.asBase,
             uint256(withdrawalShares),
-            _calculateLPSharePrice(vaultSharePrice)
+            lpSharePrice
         );
 
         return (proceeds, withdrawalShares);
@@ -322,10 +356,14 @@ abstract contract HyperdriveLP is
     ///      amount of the specified withdrawal shares given the amount of
     ///      withdrawal shares ready to withdraw.
     /// @param _withdrawalShares The withdrawal shares to redeem.
-    /// @param _minOutputPerShare The minimum amount of base the LP expects to
-    ///        receive for each withdrawal share that is burned.
+    /// @param _minOutputPerShare The minimum amount the LP expects to
+    ///        receive for each withdrawal share that is burned. The units of
+    ///        this quantity are either base or vault shares, depending on the
+    ///        value of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
-    /// @return proceeds The amount the LP received.
+    /// @return proceeds The amount the LP received. The units of this quantity
+    ///         are either base or vault shares, depending on the value of
+    ///         `_options.asBase`.
     /// @return withdrawalSharesRedeemed The amount of withdrawal shares that
     ///         were redeemed.
     function _redeemWithdrawalShares(
@@ -337,13 +375,12 @@ abstract contract HyperdriveLP is
         nonReentrant
         returns (uint256 proceeds, uint256 withdrawalSharesRedeemed)
     {
+        // Check that the provided options are valid.
+        _checkOptions(_options);
+
         // Perform a checkpoint.
         uint256 vaultSharePrice = _pricePerVaultShare();
         _applyCheckpoint(_latestCheckpoint(), vaultSharePrice);
-
-        // Distribute the excess idle to the withdrawal pool prior to redeeming
-        // the withdrawal shares.
-        _distributeExcessIdle(vaultSharePrice);
 
         // Redeem as many of the withdrawal shares as possible.
         (proceeds, withdrawalSharesRedeemed) = _redeemWithdrawalSharesInternal(
@@ -356,14 +393,15 @@ abstract contract HyperdriveLP is
 
         // Emit a RedeemWithdrawalShares event.
         emit RedeemWithdrawalShares(
-            _options.destination,
+            msg.sender, // provider
+            _options.destination, // destination
             withdrawalSharesRedeemed,
-            _convertToBaseFromOption(proceeds, vaultSharePrice, _options),
+            _convertToBaseFromOption(proceeds, vaultSharePrice, _options), // base proceeds
             _convertToVaultSharesFromOption(
                 proceeds,
                 vaultSharePrice,
                 _options
-            ),
+            ), // vault shares proceeds
             _options.asBase
         );
 
@@ -376,20 +414,31 @@ abstract contract HyperdriveLP is
     ///      withdrawal shares ready to withdraw.
     /// @param _source The address that owns the withdrawal shares to redeem.
     /// @param _withdrawalShares The withdrawal shares to redeem.
-    /// @param _sharePrice The share price.
-    /// @param _minOutputPerShare The minimum amount of base the LP expects to
-    ///        receive for each withdrawal share that is burned.
+    /// @param _vaultSharePrice The vault share price.
+    /// @param _minOutputPerShare The minimum amount the LP expects to
+    ///        receive for each withdrawal share that is burned. The units of
+    ///        this quantity are either base or vault shares, depending on the
+    ///        value of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
-    /// @return proceeds The amount the LP received.
+    /// @return proceeds The amount the LP received. The units of this quantity
+    ///         are either base or vault shares, depending on the value of
+    ///         `_options.asBase`.
     /// @return withdrawalSharesRedeemed The amount of withdrawal shares that
     ///         were redeemed.
     function _redeemWithdrawalSharesInternal(
         address _source,
         uint256 _withdrawalShares,
-        uint256 _sharePrice,
+        uint256 _vaultSharePrice,
         uint256 _minOutputPerShare,
         IHyperdrive.Options calldata _options
     ) internal returns (uint256 proceeds, uint256 withdrawalSharesRedeemed) {
+        // Distribute the excess idle to the withdrawal pool. If the distribute
+        // excess idle calculation fails, we proceed with the calculation since
+        // LPs should be able to redeem their withdrawal shares for existing
+        // withdrawal proceeds regardless of whether or not idle could be
+        // distributed.
+        _distributeExcessIdleSafe(_vaultSharePrice);
+
         // Clamp the shares to the total amount of shares ready for withdrawal
         // to avoid unnecessary reverts. We exit early if the user has no shares
         // available to redeem.
@@ -422,12 +471,12 @@ abstract contract HyperdriveLP is
         _withdrawPool.proceeds -= shareProceeds.toUint128();
 
         // Withdraw the share proceeds to the user.
-        proceeds = _withdraw(shareProceeds, _sharePrice, _options);
+        proceeds = _withdraw(shareProceeds, _vaultSharePrice, _options);
 
         // NOTE: Round up to make the check more conservative.
         //
         // Enforce the minimum user output per share.
-        if (_minOutputPerShare.mulUp(withdrawalSharesRedeemed) > proceeds) {
+        if (proceeds < _minOutputPerShare.mulUp(withdrawalSharesRedeemed)) {
             revert IHyperdrive.OutputLimit();
         }
 
@@ -437,39 +486,52 @@ abstract contract HyperdriveLP is
     /// @dev Distribute as much of the excess idle as possible to the withdrawal
     ///      pool while holding the LP share price constant.
     /// @param _vaultSharePrice The current vault share price.
-    function _distributeExcessIdle(uint256 _vaultSharePrice) internal {
+    /// @return A failure flag indicating if the calculation succeeded.
+    function _distributeExcessIdleSafe(
+        uint256 _vaultSharePrice
+    ) internal returns (bool) {
         // If there are no withdrawal shares, then there is nothing to
         // distribute.
         uint256 withdrawalSharesTotalSupply = _totalSupply[
             AssetId._WITHDRAWAL_SHARE_ASSET_ID
         ] - _withdrawPool.readyToWithdraw;
         if (withdrawalSharesTotalSupply == 0) {
-            return;
+            return true;
         }
 
         // If there is no excess idle, then there is nothing to distribute.
         uint256 idle = _calculateIdleShareReserves(_vaultSharePrice);
         if (idle == 0) {
-            return;
+            return true;
+        }
+
+        // Get the distribute excess idle parameters. If this fails for some
+        // we return a failure flag so that the caller can handle the failure.
+        (
+            LPMath.DistributeExcessIdleParams memory params,
+            bool success
+        ) = _getDistributeExcessIdleParamsSafe(
+                idle,
+                withdrawalSharesTotalSupply,
+                _vaultSharePrice
+            );
+        if (!success) {
+            return false;
         }
 
         // Calculate the amount of withdrawal shares that should be redeemed
         // and their share proceeds.
         (uint256 withdrawalSharesRedeemed, uint256 shareProceeds) = LPMath
-            .calculateDistributeExcessIdle(
-                _getDistributeExcessIdleParams(
-                    idle,
-                    withdrawalSharesTotalSupply,
-                    _vaultSharePrice
-                )
-            );
+            .calculateDistributeExcessIdle(params);
 
         // Update the withdrawal pool's state.
         _withdrawPool.readyToWithdraw += withdrawalSharesRedeemed.toUint128();
         _withdrawPool.proceeds += shareProceeds.toUint128();
 
         // Remove the withdrawal pool proceeds from the reserves.
-        _updateLiquidity(-int256(shareProceeds));
+        _updateLiquidity(-shareProceeds.toInt256());
+
+        return true;
     }
 
     /// @dev Updates the pool's liquidity and holds the pool's spot price constant.

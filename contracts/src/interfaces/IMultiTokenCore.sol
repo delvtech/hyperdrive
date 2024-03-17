@@ -31,6 +31,11 @@ interface IMultiTokenCore {
 
     /// @notice Allows a user to set an approval for an individual asset with
     ///         specific amount.
+    /// @param tokenID The asset to approve the use of.
+    /// @param operator The address who will be able to use the tokens.
+    /// @param amount The max tokens the approved person can use, setting to
+    ///        uint256.max will cause the value to never decrement (saving gas
+    ///        on transfer).
     function setApproval(
         uint256 tokenID,
         address operator,

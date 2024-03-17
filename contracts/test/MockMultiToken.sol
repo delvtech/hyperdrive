@@ -42,7 +42,7 @@ contract MockMultiToken is HyperdriveMultiToken, MockHyperdriveBase {
         );
 
     /// @notice This contract's EIP712 domain separator.
-    bytes32 public immutable DOMAIN_SEPARATOR; // solhint-disable-line var-name-mixedcase
+    bytes32 public immutable domainSeparator; // solhint-disable-line var-name-mixedcase
 
     constructor(
         bytes32 _linkerCodeHash,
@@ -64,6 +64,7 @@ contract MockMultiToken is HyperdriveMultiToken, MockHyperdriveBase {
                 ),
                 governance: address(0),
                 feeCollector: address(0),
+                sweepCollector: address(0),
                 fees: IHyperdrive.Fees({
                     curve: 0,
                     flat: 0,
@@ -91,6 +92,7 @@ contract MockMultiToken is HyperdriveMultiToken, MockHyperdriveBase {
                     ),
                     governance: address(0),
                     feeCollector: address(0),
+                    sweepCollector: address(0),
                     fees: IHyperdrive.Fees({
                         curve: 0,
                         flat: 0,
@@ -106,7 +108,7 @@ contract MockMultiToken is HyperdriveMultiToken, MockHyperdriveBase {
         //       separator with the contract address. If this is moved to one of
         //       the targets, the domain separator will need to be computed
         //       differently.
-        DOMAIN_SEPARATOR = keccak256(
+        domainSeparator = keccak256(
             abi.encode(
                 keccak256(
                     "EIP712Domain(string version,uint256 chainId,address verifyingContract)"
@@ -189,7 +191,7 @@ contract MockMultiToken is HyperdriveMultiToken, MockHyperdriveBase {
             abi.encodeCall(
                 HyperdriveTarget0.permitForAll,
                 (
-                    DOMAIN_SEPARATOR,
+                    domainSeparator,
                     PERMIT_TYPEHASH,
                     owner,
                     spender,

@@ -18,6 +18,7 @@ contract BaseTest is Test {
     address minter;
     address deployer;
     address feeCollector;
+    address sweepCollector;
     address governance;
     address pauser;
 
@@ -44,6 +45,7 @@ contract BaseTest is Test {
         deployer = createUser("deployer");
         minter = createUser("minter");
         feeCollector = createUser("feeCollector");
+        sweepCollector = createUser("sweepCollector");
         governance = createUser("governance");
         pauser = createUser("pauser");
 

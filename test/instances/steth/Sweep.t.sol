@@ -8,6 +8,7 @@ import { StETHTarget2 } from "contracts/src/instances/steth/StETHTarget2.sol";
 import { StETHTarget3 } from "contracts/src/instances/steth/StETHTarget3.sol";
 import { StETHTarget4 } from "contracts/src/instances/steth/StETHTarget4.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { IHyperdriveEvents } from "contracts/src/interfaces/IHyperdriveEvents.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { IStETHHyperdrive } from "contracts/src/interfaces/IStETHHyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -19,7 +20,7 @@ import { MockLido } from "contracts/test/MockLido.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
-contract SweepTest is BaseTest {
+contract SweepTest is BaseTest, IHyperdriveEvents {
     ForwardingToken lidoForwarder;
     ERC20Mintable sweepable;
 
@@ -60,6 +61,7 @@ contract SweepTest is BaseTest {
             timeStretch: HyperdriveMath.calculateTimeStretch(0.01e18, 365 days),
             governance: alice,
             feeCollector: bob,
+            sweepCollector: celine,
             fees: IHyperdrive.Fees(0, 0, 0, 0)
         });
         vm.warp(3 * config.positionDuration);
@@ -105,7 +107,7 @@ contract SweepTest is BaseTest {
 
     function test_sweep_failure_invalid_sweeper() external {
         vm.stopPrank();
-        vm.startPrank(celine);
+        vm.startPrank(bob);
 
         // Trying to call sweep with an invalid sweeper (an address that isn't
         // the fee collector or a pauser) should fail.
@@ -115,28 +117,42 @@ contract SweepTest is BaseTest {
 
     function test_sweep_failure_direct_sweeps() external {
         vm.stopPrank();
-        vm.startPrank(bob);
+        vm.startPrank(celine);
 
         // Trying to sweep the stETH token should fail.
         address lido = address(hyperdrive.lido());
-        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        vm.expectRevert(IHyperdrive.SweepFailed.selector);
         hyperdrive.sweep(IERC20(lido));
     }
 
     function test_sweep_failure_indirect_sweeps() external {
         vm.stopPrank();
-        vm.startPrank(bob);
+        vm.startPrank(celine);
 
         // Trying to sweep the stETH via the forwarding token should fail.
         vm.expectRevert(IHyperdrive.SweepFailed.selector);
         hyperdrive.sweep(IERC20(address(lidoForwarder)));
     }
 
-    function test_sweep_success_feeCollector() external {
-        // The fee collector can sweep a sweepable token.
+    function test_sweep_success_sweepCollector() external {
+        // The sweep collector can sweep a sweepable token.
         vm.stopPrank();
-        vm.startPrank(bob);
+        vm.startPrank(celine);
+        uint256 sweepableBalance = sweepable.balanceOf(address(hyperdrive));
+        vm.expectEmit(true, true, true, true);
+        emit Sweep(
+            hyperdrive.getPoolConfig().sweepCollector,
+            address(sweepable)
+        );
         hyperdrive.sweep(IERC20(address(sweepable)));
+
+        // Ensure that the tokens were successfully swept to the sweep
+        // collector.
+        assertEq(sweepable.balanceOf(address(hyperdrive)), 0);
+        assertEq(
+            sweepable.balanceOf(hyperdrive.getPoolConfig().sweepCollector),
+            sweepableBalance
+        );
     }
 
     function test_sweep_success_pauser() external {
@@ -148,7 +164,42 @@ contract SweepTest is BaseTest {
         // A pauser can sweep a sweepable token.
         vm.stopPrank();
         vm.startPrank(celine);
+        uint256 sweepableBalance = sweepable.balanceOf(address(hyperdrive));
+        vm.expectEmit(true, true, true, true);
+        emit Sweep(
+            hyperdrive.getPoolConfig().sweepCollector,
+            address(sweepable)
+        );
         hyperdrive.sweep(IERC20(address(sweepable)));
+
+        // Ensure that the tokens were successfully swept to the sweep
+        // collector.
+        assertEq(sweepable.balanceOf(address(hyperdrive)), 0);
+        assertEq(
+            sweepable.balanceOf(hyperdrive.getPoolConfig().sweepCollector),
+            sweepableBalance
+        );
+    }
+
+    function test_sweep_success_governance() external {
+        // Governance can sweep a sweepable token.
+        vm.stopPrank();
+        vm.startPrank(hyperdrive.getPoolConfig().governance);
+        uint256 sweepableBalance = sweepable.balanceOf(address(hyperdrive));
+        vm.expectEmit(true, true, true, true);
+        emit Sweep(
+            hyperdrive.getPoolConfig().sweepCollector,
+            address(sweepable)
+        );
+        hyperdrive.sweep(IERC20(address(sweepable)));
+
+        // Ensure that the tokens were successfully swept to the sweep
+        // collector.
+        assertEq(sweepable.balanceOf(address(hyperdrive)), 0);
+        assertEq(
+            sweepable.balanceOf(hyperdrive.getPoolConfig().sweepCollector),
+            sweepableBalance
+        );
     }
 }
 

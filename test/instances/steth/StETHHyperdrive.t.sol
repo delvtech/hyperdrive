@@ -56,7 +56,8 @@ contract StETHHyperdriveTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: celine,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -114,6 +115,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
                 timeStretch: 0,
                 governance: factory.hyperdriveGovernance(),
                 feeCollector: factory.feeCollector(),
+                sweepCollector: factory.sweepCollector(),
                 fees: IHyperdrive.Fees({
                     curve: 0,
                     flat: 0,
@@ -180,7 +182,11 @@ contract StETHHyperdriveTest is HyperdriveTest {
             contribution,
             FIXED_RATE,
             FIXED_RATE,
-            new bytes(0),
+            IHyperdrive.Options({
+                asBase: true,
+                destination: alice,
+                extraData: new bytes(0)
+            }),
             bytes32(uint256(0xdeadbabe))
         );
 
@@ -212,7 +218,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
 
     /// Deploy and Initialize ///
 
-    function test__steth__deployAndInitialize() external {
+    function test__steth__deployAndInitialize__asBase() external {
         // Deploy and Initialize the stETH hyperdrive instance. Excess ether is
         // sent, and should be returned to the sender.
         vm.stopPrank();
@@ -223,6 +229,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
                 baseToken: IERC20(ETH),
                 governance: factory.hyperdriveGovernance(),
                 feeCollector: factory.feeCollector(),
+                sweepCollector: factory.sweepCollector(),
                 linkerFactory: factory.linkerFactory(),
                 linkerCodeHash: factory.linkerCodeHash(),
                 minimumShareReserves: 1e15,
@@ -296,7 +303,11 @@ contract StETHHyperdriveTest is HyperdriveTest {
             contribution,
             FIXED_RATE,
             FIXED_RATE,
-            new bytes(0),
+            IHyperdrive.Options({
+                asBase: true,
+                destination: bob,
+                extraData: new bytes(0)
+            }),
             bytes32(uint256(0xdeadfade))
         );
         assertEq(address(bob).balance, bobBalanceBefore - contribution);
@@ -337,6 +348,146 @@ contract StETHHyperdriveTest is HyperdriveTest {
             bob,
             contribution,
             FIXED_RATE,
+            true,
+            config.minimumShareReserves,
+            new bytes(0),
+            // NOTE: Tolerance since stETH uses mulDivDown for share calculations.
+            1e5
+        );
+    }
+
+    function test__steth__deployAndInitialize__asShares() external {
+        // Deploy and Initialize the stETH hyperdrive instance. Excess ether is
+        // sent, and should be returned to the sender.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 contributionShares = 5_000e18;
+        uint256 contribution = LIDO.getPooledEthByShares(contributionShares);
+        LIDO.submit{ value: contribution }(address(0));
+        LIDO.approve(deployerCoordinator, contribution);
+        IHyperdrive.PoolDeployConfig memory config = IHyperdrive
+            .PoolDeployConfig({
+                baseToken: IERC20(ETH),
+                governance: factory.hyperdriveGovernance(),
+                feeCollector: factory.feeCollector(),
+                sweepCollector: factory.sweepCollector(),
+                linkerFactory: factory.linkerFactory(),
+                linkerCodeHash: factory.linkerCodeHash(),
+                minimumShareReserves: 1e15,
+                minimumTransactionAmount: 1e15,
+                positionDuration: POSITION_DURATION,
+                checkpointDuration: CHECKPOINT_DURATION,
+                timeStretch: 0,
+                fees: IHyperdrive.Fees({
+                    curve: 0,
+                    flat: 0,
+                    governanceLP: 0,
+                    governanceZombie: 0
+                })
+            });
+        factory.deployTarget(
+            bytes32(uint256(0xbeefbabe)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            0,
+            bytes32(uint256(0xdeadfade))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeefbabe)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            1,
+            bytes32(uint256(0xdeadfade))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeefbabe)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            2,
+            bytes32(uint256(0xdeadfade))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeefbabe)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            3,
+            bytes32(uint256(0xdeadfade))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeefbabe)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            4,
+            bytes32(uint256(0xdeadfade))
+        );
+        hyperdrive = factory.deployAndInitialize(
+            bytes32(uint256(0xbeefbabe)),
+            address(deployerCoordinator),
+            config,
+            new bytes(0),
+            contributionShares,
+            FIXED_RATE,
+            FIXED_RATE,
+            IHyperdrive.Options({
+                asBase: false,
+                destination: bob,
+                extraData: new bytes(0)
+            }),
+            bytes32(uint256(0xdeadfade))
+        );
+
+        // Ensure that the decimals are set correctly.
+        assertEq(hyperdrive.decimals(), 18);
+
+        // Ensure that Bob received the correct amount of LP tokens. He should
+        // receive LP shares totaling the amount of shares that he contributed
+        // minus the shares set aside for the minimum share reserves and the
+        // zero address's initial LP contribution.
+        assertApproxEqAbs(
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, bob),
+            contribution.divDown(
+                hyperdrive.getPoolConfig().initialVaultSharePrice
+            ) - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
+            1e5
+        );
+
+        // Ensure that the share reserves and LP total supply are equal and correct.
+        assertApproxEqAbs(
+            hyperdrive.getPoolInfo().shareReserves,
+            contribution.mulDivDown(
+                LIDO.getTotalShares(),
+                LIDO.getTotalPooledEther()
+            ),
+            1
+        );
+        assertEq(
+            hyperdrive.getPoolInfo().lpTotalSupply,
+            hyperdrive.getPoolInfo().shareReserves - config.minimumShareReserves
+        );
+
+        // Verify that the correct events were emitted.
+        verifyFactoryEvents(
+            deployerCoordinator,
+            hyperdrive,
+            bob,
+            contributionShares,
+            FIXED_RATE,
+            false,
             config.minimumShareReserves,
             new bytes(0),
             // NOTE: Tolerance since stETH uses mulDivDown for share calculations.
@@ -633,7 +784,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
         vm.startPrank(bob);
 
         // Ensure that Bob receives a refund on the excess ETH that he sent
-        // when opening a long with "asBase" set to true.
+        // when opening a short with "asBase" set to true.
         uint256 ethBalanceBefore = address(bob).balance;
         (, uint256 basePaid) = hyperdrive.openShort{ value: 2e18 }(
             1e18,
@@ -647,7 +798,7 @@ contract StETHHyperdriveTest is HyperdriveTest {
         );
         assertEq(address(bob).balance, ethBalanceBefore - basePaid);
 
-        // Ensure that Bob receives a  refund when he opens a long with "asBase"
+        // Ensure that Bob receives a refund when he opens a short with "asBase"
         // set to false and sends ether to the contract.
         ethBalanceBefore = address(bob).balance;
         hyperdrive.openShort{ value: 0.5e18 }(
@@ -677,8 +828,11 @@ contract StETHHyperdriveTest is HyperdriveTest {
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
         vm.deal(bob, balanceBefore - basePaid);
 
+        // NOTE: The variable rate must be greater than 0 since the unsupported
+        // check is only triggered if the shares amount is non-zero.
+        //
         // The term passes and interest accrues.
-        variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        variableRate = variableRate.normalizeToRange(0.01e18, 2.5e18);
         advanceTime(POSITION_DURATION, variableRate);
 
         // Bob attempts to close his short with ETH as the target asset. This

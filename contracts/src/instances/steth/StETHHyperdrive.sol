@@ -5,7 +5,6 @@ import { Hyperdrive } from "../../external/Hyperdrive.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { ILido } from "../../interfaces/ILido.sol";
-import { IStETHHyperdriveCore } from "../../interfaces/IStETHHyperdriveCore.sol";
 import { ETH } from "../../libraries/Constants.sol";
 import { StETHBase } from "./StETHBase.sol";
 
@@ -55,7 +54,7 @@ import { StETHBase } from "./StETHBase.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract StETHHyperdrive is IStETHHyperdriveCore, Hyperdrive, StETHBase {
+contract StETHHyperdrive is Hyperdrive, StETHBase {
     /// @notice Instantiates Hyperdrive with StETH as the yield source.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _target0 The target0 address.
@@ -80,10 +79,5 @@ contract StETHHyperdrive is IStETHHyperdriveCore, Hyperdrive, StETHBase {
         if (address(_config.baseToken) != ETH) {
             revert IHyperdrive.InvalidBaseToken();
         }
-    }
-
-    /// @inheritdoc IStETHHyperdriveCore
-    function sweep(IERC20) external {
-        _delegate(target0);
     }
 }
