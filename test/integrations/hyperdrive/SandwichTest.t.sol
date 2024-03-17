@@ -11,11 +11,9 @@ contract SandwichTest is HyperdriveTest {
     using HyperdriveUtils for *;
     using Lib for *;
 
-    function test_sandwich_trades(uint8 _apr, uint64 _timeDelta) external {
-        uint256 apr = uint256(_apr) * 0.01e18;
-        uint256 timeDelta = uint256(_timeDelta);
-        vm.assume(apr >= 0.01e18 && apr <= 0.2e18);
-        vm.assume(timeDelta <= ONE && timeDelta >= 0);
+    function test_sandwich_trades(uint256 apr, uint256 timeDelta) external {
+        apr = apr.normalizeToRange(0.01e18, 0.2e18);
+        timeDelta = timeDelta.normalizeToRange(0, ONE);
 
         // Deploy the pool and initialize the market
         {
@@ -61,7 +59,7 @@ contract SandwichTest is HyperdriveTest {
 
     function test_sandwich_long_trade(uint256 apr, uint256 tradeSize) external {
         // limit the fuzz testing to variableRate's less than or equal to 50%
-        apr = apr.normalizeToRange(.01e18, .5e18);
+        apr = apr.normalizeToRange(0.01e18, 0.5e18);
 
         // ensure a feasible trade size
         tradeSize = tradeSize.normalizeToRange(1_000e18, 50_000_000e18 - 1e18);
@@ -134,10 +132,59 @@ contract SandwichTest is HyperdriveTest {
         uint256 tradeAmount,
         uint256 sandwichAmount
     ) external {
+        _test_sandwich_short_trade(
+            fixedRate,
+            contribution,
+            tradeAmount,
+            sandwichAmount
+        );
+    }
+
+    function test_sandwich_short_trade_edge_cases() external {
+        // This test caused the sandwich test to fail because the sandwiching
+        // short made a small profit when the curve fee was 0. This was fixed
+        // by increasing the curve fee to 0.0001e18.
+        {
+            uint256 fixedRate = 998962223204933958;
+            uint256 contribution = 2042272226342949092412748848311668432195895990698578471431773993;
+            uint256 tradeAmount = 1000475753853052421;
+            uint256 sandwichAmount = 8174;
+            _test_sandwich_short_trade(
+                fixedRate,
+                contribution,
+                tradeAmount,
+                sandwichAmount
+            );
+        }
+
+        // This test caused the sandwich test to fail because the sandwiching
+        // short made a small profit when the curve fee was 0. This was fixed
+        // by increasing the curve fee to 0.0001e18.
+        {
+            uint256 fixedRate = 998000000000000060407;
+            uint256 contribution = 759073715388587821013812734928096154771786292308418320735217;
+            uint256 tradeAmount = 87494182301843377180327349;
+            uint256 sandwichAmount = 22746;
+            _test_sandwich_short_trade(
+                fixedRate,
+                contribution,
+                tradeAmount,
+                sandwichAmount
+            );
+        }
+    }
+
+    function _test_sandwich_short_trade(
+        uint256 fixedRate,
+        uint256 contribution,
+        uint256 tradeAmount,
+        uint256 sandwichAmount
+    ) internal {
         IHyperdrive.PoolConfig memory config = testConfig(
             0.05e18,
             POSITION_DURATION
         );
+        config.fees.curve = 0.0001e18;
         deploy(alice, config);
         fixedRate = fixedRate.normalizeToRange(0.001e18, 1e18);
         contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
@@ -181,10 +228,8 @@ contract SandwichTest is HyperdriveTest {
         assertGe(withdrawalProceeds, contribution);
     }
 
-    // TODO: Use the normalize function to improve this test.
-    function test_sandwich_lp(uint8 _apr) external {
-        uint256 apr = uint256(_apr) * 0.01e18;
-        vm.assume(apr >= 0.01e18 && apr <= 0.2e18);
+    function test_sandwich_lp(uint256 apr) external {
+        apr = apr.normalizeToRange(0.01e18, 0.2e18);
 
         // Deploy the pool with fees.
         {
