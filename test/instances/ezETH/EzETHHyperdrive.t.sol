@@ -23,6 +23,7 @@ import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
+import "forge-std/console.sol";
 
 contract EzETHHyperdriveTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -38,6 +39,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
     // The Renzo Oracle contract.
     IRenzoOracle internal constant RENZO_ORACLE =
         IRenzoOracle(0x5a12796f7e7EBbbc8a402667d266d2e65A814042);
+
     // The ezETH token contract.
     IERC20 internal constant EZETH =
         IERC20(0xbf5495Efe5DB9ce00f80364C8B423567e58d2110);
@@ -61,6 +63,16 @@ contract EzETHHyperdriveTest is HyperdriveTest {
 
     function setUp() public override __mainnet_fork(STARTING_BLOCK) {
         super.setUp();
+
+        // Fund the test accounts with ezETH and ETH.
+        address[] memory accounts = new address[](3);
+        accounts[0] = alice;
+        accounts[1] = bob;
+        accounts[2] = celine;
+        fundAccounts(address(hyperdrive), IERC20(EZETH), EZETH_WHALE, accounts);
+        vm.deal(alice, 1_000_000e18);
+        vm.deal(bob, 1_000_000e18);
+        vm.deal(celine, 1_000_000e18);
 
         // Deploy the hyperdrive factory.
         vm.startPrank(deployer);
@@ -115,7 +127,6 @@ contract EzETHHyperdriveTest is HyperdriveTest {
                 RESTAKE_MANAGER
             )
         );
-
         factory.addDeployerCoordinator(address(deployerCoordinator));
 
         // Alice deploys the hyperdrive instance.
@@ -139,7 +150,6 @@ contract EzETHHyperdriveTest is HyperdriveTest {
                     governanceZombie: 0
                 })
             });
-        uint256 contribution = 10_000e18;
         factory.deployTarget(
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
@@ -192,8 +202,10 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         );
 
         // Depositing with ETH is not allow for this pool so we need to get
-        // some ezETH for the deployer first.
+        // some ezETH for alice first.
+        uint256 contribution = 10_000e18;
         RESTAKE_MANAGER.depositETH{ value: 2 * contribution }();
+        EZETH.approve(deployerCoordinator, contribution);
 
         hyperdrive = factory.deployAndInitialize(
             bytes32(uint256(0xdeadbeef)),
@@ -211,27 +223,15 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             bytes32(uint256(0xdeadbabe))
         );
 
-        // Ensure that Bob received the correct amount of LP tokens. She should
+        // Ensure that Alice received the correct amount of LP tokens. She should
         // receive LP shares totaling the amount of shares that she contributed
         // minus the shares set aside for the minimum share reserves and the
         // zero address's initial LP contribution.
         assertApproxEqAbs(
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
-            contribution.divDown(
-                hyperdrive.getPoolConfig().initialVaultSharePrice
-            ) - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
+            contribution - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
             1e6
         );
-
-        // Fund the test accounts with ezETH and ETH.
-        address[] memory accounts = new address[](3);
-        accounts[0] = alice;
-        accounts[1] = bob;
-        accounts[2] = celine;
-        fundAccounts(address(hyperdrive), IERC20(EZETH), EZETH_WHALE, accounts);
-        vm.deal(alice, 20_000e18);
-        vm.deal(bob, 20_000e18);
-        vm.deal(celine, 20_000e18);
 
         // Start recording event logs.
         vm.recordLogs();
@@ -239,12 +239,16 @@ contract EzETHHyperdriveTest is HyperdriveTest {
 
     /// Deploy and Initialize ///
 
-    function test__ezeth__deployAndInitialize() external {
-        // Deploy and Initialize the ezETH hyperdrive instance. Excess ether is
-        // sent, and should be returned to the sender.
+    function test__eth__deployAndInitialize() external {
+        // Deploy and Initialize the ezETH hyperdrive instance.
         vm.stopPrank();
         vm.startPrank(bob);
-        uint256 bobBalanceBefore = address(bob).balance;
+
+        // Make sure bob has enough funds.
+        uint256 contribution = 5_000e18;
+        RESTAKE_MANAGER.depositETH{ value: 2 * contribution }();
+        EZETH.approve(deployerCoordinator, contribution);
+
         IHyperdrive.PoolDeployConfig memory config = IHyperdrive
             .PoolDeployConfig({
                 baseToken: IERC20(ETH),
@@ -265,7 +269,6 @@ contract EzETHHyperdriveTest is HyperdriveTest {
                     governanceZombie: 0
                 })
             });
-        uint256 contribution = 5_000e18;
         factory.deployTarget(
             bytes32(uint256(0xbeefbabe)),
             deployerCoordinator,
@@ -317,13 +320,6 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             bytes32(uint256(0xdeadfade))
         );
 
-        // Grab share information before deploying the pool.
-        (
-            ,
-            uint256 totalPooledEtherBefore,
-            uint256 totalSharesBefore
-        ) = getSharePrice();
-
         // Ensure that using base to deploy and initialize is not allowed.
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         hyperdrive = factory.deployAndInitialize{ value: contribution + 1e18 }(
@@ -341,9 +337,92 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             }),
             bytes32(uint256(0xdeadfade))
         );
+    }
 
-        // Get some ezETH for the deployer.
+    function test__ezeth__deployAndInitialize() external {
+        // Deploy and Initialize the ezETH hyperdrive instance.
+        vm.stopPrank();
+        vm.startPrank(bob);
+
+        // Make sure bob has enough funds.
+        uint256 contribution = 5_000e18;
         RESTAKE_MANAGER.depositETH{ value: 2 * contribution }();
+        EZETH.approve(deployerCoordinator, contribution);
+
+        // Get balance information.
+        uint256 bobBalanceBefore = address(bob).balance;
+        uint256 bobEzETHBalanceBefore = EZETH.balanceOf(address(bob));
+
+        IHyperdrive.PoolDeployConfig memory config = IHyperdrive
+            .PoolDeployConfig({
+                baseToken: IERC20(ETH),
+                governance: factory.hyperdriveGovernance(),
+                feeCollector: factory.feeCollector(),
+                sweepCollector: factory.sweepCollector(),
+                linkerFactory: factory.linkerFactory(),
+                linkerCodeHash: factory.linkerCodeHash(),
+                minimumShareReserves: 1e15,
+                minimumTransactionAmount: 1e15,
+                positionDuration: POSITION_DURATION_2_WEEKS,
+                checkpointDuration: CHECKPOINT_DURATION,
+                timeStretch: 0,
+                fees: IHyperdrive.Fees({
+                    curve: 0,
+                    flat: 0,
+                    governanceLP: 0,
+                    governanceZombie: 0
+                })
+            });
+        factory.deployTarget(
+            bytes32(uint256(0xbeefbabe)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            0,
+            bytes32(uint256(0xdeadfade))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeefbabe)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            1,
+            bytes32(uint256(0xdeadfade))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeefbabe)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            2,
+            bytes32(uint256(0xdeadfade))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeefbabe)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            3,
+            bytes32(uint256(0xdeadfade))
+        );
+        factory.deployTarget(
+            bytes32(uint256(0xbeefbabe)),
+            deployerCoordinator,
+            config,
+            new bytes(0),
+            FIXED_RATE,
+            FIXED_RATE,
+            4,
+            bytes32(uint256(0xdeadfade))
+        );
 
         // Deploy the pool.
         hyperdrive = factory.deployAndInitialize{ value: contribution + 1e18 }(
@@ -361,7 +440,12 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             }),
             bytes32(uint256(0xdeadfade))
         );
-        assertEq(address(bob).balance, bobBalanceBefore - contribution);
+
+        assertEq(address(bob).balance, bobBalanceBefore);
+        assertEq(
+            EZETH.balanceOf(address(bob)),
+            bobEzETHBalanceBefore - contribution
+        );
 
         // Ensure that the decimals are set correctly.
         assertEq(hyperdrive.decimals(), 18);
@@ -372,23 +456,12 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         // zero address's initial LP contribution.
         assertApproxEqAbs(
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, bob),
-            contribution.divDown(
-                hyperdrive.getPoolConfig().initialVaultSharePrice
-            ) - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
+            contribution - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
             1e5
         );
 
         // Ensure that the share reserves and LP total supply are equal and correct.
-        uint256 expectedShares = getExpectedShares(
-            contribution,
-            totalPooledEtherBefore,
-            totalSharesBefore
-        );
-        assertApproxEqAbs(
-            hyperdrive.getPoolInfo().shareReserves,
-            expectedShares,
-            1
-        );
+        assertEq(hyperdrive.getPoolInfo().shareReserves, contribution);
         assertEq(
             hyperdrive.getPoolInfo().lpTotalSupply,
             hyperdrive.getPoolInfo().shareReserves - config.minimumShareReserves
@@ -401,7 +474,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             bob,
             contribution,
             FIXED_RATE,
-            true,
+            false,
             config.minimumShareReserves,
             new bytes(0),
             // NOTE: Tolerance since ezETH uses mulDivDown for share calculations.
@@ -437,28 +510,34 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
         assertEq(vaultSharePrice, sharePrice);
 
+        vm.startPrank(bob);
+
         // Ensure that the share price accurately predicts the amount of shares
         // that will be minted for depositing a given amount of ETH.
+        uint256 maxLong = HyperdriveUtils.calculateMaxLong(hyperdrive);
+        uint256 maxEzEth = EZETH.balanceOf(address(bob));
+        uint256 maxRange = maxLong > maxEzEth ? maxEzEth : maxLong;
         basePaid = basePaid.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
+            maxRange
         );
-        uint256 hyperdriveSharesBefore = EZETH.balanceOf(address(hyperdrive));
-        openLong(bob, basePaid);
+        uint256 sharesPaid = getAndApproveShares(basePaid);
 
-        // NOTE: using the vaultSharePrice has somewhat higher tolerance.  If
-        // calculate with expectedShares(), we'll match exactly, but we're
-        // testing the vaultSharePrice here.
-        assertApproxEqAbs(
+        // Collect balance information.
+        uint256 hyperdriveSharesBefore = EZETH.balanceOf(address(hyperdrive));
+
+        // Open the position.
+        openLong(bob, sharesPaid, false);
+
+        assertEq(
             EZETH.balanceOf(address(hyperdrive)),
-            hyperdriveSharesBefore + basePaid.divDown(vaultSharePrice),
-            1e6
+            hyperdriveSharesBefore + sharesPaid
         );
     }
 
     /// Long ///
 
-    function test_open_long_with_ETH(uint256 basePaid) external {
+    function test_open_long_with_eth(uint256 basePaid) external {
         // Bob opens a long by depositing ETH.
         basePaid = basePaid.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
@@ -474,41 +553,10 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         openLong(bob, basePaid);
     }
 
-    function test_open_long_refunds() external {
+    function test_open_long_with_ezeth(uint256 basePaid) external {
+        vm.stopPrank();
         vm.startPrank(bob);
 
-        // Ensure that Bob receives a refund on the excess ETH that he sent
-        // when opening a long with "asBase" set to true.
-        uint256 ethBalanceBefore = address(bob).balance;
-        hyperdrive.openLong{ value: 2e18 }(
-            1e18,
-            0,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-        assertEq(address(bob).balance, ethBalanceBefore - 1e18);
-
-        // Ensure that Bob receives a refund when he opens a long with "asBase"
-        // set to false and sends ether to the contract.
-        ethBalanceBefore = address(bob).balance;
-        hyperdrive.openLong{ value: 0.5e18 }(
-            1e18,
-            0,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: false,
-                extraData: new bytes(0)
-            })
-        );
-        assertEq(address(bob).balance, ethBalanceBefore);
-    }
-
-    function test_open_long_with_ezeth(uint256 basePaid) external {
         // Get some balance information before the deposit.
         (
             ,
@@ -520,16 +568,19 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             address(hyperdrive)
         );
 
-        // Bob opens a long by depositing ezETH.
-        uint256 bobsBalance = EZETH.balanceOf(address(bob));
+        // Calculate the maximum amount of basePaid we can test.
+        uint256 maxLong = HyperdriveUtils.calculateMaxLong(hyperdrive);
+        uint256 maxEzEth = EZETH.balanceOf(address(bob));
+        uint256 maxRange = maxLong > maxEzEth ? maxEzEth : maxLong;
         basePaid = basePaid.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            // bob's balance is well below the max long, so we clip to that.
-            bobsBalance
+            maxRange
         );
 
-        (, uint256 totalPooledEther, uint256 totalShares) = getSharePrice();
-        uint256 sharesPaid = basePaid.mulDivDown(totalShares, totalPooledEther);
+        // Convert to shares and approve hyperdrive.
+        uint256 sharesPaid = getAndApproveShares(basePaid);
+
+        // Open the position.
         openLong(bob, sharesPaid, false);
 
         // Ensure that Renzo's aggregates and the token balances were updated
@@ -546,17 +597,30 @@ contract EzETHHyperdriveTest is HyperdriveTest {
     }
 
     function test_close_long_with_eth(uint256 basePaid) external {
-        // Bob opens a long.
+        vm.stopPrank();
+        vm.startPrank(bob);
+
+        // Calculate the maximum amount of basePaid we can test.
+        uint256 maxLong = HyperdriveUtils.calculateMaxLong(hyperdrive);
+        uint256 maxEzEth = EZETH.balanceOf(address(bob));
+        uint256 maxRange = maxLong > maxEzEth ? maxEzEth : maxLong;
         basePaid = basePaid.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
+            maxRange
         );
-        (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
+
+        // Convert to shares and approve hyperdrive.
+        uint256 sharesPaid = getAndApproveShares(basePaid);
+
+        // Bob opens a long.
+        (uint256 maturityTime, uint256 longAmount) = openLong(
+            bob,
+            sharesPaid,
+            false
+        );
 
         // Bob attempts to close his long with ETH as the target asset. This
         // fails since ETH isn't supported as a withdrawal asset.
-        vm.stopPrank();
-        vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         hyperdrive.closeLong(
             maturityTime,
@@ -577,13 +641,26 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         // Accrue interest for a term to ensure that the share price is greater
         // than one.
         advanceTime(POSITION_DURATION_2_WEEKS, 0.05e18);
+        vm.startPrank(bob);
 
-        // Bob opens a long.
+        // Calculate the maximum amount of basePaid we can test.
+        uint256 maxLong = HyperdriveUtils.calculateMaxLong(hyperdrive);
+        uint256 maxEzEth = EZETH.balanceOf(address(bob));
+        uint256 maxRange = maxLong > maxEzEth ? maxEzEth : maxLong;
         basePaid = basePaid.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
+            maxRange
         );
-        (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
+
+        // Convert to shares and approve hyperdrive.
+        uint256 sharesPaid = getAndApproveShares(basePaid);
+
+        // Bob opens a long.
+        (uint256 maturityTime, uint256 longAmount) = openLong(
+            bob,
+            sharesPaid,
+            false
+        );
 
         // The term passes and some interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
@@ -607,7 +684,6 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             uint256 totalPooledEtherAfter,
             uint256 totalSharesAfter
         ) = getSharePrice();
-
         uint256 baseProceeds = shareProceeds.mulDivDown(
             totalPooledEtherAfter,
             totalSharesAfter
@@ -632,7 +708,10 @@ contract EzETHHyperdriveTest is HyperdriveTest {
 
     // /// Short ///
 
-    function test_open_short_with_ETH(uint256 shortAmount) external {
+    function test_open_short_with_eth(uint256 shortAmount) external {
+        vm.stopPrank();
+        vm.startPrank(bob);
+
         // Bob opens a short by depositing ETH.
         shortAmount = shortAmount.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
@@ -644,12 +723,14 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         // precision loss when minting ezeth that warrants some investigation
         // before we can turn this on.  Until then, we can zap ezeth into the
         // pool.
-        vm.deal(bob, shortAmount);
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-        openShort(bob, shortAmount);
+        openShort(bob, shortAmount, false);
     }
 
     function test_open_short_with_ezeth(uint256 shortAmount) external {
+        vm.stopPrank();
+        vm.startPrank(bob);
+
         // Get some balance information before the deposit.
         (
             ,
@@ -661,12 +742,17 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             address(hyperdrive)
         );
 
-        // Bob opens a short by depositing ezETH.
+        // Calculate the maximum amount we can short.
         shortAmount = shortAmount.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
+
+        // Bob opens a short by depositing ezETH.
+        EZETH.approve(address(hyperdrive), shortAmount);
         (, uint256 sharesPaid) = openShort(bob, shortAmount, false);
+
+        // Get the base Bob paid for the short.
         (, uint256 totalPooledEther, uint256 totalShares) = getSharePrice();
         uint256 basePaid = sharesPaid.mulDivDown(totalPooledEther, totalShares);
 
@@ -698,10 +784,13 @@ contract EzETHHyperdriveTest is HyperdriveTest {
     function test_open_short_refunds() external {
         vm.startPrank(bob);
 
-        // Ensure that Bob receives a refund on the excess ETH that he sent
-        // when opening a long with "asBase" set to true.
+        // Collect some balance information.
         uint256 ethBalanceBefore = address(bob).balance;
-        (, uint256 basePaid) = hyperdrive.openShort{ value: 2e18 }(
+
+        // Ensure that the refund fails when Bob sends excess ETH
+        // when opening a short with "asBase" set to true.
+        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        hyperdrive.openShort{ value: 2e18 }(
             1e18,
             1e18,
             0,
@@ -711,12 +800,12 @@ contract EzETHHyperdriveTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
-        assertEq(address(bob).balance, ethBalanceBefore - basePaid);
 
-        // Ensure that Bob receives a  refund when he opens a long with "asBase"
+        // Ensure that the refund happens on a short with "asBase"
         // set to false and sends ether to the contract.
         ethBalanceBefore = address(bob).balance;
-        hyperdrive.openShort{ value: 0.5e18 }(
+        EZETH.approve(address(hyperdrive), 1e18);
+        hyperdrive.openShort{ value: 1e18 }(
             1e18,
             1e18,
             0,
@@ -733,15 +822,23 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         uint256 shortAmount,
         int256 variableRate
     ) external {
-        // Bob opens a short.
+        // Accrue interest for a term to ensure that the share price is greater
+        // than one.
+        advanceTime(POSITION_DURATION, 0.05e18);
+
+        // Calculate the maximum amount we can short.
         shortAmount = shortAmount.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
-        uint256 balanceBefore = bob.balance;
-        vm.deal(bob, shortAmount);
-        (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
-        vm.deal(bob, balanceBefore - basePaid);
+
+        // Approve Hyperdrive to use bob's ezEth.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        EZETH.approve(address(hyperdrive), shortAmount);
+
+        // Bob opens a short.
+        (uint256 maturityTime, ) = openShort(bob, shortAmount, false);
 
         // NOTE: The variable rate must be greater than 0 since the unsupported
         // check is only triggered if the shares amount is non-zero.
@@ -775,15 +872,19 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         // than one.
         advanceTime(POSITION_DURATION_2_WEEKS, 0.05e18);
 
-        // Bob opens a short.
+        // Calculate the maximum amount we can short.
         shortAmount = shortAmount.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
-        uint256 balanceBefore = bob.balance;
-        vm.deal(bob, shortAmount);
-        (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
-        vm.deal(bob, balanceBefore - basePaid);
+
+        // Approve Hyperdrive to use bob's ezEth.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        EZETH.approve(address(hyperdrive), shortAmount);
+
+        // Bob opens a short.
+        (uint256 maturityTime, ) = openShort(bob, shortAmount, false);
 
         // The term passes and interest accrues.
         uint256 startingVaultSharePrice = hyperdrive
@@ -839,9 +940,20 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         // Get some balance information before the deposit.
         EZETH.balanceOf(address(hyperdrive));
 
-        // Bob opens a long by depositing ETH.
-        uint256 basePaid = HyperdriveUtils.calculateMaxLong(hyperdrive);
-        (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
+        vm.startPrank(bob);
+
+        // Figure out the max shares
+        uint256 maxLong = HyperdriveUtils.calculateMaxLong(hyperdrive);
+        uint256 maxEzEth = EZETH.balanceOf(address(bob));
+        uint256 basePaid = maxLong > maxEzEth ? maxEzEth : maxLong;
+        uint256 sharesPaid = getAndApproveShares(basePaid);
+
+        // Bob opens a long by depositing ezETH.
+        (uint256 maturityTime, uint256 longAmount) = openLong(
+            bob,
+            sharesPaid,
+            false
+        );
 
         // Get some balance information before the withdrawal.
         (
@@ -1079,5 +1191,16 @@ contract EzETHHyperdriveTest is HyperdriveTest {
                 basePaid,
                 totalSharesBefore
             );
+    }
+
+    function getAndApproveShares(
+        uint256 basePaid
+    ) internal returns (uint256 sharesPaid) {
+        // Get the share amount.
+        (, uint256 totalPooledEther, uint256 totalShares) = getSharePrice();
+        sharesPaid = basePaid.mulDivDown(totalShares, totalPooledEther);
+
+        // Approve hyperdrive to use the shares.
+        EZETH.approve(address(hyperdrive), sharesPaid);
     }
 }
