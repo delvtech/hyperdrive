@@ -23,7 +23,6 @@ import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
-import "forge-std/console.sol";
 
 contract EzETHHyperdriveTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -724,7 +723,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         // before we can turn this on.  Until then, we can zap ezeth into the
         // pool.
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-        openShort(bob, shortAmount, false);
+        openShort(bob, shortAmount);
     }
 
     function test_open_short_with_ezeth(uint256 shortAmount) external {
