@@ -170,9 +170,16 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             revert IHyperdrive.MinimumTransactionAmount();
         }
 
-        // Perform a checkpoint.
+        // If the short hasn't matured, we checkpoint the latest checkpoint.
+        // Otherwise, we perform a checkpoint at the time the short matured.
+        // This ensures the short and all of the other positions in the
+        // checkpoint are closed.
         uint256 vaultSharePrice = _pricePerVaultShare();
-        _applyCheckpoint(_maturityTime, vaultSharePrice);
+        if (block.timestamp < _maturityTime) {
+            _applyCheckpoint(_latestCheckpoint(), vaultSharePrice);
+        } else {
+            _applyCheckpoint(_maturityTime, vaultSharePrice);
+        }
 
         // Burn the shorts that are being closed.
         _burn(

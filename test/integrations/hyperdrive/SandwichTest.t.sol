@@ -11,11 +11,9 @@ contract SandwichTest is HyperdriveTest {
     using HyperdriveUtils for *;
     using Lib for *;
 
-    function test_sandwich_trades(uint8 _apr, uint64 _timeDelta) external {
-        uint256 apr = uint256(_apr) * 0.01e18;
-        uint256 timeDelta = uint256(_timeDelta);
-        vm.assume(apr >= 0.01e18 && apr <= 0.2e18);
-        vm.assume(timeDelta <= ONE && timeDelta >= 0);
+    function test_sandwich_trades(uint256 apr, uint256 timeDelta) external {
+        apr = apr.normalizeToRange(0.01e18, 0.2e18);
+        timeDelta = timeDelta.normalizeToRange(0, ONE);
 
         // Deploy the pool and initialize the market
         {
@@ -230,10 +228,8 @@ contract SandwichTest is HyperdriveTest {
         assertGe(withdrawalProceeds, contribution);
     }
 
-    // TODO: Use the normalize function to improve this test.
-    function test_sandwich_lp(uint8 _apr) external {
-        uint256 apr = uint256(_apr) * 0.01e18;
-        vm.assume(apr >= 0.01e18 && apr <= 0.2e18);
+    function test_sandwich_lp(uint256 apr) external {
+        apr = apr.normalizeToRange(0.01e18, 0.2e18);
 
         // Deploy the pool with fees.
         {
