@@ -200,7 +200,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             bytes32(uint256(0xdeadbabe))
         );
 
-        // Depositing with ETH is not allow for this pool so we need to get
+        // Depositing with ETH is not allowed for this pool so we need to get
         // some ezETH for alice first.
         uint256 contribution = 10_000e18;
         RESTAKE_MANAGER.depositETH{ value: 2 * contribution }();
@@ -238,7 +238,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
 
     /// Deploy and Initialize ///
 
-    function test__eth__deployAndInitialize() external {
+    function test__eth_deployAndInitialize() external {
         // Deploy and Initialize the ezETH hyperdrive instance.
         vm.stopPrank();
         vm.startPrank(bob);
@@ -338,7 +338,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         );
     }
 
-    function test__ezeth__deployAndInitialize() external {
+    function test__ezeth_deployAndInitialize() external {
         // Deploy and Initialize the ezETH hyperdrive instance.
         vm.stopPrank();
         vm.startPrank(bob);
@@ -440,6 +440,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             bytes32(uint256(0xdeadfade))
         );
 
+        // Ensure eth and ezEth balances are correct.
         assertEq(address(bob).balance, bobBalanceBefore);
         assertEq(
             EZETH.balanceOf(address(bob)),
@@ -509,10 +510,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
         assertEq(vaultSharePrice, sharePrice);
 
-        vm.startPrank(bob);
-
-        // Ensure that the share price accurately predicts the amount of shares
-        // that will be minted for depositing a given amount of ETH.
+        // Calculate the maximum amount of basePaid we can test.
         uint256 maxLong = HyperdriveUtils.calculateMaxLong(hyperdrive);
         uint256 maxEzEth = EZETH.balanceOf(address(bob));
         uint256 maxRange = maxLong > maxEzEth ? maxEzEth : maxLong;
@@ -520,6 +518,9 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
             maxRange
         );
+
+        // Convert to shares and approve hyperdrive.
+        vm.startPrank(bob);
         uint256 sharesPaid = getAndApproveShares(basePaid);
 
         // Collect balance information.
@@ -528,6 +529,8 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         // Open the position.
         openLong(bob, sharesPaid, false);
 
+        // Ensure that the share price accurately predicts the amount of shares
+        // that will be minted for depositing a given amount of ETH.
         assertEq(
             EZETH.balanceOf(address(hyperdrive)),
             hyperdriveSharesBefore + sharesPaid
@@ -831,7 +834,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
 
-        // Approve Hyperdrive to use bob's ezEth.
+        // Approve hyperdrive to use bob's ezEth.
         vm.stopPrank();
         vm.startPrank(bob);
         EZETH.approve(address(hyperdrive), shortAmount);
@@ -877,7 +880,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
 
-        // Approve Hyperdrive to use bob's ezEth.
+        // Approve hyperdrive to use bob's ezEth.
         vm.stopPrank();
         vm.startPrank(bob);
         EZETH.approve(address(hyperdrive), shortAmount);
@@ -1013,9 +1016,9 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             );
 
             // Ensure that the ezETH shares were updated correctly.
-            uint256 expectedShares = getExpectedShares(
-                basePaid,
+            uint256 expectedShares = RENZO_ORACLE.calculateMintAmount(
                 totalPooledEtherBefore,
+                basePaid,
                 totalSharesBefore
             );
             assertEq(EZETH.totalSupply(), totalSharesBefore + expectedShares);
@@ -1177,19 +1180,6 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         );
 
         return (sharePrice, totalTVL, totalSupply);
-    }
-
-    function getExpectedShares(
-        uint256 basePaid,
-        uint256 totalPooledEtherBefore,
-        uint256 totalSharesBefore
-    ) internal pure returns (uint256 expectedShares) {
-        return
-            RENZO_ORACLE.calculateMintAmount(
-                totalPooledEtherBefore,
-                basePaid,
-                totalSharesBefore
-            );
     }
 
     function getAndApproveShares(
