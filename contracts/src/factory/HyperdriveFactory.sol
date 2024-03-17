@@ -127,7 +127,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
         IHyperdrive.Fees minFees;
         /// @dev The upper bound on the fees that can be used in new deployments.
         /// @dev Most of the fee parameters are used unmodified; however, the
-        ///      flat fee parameter is interpreted as the minimum annualized
+        ///      flat fee parameter is interpreted as the maximum annualized
         ///      flat fee. This ensures that deployers specify a smaller flat
         ///      fee than the maximum for terms shorter than a year and allows
         ///      deployers to specify a larger flat fee than the maximum for
