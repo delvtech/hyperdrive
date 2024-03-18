@@ -73,9 +73,9 @@ where
 /// A configuration for a test chain that specifies the factory parameters,
 /// the base token parameters, the lido parameters, and the parameters for an
 /// ERC4626 and a stETH hyperdrive pool.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(default)]
-struct TestChainConfig {
+pub struct TestChainConfig {
     // admin configuration
     admin: Address,
     is_competition_mode: bool,
@@ -286,7 +286,7 @@ impl TestChain {
         })
     }
 
-    pub async fn new_with_factory(num_accounts: usize) -> Result<Self> {
+    pub async fn new_with_factory(num_accounts: usize, config: TestChainConfig) -> Result<Self> {
         if num_accounts == 0 {
             panic!("cannot create a test chain with zero accounts");
         }
@@ -298,7 +298,7 @@ impl TestChain {
         let accounts = Self::fund_accounts(&provider, num_accounts).await?;
 
         // Deploy the Hyperdrive contracts.
-        let addresses = Self::full_deploy(provider.clone(), accounts[0].clone()).await?;
+        let addresses = Self::full_deploy(provider.clone(), accounts[0].clone(), config).await?;
 
         Ok(Self {
             addresses,
@@ -543,15 +543,16 @@ impl TestChain {
 
     /// Deploys the full Hyperdrive system equipped with a Hyperdrive Factory,
     /// an ERC4626Hyperdrive instance, and a StETHHyperdrive instance.
-    async fn full_deploy(provider: Provider<Http>, signer: LocalWallet) -> Result<Addresses> {
+    async fn full_deploy(
+        provider: Provider<Http>,
+        signer: LocalWallet,
+        config: TestChainConfig,
+    ) -> Result<Addresses> {
         // Set up an ethers client with the provider and signer.
         let client = Arc::new(SignerMiddleware::new(
             provider.clone(),
             signer.with_chain_id(provider.get_chainid().await?.low_u64()),
         ));
-
-        // Load the config from the environment.
-        let config = envy::from_env::<TestChainConfig>()?;
 
         // Deploy the base token and vault.
         let base = ERC20Mintable::deploy(
@@ -1330,9 +1331,102 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_deploy() -> Result<()> {
+    async fn test_deploy_devnet() -> Result<()> {
         let test_chain_config = TestChainConfig::default();
-        let chain = TestChain::new_with_factory(1).await?;
+        let chain = TestChain::new_with_factory(1, test_chain_config.clone()).await?;
+        let client = chain.client(chain.accounts()[0].clone()).await?;
+
+        // Verify that the addresses are non-zero.
+        assert_ne!(chain.addresses, Addresses::default());
+
+        // Verify that the erc4626 pool config is correct.
+        let hyperdrive = IHyperdrive::new(chain.addresses.erc4626_hyperdrive, client.clone());
+        let config = hyperdrive.get_pool_config().call().await?;
+        assert_eq!(config.base_token, chain.addresses.base_token);
+        assert_eq!(
+            config.minimum_share_reserves,
+            test_chain_config.erc4626_hyperdrive_minimum_share_reserves
+        );
+        assert_eq!(
+            config.position_duration,
+            test_chain_config.erc4626_hyperdrive_position_duration
+        );
+        assert_eq!(
+            config.checkpoint_duration,
+            test_chain_config.erc4626_hyperdrive_checkpoint_duration
+        );
+        assert_eq!(
+            config.time_stretch,
+            get_time_stretch(
+                test_chain_config.erc4626_hyperdrive_time_stretch_apr.into(),
+                test_chain_config
+                    .erc4626_hyperdrive_position_duration
+                    .into(),
+            )
+            .into()
+        );
+        assert_eq!(config.governance, test_chain_config.admin);
+        assert_eq!(config.fee_collector, test_chain_config.admin);
+        assert_eq!(
+            config.fees,
+            Fees {
+                curve: test_chain_config.erc4626_hyperdrive_curve_fee,
+                flat: test_chain_config.erc4626_hyperdrive_flat_fee,
+                governance_lp: test_chain_config.erc4626_hyperdrive_governance_lp_fee,
+                governance_zombie: test_chain_config.erc4626_hyperdrive_governance_zombie_fee,
+            }
+        );
+
+        // Verify that the steth pool config is correct.
+        let hyperdrive = IHyperdrive::new(chain.addresses.steth_hyperdrive, client.clone());
+        let config = hyperdrive.get_pool_config().call().await?;
+        assert_eq!(
+            config.base_token,
+            "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE".parse::<Address>()?
+        );
+        assert_eq!(
+            config.minimum_share_reserves,
+            test_chain_config.steth_hyperdrive_minimum_share_reserves
+        );
+        assert_eq!(
+            config.position_duration,
+            test_chain_config.steth_hyperdrive_position_duration
+        );
+        assert_eq!(
+            config.checkpoint_duration,
+            test_chain_config.steth_hyperdrive_checkpoint_duration
+        );
+        assert_eq!(
+            config.time_stretch,
+            get_time_stretch(
+                test_chain_config.steth_hyperdrive_time_stretch_apr.into(),
+                test_chain_config.steth_hyperdrive_position_duration.into(),
+            )
+            .into()
+        );
+        assert_eq!(config.governance, test_chain_config.admin);
+        assert_eq!(config.fee_collector, test_chain_config.admin);
+        assert_eq!(
+            config.fees,
+            Fees {
+                curve: test_chain_config.steth_hyperdrive_curve_fee,
+                flat: test_chain_config.steth_hyperdrive_flat_fee,
+                governance_lp: test_chain_config.steth_hyperdrive_governance_lp_fee,
+                governance_zombie: test_chain_config.steth_hyperdrive_governance_zombie_fee,
+            }
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_deploy_testnet() -> Result<()> {
+        let mut test_chain_config = TestChainConfig::default();
+        test_chain_config.erc4626_hyperdrive_position_duration = U256::from(60 * 60 * 24 * 365);
+        test_chain_config.erc4626_hyperdrive_flat_fee = uint256!(0.0005e18);
+        test_chain_config.steth_hyperdrive_position_duration = U256::from(60 * 60 * 24 * 365);
+        test_chain_config.steth_hyperdrive_flat_fee = uint256!(0.0005e18);
+        let chain = TestChain::new_with_factory(1, test_chain_config.clone()).await?;
         let client = chain.client(chain.accounts()[0].clone()).await?;
 
         // Verify that the addresses are non-zero.

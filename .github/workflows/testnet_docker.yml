@@ -7,6 +7,9 @@ on:
       - "main"
     tags:
       - "v*"
+  # FIXME
+  pull_request:
+
 
 env:
   REGISTRY: ghcr.io
