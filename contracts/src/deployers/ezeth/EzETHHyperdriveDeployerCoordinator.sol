@@ -79,9 +79,8 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         else {
             ezETH.transferFrom(_lp, address(this), _contribution);
             ezETH.approve(address(_hyperdrive), _contribution);
+            return value;
         }
-
-        return value;
     }
 
     /// @dev Allows the contract to receive ether.

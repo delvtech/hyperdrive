@@ -126,15 +126,11 @@ abstract contract EzETHBase is HyperdriveBase {
             );
     }
 
-    /// @dev Gets the total amount of base held by the pool.
+    /// @dev Unused, gets the total amount of base held by the pool.
     /// @return baseAmount The total amount of base.
-    function _totalBase() internal pure override returns (uint256) {
-        // NOTE: Since ETH is the base token and can't be swept, we can safely
-        // return zero.
-        return 0;
-    }
+    function _totalBase() internal pure override returns (uint256) {}
 
-    /// @dev Gets the total amount of shares held by the pool in the yield
+    /// @dev Unused, gets the total amount of shares held by the pool in the yield
     ///      source.
     /// @return shareAmount The total amount of shares.
     function _totalShares()
@@ -142,9 +138,7 @@ abstract contract EzETHBase is HyperdriveBase {
         view
         override
         returns (uint256 shareAmount)
-    {
-        return _ezETH.balanceOf(address(this));
-    }
+    {}
 
     /// @dev We override the message value check since this integration is
     ///      payable.
