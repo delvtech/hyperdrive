@@ -74,7 +74,7 @@ contract UpdateLiquidityTest is HyperdriveTest {
                 int256(_shareReserves) -
                 int256(1)
         );
-        vm.expectRevert(IHyperdrive.InvalidShareReserves.selector);
+        vm.expectRevert(IHyperdrive.UpdateLiquidityFailed.selector);
         mockHyperdrive.updateLiquidity(_shareReservesDelta);
     }
 

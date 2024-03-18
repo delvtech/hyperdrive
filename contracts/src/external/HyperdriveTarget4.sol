@@ -55,4 +55,12 @@ abstract contract HyperdriveTarget4 is
         return
             _openShort(_bondAmount, _maxDeposit, _minVaultSharePrice, _options);
     }
+
+    /// Checkpoints ///
+
+    /// @notice Allows anyone to mint a new checkpoint.
+    /// @param _checkpointTime The time of the checkpoint to create.
+    function checkpoint(uint256 _checkpointTime) external {
+        _checkpoint(_checkpointTime);
+    }
 }
