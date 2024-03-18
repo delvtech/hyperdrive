@@ -51,17 +51,64 @@ library LPMath {
             uint256 bondReserves
         )
     {
+        bool success;
+        (
+            shareReserves,
+            shareAdjustment,
+            bondReserves,
+            success
+        ) = calculateUpdateLiquiditySafe(
+            _shareReserves,
+            _shareAdjustment,
+            _bondReserves,
+            _minimumShareReserves,
+            _shareReservesDelta
+        );
+        if (!success) {
+            revert IHyperdrive.UpdateLiquidityFailed();
+        }
+    }
+
+    /// @dev Calculates the new share reserves, share adjustment, and bond
+    ///      reserves after liquidity is added or removed from the pool. This
+    ///      update is made in such a way that the pool's spot price remains
+    ///      constant.
+    /// @param _shareReserves The current share reserves.
+    /// @param _shareAdjustment The current share adjustment.
+    /// @param _bondReserves The current bond reserves.
+    /// @param _minimumShareReserves The minimum share reserves.
+    /// @param _shareReservesDelta The change in share reserves.
+    /// @return shareReserves The updated share reserves.
+    /// @return shareAdjustment The updated share adjustment.
+    /// @return bondReserves The updated bond reserves.
+    /// @return A flag indicating if the calculation succeeded.
+    function calculateUpdateLiquiditySafe(
+        uint256 _shareReserves,
+        int256 _shareAdjustment,
+        uint256 _bondReserves,
+        uint256 _minimumShareReserves,
+        int256 _shareReservesDelta
+    )
+        internal
+        pure
+        returns (
+            uint256 shareReserves,
+            int256 shareAdjustment,
+            uint256 bondReserves,
+            bool
+        )
+    {
         // If the share reserves delta is zero, we can return early since no
         // action is needed.
         if (_shareReservesDelta == 0) {
-            return (_shareReserves, _shareAdjustment, _bondReserves);
+            return (_shareReserves, _shareAdjustment, _bondReserves, true);
         }
 
         // Update the share reserves by applying the share reserves delta. We
         // ensure that our minimum share reserves invariant is still maintained.
         int256 shareReserves_ = _shareReserves.toInt256() + _shareReservesDelta;
         if (shareReserves_ < _minimumShareReserves.toInt256()) {
-            revert IHyperdrive.InvalidShareReserves();
+            return (0, 0, 0, false);
         }
         shareReserves = uint256(shareReserves_);
 
@@ -100,15 +147,29 @@ library LPMath {
         // (z_old - zeta_old) / y_old = (z_new - zeta_new) / y_new
         //                          =>
         // y_new = (z_new - zeta_new) * (y_old / (z_old - zeta_old))
-        bondReserves = HyperdriveMath
-            .calculateEffectiveShareReserves(shareReserves, shareAdjustment)
-            .mulDivDown(
-                _bondReserves,
-                HyperdriveMath.calculateEffectiveShareReserves(
-                    _shareReserves,
-                    _shareAdjustment
-                )
+        (uint256 oldEffectiveShareReserves, bool success) = HyperdriveMath
+            .calculateEffectiveShareReservesSafe(
+                _shareReserves,
+                _shareAdjustment
             );
+        if (!success) {
+            return (0, 0, 0, false);
+        }
+        uint256 effectiveShareReserves;
+        (effectiveShareReserves, success) = HyperdriveMath
+            .calculateEffectiveShareReservesSafe(
+                shareReserves,
+                shareAdjustment
+            );
+        if (!success) {
+            return (0, 0, 0, false);
+        }
+        bondReserves = _bondReserves.mulDivDown(
+            effectiveShareReserves,
+            oldEffectiveShareReserves
+        );
+
+        return (shareReserves, shareAdjustment, bondReserves, true);
     }
 
     struct PresentValueParams {
@@ -215,11 +276,16 @@ library LPMath {
                 .shortsOutstanding
                 .mulDown(_params.shortAverageTimeRemaining)
                 .toInt256();
-        uint256 effectiveShareReserves = HyperdriveMath
-            .calculateEffectiveShareReserves(
+        (uint256 effectiveShareReserves, bool success) = HyperdriveMath
+            .calculateEffectiveShareReservesSafe(
                 _params.shareReserves,
                 _params.shareAdjustment
             );
+        if (!success) {
+            // NOTE: Return 0 to indicate that the net curve trade couldn't be
+            // computed.
+            return (0, false);
+        }
 
         // If the net curve position is positive, then the pool is net long.
         // Closing the net curve position results in the longs being paid out
@@ -230,7 +296,8 @@ library LPMath {
             // Calculate the maximum amount of bonds that can be sold on
             // YieldSpace. If this calculation fails, then we return a failure
             // flag.
-            (uint256 maxCurveTrade, bool success) = YieldSpaceMath
+            uint256 maxCurveTrade;
+            (maxCurveTrade, success) = YieldSpaceMath
                 .calculateMaxSellBondsInSafe(
                     _params.shareReserves,
                     _params.shareAdjustment,
@@ -241,6 +308,8 @@ library LPMath {
                     _params.initialVaultSharePrice
                 );
             if (!success) {
+                // NOTE: Return 0 to indicate that the net curve trade couldn't
+                // be computed.
                 return (0, false);
             }
 
@@ -315,7 +384,8 @@ library LPMath {
 
             // Calculate the maximum amount of bonds that can be bought on
             // YieldSpace.
-            (uint256 maxCurveTrade, bool success) = YieldSpaceMath
+            uint256 maxCurveTrade;
+            (maxCurveTrade, success) = YieldSpaceMath
                 .calculateMaxBuyBondsOutSafe(
                     effectiveShareReserves,
                     _params.bondReserves,
@@ -465,21 +535,23 @@ library LPMath {
         DistributeExcessIdleParams memory _params
     ) internal pure returns (uint256, uint256) {
         // Steps 1 and 2: Calculate the maximum amount the share reserves can be
-        // debited. If the maximum share reserves delta can't be calculated,
-        // idle can't be distributed.
-        uint256 originalEffectiveShareReserves = HyperdriveMath
-            .calculateEffectiveShareReserves(
+        // debited. If the effective share reserves or the maximum share
+        // reserves delta can't be calculated or if the maximum share reserves
+        // delta is zero, idle can't be distributed.
+        (uint256 originalEffectiveShareReserves, bool success) = HyperdriveMath
+            .calculateEffectiveShareReservesSafe(
                 _params.originalShareReserves,
                 _params.originalShareAdjustment
             );
-        (
-            uint256 maxShareReservesDelta,
-            bool success
-        ) = calculateMaxShareReservesDeltaSafe(
-                _params,
-                originalEffectiveShareReserves
-            );
         if (!success) {
+            return (0, 0);
+        }
+        uint256 maxShareReservesDelta;
+        (maxShareReservesDelta, success) = calculateMaxShareReservesDeltaSafe(
+            _params,
+            originalEffectiveShareReserves
+        );
+        if (!success || maxShareReservesDelta == 0) {
             return (0, 0);
         }
 
@@ -559,27 +631,39 @@ library LPMath {
         uint256 _shareReservesDelta
     ) internal pure returns (uint256) {
         // Calculate the present value after debiting the share reserves delta.
+        bool success;
         (
             _params.presentValueParams.shareReserves,
             _params.presentValueParams.shareAdjustment,
-            _params.presentValueParams.bondReserves
-        ) = calculateUpdateLiquidity(
+            _params.presentValueParams.bondReserves,
+            success
+        ) = calculateUpdateLiquiditySafe(
             _params.originalShareReserves,
             _params.originalShareAdjustment,
             _params.originalBondReserves,
             _params.presentValueParams.minimumShareReserves,
             -_shareReservesDelta.toInt256()
         );
-        (uint256 endingPresentValue, bool success) = calculatePresentValueSafe(
+        if (!success) {
+            // NOTE: Return zero to indicate that the withdrawal shares redeemed
+            // couldn't be calculated.
+            return 0;
+        }
+        uint256 endingPresentValue;
+        (endingPresentValue, success) = calculatePresentValueSafe(
             _params.presentValueParams
         );
+        if (!success) {
+            // NOTE: Return zero to indicate that the withdrawal shares redeemed
+            // couldn't be calculated.
+            return 0;
+        }
 
-        // If the present value calculation failed or if the ending present
-        // value is greater than or equal to the starting present value, we
-        // short-circuit to avoid distributing excess idle. This edge-case can
-        // occur when the share reserves is very close to the minimum share
-        // reserves with a large value of k.
-        if (!success || endingPresentValue >= _params.startingPresentValue) {
+        // If the ending present value is greater than or equal to the starting
+        // present value, we short-circuit to avoid distributing excess idle.
+        // This edge-case can occur when the share reserves is very close to the
+        // minimum share reserves with a large value of k.
+        if (endingPresentValue >= _params.startingPresentValue) {
             return 0;
         }
 
@@ -653,17 +737,25 @@ library LPMath {
 
             // Simulate applying the share proceeds to the reserves and
             // recalculate the present value.
+            bool success;
             (
                 _params.presentValueParams.shareReserves,
                 _params.presentValueParams.shareAdjustment,
-                _params.presentValueParams.bondReserves
-            ) = calculateUpdateLiquidity(
+                _params.presentValueParams.bondReserves,
+                success
+            ) = calculateUpdateLiquiditySafe(
                 _params.originalShareReserves,
                 _params.originalShareAdjustment,
                 _params.originalBondReserves,
                 _params.presentValueParams.minimumShareReserves,
                 -shareProceeds.toInt256()
             );
+            if (!success) {
+                // NOTE: If the updated reserves can't be calculated,  we can't
+                // continue the calculation. Return 0 to indicate that the share
+                // proceeds couldn't be calculated.
+                return 0;
+            }
             uint256 presentValue = calculatePresentValue(
                 _params.presentValueParams
             );
@@ -686,7 +778,8 @@ library LPMath {
                 // Calculate the max bond amount. If the calculation fails, we
                 // return a failure flag.
                 DistributeExcessIdleParams memory params = _params; // avoid stack-too-deep
-                (uint256 maxBondAmount, bool success_) = YieldSpaceMath
+                uint256 maxBondAmount;
+                (maxBondAmount, success) = YieldSpaceMath
                     .calculateMaxSellBondsInSafe(
                         params.presentValueParams.shareReserves,
                         params.presentValueParams.shareAdjustment,
@@ -696,7 +789,7 @@ library LPMath {
                         params.presentValueParams.vaultSharePrice,
                         params.presentValueParams.initialVaultSharePrice
                     );
-                if (!success_) {
+                if (!success) {
                     // NOTE: If the max bond amount couldn't be calculated, we
                     // can't continue the calculation. Return 0 to indicate that
                     // the share proceeds couldn't be calculated.
@@ -710,11 +803,11 @@ library LPMath {
                     // linear with respect to the share proceeds.
                     (
                         shareProceeds,
-                        success_
+                        success
                     ) = calculateDistributeExcessIdleShareProceedsNetLongEdgeCaseSafe(
                         params
                     );
-                    if (!success_) {
+                    if (!success) {
                         // NOTE: Return 0 to indicate that the share proceeds
                         // couldn't be calculated.
                         return 0;
@@ -725,15 +818,21 @@ library LPMath {
                     (
                         params.presentValueParams.shareReserves,
                         params.presentValueParams.shareAdjustment,
-                        params.presentValueParams.bondReserves
-                    ) = calculateUpdateLiquidity(
+                        params.presentValueParams.bondReserves,
+                        success
+                    ) = calculateUpdateLiquiditySafe(
                         params.originalShareReserves,
                         params.originalShareAdjustment,
                         params.originalBondReserves,
                         params.presentValueParams.minimumShareReserves,
                         -shareProceeds.toInt256()
                     );
-                    (maxBondAmount, success_) = YieldSpaceMath
+                    if (!success) {
+                        // NOTE: Return 0 to indicate that the share proceeds
+                        // couldn't be calculated.
+                        return 0;
+                    }
+                    (maxBondAmount, success) = YieldSpaceMath
                         .calculateMaxSellBondsInSafe(
                             params.presentValueParams.shareReserves,
                             params.presentValueParams.shareAdjustment,
@@ -743,7 +842,7 @@ library LPMath {
                             params.presentValueParams.vaultSharePrice,
                             params.presentValueParams.initialVaultSharePrice
                         );
-                    if (!success_) {
+                    if (!success) {
                         // NOTE: Return 0 to indicate that the share proceeds
                         // couldn't be calculated.
                         return 0;
@@ -768,14 +867,15 @@ library LPMath {
             // `calculateSharesOutGivenBondsIn` when the pool is net long or
             // the derivative of `calculateSharesInGivenBondsOut`. when the pool
             // is net short.
+            uint256 derivative;
             (
-                uint256 derivative,
-                bool success
+                derivative,
+                success
             ) = calculateSharesDeltaGivenBondsDeltaDerivativeSafe(
-                    _params,
-                    _originalEffectiveShareReserves,
-                    _params.netCurveTrade
-                );
+                _params,
+                _originalEffectiveShareReserves,
+                _params.netCurveTrade
+            );
             if (!success || derivative >= ONE) {
                 // NOTE: Return 0 to indicate that the share proceeds
                 // couldn't be calculated.
@@ -985,7 +1085,8 @@ library LPMath {
         uint256 netCurveTrade = uint256(-_params.netCurveTrade);
 
         // Calculate the max bond amount. If the calculation fails, we return a
-        // failure flag.
+        // failure flag. If the calculation succeeds but the max bond amount
+        // is zero, then we return a failure flag since we can't divide by zero.
         uint256 maxBondAmount;
         (maxBondAmount, success) = YieldSpaceMath.calculateMaxBuyBondsOutSafe(
             _originalEffectiveShareReserves,
@@ -994,7 +1095,7 @@ library LPMath {
             _params.presentValueParams.vaultSharePrice,
             _params.presentValueParams.initialVaultSharePrice
         );
-        if (!success) {
+        if (!success || maxBondAmount == 0) {
             return (0, false);
         }
 
@@ -1122,11 +1223,14 @@ library LPMath {
         // derivative = c * (mu * z_e(x)) ** -t_s +
         //              (y / z_e) * (y(x)) ** -t_s -
         //              (y / z_e) * (y(x) + dy) ** -t_s
-        uint256 effectiveShareReserves = HyperdriveMath
-            .calculateEffectiveShareReserves(
+        (uint256 effectiveShareReserves, bool success) = HyperdriveMath
+            .calculateEffectiveShareReservesSafe(
                 _params.presentValueParams.shareReserves,
                 _params.presentValueParams.shareAdjustment
             );
+        if (!success) {
+            return (0, false);
+        }
         uint256 derivative = _params.presentValueParams.vaultSharePrice.divUp(
             _params
                 .presentValueParams
