@@ -23,7 +23,6 @@ import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
-import "forge-std/console.sol";
 
 contract EzETHHyperdriveTest is HyperdriveTest {
     using FixedPointMath for uint256;

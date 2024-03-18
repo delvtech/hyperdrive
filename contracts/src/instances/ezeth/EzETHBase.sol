@@ -42,12 +42,12 @@ abstract contract EzETHBase is HyperdriveBase {
 
     /// Yield Source ///
 
-    /// @dev Accepts a transfer from the user in base token.
+    //// @dev This option isn't supported because the minting calculation is too
+    ///       imprecise.
     function _depositWithBase(
         uint256, // _baseAmount unused
         bytes calldata // unused
     ) internal pure override returns (uint256, uint256) {
-        // Price calculations are too inaccurate
         revert IHyperdrive.UnsupportedToken();
     }
 
@@ -126,11 +126,15 @@ abstract contract EzETHBase is HyperdriveBase {
             );
     }
 
-    /// @dev Unused, gets the total amount of base held by the pool.
+    /// @dev Gets the total amount of base held by the pool.
     /// @return baseAmount The total amount of base.
-    function _totalBase() internal pure override returns (uint256) {}
+    function _totalBase() internal pure override returns (uint256) {
+        // NOTE: Since ETH is the base token and can't be swept, we can safely
+        // return zero.
+        return 0;
+    }
 
-    /// @dev Unused, gets the total amount of shares held by the pool in the yield
+    /// @dev Gets the total amount of shares held by the pool in the yield
     ///      source.
     /// @return shareAmount The total amount of shares.
     function _totalShares()
@@ -138,7 +142,9 @@ abstract contract EzETHBase is HyperdriveBase {
         view
         override
         returns (uint256 shareAmount)
-    {}
+    {
+        return _ezETH.balanceOf(address(this));
+    }
 
     /// @dev We override the message value check since this integration is
     ///      payable.
