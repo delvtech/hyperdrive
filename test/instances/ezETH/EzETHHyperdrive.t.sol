@@ -320,7 +320,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         );
 
         // Ensure that using base to deploy and initialize is not allowed.
-        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive = factory.deployAndInitialize{ value: contribution + 1e18 }(
             bytes32(uint256(0xbeefbabe)),
             address(deployerCoordinator),
@@ -424,7 +424,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         );
 
         // Deploy the pool.
-        hyperdrive = factory.deployAndInitialize{ value: contribution + 1e18 }(
+        hyperdrive = factory.deployAndInitialize(
             bytes32(uint256(0xbeefbabe)),
             address(deployerCoordinator),
             config,
@@ -551,7 +551,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         // precision loss when minting ezeth that warrants some investigation
         // before we can turn this on.  Until then, we can zap ezeth into the
         // pool.
-        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openLong{ value: basePaid }(
             basePaid,
             0, // min bond proceeds
@@ -734,7 +734,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         // precision loss when minting ezeth that warrants some investigation
         // before we can turn this on.  Until then, we can zap ezeth into the
         // pool.
-        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openShort{ value: shortAmount }(
             shortAmount,
             shortAmount,
@@ -807,9 +807,8 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         // Collect some balance information.
         uint256 ethBalanceBefore = address(bob).balance;
 
-        // Ensure that the refund fails when Bob sends excess ETH
-        // when opening a short with "asBase" set to true.
-        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        // Ensure that the transaction fails when any asBase is true.
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openShort{ value: 2e18 }(
             1e18,
             1e18,
@@ -821,10 +820,11 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             })
         );
 
-        // Ensure that the refund happens on a short with "asBase"
-        // set to false and sends ether to the contract.
+        // Ensure that the transaction fails when any eth is supplied, even if
+        // asBase is false.
         ethBalanceBefore = address(bob).balance;
         EZETH.approve(address(hyperdrive), 1e18);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openShort{ value: 1e18 }(
             1e18,
             1e18,

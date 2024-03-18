@@ -45,7 +45,7 @@ abstract contract EzETHBase is HyperdriveBase {
     //// @dev This option isn't supported because the minting calculation is too
     ///       imprecise.
     function _depositWithBase(
-        uint256, // _baseAmount unused
+        uint256, // unused
         bytes calldata // unused
     ) internal pure override returns (uint256, uint256) {
         revert IHyperdrive.UnsupportedToken();
@@ -148,5 +148,9 @@ abstract contract EzETHBase is HyperdriveBase {
 
     /// @dev We override the message value check since this integration is
     ///      payable.
-    function _checkMessageValue() internal pure override {}
+    function _checkMessageValue() internal view override {
+        if (msg.value > 0) {
+            revert IHyperdrive.NotPayable();
+        }
+    }
 }

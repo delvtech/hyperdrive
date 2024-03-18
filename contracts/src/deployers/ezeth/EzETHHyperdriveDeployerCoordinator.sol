@@ -82,7 +82,11 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     }
 
     /// @dev Allows the contract to receive ether.
-    function _checkMessageValue() internal view override {}
+    function _checkMessageValue() internal view override {
+        if (msg.value > 0) {
+            revert IHyperdrive.NotPayable();
+        }
+    }
 
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
