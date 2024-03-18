@@ -633,8 +633,6 @@ impl TestChain {
             .await?;
 
         // Deploy the Hyperdrive factory.
-        println!("min flat fee = {}", config.factory_min_flat_fee);
-        println!("max flat fee = {}", config.factory_max_flat_fee);
         let factory = {
             HyperdriveFactory::deploy(
                 client.clone(),
@@ -723,11 +721,13 @@ impl TestChain {
             )
             .send()
             .await?;
-            println!(
-                "position duration = {}",
-                config.erc4626_hyperdrive_position_duration
+            panic!(
+                "min flat fee = {}\nmax flat fee = {}\nposition duration = {}\nflat fee = {}",
+                config.factory_min_flat_fee,
+                config.factory_max_flat_fee,
+                config.erc4626_hyperdrive_position_duration,
+                config.erc4626_hyperdrive_flat_fee
             );
-            println!("flat fee = {}", config.erc4626_hyperdrive_flat_fee);
             let pool_config = PoolDeployConfig {
                 fee_collector: factory.fee_collector().call().await?,
                 sweep_collector: factory.sweep_collector().call().await?,
