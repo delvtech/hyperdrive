@@ -236,7 +236,7 @@ abstract contract Hyperdrive is
 
     /// @inheritdoc IHyperdriveCore
     function checkpoint(uint256) external {
-        _delegate(target2);
+        _delegate(target4);
     }
 
     /// Admin ///
