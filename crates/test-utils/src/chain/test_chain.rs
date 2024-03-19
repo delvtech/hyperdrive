@@ -1367,6 +1367,7 @@ mod tests {
         );
         assert_eq!(config.governance, test_chain_config.admin);
         assert_eq!(config.fee_collector, test_chain_config.admin);
+        assert_eq!(config.sweep_collector, test_chain_config.admin);
         assert_eq!(
             config.fees,
             Fees {
@@ -1460,6 +1461,7 @@ mod tests {
         );
         assert_eq!(config.governance, test_chain_config.admin);
         assert_eq!(config.fee_collector, test_chain_config.admin);
+        assert_eq!(config.sweep_collector, test_chain_config.admin);
         assert_eq!(
             config.fees,
             Fees {
