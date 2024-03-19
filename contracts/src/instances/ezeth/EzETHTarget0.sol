@@ -42,7 +42,7 @@ contract EzETHTarget0 is HyperdriveTarget0, EzETHBase {
         _revert(abi.encode(_ezETH));
     }
 
-    /// @notice Gets the Renzo Oracle contract.
+    /// @notice Gets the RenzoOracle contract.
     /// @return The RenzoOracle contract.
     function renzoOracle() external view returns (IRenzoOracle) {
         _revert(abi.encode(_renzoOracle));

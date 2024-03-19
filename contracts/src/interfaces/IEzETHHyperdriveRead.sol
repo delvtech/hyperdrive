@@ -14,7 +14,7 @@ interface IEzETHHyperdriveRead is IHyperdriveRead {
     /// @return The ezETH token contract.
     function ezETH() external view returns (IERC20);
 
-    /// @notice Gets the Renzo Oracle contract.
+    /// @notice Gets the RenzoOracle contract.
     /// @return The RenzoOracle contract.
     function renzoOracle() external view returns (IRenzoOracle);
 }
