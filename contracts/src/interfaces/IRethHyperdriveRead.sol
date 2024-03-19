@@ -2,7 +2,6 @@
 pragma solidity 0.8.20;
 
 import { IHyperdriveRead } from "./IHyperdriveRead.sol";
-import { ILido } from "./ILido.sol";
 import { IRocketStorage } from "./IRocketStorage.sol";
 import { IRocketTokenRETH } from "./IRocketTokenRETH.sol";
 
@@ -11,7 +10,7 @@ interface IRethHyperdriveRead is IHyperdriveRead {
     /// @return The Rocket Storage contract.
     function rocketStorage() external view returns (IRocketStorage);
 
-    /// @notice Gets the  Rocket Token rETH contract.
-    /// @return The  Rocket Token rETH contract.
+    /// @notice Gets the Rocket Token rETH contract.
+    /// @return The Rocket Token rETH contract.
     function rocketTokenRETH() external view returns (IRocketTokenRETH);
 }

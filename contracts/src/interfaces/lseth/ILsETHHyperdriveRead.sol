@@ -6,6 +6,6 @@ import { IRiverV1 } from "./IRiverV1.sol";
 
 interface ILsETHHyperdriveRead is IHyperdriveRead {
     /// @notice Gets the LsETH token contract.
-    /// @return The  LsETH token contract.
+    /// @return The LsETH token contract.
     function lsEth() external view returns (IRiverV1);
 }

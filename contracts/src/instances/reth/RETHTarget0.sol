@@ -38,8 +38,8 @@ contract RETHTarget0 is HyperdriveTarget0, RETHBase {
         _revert(abi.encode(_rocketStorage));
     }
 
-    /// @notice Gets the  Rocket Token rETH contract.
-    /// @return The  Rocket Token rETH contract.
+    /// @notice Gets the Rocket Token rETH contract.
+    /// @return The Rocket Token rETH contract.
     function rocketTokenRETH() external view returns (IRocketTokenRETH) {
         _revert(abi.encode(_rocketTokenReth));
     }
