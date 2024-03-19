@@ -1464,6 +1464,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
         // Define a config that can be reused for each test and deploy the
         // targets with this config.
+        vm.stopPrank();
+        vm.startPrank(bob);
         IHyperdrive.PoolDeployConfig memory config = IHyperdrive
             .PoolDeployConfig({
                 baseToken: IERC20(ETH),
@@ -1480,7 +1482,12 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 linkerCodeHash: factory.linkerCodeHash()
             });
         bytes memory extraData = new bytes(0);
-        _deployTargets(deployerCoordinator, config, 0.05e18, 0.05e18);
+        bytes32 deploymentId = _deployTargets(
+            deployerCoordinator,
+            config,
+            0.05e18,
+            0.05e18
+        );
 
         // Ensure that an instance can't be deployed with a coordinator that
         // hasn't been added.
@@ -1491,7 +1498,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 IHyperdriveFactory.InvalidDeployerCoordinator.selector
             );
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 address(0xdeadbeef),
                 config,
                 extraData,
@@ -1503,7 +1510,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
         }
 
@@ -1520,7 +1527,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 IHyperdriveFactory.InvalidCheckpointDuration.selector
             );
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -1532,7 +1539,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
             config.checkpointDuration = oldCheckpointDuration;
         }
@@ -1550,7 +1557,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 IHyperdriveFactory.InvalidCheckpointDuration.selector
             );
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -1562,7 +1569,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
             config.checkpointDuration = oldCheckpointDuration;
         }
@@ -1578,7 +1585,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 IHyperdriveFactory.InvalidCheckpointDuration.selector
             );
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -1590,7 +1597,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
             config.checkpointDuration = oldCheckpointDuration;
         }
@@ -1608,7 +1615,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 IHyperdriveFactory.InvalidPositionDuration.selector
             );
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -1620,7 +1627,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
             config.positionDuration = oldPositionDuration;
         }
@@ -1638,7 +1645,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 IHyperdriveFactory.InvalidPositionDuration.selector
             );
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -1650,7 +1657,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
             config.positionDuration = oldPositionDuration;
         }
@@ -1666,7 +1673,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 IHyperdriveFactory.InvalidPositionDuration.selector
             );
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -1678,7 +1685,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
             config.positionDuration = oldPositionDuration;
         }
@@ -1691,7 +1698,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             uint256 fixedAPR = factory.minFixedAPR() - 1;
             vm.expectRevert(IHyperdriveFactory.InvalidFixedAPR.selector);
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -1703,7 +1710,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
         }
 
@@ -1715,7 +1722,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             uint256 fixedAPR = factory.maxFixedAPR() + 1;
             vm.expectRevert(IHyperdriveFactory.InvalidFixedAPR.selector);
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -1727,7 +1734,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
         }
 
@@ -1736,12 +1743,13 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         {
             vm.stopPrank();
             vm.startPrank(factory.governance());
+            uint256 oldMinTimeStretchAPR = factory.minTimeStretchAPR();
             factory.updateMinTimeStretchAPR(0.001e18);
             vm.stopPrank();
             vm.startPrank(bob);
             vm.expectRevert(IHyperdriveFactory.InvalidTimeStretchAPR.selector);
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -1753,8 +1761,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
+            vm.stopPrank();
+            vm.startPrank(factory.governance());
+            factory.updateMinTimeStretchAPR(oldMinTimeStretchAPR);
         }
 
         // Ensure than an instance can't be deployed with a time stretch APR
@@ -1764,7 +1775,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             vm.startPrank(bob);
             vm.expectRevert(IHyperdriveFactory.InvalidTimeStretchAPR.selector);
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -1776,7 +1787,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
         }
 
@@ -1785,12 +1796,13 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         {
             vm.stopPrank();
             vm.startPrank(factory.governance());
+            uint256 oldMinTimeStretchAPR = factory.minTimeStretchAPR();
             factory.updateMinTimeStretchAPR(0.02e18);
             vm.stopPrank();
             vm.startPrank(bob);
             vm.expectRevert(IHyperdriveFactory.InvalidTimeStretchAPR.selector);
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -1802,8 +1814,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
+            vm.stopPrank();
+            vm.startPrank(factory.governance());
+            factory.updateMinTimeStretchAPR(oldMinTimeStretchAPR);
         }
 
         // Ensure than an instance can't be deployed with a time stretch APR
@@ -1811,12 +1826,13 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         {
             vm.stopPrank();
             vm.startPrank(factory.governance());
+            uint256 oldMinTimeStretchAPR = factory.minTimeStretchAPR();
             factory.updateMinTimeStretchAPR(0.001e18);
             vm.stopPrank();
             vm.startPrank(bob);
             vm.expectRevert(IHyperdriveFactory.InvalidTimeStretchAPR.selector);
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -1828,8 +1844,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
+            vm.stopPrank();
+            vm.startPrank(factory.governance());
+            factory.updateMinTimeStretchAPR(oldMinTimeStretchAPR);
         }
 
         // Ensure than an instance can't be deployed with a time stretch APR
@@ -1839,7 +1858,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             vm.startPrank(bob);
             vm.expectRevert(IHyperdriveFactory.InvalidTimeStretchAPR.selector);
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -1851,7 +1870,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
         }
 
@@ -1860,12 +1879,13 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         {
             vm.stopPrank();
             vm.startPrank(factory.governance());
+            uint256 oldMaxTimeStretchAPR = factory.maxTimeStretchAPR();
             factory.updateMaxTimeStretchAPR(0.3e18);
             vm.stopPrank();
             vm.startPrank(bob);
             vm.expectRevert(IHyperdriveFactory.InvalidTimeStretchAPR.selector);
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -1877,8 +1897,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
+            vm.stopPrank();
+            vm.startPrank(factory.governance());
+            factory.updateMaxTimeStretchAPR(oldMaxTimeStretchAPR);
         }
 
         // Ensure than an instance can't be deployed with a curve fee greater
@@ -1890,7 +1913,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             config.fees.curve = factory.maxFees().curve + 1;
             vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -1902,7 +1925,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
             config.fees.curve = oldCurveFee;
         }
@@ -1916,7 +1939,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             config.fees.curve = factory.minFees().curve - 1;
             vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -1928,7 +1951,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
             config.fees.curve = oldCurveFee;
         }
@@ -1945,9 +1968,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             config.fees.flat =
                 factory.maxFees().flat.mulDivDown(180 days, 365 days) +
                 1;
-            bytes32 deploymentId = keccak256(
-                abi.encode(factory.getNumberOfInstances())
-            );
             vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
             factory.deployTarget(
                 deploymentId,
@@ -1971,9 +1991,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             vm.startPrank(bob);
             uint256 oldFlatFee = config.fees.flat;
             config.fees.flat = factory.maxFees().flat + 1;
-            bytes32 deploymentId = keccak256(
-                abi.encode(factory.getNumberOfInstances())
-            );
             vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
             factory.deployTarget(
                 deploymentId,
@@ -1998,9 +2015,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             config.positionDuration = 365 days * 2;
             uint256 oldFlatFee = config.fees.flat;
             config.fees.flat = (factory.maxFees().flat + 1) * 2;
-            bytes32 deploymentId = keccak256(
-                abi.encode(factory.getNumberOfInstances())
-            );
             vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
             factory.deployTarget(
                 deploymentId,
@@ -2028,9 +2042,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             config.fees.flat =
                 factory.minFees().flat.mulDivDown(180 days, 365 days) -
                 1;
-            bytes32 deploymentId = keccak256(
-                abi.encode(factory.getNumberOfInstances())
-            );
             vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
             factory.deployTarget(
                 deploymentId,
@@ -2054,9 +2065,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             vm.startPrank(bob);
             uint256 oldFlatFee = config.fees.flat;
             config.fees.flat = factory.minFees().flat - 1;
-            bytes32 deploymentId = keccak256(
-                abi.encode(factory.getNumberOfInstances())
-            );
             vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
             factory.deployTarget(
                 deploymentId,
@@ -2081,9 +2089,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             config.positionDuration = 365 days * 2;
             uint256 oldFlatFee = config.fees.flat;
             config.fees.flat = (factory.minFees().flat - 1) * 2;
-            bytes32 deploymentId = keccak256(
-                abi.encode(factory.getNumberOfInstances())
-            );
             vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
             factory.deployTarget(
                 deploymentId,
@@ -2108,7 +2113,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             config.fees.governanceLP = factory.maxFees().governanceLP + 1;
             vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -2120,7 +2125,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
             config.fees.governanceLP = oldGovernanceLPFee;
         }
@@ -2134,7 +2139,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             config.fees.governanceLP = factory.minFees().governanceLP - 1;
             vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -2146,7 +2151,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
             config.fees.governanceLP = oldGovernanceLPFee;
         }
@@ -2162,7 +2167,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 1;
             vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -2174,7 +2179,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
             config.fees.governanceZombie = oldGovernanceZombieFee;
         }
@@ -2190,7 +2195,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 1;
             vm.expectRevert(IHyperdriveFactory.InvalidFees.selector);
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -2202,7 +2207,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
             config.fees.governanceZombie = oldGovernanceZombieFee;
         }
@@ -2216,7 +2221,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             config.linkerFactory = alice;
             vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -2228,7 +2233,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
             config.linkerFactory = oldLinkerFactory;
         }
@@ -2242,7 +2247,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             config.linkerCodeHash = bytes32(uint256(0xdeadbeef));
             vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -2254,7 +2259,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
             config.linkerCodeHash = oldLinkerCodeHash;
         }
@@ -2268,7 +2273,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             config.feeCollector = alice;
             vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -2280,7 +2285,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
             config.feeCollector = oldFeeCollector;
         }
@@ -2294,7 +2299,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             config.sweepCollector = alice;
             vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -2306,7 +2311,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
             config.sweepCollector = oldSweepCollector;
         }
@@ -2320,7 +2325,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             config.governance = alice;
             vm.expectRevert(IHyperdriveFactory.InvalidDeployConfig.selector);
             factory.deployAndInitialize(
-                bytes32(uint256(0xdeadbeef)),
+                deploymentId,
                 deployerCoordinator,
                 config,
                 extraData,
@@ -2332,10 +2337,60 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                     destination: bob,
                     extraData: new bytes(0)
                 }),
-                bytes32(uint256(0xdeadbabe))
+                deploymentId
             );
             config.governance = oldGovernance;
         }
+
+        // Ensure that an instance can be deployed successfully with a valid
+        // config. Ensure that all of the fields are set correctly in the
+        // deployed instance.
+        IHyperdrive hyperdrive = IHyperdrive(
+            factory.deployAndInitialize{ value: 10_000e18 }(
+                deploymentId,
+                deployerCoordinator,
+                config,
+                extraData,
+                10_000e18,
+                0.05e18,
+                0.05e18,
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
+                deploymentId
+            )
+        );
+        IHyperdrive.PoolConfig memory config_ = hyperdrive.getPoolConfig();
+        assertEq(address(config_.baseToken), address(config.baseToken));
+        assertEq(config_.linkerFactory, factory.linkerFactory());
+        assertEq(config_.linkerCodeHash, factory.linkerCodeHash());
+        assertEq(
+            config_.initialVaultSharePrice,
+            lido.getPooledEthByShares(ONE)
+        );
+        assertEq(config_.minimumShareReserves, config.minimumShareReserves);
+        assertEq(
+            config_.minimumTransactionAmount,
+            config.minimumTransactionAmount
+        );
+        assertEq(config_.positionDuration, config.positionDuration);
+        assertEq(config_.checkpointDuration, config.checkpointDuration);
+        assertEq(
+            config_.timeStretch,
+            HyperdriveMath.calculateTimeStretch(
+                0.05e18,
+                config.positionDuration
+            )
+        );
+        assertEq(config_.governance, factory.hyperdriveGovernance());
+        assertEq(config_.feeCollector, factory.feeCollector());
+        assertEq(config_.sweepCollector, factory.sweepCollector());
+        assertEq(config_.fees.curve, config.fees.curve);
+        assertEq(config_.fees.flat, config.fees.flat);
+        assertEq(config_.fees.governanceLP, config.fees.governanceLP);
+        assertEq(config_.fees.governanceZombie, config.fees.governanceZombie);
     }
 
     function _deployTargets(
