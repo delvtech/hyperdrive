@@ -248,6 +248,10 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             address(IEzETHHyperdriveRead(address(hyperdrive)).ezETH()),
             address(EZETH)
         );
+        assertEq(
+            address(IEzETHHyperdriveRead(address(hyperdrive)).renzoOracle()),
+            address(RENZO_ORACLE)
+        );
     }
 
     /// Deploy and Initialize ///

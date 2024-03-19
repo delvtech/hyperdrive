@@ -6,7 +6,7 @@ import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
-import { IRestakeManager } from "../../interfaces/IRenzo.sol";
+import { IRestakeManager, IRenzoOracle } from "../../interfaces/IRenzo.sol";
 import { EzETHBase } from "./EzETHBase.sol";
 
 /// @author DELV
@@ -40,6 +40,12 @@ contract EzETHTarget0 is HyperdriveTarget0, EzETHBase {
     /// @return IERC20 The ezETH token contract.
     function ezETH() external view returns (IERC20) {
         _revert(abi.encode(_ezETH));
+    }
+
+    /// @notice Gets the Renzo Oracle contract.
+    /// @return IRenzoOracle The RenzoOracle contract.
+    function renzoOracle() external view returns (IRenzoOracle) {
+        _revert(abi.encode(_renzoOracle));
     }
 
     /// @notice Returns the MultiToken's decimals.
