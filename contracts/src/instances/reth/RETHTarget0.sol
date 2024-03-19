@@ -9,7 +9,6 @@ import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IRocketStorage } from "../../interfaces/IRocketStorage.sol";
 import { IRocketTokenRETH } from "../../interfaces/IRocketTokenRETH.sol";
 import { RETHBase } from "./RETHBase.sol";
-import { IRethHyperdriveRead } from "contracts/src/interfaces/IRethHyperdriveRead.sol";
 
 /// @author DELV
 /// @title RETHTarget0

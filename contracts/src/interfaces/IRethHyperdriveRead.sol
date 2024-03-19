@@ -5,7 +5,7 @@ import { IHyperdriveRead } from "./IHyperdriveRead.sol";
 import { IRocketStorage } from "./IRocketStorage.sol";
 import { IRocketTokenRETH } from "./IRocketTokenRETH.sol";
 
-interface IRethHyperdriveRead is IHyperdriveRead {
+interface IRETHHyperdriveRead is IHyperdriveRead {
     /// @notice Gets the Rocket Storage contract.
     /// @return The Rocket Storage contract.
     function rocketStorage() external view returns (IRocketStorage);
