@@ -9,9 +9,9 @@ import { IRocketTokenRETH } from "./IRocketTokenRETH.sol";
 interface IRethHyperdriveRead is IHyperdriveRead {
     /// @notice Gets the Rocket Storage contract.
     /// @return The Rocket Storage contract.
-    function rocketStorage() external pure returns (IRocketStorage);
+    function rocketStorage() external view returns (IRocketStorage);
 
     /// @notice Gets the  Rocket Token rETH contract.
     /// @return The  Rocket Token rETH contract.
-    function rocketTokenRETH() external pure returns (IRocketTokenRETH);
+    function rocketTokenRETH() external view returns (IRocketTokenRETH);
 }
