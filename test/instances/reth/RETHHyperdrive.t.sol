@@ -12,7 +12,7 @@ import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IRETHHyperdriveRead } from "contracts/src/interfaces/IRETHHyperdriveRead.sol";
+import { IRETHHyperdrive } from "contracts/src/interfaces/IRETHHyperdrive.sol";
 import { IRocketDepositPool } from "contracts/src/interfaces/IRocketDepositPool.sol";
 import { IRocketNetworkBalances } from "contracts/src/interfaces/IRocketNetworkBalances.sol";
 import { IRocketPoolDAOProtocolSettingsDeposit } from "contracts/src/interfaces/IRocketPoolDAOProtocolSettingsDeposit.sol";
@@ -252,11 +252,11 @@ contract RETHHyperdriveTest is HyperdriveTest {
 
     function test_getters() external {
         assertEq(
-            address(IRETHHyperdriveRead(address(hyperdrive)).rocketStorage()),
+            address(IRETHHyperdrive(address(hyperdrive)).rocketStorage()),
             address(ROCKET_STORAGE)
         );
         assertEq(
-            address(IRETHHyperdriveRead(address(hyperdrive)).rocketTokenRETH()),
+            address(IRETHHyperdrive(address(hyperdrive)).rocketTokenRETH()),
             address(rocketTokenRETH)
         );
     }
