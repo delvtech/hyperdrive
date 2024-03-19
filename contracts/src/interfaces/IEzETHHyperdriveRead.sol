@@ -8,4 +8,8 @@ interface IEzETHHyperdriveRead is IHyperdriveRead {
     /// @notice Gets the Renzo contract used as this pool's yield source.
     /// @return The renzo contract.
     function renzo() external view returns (IRestakeManager);
+
+    /// @notice Gets the ezETH token contract.
+    /// @return The ezETH token contract.
+    function ezETH() external view returns (IERC20);
 }
