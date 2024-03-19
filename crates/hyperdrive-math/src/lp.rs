@@ -7,6 +7,21 @@ use fixed_point_macros::{fixed, int256};
 use crate::{State, YieldSpace};
 
 impl State {
+    /// Calculates the number of base that are not reserved by open positions.
+    pub fn calculate_idle_share_reserves_in_base(&self) -> FixedPoint {
+        // NOTE: Round up to underestimate the pool's idle.
+        let long_exposure = self.long_exposure().div_up(self.vault_share_price());
+
+        let mut idle_shares_in_base = fixed!(0e18);
+        if (self.share_reserves() > long_exposure + self.minimum_share_reserves()) {
+            idle_shares_in_base =
+                (self.share_reserves() - long_exposure - self.minimum_share_reserves())
+                    * self.vault_share_price();
+        }
+
+        idle_shares_in_base
+    }
+
     /// Calculates the present value of LPs capital in the pool.
     pub fn calculate_present_value(&self, current_block_timestamp: U256) -> FixedPoint {
         // Calculate the average time remaining for the longs and shorts.
