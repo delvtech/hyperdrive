@@ -30,6 +30,12 @@ contract LsETHTarget0 is HyperdriveTarget0, LsETHBase {
 
     /// Getters ///
 
+    /// @notice Gets the LsETH token contract.
+    /// @return The  LsETH token contract.
+    function lsEth() external view returns (IRiverV1) {
+        _revert(abi.encode(_river));
+    }
+
     /// @notice Returns the MultiToken's decimals.
     /// @return The MultiToken's decimals.
     function decimals() external pure override returns (uint8) {
