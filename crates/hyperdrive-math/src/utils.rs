@@ -98,15 +98,15 @@ pub fn calculate_initial_bond_reserves(
         .mul_down(inner)
 }
 
-/// @dev Calculates the number of share reserves that are not reserved by
+/// @dev Calculates the number of base that are not reserved by
 ///      open positions.
 /// @param vault_share_price The current vault share price.
 /// @param share_reserves The current share reserves, from market state
 /// @param long_exposure The current long exposure, from market state
-/// @param minimum_share_reserves The minimum share reserves, from pool config 
+/// @param minimum_share_reserves The minimum share reserves, from pool config
 /// @return idleShares The amount of shares that are available for LPs to
 ///         withdraw.
-pub fn calculate_idle_share_reserves(
+pub fn calculate_idle_share_reserves_in_base(
     vault_share_price: FixedPoint,
     share_reserves: FixedPoint,
     long_exposure: FixedPoint,
@@ -115,12 +115,12 @@ pub fn calculate_idle_share_reserves(
     // NOTE: Round up to underestimate the pool's idle.
     let long_exposure = long_exposure.div_up(vault_share_price);
 
-    let mut idle_shares = fixed!(0e18);
+    let mut idle_shares_in_base = fixed!(0e18);
     if (share_reserves > long_exposure + minimum_share_reserves) {
-        idle_shares = share_reserves - long_exposure - minimum_share_reserves;
+        idle_shares_in_base = (share_reserves - long_exposure - minimum_share_reserves) * vault_share_price;
     }
 
-    idle_shares
+    idle_shares_in_base
 }
 
 #[cfg(test)]
