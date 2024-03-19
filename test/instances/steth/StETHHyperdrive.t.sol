@@ -13,6 +13,7 @@ import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
+import { IStETHHyperdrive } from "contracts/src/interfaces/IStETHHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ETH } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
@@ -214,6 +215,15 @@ contract StETHHyperdriveTest is HyperdriveTest {
 
         // Start recording event logs.
         vm.recordLogs();
+    }
+
+    /// Getters ///
+
+    function test_getters() external {
+        assertEq(
+            address(IStETHHyperdrive(address(hyperdrive)).lido()),
+            address(LIDO)
+        );
     }
 
     /// Deploy and Initialize ///
