@@ -721,13 +721,6 @@ impl TestChain {
             )
             .send()
             .await?;
-            panic!(
-                "min flat fee = {}\nmax flat fee = {}\nposition duration = {}\nflat fee = {}",
-                config.factory_min_flat_fee,
-                config.factory_max_flat_fee,
-                config.erc4626_hyperdrive_position_duration,
-                config.erc4626_hyperdrive_flat_fee
-            );
             let pool_config = PoolDeployConfig {
                 fee_collector: factory.fee_collector().call().await?,
                 sweep_collector: factory.sweep_collector().call().await?,

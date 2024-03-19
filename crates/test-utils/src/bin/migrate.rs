@@ -8,14 +8,6 @@ async fn main() -> Result<()> {
     // Load the config from the environment.
     let config = envy::from_env::<TestChainConfig>()?;
 
-    panic!(
-        "erc4626 checkpoint duration = {:?}\nerc4626 position duration = {:?}\nerc4626 hyperdrive flat fee = {:?}\nsteth hyperdrive flat fee = {:?}",
-        std::env::var("ERC4626_HYPERDRIVE_CHECKPOINT_DURATION"),
-        std::env::var("ERC4626_HYPERDRIVE_POSITION_DURATION"),
-        std::env::var("ERC4626_HYPERDRIVE_FLAT_FEE"),
-        std::env::var("STETH_HYPERDRIVE_FLAT_FEE")
-    );
-
     // Spin up a new test chain. This will read from the environment to get the
     // Ethereum RPC URL, the Ethereum private key that specifies the deployer's
     // account, and the configurations for the test chain.
