@@ -12,7 +12,7 @@ impl State {
         // NOTE: Round up to underestimate the pool's idle.
         let long_exposure = self.long_exposure().div_up(self.vault_share_price());
 
-        let mut idle_shares_in_base = fixed!(0e18);
+        let mut idle_shares_in_base = fixed!(0);
         if (self.share_reserves() > long_exposure + self.minimum_share_reserves()) {
             idle_shares_in_base =
                 (self.share_reserves() - long_exposure - self.minimum_share_reserves())
