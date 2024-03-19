@@ -12,9 +12,10 @@ import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IRocketPoolDAOProtocolSettingsDeposit } from "contracts/src/interfaces/IRocketPoolDAOProtocolSettingsDeposit.sol";
+import { IRethHyperdriveRead } from "contracts/src/interfaces/IRethHyperdriveRead.sol";
 import { IRocketDepositPool } from "contracts/src/interfaces/IRocketDepositPool.sol";
 import { IRocketNetworkBalances } from "contracts/src/interfaces/IRocketNetworkBalances.sol";
+import { IRocketPoolDAOProtocolSettingsDeposit } from "contracts/src/interfaces/IRocketPoolDAOProtocolSettingsDeposit.sol";
 import { IRocketStorage } from "contracts/src/interfaces/IRocketStorage.sol";
 import { IRocketTokenRETH } from "contracts/src/interfaces/IRocketTokenRETH.sol";
 import { Lib } from "test/utils/Lib.sol";
@@ -245,6 +246,19 @@ contract RETHHyperdriveTest is HyperdriveTest {
 
         // Start recording event logs.
         vm.recordLogs();
+    }
+
+    /// Getters ///
+
+    function test_getters() external {
+        assertEq(
+            address(IRethHyperdriveRead(address(hyperdrive)).rocketStorage()),
+            address(ROCKET_STORAGE)
+        );
+        assertEq(
+            address(IRethHyperdriveRead(address(hyperdrive)).rocketTokenRETH()),
+            address(rocketTokenRETH)
+        );
     }
 
     /// Deploy and Initialize ///

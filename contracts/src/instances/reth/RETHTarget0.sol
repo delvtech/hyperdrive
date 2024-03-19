@@ -9,6 +9,7 @@ import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IRocketStorage } from "../../interfaces/IRocketStorage.sol";
 import { IRocketTokenRETH } from "../../interfaces/IRocketTokenRETH.sol";
 import { RETHBase } from "./RETHBase.sol";
+import { IRethHyperdriveRead } from "contracts/src/interfaces/IRethHyperdriveRead.sol";
 
 /// @author DELV
 /// @title RETHTarget0
@@ -30,6 +31,18 @@ contract RETHTarget0 is HyperdriveTarget0, RETHBase {
     ) HyperdriveTarget0(_config) RETHBase(__rocketStorage) {}
 
     /// Getters ///
+
+    /// @notice Gets the Rocket Storage contract.
+    /// @return The Rocket Storage contract.
+    function rocketStorage() external view returns (IRocketStorage) {
+        _revert(abi.encode(_rocketStorage));
+    }
+
+    /// @notice Gets the  Rocket Token rETH contract.
+    /// @return The  Rocket Token rETH contract.
+    function rocketTokenRETH() external view returns (IRocketTokenRETH) {
+        _revert(abi.encode(_rocketTokenReth));
+    }
 
     /// @notice Returns the MultiToken's decimals.
     /// @return The MultiToken's decimals.
