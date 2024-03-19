@@ -1284,7 +1284,6 @@ impl TestChainWithMocks {
     pub async fn new(num_accounts: usize) -> Result<Self> {
         let chain = TestChain::new(num_accounts).await?;
         let client = chain.client(chain.accounts()[0].clone()).await?;
-        // let config = PoolConfig::default();
         let config = PoolConfig {
             base_token: Address::zero(),
             linker_factory: Address::from_low_u64_be(1),
@@ -1298,6 +1297,7 @@ impl TestChainWithMocks {
                 .into(), // time stretch for 5% rate
             governance: client.address(),
             fee_collector: client.address(),
+            sweep_collector: client.address(),
             fees: Fees {
                 curve: uint256!(0.05e18),
                 flat: uint256!(0.0005e18),

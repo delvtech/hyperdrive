@@ -98,6 +98,68 @@ pub fn calculate_initial_bond_reserves(
         .mul_down(inner)
 }
 
+pub fn calculate_fees_given_bonds(
+    bond_amount: FixedPoint,
+    normalized_time_remaining: FixedPoint,
+    spot_price: FixedPoint,
+    vault_share_pric: FixedPoint,
+) -> (FixedPoint,FixedPoint,FixedPoint,FixedPoint) {
+    // NOTE: Round up to overestimate the curve fee.
+    //
+    // p (spot price) tells us how many base a bond is worth -> p = base/bonds
+    // 1 - p tells us how many additional base a bond is worth at
+    // maturity -> (1 - p) = additional base/bonds
+    //
+    // The curve fee is taken from the additional base the user gets for
+    // each bond at maturity:
+    //
+    // curve fee = ((1 - p) * phi_curve * d_y * t)/c
+    //           = (base/bonds * phi_curve * bonds * t) / (base/shares)
+    //           = (base/bonds * phi_curve * bonds * t) * (shares/base)
+    //           = (base * phi_curve * t) * (shares/base)
+    //           = phi_curve * t * shares
+    curveFee = _curveFee
+        .mulUp(ONE - _spotPrice)
+        .mulUp(_bondAmount)
+        .mulDivUp(_normalizedTimeRemaining, _vaultSharePrice);
+
+    // NOTE: Round down to underestimate the governance curve fee.
+    //
+    // Calculate the curve portion of the governance fee:
+    //
+    // governanceCurveFee = curve_fee * phi_gov
+    //                    = shares * phi_gov
+    governanceCurveFee = curveFee.mulDown(_governanceLPFee);
+
+    // NOTE: Round up to overestimate the flat fee.
+    //
+    // The flat portion of the fee is taken from the matured bonds.
+    // Since a matured bond is worth 1 base, it is appropriate to consider
+    // d_y in units of base:
+    //
+    // flat fee = (d_y * (1 - t) * phi_flat) / c
+    //          = (base * (1 - t) * phi_flat) / (base/shares)
+    //          = (base * (1 - t) * phi_flat) * (shares/base)
+    //          = shares * (1 - t) * phi_flat
+    uint256 flat = _bondAmount.mulDivUp(
+        ONE - _normalizedTimeRemaining,
+        _vaultSharePrice
+    );
+    flatFee = flat.mulUp(_flatFee);
+
+    // NOTE: Round down to underestimate the total governance fee.
+    //
+    // We calculate the flat portion of the governance fee as:
+    //
+    // governance_flat_fee = flat_fee * phi_gov
+    //                     = shares * phi_gov
+    //
+    // The totalGovernanceFee is the sum of the curve and flat governance fees.
+    totalGovernanceFee =
+        governanceCurveFee +
+        flatFee.mulDown(_governanceLPFee);
+}
+
 #[cfg(test)]
 mod tests {
     use std::panic;
