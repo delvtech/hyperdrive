@@ -13,7 +13,7 @@ import { LsETHTarget3Deployer } from "contracts/src/deployers/lseth/LsETHTarget3
 import { LsETHTarget4Deployer } from "contracts/src/deployers/lseth/LsETHTarget4Deployer.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { ILsETHHyperdriveRead } from "contracts/src/interfaces/lseth/ILsETHHyperdriveRead.sol";
+import { ILsETHHyperdrive } from "contracts/src/interfaces/lseth/ILsETHHyperdrive.sol";
 import { IRiverV1 } from "contracts/src/interfaces/lseth/IRiverV1.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ETH } from "contracts/src/libraries/Constants.sol";
@@ -225,7 +225,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
 
     function test_getters() external {
         assertEq(
-            address(ILsETHHyperdriveRead(address(hyperdrive)).lsEth()),
+            address(ILsETHHyperdrive(address(hyperdrive)).lsEth()),
             address(RIVER)
         );
     }
