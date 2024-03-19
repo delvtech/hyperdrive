@@ -117,7 +117,8 @@ pub fn calculate_idle_share_reserves_in_base(
 
     let mut idle_shares_in_base = fixed!(0e18);
     if (share_reserves > long_exposure + minimum_share_reserves) {
-        idle_shares_in_base = (share_reserves - long_exposure - minimum_share_reserves) * vault_share_price;
+        idle_shares_in_base =
+            (share_reserves - long_exposure - minimum_share_reserves) * vault_share_price;
     }
 
     idle_shares_in_base
