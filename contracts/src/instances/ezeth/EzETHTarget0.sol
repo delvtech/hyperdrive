@@ -37,9 +37,9 @@ contract EzETHTarget0 is HyperdriveTarget0, EzETHBase {
     }
 
     /// @notice Gets the ezETH token contract.
-    /// @return The ezETH token contract.
+    /// @return IERC20 The ezETH token contract.
     function ezETH() external view returns (IERC20) {
-        _revert(abi.encode(_restakeManager.ezETH()));
+        _revert(abi.encode(_ezETH));
     }
 
     /// @notice Returns the MultiToken's decimals.
