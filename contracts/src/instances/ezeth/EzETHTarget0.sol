@@ -30,6 +30,18 @@ contract EzETHTarget0 is HyperdriveTarget0, EzETHBase {
 
     /// Extras ///
 
+    /// @notice Returns the Renzo contract.
+    /// @return _restakeManager The Renzo contract.
+    function renzo() external view returns (IRestakeManager) {
+        _revert(abi.encode(_restakeManager));
+    }
+
+    /// @notice Gets the ezETH token contract.
+    /// @return The ezETH token contract.
+    function ezETH() external view returns (IERC20) {
+        _revert(abi.encode(_restakeManager.ezETH()));
+    }
+
     /// @notice Returns the MultiToken's decimals.
     /// @return The MultiToken's decimals.
     function decimals() external pure override returns (uint8) {

@@ -12,6 +12,7 @@ import { EzETHTarget4Deployer } from "contracts/src/deployers/ezeth/EzETHTarget4
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IEzETHHyperdriveRead } from "contracts/src/interfaces/IEzETHHyperdriveRead.sol";
 import { IRestakeManager } from "contracts/src/interfaces/IRenzo.sol";
 import { IRenzoOracle, IDepositQueue } from "contracts/src/interfaces/IRenzo.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -234,6 +235,19 @@ contract EzETHHyperdriveTest is HyperdriveTest {
 
         // Start recording event logs.
         vm.recordLogs();
+    }
+
+    /// Getters ///
+
+    function test_getters() external {
+        assertEq(
+            address(IEzETHHyperdriveRead(address(hyperdrive)).renzo()),
+            address(RESTAKE_MANAGER)
+        );
+        assertEq(
+            address(IEzETHHyperdriveRead(address(hyperdrive)).ezETH()),
+            address(EZETH)
+        );
     }
 
     /// Deploy and Initialize ///
