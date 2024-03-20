@@ -15,7 +15,7 @@ version = "0.0.1"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "Matthew Brown", email = "matt@delv.tech" }]
-dependencies = ["jinja2>=2.11"]
+dependencies = ["jinja2", "pydantic", "pyyaml"]
 
 [project.scripts]
 hyperdrive-codegen = "hyperdrive_codegen.main:main"
