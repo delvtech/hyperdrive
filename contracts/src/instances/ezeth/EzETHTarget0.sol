@@ -6,41 +6,46 @@ import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
-import { IRocketStorage } from "../../interfaces/IRocketStorage.sol";
-import { IRocketTokenRETH } from "../../interfaces/IRocketTokenRETH.sol";
-import { RETHBase } from "./RETHBase.sol";
+import { IRestakeManager, IRenzoOracle } from "../../interfaces/IRenzo.sol";
+import { EzETHBase } from "./EzETHBase.sol";
 
 /// @author DELV
-/// @title RETHTarget0
-/// @notice RETHHyperdrive's target0 logic contract. This contract contains
+/// @title EzETHTarget0
+/// @notice EzETHHyperdrive's target0 logic contract. This contract contains
 ///         all of the getters for Hyperdrive as well as some stateful
 ///         functions.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract RETHTarget0 is HyperdriveTarget0, RETHBase {
+contract EzETHTarget0 is HyperdriveTarget0, EzETHBase {
     using SafeERC20 for ERC20;
 
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param __rocketStorage The Rocket Pool storage contract.
+    /// @param _restakeManager The Renzo contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        IRocketStorage __rocketStorage
-    ) HyperdriveTarget0(_config) RETHBase(__rocketStorage) {}
+        IRestakeManager _restakeManager
+    ) HyperdriveTarget0(_config) EzETHBase(_restakeManager) {}
 
-    /// Getters ///
+    /// Extras ///
 
-    /// @notice Gets the Rocket Storage contract.
-    /// @return The Rocket Storage contract.
-    function rocketStorage() external view returns (IRocketStorage) {
-        _revert(abi.encode(_rocketStorage));
+    /// @notice Returns the Renzo contract.
+    /// @return The Renzo contract.
+    function renzo() external view returns (IRestakeManager) {
+        _revert(abi.encode(_restakeManager));
     }
 
-    /// @notice Gets the Rocket Token rETH contract.
-    /// @return The Rocket Token rETH contract.
-    function rocketTokenRETH() external view returns (IRocketTokenRETH) {
-        _revert(abi.encode(_rocketTokenReth));
+    /// @notice Gets the ezETH token contract.
+    /// @return The ezETH token contract.
+    function ezETH() external view returns (IERC20) {
+        _revert(abi.encode(_ezETH));
+    }
+
+    /// @notice Gets the RenzoOracle contract.
+    /// @return The RenzoOracle contract.
+    function renzoOracle() external view returns (IRenzoOracle) {
+        _revert(abi.encode(_renzoOracle));
     }
 
     /// @notice Returns the MultiToken's decimals.

@@ -31,7 +31,7 @@ contract StETHTarget0 is HyperdriveTarget0, StETHBase {
     /// Getters ///
 
     /// @notice Returns the Lido contract.
-    /// @return lido The Lido contract.
+    /// @return The Lido contract.
     function lido() external view returns (ILido) {
         _revert(abi.encode(_lido));
     }

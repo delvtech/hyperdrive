@@ -250,10 +250,6 @@ interface IHyperdrive is
     /// @notice Thrown when the present value calculation fails.
     error InvalidPresentValue();
 
-    /// @notice Thrown when update liquidity brings the share reserves below
-    ///         the minimum share reserves.
-    error InvalidShareReserves();
-
     /// @notice Thrown when an invalid signature is used provide permit access
     ///         to the MultiToken. A signature is considered to be invalid if
     ///         it fails to recover to the owner's address.
@@ -351,6 +347,9 @@ interface IHyperdrive is
     ///         a user attempts to sweep an invalid token. The options and sweep
     ///         targets that are supported vary between instances.
     error UnsupportedToken();
+
+    /// @notice Thrown when `LPMath.calculateUpdateLiquidity` fails.
+    error UpdateLiquidityFailed();
 
     /// Getters ///
 

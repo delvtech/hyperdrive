@@ -135,21 +135,45 @@ library HyperdriveMath {
     ///      flat+curve trades.
     /// @param _shareReserves The pool's share reserves.
     /// @param _shareAdjustment The pool's share adjustment.
-    /// @return The effective share reserves.
+    /// @return effectiveShareReserves The effective share reserves.
     function calculateEffectiveShareReserves(
         uint256 _shareReserves,
         int256 _shareAdjustment
-    ) internal pure returns (uint256) {
-        int256 effectiveShareReserves = _shareReserves.toInt256() -
-            _shareAdjustment;
-        if (effectiveShareReserves < 0) {
+    ) internal pure returns (uint256 effectiveShareReserves) {
+        bool success;
+        (effectiveShareReserves, success) = calculateEffectiveShareReservesSafe(
+            _shareReserves,
+            _shareAdjustment
+        );
+        if (!success) {
             Errors.throwInsufficientLiquidityError(
                 IHyperdrive
                     .InsufficientLiquidityReason
                     .InvalidEffectiveShareReserves
             );
         }
-        return uint256(effectiveShareReserves);
+    }
+
+    /// @dev Calculates the effective share reserves. The effective share
+    ///      reserves are the share reserves minus the share adjustment or
+    ///      z - zeta. We use the effective share reserves as the z-parameter
+    ///      to the YieldSpace pricing model. The share adjustment is used to
+    ///      hold the pricing mechanism invariant under the flat component of
+    ///      flat+curve trades.
+    /// @param _shareReserves The pool's share reserves.
+    /// @param _shareAdjustment The pool's share adjustment.
+    /// @return The effective share reserves.
+    /// @return A flag indicating if the calculation succeeded.
+    function calculateEffectiveShareReservesSafe(
+        uint256 _shareReserves,
+        int256 _shareAdjustment
+    ) internal pure returns (uint256, bool) {
+        int256 effectiveShareReserves = _shareReserves.toInt256() -
+            _shareAdjustment;
+        if (effectiveShareReserves < 0) {
+            return (0, false);
+        }
+        return (uint256(effectiveShareReserves), true);
     }
 
     /// @dev Calculates the initial bond reserves assuming that the initial LP
