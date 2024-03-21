@@ -8,7 +8,7 @@ import { ETH } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { IntegrationTest } from "test/utils/IntegrationTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -28,12 +28,12 @@ import { RETHTarget3Deployer } from "contracts/src/deployers/reth/RETHTarget3Dep
 import { RETHTarget4Deployer } from "contracts/src/deployers/reth/RETHTarget4Deployer.sol";
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 
-contract RETHHyperdriveTest is HyperdriveTest {
+contract RETHHyperdriveTest is IntegrationTest {
     using FixedPointMath for uint256;
     using Lib for *;
     using stdStorage for StdStorage;
 
-    uint256 internal constant FIXED_RATE = 0.05e18;
+    // uint256 internal constant FIXED_RATE = 0.05e18;
     IRocketStorage internal constant ROCKET_STORAGE =
         IRocketStorage(0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46);
 
@@ -42,14 +42,39 @@ contract RETHHyperdriveTest is HyperdriveTest {
     IRocketDepositPool rocketDepositPool;
 
     address internal RETH_WHALE = 0xCc9EE9483f662091a1de4795249E24aC0aC2630f;
-    address internal ETH_WHALE = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
+    // address internal ETH_WHALE = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
 
-    HyperdriveFactory factory;
-    address deployerCoordinator;
+    // HyperdriveFactory factory;
+    // address deployerCoordinator;
+
+    address[] internal whaleAccounts = [RETH_WHALE];
+    IntegrationConfig internal __testConfig =
+        IntegrationConfig(
+            whaleAccounts,
+            IERC20(0xae78736Cd615f374D3085123A210448E74Fc6393),
+            IERC20(ETH),
+            0
+        );
+
+    constructor() IntegrationTest(__testConfig) {}
+
+    function deployCoordinator() internal override returns (address) {
+        vm.startPrank(alice);
+        return
+            address(
+                new RETHHyperdriveDeployerCoordinator(
+                    address(new RETHHyperdriveCoreDeployer(ROCKET_STORAGE)),
+                    address(new RETHTarget0Deployer(ROCKET_STORAGE)),
+                    address(new RETHTarget1Deployer(ROCKET_STORAGE)),
+                    address(new RETHTarget2Deployer(ROCKET_STORAGE)),
+                    address(new RETHTarget3Deployer(ROCKET_STORAGE)),
+                    address(new RETHTarget4Deployer(ROCKET_STORAGE)),
+                    ROCKET_STORAGE
+                )
+            );
+    }
 
     function setUp() public override __mainnet_fork(19_429_100) {
-        super.setUp();
-
         // Fetching the rETH token contract address from storage.
         address rocketTokenRETHAddress = ROCKET_STORAGE.getAddress(
             keccak256(abi.encodePacked("contract.address", "rocketTokenRETH"))
@@ -72,180 +97,8 @@ contract RETHHyperdriveTest is HyperdriveTest {
         );
         rocketDepositPool = IRocketDepositPool(rocketDepositPoolAddress);
 
-        // Fund the test accounts with rETH and ETH.
-        address[] memory accounts = new address[](3);
-        accounts[0] = alice;
-        accounts[1] = bob;
-        accounts[2] = celine;
-        fundAccounts(
-            address(hyperdrive),
-            IERC20(rocketTokenRETH),
-            RETH_WHALE,
-            accounts
-        );
-        vm.deal(alice, 20_000e18);
-        vm.deal(bob, 20_000e18);
-        vm.deal(celine, 20_000e18);
-        // Deal ETH to the rocket token address to increase liquidity
-        // for withdrawals.
-        vm.deal(rocketTokenRETHAddress, 50_000e18);
-
-        // Deploy the hyperdrive factory.
-        vm.startPrank(deployer);
-        address[] memory defaults = new address[](1);
-        defaults[0] = bob;
-        forwarderFactory = new ERC20ForwarderFactory();
-        factory = new HyperdriveFactory(
-            HyperdriveFactory.FactoryConfig({
-                governance: alice,
-                hyperdriveGovernance: bob,
-                feeCollector: celine,
-                sweepCollector: sweepCollector,
-                defaultPausers: defaults,
-                checkpointDurationResolution: 1 hours,
-                minCheckpointDuration: 8 hours,
-                maxCheckpointDuration: 1 days,
-                minPositionDuration: 7 days,
-                maxPositionDuration: 10 * 365 days,
-                minFixedAPR: 0.001e18,
-                maxFixedAPR: 0.5e18,
-                minTimeStretchAPR: 0.005e18,
-                maxTimeStretchAPR: 0.5e18,
-                minFees: IHyperdrive.Fees({
-                    curve: 0,
-                    flat: 0,
-                    governanceLP: 0,
-                    governanceZombie: 0
-                }),
-                maxFees: IHyperdrive.Fees({
-                    curve: ONE,
-                    flat: ONE,
-                    governanceLP: ONE,
-                    governanceZombie: ONE
-                }),
-                linkerFactory: address(forwarderFactory),
-                linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
-            })
-        );
-
-        // Deploy the hyperdrive deployers and register the deployer coordinator
-        // in the factory.
-        vm.stopPrank();
-        vm.startPrank(alice);
-        deployerCoordinator = address(
-            new RETHHyperdriveDeployerCoordinator(
-                address(new RETHHyperdriveCoreDeployer(ROCKET_STORAGE)),
-                address(new RETHTarget0Deployer(ROCKET_STORAGE)),
-                address(new RETHTarget1Deployer(ROCKET_STORAGE)),
-                address(new RETHTarget2Deployer(ROCKET_STORAGE)),
-                address(new RETHTarget3Deployer(ROCKET_STORAGE)),
-                address(new RETHTarget4Deployer(ROCKET_STORAGE)),
-                ROCKET_STORAGE
-            )
-        );
-        factory.addDeployerCoordinator(address(deployerCoordinator));
-
-        // Alice deploys the hyperdrive instance.
-        IHyperdrive.PoolDeployConfig memory config = IHyperdrive
-            .PoolDeployConfig({
-                baseToken: IERC20(ETH),
-                linkerFactory: factory.linkerFactory(),
-                linkerCodeHash: factory.linkerCodeHash(),
-                minimumShareReserves: 1e15,
-                minimumTransactionAmount: 1e16,
-                positionDuration: POSITION_DURATION,
-                checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: 0,
-                governance: factory.hyperdriveGovernance(),
-                feeCollector: factory.feeCollector(),
-                sweepCollector: factory.sweepCollector(),
-                fees: IHyperdrive.Fees({
-                    curve: 0,
-                    flat: 0,
-                    governanceLP: 0,
-                    governanceZombie: 0
-                })
-            });
-        uint256 contribution = 10_000e18;
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            0,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            1,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            2,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            3,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            4,
-            bytes32(uint256(0xdeadbabe))
-        );
-        rocketTokenRETH.approve(deployerCoordinator, contribution);
-        hyperdrive = factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            contribution,
-            FIXED_RATE,
-            FIXED_RATE,
-            IHyperdrive.Options({
-                asBase: false,
-                destination: alice,
-                extraData: new bytes(0)
-            }),
-            bytes32(uint256(0xdeadbabe))
-        );
-
-        // Ensure that Alice received the correct amount of LP tokens. She should
-        // receive LP shares totaling the amount of shares that she contributed
-        // minus the shares set aside for the minimum share reserves and the
-        // zero address's initial LP contribution.
-        assertApproxEqAbs(
-            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
-            contribution - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
-            1e5
-        );
-
-        // Start recording event logs.
-        vm.recordLogs();
+        vm.deal(address(rocketTokenRETH), 50_000e18);
+        super.setUp();
     }
 
     /// Getters ///
@@ -262,134 +115,6 @@ contract RETHHyperdriveTest is HyperdriveTest {
     }
 
     /// Deploy and Initialize ///
-
-    function test__reth__deployAndInitialize() external {
-        // Deploy and Initialize the rETH hyperdrive instance.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        uint256 bobBalanceBefore = address(bob).balance;
-        IHyperdrive.PoolDeployConfig memory config = IHyperdrive
-            .PoolDeployConfig({
-                baseToken: IERC20(ETH),
-                governance: factory.hyperdriveGovernance(),
-                feeCollector: factory.feeCollector(),
-                sweepCollector: factory.sweepCollector(),
-                linkerFactory: factory.linkerFactory(),
-                linkerCodeHash: factory.linkerCodeHash(),
-                minimumShareReserves: 1e15,
-                minimumTransactionAmount: 1e16,
-                positionDuration: POSITION_DURATION,
-                checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: 0,
-                fees: IHyperdrive.Fees({
-                    curve: 0,
-                    flat: 0,
-                    governanceLP: 0,
-                    governanceZombie: 0
-                })
-            });
-        uint256 contribution = 5_000e18;
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            0,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            1,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            2,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            3,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            4,
-            bytes32(uint256(0xdeadfade))
-        );
-        rocketTokenRETH.approve(deployerCoordinator, contribution);
-        hyperdrive = factory.deployAndInitialize(
-            bytes32(uint256(0xbeefbabe)),
-            address(deployerCoordinator),
-            config,
-            new bytes(0),
-            contribution,
-            FIXED_RATE,
-            FIXED_RATE,
-            IHyperdrive.Options({
-                asBase: false,
-                destination: bob,
-                extraData: new bytes(0)
-            }),
-            bytes32(uint256(0xdeadfade))
-        );
-        assertEq(address(bob).balance, bobBalanceBefore);
-
-        // Ensure that the decimals are set correctly.
-        assertEq(hyperdrive.decimals(), 18);
-
-        // Ensure that Bob received the correct amount of LP tokens. He should
-        // receive LP shares totaling the amount of shares that he contributed
-        // minus the shares set aside for the minimum share reserves and the
-        // zero address's initial LP contribution.
-        assertApproxEqAbs(
-            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, bob),
-            contribution - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
-            1e5
-        );
-
-        // Ensure that the share reserves and LP total supply are equal and correct.
-        assertEq(hyperdrive.getPoolInfo().shareReserves, contribution);
-        assertEq(
-            hyperdrive.getPoolInfo().lpTotalSupply,
-            hyperdrive.getPoolInfo().shareReserves - config.minimumShareReserves
-        );
-
-        // Verify that the correct events were emitted.
-        verifyFactoryEvents(
-            deployerCoordinator,
-            hyperdrive,
-            bob,
-            contribution,
-            FIXED_RATE,
-            false,
-            config.minimumShareReserves,
-            new bytes(0),
-            0
-        );
-    }
 
     /// Price Per Share ///
 
