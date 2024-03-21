@@ -11,6 +11,7 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { Lib } from "test/utils/Lib.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { ETH } from "contracts/src/libraries/Constants.sol";
 
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
@@ -19,6 +20,8 @@ abstract contract IntegrationTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
     uint256 internal constant FIXED_RATE = 0.05e18;
+    // bytes32 internal constant DEPLOYMENT_SALT = bytes32(uint256(0xdeadbabe));
+
     address internal ETH_WHALE = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
 
     struct IntegrationConfig {
@@ -26,6 +29,7 @@ abstract contract IntegrationTest is HyperdriveTest {
         IERC20 token;
         IERC20 baseToken;
         uint256 shareTolerance;
+        uint256 minTransactionAmount;
     }
 
     IntegrationConfig internal config;
@@ -33,8 +37,14 @@ abstract contract IntegrationTest is HyperdriveTest {
     HyperdriveFactory factory;
     address deployerCoordinator;
 
+    IHyperdrive.PoolDeployConfig internal poolConfig;
+
+    bool internal immutable isBaseETH;
+
     constructor(IntegrationConfig storage _config) {
         config = _config;
+
+        isBaseETH = config.baseToken == IERC20(ETH);
     }
 
     function setUp() public virtual override {
@@ -65,55 +75,32 @@ abstract contract IntegrationTest is HyperdriveTest {
         deployerCoordinator = deployCoordinator();
         factory.addDeployerCoordinator(deployerCoordinator);
 
-        deployTargets();
+        deployTargets(
+            // alice,
+            bytes32(uint256(0xdeadbeef)),
+            bytes32(uint256(0xdeadbabe)),
+            10_000e18,
+            false
+        );
 
         // Start recording event logs.
         vm.recordLogs();
     }
 
-    function deployTargets() internal {
-        IHyperdrive.PoolDeployConfig memory poolConfig = IHyperdrive
-            .PoolDeployConfig({
-                baseToken: config.baseToken,
-                linkerFactory: factory.linkerFactory(),
-                linkerCodeHash: factory.linkerCodeHash(),
-                minimumShareReserves: 1e15,
-                minimumTransactionAmount: 1e16,
-                positionDuration: POSITION_DURATION,
-                checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: 0,
-                governance: factory.hyperdriveGovernance(),
-                feeCollector: factory.feeCollector(),
-                sweepCollector: factory.sweepCollector(),
-                fees: IHyperdrive.Fees({
-                    curve: 0,
-                    flat: 0,
-                    governanceLP: 0,
-                    governanceZombie: 0
-                })
-            });
-
-        deployTargets(
-            factory,
-            alice,
-            bytes32(uint256(0xdeadbeef)),
-            bytes32(uint256(0xdeadbabe)),
-            10_000e18,
-            poolConfig
-        );
-    }
+    // function isBaseETH() internal returns (bool) {
+    //     return asBase && config.baseToken;
+    // }
 
     function deployTargets(
-        HyperdriveFactory _factory,
-        address deployer,
+        // address deployer,
         bytes32 deploymentId,
         bytes32 deploymentSalt,
         uint256 contribution,
-        IHyperdrive.PoolDeployConfig memory poolConfig
-    ) public {
-        vm.startPrank(deployer);
+        bool asBase
+    ) internal {
+        vm.startPrank(alice);
 
-        _factory.deployTarget(
+        factory.deployTarget(
             deploymentId,
             deployerCoordinator,
             poolConfig,
@@ -123,7 +110,7 @@ abstract contract IntegrationTest is HyperdriveTest {
             0,
             deploymentSalt
         );
-        _factory.deployTarget(
+        factory.deployTarget(
             deploymentId,
             deployerCoordinator,
             poolConfig,
@@ -133,7 +120,7 @@ abstract contract IntegrationTest is HyperdriveTest {
             1,
             deploymentSalt
         );
-        _factory.deployTarget(
+        factory.deployTarget(
             deploymentId,
             deployerCoordinator,
             poolConfig,
@@ -143,7 +130,7 @@ abstract contract IntegrationTest is HyperdriveTest {
             2,
             deploymentSalt
         );
-        _factory.deployTarget(
+        factory.deployTarget(
             deploymentId,
             deployerCoordinator,
             poolConfig,
@@ -153,7 +140,7 @@ abstract contract IntegrationTest is HyperdriveTest {
             3,
             deploymentSalt
         );
-        _factory.deployTarget(
+        factory.deployTarget(
             deploymentId,
             deployerCoordinator,
             poolConfig,
@@ -164,22 +151,62 @@ abstract contract IntegrationTest is HyperdriveTest {
             deploymentSalt
         );
 
-        config.token.approve(deployerCoordinator, contribution);
-        hyperdrive = _factory.deployAndInitialize(
-            deploymentId,
-            deployerCoordinator,
-            poolConfig,
-            new bytes(0),
-            contribution,
-            FIXED_RATE,
-            FIXED_RATE,
-            IHyperdrive.Options({
-                asBase: false,
-                destination: deployer,
-                extraData: new bytes(0)
-            }),
-            deploymentSalt
-        );
+        config.token.approve(deployerCoordinator, 100_000e18);
+        //  asBase && isBaseETH ? contribution : 0
+
+        {
+            hyperdrive = factory.deployAndInitialize{
+                value: asBase && isBaseETH ? contribution : 0
+            }(
+                deploymentId,
+                deployerCoordinator,
+                poolConfig,
+                new bytes(0),
+                contribution,
+                FIXED_RATE,
+                FIXED_RATE,
+                IHyperdrive.Options({
+                    asBase: asBase,
+                    destination: alice,
+                    extraData: new bytes(0)
+                }),
+                deploymentSalt
+            );
+        }
+
+        // if (config.baseToken == IERC20(ETH) && asBase) {
+        //     hyperdrive = _factory.deployAndInitialize{ value: contribution }(
+        //         deploymentId,
+        //         deployerCoordinator,
+        //         poolConfig,
+        //         new bytes(0),
+        //         contribution,
+        //         FIXED_RATE,
+        //         FIXED_RATE,
+        //         IHyperdrive.Options({
+        //             asBase: false,
+        //             destination: deployer,
+        //             extraData: new bytes(0)
+        //         }),
+        //         deploymentSalt
+        //     );
+        // } else {
+        //     hyperdrive = _factory.deployAndInitialize(
+        //         deploymentId,
+        //         deployerCoordinator,
+        //         poolConfig,
+        //         new bytes(0),
+        //         contribution,
+        //         FIXED_RATE,
+        //         FIXED_RATE,
+        //         IHyperdrive.Options({
+        //             asBase: asBase,
+        //             destination: deployer,
+        //             extraData: new bytes(0)
+        //         }),
+        //         deploymentSalt
+        //     );
+        // }
     }
 
     function deployFactory() internal {
@@ -220,60 +247,121 @@ abstract contract IntegrationTest is HyperdriveTest {
                 linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
             })
         );
+
+        poolConfig = IHyperdrive.PoolDeployConfig({
+            baseToken: config.baseToken,
+            linkerFactory: factory.linkerFactory(),
+            linkerCodeHash: factory.linkerCodeHash(),
+            minimumShareReserves: 1e15,
+            minimumTransactionAmount: config.minTransactionAmount,
+            positionDuration: POSITION_DURATION,
+            checkpointDuration: CHECKPOINT_DURATION,
+            timeStretch: 0,
+            governance: factory.hyperdriveGovernance(),
+            feeCollector: factory.feeCollector(),
+            sweepCollector: factory.sweepCollector(),
+            fees: IHyperdrive.Fees({
+                curve: 0,
+                flat: 0,
+                governanceLP: 0,
+                governanceZombie: 0
+            })
+        });
     }
 
-    function getProtocolSharePrice() internal virtual returns (uint256);
+    function getProtocolSharePrice()
+        internal
+        virtual
+        returns (uint256, uint256, uint256);
 
     function deployCoordinator() internal virtual returns (address);
 
-    function test__deployAndInitialize__asShares() external {
-        IHyperdrive.PoolDeployConfig memory poolConfig = IHyperdrive
-            .PoolDeployConfig({
-                baseToken: config.baseToken,
-                linkerFactory: factory.linkerFactory(),
-                linkerCodeHash: factory.linkerCodeHash(),
-                minimumShareReserves: 1e15,
-                minimumTransactionAmount: 1e16,
-                positionDuration: POSITION_DURATION,
-                checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: 0,
-                governance: factory.hyperdriveGovernance(),
-                feeCollector: factory.feeCollector(),
-                sweepCollector: factory.sweepCollector(),
-                fees: IHyperdrive.Fees({
-                    curve: 0,
-                    flat: 0,
-                    governanceLP: 0,
-                    governanceZombie: 0
-                })
-            });
-
-        uint256 bobBalanceBefore = address(bob).balance;
+    function test__deployAndInitialize__asBase() external virtual {
+        uint256 aliceBalanceBefore = address(alice).balance;
         uint256 contribution = 5_000e18;
-        uint256 contributionShares = contribution.divDown(
-            getProtocolSharePrice()
+        (uint256 totalBase, uint256 totalShare, ) = getProtocolSharePrice();
+        uint256 contributionShares = contribution.mulDivDown(
+            totalShare,
+            totalBase
         );
 
         deployTargets(
-            factory,
-            bob,
             bytes32(uint256(0xbeefbabe)),
             bytes32(uint256(0xdeadfade)),
-            contributionShares,
-            poolConfig
+            contribution,
+            true
+            // poolConfig
         );
-
-        assertEq(address(bob).balance, bobBalanceBefore);
+        assertEq(address(alice).balance, aliceBalanceBefore - contribution);
 
         // Ensure that the decimals are set correctly.
         assertEq(hyperdrive.decimals(), 18);
 
-        // Ensure that Bob received the correct amount of LP tokens. He should
+        // Ensure that alice received the correct amount of LP tokens. He should
         // receive LP shares totaling the amount of shares that he contributed
         // minus the shares set aside for the minimum share reserves and the
         // zero address's initial LP contribution.
         assertApproxEqAbs(
-            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, bob),
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
+            contribution.divDown(
+                hyperdrive.getPoolConfig().initialVaultSharePrice
+            ) - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
+            config.shareTolerance
+        );
+
+        // Ensure that the share reserves and LP total supply are equal and correct.
+        assertApproxEqAbs(
+            hyperdrive.getPoolInfo().shareReserves,
+            contributionShares,
+            1
+        );
+        assertEq(
+            hyperdrive.getPoolInfo().lpTotalSupply,
+            hyperdrive.getPoolInfo().shareReserves -
+                hyperdrive.getPoolConfig().minimumShareReserves
+        );
+
+        // Verify that the correct events were emitted.
+        verifyFactoryEvents(
+            deployerCoordinator,
+            hyperdrive,
+            alice,
+            contribution,
+            FIXED_RATE,
+            true,
+            hyperdrive.getPoolConfig().minimumShareReserves,
+            new bytes(0),
+            // NOTE: Tolerance since stETH uses mulDivDown for share calculations.
+            config.shareTolerance
+        );
+    }
+
+    function test__deployAndInitialize__asShares() external {
+        uint256 aliceBalanceBefore = address(alice).balance;
+        uint256 contribution = 5_000e18;
+        (, , uint256 sharePrice) = getProtocolSharePrice();
+
+        uint256 contributionShares = contribution.divDown(sharePrice);
+
+        deployTargets(
+            // alice,
+            bytes32(uint256(0xbeefbabe)),
+            bytes32(uint256(0xdeadfade)),
+            contributionShares,
+            false
+        );
+
+        assertEq(address(alice).balance, aliceBalanceBefore);
+
+        // Ensure that the decimals are set correctly.
+        assertEq(hyperdrive.decimals(), 18);
+
+        // Ensure that alice received the correct amount of LP tokens. He should
+        // receive LP shares totaling the amount of shares that he contributed
+        // minus the shares set aside for the minimum share reserves and the
+        // zero address's initial LP contribution.
+        assertApproxEqAbs(
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
             contribution.divDown(
                 hyperdrive.getPoolConfig().initialVaultSharePrice
             ) - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
@@ -292,7 +380,7 @@ abstract contract IntegrationTest is HyperdriveTest {
         verifyFactoryEvents(
             deployerCoordinator,
             hyperdrive,
-            bob,
+            alice,
             contributionShares,
             FIXED_RATE,
             false,

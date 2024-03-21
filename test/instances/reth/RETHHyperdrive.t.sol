@@ -53,14 +53,25 @@ contract RETHHyperdriveTest is IntegrationTest {
             whaleAccounts,
             IERC20(0xae78736Cd615f374D3085123A210448E74Fc6393),
             IERC20(ETH),
-            0
+            0,
+            1e16
         );
 
     constructor() IntegrationTest(__testConfig) {}
 
-    function getProtocolSharePrice() internal override returns (uint256) {
-        return rocketTokenRETH.getExchangeRate();
+    function getProtocolSharePrice()
+        internal
+        override
+        returns (uint256, uint256, uint256)
+    {
+        return (
+            rocketTokenRETH.getExchangeRate(),
+            rocketTokenRETH.getExchangeRate(),
+            rocketTokenRETH.getExchangeRate()
+        );
     }
+
+    function test__deployAndInitialize__asBase() external override {}
 
     function deployCoordinator() internal override returns (address) {
         vm.startPrank(alice);
