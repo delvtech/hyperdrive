@@ -58,6 +58,10 @@ contract RETHHyperdriveTest is IntegrationTest {
 
     constructor() IntegrationTest(__testConfig) {}
 
+    function getProtocolSharePrice() internal override returns (uint256) {
+        return rocketTokenRETH.getExchangeRate();
+    }
+
     function deployCoordinator() internal override returns (address) {
         vm.startPrank(alice);
         return

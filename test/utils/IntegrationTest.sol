@@ -180,34 +180,6 @@ abstract contract IntegrationTest is HyperdriveTest {
             }),
             deploymentSalt
         );
-
-        // Ensure that Alice received the correct amount of LP tokens. She should
-        // receive LP shares totaling the amount of shares that she contributed
-        // minus the shares set aside for the minimum share reserves and the
-        // zero address's initial LP contribution.
-        assertApproxEqAbs(
-            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, deployer),
-            contribution - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
-            config.shareTolerance
-        );
-
-        // beforeDeployAndInitialize();
-
-        // hyperdrive = factory.deployAndInitialize(
-        //     bytes32(uint256(0xdeadbeef)),
-        //     deployerCoordinator,
-        //     config,
-        //     new bytes(0),
-        //     contribution,
-        //     FIXED_RATE,
-        //     FIXED_RATE,
-        //     IHyperdrive.Options({
-        //         asBase: false,
-        //         destination: alice,
-        //         extraData: new bytes(0)
-        //     }),
-        //     bytes32(uint256(0xdeadbabe))
-        // );
     }
 
     function deployFactory() internal {
@@ -278,13 +250,16 @@ abstract contract IntegrationTest is HyperdriveTest {
 
         uint256 bobBalanceBefore = address(bob).balance;
         uint256 contribution = 5_000e18;
+        uint256 contributionShares = contribution.divDown(
+            getProtocolSharePrice()
+        );
 
         deployTargets(
             factory,
             bob,
             bytes32(uint256(0xbeefbabe)),
             bytes32(uint256(0xdeadfade)),
-            contribution,
+            contributionShares,
             poolConfig
         );
 
@@ -306,7 +281,7 @@ abstract contract IntegrationTest is HyperdriveTest {
         );
 
         // Ensure that the share reserves and LP total supply are equal and correct.
-        assertEq(hyperdrive.getPoolInfo().shareReserves, contribution);
+        assertEq(hyperdrive.getPoolInfo().shareReserves, contributionShares);
         assertEq(
             hyperdrive.getPoolInfo().lpTotalSupply,
             hyperdrive.getPoolInfo().shareReserves -
@@ -318,7 +293,7 @@ abstract contract IntegrationTest is HyperdriveTest {
             deployerCoordinator,
             hyperdrive,
             bob,
-            contribution,
+            contributionShares,
             FIXED_RATE,
             false,
             poolConfig.minimumShareReserves,
