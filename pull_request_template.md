@@ -38,6 +38,8 @@ be removed.
 - [ ] **Visibility**
     - [ ] Are all `payable` function restricted to avoid stuck ether?
 - [ ] **Math**
+    - [ ] Is all of the arithmetic checked or guarded by if-statements that will
+          catch underflows?
     - [ ] If `Safe` functions are altered, are potential underflows and
           overflows caught so that a failure flag can be thrown?
     - [ ] Are all of the rounding directions clearly documented?
