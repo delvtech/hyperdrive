@@ -1,3 +1,4 @@
+// FIXME: Remove these modules.
 mod dev_chain;
 mod test_chain;
 
@@ -5,16 +6,20 @@ use std::{sync::Arc, time::Duration};
 
 pub use dev_chain::{DevChain, MNEMONIC};
 use ethers::{
-    middleware::SignerMiddleware,
+    core::utils::Anvil,
+    middleware::{
+        gas_escalator::{Frequency, GeometricGasPrice},
+        GasEscalatorMiddleware, NonceManagerMiddleware, SignerMiddleware,
+    },
     providers::{
         Http, HttpClientError, HttpRateLimitRetryPolicy, Middleware, Provider, RetryClient,
         RetryClientBuilder, RetryPolicy,
     },
-    signers::{LocalWallet, Signer},
-    types::U256,
+    signers::Signer,
+    types::{Address, U256},
+    utils::AnvilInstance,
 };
 use eyre::Result;
-use hyperdrive_addresses::Addresses;
 pub use test_chain::{TestChain, TestChainConfig, TestChainWithMocks};
 
 /// A retry policy that will retry on rate limit errors, timeout errors, and
@@ -41,42 +46,160 @@ impl RetryPolicy<HttpClientError> for ChainRetryPolicy {
     }
 }
 
-pub type ChainClient = SignerMiddleware<Provider<Arc<RetryClient<Http>>>, LocalWallet>;
+// FIXME: What are the abstractions that I want?
+//
+// - [ ] There should be an abstraction that makes it easy to get the contract
+//       addresses from a DevChain.
+// - [ ] There should be an abstraction that makes it easy to spin up an anvil
+//       chain.
+//    - [ ] It should be possible to forward these logs to a file or in some
+//          way surface these logs.
+// - [ ] There should be an abstraction that makes it easy to connect to a
+//       remote chain or dev chain.
+// - [ ] There should be an abstraction that makes it easy to deploy new pools
+//       or whole factories given a config.
+//
+// FIXME: What are some changes that should be made?
+//
+// - [ ] We should create a deployments module to create new pools and full
+//       deployments using the factory.
+//    - We need to support deploying pools.
+//    - We need to support deploying the factory.
+//    - It would be nice to support deploying the full deployment with the
+//      factory, the sDAI and Lido deployer coordinators, and two initial pools.
+//      That said, instead of doing it like that, I could write the migration
+//      script using more orthogonal tools.
+pub struct Chain {
+    provider: Provider<Http>,
+    client_version: String,
+    chain_id: u64,
+    _maybe_anvil: Option<AnvilInstance>,
+}
 
-#[async_trait::async_trait]
-pub trait Chain {
+impl Chain {
+    /// Constructs a new `Chain` from an Ethereum RPC URL.
+    pub async fn new_with_rpc(rpc_url: String) -> Result<Self> {
+        let provider = Provider::<Http>::try_from(rpc_url)?.interval(Duration::from_millis(1));
+        let client_version = provider.client_version().await?;
+        let chain_id = provider.get_chainid().await?.low_u64();
+        Ok(Self {
+            provider,
+            client_version,
+            chain_id,
+            _maybe_anvil: None,
+        })
+    }
+
+    /// Constructs a new `Chain` with a local Anvil chain.
+    pub async fn new_with_anvil() -> Result<Self> {
+        let anvil = Anvil::new()
+            .arg("--timestamp")
+            // NOTE: Anvil can't increase the time or set the time of the
+            // next block to a time in the past, so we set the genesis block
+            // to 12 AM UTC, January 1, 2000 to avoid issues when reproducing
+            // old crash reports.
+            .arg("946684800")
+            .spawn();
+        let provider =
+            Provider::<Http>::try_from(anvil.endpoint())?.interval(Duration::from_millis(1));
+        let client_version = provider.client_version().await?;
+        let chain_id = provider.get_chainid().await?.low_u64();
+        Ok(Self {
+            provider,
+            client_version,
+            chain_id,
+            _maybe_anvil: Some(anvil),
+        })
+    }
+}
+
+impl Chain {
     /// A provider that can access the chain.
-    fn provider(&self) -> Provider<Http>;
-
-    /// The accounts that are available on the chain.
-    fn accounts(&self) -> Vec<LocalWallet>;
-
-    /// The addresses of the Hyperdrive contracts on the chain.
-    fn addresses(&self) -> Addresses;
-
-    /// A client that can access the chain.
-    async fn client(&self, signer: LocalWallet) -> Result<Arc<ChainClient>> {
-        // Build a client with a retry policy that will retry on rate limit
+    pub fn provider(&self) -> Provider<Arc<RetryClient<Http>>> {
+        // Build a provider with a retry policy that will retry on rate limit
         // errors, timeout errors, and "intrinsic gas too high".
         let provider = RetryClientBuilder::default()
             .rate_limit_retries(10)
             .timeout_retries(3)
             .initial_backoff(Duration::from_millis(1))
             .build(
-                self.provider().as_ref().clone(),
+                self.provider.as_ref().clone(),
                 Box::<ChainRetryPolicy>::default(),
             );
-        let provider = Provider::new(Arc::new(provider)).interval(Duration::from_millis(1));
-
-        Ok(Arc::new(SignerMiddleware::new(
-            provider,
-            signer.with_chain_id(self.chain_id().await?.low_u64()),
-        )))
+        Provider::new(Arc::new(provider)).interval(Duration::from_millis(1))
     }
 
-    /// The chain id.
-    async fn chain_id(&self) -> Result<U256> {
-        let chain_id = self.provider().get_chainid().await?;
-        Ok(chain_id)
+    /// A client that can access the chain.
+    pub async fn client<S: Signer + 'static>(
+        &self,
+        signer: S,
+    ) -> Result<
+        GasEscalatorMiddleware<
+            NonceManagerMiddleware<SignerMiddleware<Provider<Arc<RetryClient<Http>>>, S>>,
+        >,
+    > {
+        // Build a client with signer, nonce management, and gas escalator
+        // middleware.
+        let client = SignerMiddleware::new_with_provider_chain(self.provider(), signer).await?;
+        let address = client.address();
+        let client = NonceManagerMiddleware::new(client, address);
+        let client = GasEscalatorMiddleware::new(
+            client,
+            GeometricGasPrice::new(1.125, 10u64, None::<u64>),
+            Frequency::PerBlock,
+        );
+
+        Ok(client)
+    }
+
+    /// Snapshots the chain. This only works for anvil chains.
+    pub async fn snapshot(&self) -> Result<U256> {
+        if !self.is_anvil() {
+            panic!("Can't snapshot a non-anvil chain");
+        }
+        let id = self.provider.request("evm_snapshot", ()).await?;
+        Ok(id)
+    }
+
+    /// Reverts the chain to a previous snapshot. This only works for anvil
+    /// chains.
+    pub async fn revert<U: Into<U256>>(&self, id: U) -> Result<()> {
+        if !self.is_anvil() {
+            panic!("Can't snapshot a non-anvil chain");
+        }
+        self.provider
+            .request::<[U256; 1], bool>("evm_revert", [id.into()])
+            .await?;
+        Ok(())
+    }
+
+    /// Increases the chains time. This only works for anvil chains.
+    pub async fn increase_time(&self, duration: u128) -> Result<()> {
+        if !self.is_anvil() {
+            panic!("Can't snapshot a non-anvil chain");
+        }
+        self.provider
+            .request::<[u128; 1], i128>("anvil_increaseTime", [duration])
+            .await?;
+        self.provider
+            .request::<[u128; 1], ()>("anvil_mine", [1])
+            .await?;
+        Ok(())
+    }
+
+    /// Sets the accounts balance. This only works for anvil chains.
+    pub async fn set_balance<U: Into<U256>>(&self, address: Address, balance: U) -> Result<()> {
+        if !self.is_anvil() {
+            panic!("Can't snapshot a non-anvil chain");
+        }
+        self.provider
+            .request::<(Address, U256), bool>("anvil_setBalance", (address, balance.into()))
+            .await?;
+        Ok(())
+    }
+
+    /// Checks to see if the underlying chain is an anvil chain.
+    fn is_anvil(&self) -> bool {
+        Ok(self.client_version.contains("anvil"))
     }
 }
