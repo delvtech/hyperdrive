@@ -21,7 +21,7 @@ be removed.
     - [ ] Do all `transferFrom` calls use `msg.sender` as the `from` address?
         - [ ] If not, is the function access restricted to prevent unauthorized
               token spend?
-- [ ] **Low-level calls**
+- [ ] **Low-level calls (`call`, `delegatecall`, `staticcall`, `transfer`, `send`)**
     - [ ] Is the returned `success` boolean checked to handle failed calls?
     - [ ] If using `delegatecall`, which addresses can be called, and are there
           strict controls over this?
