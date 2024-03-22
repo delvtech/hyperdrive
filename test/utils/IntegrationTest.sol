@@ -161,8 +161,7 @@ abstract contract IntegrationTest is HyperdriveTest {
             deploymentSalt
         );
 
-        // Alice gives approval to the deployer coordinator
-        // to fund the market.
+        // Alice gives approval to the deployer coordinator to fund the market.
         config.token.approve(deployerCoordinator, 100_000e18);
 
         // We expect the deployAndInitialize to fail with an
@@ -176,8 +175,7 @@ abstract contract IntegrationTest is HyperdriveTest {
             );
         }
 
-        // Deploy and initialize the market.
-        // If the base token is ETH we pass the
+        // Deploy and initialize the market. If the base token is ETH we pass the
         // contribution through the call.
         hyperdrive = factory.deployAndInitialize{
             value: asBase && isBaseETH ? contribution : 0
