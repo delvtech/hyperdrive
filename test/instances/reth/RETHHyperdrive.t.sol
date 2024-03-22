@@ -53,7 +53,7 @@ contract RETHHyperdriveTest is IntegrationTest {
     IntegrationConfig internal __testConfig =
         IntegrationConfig(
             whaleAccounts,
-            IERC20(0xae78736Cd615f374D3085123A210448E74Fc6393),
+            IERC20(rocketTokenRETH),
             IERC20(ETH),
             0,
             1e16
