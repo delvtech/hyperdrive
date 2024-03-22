@@ -20,7 +20,6 @@ abstract contract IntegrationTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
     uint256 internal constant FIXED_RATE = 0.05e18;
-    // bytes32 internal constant DEPLOYMENT_SALT = bytes32(uint256(0xdeadbabe));
 
     address internal ETH_WHALE = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
 
@@ -53,10 +52,10 @@ abstract contract IntegrationTest is HyperdriveTest {
         // _beforeSetUp();
 
         // Fund Accounts
-        address[] memory accounts = new address[](3);
+        address[] memory accounts = new address[](2);
         accounts[0] = alice;
         accounts[1] = bob;
-        accounts[2] = celine;
+        // accounts[2] = celine;
         for (uint256 i = 0; i < config.whaleAccounts.length; i++) {
             fundAccounts(
                 address(hyperdrive),
@@ -79,7 +78,7 @@ abstract contract IntegrationTest is HyperdriveTest {
             // alice,
             bytes32(uint256(0xdeadbeef)),
             bytes32(uint256(0xdeadbabe)),
-            10_000e18,
+            5_000e18,
             false
         );
 
@@ -173,40 +172,6 @@ abstract contract IntegrationTest is HyperdriveTest {
                 deploymentSalt
             );
         }
-
-        // if (config.baseToken == IERC20(ETH) && asBase) {
-        //     hyperdrive = _factory.deployAndInitialize{ value: contribution }(
-        //         deploymentId,
-        //         deployerCoordinator,
-        //         poolConfig,
-        //         new bytes(0),
-        //         contribution,
-        //         FIXED_RATE,
-        //         FIXED_RATE,
-        //         IHyperdrive.Options({
-        //             asBase: false,
-        //             destination: deployer,
-        //             extraData: new bytes(0)
-        //         }),
-        //         deploymentSalt
-        //     );
-        // } else {
-        //     hyperdrive = _factory.deployAndInitialize(
-        //         deploymentId,
-        //         deployerCoordinator,
-        //         poolConfig,
-        //         new bytes(0),
-        //         contribution,
-        //         FIXED_RATE,
-        //         FIXED_RATE,
-        //         IHyperdrive.Options({
-        //             asBase: asBase,
-        //             destination: deployer,
-        //             extraData: new bytes(0)
-        //         }),
-        //         deploymentSalt
-        //     );
-        // }
     }
 
     function deployFactory() internal {
@@ -336,7 +301,7 @@ abstract contract IntegrationTest is HyperdriveTest {
         );
     }
 
-    function test__deployAndInitialize__asShares() external {
+    function test__deployAndInitialize__asShares(uint) external {
         uint256 aliceBalanceBefore = address(alice).balance;
         uint256 contribution = 5_000e18;
         (, , uint256 sharePrice) = getProtocolSharePrice();
