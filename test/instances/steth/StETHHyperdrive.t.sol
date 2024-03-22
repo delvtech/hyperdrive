@@ -29,8 +29,6 @@ contract StETHHyperdriveTest is IntegrationTest {
     using Lib for *;
     using stdStorage for StdStorage;
 
-    // uint256 internal constant FIXED_RATE = 0.05e18;
-
     // The Lido storage location that tracks buffered ether reserves. We can
     // simulate the accrual of interest by updating this value.
     bytes32 internal constant BUFFERED_ETHER_POSITION =
@@ -39,18 +37,41 @@ contract StETHHyperdriveTest is IntegrationTest {
     ILido internal constant LIDO =
         ILido(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
 
+    // Whale accounts.
     address internal STETH_WHALE = 0x1982b2F5814301d4e9a8b0201555376e62F82428;
-    // address internal ETH_WHALE = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
-
-    // HyperdriveFactory factory;
-    // address deployerCoordinator;
-
     address[] internal whaleAccounts = [STETH_WHALE];
+
+    // The configuration for the integration testing suite.
     IntegrationConfig internal __testConfig =
         IntegrationConfig(whaleAccounts, IERC20(LIDO), IERC20(ETH), 1e5, 1e15);
 
     constructor() IntegrationTest(__testConfig) {}
 
+    function setUp() public override __mainnet_fork(17_376_154) {
+        super.setUp();
+
+        vm.startPrank(bob);
+        LIDO.approve(address(hyperdrive), 100_000e18);
+    }
+
+    /// Overrides ///
+
+    /// @dev Fetches share price information about StETH.
+    function getProtocolSharePrice()
+        internal
+        override
+        returns (uint256, uint256, uint256)
+    {
+        uint256 totalPooledEther = LIDO.getTotalPooledEther();
+        uint256 totalShares = LIDO.getTotalShares();
+        return (
+            totalPooledEther,
+            totalShares,
+            totalPooledEther.divDown(totalShares)
+        );
+    }
+
+    /// @dev Deploys the rETH deployer coordinator contract.
     function deployCoordinator() internal override returns (address) {
         vm.startPrank(alice);
         return
@@ -65,27 +86,6 @@ contract StETHHyperdriveTest is IntegrationTest {
                     LIDO
                 )
             );
-    }
-
-    function setUp() public override __mainnet_fork(17_376_154) {
-        super.setUp();
-
-        vm.startPrank(bob);
-        LIDO.approve(address(hyperdrive), 100_000e18);
-    }
-
-    function getProtocolSharePrice()
-        internal
-        override
-        returns (uint256, uint256, uint256)
-    {
-        uint256 totalPooledEther = LIDO.getTotalPooledEther();
-        uint256 totalShares = LIDO.getTotalShares();
-        return (
-            totalPooledEther,
-            totalShares,
-            totalPooledEther.divDown(totalShares)
-        );
     }
 
     /// Getters ///

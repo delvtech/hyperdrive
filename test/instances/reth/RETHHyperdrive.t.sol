@@ -33,21 +33,23 @@ contract RETHHyperdriveTest is IntegrationTest {
     using Lib for *;
     using stdStorage for StdStorage;
 
-    // uint256 internal constant FIXED_RATE = 0.05e18;
+    // Rocket Network contracts can be upgraded and addresses changed.
+    // We can safely assume these addresses are accurate because
+    // this testing suite is forked from block 19429100.
     IRocketStorage internal constant ROCKET_STORAGE =
         IRocketStorage(0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46);
+    IRocketTokenRETH internal constant rocketTokenRETH =
+        IRocketTokenRETH(0xae78736Cd615f374D3085123A210448E74Fc6393);
+    IRocketNetworkBalances internal constant rocketNetworkBalances =
+        IRocketNetworkBalances(0x07FCaBCbe4ff0d80c2b1eb42855C0131b6cba2F4);
+    IRocketDepositPool internal constant rocketDepositPool =
+        IRocketDepositPool(0xDD3f50F8A6CafbE9b31a427582963f465E745AF8);
 
-    IRocketTokenRETH rocketTokenRETH;
-    IRocketNetworkBalances rocketNetworkBalances;
-    IRocketDepositPool rocketDepositPool;
-
+    // Whale accounts.
     address internal RETH_WHALE = 0xCc9EE9483f662091a1de4795249E24aC0aC2630f;
-    // address internal ETH_WHALE = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
-
-    // HyperdriveFactory factory;
-    // address deployerCoordinator;
-
     address[] internal whaleAccounts = [RETH_WHALE];
+
+    // The configuration for the integration testing suite.
     IntegrationConfig internal __testConfig =
         IntegrationConfig(
             whaleAccounts,
@@ -59,8 +61,18 @@ contract RETHHyperdriveTest is IntegrationTest {
 
     constructor() IntegrationTest(__testConfig) {}
 
+    function setUp() public override __mainnet_fork(19_429_100) {
+        // Give the rETH contract ETH to mimic adequate withdrawable liquidity.
+        vm.deal(address(rocketTokenRETH), 50_000e18);
+        super.setUp();
+    }
+
+    /// Overrides ///
+
+    /// @dev Fetches share price information about rETH.
     function getProtocolSharePrice()
         internal
+        view
         override
         returns (uint256, uint256, uint256)
     {
@@ -71,8 +83,10 @@ contract RETHHyperdriveTest is IntegrationTest {
         );
     }
 
+    /// @dev Initializing the market with the ETH is not supported.
     function test__deployAndInitialize__asBase() external override {}
 
+    /// @dev Deploys the rETH deployer coordinator contract.
     function deployCoordinator() internal override returns (address) {
         vm.startPrank(alice);
         return
@@ -89,33 +103,6 @@ contract RETHHyperdriveTest is IntegrationTest {
             );
     }
 
-    function setUp() public override __mainnet_fork(19_429_100) {
-        // Fetching the rETH token contract address from storage.
-        address rocketTokenRETHAddress = ROCKET_STORAGE.getAddress(
-            keccak256(abi.encodePacked("contract.address", "rocketTokenRETH"))
-        );
-        rocketTokenRETH = IRocketTokenRETH(rocketTokenRETHAddress);
-
-        // Fetching the Rocket Network Balances contract address from storage.
-        address rocketNetworkBalancesAddress = ROCKET_STORAGE.getAddress(
-            keccak256(
-                abi.encodePacked("contract.address", "rocketNetworkBalances")
-            )
-        );
-        rocketNetworkBalances = IRocketNetworkBalances(
-            rocketNetworkBalancesAddress
-        );
-
-        // Fetching the Rocket Deposit Pool contract address from storage.
-        address rocketDepositPoolAddress = ROCKET_STORAGE.getAddress(
-            keccak256(abi.encodePacked("contract.address", "rocketDepositPool"))
-        );
-        rocketDepositPool = IRocketDepositPool(rocketDepositPoolAddress);
-
-        vm.deal(address(rocketTokenRETH), 50_000e18);
-        super.setUp();
-    }
-
     /// Getters ///
 
     function test_getters() external {
@@ -128,8 +115,6 @@ contract RETHHyperdriveTest is IntegrationTest {
             address(rocketTokenRETH)
         );
     }
-
-    /// Deploy and Initialize ///
 
     /// Price Per Share ///
 
@@ -157,7 +142,7 @@ contract RETHHyperdriveTest is IntegrationTest {
         );
     }
 
-    // /// Long ///
+    /// Long ///
 
     function test_open_long_with_eth(uint256 basePaid) external {
         // Bob opens a long by depositing ETH. This is not allowed and
