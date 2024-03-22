@@ -23,8 +23,10 @@ be removed.
               token spend?
 - [ ] **Low-level calls (`call`, `delegatecall`, `staticcall`, `transfer`, `send`)**
     - [ ] Is the returned `success` boolean checked to handle failed calls?
-    - [ ] If using `delegatecall`, which addresses can be called, and are there
-          strict controls over this?
+    - [ ] If using `delegatecall`, are there strict access controls on the
+          addresses that can be called? It shouldn't be possible to `delegatecall`
+          arbitrary addresses, so the list of possible targets should either be
+          immutable or tightly controlled by an admin.
 - [ ] **Reentrancy**
     - [ ] Are functions that make external calls or transfer ether marked as `nonReentrant`?
         - [ ] If not, is there documentation that explains why reentrancy is
@@ -36,7 +38,7 @@ be removed.
     - [ ] If loops are used, are there guards in place to avoid out-of-gas
           issues?
 - [ ] **Visibility**
-    - [ ] Are all `payable` function restricted to avoid stuck ether?
+    - [ ] Are all `payable` functions restricted to avoid stuck ether?
 - [ ] **Math**
     - [ ] Is all of the arithmetic checked or guarded by if-statements that will
           catch underflows?
