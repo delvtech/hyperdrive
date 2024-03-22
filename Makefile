@@ -22,6 +22,9 @@ SOLIDITY_ZOMBIE_TESTS = ZombieInterestTest
 test: 
 	make test-sol && make test-rust
 
+test-instances:
+	forge test -vv --match-path test/instances/*.t.sol
+
 test-sol-core:
 	forge test -vv --no-match-contract "$(SOLIDITY_LP_WITHDRAWAL_TESTS)|$(SOLIDITY_NETTING_TESTS)|$(SOLIDITY_ZOMBIE_TESTS)"
 
@@ -36,6 +39,8 @@ test-sol-netting:
 # NOTE: Breaking these out onto a separate machine speeds up CI execution.
 test-sol-zombie:
 	forge test -vv --match-contract "$(SOLIDITY_ZOMBIE_TESTS)"
+
+
 
 test-rust:
 	cargo test --workspace --exclude hyperdrive-math && \
