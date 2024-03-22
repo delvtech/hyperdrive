@@ -56,7 +56,8 @@ contract RETHHyperdriveTest is IntegrationTest {
             IERC20(rocketTokenRETH),
             IERC20(ETH),
             0,
-            1e16
+            1e16,
+            POSITION_DURATION
         );
 
     constructor() IntegrationTest(__testConfig) {}

@@ -43,7 +43,14 @@ contract StETHHyperdriveTest is IntegrationTest {
 
     // The configuration for the integration testing suite.
     IntegrationConfig internal __testConfig =
-        IntegrationConfig(whaleAccounts, IERC20(LIDO), IERC20(ETH), 1e5, 1e15);
+        IntegrationConfig(
+            whaleAccounts,
+            IERC20(LIDO),
+            IERC20(ETH),
+            1e5,
+            1e15,
+            POSITION_DURATION
+        );
 
     constructor() IntegrationTest(__testConfig) {}
 
@@ -59,6 +66,7 @@ contract StETHHyperdriveTest is IntegrationTest {
     /// @dev Fetches share price information about StETH.
     function getProtocolSharePrice()
         internal
+        view
         override
         returns (uint256, uint256, uint256)
     {

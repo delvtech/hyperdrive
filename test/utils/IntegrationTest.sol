@@ -14,6 +14,7 @@ import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { ETH } from "contracts/src/libraries/Constants.sol";
 
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import "forge-std/console.sol";
 
 abstract contract IntegrationTest is HyperdriveTest {
     using Lib for *;
@@ -29,6 +30,7 @@ abstract contract IntegrationTest is HyperdriveTest {
         IERC20 baseToken;
         uint256 shareTolerance;
         uint256 minTransactionAmount;
+        uint256 positionDuration;
     }
 
     IntegrationConfig internal config;
@@ -64,9 +66,11 @@ abstract contract IntegrationTest is HyperdriveTest {
                 accounts
             );
         }
-        vm.deal(alice, 20_000e18);
-        vm.deal(bob, 20_000e18);
-        vm.deal(celine, 20_000e18);
+        vm.deal(alice, 100_000e18);
+        vm.deal(bob, 100_000e18);
+        // vm.deal(celine, 20_000e18);
+        // console.logString("here1");
+        // console.logUint(config.token.balanceOf(alice));
 
         // _afterSetup();
 
@@ -98,6 +102,9 @@ abstract contract IntegrationTest is HyperdriveTest {
         bool asBase
     ) internal {
         vm.startPrank(alice);
+
+        // console.logString("here2");
+        // console.logUint(config.token.balanceOf(alice));
 
         factory.deployTarget(
             deploymentId,
@@ -219,7 +226,7 @@ abstract contract IntegrationTest is HyperdriveTest {
             linkerCodeHash: factory.linkerCodeHash(),
             minimumShareReserves: 1e15,
             minimumTransactionAmount: config.minTransactionAmount,
-            positionDuration: POSITION_DURATION,
+            positionDuration: config.positionDuration,
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: 0,
             governance: factory.hyperdriveGovernance(),
