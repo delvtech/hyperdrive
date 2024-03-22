@@ -54,7 +54,8 @@ contract LsETHHyperdriveTest is IntegrationTest {
             IERC20(ETH),
             0,
             1e15,
-            POSITION_DURATION
+            POSITION_DURATION,
+            false
         );
 
     constructor() IntegrationTest(__testConfig) {}
@@ -95,9 +96,6 @@ contract LsETHHyperdriveTest is IntegrationTest {
             RIVER.underlyingBalanceFromShares(1e18)
         );
     }
-
-    /// @dev Initializing the market with the ETH is not supported.
-    function test__deployAndInitialize__asBase() external override {}
 
     /// Getters ///
 

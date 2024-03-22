@@ -40,8 +40,6 @@ test-sol-netting:
 test-sol-zombie:
 	forge test -vv --match-contract "$(SOLIDITY_ZOMBIE_TESTS)"
 
-
-
 test-rust:
 	cargo test --workspace --exclude hyperdrive-math && \
 	cargo test --package hyperdrive-math -- --test-threads=1

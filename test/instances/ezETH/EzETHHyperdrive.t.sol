@@ -24,7 +24,6 @@ import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { IntegrationTest } from "test/utils/IntegrationTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
-import "forge-std/console.sol";
 
 contract EzETHHyperdriveTest is IntegrationTest {
     using FixedPointMath for uint256;
@@ -67,7 +66,8 @@ contract EzETHHyperdriveTest is IntegrationTest {
             IERC20(ETH),
             1e6,
             1e15,
-            POSITION_DURATION_2_WEEKS
+            POSITION_DURATION_2_WEEKS,
+            false
         );
 
     constructor() IntegrationTest(__testConfig) {}
@@ -108,9 +108,6 @@ contract EzETHHyperdriveTest is IntegrationTest {
 
         return (totalTVL, totalSupply, sharePrice);
     }
-
-    /// @dev Initializing the market with the ETH is not supported.
-    function test__deployAndInitialize__asBase() external override {}
 
     /// @dev Deploys the EzETH deployer coordinator contract.
     function deployCoordinator() internal override returns (address) {

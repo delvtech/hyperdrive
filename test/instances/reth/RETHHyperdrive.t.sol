@@ -57,7 +57,8 @@ contract RETHHyperdriveTest is IntegrationTest {
             IERC20(ETH),
             0,
             1e16,
-            POSITION_DURATION
+            POSITION_DURATION,
+            false
         );
 
     constructor() IntegrationTest(__testConfig) {}
@@ -83,9 +84,6 @@ contract RETHHyperdriveTest is IntegrationTest {
             rocketTokenRETH.getExchangeRate()
         );
     }
-
-    /// @dev Initializing the market with the ETH is not supported.
-    function test__deployAndInitialize__asBase() external override {}
 
     /// @dev Deploys the rETH deployer coordinator contract.
     function deployCoordinator() internal override returns (address) {

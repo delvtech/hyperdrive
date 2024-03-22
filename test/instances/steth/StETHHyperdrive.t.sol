@@ -49,7 +49,8 @@ contract StETHHyperdriveTest is IntegrationTest {
             IERC20(ETH),
             1e5,
             1e15,
-            POSITION_DURATION
+            POSITION_DURATION,
+            true
         );
 
     constructor() IntegrationTest(__testConfig) {}
