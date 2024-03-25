@@ -20,11 +20,11 @@ import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol"
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { IntegrationTest } from "test/utils/IntegrationTest.sol";
+import { InstanceTest } from "test/utils/InstanceTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-contract StETHHyperdriveTest is IntegrationTest {
+contract StETHHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using Lib for *;
     using stdStorage for StdStorage;
@@ -41,9 +41,9 @@ contract StETHHyperdriveTest is IntegrationTest {
     address internal STETH_WHALE = 0x1982b2F5814301d4e9a8b0201555376e62F82428;
     address[] internal whaleAccounts = [STETH_WHALE];
 
-    // The configuration for the integration testing suite.
-    IntegrationConfig internal __testConfig =
-        IntegrationConfig(
+    // The configuration for the Instance testing suite.
+    InstanceTestConfig internal __testConfig =
+        InstanceTestConfig(
             whaleAccounts,
             IERC20(LIDO),
             IERC20(ETH),
@@ -53,7 +53,7 @@ contract StETHHyperdriveTest is IntegrationTest {
             true
         );
 
-    constructor() IntegrationTest(__testConfig) {}
+    constructor() InstanceTest(__testConfig) {}
 
     function setUp() public override __mainnet_fork(17_376_154) {
         super.setUp();

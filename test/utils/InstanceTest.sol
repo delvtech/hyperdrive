@@ -13,14 +13,14 @@ import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
 /// @author DELV
-/// @title IntegrationTest
-/// @notice The base contract for the integration testing suite.
+/// @title InstanceTest
+/// @notice The base contract for the instance testing suite.
 /// @dev A testing suite that provides a foundation to setup, deploy, and
 /// test common cases for Hyperdrive instances.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract IntegrationTest is HyperdriveTest {
+abstract contract InstanceTest is HyperdriveTest {
     using Lib for *;
     using FixedPointMath for uint256;
 
@@ -30,8 +30,8 @@ abstract contract IntegrationTest is HyperdriveTest {
     // ETH whale account.
     address internal ETH_WHALE = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
 
-    /// @dev Configuration for the Integration testing suite.
-    struct IntegrationConfig {
+    /// @dev Configuration for the Instance testing suite.
+    struct InstanceTestConfig {
         address[] whaleAccounts;
         IERC20 token;
         IERC20 baseToken;
@@ -41,15 +41,15 @@ abstract contract IntegrationTest is HyperdriveTest {
         bool enableBaseDeposits;
     }
 
-    IntegrationConfig internal config;
+    InstanceTestConfig internal config;
     IHyperdrive.PoolDeployConfig internal poolConfig;
     HyperdriveFactory factory;
     address deployerCoordinator;
     bool internal immutable isBaseETH;
 
-    /// @dev Constructor for the Integration testing suite.
-    /// @param _config The Integration configuration.
-    constructor(IntegrationConfig storage _config) {
+    /// @dev Constructor for the Instance testing suite.
+    /// @param _config The Instance configuration.
+    constructor(InstanceTestConfig storage _config) {
         config = _config;
         isBaseETH = config.baseToken == IERC20(ETH);
     }
@@ -321,7 +321,7 @@ abstract contract IntegrationTest is HyperdriveTest {
                 contribution.divDown(
                     hyperdrive.getPoolConfig().initialVaultSharePrice
                 ) - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
-                config.shareTolerance // Custom share tolerance per integration.
+                config.shareTolerance // Custom share tolerance per instance.
             );
 
             // Ensure that the share reserves and LP total supply are equal and correct.
@@ -388,7 +388,7 @@ abstract contract IntegrationTest is HyperdriveTest {
             contribution.divDown(
                 hyperdrive.getPoolConfig().initialVaultSharePrice
             ) - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
-            config.shareTolerance // Custom share tolerance per integration.
+            config.shareTolerance // Custom share tolerance per instance.
         );
 
         // Ensure that the share reserves and LP total supply are equal and correct.

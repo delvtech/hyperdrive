@@ -8,7 +8,7 @@ import { ETH } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { IntegrationTest } from "test/utils/IntegrationTest.sol";
+import { InstanceTest } from "test/utils/InstanceTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -28,7 +28,7 @@ import { RETHTarget3Deployer } from "contracts/src/deployers/reth/RETHTarget3Dep
 import { RETHTarget4Deployer } from "contracts/src/deployers/reth/RETHTarget4Deployer.sol";
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 
-contract RETHHyperdriveTest is IntegrationTest {
+contract RETHHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using Lib for *;
     using stdStorage for StdStorage;
@@ -49,9 +49,9 @@ contract RETHHyperdriveTest is IntegrationTest {
     address internal RETH_WHALE = 0xCc9EE9483f662091a1de4795249E24aC0aC2630f;
     address[] internal whaleAccounts = [RETH_WHALE];
 
-    // The configuration for the integration testing suite.
-    IntegrationConfig internal __testConfig =
-        IntegrationConfig(
+    // The configuration for the Instance testing suite.
+    InstanceTestConfig internal __testConfig =
+        InstanceTestConfig(
             whaleAccounts,
             IERC20(rocketTokenRETH),
             IERC20(ETH),
@@ -61,7 +61,7 @@ contract RETHHyperdriveTest is IntegrationTest {
             false
         );
 
-    constructor() IntegrationTest(__testConfig) {}
+    constructor() InstanceTest(__testConfig) {}
 
     function setUp() public override __mainnet_fork(19_429_100) {
         // Give the rETH contract ETH to mimic adequate withdrawable liquidity.

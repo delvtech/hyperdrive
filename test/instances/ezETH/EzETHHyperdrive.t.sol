@@ -21,11 +21,11 @@ import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol"
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { IntegrationTest } from "test/utils/IntegrationTest.sol";
+import { InstanceTest } from "test/utils/InstanceTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-contract EzETHHyperdriveTest is IntegrationTest {
+contract EzETHHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using Lib for *;
     using stdStorage for StdStorage;
@@ -58,9 +58,9 @@ contract EzETHHyperdriveTest is IntegrationTest {
     address internal EZETH_WHALE = 0x40C0d1fbcB0A43A62ca7A241E7A42ca58EeF96eb;
     address[] internal whaleAccounts = [EZETH_WHALE];
 
-    // The configuration for the integration testing suite.
-    IntegrationConfig internal __testConfig =
-        IntegrationConfig(
+    // The configuration for the Instance testing suite.
+    InstanceTestConfig internal __testConfig =
+        InstanceTestConfig(
             whaleAccounts,
             IERC20(EZETH),
             IERC20(ETH),
@@ -70,7 +70,7 @@ contract EzETHHyperdriveTest is IntegrationTest {
             false
         );
 
-    constructor() IntegrationTest(__testConfig) {}
+    constructor() InstanceTest(__testConfig) {}
 
     function setUp() public override __mainnet_fork(STARTING_BLOCK) {
         // Depositing with ETH is not allowed for this pool so we need to get
