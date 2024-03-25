@@ -24,12 +24,6 @@ abstract contract InstanceTest is HyperdriveTest {
     using Lib for *;
     using FixedPointMath for uint256;
 
-    // Fixed rate used to configure market.
-    uint256 internal constant FIXED_RATE = 0.05e18;
-
-    // ETH whale account.
-    address internal ETH_WHALE = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
-
     /// @dev Configuration for the Instance testing suite.
     struct InstanceTestConfig {
         address[] whaleAccounts;
@@ -41,11 +35,23 @@ abstract contract InstanceTest is HyperdriveTest {
         bool enableBaseDeposits;
     }
 
-    InstanceTestConfig internal config;
-    IHyperdrive.PoolDeployConfig internal poolConfig;
-    HyperdriveFactory factory;
-    address deployerCoordinator;
-    bool internal immutable isBaseETH;
+    // Fixed rate used to configure market.
+    uint256 internal constant FIXED_RATE = 0.05e18;
+
+    // The configuration for the Instance testing suite.
+    InstanceTestConfig private config;
+
+    // The configuration for the pool.
+    IHyperdrive.PoolDeployConfig private poolConfig;
+
+    // The address of the deployer coordinator contract.
+    address private deployerCoordinator;
+
+    // The factory contract used for deployment in this testing suite.
+    HyperdriveFactory private factory;
+
+    // Flag for denoting if the base token is ETH.
+    bool private immutable isBaseETH;
 
     /// @dev Constructor for the Instance testing suite.
     /// @param _config The Instance configuration.
@@ -105,7 +111,7 @@ abstract contract InstanceTest is HyperdriveTest {
         bytes32 deploymentSalt,
         uint256 contribution,
         bool asBase
-    ) internal {
+    ) private {
         // Alice is the default deployer.
         vm.startPrank(alice);
 
@@ -198,7 +204,7 @@ abstract contract InstanceTest is HyperdriveTest {
 
     /// @dev Deploys the Hyperdrive Factory contract and
     ///      sets the default pool configuration.
-    function deployFactory() internal {
+    function deployFactory() private {
         // Deploy the hyperdrive factory.
         vm.startPrank(deployer);
         address[] memory defaults = new address[](1);
