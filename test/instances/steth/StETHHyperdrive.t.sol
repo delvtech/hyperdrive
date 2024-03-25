@@ -50,34 +50,29 @@ contract StETHHyperdriveTest is InstanceTest {
             1e5,
             1e15,
             POSITION_DURATION,
+            true,
             true
         );
 
+    /// @dev Instantiates the Instance testing suite with the configuration.
     constructor() InstanceTest(__testConfig) {}
 
+    /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(17_376_154) {
+        // Invoke the Instance testing suite setup.
         super.setUp();
-
-        vm.startPrank(bob);
-        LIDO.approve(address(hyperdrive), 100_000e18);
     }
 
     /// Overrides ///
 
-    /// @dev Fetches share price information about StETH.
-    function getProtocolSharePrice()
-        internal
-        view
-        override
-        returns (uint256, uint256, uint256)
-    {
+    /// @dev Converts base amount to the equivalent about in stETH.
+    function convertToShares(
+        uint256 baseAmount
+    ) internal override returns (uint256 shareAmount) {
+        // Get protocol state information used for calculating shares.
         uint256 totalPooledEther = LIDO.getTotalPooledEther();
         uint256 totalShares = LIDO.getTotalShares();
-        return (
-            totalPooledEther,
-            totalShares,
-            totalPooledEther.divDown(totalShares)
-        );
+        return baseAmount.mulDivDown(totalShares, totalPooledEther);
     }
 
     /// @dev Deploys the rETH deployer coordinator contract.

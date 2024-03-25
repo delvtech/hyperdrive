@@ -16,7 +16,7 @@ import { Lib } from "test/utils/Lib.sol";
 /// @title InstanceTest
 /// @notice The base contract for the instance testing suite.
 /// @dev A testing suite that provides a foundation to setup, deploy, and
-/// test common cases for Hyperdrive instances.
+///      test common cases for Hyperdrive instances.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
@@ -33,6 +33,7 @@ abstract contract InstanceTest is HyperdriveTest {
         uint256 minTransactionAmount;
         uint256 positionDuration;
         bool enableBaseDeposits;
+        bool enableShareDeposits;
     }
 
     // Fixed rate used to configure market.
@@ -65,6 +66,8 @@ abstract contract InstanceTest is HyperdriveTest {
         config = _config;
         isBaseETH = config.baseToken == IERC20(ETH);
     }
+
+    /// Deployments ///
 
     /// @notice Forge setup function.
     /// @dev Inherits from HyperdriveTest and deploys the
@@ -104,6 +107,10 @@ abstract contract InstanceTest is HyperdriveTest {
             contribution, // Contribution
             false // asBase
         );
+
+        config.token.approve(address(hyperdrive), 100_000e18);
+        vm.startPrank(bob);
+        config.token.approve(address(hyperdrive), 100_000e18);
 
         // Ensure that Alice received the correct amount of LP tokens. She should
         // receive LP shares totaling the amount of shares that she contributed
@@ -190,7 +197,7 @@ abstract contract InstanceTest is HyperdriveTest {
         config.token.approve(deployerCoordinator, 100_000e18);
 
         // We expect the deployAndInitialize to fail with an
-        // Unsupported token error if depositing as base is not supported.
+        // Unsupported token error if depositing with base is not supported.
         // If the base token is ETH we expect a NotPayable error.
         if (!config.enableBaseDeposits && asBase) {
             vm.expectRevert(
@@ -198,6 +205,12 @@ abstract contract InstanceTest is HyperdriveTest {
                     ? IHyperdrive.NotPayable.selector
                     : IHyperdrive.UnsupportedToken.selector
             );
+        }
+
+        // We expect the deployAndInitialize to fail with an
+        // Unsupported token error if depositing with shares is not supported.
+        if (!config.enableShareDeposits && !asBase) {
+            vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         }
 
         // Deploy and initialize the market. If the base token is ETH we pass the
@@ -284,20 +297,21 @@ abstract contract InstanceTest is HyperdriveTest {
         });
     }
 
-    /// @dev A virtual function that exposes important state
-    ///      about the underlying protocol and token. Not all values
-    ///      will be used depending on the instance.
-    /// @param baseSupply Amount of base tokens in circulation.
-    /// @param shareSupply Amount of share tokens in circulation.
-    /// @param sharePrice Price of of one share in terms of base.
-    function getProtocolSharePrice()
-        internal
-        virtual
-        returns (uint256 baseSupply, uint256 shareSupply, uint256 sharePrice);
+    /// Overrides ///
 
     /// @dev A virtual function that defines the deployer coordinator
     ///      contract that will be used to deploy all the instance targets.
     function deployCoordinator() internal virtual returns (address);
+
+    /// @dev A virtual function that converts an amount in terms of the base token
+    ///      to equivalent amount in shares.
+    /// @param baseAmount Amount in terms of the base.
+    /// @return shareAmount Amount in terms of shares.
+    function convertToShares(
+        uint256 baseAmount
+    ) internal virtual returns (uint256 shareAmount);
+
+    /// Tests ///
 
     /// @dev Test to verify a market can be deployed and initialized funded by the
     ///      base token. Is expected to revert when base deposits are not supported.
@@ -307,14 +321,8 @@ abstract contract InstanceTest is HyperdriveTest {
         // Contribution in terms of base.
         uint256 contribution = 5_000e18;
 
-        // Get protocol state information used for calculating correct LP shares.
-        (uint256 totalBase, uint256 totalShare, ) = getProtocolSharePrice();
-
         // Contribution in terms of shares.
-        uint256 contributionShares = contribution.mulDivDown(
-            totalShare,
-            totalBase
-        );
+        uint256 contributionShares = convertToShares(contribution);
 
         // Deploy all Hyperdrive contract using deployer coordinator contract.
         // This function reverts if base deposits are disabled.
@@ -385,11 +393,8 @@ abstract contract InstanceTest is HyperdriveTest {
         // Contribution in terms of base.
         uint256 contribution = 5_000e18;
 
-        // Get protocol state information used for calculating correct LP shares.
-        (, , uint256 sharePrice) = getProtocolSharePrice();
-
         // Contribution in terms of shares.
-        uint256 contributionShares = contribution.divDown(sharePrice);
+        uint256 contributionShares = convertToShares(contribution);
 
         // Deploy all Hyperdrive contracts using deployer coordinator contract.
         deployHyperdrive(
@@ -398,6 +403,11 @@ abstract contract InstanceTest is HyperdriveTest {
             contributionShares, // Contribution
             false // asBase
         );
+
+        // Early termination if share deposits are not supported.
+        if (!config.enableShareDeposits) {
+            return;
+        }
 
         // Ensure Alice's ETH balance remains the same.
         assertEq(address(alice).balance, aliceBalanceBefore);

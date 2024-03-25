@@ -55,34 +55,33 @@ contract RETHHyperdriveTest is InstanceTest {
             whaleAccounts,
             IERC20(rocketTokenRETH),
             IERC20(ETH),
-            0,
+            1e5,
             1e16,
             POSITION_DURATION,
-            false
+            false,
+            true
         );
 
+    /// @dev Instantiates the Instance testing suite with the configuration.
     constructor() InstanceTest(__testConfig) {}
 
+    /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(19_429_100) {
         // Give the rETH contract ETH to mimic adequate withdrawable liquidity.
         vm.deal(address(rocketTokenRETH), 50_000e18);
+
+        // Invoke the Instance testing suite setup.
         super.setUp();
     }
 
     /// Overrides ///
 
-    /// @dev Fetches share price information about rETH.
-    function getProtocolSharePrice()
-        internal
-        view
-        override
-        returns (uint256, uint256, uint256)
-    {
-        return (
-            rocketTokenRETH.getExchangeRate(),
-            rocketTokenRETH.getExchangeRate(),
-            rocketTokenRETH.getExchangeRate()
-        );
+    /// @dev Converts base amount to the equivalent amount in rETH.
+    function convertToShares(
+        uint256 baseAmount
+    ) internal override returns (uint256 shareAmount) {
+        // Rocket Pool has a built-in function for computing price in terms of shares.
+        return rocketTokenRETH.getRethValue(baseAmount);
     }
 
     /// @dev Deploys the rETH deployer coordinator contract.

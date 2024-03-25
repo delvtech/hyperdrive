@@ -52,15 +52,20 @@ contract LsETHHyperdriveTest is InstanceTest {
             whaleAccounts,
             IERC20(RIVER),
             IERC20(ETH),
-            0,
+            1e5,
             1e15,
             POSITION_DURATION,
-            false
+            false,
+            true
         );
 
+    /// @dev Instantiates the Instance testing suite with the configuration.
     constructor() InstanceTest(__testConfig) {}
 
+    /// @dev Forge function that is invoked to setup the testing environment.
+
     function setUp() public override __mainnet_fork(19_429_100) {
+        // Invoke the Instance testing suite setup.
         super.setUp();
     }
 
@@ -83,18 +88,12 @@ contract LsETHHyperdriveTest is InstanceTest {
             );
     }
 
-    /// @dev Fetches share price information about LsETH.
-    function getProtocolSharePrice()
-        internal
-        view
-        override
-        returns (uint256, uint256, uint256)
-    {
-        return (
-            RIVER.totalUnderlyingSupply(),
-            RIVER.totalSupply(),
-            RIVER.underlyingBalanceFromShares(1e18)
-        );
+    /// @dev Converts base amount to the equivalent amount in LsETH.
+    function convertToShares(
+        uint256 baseAmount
+    ) internal override returns (uint256 shareAmount) {
+        // River has a built-in function for computing price in terms of shares.
+        return RIVER.sharesFromUnderlyingBalance(baseAmount);
     }
 
     /// Getters ///

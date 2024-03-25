@@ -67,46 +67,34 @@ contract EzETHHyperdriveTest is InstanceTest {
             1e6,
             1e15,
             POSITION_DURATION_15_DAYS,
-            false
+            false,
+            true
         );
 
+    /// @dev Instantiates the Instance testing suite with the configuration.
     constructor() InstanceTest(__testConfig) {}
 
+    /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(STARTING_BLOCK) {
-        // Depositing with ETH is not allowed for this pool so we need to get
-        // some ezETH for alice first.
+        // Giving the EzETH whale account more EzETH before the instance setup.
         vm.startPrank(EZETH_WHALE);
-
         vm.deal(EZETH_WHALE, 50_000e18);
-        RESTAKE_MANAGER.depositETH{ value: 40_000e18 }();
+        RESTAKE_MANAGER.depositETH{ value: 50_000e18 }();
         vm.stopPrank();
 
+        // Invoke the Instance testing suite setup.
         super.setUp();
     }
 
     /// Overrides ///
 
-    /// @dev Fetches share price information about EzETH.
-    function getProtocolSharePrice()
-        internal
-        view
-        override
-        returns (uint256, uint256, uint256)
-    {
-        // Get the total TVL priced in ETH from restakeManager.
-        (, , uint256 totalTVL) = RESTAKE_MANAGER.calculateTVLs();
-
-        // Get the total supply of the ezETH token.
-        uint256 totalSupply = EZETH.totalSupply();
-
-        // Calculate the share price.
-        uint256 sharePrice = RENZO_ORACLE.calculateRedeemAmount(
-            ONE,
-            totalSupply,
-            totalTVL
-        );
-
-        return (totalTVL, totalSupply, sharePrice);
+    /// @dev Converts base amount to the equivalent about in EzETH.
+    function convertToShares(
+        uint256 baseAmount
+    ) internal override returns (uint256 shareAmount) {
+        // Get protocol state information used for calculating shares.
+        (uint256 sharePrice, , ) = getSharePrice();
+        return baseAmount.divDown(sharePrice);
     }
 
     /// @dev Deploys the EzETH deployer coordinator contract.
