@@ -309,7 +309,7 @@ abstract contract InstanceTest is HyperdriveTest {
     /// @return shareAmount Amount in terms of shares.
     function convertToShares(
         uint256 baseAmount
-    ) internal virtual returns (uint256 shareAmount);
+    ) internal view virtual returns (uint256 shareAmount);
 
     /// Tests ///
 

@@ -79,7 +79,7 @@ contract RETHHyperdriveTest is InstanceTest {
     /// @dev Converts base amount to the equivalent amount in rETH.
     function convertToShares(
         uint256 baseAmount
-    ) internal override returns (uint256 shareAmount) {
+    ) internal view override returns (uint256 shareAmount) {
         // Rocket Pool has a built-in function for computing price in terms of shares.
         return rocketTokenRETH.getRethValue(baseAmount);
     }

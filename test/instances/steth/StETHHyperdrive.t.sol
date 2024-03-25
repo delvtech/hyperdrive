@@ -68,7 +68,7 @@ contract StETHHyperdriveTest is InstanceTest {
     /// @dev Converts base amount to the equivalent about in stETH.
     function convertToShares(
         uint256 baseAmount
-    ) internal override returns (uint256 shareAmount) {
+    ) internal view override returns (uint256 shareAmount) {
         // Get protocol state information used for calculating shares.
         uint256 totalPooledEther = LIDO.getTotalPooledEther();
         uint256 totalShares = LIDO.getTotalShares();

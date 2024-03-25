@@ -91,7 +91,7 @@ contract EzETHHyperdriveTest is InstanceTest {
     /// @dev Converts base amount to the equivalent about in EzETH.
     function convertToShares(
         uint256 baseAmount
-    ) internal override returns (uint256 shareAmount) {
+    ) internal view override returns (uint256 shareAmount) {
         // Get protocol state information used for calculating shares.
         (uint256 sharePrice, , ) = getSharePrice();
         return baseAmount.divDown(sharePrice);
