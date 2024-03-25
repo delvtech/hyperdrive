@@ -51,7 +51,7 @@ contract EzETHHyperdriveTest is InstanceTest {
     // oracles makes it difficult to test on a mainnet fork without heavy
     // mocking.  To test with their deployed code we use a shorter position
     // duration.
-    uint256 internal constant POSITION_DURATION_2_WEEKS = 15 days;
+    uint256 internal constant POSITION_DURATION_15_DAYS = 15 days;
     uint256 internal constant STARTING_BLOCK = 19119544;
 
     // Whale accounts.
@@ -66,7 +66,7 @@ contract EzETHHyperdriveTest is InstanceTest {
             IERC20(ETH),
             1e6,
             1e15,
-            POSITION_DURATION_2_WEEKS,
+            POSITION_DURATION_15_DAYS,
             false
         );
 
@@ -146,13 +146,13 @@ contract EzETHHyperdriveTest is InstanceTest {
     function test__ezeth_interest_and_advance_time() external {
         // hand calculated value sanity check
         uint256 positionAdjustedInterestRate = uint256(0.05e18).mulDivDown(
-            POSITION_DURATION_2_WEEKS,
+            POSITION_DURATION_15_DAYS,
             365 days
         );
 
         // Ensure that advancing time accrues interest like we expect.
         (uint256 sharePriceBefore, , ) = getSharePrice();
-        advanceTime(POSITION_DURATION_2_WEEKS, 0.05e18);
+        advanceTime(POSITION_DURATION_15_DAYS, 0.05e18);
         (uint256 sharePriceAfter, , ) = getSharePrice();
         assertEq(positionAdjustedInterestRate, 0.002054794520547945e18);
         assertEq(
@@ -312,7 +312,7 @@ contract EzETHHyperdriveTest is InstanceTest {
     ) external {
         // Accrue interest for a term to ensure that the share price is greater
         // than one.
-        advanceTime(POSITION_DURATION_2_WEEKS, 0.05e18);
+        advanceTime(POSITION_DURATION_15_DAYS, 0.05e18);
         vm.startPrank(bob);
 
         // Calculate the maximum amount of basePaid we can test.
@@ -336,7 +336,7 @@ contract EzETHHyperdriveTest is InstanceTest {
 
         // The term passes and some interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
-        advanceTime(POSITION_DURATION_2_WEEKS, variableRate);
+        advanceTime(POSITION_DURATION_15_DAYS, variableRate);
 
         // Get some balance information before the withdrawal.
         (
@@ -446,7 +446,7 @@ contract EzETHHyperdriveTest is InstanceTest {
         assertGt(basePaid, 0);
         assertGe(
             realizedRate,
-            FIXED_RATE.mulDown(POSITION_DURATION_2_WEEKS.divDown(365 days))
+            FIXED_RATE.mulDown(POSITION_DURATION_15_DAYS.divDown(365 days))
         );
 
         // Ensure that Renzo's aggregates and the token balances were updated
@@ -526,7 +526,7 @@ contract EzETHHyperdriveTest is InstanceTest {
         //
         // The term passes and interest accrues.
         variableRate = variableRate.normalizeToRange(0.01e18, 2.5e18);
-        advanceTime(POSITION_DURATION_2_WEEKS, variableRate);
+        advanceTime(POSITION_DURATION_15_DAYS, variableRate);
 
         // Bob attempts to close his short with ETH as the target asset. This
         // fails since ETH isn't supported as a withdrawal asset.
@@ -551,7 +551,7 @@ contract EzETHHyperdriveTest is InstanceTest {
     ) external {
         // Accrue interest for a term to ensure that the share price is greater
         // than one.
-        advanceTime(POSITION_DURATION_2_WEEKS, 0.05e18);
+        advanceTime(POSITION_DURATION_15_DAYS, 0.05e18);
 
         // Calculate the maximum amount we can short.
         shortAmount = shortAmount.normalizeToRange(
@@ -572,7 +572,7 @@ contract EzETHHyperdriveTest is InstanceTest {
             .getPoolInfo()
             .vaultSharePrice;
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
-        advanceTime(POSITION_DURATION_2_WEEKS, variableRate);
+        advanceTime(POSITION_DURATION_15_DAYS, variableRate);
 
         // Get some balance information before closing the short.
         (
@@ -802,7 +802,7 @@ contract EzETHHyperdriveTest is InstanceTest {
         // accrual of interest by adding to the balance of the DepositQueue contract.
         // RestakeManager adds the balance of the DepositQueue to totalTVL in calculateTVLs()
         uint256 adjustedVariableRate = uint256(variableRate).mulDivDown(
-            POSITION_DURATION_2_WEEKS,
+            POSITION_DURATION_15_DAYS,
             365 days
         );
         uint256 ethToAdd = totalTVLBefore.mulDown(adjustedVariableRate);
