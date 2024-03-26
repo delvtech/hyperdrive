@@ -12,6 +12,8 @@ from hyperdrive_codegen.file import write_string_to_file
 
 @dataclass
 class TemplatePathInfo:
+    """Path and name information for the template."""
+
     path: str
     base_name: str
     folder: str
@@ -19,8 +21,18 @@ class TemplatePathInfo:
 
 @dataclass
 class TemplateInfo:
+    """Contains a jinja template and path information."""
+
     template: Template
     path_info: TemplatePathInfo
+
+
+@dataclass
+class FileInfo:
+    """Contains template information and the rendered code."""
+
+    template: TemplateInfo
+    rendered_code: str
 
 
 deployer_templates = [
@@ -63,13 +75,19 @@ def get_templates(env: Environment) -> list[TemplateInfo]:
     return [TemplateInfo(template=env.get_template(path_info.path), path_info=path_info) for path_info in path_infos]
 
 
-@dataclass
-class FileInfo:
-    template: TemplateInfo
-    rendered_code: str
-
-
 def write_templates_to_files(templates: list[TemplateInfo], output_path: Path, template_config: TemplateConfig):
+    """Writes a given list of templates to file.
+
+    Parameters
+    ----------
+    templates : list[TemplateInfo]
+        Template information containing path information and the rendered code.
+    output_path : Path
+        The directory to write files to.
+    template_config : TemplateConfig
+        Template configuration, has all the variables the jinja templates use.
+    """
+
     for template in templates:
         # Get the file information and rendered code.
         file_info = FileInfo(template, rendered_code=template.template.render(template_config.model_dump()))
