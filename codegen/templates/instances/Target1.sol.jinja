@@ -1,0 +1,25 @@
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity 0.8.20;
+
+import { HyperdriveTarget1 } from "../../external/HyperdriveTarget1.sol";
+import { I{{ name.capitalized }} } from "../../interfaces/I{{ name.capitalized }}.sol";
+import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { {{ name.capitalized }}Base } from "./{{ name.capitalized }}Base.sol";
+
+/// @author DELV
+/// @title {{ name.capitalized }}Target1
+/// @notice {{ name.capitalized }}Hyperdrive's target1 logic contract. This contract contains
+///         several stateful functions that couldn't fit into the Hyperdrive
+///         contract.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
+contract {{ name.capitalized }}Target1 is HyperdriveTarget1, {{ name.capitalized }}Base {
+    /// @notice Initializes the target1 contract.
+    /// @param _config The configuration of the Hyperdrive pool.
+    /// @param __vault The {{ name.capitalized }} compatible vault.
+    constructor(
+        IHyperdrive.PoolConfig memory _config,
+        I{{ name.capitalized }} __vault
+    ) HyperdriveTarget1(_config) {{ name.capitalized }}Base(__vault) {}
+}
