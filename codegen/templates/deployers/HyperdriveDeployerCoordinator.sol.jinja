@@ -61,7 +61,8 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
         uint256 _contribution,
         IHyperdrive.Options memory _options
 {% if contract.as_base_allowed and contract.payable %}
-    ) internal override returns (uint256 value) {
+    ) internal override returns (uint256) {
+        uint256 value;
         // If base is the deposit asset, ensure that enough ether was sent to
         // the contract and return the amount of ether that should be sent for
         // the contribution.
@@ -79,15 +80,9 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
             // FIXME: Implement this for new instances. ERC20 example provided.
             // Take custody of the contribution and approve Hyperdrive to pull
             // the tokens.
-            token = address({{ name.capitalized }}Hyperdrive(address(_hyperdrive)).vault());
+            address token = address(I{{ name.capitalized }}Hyperdrive(address(_hyperdrive)).vault());
             ERC20(token).safeTransferFrom(_lp, address(this), _contribution);
             ERC20(token).forceApprove(address(_hyperdrive), _contribution);
-                uint256 approvalAmount = {{ name.camelCase }}.transferSharesFrom(
-                    _lp,
-                    address(this),
-                    _contribution
-                );
-                token.approve(address(_hyperdrive), approvalAmount);
             // ****************************************************************
         }
 {% elif contract.as_base_allowed and not contract.payable %}

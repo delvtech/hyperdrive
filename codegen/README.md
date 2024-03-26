@@ -32,7 +32,7 @@ hyperdrive/
 
 ### 0. Install Python
 
-You'll need to have python installed on your machine to use this tool. Installation varies by operatin system.
+You'll need to have python installed on your machine to use this tool. Installation varies by operating system, check the Python homepage for instructions.
 
 ### 1. Install Pyenv
 
@@ -57,12 +57,12 @@ source .venv/bin/activate
 To install the dependencies:
 
 ```bash
-pip install -e .
+pip install -e codegen
 ```
 
 ### 5. Check Installation
 
-Verify that your package was installed correctly by running something like pip list. You should see hyperdrive-codegen listed as a package.
+Verify that your package was installed correctly by running something like `pip list`. You should see hyperdrive-codegen listed as a package.
 
 ## Usage
 
@@ -71,8 +71,15 @@ If installation was successful, from the `example/` directory you should be able
 ```bash
 hyperdrive-codegen --config config.yaml
 ```
-
 Which will output all the generated code in `example/out`.
+
+To actually start a new integration, you would run the following from the hyperdrive root directory:
+
+```bash
+hyperdrive-codegen --config codegen/example/config.yaml --out contracts/src
+```
+
+Which will populate all the new files into the appropriate folders within `contracts/src/`.
 
 ### 6. VSCode Debugging
 
@@ -95,4 +102,4 @@ Add the following VSCode launch configuration, to be able to debug the tool:
 }
 ```
 
-Note that VSCode should be launched from the codegen/ directory, not the hyperdrive directory.
+Note that VSCode should be launched from the `codegen/` directory, not the hyperdrive directory.
