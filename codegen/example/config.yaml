@@ -16,8 +16,8 @@ name:
 contract:
   # If the contract is payable in Ether.  If it is, then logic should be added
   # to accept Ether, and deposit into the vault to obtain vault shares.
-  payable: false
+  payable: true
 
   # If the contract can accept base to convert to valut shares on behalf of the
   # user.
-  as_base_allowed: false
+  as_base_allowed: true

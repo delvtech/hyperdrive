@@ -35,6 +35,7 @@ abstract contract {{ name.capitalized }}Base is HyperdriveBase {
     /// Yield Source ///
 
     /// @dev Accepts a deposit from the user in base.
+{%- if contract.as_base_allowed %}
     /// @param _baseAmount The base amount to deposit.
     /// @return The shares that were minted in the deposit.
     /// @return The amount of ETH to refund. Since this yield source isn't
@@ -43,7 +44,6 @@ abstract contract {{ name.capitalized }}Base is HyperdriveBase {
         uint256 _baseAmount,
         bytes calldata // unused
     ) internal override returns (uint256, uint256) {
-
         // ****************************************************************
         // FIXME: Implement this for new instances. ERC20 example provided.
         // Take custody of the deposit in base.
@@ -66,6 +66,16 @@ abstract contract {{ name.capitalized }}Base is HyperdriveBase {
 
         return (sharesMinted, 0);
         // ****************************************************************
+{% else %}
+    /// @return The shares that were minted in the deposit.
+    /// @return The amount of ETH to refund. Since this yield source isn't
+    ///         payable, this is always zero.
+    function _depositWithBase(
+        uint256, // unused _baseAmount
+        bytes calldata // unused _extraData
+    ) internal pure override returns (uint256, uint256) {
+        revert IHyperdrive.UnsupportedToken();
+{%- endif %}
     }
 
     /// @dev Process a deposit in vault shares.
@@ -87,6 +97,7 @@ abstract contract {{ name.capitalized }}Base is HyperdriveBase {
 
     /// @dev Process a withdrawal in base and send the proceeds to the
     ///      destination.
+{% if contract.as_base_allowed %}
     /// @param _shareAmount The amount of vault shares to withdraw.
     /// @param _destination The destination of the withdrawal.
     /// @return amountWithdrawn The amount of base withdrawn.
@@ -107,6 +118,15 @@ abstract contract {{ name.capitalized }}Base is HyperdriveBase {
 
         return amountWithdrawn;
         // ****************************************************************
+{% else %}
+    /// @return amountWithdrawn The amount of base withdrawn.
+    function _withdrawWithBase(
+        uint256, // unused _shareAmount
+        address, // unused _destination
+        bytes calldata // unused _extraData
+    ) internal pure override returns (uint256) {
+        revert IHyperdrive.UnsupportedToken();
+{%- endif %}
     }
 
     /// @dev Process a withdrawal in vault shares and send the proceeds to the
@@ -122,17 +142,6 @@ abstract contract {{ name.capitalized }}Base is HyperdriveBase {
         // FIXME: Implement this for new instances. ERC20 example provided.
         // Transfer vault shares to the destination.
         ERC20(address(_vault)).safeTransfer(_destination, _shareAmount);
-        // ****************************************************************
-    }
-
-    /// @dev Ensure that ether wasn't sent because {{ name.capitalized }} vaults don't support
-    ///      deposits of ether.
-    function _checkMessageValue() internal view override {
-        // ****************************************************************
-        // FIXME: Implement this for new instances.
-        if (msg.value != 0) {
-            revert IHyperdrive.NotPayable();
-        }
         // ****************************************************************
     }
 
@@ -177,4 +186,18 @@ abstract contract {{ name.capitalized }}Base is HyperdriveBase {
     {
         return _vault.balanceOf(address(this));
     }
+
+{% if contract.payable %}
+    /// @dev We override the message value check since this integration is
+    ///      payable.
+    function _checkMessageValue() internal pure override {}
+{% else %}
+    /// @dev We override the message value check since this integration is
+    ///      not payable.
+    function _checkMessageValue() internal view override {
+        if (msg.value > 0) {
+            revert IHyperdrive.NotPayable();
+        }
+    }
+{%- endif %}
 }
