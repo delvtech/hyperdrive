@@ -24,7 +24,8 @@ def codegen(config_file_path: Path | str, output_dir: Path | str):
     # Setup the output directory.
     folder_structure = get_output_folder_structure(template_config.name.lowercase)
     output_path = Path(output_dir)
-    setup_directory(output_path, folder_structure, True)
+    clear_existing = False
+    setup_directory(output_path, folder_structure, clear_existing)
 
     # Write the templates to files.
     write_templates_to_files(templates, output_path, template_config)

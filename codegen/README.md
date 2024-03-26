@@ -66,8 +66,33 @@ Verify that your package was installed correctly by running something like pip l
 
 ## Usage
 
-If installation was successful, you should be able to run the command from the terminal:
+If installation was successful, from the `example/` directory you should be able to run the command:
 
 ```bash
-hyperdrive-codegen
+hyperdrive-codegen --config config.yaml
 ```
+
+Which will output all the generated code in `example/out`.
+
+### 6. VSCode Debugging
+
+Add the following VSCode launch configuration, to be able to debug the tool:
+
+```json
+// codegen/.vscode/launch.json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Codegen Debugger",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "./hyperdrive_codegen/main.py",
+      "console": "integratedTerminal",
+      "args": "--config ./example/config.yaml --out ./example/out"
+    }
+  ]
+}
+```
+
+Note that VSCode should be launched from the codegen/ directory, not the hyperdrive directory.

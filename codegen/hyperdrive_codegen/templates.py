@@ -36,7 +36,7 @@ class FileInfo:
 
 
 deployer_templates = [
-    TemplatePathInfo("deployers/HyperdriveCoreDeployer.sol.jinja", "HyperdriveCoreDeployer.sol", "deployers"),
+    TemplatePathInfo("deployers/HyperdriveCoreDeployer.sol.jinja", "HyperdriveCoreDeployer", "deployers"),
     TemplatePathInfo("deployers/HyperdriveDeployerCoordinator.sol.jinja", "HyperdriveDeployerCoordinator", "deployers"),
     TemplatePathInfo("deployers/Target0Deployer.sol.jinja", "Target0Deployer", "deployers"),
     TemplatePathInfo("deployers/Target1Deployer.sol.jinja", "Target1Deployer", "deployers"),
@@ -55,6 +55,11 @@ instance_templates = [
     TemplatePathInfo("instances/Target4.sol.jinja", "Target4", "instances"),
 ]
 
+interface_templates = [
+    TemplatePathInfo("interfaces/IHyperdrive.sol.jinja", "Hyperdrive", "interfaces"),
+    TemplatePathInfo("interfaces/IYieldSource.sol.jinja", "", "interfaces"),
+]
+
 
 def get_templates(env: Environment) -> list[TemplateInfo]:
     """Returns a list of template files for generating customized Hyperdrive instances.
@@ -71,7 +76,7 @@ def get_templates(env: Environment) -> list[TemplateInfo]:
     """
 
     # Gather the template file strings and return a list of TemplateInfo's.
-    path_infos = deployer_templates + instance_templates
+    path_infos = deployer_templates + instance_templates + interface_templates
     return [TemplateInfo(template=env.get_template(path_info.path), path_info=path_info) for path_info in path_infos]
 
 
@@ -92,8 +97,13 @@ def write_templates_to_files(templates: list[TemplateInfo], output_path: Path, t
         # Get the file information and rendered code.
         file_info = FileInfo(template, rendered_code=template.template.render(template_config.model_dump()))
 
-        # Get the contract file path.
+        # Get the contract file name and prepend 'I' if it is an interface file.
         contract_file_name = f"{template_config.name.capitalized}{file_info.template.path_info.base_name}.sol"
+        contract_file_name = (
+            "I" + contract_file_name if file_info.template.path_info.folder == "interfaces" else contract_file_name
+        )
+
+        # Get the path for the file name.
         contract_file_path = Path(
             os.path.join(
                 output_path, file_info.template.path_info.folder, template_config.name.lowercase, contract_file_name
