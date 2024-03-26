@@ -10,7 +10,7 @@ from hyperdrive_codegen.jinja import get_jinja_env
 from hyperdrive_codegen.templates import get_templates, write_templates_to_files
 
 
-def codegen(config_file_path: Path | str, output_dir: Path | str):
+def codegen(config_file_path: Path | str, output_dir: Path | str, clear_existing: bool = False):
     """Main script to generate hyperdrive integration boilerplate code."""
 
     # Load the configuration file that has all the variables used in the
@@ -24,7 +24,6 @@ def codegen(config_file_path: Path | str, output_dir: Path | str):
     # Setup the output directory.
     folder_structure = get_output_folder_structure(template_config.name.lowercase)
     output_path = Path(output_dir)
-    clear_existing = False
     setup_directory(output_path, folder_structure, clear_existing)
 
     # Write the templates to files.

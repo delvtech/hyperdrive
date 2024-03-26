@@ -38,7 +38,7 @@ contract {{ name.capitalized }}HyperdriveCoreDeployer is IHyperdriveCoreDeployer
             address(
                 // NOTE: We hash the sender with the salt to prevent the
                 // front-running of deployments.
-                new {{ name.capitalized }}Hyperdrive{
+                new I{{ name.capitalized }}Hyperdrive{
                     salt: keccak256(abi.encode(msg.sender, _salt))
                 }(
                     _config,
@@ -47,7 +47,7 @@ contract {{ name.capitalized }}HyperdriveCoreDeployer is IHyperdriveCoreDeployer
                     _target2,
                     _target3,
                     _target4,
-                    {{ name.capitalized }}(vault)
+                    I{{ name.capitalized }}(vault)
                 )
             )
         );

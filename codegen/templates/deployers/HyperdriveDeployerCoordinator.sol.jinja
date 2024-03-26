@@ -123,7 +123,7 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
         // Hyperdrive pool.
         address token = address({{ name.capitalized }}Hyperdrive(address(_hyperdrive)).vault());
         ERC20(token).transferFrom(_lp, address(this), _contribution);
-        ezETH.approve(address(_hyperdrive), _contribution);
+        ERC20(token).approve(address(_hyperdrive), _contribution);
         // ****************************************************************
 
         return value;

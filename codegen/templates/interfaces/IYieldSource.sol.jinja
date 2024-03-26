@@ -2,6 +2,8 @@
 // @author is Fei Protocol - https://github.com/fei-protocol/ERC4626/blob/main/src/interfaces/IERC4626.sol
 pragma solidity 0.8.20;
 
+import { IERC4626 } from "../IERC4626.sol";
+
 // ****************************************************************************
 // FIXME: Fill out this interface as needed.
 
@@ -11,5 +13,5 @@ pragma solidity 0.8.20;
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract I{{ name.capitalized }} {}
+abstract contract I{{ name.capitalized }} is IERC4626 {}
 // ****************************************************************************
