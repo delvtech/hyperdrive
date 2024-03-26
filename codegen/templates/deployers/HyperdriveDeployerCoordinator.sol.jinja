@@ -61,7 +61,7 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
         uint256 _contribution,
         IHyperdrive.Options memory _options
     ) internal override returns (uint256) {
-{% if contract.as_base_allowed && contract.payable %}
+{% if contract.as_base_allowed and contract.payable %}
         // If base is the deposit asset, ensure that enough ether was sent to
         // the contract and return the amount of ether that should be sent for
         // the contribution.
@@ -87,7 +87,7 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
                     address(this),
                     _contribution
                 );
-                {{}}.approve(address(_hyperdrive), approvalAmount);
+                token.approve(address(_hyperdrive), approvalAmount);
             // ****************************************************************
         }
 
