@@ -1,5 +1,20 @@
 # Template configuration
+
+# Vault naming formats.
 name:
   capitalized: "TestETH"
   lowercase: "testeth"
   camelcase: "testEth"
+
+# Configuration parameters for the hyperdrive instance.
+contract:
+
+  # If the contract is payable in Ether.  If it is, then logic should be added
+  # to accept Ether, and deposit into the vault to obtain vault shares.
+  payable: false
+
+  # If the contract can accept base to convert to valut shares on behalf of the
+  # user.
+  as_base_allowed: false
+
+
