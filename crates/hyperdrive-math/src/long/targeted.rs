@@ -1,4 +1,7 @@
-use ethers::{providers::maybe, types::I256};
+use ethers::{
+    providers::maybe,
+    types::{I256, U256},
+};
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
@@ -18,34 +21,146 @@ impl State {
         let checkpoint_exposure = checkpoint_exposure.into();
 
         // Estimate the long that achieves a target rate
-        let (absolute_target_base_amount, absolute_target_bond_amount) =
-            self.absolute_targeted_long(target_rate);
-        // Get the maximum long that brings the spot price to 1.
-        let max_base_amount = self.get_max_long(budget, checkpoint_exposure, maybe_max_iterations);
-        // Ensure that the target is less than the max.
-        let target_base_amount = absolute_target_base_amount.min(max_base_amount);
-        // Verify solvency.
+        let (spot_target_base_amount, spot_target_bond_amount) =
+            self.spot_targeted_long(target_rate);
+        let resulting_rate = self.rate_after_long(spot_target_base_amount);
+        let abs_rate_error = self.abs_rate_error(target_rate, resulting_rate);
+        // TODO: ask alex about an appropriate tolerance for the rate error
+        let allowable_error = fixed!(1e5);
+        // Verify solvency and target rate
         if self
             .solvency_after_long(
-                absolute_target_base_amount,
-                absolute_target_bond_amount,
+                spot_target_base_amount,
+                spot_target_bond_amount,
                 checkpoint_exposure,
             )
             .is_some()
+            && abs_rate_error < allowable_error
         {
-            return target_base_amount.min(budget);
+            return spot_target_base_amount.min(budget);
         } else {
-            // TODO: Refine using an iterative method
-            panic!("Initial guess in `get_targeted_long` is insolvent.");
+            // Adjust your first guess
+            // TODO: Need to come up with a smarter and safe first guess
+            let mut possible_target_base_amount = if resulting_rate > target_rate {
+                spot_target_base_amount / fixed!(15e17) // overshot; need a smaller long
+            } else {
+                spot_target_base_amount * fixed!(15e17) // undershot; need a larger long
+            };
+            // Iteratively find a solution
+            for _ in 0..maybe_max_iterations.unwrap_or(7) {
+                let possible_target_bond_amount =
+                    self.calculate_open_long(possible_target_base_amount);
+                let resulting_rate = self.rate_after_long(possible_target_base_amount);
+                let abs_rate_error = self.abs_rate_error(target_rate, resulting_rate);
+                if self
+                    .solvency_after_long(
+                        possible_target_base_amount,
+                        possible_target_bond_amount,
+                        checkpoint_exposure,
+                    )
+                    .is_some()
+                    && abs_rate_error < allowable_error
+                {
+                    return possible_target_base_amount.max(budget);
+                } else {
+                    possible_target_base_amount = possible_target_base_amount
+                        + self.targeted_loss_derivative(
+                            target_rate,
+                            possible_target_base_amount,
+                            possible_target_bond_amount,
+                        );
+                }
+            }
+            if self
+                .solvency_after_long(
+                    possible_target_base_amount,
+                    self.calculate_open_long(possible_target_base_amount),
+                    checkpoint_exposure,
+                )
+                .is_some()
+            {
+                return possible_target_base_amount.max(budget);
+            } else {
+                panic!("Initial guess in `get_targeted_long` is insolvent.");
+            }
         }
+    }
+
+    /// The non-negative error between a target rate and resulting rate
+    /// TODO: Add docs
+    fn abs_rate_error(&self, target_rate: FixedPoint, resulting_rate: FixedPoint) -> FixedPoint {
+        if resulting_rate > target_rate {
+            resulting_rate - target_rate
+        } else {
+            target_rate - resulting_rate
+        }
+    }
+
+    /// The spot fixed rate after a long has been opened
+    /// TODO: Add docs
+    fn rate_after_long(&self, base_amount: FixedPoint) -> FixedPoint {
+        let annualized_time =
+            self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
+        let resulting_price = self.get_spot_price_after_long(base_amount);
+        (fixed!(1e18) - resulting_price) / (resulting_price * annualized_time)
+    }
+
+    /// The derivative of the equation for calculating the spot rate after a long
+    /// TODO: Add docs
+    fn rate_after_long_derivative(
+        &self,
+        base_amount: FixedPoint,
+        bond_amount: FixedPoint,
+    ) -> FixedPoint {
+        let annualized_time =
+            self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
+        let dprice = self.price_after_long_derivative(base_amount, bond_amount);
+        // TODO: This is the price before fees; we want price after fees
+        let price = self.get_spot_price_after_long(base_amount);
+        (-dprice * price * annualized_time
+            - (fixed!(1e18) - price) * (dprice * annualized_time + price))
+            / (price * annualized_time).pow(fixed!(2e18))
+    }
+
+    /// The derivative of the price after a long
+    /// TODO: This is wrong -- need to use formula for price after trade not before
+    /// TODO: Add docs
+    fn price_after_long_derivative(
+        &self,
+        base_amount: FixedPoint,
+        bond_amount: FixedPoint,
+    ) -> Option<FixedPoint> {
+        let price_after_long = self.get_spot_price_after_long(base_amount);
+        let maybe_derivative = self.long_amount_derivative(base_amount);
+        maybe_derivative.map(|derivative| {
+            -(fixed!(1e18) / price_after_long.pow(fixed!(2e18)))
+                * ((base_amount * derivative - bond_amount) / base_amount.pow(fixed!(2e18)))
+        })
+    }
+
+    /// The loss used for the targeted long optimization process
+    /// TODO: Add docs
+    fn targeted_loss(&self, target_rate: FixedPoint, base_amount: FixedPoint) -> FixedPoint {
+        let resulting_rate = self.rate_after_long(base_amount);
+        let abs_rate_error = self.abs_rate_error(target_rate, resulting_rate);
+        (fixed!(1e18) / fixed!(2e18)) * (abs_rate_error).pow(fixed!(2e18))
+    }
+
+    /// Derivative of the targeted long loss
+    /// TODO: Add docs
+    fn targeted_loss_derivative(
+        &self,
+        target_rate: FixedPoint,
+        base_amount: FixedPoint,
+        bond_amount: FixedPoint,
+    ) -> FixedPoint {
+        (self.rate_after_long(base_amount) - target_rate)
+            * self.rate_after_long_derivative(base_amount, bond_amount)
     }
 
     /// Calculates the long that should be opened to hit a target interest rate.
     /// This calculation does not take Hyperdrive's solvency constraints into account and shouldn't be used directly.
-    fn absolute_targeted_long<F: Into<FixedPoint>>(
-        &self,
-        target_rate: F,
-    ) -> (FixedPoint, FixedPoint) {
+    fn spot_targeted_long<F: Into<FixedPoint>>(&self, target_rate: F) -> (FixedPoint, FixedPoint) {
         //
         // TODO: Docstring
         //
@@ -67,19 +182,19 @@ impl State {
         //
         let target_bond_reserves = inner * scaled_rate;
 
-        // The absolute max base amount is given by:
+        // The spot max base amount is given by:
         //
-        // absolute_target_base_amount = c * (z_t - z)
-        let absolute_target_base_amount =
+        // spot_target_base_amount = c * (z_t - z)
+        let spot_target_base_amount =
             (target_share_reserves - self.effective_share_reserves()) * self.vault_share_price();
 
-        // The absolute max bond amount is given by:
+        // The spot max bond amount is given by:
         //
-        // absolute_target_bond_amount = (y - y_t) - c(x)
-        let absolute_target_bond_amount = (self.bond_reserves() - target_bond_reserves)
-            - self.open_long_curve_fees(absolute_target_base_amount);
+        // spot_target_bond_amount = (y - y_t) - c(x)
+        let spot_target_bond_amount = (self.bond_reserves() - target_bond_reserves)
+            - self.open_long_curve_fees(spot_target_base_amount);
 
-        (absolute_target_base_amount, absolute_target_bond_amount)
+        (spot_target_base_amount, spot_target_bond_amount)
     }
 }
 
