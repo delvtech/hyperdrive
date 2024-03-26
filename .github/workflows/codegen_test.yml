@@ -1,0 +1,45 @@
+name: Codegen Test
+
+on:
+  push:
+  pull_request:
+  merge_group:
+
+jobs:
+  detect-changes:
+    uses: ./.github/workflows/check_diff.yaml
+    with:
+      pattern: ^codegen/
+
+  test-core:
+    name: solidity test core
+    runs-on: ubuntu-latest-16core
+    needs: detect-changes
+    if: needs.detect-changes.outputs.changed == 'true'
+    env:
+      GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
+      MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: install foundry
+        uses: foundry-rs/foundry-toolchain@v1.0.10
+        with:
+          version: nightly
+
+      - name: set up python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+          cache: "pip"
+          token: ${{github.token}}
+
+      - name: install requirements
+        run: |
+          uv pip install -e codegen
+
+      - name: test
+        run: ./codegen/test/test.sh
