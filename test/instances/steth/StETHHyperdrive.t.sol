@@ -20,16 +20,14 @@ import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol"
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { InstanceTest } from "test/utils/InstanceTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-contract StETHHyperdriveTest is HyperdriveTest {
+contract StETHHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using Lib for *;
     using stdStorage for StdStorage;
-
-    uint256 internal constant FIXED_RATE = 0.05e18;
 
     // The Lido storage location that tracks buffered ether reserves. We can
     // simulate the accrual of interest by updating this value.
@@ -39,182 +37,59 @@ contract StETHHyperdriveTest is HyperdriveTest {
     ILido internal constant LIDO =
         ILido(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
 
+    // Whale accounts.
     address internal STETH_WHALE = 0x1982b2F5814301d4e9a8b0201555376e62F82428;
-    address internal ETH_WHALE = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
+    address[] internal whaleAccounts = [STETH_WHALE];
 
-    HyperdriveFactory factory;
-    address deployerCoordinator;
+    // The configuration for the Instance testing suite.
+    InstanceTestConfig internal __testConfig =
+        InstanceTestConfig(
+            whaleAccounts,
+            IERC20(LIDO),
+            IERC20(ETH),
+            1e5,
+            1e15,
+            POSITION_DURATION,
+            true,
+            true
+        );
 
+    /// @dev Instantiates the Instance testing suite with the configuration.
+    constructor() InstanceTest(__testConfig) {}
+
+    /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(17_376_154) {
+        // Invoke the Instance testing suite setup.
         super.setUp();
+    }
 
-        // Deploy the hyperdrive factory.
-        vm.startPrank(deployer);
-        address[] memory defaults = new address[](1);
-        defaults[0] = bob;
-        forwarderFactory = new ERC20ForwarderFactory();
-        factory = new HyperdriveFactory(
-            HyperdriveFactory.FactoryConfig({
-                governance: alice,
-                hyperdriveGovernance: bob,
-                feeCollector: feeCollector,
-                sweepCollector: sweepCollector,
-                defaultPausers: defaults,
-                checkpointDurationResolution: 1 hours,
-                minCheckpointDuration: 8 hours,
-                maxCheckpointDuration: 1 days,
-                minPositionDuration: 7 days,
-                maxPositionDuration: 10 * 365 days,
-                minFixedAPR: 0.001e18,
-                maxFixedAPR: 0.5e18,
-                minTimeStretchAPR: 0.005e18,
-                maxTimeStretchAPR: 0.5e18,
-                minFees: IHyperdrive.Fees({
-                    curve: 0,
-                    flat: 0,
-                    governanceLP: 0,
-                    governanceZombie: 0
-                }),
-                maxFees: IHyperdrive.Fees({
-                    curve: ONE,
-                    flat: ONE,
-                    governanceLP: ONE,
-                    governanceZombie: ONE
-                }),
-                linkerFactory: address(forwarderFactory),
-                linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
-            })
-        );
+    /// Overrides ///
 
-        // Deploy the hyperdrive deployers and register the deployer coordinator
-        // in the factory.
-        vm.stopPrank();
+    /// @dev Converts base amount to the equivalent about in stETH.
+    function convertToShares(
+        uint256 baseAmount
+    ) internal view override returns (uint256 shareAmount) {
+        // Get protocol state information used for calculating shares.
+        uint256 totalPooledEther = LIDO.getTotalPooledEther();
+        uint256 totalShares = LIDO.getTotalShares();
+        return baseAmount.mulDivDown(totalShares, totalPooledEther);
+    }
+
+    /// @dev Deploys the rETH deployer coordinator contract.
+    function deployCoordinator() internal override returns (address) {
         vm.startPrank(alice);
-        deployerCoordinator = address(
-            new StETHHyperdriveDeployerCoordinator(
-                address(new StETHHyperdriveCoreDeployer(LIDO)),
-                address(new StETHTarget0Deployer(LIDO)),
-                address(new StETHTarget1Deployer(LIDO)),
-                address(new StETHTarget2Deployer(LIDO)),
-                address(new StETHTarget3Deployer(LIDO)),
-                address(new StETHTarget4Deployer(LIDO)),
-                LIDO
-            )
-        );
-        factory.addDeployerCoordinator(address(deployerCoordinator));
-
-        // Alice deploys the hyperdrive instance.
-        IHyperdrive.PoolDeployConfig memory config = IHyperdrive
-            .PoolDeployConfig({
-                baseToken: IERC20(ETH),
-                linkerFactory: factory.linkerFactory(),
-                linkerCodeHash: factory.linkerCodeHash(),
-                minimumShareReserves: 1e15,
-                minimumTransactionAmount: 1e15,
-                positionDuration: POSITION_DURATION,
-                checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: 0,
-                governance: factory.hyperdriveGovernance(),
-                feeCollector: factory.feeCollector(),
-                sweepCollector: factory.sweepCollector(),
-                fees: IHyperdrive.Fees({
-                    curve: 0,
-                    flat: 0,
-                    governanceLP: 0,
-                    governanceZombie: 0
-                })
-            });
-        uint256 contribution = 10_000e18;
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            0,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            1,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            2,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            3,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            4,
-            bytes32(uint256(0xdeadbabe))
-        );
-        hyperdrive = factory.deployAndInitialize{ value: contribution }(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            contribution,
-            FIXED_RATE,
-            FIXED_RATE,
-            IHyperdrive.Options({
-                asBase: true,
-                destination: alice,
-                extraData: new bytes(0)
-            }),
-            bytes32(uint256(0xdeadbabe))
-        );
-
-        // Ensure that Bob received the correct amount of LP tokens. She should
-        // receive LP shares totaling the amount of shares that she contributed
-        // minus the shares set aside for the minimum share reserves and the
-        // zero address's initial LP contribution.
-        assertApproxEqAbs(
-            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
-            contribution.divDown(
-                hyperdrive.getPoolConfig().initialVaultSharePrice
-            ) - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
-            1e5
-        );
-
-        // Fund the test accounts with stETH and ETH.
-        address[] memory accounts = new address[](3);
-        accounts[0] = alice;
-        accounts[1] = bob;
-        accounts[2] = celine;
-        fundAccounts(address(hyperdrive), IERC20(LIDO), STETH_WHALE, accounts);
-        vm.deal(alice, 20_000e18);
-        vm.deal(bob, 20_000e18);
-        vm.deal(celine, 20_000e18);
-
-        // Start recording event logs.
-        vm.recordLogs();
+        return
+            address(
+                new StETHHyperdriveDeployerCoordinator(
+                    address(new StETHHyperdriveCoreDeployer(LIDO)),
+                    address(new StETHTarget0Deployer(LIDO)),
+                    address(new StETHTarget1Deployer(LIDO)),
+                    address(new StETHTarget2Deployer(LIDO)),
+                    address(new StETHTarget3Deployer(LIDO)),
+                    address(new StETHTarget4Deployer(LIDO)),
+                    LIDO
+                )
+            );
     }
 
     /// Getters ///
@@ -223,285 +98,6 @@ contract StETHHyperdriveTest is HyperdriveTest {
         assertEq(
             address(IStETHHyperdrive(address(hyperdrive)).lido()),
             address(LIDO)
-        );
-    }
-
-    /// Deploy and Initialize ///
-
-    function test__steth__deployAndInitialize__asBase() external {
-        // Deploy and Initialize the stETH hyperdrive instance. Excess ether is
-        // sent, and should be returned to the sender.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        uint256 bobBalanceBefore = address(bob).balance;
-        IHyperdrive.PoolDeployConfig memory config = IHyperdrive
-            .PoolDeployConfig({
-                baseToken: IERC20(ETH),
-                governance: factory.hyperdriveGovernance(),
-                feeCollector: factory.feeCollector(),
-                sweepCollector: factory.sweepCollector(),
-                linkerFactory: factory.linkerFactory(),
-                linkerCodeHash: factory.linkerCodeHash(),
-                minimumShareReserves: 1e15,
-                minimumTransactionAmount: 1e15,
-                positionDuration: POSITION_DURATION,
-                checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: 0,
-                fees: IHyperdrive.Fees({
-                    curve: 0,
-                    flat: 0,
-                    governanceLP: 0,
-                    governanceZombie: 0
-                })
-            });
-        uint256 contribution = 5_000e18;
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            0,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            1,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            2,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            3,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            4,
-            bytes32(uint256(0xdeadfade))
-        );
-        hyperdrive = factory.deployAndInitialize{ value: contribution + 1e18 }(
-            bytes32(uint256(0xbeefbabe)),
-            address(deployerCoordinator),
-            config,
-            new bytes(0),
-            contribution,
-            FIXED_RATE,
-            FIXED_RATE,
-            IHyperdrive.Options({
-                asBase: true,
-                destination: bob,
-                extraData: new bytes(0)
-            }),
-            bytes32(uint256(0xdeadfade))
-        );
-        assertEq(address(bob).balance, bobBalanceBefore - contribution);
-
-        // Ensure that the decimals are set correctly.
-        assertEq(hyperdrive.decimals(), 18);
-
-        // Ensure that Bob received the correct amount of LP tokens. He should
-        // receive LP shares totaling the amount of shares that he contributed
-        // minus the shares set aside for the minimum share reserves and the
-        // zero address's initial LP contribution.
-        assertApproxEqAbs(
-            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, bob),
-            contribution.divDown(
-                hyperdrive.getPoolConfig().initialVaultSharePrice
-            ) - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
-            1e5
-        );
-
-        // Ensure that the share reserves and LP total supply are equal and correct.
-        assertApproxEqAbs(
-            hyperdrive.getPoolInfo().shareReserves,
-            contribution.mulDivDown(
-                LIDO.getTotalShares(),
-                LIDO.getTotalPooledEther()
-            ),
-            1
-        );
-        assertEq(
-            hyperdrive.getPoolInfo().lpTotalSupply,
-            hyperdrive.getPoolInfo().shareReserves - config.minimumShareReserves
-        );
-
-        // Verify that the correct events were emitted.
-        verifyFactoryEvents(
-            deployerCoordinator,
-            hyperdrive,
-            bob,
-            contribution,
-            FIXED_RATE,
-            true,
-            config.minimumShareReserves,
-            new bytes(0),
-            // NOTE: Tolerance since stETH uses mulDivDown for share calculations.
-            1e5
-        );
-    }
-
-    function test__steth__deployAndInitialize__asShares() external {
-        // Deploy and Initialize the stETH hyperdrive instance. Excess ether is
-        // sent, and should be returned to the sender.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        uint256 contributionShares = 5_000e18;
-        uint256 contribution = LIDO.getPooledEthByShares(contributionShares);
-        LIDO.submit{ value: contribution }(address(0));
-        LIDO.approve(deployerCoordinator, contribution);
-        IHyperdrive.PoolDeployConfig memory config = IHyperdrive
-            .PoolDeployConfig({
-                baseToken: IERC20(ETH),
-                governance: factory.hyperdriveGovernance(),
-                feeCollector: factory.feeCollector(),
-                sweepCollector: factory.sweepCollector(),
-                linkerFactory: factory.linkerFactory(),
-                linkerCodeHash: factory.linkerCodeHash(),
-                minimumShareReserves: 1e15,
-                minimumTransactionAmount: 1e15,
-                positionDuration: POSITION_DURATION,
-                checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: 0,
-                fees: IHyperdrive.Fees({
-                    curve: 0,
-                    flat: 0,
-                    governanceLP: 0,
-                    governanceZombie: 0
-                })
-            });
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            0,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            1,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            2,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            3,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            4,
-            bytes32(uint256(0xdeadfade))
-        );
-        hyperdrive = factory.deployAndInitialize(
-            bytes32(uint256(0xbeefbabe)),
-            address(deployerCoordinator),
-            config,
-            new bytes(0),
-            contributionShares,
-            FIXED_RATE,
-            FIXED_RATE,
-            IHyperdrive.Options({
-                asBase: false,
-                destination: bob,
-                extraData: new bytes(0)
-            }),
-            bytes32(uint256(0xdeadfade))
-        );
-
-        // Ensure that the decimals are set correctly.
-        assertEq(hyperdrive.decimals(), 18);
-
-        // Ensure that Bob received the correct amount of LP tokens. He should
-        // receive LP shares totaling the amount of shares that he contributed
-        // minus the shares set aside for the minimum share reserves and the
-        // zero address's initial LP contribution.
-        assertApproxEqAbs(
-            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, bob),
-            contribution.divDown(
-                hyperdrive.getPoolConfig().initialVaultSharePrice
-            ) - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
-            1e5
-        );
-
-        // Ensure that the share reserves and LP total supply are equal and correct.
-        assertApproxEqAbs(
-            hyperdrive.getPoolInfo().shareReserves,
-            contribution.mulDivDown(
-                LIDO.getTotalShares(),
-                LIDO.getTotalPooledEther()
-            ),
-            1
-        );
-        assertEq(
-            hyperdrive.getPoolInfo().lpTotalSupply,
-            hyperdrive.getPoolInfo().shareReserves - config.minimumShareReserves
-        );
-
-        // Verify that the correct events were emitted.
-        verifyFactoryEvents(
-            deployerCoordinator,
-            hyperdrive,
-            bob,
-            contributionShares,
-            FIXED_RATE,
-            false,
-            config.minimumShareReserves,
-            new bytes(0),
-            // NOTE: Tolerance since stETH uses mulDivDown for share calculations.
-            1e5
         );
     }
 

@@ -21,16 +21,14 @@ import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol"
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { InstanceTest } from "test/utils/InstanceTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-contract EzETHHyperdriveTest is HyperdriveTest {
+contract EzETHHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using Lib for *;
     using stdStorage for StdStorage;
-
-    uint256 internal constant FIXED_RATE = 0.05e18;
 
     // The Renzo main entrypoint contract to stake ETH and receive ezETH.
     IRestakeManager internal constant RESTAKE_MANAGER =
@@ -53,188 +51,67 @@ contract EzETHHyperdriveTest is HyperdriveTest {
     // oracles makes it difficult to test on a mainnet fork without heavy
     // mocking.  To test with their deployed code we use a shorter position
     // duration.
-    uint256 internal constant POSITION_DURATION_2_WEEKS = 15 days;
-    address internal ETH_WHALE = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
-    address internal EZETH_WHALE = 0x40C0d1fbcB0A43A62ca7A241E7A42ca58EeF96eb;
+    uint256 internal constant POSITION_DURATION_15_DAYS = 15 days;
     uint256 internal constant STARTING_BLOCK = 19119544;
 
-    HyperdriveFactory factory;
-    address deployerCoordinator;
+    // Whale accounts.
+    address internal EZETH_WHALE = 0x40C0d1fbcB0A43A62ca7A241E7A42ca58EeF96eb;
+    address[] internal whaleAccounts = [EZETH_WHALE];
 
+    // The configuration for the Instance testing suite.
+    InstanceTestConfig internal __testConfig =
+        InstanceTestConfig(
+            whaleAccounts,
+            IERC20(EZETH),
+            IERC20(ETH),
+            1e6,
+            1e15,
+            POSITION_DURATION_15_DAYS,
+            false,
+            true
+        );
+
+    /// @dev Instantiates the Instance testing suite with the configuration.
+    constructor() InstanceTest(__testConfig) {}
+
+    /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(STARTING_BLOCK) {
-        super.setUp();
-
-        // Fund the test accounts with ezETH and ETH.
-        address[] memory accounts = new address[](3);
-        accounts[0] = alice;
-        accounts[1] = bob;
-        accounts[2] = celine;
-        fundAccounts(address(hyperdrive), IERC20(EZETH), EZETH_WHALE, accounts);
-        vm.deal(alice, 1_000_000e18);
-        vm.deal(bob, 1_000_000e18);
-        vm.deal(celine, 1_000_000e18);
-
-        // Deploy the hyperdrive factory.
-        vm.startPrank(deployer);
-        address[] memory defaults = new address[](1);
-        defaults[0] = bob;
-        forwarderFactory = new ERC20ForwarderFactory();
-        factory = new HyperdriveFactory(
-            HyperdriveFactory.FactoryConfig({
-                governance: alice,
-                hyperdriveGovernance: bob,
-                feeCollector: feeCollector,
-                sweepCollector: sweepCollector,
-                defaultPausers: defaults,
-                checkpointDurationResolution: 1 hours,
-                minCheckpointDuration: 8 hours,
-                maxCheckpointDuration: 1 days,
-                minPositionDuration: 7 days,
-                maxPositionDuration: 10 * 365 days,
-                minFixedAPR: 0.001e18,
-                maxFixedAPR: 0.5e18,
-                minTimeStretchAPR: 0.005e18,
-                maxTimeStretchAPR: 0.5e18,
-                minFees: IHyperdrive.Fees({
-                    curve: 0,
-                    flat: 0,
-                    governanceLP: 0,
-                    governanceZombie: 0
-                }),
-                maxFees: IHyperdrive.Fees({
-                    curve: ONE,
-                    flat: ONE,
-                    governanceLP: ONE,
-                    governanceZombie: ONE
-                }),
-                linkerFactory: address(forwarderFactory),
-                linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
-            })
-        );
-
-        // Deploy the hyperdrive deployers and register the deployer coordinator
-        // in the factory.
+        // Giving the EzETH whale account more EzETH before the instance setup.
+        vm.startPrank(EZETH_WHALE);
+        vm.deal(EZETH_WHALE, 50_000e18);
+        RESTAKE_MANAGER.depositETH{ value: 50_000e18 }();
         vm.stopPrank();
+
+        // Invoke the Instance testing suite setup.
+        super.setUp();
+    }
+
+    /// Overrides ///
+
+    /// @dev Converts base amount to the equivalent about in EzETH.
+    function convertToShares(
+        uint256 baseAmount
+    ) internal view override returns (uint256 shareAmount) {
+        // Get protocol state information used for calculating shares.
+        (uint256 sharePrice, , ) = getSharePrice();
+        return baseAmount.divDown(sharePrice);
+    }
+
+    /// @dev Deploys the EzETH deployer coordinator contract.
+    function deployCoordinator() internal override returns (address) {
         vm.startPrank(alice);
-        deployerCoordinator = address(
-            new EzETHHyperdriveDeployerCoordinator(
-                address(new EzETHHyperdriveCoreDeployer(RESTAKE_MANAGER)),
-                address(new EzETHTarget0Deployer(RESTAKE_MANAGER)),
-                address(new EzETHTarget1Deployer(RESTAKE_MANAGER)),
-                address(new EzETHTarget2Deployer(RESTAKE_MANAGER)),
-                address(new EzETHTarget3Deployer(RESTAKE_MANAGER)),
-                address(new EzETHTarget4Deployer(RESTAKE_MANAGER)),
-                RESTAKE_MANAGER
-            )
-        );
-        factory.addDeployerCoordinator(address(deployerCoordinator));
-
-        // Alice deploys the hyperdrive instance.
-        IHyperdrive.PoolDeployConfig memory config = IHyperdrive
-            .PoolDeployConfig({
-                baseToken: IERC20(ETH),
-                linkerFactory: factory.linkerFactory(),
-                linkerCodeHash: factory.linkerCodeHash(),
-                minimumShareReserves: 1e15,
-                minimumTransactionAmount: 1e15,
-                positionDuration: POSITION_DURATION_2_WEEKS,
-                checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: 0,
-                governance: factory.hyperdriveGovernance(),
-                feeCollector: factory.feeCollector(),
-                sweepCollector: factory.sweepCollector(),
-                fees: IHyperdrive.Fees({
-                    curve: 0,
-                    flat: 0,
-                    governanceLP: 0,
-                    governanceZombie: 0
-                })
-            });
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            0,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            1,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            2,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            3,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            4,
-            bytes32(uint256(0xdeadbabe))
-        );
-
-        // Depositing with ETH is not allowed for this pool so we need to get
-        // some ezETH for alice first.
-        uint256 contribution = 10_000e18;
-        RESTAKE_MANAGER.depositETH{ value: 2 * contribution }();
-        EZETH.approve(deployerCoordinator, contribution);
-
-        hyperdrive = factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            contribution,
-            FIXED_RATE,
-            FIXED_RATE,
-            IHyperdrive.Options({
-                asBase: false,
-                destination: alice,
-                extraData: new bytes(0)
-            }),
-            bytes32(uint256(0xdeadbabe))
-        );
-
-        // Ensure that Alice received the correct amount of LP tokens. She should
-        // receive LP shares totaling the amount of shares that she contributed
-        // minus the shares set aside for the minimum share reserves and the
-        // zero address's initial LP contribution.
-        assertApproxEqAbs(
-            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
-            contribution - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
-            1e6
-        );
-
-        // Start recording event logs.
-        vm.recordLogs();
+        return
+            address(
+                new EzETHHyperdriveDeployerCoordinator(
+                    address(new EzETHHyperdriveCoreDeployer(RESTAKE_MANAGER)),
+                    address(new EzETHTarget0Deployer(RESTAKE_MANAGER)),
+                    address(new EzETHTarget1Deployer(RESTAKE_MANAGER)),
+                    address(new EzETHTarget2Deployer(RESTAKE_MANAGER)),
+                    address(new EzETHTarget3Deployer(RESTAKE_MANAGER)),
+                    address(new EzETHTarget4Deployer(RESTAKE_MANAGER)),
+                    RESTAKE_MANAGER
+                )
+            );
     }
 
     /// Getters ///
@@ -254,262 +131,16 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         );
     }
 
-    /// Deploy and Initialize ///
-
-    function test__eth_deployAndInitialize() external {
-        // Deploy and Initialize the ezETH hyperdrive instance.
-        vm.stopPrank();
-        vm.startPrank(bob);
-
-        // Make sure bob has enough funds.
-        uint256 contribution = 5_000e18;
-        RESTAKE_MANAGER.depositETH{ value: 2 * contribution }();
-        EZETH.approve(deployerCoordinator, contribution);
-
-        IHyperdrive.PoolDeployConfig memory config = IHyperdrive
-            .PoolDeployConfig({
-                baseToken: IERC20(ETH),
-                governance: factory.hyperdriveGovernance(),
-                feeCollector: factory.feeCollector(),
-                sweepCollector: factory.sweepCollector(),
-                linkerFactory: factory.linkerFactory(),
-                linkerCodeHash: factory.linkerCodeHash(),
-                minimumShareReserves: 1e15,
-                minimumTransactionAmount: 1e15,
-                positionDuration: POSITION_DURATION_2_WEEKS,
-                checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: 0,
-                fees: IHyperdrive.Fees({
-                    curve: 0,
-                    flat: 0,
-                    governanceLP: 0,
-                    governanceZombie: 0
-                })
-            });
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            0,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            1,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            2,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            3,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            4,
-            bytes32(uint256(0xdeadfade))
-        );
-
-        // Ensure that using base to deploy and initialize is not allowed.
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive = factory.deployAndInitialize{ value: contribution + 1e18 }(
-            bytes32(uint256(0xbeefbabe)),
-            address(deployerCoordinator),
-            config,
-            new bytes(0),
-            contribution,
-            FIXED_RATE,
-            FIXED_RATE,
-            IHyperdrive.Options({
-                asBase: true,
-                destination: bob,
-                extraData: new bytes(0)
-            }),
-            bytes32(uint256(0xdeadfade))
-        );
-    }
-
-    function test__ezeth_deployAndInitialize() external {
-        // Deploy and Initialize the ezETH hyperdrive instance.
-        vm.stopPrank();
-        vm.startPrank(bob);
-
-        // Make sure bob has enough funds.
-        uint256 contribution = 5_000e18;
-        RESTAKE_MANAGER.depositETH{ value: 2 * contribution }();
-        EZETH.approve(deployerCoordinator, contribution);
-
-        // Get balance information.
-        uint256 bobBalanceBefore = address(bob).balance;
-        uint256 bobEzETHBalanceBefore = EZETH.balanceOf(address(bob));
-
-        IHyperdrive.PoolDeployConfig memory config = IHyperdrive
-            .PoolDeployConfig({
-                baseToken: IERC20(ETH),
-                governance: factory.hyperdriveGovernance(),
-                feeCollector: factory.feeCollector(),
-                sweepCollector: factory.sweepCollector(),
-                linkerFactory: factory.linkerFactory(),
-                linkerCodeHash: factory.linkerCodeHash(),
-                minimumShareReserves: 1e15,
-                minimumTransactionAmount: 1e15,
-                positionDuration: POSITION_DURATION_2_WEEKS,
-                checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: 0,
-                fees: IHyperdrive.Fees({
-                    curve: 0,
-                    flat: 0,
-                    governanceLP: 0,
-                    governanceZombie: 0
-                })
-            });
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            0,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            1,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            2,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            3,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            4,
-            bytes32(uint256(0xdeadfade))
-        );
-
-        // Deploy the pool.
-        hyperdrive = factory.deployAndInitialize(
-            bytes32(uint256(0xbeefbabe)),
-            address(deployerCoordinator),
-            config,
-            new bytes(0),
-            contribution,
-            FIXED_RATE,
-            FIXED_RATE,
-            IHyperdrive.Options({
-                asBase: false,
-                destination: bob,
-                extraData: new bytes(0)
-            }),
-            bytes32(uint256(0xdeadfade))
-        );
-
-        // Ensure eth and ezEth balances are correct.
-        assertEq(address(bob).balance, bobBalanceBefore);
-        assertEq(
-            EZETH.balanceOf(address(bob)),
-            bobEzETHBalanceBefore - contribution
-        );
-
-        // Ensure that the decimals are set correctly.
-        assertEq(hyperdrive.decimals(), 18);
-
-        // Ensure that Bob received the correct amount of LP tokens. He should
-        // receive LP shares totaling the amount of shares that he contributed
-        // minus the shares set aside for the minimum share reserves and the
-        // zero address's initial LP contribution.
-        assertApproxEqAbs(
-            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, bob),
-            contribution - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
-            1e5
-        );
-
-        // Ensure that the share reserves and LP total supply are equal and correct.
-        assertEq(hyperdrive.getPoolInfo().shareReserves, contribution);
-        assertEq(
-            hyperdrive.getPoolInfo().lpTotalSupply,
-            hyperdrive.getPoolInfo().shareReserves - config.minimumShareReserves
-        );
-
-        // Verify that the correct events were emitted.
-        verifyFactoryEvents(
-            deployerCoordinator,
-            hyperdrive,
-            bob,
-            contribution,
-            FIXED_RATE,
-            false,
-            config.minimumShareReserves,
-            new bytes(0),
-            // NOTE: Tolerance since ezETH uses mulDivDown for share calculations.
-            1e5
-        );
-    }
-
     function test__ezeth_interest_and_advance_time() external {
         // hand calculated value sanity check
         uint256 positionAdjustedInterestRate = uint256(0.05e18).mulDivDown(
-            POSITION_DURATION_2_WEEKS,
+            POSITION_DURATION_15_DAYS,
             365 days
         );
 
         // Ensure that advancing time accrues interest like we expect.
         (uint256 sharePriceBefore, , ) = getSharePrice();
-        advanceTime(POSITION_DURATION_2_WEEKS, 0.05e18);
+        advanceTime(POSITION_DURATION_15_DAYS, 0.05e18);
         (uint256 sharePriceAfter, , ) = getSharePrice();
         assertEq(positionAdjustedInterestRate, 0.002054794520547945e18);
         assertEq(
@@ -669,7 +300,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
     ) external {
         // Accrue interest for a term to ensure that the share price is greater
         // than one.
-        advanceTime(POSITION_DURATION_2_WEEKS, 0.05e18);
+        advanceTime(POSITION_DURATION_15_DAYS, 0.05e18);
         vm.startPrank(bob);
 
         // Calculate the maximum amount of basePaid we can test.
@@ -693,7 +324,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
 
         // The term passes and some interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
-        advanceTime(POSITION_DURATION_2_WEEKS, variableRate);
+        advanceTime(POSITION_DURATION_15_DAYS, variableRate);
 
         // Get some balance information before the withdrawal.
         (
@@ -803,7 +434,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         assertGt(basePaid, 0);
         assertGe(
             realizedRate,
-            FIXED_RATE.mulDown(POSITION_DURATION_2_WEEKS.divDown(365 days))
+            FIXED_RATE.mulDown(POSITION_DURATION_15_DAYS.divDown(365 days))
         );
 
         // Ensure that Renzo's aggregates and the token balances were updated
@@ -883,7 +514,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         //
         // The term passes and interest accrues.
         variableRate = variableRate.normalizeToRange(0.01e18, 2.5e18);
-        advanceTime(POSITION_DURATION_2_WEEKS, variableRate);
+        advanceTime(POSITION_DURATION_15_DAYS, variableRate);
 
         // Bob attempts to close his short with ETH as the target asset. This
         // fails since ETH isn't supported as a withdrawal asset.
@@ -908,7 +539,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
     ) external {
         // Accrue interest for a term to ensure that the share price is greater
         // than one.
-        advanceTime(POSITION_DURATION_2_WEEKS, 0.05e18);
+        advanceTime(POSITION_DURATION_15_DAYS, 0.05e18);
 
         // Calculate the maximum amount we can short.
         shortAmount = shortAmount.normalizeToRange(
@@ -929,7 +560,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             .getPoolInfo()
             .vaultSharePrice;
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
-        advanceTime(POSITION_DURATION_2_WEEKS, variableRate);
+        advanceTime(POSITION_DURATION_15_DAYS, variableRate);
 
         // Get some balance information before closing the short.
         (
@@ -960,7 +591,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
             totalShares
         );
         assertLe(baseProceeds, expectedBaseProceeds + 1e4);
-        assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 1e5);
+        assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 1e6);
 
         // Ensure that Lido's aggregates and the token balances were updated
         // correctly during the trade.
@@ -1159,7 +790,7 @@ contract EzETHHyperdriveTest is HyperdriveTest {
         // accrual of interest by adding to the balance of the DepositQueue contract.
         // RestakeManager adds the balance of the DepositQueue to totalTVL in calculateTVLs()
         uint256 adjustedVariableRate = uint256(variableRate).mulDivDown(
-            POSITION_DURATION_2_WEEKS,
+            POSITION_DURATION_15_DAYS,
             365 days
         );
         uint256 ethToAdd = totalTVLBefore.mulDown(adjustedVariableRate);
