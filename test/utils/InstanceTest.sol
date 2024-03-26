@@ -213,6 +213,9 @@ abstract contract InstanceTest is HyperdriveTest {
             vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         }
 
+        // Record Alice's ETH balance before the deployment call.
+        uint256 aliceBalanceBefore = address(alice).balance;
+
         // Deploy and initialize the market. If the base token is ETH we pass the
         // contribution through the call.
         hyperdrive = factory.deployAndInitialize{
@@ -232,6 +235,13 @@ abstract contract InstanceTest is HyperdriveTest {
             }),
             deploymentSalt
         );
+
+        // Ensure that refunds are handled properly.
+        if (config.enableBaseDeposits && asBase && isBaseETH) {
+            assertEq(aliceBalanceBefore - contribution, address(alice).balance);
+        } else {
+            assertEq(aliceBalanceBefore, address(alice).balance);
+        }
     }
 
     /// @dev Deploys the Hyperdrive Factory contract and
