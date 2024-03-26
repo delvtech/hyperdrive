@@ -1,36 +1,30 @@
 """The main script to generate hyperdrive integration boilerplate code."""
 
-import os
 from pathlib import Path
 
-import yaml
+from jinja2 import Environment
 
-from hyperdrive_codegen.config import TemplateConfig
-from hyperdrive_codegen.file import get_output_folder_structure, setup_directory, write_string_to_file
+from hyperdrive_codegen.config import get_template_config
+from hyperdrive_codegen.file import get_output_folder_structure, setup_directory
 from hyperdrive_codegen.jinja import get_jinja_env
+from hyperdrive_codegen.templates import get_templates, write_templates_to_files
 
 
 def codegen(config_file_path: Path | str, output_dir: Path | str):
     """Main script to generate hyperdrive integration boilerplate code."""
 
-    # load config file
-    config_file_path = Path(config_file_path)
-    with open(config_file_path, "r", encoding="utf-8") as file:
-        config_data = yaml.safe_load(file)
+    # Load the configuration file that has all the variables used in the
+    # template files.
+    template_config = get_template_config(config_file_path)
 
-    template_config = TemplateConfig(**config_data)
+    # Get the templates to render.
+    env: Environment = get_jinja_env()
+    templates = get_templates(env)
 
-    # load template files
-    env = get_jinja_env()
-    core_deployer_template = env.get_template("deployers/HyperdriveCoreDeployer.sol.jinja")
-
-    # generate the code
-    rendered_code = core_deployer_template.render(name=template_config.name)
-
-    # write to file
+    # Setup the output directory.
     folder_structure = get_output_folder_structure(template_config.name.lowercase)
-    setup_directory(output_dir, folder_structure, True)
     output_path = Path(output_dir)
-    contract_file_name = f"{template_config.name.capitalized}HyperdriveCoreDeployer.sol"
-    contract_file_path = Path(os.path.join(output_path, "deployers", contract_file_name))
-    write_string_to_file(contract_file_path, rendered_code)
+    setup_directory(output_path, folder_structure, True)
+
+    # Write the templates to files.
+    write_templates_to_files(templates, output_path, template_config)
