@@ -54,14 +54,14 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
     ///        of `_options.asBase`.
     /// @param _options The options that configure how the initialization is
     ///        settled.
-    /// @return The value that should be sent in the initialize transaction.
+    /// @return value The value that should be sent in the initialize transaction.
     function _prepareInitialize(
         IHyperdrive _hyperdrive,
         address _lp,
         uint256 _contribution,
         IHyperdrive.Options memory _options
-    ) internal override returns (uint256) {
 {% if contract.as_base_allowed and contract.payable %}
+    ) internal override returns (uint256 value) {
         // If base is the deposit asset, ensure that enough ether was sent to
         // the contract and return the amount of ether that should be sent for
         // the contribution.
@@ -90,9 +90,8 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
                 token.approve(address(_hyperdrive), approvalAmount);
             // ****************************************************************
         }
-
-        return value;
 {% elif contract.as_base_allowed and not contract.payable %}
+    ) internal override returns (uint256 value) {
         // If base is the deposit asset, the initialization will be paid in the
         // base token.
         address token;
@@ -101,7 +100,7 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
         }
         // Otherwise, the initialization will be paid in vault shares.
         else {
-            token = address({{ name.capitalized }}Hyperdrive(address(_hyperdrive)).vault());
+            token = address(I{{ name.capitalized }}Hyperdrive(address(_hyperdrive)).vault());
         }
 
         // ****************************************************************
@@ -112,6 +111,7 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
         ERC20(token).forceApprove(address(_hyperdrive), _contribution);
         // ****************************************************************
 {% elif not contract.as_base_allowed and not contract.payable %}
+    ) internal override returns (uint256 value) {
         // Depositing as base is disallowed.
         if (_options.asBase) {
             revert IHyperdrive.UnsupportedToken();
@@ -121,13 +121,12 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
         // FIXME: Implement this for new instances. ERC20 example provided.
         // Otherwise, transfer vault shares from the LP and approve the
         // Hyperdrive pool.
-        address token = address({{ name.capitalized }}Hyperdrive(address(_hyperdrive)).vault());
+        address token = address(I{{ name.capitalized }}Hyperdrive(address(_hyperdrive)).vault());
         ERC20(token).transferFrom(_lp, address(this), _contribution);
         ERC20(token).approve(address(_hyperdrive), _contribution);
         // ****************************************************************
-
-        return value;
 {% endif %}
+        return value;
     }
 
 {% if contract.payable %}
@@ -167,11 +166,10 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
     }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
-    /// @param _extraData The extra data passed to the child deployers.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
-        bytes memory _extraData
-    ) internal view override returns (uint256) {
+        bytes memory // unused _extraData
+    ) internal pure override returns (uint256) {
         // ****************************************************************
         // FIXME:  Implement this for new instances.
         return ONE;
