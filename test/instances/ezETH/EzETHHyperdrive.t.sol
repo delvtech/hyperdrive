@@ -21,11 +21,11 @@ import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol"
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { InstanceTest } from "test/utils/InstanceTest.sol";
+import { InstanceTestV2 } from "test/utils/InstanceTestV2.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-contract EzETHHyperdriveTest is InstanceTest {
+contract EzETHHyperdriveTest is InstanceTestV2 {
     using FixedPointMath for uint256;
     using Lib for *;
     using stdStorage for StdStorage;
@@ -72,7 +72,7 @@ contract EzETHHyperdriveTest is InstanceTest {
         );
 
     /// @dev Instantiates the Instance testing suite with the configuration.
-    constructor() InstanceTest(__testConfig) {}
+    constructor() InstanceTestV2(__testConfig) {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(STARTING_BLOCK) {
@@ -97,6 +97,17 @@ contract EzETHHyperdriveTest is InstanceTest {
         return baseAmount.divDown(sharePrice);
     }
 
+    function getTokenBalances(
+        address account
+    ) internal view override returns (uint256, uint256) {
+        return (EZETH.balanceOf(account), 0);
+    }
+
+    function getSupply() internal override returns (uint256, uint256) {
+        (, uint256 totalPooledEther, ) = getSharePrice();
+        return (totalPooledEther, EZETH.totalSupply());
+    }
+
     /// @dev Deploys the EzETH deployer coordinator contract.
     function deployCoordinator() internal override returns (address) {
         vm.startPrank(alice);
@@ -112,6 +123,143 @@ contract EzETHHyperdriveTest is InstanceTest {
                     RESTAKE_MANAGER
                 )
             );
+    }
+
+    function verifyDeposit(
+        address trader,
+        uint256 basePaid,
+        bool asBase,
+        uint256 totalBaseSupplyBefore,
+        uint256 totalSharesBefore,
+        AccountBalances memory traderBalancesBefore,
+        AccountBalances memory hyperdriveBalancesBefore
+    ) internal {
+        if (asBase) {
+            // Ensure that the amount of pooled ether increased by the base paid.
+            (, uint256 totalPooledEther, ) = getSharePrice();
+            assertEq(totalPooledEther, totalBaseSupplyBefore + basePaid);
+
+            // Ensure that the ETH balances were updated correctly.
+            assertEq(
+                address(hyperdrive).balance,
+                hyperdriveBalancesBefore.ETHBalance
+            );
+            assertEq(bob.balance, traderBalancesBefore.ETHBalance - basePaid);
+
+            // Ensure ezETH shares were updated correctly.
+            assertEq(
+                EZETH.balanceOf(trader),
+                traderBalancesBefore.ezethBalance
+            );
+
+            // Ensure that the ezETH shares were updated correctly.
+            uint256 expectedShares = RENZO_ORACLE.calculateMintAmount(
+                totalBaseSupplyBefore,
+                basePaid,
+                totalSharesBefore
+            );
+            assertEq(EZETH.totalSupply(), totalSharesBefore + expectedShares);
+            assertEq(
+                EZETH.balanceOf(address(hyperdrive)),
+                hyperdriveBalancesBefore.ezethBalance + expectedShares
+            );
+            assertEq(EZETH.balanceOf(bob), traderBalancesBefore.ezethBalance);
+        } else {
+            // Ensure that the amount of pooled ether stays the same.
+            (, uint256 totalPooledEther, ) = getSharePrice();
+            assertEq(totalPooledEther, totalBaseSupplyBefore);
+
+            // Ensure that the ETH balances were updated correctly.
+            assertEq(
+                address(hyperdrive).balance,
+                hyperdriveBalancesBefore.ETHBalance
+            );
+            assertEq(trader.balance, traderBalancesBefore.ETHBalance);
+
+            // Ensure that the ezETH shares were updated correctly.
+            uint256 expectedShares = basePaid.mulDivDown(
+                totalSharesBefore,
+                totalBaseSupplyBefore
+            );
+            assertEq(EZETH.totalSupply(), totalSharesBefore);
+            assertApproxEqAbs(
+                EZETH.balanceOf(address(hyperdrive)),
+                hyperdriveBalancesBefore.ezethBalance + expectedShares,
+                1
+            );
+            assertApproxEqAbs(
+                EZETH.balanceOf(trader),
+                traderBalancesBefore.ezethBalance - expectedShares,
+                1
+            );
+        }
+    }
+
+    function _verifyDeposit(
+        address trader,
+        uint256 basePaid,
+        bool asBase,
+        uint256 totalBaseSupplyBefore,
+        uint256 totalSharesBefore,
+        AccountBalances2 memory traderBalancesBefore,
+        AccountBalances2 memory hyperdriveBalancesBefore
+    ) internal override {
+        if (asBase) {
+            // Ensure that the amount of pooled ether increased by the base paid.
+            (, uint256 totalPooledEther, ) = getSharePrice();
+            assertEq(totalPooledEther, totalBaseSupplyBefore + basePaid);
+
+            // Ensure that the ETH balances were updated correctly.
+            assertEq(
+                address(hyperdrive).balance,
+                hyperdriveBalancesBefore.ETHBalance
+            );
+            assertEq(bob.balance, traderBalancesBefore.ETHBalance - basePaid);
+
+            // Ensure ezETH shares were updated correctly.
+            assertEq(
+                EZETH.balanceOf(trader),
+                traderBalancesBefore.sharesBalance
+            );
+
+            // Ensure that the ezETH shares were updated correctly.
+            uint256 expectedShares = RENZO_ORACLE.calculateMintAmount(
+                totalBaseSupplyBefore,
+                basePaid,
+                totalSharesBefore
+            );
+            assertEq(EZETH.totalSupply(), totalSharesBefore + expectedShares);
+            assertEq(
+                EZETH.balanceOf(address(hyperdrive)),
+                hyperdriveBalancesBefore.sharesBalance + expectedShares
+            );
+            assertEq(EZETH.balanceOf(bob), traderBalancesBefore.sharesBalance);
+        } else {
+            // Ensure that the amount of pooled ether stays the same.
+            (, uint256 totalPooledEther, ) = getSharePrice();
+            assertEq(totalPooledEther, totalBaseSupplyBefore);
+
+            // Ensure that the ETH balances were updated correctly.
+            assertEq(
+                address(hyperdrive).balance,
+                hyperdriveBalancesBefore.ETHBalance
+            );
+            assertEq(trader.balance, traderBalancesBefore.ETHBalance);
+
+            // Ensure that the ezETH shares were updated correctly.
+            uint256 expectedShares = convertToShares(basePaid);
+            assertEq(EZETH.totalSupply(), totalSharesBefore);
+            assertApproxEqAbs(
+                EZETH.balanceOf(address(hyperdrive)),
+                hyperdriveBalancesBefore.sharesBalance + expectedShares,
+                2
+            );
+            assertApproxEqAbs(
+                EZETH.balanceOf(trader),
+                traderBalancesBefore.sharesBalance - expectedShares,
+                2
+            );
+        }
     }
 
     /// Getters ///
@@ -649,76 +797,6 @@ contract EzETHHyperdriveTest is InstanceTest {
             bobBalancesBefore,
             hyperdriveBalancesBefore
         );
-    }
-
-    function verifyDeposit(
-        address trader,
-        uint256 basePaid,
-        bool asBase,
-        uint256 totalPooledEtherBefore,
-        uint256 totalSharesBefore,
-        AccountBalances memory traderBalancesBefore,
-        AccountBalances memory hyperdriveBalancesBefore
-    ) internal {
-        if (asBase) {
-            // Ensure that the amount of pooled ether increased by the base paid.
-            (, uint256 totalPooledEther, ) = getSharePrice();
-            assertEq(totalPooledEther, totalPooledEtherBefore + basePaid);
-
-            // Ensure that the ETH balances were updated correctly.
-            assertEq(
-                address(hyperdrive).balance,
-                hyperdriveBalancesBefore.ETHBalance
-            );
-            assertEq(bob.balance, traderBalancesBefore.ETHBalance - basePaid);
-
-            // Ensure ezETH shares were updated correctly.
-            assertEq(
-                EZETH.balanceOf(trader),
-                traderBalancesBefore.ezethBalance
-            );
-
-            // Ensure that the ezETH shares were updated correctly.
-            uint256 expectedShares = RENZO_ORACLE.calculateMintAmount(
-                totalPooledEtherBefore,
-                basePaid,
-                totalSharesBefore
-            );
-            assertEq(EZETH.totalSupply(), totalSharesBefore + expectedShares);
-            assertEq(
-                EZETH.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.ezethBalance + expectedShares
-            );
-            assertEq(EZETH.balanceOf(bob), traderBalancesBefore.ezethBalance);
-        } else {
-            // Ensure that the amount of pooled ether stays the same.
-            (, uint256 totalPooledEther, ) = getSharePrice();
-            assertEq(totalPooledEther, totalPooledEtherBefore);
-
-            // Ensure that the ETH balances were updated correctly.
-            assertEq(
-                address(hyperdrive).balance,
-                hyperdriveBalancesBefore.ETHBalance
-            );
-            assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-            // Ensure that the ezETH shares were updated correctly.
-            uint256 expectedShares = basePaid.mulDivDown(
-                totalSharesBefore,
-                totalPooledEtherBefore
-            );
-            assertEq(EZETH.totalSupply(), totalSharesBefore);
-            assertApproxEqAbs(
-                EZETH.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.ezethBalance + expectedShares,
-                1
-            );
-            assertApproxEqAbs(
-                EZETH.balanceOf(trader),
-                traderBalancesBefore.ezethBalance - expectedShares,
-                1
-            );
-        }
     }
 
     function verifyEzethWithdrawal(
