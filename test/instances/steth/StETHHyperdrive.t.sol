@@ -65,16 +65,6 @@ contract StETHHyperdriveTest is InstanceTest {
 
     /// Overrides ///
 
-    function getSupply() internal view override returns (uint256, uint256) {
-        return (LIDO.getTotalPooledEther(), LIDO.getTotalShares());
-    }
-
-    function getTokenBalances(
-        address account
-    ) internal view override returns (uint256, uint256) {
-        return (LIDO.sharesOf(account), LIDO.balanceOf(account));
-    }
-
     /// @dev Converts base amount to the equivalent about in stETH.
     function convertToShares(
         uint256 baseAmount
@@ -102,6 +92,19 @@ contract StETHHyperdriveTest is InstanceTest {
             );
     }
 
+    /// @dev Fetches the total supply of the base and share tokens.
+    function getSupply() internal view override returns (uint256, uint256) {
+        return (LIDO.getTotalPooledEther(), LIDO.getTotalShares());
+    }
+
+    /// @dev Fetches the token balance information of an account.
+    function getTokenBalances(
+        address account
+    ) internal view override returns (uint256, uint256) {
+        return (LIDO.sharesOf(account), LIDO.balanceOf(account));
+    }
+
+    /// @dev Verifies that deposit accounting is correct when opening positions.
     function verifyDeposit(
         address trader,
         uint256 amountPaid,

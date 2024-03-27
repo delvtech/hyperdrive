@@ -101,20 +101,20 @@ contract RETHHyperdriveTest is InstanceTest {
             );
     }
 
-    /// @dev Fetches the token balance information of an account.
-    function getTokenBalances(
-        address account
-    ) internal view override returns (uint256, uint256) {
-        uint256 rethBalance = rocketTokenRETH.balanceOf(account);
-        return (rethBalance, rocketTokenRETH.getEthValue(rethBalance));
-    }
-
     /// @dev Fetches the total supply of the base and share tokens.
     function getSupply() internal view override returns (uint256, uint256) {
         return (
             rocketNetworkBalances.getTotalETHBalance(),
             rocketNetworkBalances.getTotalRETHSupply()
         );
+    }
+
+    /// @dev Fetches the token balance information of an account.
+    function getTokenBalances(
+        address account
+    ) internal view override returns (uint256, uint256) {
+        uint256 rethBalance = rocketTokenRETH.balanceOf(account);
+        return (rethBalance, rocketTokenRETH.getEthValue(rethBalance));
     }
 
     /// @dev Verifies that deposit accounting is correct when opening positions.
