@@ -327,7 +327,7 @@ abstract contract InstanceTest is HyperdriveTest {
     /// @param totalBaseBefore Total supply of the base token before the trade.
     /// @param totalSharesBefore Total supply of the share token before the trade.
     /// @param traderBalancesBefore Balances of tokens of the trader before the trade.
-    /// @param hyperdriveBalanceBefore Balances of tokens of the Hyperdrive contract before the trade.
+    /// @param hyperdriveBalancesBefore Balances of tokens of the Hyperdrive contract before the trade.
     function verifyDeposit(
         address trader,
         uint256 basePaid,
@@ -351,9 +351,12 @@ abstract contract InstanceTest is HyperdriveTest {
         returns (uint256 sharesBalance, uint256 baseBalance);
 
     /// @dev A virtual function that fetches the total supply of the base and share tokens.
-    /// @return sharesBalance The total supply of the share token.
-    /// @return baseBalance The total supply of the base token.
-    function getSupply() internal virtual returns (uint256, uint256);
+    /// @return totalSupplyShares The total supply of the share token.
+    /// @return totalSupplyBase The total supply of the base token.
+    function getSupply()
+        internal
+        virtual
+        returns (uint256 totalSupplyShares, uint256 totalSupplyBase);
 
     /// Tests ///
 
