@@ -95,16 +95,19 @@ contract LsETHHyperdriveTest is InstanceTest {
         return RIVER.sharesFromUnderlyingBalance(baseAmount);
     }
 
+    /// @dev Fetches the token balance information of an account.
     function getTokenBalances(
         address account
     ) internal view override returns (uint256, uint256) {
         return (RIVER.balanceOf(account), RIVER.balanceOfUnderlying(account));
     }
 
+    /// @dev Fetches the total supply of the base and share tokens.
     function getSupply() internal view override returns (uint256, uint256) {
         return (RIVER.totalUnderlyingSupply(), RIVER.totalSupply());
     }
 
+    /// @dev Verifies that deposit accounting is correct when opening positions.
     function verifyDeposit(
         address trader,
         uint256 amount,
@@ -114,13 +117,15 @@ contract LsETHHyperdriveTest is InstanceTest {
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
     ) internal override {
+        // Deposits as base is not supported for this instance.
         if (asBase) {
             revert IHyperdrive.NotPayable();
         }
 
+        // Convert the amount in terms of shares.
         amount = convertToShares(amount);
 
-        // Ensure that the ether balances were updated correctly.
+        // Ensure that the ETH balances were updated correctly.
         assertEq(
             address(hyperdrive).balance,
             hyperdriveBalancesBefore.ETHBalance
