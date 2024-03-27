@@ -2,7 +2,6 @@
 pragma solidity 0.8.20;
 
 import { HyperdriveTarget4 } from "../../external/HyperdriveTarget4.sol";
-import { I{{ name.capitalized }} } from "../../interfaces/{{ name.lowercase }}/I{{ name.capitalized }}.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { {{ name.capitalized }}Base } from "./{{ name.capitalized }}Base.sol";
 
@@ -17,9 +16,7 @@ import { {{ name.capitalized }}Base } from "./{{ name.capitalized }}Base.sol";
 contract {{ name.capitalized }}Target4 is HyperdriveTarget4, {{ name.capitalized }}Base {
     /// @notice Initializes the target4 contract.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param __vault The {{ name.capitalized }} compatible vault.
     constructor(
-        IHyperdrive.PoolConfig memory _config,
-        I{{ name.capitalized }} __vault
-    ) HyperdriveTarget4(_config) {{ name.capitalized }}Base(__vault) {}
+        IHyperdrive.PoolConfig memory _config
+    ) HyperdriveTarget4(_config) {}
 }

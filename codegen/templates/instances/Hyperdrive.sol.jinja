@@ -5,9 +5,7 @@ import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
-import { I{{ name.capitalized }} } from "../../interfaces/{{ name.lowercase }}/I{{ name.capitalized }}.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
 import { {{ name.capitalized }}Base } from "./{{ name.capitalized }}Base.sol";
 
 ///      ______  __                           _________      _____
@@ -57,7 +55,6 @@ import { {{ name.capitalized }}Base } from "./{{ name.capitalized }}Base.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract {{ name.capitalized }}Hyperdrive is Hyperdrive, {{ name.capitalized }}Base {
-    using FixedPointMath for uint256;
     using SafeERC20 for ERC20;
 
     /// @notice Instantiates Hyperdrive with a {{ name.capitalized }} vault as the yield source.
@@ -67,31 +64,21 @@ contract {{ name.capitalized }}Hyperdrive is Hyperdrive, {{ name.capitalized }}B
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
     /// @param _target4 The target4 address.
-    /// @param __vault The {{ name.capitalized }} compatible yield source.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         address _target0,
         address _target1,
         address _target2,
         address _target3,
-        address _target4,
-        I{{ name.capitalized }} __vault
+        address _target4
     )
         Hyperdrive(_config, _target0, _target1, _target2, _target3, _target4)
-        {{ name.capitalized }}Base(__vault)
     {
-
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC4626 example provided.
-        // Ensure that the base token is the same as the vault's underlying
-        // asset.
-        if (address(_config.baseToken) != I{{ name.capitalized }}(_vault).asset()) {
-            revert IHyperdrive.InvalidBaseToken();
-        }
-
         // Approve the base token with 1 wei. This ensures that all of the
         // subsequent approvals will be writing to a dirty storage slot.
-        ERC20(address(_config.baseToken)).forceApprove(address(_vault), 1);
-        // ****************************************************************
+        ERC20(address(_config.baseToken)).forceApprove(
+            address(_config.vaultSharesToken),
+            1
+        );
     }
 }

@@ -13,15 +13,6 @@ import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDep
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract {{ name.capitalized }}Target2Deployer is IHyperdriveTargetDeployer {
-    /// @notice The {{ name.capitalized }} contract.
-    I{{ name.capitalized }} public immutable {{ name.camelcase }};
-
-    /// @notice Instantiates the core deployer.
-    /// @param _{{ name.camelcase }} The {{ name.capitalized }} contract.
-    constructor(I{{ name.capitalized }} _{{ name.camelcase }}) {
-        {{ name.camelcase }} = _{{ name.camelcase }};
-    }
-
     /// @notice Deploys a target2 instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _salt The create2 salt used in the deployment.
@@ -37,7 +28,7 @@ contract {{ name.capitalized }}Target2Deployer is IHyperdriveTargetDeployer {
                 // front-running of deployments.
                 new {{ name.capitalized }}Target2{
                     salt: keccak256(abi.encode(msg.sender, _salt))
-                }(_config, {{ name.camelcase }})
+                }(_config)
             );
     }
 }

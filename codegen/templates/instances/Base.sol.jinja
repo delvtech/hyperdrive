@@ -3,11 +3,10 @@ pragma solidity 0.8.20;
 
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import { IERC4626 } from "../../interfaces/IERC4626.sol";
 import { I{{ name.capitalized }} } from "../../interfaces/{{ name.lowercase }}/I{{ name.capitalized }}.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { I{{ name.capitalized }}Hyperdrive } from "../../interfaces/{{ name.lowercase }}/I{{ name.capitalized }}Hyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
-import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title {{ name.capitalized }}Base
@@ -19,18 +18,7 @@ import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract {{ name.capitalized }}Base is HyperdriveBase {
-    using FixedPointMath for uint256;
     using SafeERC20 for ERC20;
-
-    /// @dev The {{ name.capitalized }} vault that this pool uses as a yield source.
-    I{{ name.capitalized }} internal immutable _vault;
-
-    /// @notice Instantiates the {{ name.capitalized }} Hyperdrive base contract.
-    /// @param __vault The {{ name.capitalized }} compatible vault.
-    constructor(I{{ name.capitalized }} __vault) {
-        // Initialize the pool immutable.
-        _vault = __vault;
-    }
 
     /// Yield Source ///
 
@@ -45,7 +33,7 @@ abstract contract {{ name.capitalized }}Base is HyperdriveBase {
         bytes calldata // unused
     ) internal override returns (uint256, uint256) {
         // ****************************************************************
-        // FIXME: Implement this for new instances. ERC20 example provided.
+        // FIXME: Implement this for new instances. ERC4626 example provided.
         // Take custody of the deposit in base.
         ERC20(address(_baseToken)).safeTransferFrom(
             msg.sender,
@@ -59,10 +47,13 @@ abstract contract {{ name.capitalized }}Base is HyperdriveBase {
         // the vault ends with an approval of 1 wei. This makes future
         // approvals cheaper by keeping the storage slot warm.
         ERC20(address(_baseToken)).forceApprove(
-            address(_vault),
+            address(_vaultSharesToken),
             _baseAmount + 1
         );
-        uint256 sharesMinted = _vault.deposit(_baseAmount, address(this));
+        uint256 sharesMinted = IERC4626(address(_vaultSharesToken)).deposit(
+            _baseAmount,
+            address(this)
+        );
 
         return (sharesMinted, 0);
         // ****************************************************************
@@ -82,12 +73,12 @@ abstract contract {{ name.capitalized }}Base is HyperdriveBase {
     /// @param _shareAmount The vault shares amount to deposit.
     function _depositWithShares(
         uint256 _shareAmount,
-        bytes calldata // unused
+        bytes calldata // unused _extraData
     ) internal override {
         // ****************************************************************
         // FIXME: Implement this for new instances. ERC20 example provided.
         // Take custody of the deposit in vault shares.
-        ERC20(address(_vault)).safeTransferFrom(
+        ERC20(address(_vaultSharesToken)).safeTransferFrom(
             msg.sender,
             address(this),
             _shareAmount
@@ -107,10 +98,10 @@ abstract contract {{ name.capitalized }}Base is HyperdriveBase {
         bytes calldata // unused
     ) internal override returns (uint256 amountWithdrawn) {
         // ****************************************************************
-        // FIXME: Implement this for new instances. ERC20 example provided.
+        // FIXME: Implement this for new instances. ERC4626 example provided.
         // Redeem from the yield source and transfer the
         // resulting base to the destination address.
-        amountWithdrawn = _vault.redeem(
+        amountWithdrawn = IERC4626(address(_vaultSharesToken)).redeem(
             _shareAmount,
             _destination,
             address(this)
@@ -141,7 +132,7 @@ abstract contract {{ name.capitalized }}Base is HyperdriveBase {
         // ****************************************************************
         // FIXME: Implement this for new instances. ERC20 example provided.
         // Transfer vault shares to the destination.
-        ERC20(address(_vault)).safeTransfer(_destination, _shareAmount);
+        ERC20(address(_vaultSharesToken)).safeTransfer(_destination, _shareAmount);
         // ****************************************************************
     }
 
@@ -153,7 +144,8 @@ abstract contract {{ name.capitalized }}Base is HyperdriveBase {
     ) internal view override returns (uint256) {
         // ****************************************************************
         // FIXME: Implement this for new instances.
-        return _vault.convertToAssets(_shareAmount);
+        return
+            IERC4626(address(_vaultSharesToken)).convertToAssets(_shareAmount);
         // ****************************************************************
     }
 
@@ -165,7 +157,8 @@ abstract contract {{ name.capitalized }}Base is HyperdriveBase {
     ) internal view override returns (uint256) {
         // ****************************************************************
         // FIXME: Implement this for new instances.
-        return _vault.convertToShares(_baseAmount);
+        return
+            IERC4626(address(_vaultSharesToken)).convertToShares(_baseAmount);
         // ****************************************************************
     }
 
@@ -184,7 +177,7 @@ abstract contract {{ name.capitalized }}Base is HyperdriveBase {
         override
         returns (uint256 shareAmount)
     {
-        return _vault.balanceOf(address(this));
+        return _vaultSharesToken.balanceOf(address(this));
     }
 
 {% if contract.payable %}

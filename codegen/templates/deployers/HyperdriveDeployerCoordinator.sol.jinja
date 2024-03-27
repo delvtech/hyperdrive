@@ -80,7 +80,7 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
             // FIXME: Implement this for new instances. ERC20 example provided.
             // Take custody of the contribution and approve Hyperdrive to pull
             // the tokens.
-            address token = address(I{{ name.capitalized }}Hyperdrive(address(_hyperdrive)).vault());
+            address token = _hyperdrive.vaultSharesToken();
             ERC20(token).safeTransferFrom(_lp, address(this), _contribution);
             ERC20(token).forceApprove(address(_hyperdrive), _contribution);
             // ****************************************************************
@@ -95,7 +95,7 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
         }
         // Otherwise, the initialization will be paid in vault shares.
         else {
-            token = address(I{{ name.capitalized }}Hyperdrive(address(_hyperdrive)).vault());
+            token = _hyperdrive.vaultSharesToken();
         }
 
         // ****************************************************************
@@ -116,7 +116,7 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
         // FIXME: Implement this for new instances. ERC20 example provided.
         // Otherwise, transfer vault shares from the LP and approve the
         // Hyperdrive pool.
-        address token = address(I{{ name.capitalized }}Hyperdrive(address(_hyperdrive)).vault());
+        address token = _hyperdrive.vaultSharesToken();
         ERC20(token).transferFrom(_lp, address(this), _contribution);
         ERC20(token).approve(address(_hyperdrive), _contribution);
         // ****************************************************************
@@ -163,6 +163,7 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
+        IHyperdrive.PoolDeployConfig memory, // unused _deployConfig
         bytes memory // unused _extraData
     ) internal pure override returns (uint256) {
         // ****************************************************************
