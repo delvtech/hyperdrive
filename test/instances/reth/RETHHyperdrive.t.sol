@@ -154,6 +154,9 @@ contract RETHHyperdriveTest is InstanceTest {
             1
         );
 
+        // Ensure the total base supply was updated correctly.
+        assertEq(rocketNetworkBalances.getTotalETHBalance(), totalBaseBefore);
+
         // Ensure the total supply was updated correctly.
         assertEq(rocketTokenRETH.totalSupply(), totalSharesBefore);
     }
