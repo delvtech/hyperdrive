@@ -459,4 +459,130 @@ abstract contract InstanceTest is HyperdriveTest {
             config.shareTolerance
         );
     }
+
+    struct AccountBalances {
+        uint256 sharesBalance;
+        uint256 baseBalance;
+        uint256 ETHBalance;
+    }
+
+    function getTokenBalances(
+        address account
+    ) internal view virtual returns (uint256, uint256);
+
+    function getSupply() internal virtual returns (uint256, uint256);
+
+    function getAccountBalances(
+        address account
+    ) internal view returns (AccountBalances memory) {
+        (uint256 shares, uint256 base) = getTokenBalances(account);
+
+        return
+            AccountBalances({
+                sharesBalance: shares,
+                baseBalance: base,
+                ETHBalance: account.balance
+            });
+    }
+
+    function verifyDeposit(
+        address trader,
+        uint256 amountPaid,
+        bool asBase,
+        uint256 totalBaseBefore,
+        uint256 totalSharesBefore,
+        AccountBalances memory traderBalancesBefore,
+        AccountBalances memory hyperdriveBalancesBefore
+    ) internal virtual;
+
+    function test__open_long_with_shares(uint256 basePaid) external {
+        (
+            uint256 totalBaseSupplyBefore,
+            uint256 totalSharesSupplyBefore
+        ) = getSupply();
+
+        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
+        AccountBalances memory hyperdriveBalanceBefore = getAccountBalances(
+            address(hyperdrive)
+        );
+
+        // Calculate the maximum amount of basePaid we can test. The limit is
+        // either the max long that Hyperdrive can open or the amount of rETH
+        // tokens the trader has.
+        uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
+        uint256 maxSharesAmount = bobBalancesBefore.sharesBalance;
+
+        // Bob opens a long by depositing stETH.
+        basePaid = basePaid.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            maxLongAmount > maxSharesAmount ? maxSharesAmount : maxLongAmount
+        );
+
+        uint256 sharesPaid = convertToShares(basePaid);
+
+        openLong(bob, sharesPaid, false);
+        verifyDeposit(
+            bob,
+            basePaid,
+            false,
+            totalBaseSupplyBefore,
+            totalSharesSupplyBefore,
+            bobBalancesBefore,
+            hyperdriveBalanceBefore
+        );
+    }
+
+    function test__open_long_with_base(uint256 basePaid) external {
+        (
+            uint256 totalBaseSupplyBefore,
+            uint256 totalSharesSupplyBefore
+        ) = getSupply();
+
+        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
+        AccountBalances memory hyperdriveBalanceBefore = getAccountBalances(
+            address(hyperdrive)
+        );
+
+        // Bob opens a long by depositing stETH.
+        vm.startPrank(bob);
+        basePaid = basePaid.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            HyperdriveUtils.calculateMaxLong(hyperdrive)
+        );
+
+        // We expect the deployAndInitialize to fail with an
+        // Unsupported token error if depositing with base is not supported.
+        // If the base token is ETH we expect a NotPayable error.
+        if (!config.enableBaseDeposits) {
+            vm.expectRevert(
+                isBaseETH
+                    ? IHyperdrive.NotPayable.selector
+                    : IHyperdrive.UnsupportedToken.selector
+            );
+        }
+
+        hyperdrive.openLong{ value: isBaseETH ? basePaid : 0 }(
+            basePaid,
+            0,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+        // openLong(bob, basePaid, true);
+
+        if (config.enableBaseDeposits) {
+            verifyDeposit(
+                bob,
+                basePaid,
+                true,
+                totalBaseSupplyBefore,
+                totalSharesSupplyBefore,
+                bobBalancesBefore,
+                hyperdriveBalanceBefore
+            );
+        }
+    }
 }
