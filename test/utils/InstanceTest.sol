@@ -244,8 +244,7 @@ abstract contract InstanceTest is HyperdriveTest {
         }
     }
 
-    /// @dev Deploys the Hyperdrive Factory contract and
-    ///      sets the default pool configuration.
+    /// @dev Deploys the Hyperdrive Factory contract and sets the default pool configuration.
     function deployFactory() private {
         // Deploy the hyperdrive factory.
         vm.startPrank(deployer);
@@ -321,6 +320,41 @@ abstract contract InstanceTest is HyperdriveTest {
     function convertToShares(
         uint256 baseAmount
     ) internal view virtual returns (uint256 shareAmount);
+
+    /// @dev A virtual function that ensures the deposit accounting is correct when opening positions.
+    /// @param trader The account opening the position.
+    /// @param basePaid The amount the position was opened with in terms of base.
+    /// @param asBase Flag to determine whether the position was opened with the base or share token.
+    /// @param totalBaseBefore Total supply of the base token before the trade.
+    /// @param totalSharesBefore Total supply of the share token before the trade.
+    /// @param traderBalancesBefore Balances of tokens of the trader before the trade.
+    /// @param hyperdriveBalanceBefore Balances of tokens of the Hyperdrive contract before the trade.
+    function verifyDeposit(
+        address trader,
+        uint256 basePaid,
+        bool asBase,
+        uint256 totalBaseBefore,
+        uint256 totalSharesBefore,
+        AccountBalances memory traderBalancesBefore,
+        AccountBalances memory hyperdriveBalancesBefore
+    ) internal virtual;
+
+    /// @dev A virtual function that fetches the token balance information of an account.
+    /// @param account The account to fetch token balances of.
+    /// @return sharesBalance The shares token balance of the account.
+    /// @return baseBalance The base token balance of the account.
+    function getTokenBalances(
+        address account
+    )
+        internal
+        view
+        virtual
+        returns (uint256 sharesBalance, uint256 baseBalance);
+
+    /// @dev A virtual function that fetches the total supply of the base and share tokens.
+    /// @return sharesBalance The total supply of the share token.
+    /// @return baseBalance The total supply of the base token.
+    function getSupply() internal virtual returns (uint256, uint256);
 
     /// Tests ///
 
@@ -460,17 +494,116 @@ abstract contract InstanceTest is HyperdriveTest {
         );
     }
 
+    /// @dev Fuzz Test to ensure deposit accounting is correct for opening longs
+    ///      with the share token.
+    /// @param basePaid Amount in terms of base to open a long.
+    function test__open_long_with_shares(uint256 basePaid) external {
+        // Get balance information before opening a long.
+        (
+            uint256 totalBaseSupplyBefore,
+            uint256 totalSharesSupplyBefore
+        ) = getSupply();
+        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
+        AccountBalances memory hyperdriveBalanceBefore = getAccountBalances(
+            address(hyperdrive)
+        );
+
+        // Calculate the maximum amount of basePaid we can test. The limit is
+        // either the maximum long that Hyperdrive can open or the amount of the
+        // share token the trader has.
+        uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
+        uint256 maxShareAmount = bobBalancesBefore.sharesBalance;
+
+        // We normalize the basePaid variable within a valid range the market can support.
+        basePaid = basePaid.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            maxLongAmount > maxShareAmount ? maxShareAmount : maxLongAmount
+        );
+
+        // Convert the amount to deposit in terms of the share token.
+        uint256 sharesPaid = convertToShares(basePaid);
+
+        // Bob opens a long by depositing the share token.
+        openLong(bob, sharesPaid, false);
+
+        // Ensure the deposit accounting is correct.
+        verifyDeposit(
+            bob,
+            basePaid,
+            false,
+            totalBaseSupplyBefore,
+            totalSharesSupplyBefore,
+            bobBalancesBefore,
+            hyperdriveBalanceBefore
+        );
+    }
+
+    /// @dev Fuzz Test to ensure deposit accounting is correct for opening longs
+    ///      with the base token. This test case is expected to fail if base deposits
+    ///      is not supported.
+    /// @param basePaid Amount in terms of base to open a long.
+    function test__open_long_with_base(uint256 basePaid) external {
+        // Get balance information before opening a long.
+        (
+            uint256 totalBaseSupplyBefore,
+            uint256 totalSharesSupplyBefore
+        ) = getSupply();
+        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
+        AccountBalances memory hyperdriveBalanceBefore = getAccountBalances(
+            address(hyperdrive)
+        );
+
+        // We normalize the basePaid variable within a valid range the market can support.
+        basePaid = basePaid.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            HyperdriveUtils.calculateMaxLong(hyperdrive)
+        );
+
+        // We expect the openLong to fail with an Unsupported token error
+        // if depositing with base is not supported or a NotPayable error
+        // if the base token is ETH.
+        if (!config.enableBaseDeposits) {
+            vm.expectRevert(
+                isBaseETH
+                    ? IHyperdrive.NotPayable.selector
+                    : IHyperdrive.UnsupportedToken.selector
+            );
+        }
+
+        // Bob opens a long by depositing the base token.
+        vm.startPrank(bob);
+        hyperdrive.openLong{ value: isBaseETH ? basePaid : 0 }(
+            basePaid,
+            0,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+
+        // If base deposits are supported we ensure the deposit accounting is correct.
+        if (config.enableBaseDeposits) {
+            verifyDeposit(
+                bob,
+                basePaid,
+                true,
+                totalBaseSupplyBefore,
+                totalSharesSupplyBefore,
+                bobBalancesBefore,
+                hyperdriveBalanceBefore
+            );
+        }
+    }
+
+    /// Utilities ///
+
     struct AccountBalances {
         uint256 sharesBalance;
         uint256 baseBalance;
         uint256 ETHBalance;
     }
-
-    function getTokenBalances(
-        address account
-    ) internal view virtual returns (uint256, uint256);
-
-    function getSupply() internal virtual returns (uint256, uint256);
 
     function getAccountBalances(
         address account
@@ -483,106 +616,5 @@ abstract contract InstanceTest is HyperdriveTest {
                 baseBalance: base,
                 ETHBalance: account.balance
             });
-    }
-
-    function verifyDeposit(
-        address trader,
-        uint256 amountPaid,
-        bool asBase,
-        uint256 totalBaseBefore,
-        uint256 totalSharesBefore,
-        AccountBalances memory traderBalancesBefore,
-        AccountBalances memory hyperdriveBalancesBefore
-    ) internal virtual;
-
-    function test__open_long_with_shares(uint256 basePaid) external {
-        (
-            uint256 totalBaseSupplyBefore,
-            uint256 totalSharesSupplyBefore
-        ) = getSupply();
-
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalanceBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-
-        // Calculate the maximum amount of basePaid we can test. The limit is
-        // either the max long that Hyperdrive can open or the amount of rETH
-        // tokens the trader has.
-        uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
-        uint256 maxSharesAmount = bobBalancesBefore.sharesBalance;
-
-        // Bob opens a long by depositing stETH.
-        basePaid = basePaid.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            maxLongAmount > maxSharesAmount ? maxSharesAmount : maxLongAmount
-        );
-
-        uint256 sharesPaid = convertToShares(basePaid);
-
-        openLong(bob, sharesPaid, false);
-        verifyDeposit(
-            bob,
-            basePaid,
-            false,
-            totalBaseSupplyBefore,
-            totalSharesSupplyBefore,
-            bobBalancesBefore,
-            hyperdriveBalanceBefore
-        );
-    }
-
-    function test__open_long_with_base(uint256 basePaid) external {
-        (
-            uint256 totalBaseSupplyBefore,
-            uint256 totalSharesSupplyBefore
-        ) = getSupply();
-
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalanceBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-
-        // Bob opens a long by depositing stETH.
-        vm.startPrank(bob);
-        basePaid = basePaid.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
-        );
-
-        // We expect the deployAndInitialize to fail with an
-        // Unsupported token error if depositing with base is not supported.
-        // If the base token is ETH we expect a NotPayable error.
-        if (!config.enableBaseDeposits) {
-            vm.expectRevert(
-                isBaseETH
-                    ? IHyperdrive.NotPayable.selector
-                    : IHyperdrive.UnsupportedToken.selector
-            );
-        }
-
-        hyperdrive.openLong{ value: isBaseETH ? basePaid : 0 }(
-            basePaid,
-            0,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-        // openLong(bob, basePaid, true);
-
-        if (config.enableBaseDeposits) {
-            verifyDeposit(
-                bob,
-                basePaid,
-                true,
-                totalBaseSupplyBefore,
-                totalSharesSupplyBefore,
-                bobBalancesBefore,
-                hyperdriveBalanceBefore
-            );
-        }
     }
 }
