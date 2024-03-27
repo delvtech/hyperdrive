@@ -190,69 +190,6 @@ contract RETHHyperdriveTest is InstanceTestV2 {
 
     /// Long ///
 
-    // function test_open_long_with_eth(uint256 basePaid) external {
-    //     // Bob opens a long by depositing ETH. This is not allowed and
-    //     // should throw an unsupported token exception.
-    //     vm.startPrank(bob);
-    //     basePaid = basePaid.normalizeToRange(
-    //         2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-    //         HyperdriveUtils.calculateMaxLong(hyperdrive)
-    //     );
-    //     vm.expectRevert(IHyperdrive.NotPayable.selector);
-    //     hyperdrive.openLong{ value: basePaid }(
-    //         basePaid,
-    //         0,
-    //         0,
-    //         IHyperdrive.Options({
-    //             destination: bob,
-    //             asBase: true,
-    //             extraData: new bytes(0)
-    //         })
-    //     );
-    // }
-
-    // function test_open_long_with_reth(uint256 basePaid) external {
-    //     // Get some balance information before the deposit.
-    //     (
-    //         uint256 totalBaseSupplyBefore,
-    //         uint256 totalSharesSupplyBefore
-    //     ) = getSupply();
-    //     AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-    //     AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-    //         address(hyperdrive)
-    //     );
-
-    //     // Calculate the maximum amount of basePaid we can test. The limit is
-    //     // either the max long that Hyperdrive can open or the amount of rETH
-    //     // tokens the trader has.
-    //     uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
-    //     uint256 maxEthAmount = rocketTokenRETH.getEthValue(
-    //         rocketTokenRETH.balanceOf(bob)
-    //     );
-
-    //     // Bob opens a long by depositing rETH.
-    //     vm.startPrank(bob);
-    //     basePaid = basePaid.normalizeToRange(
-    //         2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-    //         maxLongAmount > maxEthAmount ? maxEthAmount : maxLongAmount
-    //     );
-    //     uint256 sharesPaid = rocketTokenRETH.getRethValue(basePaid);
-    //     rocketTokenRETH.approve(address(hyperdrive), sharesPaid);
-    //     openLong(bob, sharesPaid, false);
-
-    //     // Ensure that Rocket Pool's aggregates and the token balances were updated
-    //     // correctly during the trade.
-    //     verifyDeposit(
-    //         bob,
-    //         basePaid,
-    //         false,
-    //         totalBaseSupplyBefore,
-    //         totalSharesSupplyBefore,
-    //         bobBalancesBefore,
-    //         hyperdriveBalancesBefore
-    //     );
-    // }
-
     function test_open_long_refunds() external {
         vm.startPrank(bob);
 
@@ -756,19 +693,4 @@ contract RETHHyperdriveTest is InstanceTestV2 {
         // Ensure the new rate is higher than the old rate.
         assertGt(rocketTokenRETH.getExchangeRate(), oldRate);
     }
-
-    // struct AccountBalances {
-    //     uint256 rethBalance;
-    //     uint256 ETHBalance;
-    // }
-
-    // function getAccountBalances(
-    //     address account
-    // ) internal view returns (AccountBalances memory) {
-    //     return
-    //         AccountBalances({
-    //             rethBalance: rocketTokenRETH.balanceOf(account),
-    //             ETHBalance: account.balance
-    //         });
-    // }
 }
