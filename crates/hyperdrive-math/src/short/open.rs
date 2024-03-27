@@ -3,7 +3,77 @@ use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
-use crate::{State, YieldSpace};
+use crate::{yield_space::calculate_shares_out_given_bonds_in_down_safe, State, YieldSpace};
+
+/// Gets the amount of base the trader will need to deposit for a short of
+/// a given size.
+///
+/// The short deposit is made up of several components:
+/// - The long's fixed rate (without considering fees): $\Delta y - c \cdot \Delta
+/// - The curve fee: $c \cdot (1 - p) \cdot \Delta y$
+/// - The backpaid short interest: $(c - c_0) \cdot \Delta y$
+/// - The flat fee: $f \cdot \Delta y$
+///
+/// Putting these components together, we can write out the short deposit
+/// function as:
+///
+/// $$
+/// D(x) = \Delta y - (c \cdot P(x) - \phi_{curve} \cdot (1 - p) \cdot \Delta y)
+///        + (c - c_0) \cdot \tfrac{\Delta y}{c_0} + \phi_{flat} \cdot \Delta y \\
+///      = \tfrac{c}{c_0} \cdot \Delta y - (c \cdot P(x) - \phi_{curve} \cdot (1 - p) \cdot \Delta y)
+///        + \phi_{flat} \cdot \Delta y
+/// $$
+///
+/// $x$ is the number of bonds being shorted and $P(x)$ is the amount of
+/// shares the curve says the LPs need to pay the shorts (i.e. the LP
+/// principal).
+pub fn calculate_open_short(
+    ze: FixedPoint,
+    y: FixedPoint,
+    c: FixedPoint,
+    mu: FixedPoint,
+    t: FixedPoint,
+    flat_fee: FixedPoint,
+    curve_fee: FixedPoint,
+    short_amount: FixedPoint,
+    spot_price: FixedPoint,
+    mut open_vault_share_price: FixedPoint,
+) -> Result<FixedPoint> {
+    // If the open share price hasn't been set, we use the current share
+    // price, since this is what will be set as the checkpoint share price
+    // in the next transaction.
+    if open_vault_share_price == fixed!(0) {
+        open_vault_share_price = c;
+    }
+
+    // NOTE: The order of additions and subtractions is important to avoid underflows.
+    Ok(short_amount.mul_div_down(c, open_vault_share_price)
+        + flat_fee * short_amount
+        + curve_fee * (fixed!(1e18) - spot_price) * short_amount
+        - c * short_principal(ze, y, c, mu, t, short_amount)?)
+}
+
+/// Gets the amount of short principal that the LPs need to pay to back a
+/// short before fees are taken into consideration, $P(x)$.
+///
+/// Let the LP principal that backs $x$ shorts be given by $P(x)$. We can
+/// solve for this in terms of $x$ using the YieldSpace invariant:
+///
+/// $$
+/// k = \tfrac{c}{\mu} \cdot (\mu \cdot (z - P(x)))^{1 - t_s} + (y + x)^{1 - t_s} \\
+/// \implies \\
+/// P(x) = z - \tfrac{1}{\mu} \cdot (\tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s}))^{\tfrac{1}{1 - t_s}}
+/// $$
+pub fn short_principal(
+    ze: FixedPoint,
+    y: FixedPoint,
+    c: FixedPoint,
+    mu: FixedPoint,
+    t: FixedPoint,
+    short_amount: FixedPoint,
+) -> Result<FixedPoint> {
+    calculate_shares_out_given_bonds_in_down_safe(ze, y, c, mu, t, short_amount)
+}
 
 impl State {
     /// Gets the amount of base the trader will need to deposit for a short of

@@ -2,7 +2,735 @@ use ethers::types::I256;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
-use crate::{get_effective_share_reserves, State, YieldSpace};
+use crate::{
+    calculate_open_short, get_effective_share_reserves, get_solvency, open_short_curve_fee,
+    open_short_governance_fee, short_principal,
+    yield_space::{get_spot_price, k_down, k_up},
+    State, YieldSpace,
+};
+
+/// Gets the minimum price that the pool can support.
+///
+/// YieldSpace intersects the y-axis with a finite slope, so there is a
+/// minimum price that the pool can support. This is the price at which the
+/// share reserves are equal to the minimum share reserves.
+///
+/// We can solve for the bond reserves $y_{max}$ implied by the share reserves
+/// being equal to $z_{min}$ using the current k value:
+///
+/// $$
+/// k = \tfrac{c}{\mu} \cdot \left( \mu \cdot z_{min} \right)^{1 - t_s} + y_{max}^{1 - t_s} \\
+/// \implies \\
+/// y_{max} = \left( k - \tfrac{c}{\mu} \cdot \left( \mu \cdot z_{min} \right)^{1 - t_s} \right)^{\tfrac{1}{1 - t_s}}
+/// $$
+///
+/// From there, we can calculate the spot price as normal as:
+///
+/// $$
+/// p = \left( \tfrac{\mu \cdot z_{min}}{y_{max}} \right)^{t_s}
+/// $$
+pub fn get_min_price(
+    ze: FixedPoint,
+    y: FixedPoint,
+    c: FixedPoint,
+    mu: FixedPoint,
+    t: FixedPoint,
+    c_initial: FixedPoint,
+    z_min: FixedPoint,
+    time_stretch: FixedPoint,
+) -> FixedPoint {
+    let y_max = (k_up(ze, y, c, mu, t)
+        - (c / c_initial) * (c_initial * z_min).pow(fixed!(1e18) - time_stretch))
+    .pow(fixed!(1e18).div_up(fixed!(1e18) - time_stretch));
+    ((c_initial * z_min) / y_max).pow(time_stretch)
+}
+
+// TODO: Make it clear to the consumer that the maximum number of iterations
+// is 2 * max_iterations.
+//
+/// Gets the max short that can be opened with the given budget.
+///
+/// We start by finding the largest possible short (irrespective of budget),
+/// and then we iteratively approach a solution using Newton's method if the
+/// budget isn't satisified.
+///
+/// The user can provide `maybe_conservative_price`, which is a lower bound
+/// on the realized price that the short will pay. This is used to help the
+/// algorithm converge faster in real world situations. If this is `None`,
+/// then we'll use the theoretical worst case realized price.
+pub fn get_max_short<F1: Into<FixedPoint>, F2: Into<FixedPoint>, I: Into<I256>>(
+    ze: FixedPoint,
+    z: FixedPoint,
+    zeta: I256,
+    y: FixedPoint,
+    c: FixedPoint,
+    mu: FixedPoint,
+    t: FixedPoint,
+    c_initial: FixedPoint,
+    z_min: FixedPoint,
+    time_stretch: FixedPoint,
+    flat_fee: FixedPoint,
+    curve_fee: FixedPoint,
+    governance_lp_fee: FixedPoint,
+    long_exposure: FixedPoint,
+    budget: F1,
+    open_vault_share_price: F2,
+    checkpoint_exposure: I,
+    maybe_conservative_price: Option<FixedPoint>, // TODO: Is there a nice way of abstracting the inner type?
+    maybe_max_iterations: Option<usize>,
+) -> FixedPoint {
+    let budget = budget.into();
+    let open_vault_share_price = open_vault_share_price.into();
+    let checkpoint_exposure = checkpoint_exposure.into();
+
+    // If the budget is zero, then we return early.
+    if budget == fixed!(0) {
+        return fixed!(0);
+    }
+
+    // Get the spot price and the open share price. If the open share price
+    // is zero, then we'll use the current share price since the checkpoint
+    // hasn't been minted yet.
+    let spot_price = get_spot_price(ze, y, mu, t);
+    let open_vault_share_price = if open_vault_share_price != fixed!(0) {
+        open_vault_share_price
+    } else {
+        c
+    };
+
+    // Assuming the budget is infinite, find the largest possible short that
+    // can be opened. If the short satisfies the budget, this is the max
+    // short amount.
+    let mut max_bond_amount = absolute_max_short(
+        ze,
+        z,
+        zeta,
+        y,
+        c,
+        mu,
+        t,
+        c_initial,
+        z_min,
+        time_stretch,
+        curve_fee,
+        governance_lp_fee,
+        long_exposure,
+        spot_price,
+        checkpoint_exposure,
+        maybe_max_iterations,
+    );
+    let deposit = match calculate_open_short(
+        ze,
+        y,
+        c,
+        mu,
+        t,
+        flat_fee,
+        curve_fee,
+        max_bond_amount,
+        spot_price,
+        open_vault_share_price,
+    ) {
+        Ok(d) => d,
+        Err(_) => return max_bond_amount,
+    };
+    if deposit <= budget {
+        return max_bond_amount;
+    }
+
+    // Use Newton's method to iteratively approach a solution. We use the
+    // short deposit in base minus the budget as our objective function,
+    // which will converge to the amount of bonds that need to be shorted
+    // for the short deposit to consume the entire budget. Using the
+    // notation from the function comments, we can write our objective
+    // function as:
+    //
+    // $$
+    // F(x) = B - D(x)
+    // $$
+    //
+    // Since $B$ is just a constant, $F'(x) = -D'(x)$. Given the current guess
+    // of $x_n$, Newton's method gives us an updated guess of $x_{n+1}$:
+    //
+    // $$
+    // x_{n+1} = x_n - \tfrac{F(x_n)}{F'(x_n)} = x_n + \tfrac{B - D(x_n)}{D'(x_n)}
+    // $$
+    //
+    // The guess that we make is very important in determining how quickly
+    // we converge to the solution.
+    max_bond_amount = max_short_guess(
+        ze,
+        y,
+        c,
+        mu,
+        t,
+        flat_fee,
+        curve_fee,
+        budget,
+        spot_price,
+        open_vault_share_price,
+        maybe_conservative_price,
+    );
+    for _ in 0..maybe_max_iterations.unwrap_or(7) {
+        let deposit = match calculate_open_short(
+            ze,
+            y,
+            c,
+            mu,
+            t,
+            flat_fee,
+            curve_fee,
+            max_bond_amount,
+            spot_price,
+            open_vault_share_price,
+        ) {
+            Ok(d) => d,
+            Err(_) => return max_bond_amount,
+        };
+        max_bond_amount += (budget - deposit)
+            / short_deposit_derivative(
+                ze,
+                y,
+                c,
+                mu,
+                t,
+                c_initial,
+                time_stretch,
+                flat_fee,
+                curve_fee,
+                max_bond_amount,
+                spot_price,
+                open_vault_share_price,
+            );
+    }
+
+    // Verify that the max short satisfies the budget.
+    if budget
+        < calculate_open_short(
+            ze,
+            y,
+            c,
+            mu,
+            t,
+            flat_fee,
+            curve_fee,
+            max_bond_amount,
+            spot_price,
+            open_vault_share_price,
+        )
+        .unwrap()
+    {
+        panic!("max short exceeded budget");
+    }
+
+    max_bond_amount
+}
+
+/// Gets an initial guess for the max short calculation.
+///
+/// The user can specify a conservative price that they know is less than
+/// the worst-case realized price. This significantly improves the speed of
+/// convergence of Newton's method.
+fn max_short_guess(
+    ze: FixedPoint,
+    y: FixedPoint,
+    c: FixedPoint,
+    mu: FixedPoint,
+    t: FixedPoint,
+    flat_fee: FixedPoint,
+    curve_fee: FixedPoint,
+    budget: FixedPoint,
+    spot_price: FixedPoint,
+    open_vault_share_price: FixedPoint,
+    maybe_conservative_price: Option<FixedPoint>,
+) -> FixedPoint {
+    // If a conservative price is given, we can use it to solve for an
+    // initial guess for what the max short is. If this conservative price
+    // is an overestimate or if a conservative price isn't given, we revert
+    // to using the theoretical worst case scenario as our guess.
+    if let Some(conservative_price) = maybe_conservative_price {
+        // Given our conservative price $p_c$, we can write the short deposit
+        // function as:
+        //
+        // $$
+        // D(x) = \left( \tfrac{c}{c_0} - $p_c$ \right) \cdot x
+        //        + \phi_{flat} \cdot x + \phi_{curve} \cdot (1 - p) \cdot x
+        // $$
+        //
+        // We then solve for $x^*$ such that $D(x^*) = B$, which gives us a
+        // guess of:
+        //
+        // $$
+        // x^* = \tfrac{B}{\tfrac{c}{c_0} - $p_c$ + \phi_{flat} + \phi_{curve} \cdot (1 - p)}
+        // $$
+        //
+        // If the budget can cover the actual short deposit on $x^*$ , we
+        // return it as our guess. Otherwise, we revert to the worst case
+        // scenario.
+        let guess = budget
+            / (c.div_up(open_vault_share_price)
+                + flat_fee
+                + curve_fee * (fixed!(1e18) - spot_price)
+                - conservative_price);
+        if let Ok(deposit) = calculate_open_short(
+            ze,
+            y,
+            c,
+            mu,
+            t,
+            flat_fee,
+            curve_fee,
+            guess,
+            spot_price,
+            open_vault_share_price,
+        ) {
+            if budget >= deposit {
+                return guess;
+            }
+        }
+    }
+
+    // We know that the max short's bond amount is greater than 0 which
+    // gives us an absolute lower bound, but we can do better most of the
+    // time. If the fixed rate was infinite, the max loss for shorts would
+    // be 1 per bond since the spot price would be 0. With this in mind, the
+    // max short amount would be equal to the budget before we consider the
+    // flat fee, curve fee, and back-paid interest. Considering that the
+    // budget also needs to cover the fees and back-paid interest, we
+    // subtract these components from the budget to get a better estimate of
+    // the max bond amount. If subtracting these components results in a
+    // negative number, we just 0 as our initial guess.
+    let worst_case_deposit = match calculate_open_short(
+        ze,
+        y,
+        c,
+        mu,
+        t,
+        flat_fee,
+        curve_fee,
+        budget,
+        spot_price,
+        open_vault_share_price,
+    ) {
+        Ok(d) => d,
+        Err(_) => return fixed!(0),
+    };
+    if budget >= worst_case_deposit {
+        budget - worst_case_deposit
+    } else {
+        fixed!(0)
+    }
+}
+
+/// Gets the absolute max short that can be opened without violating the
+/// pool's solvency constraints.
+fn absolute_max_short(
+    ze: FixedPoint,
+    z: FixedPoint,
+    zeta: I256,
+    y: FixedPoint,
+    c: FixedPoint,
+    mu: FixedPoint,
+    t: FixedPoint,
+    c_initial: FixedPoint,
+    z_min: FixedPoint,
+    time_stretch: FixedPoint,
+    curve_fee: FixedPoint,
+    governance_lp_fee: FixedPoint,
+    long_exposure: FixedPoint,
+    spot_price: FixedPoint,
+    checkpoint_exposure: I256,
+    maybe_max_iterations: Option<usize>,
+) -> FixedPoint {
+    // We start by calculating the maximum short that can be opened on the
+    // YieldSpace curve.
+    let absolute_max_bond_amount = {
+        // We have the twin constraints that $z \geq z_{min}$ and
+        // $z - \zeta \geq z_{min}$. Combining these together, we calculate
+        // the optimal share reserves as $z_{optimal} = z_{min} + max(0, \zeta)$.
+        let optimal_share_reserves = z_min + FixedPoint::from(zeta.max(I256::zero()));
+
+        // We calculate the optimal bond reserves by solving for the bond
+        // reserves that is implied by the optimal share reserves. We can do
+        // this as follows:
+        //
+        // k = (c / mu) * (mu * (z' - zeta)) ** (1 - t_s) + y' ** (1 - t_s)
+        //                              =>
+        // y' = (k - (c / mu) * (mu * (z' - zeta)) ** (1 - t_s)) ** (1 / (1 - t_s))
+        let optimal_effective_share_reserves =
+            get_effective_share_reserves(optimal_share_reserves, zeta);
+        let optimal_bond_reserves = k_down(ze, y, c, mu, t)
+            - c.div_up(c_initial).mul_up(
+                (c_initial.mul_up(optimal_effective_share_reserves))
+                    .pow(fixed!(1e18) - time_stretch),
+            );
+        let optimal_bond_reserves = if optimal_bond_reserves >= fixed!(1e18) {
+            // Rounding the exponent down results in a smaller outcome.
+            optimal_bond_reserves.pow(fixed!(1e18) / (fixed!(1e18) - time_stretch))
+        } else {
+            // Rounding the exponent up results in a smaller outcome.
+            optimal_bond_reserves.pow(fixed!(1e18).div_up(fixed!(1e18) - time_stretch))
+        };
+
+        optimal_bond_reserves - y
+    };
+    if solvency_after_short(
+        ze,
+        z,
+        y,
+        c,
+        mu,
+        t,
+        z_min,
+        curve_fee,
+        governance_lp_fee,
+        long_exposure,
+        absolute_max_bond_amount,
+        spot_price,
+        checkpoint_exposure,
+    )
+    .is_some()
+    {
+        return absolute_max_bond_amount;
+    }
+
+    // Use Newton's method to iteratively approach a solution. We use pool's
+    // solvency $S(x)$ w.r.t. the amount of bonds shorted $x$ as our
+    // objective function, which will converge to the maximum short amount
+    // when $S(x) = 0$. The derivative of $S(x)$ is negative (since solvency
+    // decreases as more shorts are opened). The fixed point library doesn't
+    // support negative numbers, so we use the negation of the derivative to
+    // side-step the issue.
+    //
+    // Given the current guess of $x_n$, Newton's method gives us an updated
+    // guess of $x_{n+1}$:
+    //
+    // $$
+    // x_{n+1} = x_n - \tfrac{S(x_n)}{S'(x_n)} = x_n + \tfrac{S(x_n)}{-S'(x_n)}
+    // $$
+    //
+    // The guess that we make is very important in determining how quickly
+    // we converge to the solution.
+    let mut max_bond_amount = absolute_max_short_guess(
+        z,
+        c,
+        z_min,
+        long_exposure,
+        curve_fee,
+        governance_lp_fee,
+        spot_price,
+        checkpoint_exposure,
+    );
+    let mut maybe_solvency = solvency_after_short(
+        ze,
+        z,
+        y,
+        c,
+        mu,
+        t,
+        z_min,
+        curve_fee,
+        governance_lp_fee,
+        long_exposure,
+        max_bond_amount,
+        spot_price,
+        checkpoint_exposure,
+    );
+    if maybe_solvency.is_none() {
+        panic!("Initial guess in `max_short` is insolvent.");
+    }
+    let mut solvency = maybe_solvency.unwrap();
+    for _ in 0..maybe_max_iterations.unwrap_or(7) {
+        // TODO: It may be better to gracefully handle crossing over the
+        // root by extending the fixed point math library to handle negative
+        // numbers or even just using an if-statement to handle the negative
+        // numbers.
+        //
+        // Calculate the next iteration of Newton's method. If the candidate
+        // is larger than the absolute max, we've gone too far and something
+        // has gone wrong.
+        let maybe_derivative = solvency_after_short_derivative(
+            ze,
+            y,
+            c,
+            mu,
+            t,
+            c_initial,
+            time_stretch,
+            curve_fee,
+            governance_lp_fee,
+            max_bond_amount,
+            spot_price,
+        );
+        if maybe_derivative.is_none() {
+            break;
+        }
+        let possible_max_bond_amount = max_bond_amount + solvency / maybe_derivative.unwrap();
+        if possible_max_bond_amount > absolute_max_bond_amount {
+            break;
+        }
+
+        // If the candidate is insolvent, we've gone too far and can stop
+        // iterating. Otherwise, we update our guess and continue.
+        maybe_solvency = solvency_after_short(
+            ze,
+            z,
+            y,
+            c,
+            mu,
+            t,
+            z_min,
+            curve_fee,
+            governance_lp_fee,
+            long_exposure,
+            possible_max_bond_amount,
+            spot_price,
+            checkpoint_exposure,
+        );
+        if let Some(s) = maybe_solvency {
+            solvency = s;
+            max_bond_amount = possible_max_bond_amount;
+        } else {
+            break;
+        }
+    }
+
+    max_bond_amount
+}
+
+/// Gets an initial guess for the absolute max short. This is a conservative
+/// guess that will be less than the true absolute max short, which is what
+/// we need to start Newton's method.
+///
+/// To calculate our guess, we assume an unrealistically good realized
+/// price $p_r$ for opening the short. This allows us to approximate
+/// $P(x) \approx \tfrac{1}{c} \cdot p_r \cdot x$. Plugging this
+/// into our solvency function $s(x)$, we get an approximation of our
+/// solvency as:
+///
+/// $$
+/// S(x) \approx (z_0 - \tfrac{1}{c} \cdot (
+///                  p_r - \phi_{c} \cdot (1 - p) + \phi_{g} \cdot \phi_{c} \cdot (1 - p)
+///              )) - \tfrac{e_0 - max(e_{c}, 0)}{c} - z_{min}
+/// $$
+///
+/// Setting this equal to zero, we can solve for our initial guess:
+///
+/// $$
+/// x = \frac{c \cdot (s_0 + \tfrac{max(e_{c}, 0)}{c})}{
+///         p_r - \phi_{c} \cdot (1 - p) + \phi_{g} \cdot \phi_{c} \cdot (1 - p)
+///     }
+/// $$
+fn absolute_max_short_guess(
+    z: FixedPoint,
+    c: FixedPoint,
+    z_min: FixedPoint,
+    long_exposure: FixedPoint,
+    curve_fee: FixedPoint,
+    governance_lp_fee: FixedPoint,
+    spot_price: FixedPoint,
+    checkpoint_exposure: I256,
+) -> FixedPoint {
+    let estimate_price = spot_price;
+    let checkpoint_exposure = FixedPoint::from(checkpoint_exposure.max(I256::zero())) / c;
+    (c * (get_solvency(z, c, z_min, long_exposure) + checkpoint_exposure))
+        / (estimate_price - curve_fee * (fixed!(1e18) - spot_price)
+            + governance_lp_fee * curve_fee * (fixed!(1e18) - spot_price))
+}
+
+/// Gets the derivative of the short deposit function with respect to the
+/// short amount. This allows us to use Newton's method to approximate the
+/// maximum short that a trader can open.
+///
+/// Using this, calculating $D'(x)$ is straightforward:
+///
+/// $$
+/// D'(x) = \tfrac{c}{c_0} - (c \cdot P'(x) - \phi_{curve} \cdot (1 - p)) + \phi_{flat}
+/// $$
+///
+/// $$
+/// P'(x) = \tfrac{1}{c} \cdot (y + x)^{-t_s} \cdot \left(\tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s}) \right)^{\tfrac{t_s}{1 - t_s}}
+/// $$
+fn short_deposit_derivative(
+    ze: FixedPoint,
+    y: FixedPoint,
+    c: FixedPoint,
+    mu: FixedPoint,
+    t: FixedPoint,
+    c_initial: FixedPoint,
+    time_stretch: FixedPoint,
+    flat_fee: FixedPoint,
+    curve_fee: FixedPoint,
+    short_amount: FixedPoint,
+    spot_price: FixedPoint,
+    open_vault_share_price: FixedPoint,
+) -> FixedPoint {
+    // NOTE: The order of additions and subtractions is important to avoid underflows.
+    let payment_factor = (fixed!(1e18) / (y + short_amount).pow(time_stretch))
+        * theta(ze, y, c, mu, t, c_initial, time_stretch, short_amount)
+            .pow(time_stretch / (fixed!(1e18) + time_stretch));
+    (c / open_vault_share_price) + flat_fee + curve_fee * (fixed!(1e18) - spot_price)
+        - payment_factor
+}
+
+/// Gets the pool's solvency after opening a short.
+///
+/// We can express the pool's solvency after opening a short of $x$ bonds as:
+///
+/// $$
+/// s(x) = z(x) - \tfrac{e(x)}{c} - z_{min}
+/// $$
+///
+/// where $z(x)$ represents the pool's share reserves after opening the short:
+///
+/// $$
+/// z(x) = z_0 - \left(
+///            P(x) - \left( \tfrac{c(x)}{c} - \tfrac{g(x)}{c} \right)
+///        \right)
+/// $$
+///
+/// and $e(x)$ represents the pool's exposure after opening the short:
+///
+/// $$
+/// e(x) = e_0 - min(x + D(x), max(e_{c}, 0))
+/// $$
+///
+/// We simplify our $e(x)$ formula by noting that the max short is only
+/// constrained by solvency when $x + D(x) > max(e_{c}, 0)$ since $x + D(x)$
+/// grows faster than $P(x) - \tfrac{\phi_{c}}{c} \cdot \left( 1 - p \right) \cdot x$.
+/// With this in mind, $min(x + D(x), max(e_{c}, 0)) = max(e_{c}, 0)$
+/// whenever solvency is actually a constraint, so we can write:
+///
+/// $$
+/// e(x) = e_0 - max(e_{c}, 0)
+/// $$
+fn solvency_after_short(
+    ze: FixedPoint,
+    z: FixedPoint,
+    y: FixedPoint,
+    c: FixedPoint,
+    mu: FixedPoint,
+    t: FixedPoint,
+    z_min: FixedPoint,
+    curve_fee: FixedPoint,
+    governance_lp_fee: FixedPoint,
+    long_exposure: FixedPoint,
+    short_amount: FixedPoint,
+    spot_price: FixedPoint,
+    checkpoint_exposure: I256,
+) -> Option<FixedPoint> {
+    let principal = if let Ok(p) = short_principal(ze, y, c, mu, t, short_amount) {
+        p
+    } else {
+        return None;
+    };
+    let share_reserves = z
+        - (principal
+            - (open_short_curve_fee(curve_fee, short_amount, spot_price)
+                - open_short_governance_fee(
+                    curve_fee,
+                    governance_lp_fee,
+                    short_amount,
+                    spot_price,
+                ))
+                / c);
+    let exposure = {
+        let checkpoint_exposure: FixedPoint = checkpoint_exposure.max(I256::zero()).into();
+        (long_exposure - checkpoint_exposure) / c
+    };
+    if share_reserves >= exposure + z_min {
+        Some(share_reserves - exposure - z_min)
+    } else {
+        None
+    }
+}
+
+/// Gets the derivative of the pool's solvency w.r.t. the short amount.
+///
+/// The derivative is calculated as:
+///
+/// \begin{aligned}
+/// s'(x) &= z'(x) - 0 - 0
+///       &= 0 - \left( P'(x) - \frac{(c'(x) - g'(x))}{c} \right)
+///       &= -P'(x) + \frac{
+///              \phi_{c} \cdot (1 - p) \cdot (1 - \phi_{g})
+///          }{c}
+/// \end{aligned}
+///
+/// Since solvency decreases as the short amount increases, we negate the
+/// derivative. This avoids issues with the fixed point library which
+/// doesn't support negative values.
+fn solvency_after_short_derivative(
+    ze: FixedPoint,
+    y: FixedPoint,
+    c: FixedPoint,
+    mu: FixedPoint,
+    t: FixedPoint,
+    c_initial: FixedPoint,
+    time_stretch: FixedPoint,
+    curve_fee: FixedPoint,
+    governance_lp_fee: FixedPoint,
+    short_amount: FixedPoint,
+    spot_price: FixedPoint,
+) -> Option<FixedPoint> {
+    let lhs = short_principal_derivative(ze, y, c, mu, t, c_initial, time_stretch, short_amount);
+    let rhs = curve_fee * (fixed!(1e18) - spot_price) * (fixed!(1e18) - governance_lp_fee) / c;
+    if lhs >= rhs {
+        Some(lhs - rhs)
+    } else {
+        None
+    }
+}
+
+/// Gets the derivative of the short principal $P(x)$ w.r.t. the amount of
+/// bonds that are shorted $x$.
+///
+/// The derivative is calculated as:
+///
+/// $$
+/// P'(x) = \tfrac{1}{c} \cdot (y + x)^{-t_s} \cdot \left(
+///             \tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s})
+///         \right)^{\tfrac{t_s}{1 - t_s}}
+/// $$
+fn short_principal_derivative(
+    ze: FixedPoint,
+    y: FixedPoint,
+    c: FixedPoint,
+    mu: FixedPoint,
+    t: FixedPoint,
+    c_initial: FixedPoint,
+    time_stretch: FixedPoint,
+    short_amount: FixedPoint,
+) -> FixedPoint {
+    let lhs = fixed!(1e18) / (c.mul_up((y + short_amount).pow(time_stretch)));
+    let rhs = ((c_initial / c)
+        * (k_down(ze, y, c, mu, t) - (y + short_amount).pow(fixed!(1e18) - time_stretch)))
+    .pow(time_stretch.div_up(fixed!(1e18) - time_stretch));
+    lhs * rhs
+}
+
+/// A helper function used in calculating the short deposit.
+///
+/// This calculates the inner component of the `short_principal` calculation,
+/// which makes the `short_principal` and `short_deposit_derivative` calculations
+/// easier. $\theta(x)$ is defined as:
+///
+/// $$
+/// \theta(x) = \tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s})
+/// $$
+fn theta(
+    ze: FixedPoint,
+    y: FixedPoint,
+    c: FixedPoint,
+    mu: FixedPoint,
+    t: FixedPoint,
+    c_initial: FixedPoint,
+    time_stretch: FixedPoint,
+    short_amount: FixedPoint,
+) -> FixedPoint {
+    (c_initial / c)
+        * (k_down(ze, y, c, mu, t) - (y + short_amount).pow(fixed!(1e18) - time_stretch))
+}
 
 impl State {
     /// Gets the minimum price that the pool can support.
@@ -26,13 +754,16 @@ impl State {
     /// p = \left( \tfrac{\mu \cdot z_{min}}{y_{max}} \right)^{t_s}
     /// $$
     pub fn get_min_price(&self) -> FixedPoint {
-        let y_max = (self.k_up()
-            - (self.vault_share_price() / self.initial_vault_share_price())
-                * (self.initial_vault_share_price() * self.minimum_share_reserves())
-                    .pow(fixed!(1e18) - self.time_stretch()))
-        .pow(fixed!(1e18).div_up(fixed!(1e18) - self.time_stretch()));
-        ((self.initial_vault_share_price() * self.minimum_share_reserves()) / y_max)
-            .pow(self.time_stretch())
+        get_min_price(
+            self.ze(),
+            self.y(),
+            self.c(),
+            self.mu(),
+            self.t(),
+            self.initial_vault_share_price(),
+            self.minimum_share_reserves(),
+            self.time_stretch(),
+        )
     }
 
     // TODO: Make it clear to the consumer that the maximum number of iterations
@@ -56,474 +787,27 @@ impl State {
         maybe_conservative_price: Option<FixedPoint>, // TODO: Is there a nice way of abstracting the inner type?
         maybe_max_iterations: Option<usize>,
     ) -> FixedPoint {
-        let budget = budget.into();
-        let open_vault_share_price = open_vault_share_price.into();
-        let checkpoint_exposure = checkpoint_exposure.into();
-
-        // If the budget is zero, then we return early.
-        if budget == fixed!(0) {
-            return fixed!(0);
-        }
-
-        // Get the spot price and the open share price. If the open share price
-        // is zero, then we'll use the current share price since the checkpoint
-        // hasn't been minted yet.
-        let spot_price = self.get_spot_price();
-        let open_vault_share_price = if open_vault_share_price != fixed!(0) {
-            open_vault_share_price
-        } else {
-            self.vault_share_price()
-        };
-
-        // Assuming the budget is infinite, find the largest possible short that
-        // can be opened. If the short satisfies the budget, this is the max
-        // short amount.
-        let mut max_bond_amount =
-            self.absolute_max_short(spot_price, checkpoint_exposure, maybe_max_iterations);
-        let deposit =
-            match self.calculate_open_short(max_bond_amount, spot_price, open_vault_share_price) {
-                Ok(d) => d,
-                Err(_) => return max_bond_amount,
-            };
-        if deposit <= budget {
-            return max_bond_amount;
-        }
-
-        // Use Newton's method to iteratively approach a solution. We use the
-        // short deposit in base minus the budget as our objective function,
-        // which will converge to the amount of bonds that need to be shorted
-        // for the short deposit to consume the entire budget. Using the
-        // notation from the function comments, we can write our objective
-        // function as:
-        //
-        // $$
-        // F(x) = B - D(x)
-        // $$
-        //
-        // Since $B$ is just a constant, $F'(x) = -D'(x)$. Given the current guess
-        // of $x_n$, Newton's method gives us an updated guess of $x_{n+1}$:
-        //
-        // $$
-        // x_{n+1} = x_n - \tfrac{F(x_n)}{F'(x_n)} = x_n + \tfrac{B - D(x_n)}{D'(x_n)}
-        // $$
-        //
-        // The guess that we make is very important in determining how quickly
-        // we converge to the solution.
-        max_bond_amount = self.max_short_guess(
+        get_max_short(
+            self.ze(),
+            self.z(),
+            self.zeta(),
+            self.y(),
+            self.c(),
+            self.mu(),
+            self.t(),
+            self.initial_vault_share_price(),
+            self.minimum_share_reserves(),
+            self.time_stretch(),
+            self.flat_fee(),
+            self.curve_fee(),
+            self.governance_lp_fee(),
+            self.long_exposure(),
             budget,
-            spot_price,
             open_vault_share_price,
+            checkpoint_exposure,
             maybe_conservative_price,
-        );
-        for _ in 0..maybe_max_iterations.unwrap_or(7) {
-            let deposit = match self.calculate_open_short(
-                max_bond_amount,
-                spot_price,
-                open_vault_share_price,
-            ) {
-                Ok(d) => d,
-                Err(_) => return max_bond_amount,
-            };
-            max_bond_amount += (budget - deposit)
-                / self.short_deposit_derivative(
-                    max_bond_amount,
-                    spot_price,
-                    open_vault_share_price,
-                );
-        }
-
-        // Verify that the max short satisfies the budget.
-        if budget
-            < self
-                .calculate_open_short(max_bond_amount, spot_price, open_vault_share_price)
-                .unwrap()
-        {
-            panic!("max short exceeded budget");
-        }
-
-        max_bond_amount
-    }
-
-    /// Gets an initial guess for the max short calculation.
-    ///
-    /// The user can specify a conservative price that they know is less than
-    /// the worst-case realized price. This significantly improves the speed of
-    /// convergence of Newton's method.
-    fn max_short_guess(
-        &self,
-        budget: FixedPoint,
-        spot_price: FixedPoint,
-        open_vault_share_price: FixedPoint,
-        maybe_conservative_price: Option<FixedPoint>,
-    ) -> FixedPoint {
-        // If a conservative price is given, we can use it to solve for an
-        // initial guess for what the max short is. If this conservative price
-        // is an overestimate or if a conservative price isn't given, we revert
-        // to using the theoretical worst case scenario as our guess.
-        if let Some(conservative_price) = maybe_conservative_price {
-            // Given our conservative price $p_c$, we can write the short deposit
-            // function as:
-            //
-            // $$
-            // D(x) = \left( \tfrac{c}{c_0} - $p_c$ \right) \cdot x
-            //        + \phi_{flat} \cdot x + \phi_{curve} \cdot (1 - p) \cdot x
-            // $$
-            //
-            // We then solve for $x^*$ such that $D(x^*) = B$, which gives us a
-            // guess of:
-            //
-            // $$
-            // x^* = \tfrac{B}{\tfrac{c}{c_0} - $p_c$ + \phi_{flat} + \phi_{curve} \cdot (1 - p)}
-            // $$
-            //
-            // If the budget can cover the actual short deposit on $x^*$ , we
-            // return it as our guess. Otherwise, we revert to the worst case
-            // scenario.
-            let guess = budget
-                / (self.vault_share_price().div_up(open_vault_share_price)
-                    + self.flat_fee()
-                    + self.curve_fee() * (fixed!(1e18) - spot_price)
-                    - conservative_price);
-            if let Ok(deposit) =
-                self.calculate_open_short(guess, spot_price, open_vault_share_price)
-            {
-                if budget >= deposit {
-                    return guess;
-                }
-            }
-        }
-
-        // We know that the max short's bond amount is greater than 0 which
-        // gives us an absolute lower bound, but we can do better most of the
-        // time. If the fixed rate was infinite, the max loss for shorts would
-        // be 1 per bond since the spot price would be 0. With this in mind, the
-        // max short amount would be equal to the budget before we consider the
-        // flat fee, curve fee, and back-paid interest. Considering that the
-        // budget also needs to cover the fees and back-paid interest, we
-        // subtract these components from the budget to get a better estimate of
-        // the max bond amount. If subtracting these components results in a
-        // negative number, we just 0 as our initial guess.
-        let worst_case_deposit =
-            match self.calculate_open_short(budget, spot_price, open_vault_share_price) {
-                Ok(d) => d,
-                Err(_) => return fixed!(0),
-            };
-        if budget >= worst_case_deposit {
-            budget - worst_case_deposit
-        } else {
-            fixed!(0)
-        }
-    }
-
-    /// Gets the absolute max short that can be opened without violating the
-    /// pool's solvency constraints.
-    fn absolute_max_short(
-        &self,
-        spot_price: FixedPoint,
-        checkpoint_exposure: I256,
-        maybe_max_iterations: Option<usize>,
-    ) -> FixedPoint {
-        // We start by calculating the maximum short that can be opened on the
-        // YieldSpace curve.
-        let absolute_max_bond_amount = {
-            // We have the twin constraints that $z \geq z_{min}$ and
-            // $z - \zeta \geq z_{min}$. Combining these together, we calculate
-            // the optimal share reserves as $z_{optimal} = z_{min} + max(0, \zeta)$.
-            let optimal_share_reserves = self.minimum_share_reserves()
-                + FixedPoint::from(self.share_adjustment().max(I256::zero()));
-
-            // We calculate the optimal bond reserves by solving for the bond
-            // reserves that is implied by the optimal share reserves. We can do
-            // this as follows:
-            //
-            // k = (c / mu) * (mu * (z' - zeta)) ** (1 - t_s) + y' ** (1 - t_s)
-            //                              =>
-            // y' = (k - (c / mu) * (mu * (z' - zeta)) ** (1 - t_s)) ** (1 / (1 - t_s))
-            let optimal_effective_share_reserves =
-                get_effective_share_reserves(optimal_share_reserves, self.share_adjustment());
-            let optimal_bond_reserves = self.k_down()
-                - self
-                    .vault_share_price()
-                    .div_up(self.initial_vault_share_price())
-                    .mul_up(
-                        (self
-                            .initial_vault_share_price()
-                            .mul_up(optimal_effective_share_reserves))
-                        .pow(fixed!(1e18) - self.time_stretch()),
-                    );
-            let optimal_bond_reserves = if optimal_bond_reserves >= fixed!(1e18) {
-                // Rounding the exponent down results in a smaller outcome.
-                optimal_bond_reserves.pow(fixed!(1e18) / (fixed!(1e18) - self.time_stretch()))
-            } else {
-                // Rounding the exponent up results in a smaller outcome.
-                optimal_bond_reserves.pow(fixed!(1e18).div_up(fixed!(1e18) - self.time_stretch()))
-            };
-
-            optimal_bond_reserves - self.bond_reserves()
-        };
-        if self
-            .solvency_after_short(absolute_max_bond_amount, spot_price, checkpoint_exposure)
-            .is_some()
-        {
-            return absolute_max_bond_amount;
-        }
-
-        // Use Newton's method to iteratively approach a solution. We use pool's
-        // solvency $S(x)$ w.r.t. the amount of bonds shorted $x$ as our
-        // objective function, which will converge to the maximum short amount
-        // when $S(x) = 0$. The derivative of $S(x)$ is negative (since solvency
-        // decreases as more shorts are opened). The fixed point library doesn't
-        // support negative numbers, so we use the negation of the derivative to
-        // side-step the issue.
-        //
-        // Given the current guess of $x_n$, Newton's method gives us an updated
-        // guess of $x_{n+1}$:
-        //
-        // $$
-        // x_{n+1} = x_n - \tfrac{S(x_n)}{S'(x_n)} = x_n + \tfrac{S(x_n)}{-S'(x_n)}
-        // $$
-        //
-        // The guess that we make is very important in determining how quickly
-        // we converge to the solution.
-        let mut max_bond_amount = self.absolute_max_short_guess(spot_price, checkpoint_exposure);
-        let mut maybe_solvency =
-            self.solvency_after_short(max_bond_amount, spot_price, checkpoint_exposure);
-        if maybe_solvency.is_none() {
-            panic!("Initial guess in `max_short` is insolvent.");
-        }
-        let mut solvency = maybe_solvency.unwrap();
-        for _ in 0..maybe_max_iterations.unwrap_or(7) {
-            // TODO: It may be better to gracefully handle crossing over the
-            // root by extending the fixed point math library to handle negative
-            // numbers or even just using an if-statement to handle the negative
-            // numbers.
-            //
-            // Calculate the next iteration of Newton's method. If the candidate
-            // is larger than the absolute max, we've gone too far and something
-            // has gone wrong.
-            let maybe_derivative =
-                self.solvency_after_short_derivative(max_bond_amount, spot_price);
-            if maybe_derivative.is_none() {
-                break;
-            }
-            let possible_max_bond_amount = max_bond_amount + solvency / maybe_derivative.unwrap();
-            if possible_max_bond_amount > absolute_max_bond_amount {
-                break;
-            }
-
-            // If the candidate is insolvent, we've gone too far and can stop
-            // iterating. Otherwise, we update our guess and continue.
-            maybe_solvency = self.solvency_after_short(
-                possible_max_bond_amount,
-                spot_price,
-                checkpoint_exposure,
-            );
-            if let Some(s) = maybe_solvency {
-                solvency = s;
-                max_bond_amount = possible_max_bond_amount;
-            } else {
-                break;
-            }
-        }
-
-        max_bond_amount
-    }
-
-    /// Gets an initial guess for the absolute max short. This is a conservative
-    /// guess that will be less than the true absolute max short, which is what
-    /// we need to start Newton's method.
-    ///
-    /// To calculate our guess, we assume an unrealistically good realized
-    /// price $p_r$ for opening the short. This allows us to approximate
-    /// $P(x) \approx \tfrac{1}{c} \cdot p_r \cdot x$. Plugging this
-    /// into our solvency function $s(x)$, we get an approximation of our
-    /// solvency as:
-    ///
-    /// $$
-    /// S(x) \approx (z_0 - \tfrac{1}{c} \cdot (
-    ///                  p_r - \phi_{c} \cdot (1 - p) + \phi_{g} \cdot \phi_{c} \cdot (1 - p)
-    ///              )) - \tfrac{e_0 - max(e_{c}, 0)}{c} - z_{min}
-    /// $$
-    ///
-    /// Setting this equal to zero, we can solve for our initial guess:
-    ///
-    /// $$
-    /// x = \frac{c \cdot (s_0 + \tfrac{max(e_{c}, 0)}{c})}{
-    ///         p_r - \phi_{c} \cdot (1 - p) + \phi_{g} \cdot \phi_{c} \cdot (1 - p)
-    ///     }
-    /// $$
-    fn absolute_max_short_guess(
-        &self,
-        spot_price: FixedPoint,
-        checkpoint_exposure: I256,
-    ) -> FixedPoint {
-        let estimate_price = spot_price;
-        let checkpoint_exposure =
-            FixedPoint::from(checkpoint_exposure.max(I256::zero())) / self.vault_share_price();
-        (self.vault_share_price() * (self.get_solvency() + checkpoint_exposure))
-            / (estimate_price - self.curve_fee() * (fixed!(1e18) - spot_price)
-                + self.governance_lp_fee() * self.curve_fee() * (fixed!(1e18) - spot_price))
-    }
-
-    /// Gets the derivative of the short deposit function with respect to the
-    /// short amount. This allows us to use Newton's method to approximate the
-    /// maximum short that a trader can open.
-    ///
-    /// Using this, calculating $D'(x)$ is straightforward:
-    ///
-    /// $$
-    /// D'(x) = \tfrac{c}{c_0} - (c \cdot P'(x) - \phi_{curve} \cdot (1 - p)) + \phi_{flat}
-    /// $$
-    ///
-    /// $$
-    /// P'(x) = \tfrac{1}{c} \cdot (y + x)^{-t_s} \cdot \left(\tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s}) \right)^{\tfrac{t_s}{1 - t_s}}
-    /// $$
-    fn short_deposit_derivative(
-        &self,
-        short_amount: FixedPoint,
-        spot_price: FixedPoint,
-        open_vault_share_price: FixedPoint,
-    ) -> FixedPoint {
-        // NOTE: The order of additions and subtractions is important to avoid underflows.
-        let payment_factor = (fixed!(1e18)
-            / (self.bond_reserves() + short_amount).pow(self.time_stretch()))
-            * self
-                .theta(short_amount)
-                .pow(self.time_stretch() / (fixed!(1e18) + self.time_stretch()));
-        (self.vault_share_price() / open_vault_share_price)
-            + self.flat_fee()
-            + self.curve_fee() * (fixed!(1e18) - spot_price)
-            - payment_factor
-    }
-
-    /// Gets the pool's solvency after opening a short.
-    ///
-    /// We can express the pool's solvency after opening a short of $x$ bonds as:
-    ///
-    /// $$
-    /// s(x) = z(x) - \tfrac{e(x)}{c} - z_{min}
-    /// $$
-    ///
-    /// where $z(x)$ represents the pool's share reserves after opening the short:
-    ///
-    /// $$
-    /// z(x) = z_0 - \left(
-    ///            P(x) - \left( \tfrac{c(x)}{c} - \tfrac{g(x)}{c} \right)
-    ///        \right)
-    /// $$
-    ///
-    /// and $e(x)$ represents the pool's exposure after opening the short:
-    ///
-    /// $$
-    /// e(x) = e_0 - min(x + D(x), max(e_{c}, 0))
-    /// $$
-    ///
-    /// We simplify our $e(x)$ formula by noting that the max short is only
-    /// constrained by solvency when $x + D(x) > max(e_{c}, 0)$ since $x + D(x)$
-    /// grows faster than $P(x) - \tfrac{\phi_{c}}{c} \cdot \left( 1 - p \right) \cdot x$.
-    /// With this in mind, $min(x + D(x), max(e_{c}, 0)) = max(e_{c}, 0)$
-    /// whenever solvency is actually a constraint, so we can write:
-    ///
-    /// $$
-    /// e(x) = e_0 - max(e_{c}, 0)
-    /// $$
-    fn solvency_after_short(
-        &self,
-        short_amount: FixedPoint,
-        spot_price: FixedPoint,
-        checkpoint_exposure: I256,
-    ) -> Option<FixedPoint> {
-        let principal = if let Ok(p) = self.short_principal(short_amount) {
-            p
-        } else {
-            return None;
-        };
-        let share_reserves = self.share_reserves()
-            - (principal
-                - (self.open_short_curve_fee(short_amount, spot_price)
-                    - self.open_short_governance_fee(short_amount, spot_price))
-                    / self.vault_share_price());
-        let exposure = {
-            let checkpoint_exposure: FixedPoint = checkpoint_exposure.max(I256::zero()).into();
-            (self.long_exposure() - checkpoint_exposure) / self.vault_share_price()
-        };
-        if share_reserves >= exposure + self.minimum_share_reserves() {
-            Some(share_reserves - exposure - self.minimum_share_reserves())
-        } else {
-            None
-        }
-    }
-
-    /// Gets the derivative of the pool's solvency w.r.t. the short amount.
-    ///
-    /// The derivative is calculated as:
-    ///
-    /// \begin{aligned}
-    /// s'(x) &= z'(x) - 0 - 0
-    ///       &= 0 - \left( P'(x) - \frac{(c'(x) - g'(x))}{c} \right)
-    ///       &= -P'(x) + \frac{
-    ///              \phi_{c} \cdot (1 - p) \cdot (1 - \phi_{g})
-    ///          }{c}
-    /// \end{aligned}
-    ///
-    /// Since solvency decreases as the short amount increases, we negate the
-    /// derivative. This avoids issues with the fixed point library which
-    /// doesn't support negative values.
-    fn solvency_after_short_derivative(
-        &self,
-        short_amount: FixedPoint,
-        spot_price: FixedPoint,
-    ) -> Option<FixedPoint> {
-        let lhs = self.short_principal_derivative(short_amount);
-        let rhs = self.curve_fee()
-            * (fixed!(1e18) - spot_price)
-            * (fixed!(1e18) - self.governance_lp_fee())
-            / self.vault_share_price();
-        if lhs >= rhs {
-            Some(lhs - rhs)
-        } else {
-            None
-        }
-    }
-
-    /// Gets the derivative of the short principal $P(x)$ w.r.t. the amount of
-    /// bonds that are shorted $x$.
-    ///
-    /// The derivative is calculated as:
-    ///
-    /// $$
-    /// P'(x) = \tfrac{1}{c} \cdot (y + x)^{-t_s} \cdot \left(
-    ///             \tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s})
-    ///         \right)^{\tfrac{t_s}{1 - t_s}}
-    /// $$
-    fn short_principal_derivative(&self, short_amount: FixedPoint) -> FixedPoint {
-        let lhs = fixed!(1e18)
-            / (self
-                .vault_share_price()
-                .mul_up((self.bond_reserves() + short_amount).pow(self.time_stretch())));
-        let rhs = ((self.initial_vault_share_price() / self.vault_share_price())
-            * (self.k_down()
-                - (self.bond_reserves() + short_amount).pow(fixed!(1e18) - self.time_stretch())))
-        .pow(
-            self.time_stretch()
-                .div_up(fixed!(1e18) - self.time_stretch()),
-        );
-        lhs * rhs
-    }
-
-    /// A helper function used in calculating the short deposit.
-    ///
-    /// This calculates the inner component of the `short_principal` calculation,
-    /// which makes the `short_principal` and `short_deposit_derivative` calculations
-    /// easier. $\theta(x)$ is defined as:
-    ///
-    /// $$
-    /// \theta(x) = \tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s})
-    /// $$
-    fn theta(&self, short_amount: FixedPoint) -> FixedPoint {
-        (self.initial_vault_share_price() / self.vault_share_price())
-            * (self.k_down()
-                - (self.bond_reserves() + short_amount).pow(fixed!(1e18) - self.time_stretch()))
+            maybe_max_iterations,
+        )
     }
 }
 
