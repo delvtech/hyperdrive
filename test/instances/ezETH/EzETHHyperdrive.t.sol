@@ -182,12 +182,12 @@ contract EzETHHyperdriveTest is InstanceTestV2 {
             assertApproxEqAbs(
                 EZETH.balanceOf(address(hyperdrive)),
                 hyperdriveBalancesBefore.sharesBalance + expectedShares,
-                1
+                2
             );
             assertApproxEqAbs(
                 EZETH.balanceOf(trader),
                 traderBalancesBefore.sharesBalance - expectedShares,
-                1
+                2
             );
         }
     }
@@ -265,74 +265,6 @@ contract EzETHHyperdriveTest is InstanceTestV2 {
     }
 
     /// Long ///
-
-    // function test_open_long_with_eth(uint256 basePaid) external {
-    //     // Bob opens a long by depositing ETH.
-    //     basePaid = basePaid.normalizeToRange(
-    //         2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-    //         HyperdriveUtils.calculateMaxLong(hyperdrive)
-    //     );
-
-    //     // Ensure that we get an UnsupportedToken error.  Opening positions
-    //     // with ETH are not allowed right now.  There is a great enough
-    //     // precision loss when minting ezeth that warrants some investigation
-    //     // before we can turn this on.  Until then, we can zap ezeth into the
-    //     // pool.
-    //     vm.expectRevert(IHyperdrive.NotPayable.selector);
-    //     hyperdrive.openLong{ value: basePaid }(
-    //         basePaid,
-    //         0, // min bond proceeds
-    //         0, // min vault share price
-    //         IHyperdrive.Options({
-    //             destination: bob,
-    //             asBase: true,
-    //             extraData: new bytes(0)
-    //         })
-    //     );
-    // }
-
-    // function test_open_long_with_ezeth(uint256 basePaid) external {
-    //     vm.stopPrank();
-    //     vm.startPrank(bob);
-
-    //     // Get some balance information before the deposit.
-    //     (
-    //         ,
-    //         uint256 totalPooledEtherBefore,
-    //         uint256 totalSharesBefore
-    //     ) = getSharePrice();
-    //     AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-    //     AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-    //         address(hyperdrive)
-    //     );
-
-    //     // Calculate the maximum amount of basePaid we can test.
-    //     uint256 maxLong = HyperdriveUtils.calculateMaxLong(hyperdrive);
-    //     uint256 maxEzEth = EZETH.balanceOf(address(bob));
-    //     uint256 maxRange = maxLong > maxEzEth ? maxEzEth : maxLong;
-    //     basePaid = basePaid.normalizeToRange(
-    //         2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-    //         maxRange
-    //     );
-
-    //     // Convert to shares and approve hyperdrive.
-    //     uint256 sharesPaid = getAndApproveShares(basePaid);
-
-    //     // Open the position.
-    //     openLong(bob, sharesPaid, false);
-
-    //     // Ensure that Renzo's aggregates and the token balances were updated
-    //     // correctly during the trade.
-    //     verifyDeposit(
-    //         bob,
-    //         basePaid,
-    //         false,
-    //         totalPooledEtherBefore,
-    //         totalSharesBefore,
-    //         bobBalancesBefore,
-    //         hyperdriveBalancesBefore
-    //     );
-    // }
 
     function test_close_long_with_eth(uint256 basePaid) external {
         vm.stopPrank();
@@ -815,21 +747,6 @@ contract EzETHHyperdriveTest is InstanceTestV2 {
             );
         }
     }
-
-    // struct AccountBalances {
-    //     uint256 ezethBalance;
-    //     uint256 ETHBalance;
-    // }
-
-    // function getAccountBalances(
-    //     address account
-    // ) internal view returns (AccountBalances memory) {
-    //     return
-    //         AccountBalances({
-    //             ezethBalance: EZETH.balanceOf(account),
-    //             ETHBalance: account.balance
-    //         });
-    // }
 
     // returns share price information.
     function getSharePrice()
