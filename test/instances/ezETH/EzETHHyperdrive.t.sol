@@ -103,7 +103,7 @@ contract EzETHHyperdriveTest is InstanceTestV2 {
         return (EZETH.balanceOf(account), 0);
     }
 
-    function getSupply() internal override returns (uint256, uint256) {
+    function getSupply() internal view override returns (uint256, uint256) {
         (, uint256 totalPooledEther, ) = getSharePrice();
         return (totalPooledEther, EZETH.totalSupply());
     }

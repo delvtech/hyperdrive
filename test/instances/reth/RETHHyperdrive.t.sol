@@ -108,7 +108,7 @@ contract RETHHyperdriveTest is InstanceTestV2 {
         return (rethBalance, rocketTokenRETH.getEthValue(rethBalance));
     }
 
-    function getSupply() internal override returns (uint256, uint256) {
+    function getSupply() internal view override returns (uint256, uint256) {
         return (
             rocketNetworkBalances.getTotalETHBalance(),
             rocketNetworkBalances.getTotalRETHSupply()
