@@ -64,7 +64,7 @@ contract StETHHyperdriveTest is InstanceTestV2 {
 
     /// Overrides ///
 
-    function getSupply() internal override returns (uint256, uint256) {
+    function getSupply() internal view override returns (uint256, uint256) {
         return (LIDO.getTotalPooledEther(), LIDO.getTotalShares());
     }
 
