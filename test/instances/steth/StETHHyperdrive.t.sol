@@ -851,21 +851,4 @@ contract StETHHyperdriveTest is InstanceTestV2 {
             bytes32(bufferedEther)
         );
     }
-
-    // struct AccountBalances {
-    //     uint256 stethShares;
-    //     uint256 stethBalance;
-    //     uint256 ETHBalance;
-    // }
-
-    // function getAccountBalances(
-    //     address account
-    // ) internal view returns (AccountBalances memory) {
-    //     return
-    //         AccountBalances({
-    //             stethShares: LIDO.sharesOf(account),
-    //             stethBalance: LIDO.balanceOf(account),
-    //             ETHBalance: account.balance
-    //         });
-    // }
 }
