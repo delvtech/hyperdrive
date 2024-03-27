@@ -1451,12 +1451,12 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(factory.governance());
         address deployerCoordinator = address(
             new StETHHyperdriveDeployerCoordinator(
-                address(new StETHHyperdriveCoreDeployer(lido)),
-                address(new StETHTarget0Deployer(lido)),
-                address(new StETHTarget1Deployer(lido)),
-                address(new StETHTarget2Deployer(lido)),
-                address(new StETHTarget3Deployer(lido)),
-                address(new StETHTarget4Deployer(lido)),
+                address(new StETHHyperdriveCoreDeployer()),
+                address(new StETHTarget0Deployer()),
+                address(new StETHTarget1Deployer()),
+                address(new StETHTarget2Deployer()),
+                address(new StETHTarget3Deployer()),
+                address(new StETHTarget4Deployer()),
                 lido
             )
         );
@@ -1469,6 +1469,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         IHyperdrive.PoolDeployConfig memory config = IHyperdrive
             .PoolDeployConfig({
                 baseToken: IERC20(ETH),
+                vaultSharesToken: IERC20(address(lido)),
                 minimumShareReserves: 1e15,
                 minimumTransactionAmount: 1e15,
                 positionDuration: 365 days,
@@ -2362,6 +2363,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 deploymentId
             )
         );
+        // FIXME: Check the vault shares token.
         IHyperdrive.PoolConfig memory config_ = hyperdrive.getPoolConfig();
         assertEq(address(config_.baseToken), address(config.baseToken));
         assertEq(config_.linkerFactory, factory.linkerFactory());
@@ -2547,6 +2549,8 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
         // Initialize this test's pool config.
         config = IHyperdrive.PoolDeployConfig({
             baseToken: dai,
+            // NOTE: This is overrided when deploying instances.
+            vaultSharesToken: IERC20(address(0)),
             minimumShareReserves: 1e18,
             minimumTransactionAmount: 1e15,
             positionDuration: 365 days,
@@ -2611,12 +2615,12 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
 
         deploymentId = keccak256(abi.encode(deploymentId));
         salt = keccak256(abi.encode(salt));
-        bytes memory extraData = abi.encode(address(pool));
+        config.vaultSharesToken = IERC20(pool);
         factory.deployTarget(
             deploymentId,
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             APR,
             APR,
             0,
@@ -2626,7 +2630,7 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             deploymentId,
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             APR,
             APR,
             1,
@@ -2636,7 +2640,7 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             deploymentId,
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             APR,
             APR,
             2,
@@ -2646,7 +2650,7 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             deploymentId,
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             APR,
             APR,
             3,
@@ -2656,7 +2660,7 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             deploymentId,
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             APR,
             APR,
             4,
@@ -2666,7 +2670,7 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             deploymentId,
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             CONTRIBUTION,
             APR,
             APR,
@@ -2722,7 +2726,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
         assertEq(dai.balanceOf(charlie), CONTRIBUTION);
         assertEq(dai.balanceOf(address(pool1)), 0);
 
-        bytes memory extraData = abi.encode(address(pool1));
+        config.vaultSharesToken = pool1;
         IHyperdrive.Options memory options = IHyperdrive.Options({
             asBase: true,
             destination: charlie,
@@ -2732,7 +2736,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             APR,
             APR,
             0,
@@ -2742,7 +2746,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             APR,
             APR,
             1,
@@ -2752,7 +2756,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             APR,
             APR,
             2,
@@ -2762,7 +2766,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             APR,
             APR,
             3,
@@ -2772,7 +2776,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             APR,
             APR,
             4,
@@ -2782,7 +2786,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             CONTRIBUTION,
             APR,
             APR,
@@ -2811,7 +2815,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             APR,
             true,
             config.minimumShareReserves,
-            extraData,
+            new bytes(0),
             0
         );
 
@@ -2828,12 +2832,12 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
 
         dai.approve(address(deployerCoordinator1), CONTRIBUTION);
 
-        extraData = abi.encode(address(pool2));
+        config.vaultSharesToken = pool2;
         factory.deployTarget(
             bytes32(uint256(0xdead)),
             deployerCoordinator1,
             config,
-            extraData,
+            new bytes(0),
             APR,
             APR,
             0,
@@ -2843,7 +2847,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             bytes32(uint256(0xdead)),
             deployerCoordinator1,
             config,
-            extraData,
+            new bytes(0),
             APR,
             APR,
             1,
@@ -2853,7 +2857,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             bytes32(uint256(0xdead)),
             deployerCoordinator1,
             config,
-            extraData,
+            new bytes(0),
             APR,
             APR,
             2,
@@ -2863,7 +2867,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             bytes32(uint256(0xdead)),
             deployerCoordinator1,
             config,
-            extraData,
+            new bytes(0),
             APR,
             APR,
             3,
@@ -2873,7 +2877,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             bytes32(uint256(0xdead)),
             deployerCoordinator1,
             config,
-            extraData,
+            new bytes(0),
             APR,
             APR,
             4,
@@ -2883,7 +2887,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             bytes32(uint256(0xdead)),
             deployerCoordinator1,
             config,
-            extraData,
+            new bytes(0),
             CONTRIBUTION,
             APR,
             APR,
@@ -2912,7 +2916,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             APR,
             true,
             config.minimumShareReserves,
-            extraData,
+            new bytes(0),
             0
         );
 
@@ -2936,13 +2940,13 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
         assertEq(dai.balanceOf(dan), CONTRIBUTION);
         assertEq(dai.balanceOf(address(pool2)), CONTRIBUTION); // From Charlie
 
-        extraData = abi.encode(address(pool2));
         options.destination = dan;
+        config.vaultSharesToken = pool2;
         factory.deployTarget(
             bytes32(uint256(0xbeef)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             APR,
             APR,
             0,
@@ -2952,7 +2956,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             bytes32(uint256(0xbeef)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             APR,
             APR,
             1,
@@ -2962,7 +2966,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             bytes32(uint256(0xbeef)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             APR,
             APR,
             2,
@@ -2972,7 +2976,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             bytes32(uint256(0xbeef)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             APR,
             APR,
             3,
@@ -2982,7 +2986,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             bytes32(uint256(0xbeef)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             APR,
             APR,
             4,
@@ -2992,7 +2996,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             bytes32(uint256(0xbeef)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             CONTRIBUTION,
             APR,
             APR,
@@ -3021,7 +3025,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
             APR,
             true,
             config.minimumShareReserves,
-            extraData,
+            new bytes(0),
             0
         );
 

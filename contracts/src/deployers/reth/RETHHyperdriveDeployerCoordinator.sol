@@ -5,6 +5,7 @@ import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IRocketStorage } from "../../interfaces/IRocketStorage.sol";
 import { IRocketTokenRETH } from "../../interfaces/IRocketTokenRETH.sol";
+import { ETH } from "../../libraries/Constants.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
@@ -104,6 +105,18 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig);
 
+        // Ensure that the base token address is properly configured.
+        if (address(_deployConfig.baseToken) != ETH) {
+            revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
+        }
+
+        // Ensure that the vault shares token address is properly configured.
+        if (
+            address(_deployConfig.vaultSharesToken) != address(rocketTokenReth)
+        ) {
+            revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
+        }
+
         // Ensure that the minimum share reserves are equal to 1e15. This value
         // has been tested to prevent arithmetic overflows in the
         // `_updateLiquidity` function when the share reserves are as high as
@@ -123,6 +136,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
+        IHyperdrive.PoolDeployConfig memory, // unused pool deploy config
         bytes memory // unused extra data
     ) internal view override returns (uint256) {
         // Returns the value of one RETH token in ETH.

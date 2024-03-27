@@ -198,7 +198,10 @@ abstract contract HyperdriveDeployerCoordinator is
 
             // Get the initial share price and the hashes of the config and extra
             // data.
-            uint256 initialSharePrice = _getInitialVaultSharePrice(_extraData);
+            uint256 initialSharePrice = _getInitialVaultSharePrice(
+                _deployConfig,
+                _extraData
+            );
             bytes32 configHash_ = keccak256(abi.encode(_deployConfig));
             bytes32 extraDataHash = keccak256(_extraData);
 
@@ -436,9 +439,12 @@ abstract contract HyperdriveDeployerCoordinator is
     }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
+    /// @param _deployConfig The deploy config that will used to deploy the
+    ///        pool.
     /// @param _extraData The extra data passed to the child deployers.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
+        IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory _extraData
     ) internal view virtual returns (uint256);
 
@@ -450,6 +456,7 @@ abstract contract HyperdriveDeployerCoordinator is
     ) internal pure returns (IHyperdrive.PoolConfig memory _config) {
         // Copy the `PoolDeployConfig` into a `PoolConfig` struct.
         _config.baseToken = _deployConfig.baseToken;
+        _config.vaultSharesToken = _deployConfig.vaultSharesToken;
         _config.linkerFactory = _deployConfig.linkerFactory;
         _config.linkerCodeHash = _deployConfig.linkerCodeHash;
         _config.minimumShareReserves = _deployConfig.minimumShareReserves;

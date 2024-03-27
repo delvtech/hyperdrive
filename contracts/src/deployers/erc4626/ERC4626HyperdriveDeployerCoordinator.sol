@@ -5,7 +5,6 @@ import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { IERC4626Hyperdrive } from "../../interfaces/IERC4626Hyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
@@ -68,7 +67,7 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         }
         // Otherwise, the initialization will be paid in vault shares.
         else {
-            token = address(IERC4626Hyperdrive(address(_hyperdrive)).vault());
+            token = _hyperdrive.vaultSharesToken();
         }
 
         // Take custody of the contribution and approve Hyperdrive to pull the
@@ -94,6 +93,19 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     ) internal view override {
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig);
+
+        // Ensure that the vault shares token address is non-zero.
+        if (address(_deployConfig.vaultSharesToken) == address(0)) {
+            revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
+        }
+
+        // Ensure that the base token address is properly configured.
+        if (
+            address(_deployConfig.baseToken) !=
+            IERC4626(address(_deployConfig.vaultSharesToken)).asset()
+        ) {
+            revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
+        }
 
         // Ensure that the minimum share reserves are large enough to meet the
         // minimum requirements for safety.
@@ -122,13 +134,17 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
-    /// @param _extraData The extra data passed to the child deployers.
+    /// @param _deployConfig The deploy config that will used to deploy the
+    ///        pool.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
-        bytes memory _extraData
+        IHyperdrive.PoolDeployConfig memory _deployConfig,
+        bytes memory // unused extra data
     ) internal view override returns (uint256) {
         // Return the vault's current share price.
-        IERC4626 vault = IERC4626(abi.decode(_extraData, (address)));
-        return vault.convertToAssets(ONE);
+        return
+            IERC4626(address(_deployConfig.vaultSharesToken)).convertToAssets(
+                ONE
+            );
     }
 }

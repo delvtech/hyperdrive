@@ -36,12 +36,6 @@ contract EzETHTarget0 is HyperdriveTarget0, EzETHBase {
         _revert(abi.encode(_restakeManager));
     }
 
-    /// @notice Gets the ezETH token contract.
-    /// @return The ezETH token contract.
-    function ezETH() external view returns (IERC20) {
-        _revert(abi.encode(_ezETH));
-    }
-
     /// @notice Gets the RenzoOracle contract.
     /// @return The RenzoOracle contract.
     function renzoOracle() external view returns (IRenzoOracle) {

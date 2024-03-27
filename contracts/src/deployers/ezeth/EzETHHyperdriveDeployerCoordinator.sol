@@ -5,6 +5,7 @@ import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IRestakeManager } from "../../interfaces/IRenzo.sol";
+import { ETH } from "../../libraries/Constants.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
@@ -96,6 +97,16 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig);
 
+        // Ensure that the base token address is properly configured.
+        if (address(_deployConfig.baseToken) != ETH) {
+            revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
+        }
+
+        // Ensure that the vault shares token address is properly configured.
+        if (address(_deployConfig.vaultSharesToken) != address(ezETH)) {
+            revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
+        }
+
         // Ensure that the minimum share reserves are equal to 1e15. This value
         // has been tested to prevent arithmetic overflows in the
         // `_updateLiquidity` function when the share reserves are as high as
@@ -115,6 +126,7 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
+        IHyperdrive.PoolDeployConfig memory, // unused pool deploy config
         bytes memory // unused extra data
     ) internal view override returns (uint256) {
         // Return ezETH's current vault share price.

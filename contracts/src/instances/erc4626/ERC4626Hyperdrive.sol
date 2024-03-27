@@ -4,10 +4,8 @@ pragma solidity 0.8.20;
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
-import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
 import { ERC4626Base } from "./ERC4626Base.sol";
 
 ///      ______  __                           _________      _____
@@ -57,7 +55,6 @@ import { ERC4626Base } from "./ERC4626Base.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
-    using FixedPointMath for uint256;
     using SafeERC20 for ERC20;
 
     /// @notice Instantiates Hyperdrive with a ERC4626 vault as the yield source.
@@ -67,27 +64,19 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
     /// @param _target4 The target4 address.
-    /// @param __vault The ERC4626 compatible yield source.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         address _target0,
         address _target1,
         address _target2,
         address _target3,
-        address _target4,
-        IERC4626 __vault
-    )
-        Hyperdrive(_config, _target0, _target1, _target2, _target3, _target4)
-        ERC4626Base(__vault)
-    {
-        // Ensure that the base token is the same as the vault's underlying
-        // asset.
-        if (address(_config.baseToken) != IERC4626(_vault).asset()) {
-            revert IHyperdrive.InvalidBaseToken();
-        }
-
+        address _target4
+    ) Hyperdrive(_config, _target0, _target1, _target2, _target3, _target4) {
         // Approve the base token with 1 wei. This ensures that all of the
         // subsequent approvals will be writing to a dirty storage slot.
-        ERC20(address(_config.baseToken)).forceApprove(address(_vault), 1);
+        ERC20(address(_config.baseToken)).forceApprove(
+            address(_config.vaultSharesToken),
+            1
+        );
     }
 }

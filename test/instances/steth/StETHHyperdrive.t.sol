@@ -13,7 +13,6 @@ import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
-import { IStETHHyperdrive } from "contracts/src/interfaces/IStETHHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ETH } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
@@ -45,8 +44,8 @@ contract StETHHyperdriveTest is InstanceTest {
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig(
             whaleAccounts,
-            IERC20(LIDO),
             IERC20(ETH),
+            IERC20(LIDO),
             1e5,
             1e15,
             POSITION_DURATION,
@@ -81,24 +80,15 @@ contract StETHHyperdriveTest is InstanceTest {
         return
             address(
                 new StETHHyperdriveDeployerCoordinator(
-                    address(new StETHHyperdriveCoreDeployer(LIDO)),
-                    address(new StETHTarget0Deployer(LIDO)),
-                    address(new StETHTarget1Deployer(LIDO)),
-                    address(new StETHTarget2Deployer(LIDO)),
-                    address(new StETHTarget3Deployer(LIDO)),
-                    address(new StETHTarget4Deployer(LIDO)),
+                    address(new StETHHyperdriveCoreDeployer()),
+                    address(new StETHTarget0Deployer()),
+                    address(new StETHTarget1Deployer()),
+                    address(new StETHTarget2Deployer()),
+                    address(new StETHTarget3Deployer()),
+                    address(new StETHTarget4Deployer()),
                     LIDO
                 )
             );
-    }
-
-    /// Getters ///
-
-    function test_getters() external {
-        assertEq(
-            address(IStETHHyperdrive(address(hyperdrive)).lido()),
-            address(LIDO)
-        );
     }
 
     /// Price Per Share ///

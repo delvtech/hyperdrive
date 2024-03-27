@@ -62,8 +62,8 @@ contract EzETHHyperdriveTest is InstanceTest {
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig(
             whaleAccounts,
-            IERC20(EZETH),
             IERC20(ETH),
+            IERC20(EZETH),
             1e6,
             1e15,
             POSITION_DURATION_15_DAYS,
@@ -120,10 +120,6 @@ contract EzETHHyperdriveTest is InstanceTest {
         assertEq(
             address(IEzETHHyperdriveRead(address(hyperdrive)).renzo()),
             address(RESTAKE_MANAGER)
-        );
-        assertEq(
-            address(IEzETHHyperdriveRead(address(hyperdrive)).ezETH()),
-            address(EZETH)
         );
         assertEq(
             address(IEzETHHyperdriveRead(address(hyperdrive)).renzoOracle()),

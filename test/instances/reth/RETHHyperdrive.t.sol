@@ -53,8 +53,8 @@ contract RETHHyperdriveTest is InstanceTest {
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig(
             whaleAccounts,
-            IERC20(rocketTokenRETH),
             IERC20(ETH),
+            IERC20(rocketTokenRETH),
             1e5,
             1e16,
             POSITION_DURATION,
@@ -107,10 +107,6 @@ contract RETHHyperdriveTest is InstanceTest {
         assertEq(
             address(IRETHHyperdrive(address(hyperdrive)).rocketStorage()),
             address(ROCKET_STORAGE)
-        );
-        assertEq(
-            address(IRETHHyperdrive(address(hyperdrive)).rocketTokenRETH()),
-            address(rocketTokenRETH)
         );
     }
 

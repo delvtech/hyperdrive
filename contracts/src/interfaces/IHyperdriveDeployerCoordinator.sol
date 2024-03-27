@@ -30,6 +30,15 @@ interface IHyperdriveDeployerCoordinator {
     ///         to initialize a payable Hyperdrive instance.
     error InsufficientValue();
 
+    /// @notice Thrown when the base token isn't valid. Each instance will have
+    ///         different criteria for what constitutes a valid base token.
+    error InvalidBaseToken();
+
+    /// @notice Thrown when the vault shares token isn't valid. Each instance
+    ///         will have different criteria for what constitutes a valid base
+    ///         token.
+    error InvalidVaultSharesToken();
+
     /// @notice Thrown when the checkpoint duration specified is zero.
     error InvalidCheckpointDuration();
 

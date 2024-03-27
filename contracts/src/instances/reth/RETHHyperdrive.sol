@@ -3,8 +3,6 @@ pragma solidity 0.8.20;
 
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { IERC20 } from "../../interfaces/IERC20.sol";
-import { ETH } from "../../libraries/Constants.sol";
 import { IRocketStorage } from "../../interfaces/IRocketStorage.sol";
 import { RETHBase } from "./RETHBase.sol";
 
@@ -74,10 +72,5 @@ contract RETHHyperdrive is Hyperdrive, RETHBase {
     )
         Hyperdrive(_config, _target0, _target1, _target2, _target3, _target4)
         RETHBase(__rocketStorage)
-    {
-        // Ensure that the base token address is properly configured.
-        if (address(_config.baseToken) != ETH) {
-            revert IHyperdrive.InvalidBaseToken();
-        }
-    }
+    {}
 }
