@@ -97,17 +97,6 @@ contract EzETHHyperdriveTest is InstanceTest {
         return baseAmount.divDown(sharePrice);
     }
 
-    function getTokenBalances(
-        address account
-    ) internal view override returns (uint256, uint256) {
-        return (EZETH.balanceOf(account), 0);
-    }
-
-    function getSupply() internal view override returns (uint256, uint256) {
-        (, uint256 totalPooledEther, ) = getSharePrice();
-        return (totalPooledEther, EZETH.totalSupply());
-    }
-
     /// @dev Deploys the EzETH deployer coordinator contract.
     function deployCoordinator() internal override returns (address) {
         vm.startPrank(alice);
@@ -125,6 +114,20 @@ contract EzETHHyperdriveTest is InstanceTest {
             );
     }
 
+    /// @dev Fetches the token balance information of an account.
+    function getTokenBalances(
+        address account
+    ) internal view override returns (uint256, uint256) {
+        return (EZETH.balanceOf(account), 0);
+    }
+
+    /// @dev Fetches the total supply of the base and share tokens.
+    function getSupply() internal view override returns (uint256, uint256) {
+        (, uint256 totalPooledEther, ) = getSharePrice();
+        return (totalPooledEther, EZETH.totalSupply());
+    }
+
+    /// @dev Verifies that deposit accounting is correct when opening positions.
     function verifyDeposit(
         address trader,
         uint256 basePaid,
@@ -182,12 +185,12 @@ contract EzETHHyperdriveTest is InstanceTest {
             assertApproxEqAbs(
                 EZETH.balanceOf(address(hyperdrive)),
                 hyperdriveBalancesBefore.sharesBalance + expectedShares,
-                2
+                2 // Higher tolerance due to rounding when converting back into shares.
             );
             assertApproxEqAbs(
                 EZETH.balanceOf(trader),
                 traderBalancesBefore.sharesBalance - expectedShares,
-                2
+                2 // Higher tolerance due to rounding when converting back into shares.
             );
         }
     }
