@@ -197,7 +197,7 @@ abstract contract InstanceTest is HyperdriveTest {
         config.vaultSharesToken.approve(deployerCoordinator, 100_000e18);
 
         // We expect the deployAndInitialize to fail with an
-        // Unsupported token error if depositing with base is not supported.
+        // UnsupportedToken error if depositing with base is not supported.
         // If the base token is ETH we expect a NotPayable error.
         if (!config.enableBaseDeposits && asBase) {
             vm.expectRevert(
@@ -208,7 +208,7 @@ abstract contract InstanceTest is HyperdriveTest {
         }
 
         // We expect the deployAndInitialize to fail with an
-        // Unsupported token error if depositing with shares is not supported.
+        // UnsupportedToken error if depositing with shares is not supported.
         if (!config.enableShareDeposits && !asBase) {
             vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         }
@@ -321,7 +321,8 @@ abstract contract InstanceTest is HyperdriveTest {
         uint256 baseAmount
     ) internal view virtual returns (uint256 shareAmount);
 
-    /// @dev A virtual function that ensures the deposit accounting is correct when opening positions.
+    /// @dev A virtual function that ensures the deposit accounting is correct
+    ///      when opening positions.
     /// @param trader The account opening the position.
     /// @param basePaid The amount the position was opened with in terms of base.
     /// @param asBase Flag to determine whether the position was opened with the base or share token.
@@ -500,7 +501,7 @@ abstract contract InstanceTest is HyperdriveTest {
     /// @dev Fuzz Test to ensure deposit accounting is correct for opening longs
     ///      with the share token.
     /// @param basePaid Amount in terms of base to open a long.
-    function test__open_long_with_shares(uint256 basePaid) external {
+    function test_open_long_with_shares(uint256 basePaid) external {
         // Get balance information before opening a long.
         (
             uint256 totalBaseSupplyBefore,
@@ -545,7 +546,7 @@ abstract contract InstanceTest is HyperdriveTest {
     ///      with the base token. This test case is expected to fail if base deposits
     ///      is not supported.
     /// @param basePaid Amount in terms of base to open a long.
-    function test__open_long_with_base(uint256 basePaid) external {
+    function test_open_long_with_base(uint256 basePaid) external {
         // Get balance information before opening a long.
         (
             uint256 totalBaseSupplyBefore,
@@ -562,7 +563,7 @@ abstract contract InstanceTest is HyperdriveTest {
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
 
-        // We expect the openLong to fail with an Unsupported token error
+        // We expect the openLong to fail with an UnsupportedToken error
         // if depositing with base is not supported or a NotPayable error
         // if the base token is ETH.
         if (!config.enableBaseDeposits) {
