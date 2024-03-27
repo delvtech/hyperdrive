@@ -101,6 +101,7 @@ contract RETHHyperdriveTest is InstanceTest {
             );
     }
 
+    /// @dev Fetches the token balance information of an account.
     function getTokenBalances(
         address account
     ) internal view override returns (uint256, uint256) {
@@ -108,6 +109,7 @@ contract RETHHyperdriveTest is InstanceTest {
         return (rethBalance, rocketTokenRETH.getEthValue(rethBalance));
     }
 
+    /// @dev Fetches the total supply of the base and share tokens.
     function getSupply() internal view override returns (uint256, uint256) {
         return (
             rocketNetworkBalances.getTotalETHBalance(),
@@ -115,6 +117,7 @@ contract RETHHyperdriveTest is InstanceTest {
         );
     }
 
+    /// @dev Verifies that deposit accounting is correct when opening positions.
     function verifyDeposit(
         address trader,
         uint256 amount,
@@ -124,13 +127,15 @@ contract RETHHyperdriveTest is InstanceTest {
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
     ) internal override {
+        // Deposits as base is not supported for this instance.
         if (asBase) {
             revert IHyperdrive.UnsupportedToken();
         }
 
+        // Convert the amount in terms of shares.
         amount = convertToShares(amount);
 
-        // Ensure that the ether balances were updated correctly.
+        // Ensure that the ETH balances were updated correctly.
         assertEq(
             address(hyperdrive).balance,
             hyperdriveBalancesBefore.ETHBalance
@@ -149,7 +154,7 @@ contract RETHHyperdriveTest is InstanceTest {
             1
         );
 
-        // // Ensure the total supply was updated correctly.
+        // Ensure the total supply was updated correctly.
         assertEq(rocketTokenRETH.totalSupply(), totalSharesBefore);
     }
 
