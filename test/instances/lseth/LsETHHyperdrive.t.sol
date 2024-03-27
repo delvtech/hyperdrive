@@ -19,11 +19,11 @@ import { ETH } from "contracts/src/libraries/Constants.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { InstanceTest } from "test/utils/InstanceTest.sol";
+import { InstanceTestV2 } from "test/utils/InstanceTestV2.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-contract LsETHHyperdriveTest is InstanceTest {
+contract LsETHHyperdriveTest is InstanceTestV2 {
     using FixedPointMath for uint256;
     using Lib for *;
     using stdStorage for StdStorage;
@@ -59,7 +59,7 @@ contract LsETHHyperdriveTest is InstanceTest {
         );
 
     /// @dev Instantiates the Instance testing suite with the configuration.
-    constructor() InstanceTest(__testConfig) {}
+    constructor() InstanceTestV2(__testConfig) {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
 
@@ -93,6 +93,61 @@ contract LsETHHyperdriveTest is InstanceTest {
     ) internal view override returns (uint256 shareAmount) {
         // River has a built-in function for computing price in terms of shares.
         return RIVER.sharesFromUnderlyingBalance(baseAmount);
+    }
+
+    function getTokenBalances(
+        address account
+    ) internal view override returns (uint256, uint256) {
+        return (RIVER.balanceOf(account), RIVER.balanceOfUnderlying(account));
+    }
+
+    function getSupply() internal override returns (uint256, uint256) {
+        return (RIVER.totalUnderlyingSupply(), RIVER.totalSupply());
+    }
+
+    function _verifyDeposit(
+        address trader,
+        uint256 amount,
+        bool asBase,
+        uint totalBaseBefore, // unused
+        uint256 totalSharesBefore,
+        AccountBalances2 memory traderBalancesBefore,
+        AccountBalances2 memory hyperdriveBalancesBefore
+    ) internal override {
+        if (asBase) {
+            revert IHyperdrive.NotPayable();
+        }
+
+        amount = convertToShares(amount);
+
+        // Ensure that the ether balances were updated correctly.
+        assertEq(
+            address(hyperdrive).balance,
+            hyperdriveBalancesBefore.ETHBalance
+        );
+        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
+
+        // Ensure that the LsETH balances were updated correctly.
+        assertEq(
+            RIVER.balanceOf(address(hyperdrive)),
+            hyperdriveBalancesBefore.sharesBalance + amount
+        );
+        assertEq(
+            RIVER.balanceOf(trader),
+            traderBalancesBefore.sharesBalance - amount
+        );
+
+        // Ensure the total supply was updated correctly.
+        assertEq(RIVER.totalSupply(), totalSharesBefore);
+    }
+
+    /// Getters ///
+
+    function test_getters() external {
+        assertEq(
+            address(ILsETHHyperdrive(address(hyperdrive)).lsEth()),
+            address(RIVER)
+        );
     }
 
     /// Price Per Share ///
