@@ -15,6 +15,7 @@ use rand::{
 };
 pub use short::*;
 pub use utils::*;
+use yield_space::get_spot_price;
 pub use yield_space::YieldSpace;
 
 #[derive(Clone, Debug)]
@@ -123,15 +124,18 @@ impl State {
 
     /// Gets the pool's spot rate.
     pub fn get_spot_rate(&self) -> FixedPoint {
-        let annualized_time =
-            self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
-        let spot_price = self.get_spot_price();
-        (fixed!(1e18) - spot_price) / (spot_price * annualized_time)
+        get_spot_rate(
+            self.ze(),
+            self.y(),
+            self.mu(),
+            self.t(),
+            self.position_duration(),
+        )
     }
 
     /// Converts a timestamp to the checkpoint timestamp that it corresponds to.
     pub fn to_checkpoint(&self, time: U256) -> U256 {
-        time - time % self.config.checkpoint_duration
+        to_checkpoint(self.checkpoint_duration(), time)
     }
 
     /// Gets the normalized time remaining
@@ -197,6 +201,7 @@ impl State {
         self.info.share_reserves.into()
     }
 
+    #[allow(dead_code)]
     fn effective_share_reserves(&self) -> FixedPoint {
         get_effective_share_reserves(self.share_reserves(), self.share_adjustment())
     }
@@ -253,6 +258,40 @@ impl YieldSpace for State {
 
     fn t(&self) -> FixedPoint {
         self.time_stretch()
+    }
+}
+
+/// Gets the pool's spot rate.
+pub fn get_spot_rate(
+    ze: FixedPoint,
+    y: FixedPoint,
+    mu: FixedPoint,
+    t: FixedPoint,
+    position_duration: FixedPoint,
+) -> FixedPoint {
+    let annualized_time = position_duration / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
+    let spot_price = get_spot_price(ze, y, mu, t);
+    (fixed!(1e18) - spot_price) / (spot_price * annualized_time)
+}
+
+/// Converts a timestamp to the checkpoint timestamp that it corresponds to.
+pub fn to_checkpoint(checkpoint_duration: FixedPoint, time: U256) -> U256 {
+    time - time % checkpoint_duration
+}
+
+pub fn time_remaining_scaled(
+    checkpoint_duration: FixedPoint,
+    position_duration: FixedPoint,
+    current_block_timestamp: U256,
+    maturity_time: U256,
+) -> FixedPoint {
+    let latest_checkpoint =
+        to_checkpoint(checkpoint_duration, current_block_timestamp) * uint256!(1e18);
+    if maturity_time > latest_checkpoint {
+        FixedPoint::from(maturity_time - latest_checkpoint)
+            / FixedPoint::from(U256::from(position_duration) * uint256!(1e18))
+    } else {
+        fixed!(0)
     }
 }
 

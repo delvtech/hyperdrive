@@ -689,6 +689,7 @@ impl State {
     /// Calculates the largest long that can be opened without buying bonds at a
     /// negative interest rate. This calculation does not take Hyperdrive's
     /// solvency constraints into account and shouldn't be used directly.
+    #[allow(dead_code)]
     fn absolute_max_long(&self) -> (FixedPoint, FixedPoint) {
         absolute_max_long(
             self.ze(),

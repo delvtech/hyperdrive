@@ -116,6 +116,7 @@ pub fn calculate_close_short<F: Into<FixedPoint>>(
 }
 
 impl State {
+    #[allow(dead_code)]
     fn calculate_close_short_flat_plus_curve<F: Into<FixedPoint>>(
         &self,
         bond_amount: F,
@@ -150,6 +151,7 @@ impl State {
     }
 
     // Calculates the proceeds in shares of closing a short position.
+    #[allow(dead_code)]
     fn calculate_short_proceeds(
         &self,
         bond_amount: FixedPoint,

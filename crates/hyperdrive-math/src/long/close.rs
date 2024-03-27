@@ -54,6 +54,7 @@ pub fn calculate_close_long<F: Into<FixedPoint>>(
 }
 
 impl State {
+    #[allow(dead_code)]
     fn calculate_close_long_flat_plus_curve<F: Into<FixedPoint>>(
         &self,
         bond_amount: F,
