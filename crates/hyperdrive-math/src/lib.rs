@@ -17,8 +17,7 @@ use rand::{
 };
 pub use short::*;
 pub use utils::*;
-use yield_space::get_spot_price;
-pub use yield_space::YieldSpace;
+pub use yield_space::*;
 
 #[derive(Clone, Debug)]
 pub struct State {
