@@ -135,14 +135,14 @@ pub fn calculate_net_curve_trade(
             let net_curve_position: FixedPoint = FixedPoint::from(net_curve_position);
             let max_curve_trade =
                 calculate_max_sell_bonds_in_safe(ze, y, c, mu, t, zeta, z_min).unwrap();
-            if max_curve_trade >= net_curve_position.into() {
+            if max_curve_trade >= net_curve_position {
                 match calculate_shares_out_given_bonds_in_down_safe(
                     ze,
                     y,
                     c,
                     mu,
                     t,
-                    net_curve_position.into(),
+                    net_curve_position,
                 ) {
                     Ok(net_curve_trade) => -I256::try_from(net_curve_trade).unwrap(),
                     Err(err) => {
@@ -171,7 +171,7 @@ pub fn calculate_net_curve_trade(
                     c,
                     mu,
                     t,
-                    net_curve_position.into(),
+                    net_curve_position,
                 ) {
                     Ok(net_curve_trade) => I256::try_from(net_curve_trade).unwrap(),
                     Err(err) => {

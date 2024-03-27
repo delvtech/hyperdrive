@@ -336,7 +336,7 @@ pub fn calculate_max_sell_bonds_in_safe(
     // fall below the minimum share reserves. Otherwise, the minimum share
     // reserves is just zMin.
     if zeta < I256::zero() {
-        z_min = z_min + FixedPoint::from(-zeta);
+        z_min += FixedPoint::from(-zeta);
     }
 
     // We solve for the maximum sell using the constraint that the pool's
