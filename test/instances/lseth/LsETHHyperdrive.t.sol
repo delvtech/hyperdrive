@@ -144,6 +144,9 @@ contract LsETHHyperdriveTest is InstanceTest {
             1
         );
 
+        // Ensure the total base supply was updated correctly.
+        assertEq(RIVER.totalUnderlyingSupply(), totalBaseBefore);
+
         // Ensure the total supply was updated correctly.
         assertEq(RIVER.totalSupply(), totalSharesBefore);
     }
