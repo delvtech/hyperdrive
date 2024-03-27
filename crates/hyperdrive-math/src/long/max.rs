@@ -4,7 +4,8 @@ use fixed_point_macros::{fixed, int256};
 
 use crate::{
     calculate_open_long, open_long_curve_fees, open_long_governance_fee,
-    yield_space::get_spot_price, yield_space::k_down, State, YieldSpace,
+    yield_space::{get_spot_price, k_down},
+    State, YieldSpace,
 };
 
 /// Gets the pool's max spot price.
