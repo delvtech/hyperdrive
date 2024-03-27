@@ -31,7 +31,7 @@ def get_output_folder_structure(lowercase_name: str) -> dict:
     -------
     dict
     """
-    return {"deployers": {lowercase_name: {}}, "instances": {lowercase_name: {}}, "interfaces": {lowercase_name: {}}}
+    return {"deployers": {lowercase_name: {}}, "instances": {lowercase_name: {}}, "interfaces": {}}
 
 
 def setup_directory(base_path: Path | str, structure: dict, clear_existing: bool = False) -> None:

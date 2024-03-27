@@ -4,10 +4,9 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from jinja2 import Environment, Template
-
 from hyperdrive_codegen.config import TemplateConfig
 from hyperdrive_codegen.file import write_string_to_file
+from jinja2 import Environment, Template
 
 
 @dataclass
@@ -97,18 +96,23 @@ def write_templates_to_files(templates: list[TemplateInfo], output_path: Path, t
         # Get the file information and rendered code.
         file_info = FileInfo(template, rendered_code=template.template.render(template_config.model_dump()))
 
-        # Get the contract file name and prepend 'I' if it is an interface file.
+        # Get the contract file name
         contract_file_name = f"{template_config.name.capitalized}{file_info.template.path_info.base_name}.sol"
-        contract_file_name = (
-            "I" + contract_file_name if file_info.template.path_info.folder == "interfaces" else contract_file_name
-        )
 
-        # Get the path for the file name.
-        contract_file_path = Path(
-            os.path.join(
-                output_path, file_info.template.path_info.folder, template_config.name.lowercase, contract_file_name
+        # Prepend 'I' to the file name if it is an interface file
+        is_interface_file = file_info.template.path_info.folder == "interfaces"
+        if is_interface_file:
+            contract_file_name = "I" + contract_file_name
+            # NOTE: don't place interface files in a subfolder
+            contract_file_path = Path(
+                os.path.join(output_path, file_info.template.path_info.folder, contract_file_name)
             )
-        )
+        else:
+            contract_file_path = Path(
+                os.path.join(
+                    output_path, file_info.template.path_info.folder, template_config.name.lowercase, contract_file_name
+                )
+            )
 
         # Write the rendered code to file.
         write_string_to_file(contract_file_path, file_info.rendered_code)
