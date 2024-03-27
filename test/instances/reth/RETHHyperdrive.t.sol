@@ -566,39 +566,6 @@ contract RETHHyperdriveTest is InstanceTestV2 {
         );
     }
 
-    // function verifyDeposit(
-    //     address trader,
-    //     uint256 amount,
-    //     bool asBase,
-    //     uint256 totalSharesBefore,
-    //     AccountBalances memory traderBalancesBefore,
-    //     AccountBalances memory hyperdriveBalancesBefore
-    // ) internal {
-    //     if (asBase) {
-    //         revert IHyperdrive.UnsupportedToken();
-    //     }
-
-    //     // Ensure that the ether balances were updated correctly.
-    //     assertEq(
-    //         address(hyperdrive).balance,
-    //         hyperdriveBalancesBefore.ETHBalance
-    //     );
-    //     assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-    //     // Ensure that the rETH balances were updated correctly.
-    //     assertEq(
-    //         rocketTokenRETH.balanceOf(address(hyperdrive)),
-    //         hyperdriveBalancesBefore.rethBalance + amount
-    //     );
-    //     assertEq(
-    //         rocketTokenRETH.balanceOf(trader),
-    //         traderBalancesBefore.rethBalance - amount
-    //     );
-
-    //     // Ensure the total supply was updated correctly.
-    //     assertEq(rocketTokenRETH.totalSupply(), totalSharesBefore);
-    // }
-
     function verifyRethWithdrawal(
         address trader,
         uint256 amount,
