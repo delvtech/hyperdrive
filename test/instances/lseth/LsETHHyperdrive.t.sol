@@ -20,11 +20,11 @@ import { ETH } from "contracts/src/libraries/Constants.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { InstanceTestV2 } from "test/utils/InstanceTestV2.sol";
+import { InstanceTest } from "test/utils/InstanceTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-contract LsETHHyperdriveTest is InstanceTestV2 {
+contract LsETHHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using Lib for *;
     using stdStorage for StdStorage;
@@ -60,7 +60,7 @@ contract LsETHHyperdriveTest is InstanceTestV2 {
         );
 
     /// @dev Instantiates the Instance testing suite with the configuration.
-    constructor() InstanceTestV2(__testConfig) {}
+    constructor() InstanceTest(__testConfig) {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
 
