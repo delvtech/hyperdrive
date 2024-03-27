@@ -8,7 +8,7 @@ import { ETH } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { InstanceTest } from "test/utils/InstanceTest.sol";
+import { InstanceTestV2 } from "test/utils/InstanceTestV2.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -28,7 +28,7 @@ import { RETHTarget3Deployer } from "contracts/src/deployers/reth/RETHTarget3Dep
 import { RETHTarget4Deployer } from "contracts/src/deployers/reth/RETHTarget4Deployer.sol";
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 
-contract RETHHyperdriveTest is InstanceTest {
+contract RETHHyperdriveTest is InstanceTestV2 {
     using FixedPointMath for uint256;
     using Lib for *;
     using stdStorage for StdStorage;
@@ -63,7 +63,7 @@ contract RETHHyperdriveTest is InstanceTest {
         );
 
     /// @dev Instantiates the Instance testing suite with the configuration.
-    constructor() InstanceTest(__testConfig) {}
+    constructor() InstanceTestV2(__testConfig) {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(19_429_100) {
@@ -99,6 +99,56 @@ contract RETHHyperdriveTest is InstanceTest {
                     ROCKET_STORAGE
                 )
             );
+    }
+
+    function getTokenBalances(
+        address account
+    ) internal view override returns (uint256, uint256) {
+        uint256 rethBalance = rocketTokenRETH.balanceOf(account);
+        return (rethBalance, rocketTokenRETH.getEthValue(rethBalance));
+    }
+
+    function getSupply() internal override returns (uint256, uint256) {
+        return (
+            rocketNetworkBalances.getTotalETHBalance(),
+            rocketNetworkBalances.getTotalRETHSupply()
+        );
+    }
+
+    function _verifyDeposit(
+        address trader,
+        uint256 amount,
+        bool asBase,
+        uint256 totalBaseBefore, // unused
+        uint256 totalSharesBefore,
+        AccountBalances2 memory traderBalancesBefore,
+        AccountBalances2 memory hyperdriveBalancesBefore
+    ) internal override {
+        if (asBase) {
+            revert IHyperdrive.UnsupportedToken();
+        }
+
+        amount = convertToShares(amount);
+
+        // Ensure that the ether balances were updated correctly.
+        assertEq(
+            address(hyperdrive).balance,
+            hyperdriveBalancesBefore.ETHBalance
+        );
+        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
+
+        // Ensure that the rETH balances were updated correctly.
+        assertEq(
+            rocketTokenRETH.balanceOf(address(hyperdrive)),
+            hyperdriveBalancesBefore.sharesBalance + amount
+        );
+        assertEq(
+            rocketTokenRETH.balanceOf(trader),
+            traderBalancesBefore.sharesBalance - amount
+        );
+
+        // // Ensure the total supply was updated correctly.
+        assertEq(rocketTokenRETH.totalSupply(), totalSharesBefore);
     }
 
     /// Getters ///

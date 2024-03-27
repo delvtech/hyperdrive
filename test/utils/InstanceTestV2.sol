@@ -46,7 +46,7 @@ abstract contract InstanceTestV2 is HyperdriveTest {
         bytes32(uint256(0xdeadbabe));
 
     // The configuration for the Instance testing suite.
-    InstanceTestConfig private config;
+    InstanceTestConfig internal config;
 
     // The configuration for the pool.
     IHyperdrive.PoolDeployConfig private poolConfig;
@@ -505,10 +505,16 @@ abstract contract InstanceTestV2 is HyperdriveTest {
             address(hyperdrive)
         );
 
+        // Calculate the maximum amount of basePaid we can test. The limit is
+        // either the max long that Hyperdrive can open or the amount of rETH
+        // tokens the trader has.
+        uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
+        uint256 maxSharesAmount = bobBalancesBefore.sharesBalance;
+
         // Bob opens a long by depositing stETH.
         basePaid = basePaid.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
+            maxLongAmount > maxSharesAmount ? maxSharesAmount : maxLongAmount
         );
 
         uint256 sharesPaid = convertToShares(basePaid);
@@ -537,23 +543,46 @@ abstract contract InstanceTestV2 is HyperdriveTest {
         );
 
         // Bob opens a long by depositing stETH.
+        vm.startPrank(bob);
         basePaid = basePaid.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
 
-        // uint256 sharesPaid = convertToShares(basePaid);
+        // We expect the deployAndInitialize to fail with an
+        // Unsupported token error if depositing with base is not supported.
+        // If the base token is ETH we expect a NotPayable error.
+        if (!config.enableBaseDeposits) {
+            vm.expectRevert(
+                isBaseETH
+                    ? IHyperdrive.NotPayable.selector
+                    : IHyperdrive.UnsupportedToken.selector
+            );
+        }
 
-        openLong(bob, basePaid, true);
-        _verifyDeposit(
-            bob,
+        hyperdrive.openLong{ value: isBaseETH ? basePaid : 0 }(
             basePaid,
-            true,
-            totalBaseSupplyBefore,
-            totalSharesSupplyBefore,
-            bobBalancesBefore,
-            hyperdriveBalanceBefore
+            0,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
         );
+        // openLong(bob, basePaid, true);
+
+        if (config.enableBaseDeposits) {
+            _verifyDeposit(
+                bob,
+                basePaid,
+                true,
+                totalBaseSupplyBefore,
+                totalSharesSupplyBefore,
+                bobBalancesBefore,
+                hyperdriveBalanceBefore
+            );
+        }
     }
 
     // function verifyDeposit(
