@@ -2,7 +2,56 @@ use ethers::types::U256;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
-use crate::{State, YieldSpace};
+use crate::{
+    close_long_curve_fee, close_long_flat_fee,
+    yield_space::calculate_shares_out_given_bonds_in_down, State, YieldSpace,
+};
+
+fn calculate_close_long_flat_plus_curve<F: Into<FixedPoint>>(
+    ze: F,
+    y: F,
+    c: F,
+    mu: F,
+    t: F,
+    dy: F,
+    tr: F,
+) -> FixedPoint {
+    let [ze, y, c, mu, t, dy, tr] = [ze, y, c, mu, t, dy, tr].map(|v| v.into());
+
+    // Calculate the flat part of the trade
+    let flat = dy.mul_div_down(fixed!(1e18) - tr, c);
+
+    // Calculate the curve part of the trade
+    let curve = if t > fixed!(0) {
+        let curve_bonds_in = dy * tr;
+        calculate_shares_out_given_bonds_in_down(ze, y, c, mu, t, curve_bonds_in)
+    } else {
+        fixed!(0)
+    };
+
+    flat + curve
+}
+
+/// Gets the amount of shares the trader will receive after fees for closing a long
+pub fn calculate_close_long<F: Into<FixedPoint>>(
+    ze: F,
+    y: F,
+    c: F,
+    mu: F,
+    t: F,
+    curve_fee: F,
+    flat_fee: F,
+    dy: F,
+    tr: F,
+) -> FixedPoint {
+    let [ze, y, c, mu, t, curve_fee, flat_fee, dy, tr] =
+        [ze, y, c, mu, t, curve_fee, flat_fee, dy, tr].map(|v| v.into());
+
+    // Subtract the fees from the trade
+    calculate_close_long_flat_plus_curve(ze, y, c, mu, t, dy, tr)
+        - close_long_curve_fee(ze, y, c, mu, t, curve_fee, dy, tr)
+        - close_long_flat_fee(c, dy, tr, flat_fee)
+}
 
 impl State {
     fn calculate_close_long_flat_plus_curve<F: Into<FixedPoint>>(

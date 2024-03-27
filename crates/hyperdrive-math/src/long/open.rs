@@ -1,6 +1,79 @@
+use ethers::types::I256;
 use fixed_point::FixedPoint;
 
-use crate::{State, YieldSpace};
+use crate::{
+    get_effective_share_reserves, get_max_spot_price, open_long_curve_fees,
+    yield_space::{calculate_bonds_out_given_shares_in_down, get_spot_price},
+    State, YieldSpace,
+};
+/// Gets the long amount that will be opened for a given base amount.
+///
+/// The long amount $y(x)$ that a trader will receive is given by:
+///
+/// $$
+/// y(x) = y_{*}(x) - c(x)
+/// $$
+///
+/// Where $y_{*}(x)$ is the amount of long that would be opened if there was
+/// no curve fee and [$c(x)$](long_curve_fee) is the curve fee. $y_{*}(x)$
+/// is given by:
+///
+/// $$
+/// y_{*}(x) = y - \left(
+///                k - \tfrac{c}{\mu} \cdot \left(
+///                    \mu \cdot \left( z + \tfrac{x}{c}
+///                \right) \right)^{1 - t_s}
+///            \right)^{\tfrac{1}{1 - t_s}}
+/// $$
+pub fn calculate_open_long<F: Into<FixedPoint>>(
+    zeta: I256,
+    ze: FixedPoint,
+    z: FixedPoint,
+    y: FixedPoint,
+    c: FixedPoint,
+    mu: FixedPoint,
+    t: FixedPoint,
+    flat_fee: FixedPoint,
+    curve_fee: FixedPoint,
+    base_amount: F,
+) -> FixedPoint {
+    let base_amount = base_amount.into();
+    let long_amount =
+        self.calculate_bonds_out_given_shares_in_down(base_amount / self.vault_share_price());
+
+    // Throw an error if opening the long would result in negative interest.
+    let ending_spot_price = {
+        let mut state: State = self.clone();
+        state.info.bond_reserves -= long_amount.into();
+        state.info.share_reserves += (base_amount / self.vault_share_price()).into();
+        state.get_spot_price()
+    };
+    let max_spot_price = self.get_max_spot_price();
+    if ending_spot_price > max_spot_price {
+        // TODO would be nice to return a `Result` here instead of a panic.
+        panic!("InsufficientLiquidity: Negative Interest");
+    }
+
+    long_amount - self.open_long_curve_fees(base_amount)
+}
+
+fn spot_price_after_long(
+    zeta: I256,
+    z: FixedPoint,
+    y: FixedPoint,
+    c: FixedPoint,
+    mu: FixedPoint,
+    t: FixedPoint,
+    base_amount: FixedPoint,
+    bond_amount: FixedPoint,
+) -> FixedPoint {
+    get_spot_price(
+        get_effective_share_reserves(z + base_amount / c, zeta),
+        y - bond_amount,
+        mu,
+        t,
+    )
+}
 
 impl State {
     /// Gets the long amount that will be opened for a given base amount.
@@ -23,24 +96,18 @@ impl State {
     ///            \right)^{\tfrac{1}{1 - t_s}}
     /// $$
     pub fn calculate_open_long<F: Into<FixedPoint>>(&self, base_amount: F) -> FixedPoint {
-        let base_amount = base_amount.into();
-        let long_amount =
-            self.calculate_bonds_out_given_shares_in_down(base_amount / self.vault_share_price());
-
-        // Throw an error if opening the long would result in negative interest.
-        let ending_spot_price = {
-            let mut state: State = self.clone();
-            state.info.bond_reserves -= long_amount.into();
-            state.info.share_reserves += (base_amount / self.vault_share_price()).into();
-            state.get_spot_price()
-        };
-        let max_spot_price = self.get_max_spot_price();
-        if ending_spot_price > max_spot_price {
-            // TODO would be nice to return a `Result` here instead of a panic.
-            panic!("InsufficientLiquidity: Negative Interest");
-        }
-
-        long_amount - self.open_long_curve_fees(base_amount)
+        calculate_open_long(
+            self.zeta(),
+            self.ze(),
+            self.z(),
+            self.y(),
+            self.c(),
+            self.mu(),
+            self.t(),
+            self.flat_fee(),
+            self.curve_fee(),
+            base_amount,
+        )
     }
 
     #[deprecated(since = "0.4.0", note = "please use `calculate_open_long` instead")]
@@ -59,12 +126,16 @@ impl State {
         base_amount: FixedPoint,
         bond_amount: FixedPoint,
     ) -> FixedPoint {
-        let mut state: State = self.clone();
-        state.info.bond_reserves -= bond_amount.into();
-        state.info.share_reserves += (base_amount / state.vault_share_price()
-            - self.open_long_governance_fee(base_amount) / state.vault_share_price())
-        .into();
-        state.get_spot_price()
+        spot_price_after_long(
+            self.zeta(),
+            self.z(),
+            self.y(),
+            self.c(),
+            self.mu(),
+            self.t(),
+            base_amount,
+            bond_amount,
+        )
     }
 }
 
