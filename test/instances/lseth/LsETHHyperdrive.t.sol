@@ -113,7 +113,7 @@ contract LsETHHyperdriveTest is InstanceTest {
         address trader,
         uint256 amount,
         bool asBase,
-        uint totalBaseBefore, // unused
+        uint totalBaseBefore,
         uint256 totalSharesBefore,
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore

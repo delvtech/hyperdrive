@@ -122,7 +122,7 @@ contract RETHHyperdriveTest is InstanceTest {
         address trader,
         uint256 amount,
         bool asBase,
-        uint256 totalBaseBefore, // unused
+        uint256 totalBaseBefore,
         uint256 totalSharesBefore,
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
