@@ -101,7 +101,7 @@ contract LsETHHyperdriveTest is InstanceTestV2 {
         return (RIVER.balanceOf(account), RIVER.balanceOfUnderlying(account));
     }
 
-    function getSupply() internal override returns (uint256, uint256) {
+    function getSupply() internal view override returns (uint256, uint256) {
         return (RIVER.totalUnderlyingSupply(), RIVER.totalSupply());
     }
 
@@ -352,7 +352,6 @@ contract LsETHHyperdriveTest is InstanceTestV2 {
             uint256 totalBaseSupplyBefore,
             uint256 totalSharesSupplyBefore
         ) = getSupply();
-        uint256 totalLsethSupplyBefore = RIVER.totalSupply();
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
