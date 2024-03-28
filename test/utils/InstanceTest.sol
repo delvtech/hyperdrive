@@ -537,7 +537,7 @@ abstract contract InstanceTest is HyperdriveTest {
         uint256 sharesPaid = convertToShares(basePaid);
 
         // Bob opens a long by depositing the base token.
-        // We expect the openShort to fail with an UnsupportedToken error
+        // We expect openLong to fail with an UnsupportedToken error
         // if depositing with shares is not supported.
         vm.startPrank(bob);
         if (!config.enableShareDeposits) {
@@ -553,6 +553,11 @@ abstract contract InstanceTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
+
+        // Early termination if share deposits is not supported.
+        if (!config.enableShareDeposits) {
+            return;
+        }
 
         // Ensure that Bob received the correct amount of bonds.
         assertEq(
@@ -596,9 +601,11 @@ abstract contract InstanceTest is HyperdriveTest {
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
 
-        // We expect the openLong to fail with an UnsupportedToken error
+        // Bob opens a long by depositing the base token.
+        // We expect openLong to fail with an UnsupportedToken error
         // if depositing with base is not supported or a NotPayable error
         // if the base token is ETH.
+        vm.startPrank(bob);
         if (!config.enableBaseDeposits) {
             vm.expectRevert(
                 isBaseETH
@@ -606,9 +613,6 @@ abstract contract InstanceTest is HyperdriveTest {
                     : IHyperdrive.UnsupportedToken.selector
             );
         }
-
-        // Bob opens a long by depositing the base token.
-        vm.startPrank(bob);
         (uint256 maturityTime, uint256 bondAmount) = hyperdrive.openLong{
             value: isBaseETH ? basePaid : 0
         }(
@@ -653,7 +657,7 @@ abstract contract InstanceTest is HyperdriveTest {
     ///      is not supported.
     /// @param shortAmount Amount of bonds to short.
     function test_open_short_with_shares(uint256 shortAmount) external {
-        // Get some balance information before the deposit.
+        // Get some balance information before opening a short.
         (
             uint256 totalBaseSupplyBefore,
             uint256 totalSharesSupplyBefore
@@ -663,6 +667,7 @@ abstract contract InstanceTest is HyperdriveTest {
             address(hyperdrive)
         );
 
+        // We normalize the short amount within a valid range the market can support.
         shortAmount = shortAmount.normalizeToRange(
             100 * hyperdrive.getPoolConfig().minimumTransactionAmount,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
@@ -671,7 +676,6 @@ abstract contract InstanceTest is HyperdriveTest {
         // Bob opens a short by depositing shares.
         // We expect the openShort to fail with an UnsupportedToken error
         // if depositing with shares is not supported.
-
         vm.startPrank(bob);
         if (!config.enableShareDeposits) {
             vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
@@ -687,7 +691,7 @@ abstract contract InstanceTest is HyperdriveTest {
             })
         );
 
-        // Early termination if base deposits are not supported.
+        // Early termination if base deposits is not supported.
         if (!config.enableShareDeposits) {
             return;
         }
@@ -724,7 +728,7 @@ abstract contract InstanceTest is HyperdriveTest {
     ///      is not supported.
     /// @param shortAmount Amount of bonds to short.
     function test_open_short_with_base(uint256 shortAmount) external {
-        // Get some balance information before the deposit.
+        // Get some balance information before opening a short.
         (
             uint256 totalBaseSupplyBefore,
             uint256 totalSharesSupplyBefore
@@ -734,16 +738,17 @@ abstract contract InstanceTest is HyperdriveTest {
             address(hyperdrive)
         );
 
-        // Bob opens a short by depositing base.
-        vm.startPrank(bob);
+        // We normalize the short amount within a valid range the market can support.
         shortAmount = shortAmount.normalizeToRange(
             100 * hyperdrive.getPoolConfig().minimumTransactionAmount,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
 
+        // Bob opens a short by depositing base.
         // We expect the openShort to fail with an UnsupportedToken error
         // if depositing with base is not supported or a NotPayable error
         // if the base token is ETH.
+        vm.startPrank(bob);
         if (!config.enableBaseDeposits) {
             vm.expectRevert(
                 isBaseETH
@@ -764,7 +769,7 @@ abstract contract InstanceTest is HyperdriveTest {
             })
         );
 
-        // Early termination if base deposits are not supported.
+        // Early termination if base deposits is not supported.
         if (!config.enableBaseDeposits) {
             return;
         }
