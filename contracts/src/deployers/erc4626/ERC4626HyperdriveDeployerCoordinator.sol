@@ -134,7 +134,7 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
-    /// @param _deployConfig The deploy config that will used to deploy the
+    /// @param _deployConfig The deploy config that will be used to deploy the
     ///        pool.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(

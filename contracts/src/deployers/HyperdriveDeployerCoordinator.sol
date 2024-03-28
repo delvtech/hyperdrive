@@ -439,7 +439,7 @@ abstract contract HyperdriveDeployerCoordinator is
     }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
-    /// @param _deployConfig The deploy config that will used to deploy the
+    /// @param _deployConfig The deploy config that will be used to deploy the
     ///        pool.
     /// @param _extraData The extra data passed to the child deployers.
     /// @return The initial vault share price of the Hyperdrive pool.

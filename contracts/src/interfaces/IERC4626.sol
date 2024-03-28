@@ -25,6 +25,7 @@ abstract contract IERC4626 is IERC20 {
     function asset() external view virtual returns (address asset);
 
     /// @notice The total number of underlying assets held by the vault.
+    /// @return totalAssets The total number of underlying assets.
     function totalAssets() external view virtual returns (uint256 totalAssets);
 
     /// @notice Deposits assets into the vault and mints shares.
@@ -59,6 +60,7 @@ abstract contract IERC4626 is IERC20 {
     /// @notice Burns a specified amount of shares for an owner.
     /// @param shares The amount of shares to burn.
     /// @param receiver The address that will receive the assets.
+    /// @param owner The address that owns the shares.
     /// @return assets The amount of assets received for burning the shares.
     function redeem(
         uint256 shares,

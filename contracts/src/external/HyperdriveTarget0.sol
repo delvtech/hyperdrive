@@ -237,13 +237,13 @@ abstract contract HyperdriveTarget0 is
     }
 
     /// @notice Gets the base token.
-    /// @return The base token.
+    /// @return The base token address.
     function baseToken() external view returns (address) {
         _revert(abi.encode(_baseToken));
     }
 
     /// @notice Gets the vault shares token.
-    /// @return The vault shares token.
+    /// @return The vault shares token address.
     function vaultSharesToken() external view returns (address) {
         _revert(abi.encode(_vaultSharesToken));
     }
