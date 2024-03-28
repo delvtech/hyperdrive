@@ -322,6 +322,14 @@ abstract contract InstanceTest is HyperdriveTest {
         uint256 baseAmount
     ) internal view virtual returns (uint256 shareAmount);
 
+    /// @dev A virtual function that converts an amount in terms of the share token
+    ///      to equivalent amount in base.
+    /// @param shareAmount Amount in terms of the shares.
+    /// @return baseAmount in terms of base.
+    function convertToBase(
+        uint256 shareAmount
+    ) internal view virtual returns (uint256 baseAmount);
+
     /// @dev A virtual function that ensures the deposit accounting is correct
     ///      when opening positions.
     /// @param trader The account opening the position.
@@ -626,6 +634,52 @@ abstract contract InstanceTest is HyperdriveTest {
                 hyperdriveBalanceBefore
             );
         }
+    }
+
+    function test_open_short_with_shares(uint256 shortAmount) external {
+        // Get some balance information before the deposit.
+        (
+            uint256 totalBaseSupplyBefore,
+            uint256 totalSharesSupplyBefore
+        ) = getSupply();
+        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
+        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
+            address(hyperdrive)
+        );
+
+        // Bob opens a short by depositing LsETH.
+        vm.startPrank(bob);
+        shortAmount = shortAmount.normalizeToRange(
+            100 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            HyperdriveUtils.calculateMaxShort(hyperdrive)
+        );
+        // RIVER.approve(address(hyperdrive), shortAmount);
+        (, uint256 sharesPaid) = openShort(bob, shortAmount, false);
+        uint256 basePaid = convertToBase(sharesPaid);
+
+        // Ensure that the amount of base paid by the short is reasonable.
+        uint256 realizedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
+            shortAmount - basePaid,
+            shortAmount,
+            1e18
+        );
+        assertGt(basePaid, 0);
+        assertGe(
+            realizedRate,
+            FIXED_RATE.mulDown(config.positionDuration.divDown(365 days))
+        );
+
+        // Ensure that River aggregates and the token balances were updated
+        // correctly during the trade.
+        verifyDeposit(
+            bob,
+            basePaid,
+            false,
+            totalBaseSupplyBefore,
+            totalSharesSupplyBefore,
+            bobBalancesBefore,
+            hyperdriveBalancesBefore
+        );
     }
 
     /// Utilities ///
