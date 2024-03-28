@@ -64,11 +64,7 @@ impl State {
                     return possible_target_base_amount.max(budget);
                 } else {
                     possible_target_base_amount = possible_target_base_amount
-                        + self.targeted_loss_derivative(
-                            target_rate,
-                            possible_target_base_amount,
-                            possible_target_bond_amount,
-                        );
+                        + self.targeted_loss_derivative(target_rate, possible_target_base_amount);
                 }
             }
             if self
@@ -107,35 +103,46 @@ impl State {
 
     /// The derivative of the equation for calculating the spot rate after a long
     /// TODO: Add docs
-    fn rate_after_long_derivative(
-        &self,
-        base_amount: FixedPoint,
-        bond_amount: FixedPoint,
-    ) -> FixedPoint {
+    fn rate_after_long_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
         let annualized_time =
             self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
-        let dprice = self.price_after_long_derivative(base_amount, bond_amount);
-        // TODO: This is the price before fees; we want price after fees
         let price = self.get_spot_price_after_long(base_amount);
-        (-dprice * price * annualized_time
-            - (fixed!(1e18) - price) * (dprice * annualized_time + price))
-            / (price * annualized_time).pow(fixed!(2e18))
+        let price_derivative = match self.price_after_long_derivative(base_amount) {
+            Some(derivative) => derivative,
+            None => return None,
+        };
+        Some(
+            (-price_derivative * price * annualized_time
+                - (fixed!(1e18) - price) * (price_derivative * annualized_time + price),)
+                / (price * annualized_time).pow(fixed!(2e18)),
+        )
     }
 
     /// The derivative of the price after a long
-    /// TODO: This is wrong -- need to use formula for price after trade not before
     /// TODO: Add docs
-    fn price_after_long_derivative(
-        &self,
-        base_amount: FixedPoint,
-        bond_amount: FixedPoint,
-    ) -> Option<FixedPoint> {
-        let price_after_long = self.get_spot_price_after_long(base_amount);
-        let maybe_derivative = self.long_amount_derivative(base_amount);
-        maybe_derivative.map(|derivative| {
-            -(fixed!(1e18) / price_after_long.pow(fixed!(2e18)))
-                * ((base_amount * derivative - bond_amount) / base_amount.pow(fixed!(2e18)))
-        })
+    fn price_after_long_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
+        let long_amount_derivative = match self.long_amount_derivative(base_amount) {
+            Some(derivative) => derivative,
+            None => return None,
+        };
+        let initial_spot_price = self.get_spot_price();
+        let gov_fee_derivative =
+            self.governance_lp_fee() * self.curve_fee() * (fixed!(1e18) - initial_spot_price);
+        let inner_numerator = self.mu()
+            * (self.ze() + base_amount / self.vault_share_price()
+                - self.open_long_governance_fee(base_amount)
+                - self.zeta().into());
+        let inner_numerator_derivative = self.mu() / self.vault_share_price() - gov_fee_derivative;
+        let inner_denominator = self.bond_reserves() - self.calculate_open_long(base_amount);
+        let inner_denominator_derivative = -long_amount_derivative;
+        let inner_derivative = (inner_denominator * inner_numerator_derivative
+            - inner_numerator * inner_denominator_derivative)
+            / inner_denominator.pow(fixed!(2e18));
+        return Some(
+            inner_derivative
+                * self.time_stretch()
+                * (inner_numerator / inner_denominator).pow(self.time_stretch() - fixed!(1e18)),
+        );
     }
 
     /// The loss used for the targeted long optimization process
@@ -152,10 +159,9 @@ impl State {
         &self,
         target_rate: FixedPoint,
         base_amount: FixedPoint,
-        bond_amount: FixedPoint,
     ) -> FixedPoint {
         (self.rate_after_long(base_amount) - target_rate)
-            * self.rate_after_long_derivative(base_amount, bond_amount)
+            * self.rate_after_long_derivative(base_amount)
     }
 
     /// Calculates the long that should be opened to hit a target interest rate.
