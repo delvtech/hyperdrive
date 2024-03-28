@@ -244,7 +244,8 @@ abstract contract InstanceTest is HyperdriveTest {
         }
     }
 
-    /// @dev Deploys the Hyperdrive Factory contract and sets the default pool configuration.
+    /// @dev Deploys the Hyperdrive Factory contract and sets
+    ///      the default pool configuration.
     function deployFactory() private {
         // Deploy the hyperdrive factory.
         vm.startPrank(deployer);
@@ -353,12 +354,12 @@ abstract contract InstanceTest is HyperdriveTest {
         returns (uint256 sharesBalance, uint256 baseBalance);
 
     /// @dev A virtual function that fetches the total supply of the base and share tokens.
-    /// @return totalSupplyShares The total supply of the share token.
     /// @return totalSupplyBase The total supply of the base token.
+    /// @return totalSupplyShares The total supply of the share token.
     function getSupply()
         internal
         virtual
-        returns (uint256 totalSupplyShares, uint256 totalSupplyBase);
+        returns (uint256 totalSupplyBase, uint256 totalSupplyShares);
 
     /// Tests ///
 
