@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
+import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IRiverV1 } from "../../interfaces/IRiverV1.sol";
@@ -15,6 +17,7 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract LsETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+    using SafeERC20 for ERC20;
     using FixedPointMath for uint256;
 
     /// @dev The LsETH contract.
@@ -58,24 +61,29 @@ contract LsETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     ///        of `_options.asBase`.
     /// @param _options The options that configure how the initialization is
     ///        settled.
-    /// @return value The value that should be sent in the initialize
-    ///         transaction.
+    /// @return The value that should be sent in the initialize transaction.
     function _prepareInitialize(
         IHyperdrive _hyperdrive,
         address _lp,
         uint256 _contribution,
         IHyperdrive.Options memory _options
-    ) internal override returns (uint256 value) {
+    ) internal override returns (uint256) {
         // Depositing as base is disallowed.
         if (_options.asBase) {
             revert IHyperdrive.UnsupportedToken();
         }
+
         // Transfer vault shares from the LP and approve the
         // Hyperdrive pool.
-        river.transferFrom(_lp, address(this), _contribution);
-        river.approve(address(_hyperdrive), _contribution);
+        ERC20(address(river)).safeTransferFrom(
+            _lp,
+            address(this),
+            _contribution
+        );
+        ERC20(address(river)).forceApprove(address(_hyperdrive), _contribution);
 
-        return value;
+        // NOTE: Return zero since this yield source isn't payable.
+        return 0;
     }
 
     /// @dev We override the message value check since this integration is

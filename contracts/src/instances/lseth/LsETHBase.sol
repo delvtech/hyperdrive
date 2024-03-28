@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
+import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IRiverV1 } from "../../interfaces/IRiverV1.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
@@ -16,6 +18,8 @@ import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract LsETHBase is HyperdriveBase {
+    using SafeERC20 for ERC20;
+
     /// Yield Source ///
 
     /// @dev Deposits as base asset not supported for this integration.
@@ -33,7 +37,11 @@ abstract contract LsETHBase is HyperdriveBase {
         bytes calldata // unused
     ) internal override {
         // Transfer LsETH shares into the contract.
-        _vaultSharesToken.transferFrom(msg.sender, address(this), _shareAmount);
+        ERC20(address(_vaultSharesToken)).safeTransferFrom(
+            msg.sender,
+            address(this),
+            _shareAmount
+        );
     }
 
     /// @dev Withdrawals as base asset not supported for this integration.
@@ -57,7 +65,10 @@ abstract contract LsETHBase is HyperdriveBase {
         bytes calldata // unused
     ) internal override {
         // Transfer the LsETH shares to the destination.
-        _vaultSharesToken.transfer(_destination, _shareAmount);
+        ERC20(address(_vaultSharesToken)).safeTransfer(
+            _destination,
+            _shareAmount
+        );
     }
 
     /// @dev We override the message value check since this integration is

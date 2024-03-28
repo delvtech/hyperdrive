@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
+import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IRocketDepositPool } from "../../interfaces/IRocketDepositPool.sol";
 import { IRocketStorage } from "../../interfaces/IRocketStorage.sol";
 import { IRocketTokenRETH } from "../../interfaces/IRocketTokenRETH.sol";
-import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title RETHHyperdrive
@@ -19,6 +20,8 @@ import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract RETHBase is HyperdriveBase {
+    using SafeERC20 for ERC20;
+
     /// @dev The Rocket Pool storage contract.
     IRocketStorage internal immutable _rocketStorage;
 
@@ -46,7 +49,11 @@ abstract contract RETHBase is HyperdriveBase {
         bytes calldata // unused
     ) internal override {
         // Transfer rETH shares into the contract.
-        _vaultSharesToken.transferFrom(msg.sender, address(this), _shareAmount);
+        ERC20(address(_vaultSharesToken)).safeTransferFrom(
+            msg.sender,
+            address(this),
+            _shareAmount
+        );
     }
 
     /// @dev Process a withdrawal in base and send the proceeds to the
@@ -86,7 +93,10 @@ abstract contract RETHBase is HyperdriveBase {
         bytes calldata // unused
     ) internal override {
         // Transfer the rETH shares to the destination.
-        _vaultSharesToken.transfer(_destination, _shareAmount);
+        ERC20(address(_vaultSharesToken)).safeTransfer(
+            _destination,
+            _shareAmount
+        );
     }
 
     /// @dev Convert an amount of vault shares to an amount of base.
