@@ -1,2 +1,4 @@
 # All PRs must be approved by code owners
 * @jalextowle @jrhea
+contracts/* @mcclurejt
+crates/* @dpaiton @mcclurejt
