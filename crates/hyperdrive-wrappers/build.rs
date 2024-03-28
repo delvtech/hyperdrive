@@ -48,6 +48,7 @@ const TARGETS: &[&str] = &[
     "ERC20Mintable",
     "EtchingVault",
     "MockERC4626",
+    "MockHyperdrive",
     "MockFixedPointMath",
     "MockHyperdriveMath",
     "MockLido",

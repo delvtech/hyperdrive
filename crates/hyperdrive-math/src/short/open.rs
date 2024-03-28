@@ -1,4 +1,3 @@
-use ethers::types::I256;
 use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
@@ -50,14 +49,16 @@ impl State {
         )
     }
 
-    /// Gets the spot price after opening the short on the YieldSpace curve and
-    /// before calculating the fees.
-    pub fn get_spot_price_after_short(&self, bond_amount: FixedPoint) -> FixedPoint {
+    /// Gets the spot price after opening the short on the YieldSpace curve and before calculating
+    /// the fees.
+    pub fn calculate_spot_price_after_open_short(&self, bond_amount: FixedPoint) -> FixedPoint {
         let shares_amount = self.calculate_shares_out_given_bonds_in_down(bond_amount);
-        self.spot_price_after_short(shares_amount * self.vault_share_price(), bond_amount)
+        self.spot_price_after_open_short(shares_amount * self.vault_share_price(), bond_amount)
     }
 
-    fn spot_price_after_short(
+    // Applies base and bond deltas to the pool's reserves as if a user opened a short and returns
+    // the spot price.
+    fn spot_price_after_open_short(
         &self,
         base_amount: FixedPoint,
         bond_amount: FixedPoint,
@@ -98,7 +99,7 @@ impl State {
 mod tests {
     use std::panic;
 
-    use ethers::types::U256;
+    use ethers::types::{I256, U256};
     use eyre::Result;
     use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::MaxTradeParams;
     use rand::{thread_rng, Rng};

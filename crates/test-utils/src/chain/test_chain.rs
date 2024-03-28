@@ -40,6 +40,7 @@ use hyperdrive_wrappers::wrappers::{
     ihyperdrive::{Fees, PoolConfig},
     mock_erc4626::MockERC4626,
     mock_fixed_point_math::MockFixedPointMath,
+    mock_hyperdrive::MockHyperdrive,
     mock_hyperdrive_math::MockHyperdriveMath,
     mock_lido::MockLido,
     mock_lp_math::MockLPMath,
@@ -1222,6 +1223,8 @@ impl TestChain {
             ))
         } else {
             let anvil = Anvil::new()
+                .arg("--code-size-limit")
+                .arg("100000")
                 .arg("--timestamp")
                 // NOTE: Anvil can't increase the time or set the time of the
                 // next block to a time in the past, so we set the genesis block
@@ -1270,6 +1273,7 @@ impl TestChain {
 
 pub struct TestChainWithMocks {
     chain: TestChain,
+    mock_hyperdrive: MockHyperdrive<ChainClient>,
     mock_fixed_point_math: MockFixedPointMath<ChainClient>,
     mock_hyperdrive_math: MockHyperdriveMath<ChainClient>,
     mock_lp_math: MockLPMath<ChainClient>,
@@ -1280,9 +1284,32 @@ impl TestChainWithMocks {
     pub async fn new(num_accounts: usize) -> Result<Self> {
         let chain = TestChain::new(num_accounts).await?;
         let client = chain.client(chain.accounts()[0].clone()).await?;
-
+        let config = PoolConfig {
+            base_token: Address::zero(),
+            linker_factory: Address::from_low_u64_be(1),
+            linker_code_hash: [1; 32],
+            initial_vault_share_price: uint256!(1e18),
+            minimum_share_reserves: uint256!(10e18),
+            minimum_transaction_amount: uint256!(0.001e18),
+            position_duration: U256::from(60 * 60 * 24 * 365), // 1 year
+            checkpoint_duration: U256::from(60 * 60 * 24),     // 1 day
+            time_stretch: get_time_stretch(fixed!(0.05e18), U256::from(60 * 60 * 24 * 365).into())
+                .into(), // time stretch for 5% rate
+            governance: client.address(),
+            fee_collector: client.address(),
+            sweep_collector: client.address(),
+            fees: Fees {
+                curve: uint256!(0.05e18),
+                flat: uint256!(0.0005e18),
+                governance_lp: uint256!(0.15e18),
+                governance_zombie: uint256!(0.15e18),
+            },
+        };
         // Deploy the mock contracts.
         let mock_fixed_point_math = MockFixedPointMath::deploy(client.clone(), ())?
+            .send()
+            .await?;
+        let mock_hyperdrive = MockHyperdrive::deploy(client.clone(), (config,))?
             .send()
             .await?;
         let mock_hyperdrive_math = MockHyperdriveMath::deploy(client.clone(), ())?
@@ -1296,6 +1323,7 @@ impl TestChainWithMocks {
         Ok(Self {
             chain,
             mock_fixed_point_math,
+            mock_hyperdrive,
             mock_hyperdrive_math,
             mock_lp_math,
             mock_yield_space_math,
@@ -1308,6 +1336,10 @@ impl TestChainWithMocks {
 
     pub fn mock_fixed_point_math(&self) -> MockFixedPointMath<ChainClient> {
         self.mock_fixed_point_math.clone()
+    }
+
+    pub fn mock_hyperdrive(&self) -> MockHyperdrive<ChainClient> {
+        self.mock_hyperdrive.clone()
     }
 
     pub fn mock_hyperdrive_math(&self) -> MockHyperdriveMath<ChainClient> {

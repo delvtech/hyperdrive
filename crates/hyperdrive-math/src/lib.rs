@@ -1,3 +1,5 @@
+// unused imports are here to expose the modules at a higher level
+#![allow(unused_imports)]
 mod long;
 mod lp;
 mod short;
@@ -147,12 +149,12 @@ impl State {
         self.config.position_duration.into()
     }
 
-    fn checkpoint_duration(&self) -> FixedPoint {
-        self.config.checkpoint_duration.into()
-    }
-
     fn time_stretch(&self) -> FixedPoint {
         self.config.time_stretch.into()
+    }
+
+    fn checkpoint_duration(&self) -> FixedPoint {
+        self.config.checkpoint_duration.into()
     }
 
     fn initial_vault_share_price(&self) -> FixedPoint {
