@@ -29,6 +29,7 @@ impl Distribution<State> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> State {
         let config = PoolConfig {
             base_token: Address::zero(),
+            vault_shares_token: Address::zero(),
             linker_factory: Address::zero(),
             linker_code_hash: [0; 32],
             governance: Address::zero(),
