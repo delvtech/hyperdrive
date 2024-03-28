@@ -91,9 +91,17 @@ contract LsETHHyperdriveTest is InstanceTest {
     /// @dev Converts base amount to the equivalent amount in LsETH.
     function convertToShares(
         uint256 baseAmount
-    ) internal view override returns (uint256 shareAmount) {
+    ) internal view override returns (uint256) {
         // River has a built-in function for computing price in terms of shares.
         return RIVER.sharesFromUnderlyingBalance(baseAmount);
+    }
+
+    /// @dev Converts base amount to the equivalent amount in ETH.
+    function convertToBase(
+        uint256 shareAmount
+    ) internal view override returns (uint256) {
+        // River has a built-in function for computing price in terms of base.
+        return RIVER.underlyingBalanceFromShares(shareAmount);
     }
 
     /// @dev Fetches the token balance information of an account.

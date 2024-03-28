@@ -91,10 +91,28 @@ contract EzETHHyperdriveTest is InstanceTest {
     /// @dev Converts base amount to the equivalent about in EzETH.
     function convertToShares(
         uint256 baseAmount
-    ) internal view override returns (uint256 shareAmount) {
+    ) internal view override returns (uint256) {
         // Get protocol state information used for calculating shares.
         (uint256 sharePrice, , ) = getSharePrice();
         return baseAmount.divDown(sharePrice);
+    }
+
+    /// @dev Converts share amount to the equivalent amount in ETH.
+    function convertToBase(
+        uint256 baseAmount
+    ) internal view override returns (uint256) {
+        // Get the total TVL priced in ETH from RestakeManager.
+        (, , uint256 totalTVL) = RESTAKE_MANAGER.calculateTVLs();
+
+        // Get the total supply of the ezETH token.
+        uint256 totalSupply = EZETH.totalSupply();
+
+        return
+            RENZO_ORACLE.calculateRedeemAmount(
+                baseAmount,
+                totalSupply,
+                totalTVL
+            );
     }
 
     /// @dev Deploys the EzETH deployer coordinator contract.
