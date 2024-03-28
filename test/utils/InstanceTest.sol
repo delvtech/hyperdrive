@@ -696,6 +696,18 @@ abstract contract InstanceTest is HyperdriveTest {
             return;
         }
 
+        // Ensure that Bob received the correct amount of shorted bonds.
+        assertEq(
+            hyperdrive.balanceOf(
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    maturityTime
+                ),
+                bob
+            ),
+            shortAmount
+        );
+
         // Convert shares paid when opening short to base for deposit accounting.
         uint256 basePaid = convertToBase(sharesPaid);
 
@@ -773,6 +785,18 @@ abstract contract InstanceTest is HyperdriveTest {
         if (!config.enableBaseDeposits) {
             return;
         }
+
+        // Ensure that Bob received the correct amount of shorted bonds.
+        assertEq(
+            hyperdrive.balanceOf(
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    maturityTime
+                ),
+                bob
+            ),
+            shortAmount
+        );
 
         // Ensure that the amount of base paid by the short is reasonable.
         uint256 realizedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
