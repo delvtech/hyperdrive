@@ -316,7 +316,7 @@ abstract contract InstanceTest is HyperdriveTest {
 
     /// @dev A virtual function that converts an amount in terms of the base token
     ///      to equivalent amount in shares.
-    /// @param baseAmount Amount in terms of the base.
+    /// @param baseAmount Amount in terms of base.
     /// @return shareAmount Amount in terms of shares.
     function convertToShares(
         uint256 baseAmount
@@ -324,8 +324,8 @@ abstract contract InstanceTest is HyperdriveTest {
 
     /// @dev A virtual function that converts an amount in terms of the share token
     ///      to equivalent amount in base.
-    /// @param shareAmount Amount in terms of the shares.
-    /// @return baseAmount in terms of base.
+    /// @param shareAmount Amount in terms of shares.
+    /// @return baseAmount Amount in terms of base.
     function convertToBase(
         uint256 shareAmount
     ) internal view virtual returns (uint256 baseAmount);
