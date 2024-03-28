@@ -320,6 +320,25 @@ abstract contract InstanceTest is HyperdriveTest {
         AccountBalances memory hyperdriveBalancesBefore
     ) internal virtual;
 
+    /// @dev A virtual function that ensures the deposit accounting is correct
+    ///      when opening positions.
+    /// @param trader The account opening the position.
+    /// @param baseProceeds The amount the position was opened with in terms of base.
+    /// @param asBase Flag to determine whether the position was opened with the base or share token.
+    /// @param totalBaseBefore Total supply of the base token before the trade.
+    /// @param totalSharesBefore Total supply of the share token before the trade.
+    /// @param traderBalancesBefore Balances of tokens of the trader before the trade.
+    /// @param hyperdriveBalancesBefore Balances of tokens of the Hyperdrive contract before the trade.
+    function verifyWithdrawal(
+        address trader,
+        uint256 baseProceeds,
+        bool asBase,
+        uint256 totalBaseBefore,
+        uint256 totalSharesBefore,
+        AccountBalances memory traderBalancesBefore,
+        AccountBalances memory hyperdriveBalancesBefore
+    ) internal virtual;
+
     /// @dev A virtual function that fetches the token balance information of an account.
     /// @param account The account to fetch token balances of.
     /// @return baseBalance The shares token balance of the account.
@@ -503,7 +522,7 @@ abstract contract InstanceTest is HyperdriveTest {
         // Get balance information before opening a long.
         (
             uint256 totalBaseSupplyBefore,
-            uint256 totalSharesSupplyBefore
+            uint256 totalShareSupplyBefore
         ) = getSupply();
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
         AccountBalances memory hyperdriveBalanceBefore = getAccountBalances(
@@ -563,7 +582,7 @@ abstract contract InstanceTest is HyperdriveTest {
             basePaid,
             false,
             totalBaseSupplyBefore,
-            totalSharesSupplyBefore,
+            totalShareSupplyBefore,
             bobBalancesBefore,
             hyperdriveBalanceBefore
         );
@@ -577,7 +596,7 @@ abstract contract InstanceTest is HyperdriveTest {
         // Get balance information before opening a long.
         (
             uint256 totalBaseSupplyBefore,
-            uint256 totalSharesSupplyBefore
+            uint256 totalShareSupplyBefore
         ) = getSupply();
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
         AccountBalances memory hyperdriveBalanceBefore = getAccountBalances(
@@ -652,7 +671,7 @@ abstract contract InstanceTest is HyperdriveTest {
             basePaid,
             true,
             totalBaseSupplyBefore,
-            totalSharesSupplyBefore,
+            totalShareSupplyBefore,
             bobBalancesBefore,
             hyperdriveBalanceBefore
         );
@@ -666,7 +685,7 @@ abstract contract InstanceTest is HyperdriveTest {
         // Get some balance information before opening a short.
         (
             uint256 totalBaseSupplyBefore,
-            uint256 totalSharesSupplyBefore
+            uint256 totalShareSupplyBefore
         ) = getSupply();
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
@@ -735,7 +754,79 @@ abstract contract InstanceTest is HyperdriveTest {
             basePaid,
             false,
             totalBaseSupplyBefore,
-            totalSharesSupplyBefore,
+            totalShareSupplyBefore,
+            bobBalancesBefore,
+            hyperdriveBalancesBefore
+        );
+    }
+
+    function test_close_long_with_shares(
+        uint256 basePaid,
+        int256 variableRate
+    ) external virtual {
+        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
+
+        // Accrue interest for a term to ensure that the share price is greater
+        // than one.
+        advanceTime(POSITION_DURATION, int256(FIXED_RATE));
+
+        // Calculate the maximum amount of basePaid we can test. The limit is
+        // either the maximum long that Hyperdrive can open or the amount of the
+        // share token the trader has.
+        uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
+        uint256 maxShareAmount = bobBalancesBefore.sharesBalance;
+
+        // We normalize the basePaid variable within a valid range the market can support.
+        basePaid = basePaid.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            maxLongAmount > maxShareAmount ? maxShareAmount : maxLongAmount
+        );
+
+        // Convert the amount to deposit in terms of the share token.
+        // uint256 sharesPaid = ;
+
+        // Bob opens a long.
+        // basePaid = basePaid.normalizeToRange(
+        //     2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+        //     HyperdriveUtils.calculateMaxLong(hyperdrive)
+        // );
+        (uint256 maturityTime, uint256 longAmount) = openLong(
+            bob,
+            convertToShares(basePaid),
+            false
+        );
+
+        // The term passes and some interest accrues.
+        variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        advanceTime(config.positionDuration, variableRate);
+
+        // Get some balance information before opening a short.
+        (
+            uint256 totalBaseSupplyBefore,
+            uint256 totalShareSupplyBefore
+        ) = getSupply();
+        bobBalancesBefore = getAccountBalances(bob);
+        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
+            address(hyperdrive)
+        );
+
+        // Bob closes his long with stETH as the target asset.
+        uint256 shareProceeds = closeLong(bob, maturityTime, longAmount, false);
+        uint256 baseProceeds = convertToBase(shareProceeds);
+
+        // Ensuse that Bob received approximately the bond amount but wasn't
+        // overpaid.
+        assertLe(baseProceeds, longAmount);
+        assertApproxEqAbs(baseProceeds, longAmount, 10);
+
+        // Ensure that Lido's aggregates and the token balances were updated
+        // correctly during the trade.
+        verifyWithdrawal(
+            bob,
+            baseProceeds,
+            false,
+            totalBaseSupplyBefore,
+            totalShareSupplyBefore,
             bobBalancesBefore,
             hyperdriveBalancesBefore
         );
@@ -749,7 +840,7 @@ abstract contract InstanceTest is HyperdriveTest {
         // Get some balance information before opening a short.
         (
             uint256 totalBaseSupplyBefore,
-            uint256 totalSharesSupplyBefore
+            uint256 totalShareSupplyBefore
         ) = getSupply();
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
@@ -839,7 +930,7 @@ abstract contract InstanceTest is HyperdriveTest {
             basePaid,
             true,
             totalBaseSupplyBefore,
-            totalSharesSupplyBefore,
+            totalShareSupplyBefore,
             bobBalancesBefore,
             hyperdriveBalancesBefore
         );
