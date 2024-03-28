@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { IERC20 } from "../interfaces/IERC20.sol";
 import { HyperdriveTarget0 } from "../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveCore } from "../interfaces/IHyperdriveCore.sol";
@@ -235,7 +236,7 @@ abstract contract Hyperdrive is
 
     /// @inheritdoc IHyperdriveCore
     function checkpoint(uint256) external {
-        _delegate(target2);
+        _delegate(target4);
     }
 
     /// Admin ///
@@ -253,12 +254,27 @@ abstract contract Hyperdrive is
     }
 
     /// @inheritdoc IHyperdriveCore
+    function setFeeCollector(address) external {
+        _delegate(target0);
+    }
+
+    /// @inheritdoc IHyperdriveCore
+    function setSweepCollector(address) external {
+        _delegate(target0);
+    }
+
+    /// @inheritdoc IHyperdriveCore
     function setGovernance(address) external {
         _delegate(target0);
     }
 
     /// @inheritdoc IHyperdriveCore
     function setPauser(address, bool) external {
+        _delegate(target0);
+    }
+
+    /// @inheritdoc IHyperdriveCore
+    function sweep(IERC20) external {
         _delegate(target0);
     }
 

@@ -123,7 +123,8 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         _mint(assetId, _options.destination, bondAmount);
 
         // Emit an OpenShort event.
-        uint256 vaultSharePrice_ = vaultSharePrice;
+        uint256 shareReservesDelta_ = shareReservesDelta; // Avoid stack too deep error.
+        uint256 vaultSharePrice_ = vaultSharePrice; // Avoid stack too deep error.
         IHyperdrive.Options calldata options = _options;
         emit OpenShort(
             options.destination,
@@ -132,12 +133,11 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             baseDeposit, // base deposit
             _convertToVaultSharesFromOption(deposit, vaultSharePrice_, options), // vault shares deposit
             options.asBase,
-            _convertToBaseFromOption(
-                // We add the governance fee to the share reserves delta since
-                // the user is responsible for paying the governance fee.
-                shareReservesDelta + totalGovernanceFee,
-                vaultSharePrice_,
-                options
+            // NOTE: We subtract out the governance fee from the share reserves
+            // delta since the user is responsible for paying the governance
+            // fee.
+            (shareReservesDelta_ - totalGovernanceFee).mulDown(
+                vaultSharePrice_
             ),
             bondAmount
         );
@@ -170,9 +170,16 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             revert IHyperdrive.MinimumTransactionAmount();
         }
 
-        // Perform a checkpoint.
+        // If the short hasn't matured, we checkpoint the latest checkpoint.
+        // Otherwise, we perform a checkpoint at the time the short matured.
+        // This ensures the short and all of the other positions in the
+        // checkpoint are closed.
         uint256 vaultSharePrice = _pricePerVaultShare();
-        _applyCheckpoint(_maturityTime, vaultSharePrice);
+        if (block.timestamp < _maturityTime) {
+            _applyCheckpoint(_latestCheckpoint(), vaultSharePrice);
+        } else {
+            _applyCheckpoint(_maturityTime, vaultSharePrice);
+        }
 
         // Burn the shorts that are being closed.
         _burn(
@@ -264,10 +271,13 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // Emit a CloseShort event.
         uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
         uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
+        uint256 shareReservesDelta_ = shareReservesDelta; // Avoid stack too deep error.
+        uint256 totalGovernanceFee_ = totalGovernanceFee; // Avoid stack too deep error.
         uint256 vaultSharePrice_ = vaultSharePrice; // Avoid stack too deep error.
         IHyperdrive.Options calldata options = _options; // Avoid stack too deep error.
         emit CloseShort(
-            options.destination,
+            msg.sender, // trader
+            options.destination, // destination
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime),
             maturityTime,
             // base proceeds
@@ -279,6 +289,11 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
                 options
             ),
             options.asBase,
+            // NOTE: We add the governance fee to the share reserves delta since
+            // the user is responsible for paying the governance fee.
+            (shareReservesDelta_ + totalGovernanceFee_).mulDown(
+                vaultSharePrice_
+            ),
             bondAmount
         );
 
@@ -504,9 +519,9 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         baseDeposit = HyperdriveMath
             .calculateShortProceedsUp(
                 _bondAmount,
-                // NOTE: We add the governance fee back to the share reserves
-                // delta here because the trader will need to provide this in
-                // their deposit.
+                // NOTE: We subtract the governance fee back to the share
+                // reserves delta here because the trader will need to provide
+                // this in their deposit.
                 shareReservesDelta - governanceCurveFee,
                 _openVaultSharePrice,
                 _vaultSharePrice.max(_openVaultSharePrice),

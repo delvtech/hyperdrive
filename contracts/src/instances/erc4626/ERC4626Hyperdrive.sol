@@ -7,7 +7,6 @@ import { Hyperdrive } from "../../external/Hyperdrive.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { IERC4626HyperdriveCore } from "../../interfaces/IERC4626HyperdriveCore.sol";
 import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
 import { ERC4626Base } from "./ERC4626Base.sol";
 
@@ -57,7 +56,7 @@ import { ERC4626Base } from "./ERC4626Base.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract ERC4626Hyperdrive is IERC4626HyperdriveCore, Hyperdrive, ERC4626Base {
+contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
     using FixedPointMath for uint256;
     using SafeERC20 for ERC20;
 
@@ -90,10 +89,5 @@ contract ERC4626Hyperdrive is IERC4626HyperdriveCore, Hyperdrive, ERC4626Base {
         // Approve the base token with 1 wei. This ensures that all of the
         // subsequent approvals will be writing to a dirty storage slot.
         ERC20(address(_config.baseToken)).forceApprove(address(_vault), 1);
-    }
-
-    /// @inheritdoc IERC4626HyperdriveCore
-    function sweep(IERC20) external {
-        _delegate(target0);
     }
 }

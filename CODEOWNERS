@@ -1,0 +1,10 @@
+# Global Code Owners
+* @jalextowle @jrhea @mcclurejt
+
+# Rust SDK Code Owners
+.github/* @dpaiton @slundqui @ryangoree
+crates/* @dpaiton @slundqui @ryangoree
+Cargo.toml @dpaiton @slundqui @ryangoree
+rustfmt.toml @dpaiton @slundqui @ryangoree
+Makefile @dpaiton @slundqui @ryangoree
+README.md @dpaiton @slundqui @ryangoree

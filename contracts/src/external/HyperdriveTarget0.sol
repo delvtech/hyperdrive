@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveRead } from "../interfaces/IHyperdriveRead.sol";
 import { HyperdriveAdmin } from "../internal/HyperdriveAdmin.sol";
@@ -56,6 +57,18 @@ abstract contract HyperdriveTarget0 is
         _pause(_status);
     }
 
+    /// @notice Allows governance to change the fee collector.
+    /// @param _who The new fee collector address.
+    function setFeeCollector(address _who) external {
+        _setFeeCollector(_who);
+    }
+
+    /// @notice Allows governance to change the sweep collector.
+    /// @param _who The new sweep collector address.
+    function setSweepCollector(address _who) external {
+        _setSweepCollector(_who);
+    }
+
     /// @notice Allows governance to change governance.
     /// @param _who The new governance address.
     function setGovernance(address _who) external {
@@ -67,6 +80,16 @@ abstract contract HyperdriveTarget0 is
     /// @param status The new pauser status.
     function setPauser(address who, bool status) external {
         _setPauser(who, status);
+    }
+
+    /// @notice Transfers the contract's balance of a target token to the sweep
+    ///         collector address.
+    /// @dev WARN: It is unlikely but possible that there is a selector overlap
+    ///      with 'transfer'. Any integrating contracts should be checked
+    ///      for that, as it may result in an unexpected call from this address.
+    /// @param _target The target token to sweep.
+    function sweep(IERC20 _target) external {
+        _sweep(_target);
     }
 
     /// MultiToken ///
@@ -262,6 +285,7 @@ abstract contract HyperdriveTarget0 is
                     timeStretch: _timeStretch,
                     governance: _governance,
                     feeCollector: _feeCollector,
+                    sweepCollector: _sweepCollector,
                     fees: IHyperdrive.Fees(
                         _curveFee,
                         _flatFee,

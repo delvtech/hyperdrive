@@ -24,7 +24,7 @@ interface ILido is IERC20 {
     /// @param _sender The owner of the tokens.
     /// @param _recipient The recipient of the tokens.
     /// @param _sharesAmount The amount of tokens that will be transferred.
-    /// @return A flag indicating whether or not the transfer succeeded.
+    /// @return The amount of stETH tokens transferred.
     function transferSharesFrom(
         address _sender,
         address _recipient,

@@ -312,6 +312,63 @@ abstract contract HyperdriveDeployerCoordinator is
         return target;
     }
 
+    /// @notice Initializes a pool that was deployed by this coordinator.
+    /// @dev This function utilizes several helper functions that provide
+    ///      flexibility to implementations.
+    /// @param _deploymentId The ID of the deployment.
+    /// @param _lp The LP that is initializing the pool.
+    /// @param _contribution The amount of capital to supply. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
+    /// @param _apr The target APR.
+    /// @param _options The options that configure how the initialization is
+    ///        settled.
+    /// @return lpShares The initial number of LP shares created.
+    function initialize(
+        bytes32 _deploymentId,
+        address _lp,
+        uint256 _contribution,
+        uint256 _apr,
+        IHyperdrive.Options memory _options
+    ) external payable returns (uint256 lpShares) {
+        // Check that the message value is valid.
+        _checkMessageValue();
+
+        // Ensure that the instance has been fully deployed.
+        IHyperdrive hyperdrive = IHyperdrive(
+            _deployments[msg.sender][_deploymentId].hyperdrive
+        );
+        if (address(hyperdrive) == address(0)) {
+            revert IHyperdriveDeployerCoordinator.HyperdriveIsNotDeployed();
+        }
+
+        // Prepare for initialization by drawing funds from the user.
+        uint256 value = _prepareInitialize(
+            hyperdrive,
+            _lp,
+            _contribution,
+            _options
+        );
+
+        // Initialize the deployment.
+        lpShares = hyperdrive.initialize{ value: value }(
+            _contribution,
+            _apr,
+            _options
+        );
+
+        // Refund any excess ether that was sent.
+        uint256 refund = msg.value - value;
+        if (refund > 0) {
+            (bool success, ) = payable(msg.sender).call{ value: refund }("");
+            if (!success) {
+                revert IHyperdriveDeployerCoordinator.TransferFailed();
+            }
+        }
+
+        return lpShares;
+    }
+
     /// @notice Gets the deployment specified by the deployer and deployment ID.
     /// @param _deployer The deployer.
     /// @param _deploymentId The deployment ID.
@@ -322,6 +379,28 @@ abstract contract HyperdriveDeployerCoordinator is
     ) external view returns (Deployment memory) {
         return _deployments[_deployer][_deploymentId];
     }
+
+    /// @dev Prepares the coordinator for initialization by drawing funds from
+    ///      the LP, if necessary.
+    /// @param _hyperdrive The Hyperdrive instance that is being initialized.
+    /// @param _lp The LP that is initializing the pool.
+    /// @param _contribution The amount of capital to supply. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
+    /// @param _options The options that configure how the initialization is
+    ///        settled.
+    /// @return value The value that should be sent in the initialize
+    ///         transaction.
+    function _prepareInitialize(
+        IHyperdrive _hyperdrive,
+        address _lp,
+        uint256 _contribution,
+        IHyperdrive.Options memory _options
+    ) internal virtual returns (uint256 value);
+
+    /// @dev A yield source dependent check that prevents ether from being
+    ///      transferred to Hyperdrive instances that don't accept ether.
+    function _checkMessageValue() internal view virtual;
 
     /// @dev Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
@@ -381,6 +460,7 @@ abstract contract HyperdriveDeployerCoordinator is
         _config.timeStretch = _deployConfig.timeStretch;
         _config.governance = _deployConfig.governance;
         _config.feeCollector = _deployConfig.feeCollector;
+        _config.sweepCollector = _deployConfig.sweepCollector;
         _config.fees = _deployConfig.fees;
     }
 }

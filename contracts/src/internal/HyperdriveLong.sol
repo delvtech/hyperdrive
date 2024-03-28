@@ -158,11 +158,16 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             revert IHyperdrive.MinimumTransactionAmount();
         }
 
-        // Perform a checkpoint at the maturity time. This ensures the long and
-        // all of the other positions in the checkpoint are closed. This will
-        // have no effect if the maturity time is in the future.
+        // If the long hasn't matured, we checkpoint the latest checkpoint.
+        // Otherwise, we perform a checkpoint at the time the long matured.
+        // This ensures the long and all of the other positions in the
+        // checkpoint are closed.
         uint256 vaultSharePrice = _pricePerVaultShare();
-        _applyCheckpoint(_maturityTime, vaultSharePrice);
+        if (block.timestamp < _maturityTime) {
+            _applyCheckpoint(_latestCheckpoint(), vaultSharePrice);
+        } else {
+            _applyCheckpoint(_maturityTime, vaultSharePrice);
+        }
 
         // Burn the longs that are being closed.
         _burn(
@@ -242,7 +247,8 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         uint256 vaultSharePrice_ = vaultSharePrice; // Avoid stack too deep error.
         IHyperdrive.Options calldata options = _options; // Avoid stack too deep error.
         emit CloseLong(
-            options.destination,
+            msg.sender, // trader
+            options.destination, // destination
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             maturityTime,
             // base proceeds

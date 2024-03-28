@@ -26,8 +26,161 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
 
     /// Yield Source ///
 
+    /// @dev Process a deposit in either base or vault shares.
+    /// @param _amount The amount of capital to deposit. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
+    /// @param _options The options that configure how the deposit is
+    ///        settled. In particular, the currency used in the deposit is
+    ///        specified here. Aside from those options, yield sources can
+    ///        choose to implement additional options.
+    /// @return sharesMinted The shares created by this deposit.
+    /// @return vaultSharePrice The vault share price.
+    function _deposit(
+        uint256 _amount,
+        IHyperdrive.Options calldata _options
+    ) internal returns (uint256 sharesMinted, uint256 vaultSharePrice) {
+        // Deposit with either base or shares depending on the provided options.
+        uint256 refund;
+        if (_options.asBase) {
+            // Process the deposit in base.
+            (sharesMinted, refund) = _depositWithBase(
+                _amount,
+                _options.extraData
+            );
+        } else {
+            // The refund is equal to the full message value since ETH will
+            // never be a shares asset.
+            refund = msg.value;
+
+            // Process the deposit in shares.
+            _depositWithShares(_amount, _options.extraData);
+
+            // WARN: This logic doesn't account for slippage in the conversion
+            // from base to shares. If deposits to the yield source incur
+            // slippage, this logic will be incorrect.
+            //
+            // The amount of shares minted is equal to the input amount.
+            sharesMinted = _amount;
+        }
+
+        // Calculate the vault share price.
+        vaultSharePrice = _pricePerVaultShare();
+
+        // Return excess ether that was sent to the contract.
+        if (refund > 0) {
+            (bool success, ) = payable(msg.sender).call{ value: refund }("");
+            if (!success) {
+                revert IHyperdrive.TransferFailed();
+            }
+        }
+
+        return (sharesMinted, vaultSharePrice);
+    }
+
+    /// @dev Process a withdrawal and send the proceeds to the destination.
+    /// @param _shares The vault shares to withdraw from the yield source.
+    /// @param _vaultSharePrice The vault share price.
+    /// @param _options The options that configure how the withdrawal is
+    ///        settled. In particular, the destination and currency used in the
+    ///        withdrawal are specified here. Aside from those options, yield
+    ///        sources can choose to implement additional options.
+    /// @return amountWithdrawn The proceeds of the withdrawal. The units of
+    ///        this quantity are either base or vault shares, depending on the
+    ///        value of `_options.asBase`.
+    function _withdraw(
+        uint256 _shares,
+        uint256 _vaultSharePrice,
+        IHyperdrive.Options calldata _options
+    ) internal returns (uint256 amountWithdrawn) {
+        // NOTE: Round down to underestimate the base proceeds.
+        //
+        // Correct for any error that crept into the calculation of the share
+        // amount by converting the shares to base and then back to shares
+        // using the vault's share conversion logic.
+        uint256 baseAmount = _shares.mulDown(_vaultSharePrice);
+        _shares = _convertToShares(baseAmount);
+
+        // If we're withdrawing zero shares, short circuit and return 0.
+        if (_shares == 0) {
+            return 0;
+        }
+
+        // Withdraw in either base or shares depending on the provided options.
+        if (_options.asBase) {
+            // Process the withdrawal in base.
+            amountWithdrawn = _withdrawWithBase(
+                _shares,
+                _options.destination,
+                _options.extraData
+            );
+        } else {
+            // Process the withdrawal in shares.
+            _withdrawWithShares(
+                _shares,
+                _options.destination,
+                _options.extraData
+            );
+            amountWithdrawn = _shares;
+        }
+
+        return amountWithdrawn;
+    }
+
+    /// @dev Loads the share price from the yield source.
+    /// @return vaultSharePrice The current vault share price.
+    function _pricePerVaultShare()
+        internal
+        view
+        returns (uint256 vaultSharePrice)
+    {
+        return _convertToBase(ONE);
+    }
+
+    /// @dev Accepts a deposit from the user in base.
+    /// @param _baseAmount The base amount to deposit.
+    /// @param _extraData The extra data to use in the deposit.
+    /// @return sharesMinted The shares that were minted in the deposit.
+    /// @return refund The amount of ETH to refund. This should be zero for
+    ///         yield sources that don't accept ETH.
+    function _depositWithBase(
+        uint256 _baseAmount,
+        bytes calldata _extraData
+    ) internal virtual returns (uint256 sharesMinted, uint256 refund);
+
+    /// @dev Process a deposit in vault shares.
+    /// @param _shareAmount The vault shares amount to deposit.
+    /// @param _extraData The extra data to use in the deposit.
+    function _depositWithShares(
+        uint256 _shareAmount,
+        bytes calldata _extraData
+    ) internal virtual;
+
+    /// @dev Process a withdrawal in base and send the proceeds to the
+    ///      destination.
+    /// @param _shareAmount The amount of vault shares to withdraw.
+    /// @param _destination The destination of the withdrawal.
+    /// @param _extraData The extra data used to settle the withdrawal.
+    /// @return amountWithdrawn The amount of base withdrawn.
+    function _withdrawWithBase(
+        uint256 _shareAmount,
+        address _destination,
+        bytes calldata _extraData
+    ) internal virtual returns (uint256 amountWithdrawn);
+
+    /// @dev Process a withdrawal in vault shares and send the proceeds to the
+    ///      destination.
+    /// @param _shareAmount The amount of vault shares to withdraw.
+    /// @param _destination The destination of the withdrawal.
+    /// @param _extraData The extra data used to settle the withdrawal.
+    function _withdrawWithShares(
+        uint256 _shareAmount,
+        address _destination,
+        bytes calldata _extraData
+    ) internal virtual;
+
     /// @dev A yield source dependent check that prevents ether from being
-    ///         transferred to Hyperdrive instances that don't accept ether.
+    ///      transferred to Hyperdrive instances that don't accept ether.
     function _checkMessageValue() internal view virtual;
 
     /// @dev A yield source dependent check that verifies that the provided
@@ -44,45 +197,28 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         }
     }
 
-    /// @dev Accepts a deposit from the user and commits it to the yield source.
-    /// @param _amount The amount of capital to deposit. The units of this
-    ///        quantity are either base or vault shares, depending on the value
-    ///        of `_options.asBase`.
-    /// @param _options The options that configure how the deposit is
-    ///        settled. In particular, the currency used in the deposit is
-    ///        specified here. Aside from those options, yield sources can
-    ///        choose to implement additional options.
-    /// @return sharesMinted The shares created by this deposit.
-    /// @return vaultSharePrice The vault share price.
-    function _deposit(
-        uint256 _amount,
-        IHyperdrive.Options calldata _options
-    ) internal virtual returns (uint256 sharesMinted, uint256 vaultSharePrice);
+    /// @dev Convert an amount of vault shares to an amount of base.
+    /// @param _shareAmount The vault shares amount.
+    /// @return baseAmount The base amount.
+    function _convertToBase(
+        uint256 _shareAmount
+    ) internal view virtual returns (uint256 baseAmount);
 
-    /// @dev Withdraws shares from the yield source and sends the proceeds to
-    ///      the destination.
-    /// @param _shares The vault shares to withdraw from the yield source.
-    /// @param _vaultSharePrice The vault share price.
-    /// @param _options The options that configure how the withdrawal is
-    ///        settled. In particular, the destination and currency used in the
-    ///        withdrawal are specified here. Aside from those options, yield
-    ///        sources can choose to implement additional options.
-    /// @return amountWithdrawn The proceeds of the withdrawal. The units of
-    ///        this quantity are either base or vault shares, depending on the
-    ///        value of `_options.asBase`.
-    function _withdraw(
-        uint256 _shares,
-        uint256 _vaultSharePrice,
-        IHyperdrive.Options calldata _options
-    ) internal virtual returns (uint256 amountWithdrawn);
+    /// @dev Convert an amount of base to an amount of vault shares.
+    /// @param _baseAmount The base amount.
+    /// @return shareAmount The vault shares amount.
+    function _convertToShares(
+        uint256 _baseAmount
+    ) internal view virtual returns (uint256 shareAmount);
 
-    /// @dev Loads the share price from the yield source.
-    /// @return vaultSharePrice The current vault share price.
-    function _pricePerVaultShare()
-        internal
-        view
-        virtual
-        returns (uint256 vaultSharePrice);
+    /// @dev Gets the total amount of base held by the pool.
+    /// @return baseAmount The total amount of base.
+    function _totalBase() internal view virtual returns (uint256 baseAmount);
+
+    /// @dev Gets the total amount of shares held by the pool in the yield
+    ///      source.
+    /// @return shareAmount The total amount of shares.
+    function _totalShares() internal view virtual returns (uint256 shareAmount);
 
     /// Pause ///
 

@@ -18,6 +18,7 @@ contract BaseTest is Test {
     address minter;
     address deployer;
     address feeCollector;
+    address sweepCollector;
     address governance;
     address pauser;
 
@@ -44,6 +45,7 @@ contract BaseTest is Test {
         deployer = createUser("deployer");
         minter = createUser("minter");
         feeCollector = createUser("feeCollector");
+        sweepCollector = createUser("sweepCollector");
         governance = createUser("governance");
         pauser = createUser("pauser");
 
@@ -117,73 +119,6 @@ contract BaseTest is Test {
             // Approve Hyperdrive on behalf of the account.
             vm.startPrank(accounts[i]);
             token.approve(hyperdrive, type(uint256).max);
-        }
-    }
-
-    function assertWithDelta(
-        uint256 _value,
-        int256 _delta,
-        uint256 _targetValue
-    ) public {
-        bool positiveDelta = _delta >= 0;
-
-        if (positiveDelta) {
-            assertTrue(
-                _targetValue >= _value,
-                "_targetValue should be greater than or equal to _value"
-            );
-        } else {
-            assertTrue(
-                _value > _targetValue,
-                "_targetValue should be less than _value"
-            );
-        }
-
-        uint256 upperBound = positiveDelta ? _value + uint256(_delta) : _value;
-        uint256 lowerBound = !positiveDelta
-            ? _value - uint256(-_delta)
-            : _value;
-
-        // targetValue must be within the range
-        if (_targetValue < lowerBound || _targetValue > upperBound) {
-            assertGe(_targetValue, lowerBound, "exceeds lower bound");
-            assertLe(_targetValue, upperBound, "exceeds upper bound");
-            return;
-        }
-
-        // If the delta is positive it indicates the target value is value + delta
-        if (positiveDelta) {
-            uint256 valueToTarget = _targetValue - _value;
-            if (valueToTarget < uint256(_delta)) {
-                console2.log(
-                    "Precision increased by: %s",
-                    uint256(_delta) - valueToTarget
-                );
-                console2.log("Old Delta: %s", _delta);
-                console2.log("New Delta: %s", valueToTarget);
-            } else {
-                assertEq(
-                    upperBound,
-                    _targetValue,
-                    "expected upperBound to match _targetValue"
-                );
-            }
-        } else {
-            uint256 valueToTarget = _value - _targetValue;
-            if (valueToTarget < uint256(-_delta)) {
-                console2.log(
-                    "Precision increased by: %s",
-                    uint256(-_delta) - valueToTarget
-                );
-                console2.log("Old Delta: %s", _delta);
-                console2.log("New Delta: -%s", valueToTarget);
-            } else {
-                assertEq(
-                    lowerBound,
-                    _targetValue,
-                    "expected lowerBound to match _targetValue"
-                );
-            }
         }
     }
 }

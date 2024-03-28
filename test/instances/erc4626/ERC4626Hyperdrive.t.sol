@@ -89,7 +89,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
-                feeCollector: celine,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -134,6 +135,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             timeStretch: ONE.divDown(22.186877016851916266e18),
             governance: alice,
             feeCollector: bob,
+            sweepCollector: celine,
             fees: IHyperdrive.Fees(0, 0, 0, 0)
         });
         address target0 = address(new ERC4626Target0(config, pool));
@@ -294,9 +296,10 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 timeStretch: 0,
                 governance: factory.hyperdriveGovernance(),
                 feeCollector: factory.feeCollector(),
+                sweepCollector: factory.sweepCollector(),
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
             });
-        dai.approve(address(factory), type(uint256).max);
+        dai.approve(address(deployerCoordinator), type(uint256).max);
         factory.deployTarget(
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
@@ -355,7 +358,11 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             contribution,
             apr,
             apr,
-            new bytes(0),
+            IHyperdrive.Options({
+                asBase: true,
+                destination: alice,
+                extraData: new bytes(0)
+            }),
             bytes32(uint256(0xdeadbabe))
         );
 
@@ -375,6 +382,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             alice,
             contribution,
             apr,
+            true,
             config.minimumShareReserves,
             abi.encode(address(pool)),
             0
@@ -398,9 +406,10 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 timeStretch: 0,
                 governance: factory.hyperdriveGovernance(),
                 feeCollector: factory.feeCollector(),
+                sweepCollector: factory.sweepCollector(),
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
             });
-        dai.approve(address(factory), type(uint256).max);
+        dai.approve(address(deployerCoordinator), type(uint256).max);
         factory.deployTarget(
             bytes32(uint256(0xdead)),
             deployerCoordinator,
@@ -459,7 +468,11 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             contribution,
             apr,
             apr,
-            new bytes(0),
+            IHyperdrive.Options({
+                asBase: true,
+                destination: alice,
+                extraData: new bytes(0)
+            }),
             bytes32(uint256(0xbabe))
         );
 

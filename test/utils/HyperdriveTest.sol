@@ -158,6 +158,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 ),
                 governance: governance,
                 feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
                 fees: fees
             });
     }
@@ -918,6 +919,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         address deployer,
         uint256 contribution,
         uint256 apr,
+        bool asBase,
         uint256 minimumShareReserves,
         bytes memory expectedExtraData,
         uint256 tolerance
@@ -1008,6 +1010,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
             );
 
             // Verify the event data.
+            IHyperdrive hyperdrive_ = _hyperdrive;
             (
                 uint256 eventLpAmount,
                 uint256 eventBaseAmount,
@@ -1019,23 +1022,37 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                     (uint256, uint256, uint256, bool, uint256)
                 );
             uint256 contribution_ = contribution;
-            IHyperdrive hyperdrive_ = _hyperdrive;
-            assertApproxEqAbs(
-                eventLpAmount,
-                contribution_.divDown(
-                    hyperdrive_.getPoolConfig().initialVaultSharePrice
-                ) - 2 * minimumShareReserves,
-                tolerance
-            );
-            assertEq(eventBaseAmount, contribution_);
-            assertApproxEqAbs(
-                eventShareAmount,
-                contribution_.divDown(
-                    hyperdrive_.getPoolInfo().vaultSharePrice
-                ),
-                1e5
-            );
-            assertEq(eventAsBase, true);
+            if (asBase) {
+                assertApproxEqAbs(
+                    eventLpAmount,
+                    contribution_.divDown(
+                        hyperdrive_.getPoolConfig().initialVaultSharePrice
+                    ) - 2 * minimumShareReserves,
+                    tolerance
+                );
+                assertEq(eventBaseAmount, contribution_);
+                assertApproxEqAbs(
+                    eventShareAmount,
+                    contribution_.divDown(
+                        hyperdrive_.getPoolConfig().initialVaultSharePrice
+                    ),
+                    1e5
+                );
+            } else {
+                assertApproxEqAbs(
+                    eventLpAmount,
+                    contribution_ - 2 * minimumShareReserves,
+                    tolerance
+                );
+                assertEq(
+                    eventBaseAmount,
+                    contribution_.mulDown(
+                        hyperdrive_.getPoolInfo().vaultSharePrice
+                    )
+                );
+                assertApproxEqAbs(eventShareAmount, contribution_, 1e5);
+            }
+            assertEq(eventAsBase, asBase);
             assertEq(eventApr, apr);
         }
     }

@@ -26,6 +26,10 @@ interface IHyperdriveFactory {
     /// @notice Emitted when the fee collector used in new deployments is updated.
     event FeeCollectorUpdated(address indexed newFeeCollector);
 
+    /// @notice Emitted when the sweep collector used in new deployments is
+    ///         updated.
+    event SweepCollectorUpdated(address indexed newSweepCollector);
+
     /// @notice Emitted when the factory's governance is updated.
     event GovernanceUpdated(address indexed governance);
 
@@ -94,10 +98,6 @@ interface IHyperdriveFactory {
     /// @notice Thrown when the ending index of a range is larger than the
     ///         underlying list.
     error EndIndexTooLarge();
-
-    /// @notice Thrown when a deployer provides an insufficient amount of base
-    ///         to initialize a payable Hyperdrive instance.
-    error InsufficientValue();
 
     /// @notice Thrown when the checkpoint duration supplied to `deployTarget`
     ///         or `deployAndInitialize` isn't a multiple of the checkpoint
@@ -196,6 +196,10 @@ interface IHyperdriveFactory {
     ///         time stretch APRs or doesn't satisfy the lower and upper safe
     ///         bounds implied by the fixed APR.
     error InvalidTimeStretchAPR();
+
+    /// @notice Thrown when ether is sent to the factory when `receive` is
+    ///         locked.
+    error ReceiveLocked();
 
     /// @notice Thrown when an ether transfer fails.
     error TransferFailed();
