@@ -159,6 +159,44 @@ contract LsETHHyperdriveTest is InstanceTest {
         assertEq(RIVER.totalSupply(), totalSharesBefore);
     }
 
+    function verifyWithdrawal(
+        address trader,
+        uint256 baseProceeds,
+        bool asBase,
+        uint256 totalBaseBefore,
+        uint256 totalSharesBefore,
+        AccountBalances memory traderBalancesBefore,
+        AccountBalances memory hyperdriveBalancesBefore
+    ) internal override {
+        // if (asBase) {
+        //     revert IHyperdrive.NotPayable();
+        // }
+
+        uint256 amount = convertToShares(baseProceeds);
+
+        // Ensure the total amount of LsETH stays the same.
+        assertEq(RIVER.totalSupply(), totalSharesBefore);
+
+        // Ensure that the ETH balances were updated correctly.
+        assertEq(
+            address(hyperdrive).balance,
+            hyperdriveBalancesBefore.ETHBalance
+        );
+        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
+
+        // Ensure the LsETH balances were updated correctly.
+        assertApproxEqAbs(
+            RIVER.balanceOf(address(hyperdrive)),
+            hyperdriveBalancesBefore.sharesBalance - amount,
+            1
+        );
+        assertApproxEqAbs(
+            RIVER.balanceOf(address(trader)),
+            traderBalancesBefore.sharesBalance + amount,
+            1
+        );
+    }
+
     /// Getters ///
 
     function test_getters() external {
@@ -278,67 +316,6 @@ contract LsETHHyperdriveTest is InstanceTest {
         );
     }
 
-    function test_close_long_with_lseth(
-        uint256 basePaid,
-        int256 variableRate
-    ) external {
-        // Accrue interest for a term to ensure that the share price is greater
-        // than one.
-        advanceTime(POSITION_DURATION, 0.05e18);
-        vm.startPrank(bob);
-
-        // Calculate the maximum amount of basePaid we can test. The limit is
-        // either the max long that Hyperdrive can open or the amount of LsETH
-        // tokens the trader has.
-        uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
-        uint256 maxEthAmount = RIVER.underlyingBalanceFromShares(
-            RIVER.balanceOf(bob)
-        );
-
-        // Bob opens a long by depositing LsETH.
-        basePaid = basePaid.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            maxLongAmount > maxEthAmount ? maxEthAmount : maxLongAmount
-        );
-        uint256 sharesPaid = RIVER.sharesFromUnderlyingBalance(basePaid);
-        RIVER.approve(address(hyperdrive), sharesPaid);
-        (uint256 maturityTime, uint256 longAmount) = openLong(
-            bob,
-            sharesPaid,
-            false
-        );
-
-        // The term passes and some interest accrues.
-        variableRate = variableRate.normalizeToRange(0, 2.5e18);
-        advanceTime(POSITION_DURATION, variableRate);
-
-        // Get some balance information before the withdrawal.
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-        uint256 totalLsethSupplyBefore = RIVER.totalSupply();
-
-        // Bob closes his long with LsETH as the target asset.
-        uint256 shareProceeds = closeLong(bob, maturityTime, longAmount, false);
-        uint256 baseProceeds = RIVER.underlyingBalanceFromShares(shareProceeds);
-
-        // Ensure Bob is credited the correct amount of bonds.
-        assertLe(baseProceeds, longAmount);
-        assertApproxEqAbs(baseProceeds, longAmount, 10);
-
-        // Ensure that River aggregates and the token balances were updated
-        // correctly during the trade.
-        verifyLsethWithdrawal(
-            bob,
-            shareProceeds,
-            false,
-            totalLsethSupplyBefore,
-            bobBalancesBefore,
-            hyperdriveBalancesBefore
-        );
-    }
-
     /// Short ///
 
     function test_open_short_refunds() external {
@@ -437,7 +414,10 @@ contract LsETHHyperdriveTest is InstanceTest {
         advanceTime(POSITION_DURATION, variableRate);
 
         // Get some balance information before closing the short.
-        uint256 totalLsethSupplyBefore = RIVER.totalSupply();
+        (
+            uint256 totalBaseSupplyBefore,
+            uint256 totalShareSupplyBefore
+        ) = getSupply();
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
@@ -461,46 +441,14 @@ contract LsETHHyperdriveTest is InstanceTest {
 
         // Ensure that River aggregates and the token balances were updated
         // correctly during the trade.
-        verifyLsethWithdrawal(
+        verifyWithdrawal(
             bob,
-            shareProceeds,
+            baseProceeds,
             false,
-            totalLsethSupplyBefore,
+            totalBaseSupplyBefore,
+            totalShareSupplyBefore,
             bobBalancesBefore,
             hyperdriveBalancesBefore
-        );
-    }
-
-    function verifyLsethWithdrawal(
-        address trader,
-        uint256 amount,
-        bool asBase,
-        uint256 totalLsethSupplyBefore,
-        AccountBalances memory traderBalancesBefore,
-        AccountBalances memory hyperdriveBalancesBefore
-    ) internal {
-        if (asBase) {
-            revert IHyperdrive.NotPayable();
-        }
-
-        // Ensure the total amount of LsETH stays the same.
-        assertEq(RIVER.totalSupply(), totalLsethSupplyBefore);
-
-        // Ensure that the ETH balances were updated correctly.
-        assertEq(
-            address(hyperdrive).balance,
-            hyperdriveBalancesBefore.ETHBalance
-        );
-        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-        // Ensure the LsETH balances were updated correctly.
-        assertEq(
-            RIVER.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.sharesBalance - amount
-        );
-        assertEq(
-            RIVER.balanceOf(address(trader)),
-            traderBalancesBefore.sharesBalance + amount
         );
     }
 

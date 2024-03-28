@@ -169,6 +169,69 @@ contract RETHHyperdriveTest is InstanceTest {
         assertEq(rocketTokenRETH.totalSupply(), totalSharesBefore);
     }
 
+    function verifyWithdrawal(
+        address trader,
+        uint256 baseProceeds,
+        bool asBase,
+        uint256 totalBaseBefore,
+        uint256 totalSharesBefore,
+        AccountBalances memory traderBalancesBefore,
+        AccountBalances memory hyperdriveBalancesBefore
+    ) internal override {
+        uint256 amount = baseProceeds;
+        if (asBase) {
+            uint256 amountAsShares = rocketTokenRETH.getRethValue(baseProceeds);
+
+            // Ensure the total amount of rETH were updated correctly.
+            assertApproxEqAbs(
+                rocketTokenRETH.totalSupply(),
+                totalSharesBefore - amountAsShares,
+                1
+            );
+
+            // Ensure that the ETH balances were updated correctly.
+            assertEq(
+                address(hyperdrive).balance,
+                hyperdriveBalancesBefore.ETHBalance
+            );
+            assertEq(trader.balance, traderBalancesBefore.ETHBalance + amount);
+
+            // Ensure the rETH balances were updated correctly.
+            assertApproxEqAbs(
+                rocketTokenRETH.balanceOf(address(hyperdrive)),
+                hyperdriveBalancesBefore.sharesBalance - amountAsShares,
+                1
+            );
+            assertEq(
+                rocketTokenRETH.balanceOf(address(trader)),
+                traderBalancesBefore.sharesBalance
+            );
+        } else {
+            amount = convertToShares(amount);
+            // Ensure the total amount of rETH stays the same.
+            assertEq(rocketTokenRETH.totalSupply(), totalSharesBefore);
+
+            // Ensure that the ETH balances were updated correctly.
+            assertEq(
+                address(hyperdrive).balance,
+                hyperdriveBalancesBefore.ETHBalance
+            );
+            assertEq(trader.balance, traderBalancesBefore.ETHBalance);
+
+            // Ensure the rETH balances were updated correctly.
+            assertApproxEqAbs(
+                rocketTokenRETH.balanceOf(address(hyperdrive)),
+                hyperdriveBalancesBefore.sharesBalance - amount,
+                1
+            );
+            assertApproxEqAbs(
+                rocketTokenRETH.balanceOf(address(trader)),
+                traderBalancesBefore.sharesBalance + amount,
+                1
+            );
+        }
+    }
+
     /// Getters ///
 
     function test_getters() external {
@@ -281,7 +344,10 @@ contract RETHHyperdriveTest is InstanceTest {
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
         );
-        uint256 totalRethSupplyBefore = rocketTokenRETH.totalSupply();
+        (
+            uint256 totalBaseSupplyBefore,
+            uint256 totalShareSupplyBefore
+        ) = getSupply();
 
         // Bob closes his long with ETH as the target asset.
         uint256 baseProceeds = closeLong(bob, maturityTime, longAmount, true);
@@ -292,72 +358,12 @@ contract RETHHyperdriveTest is InstanceTest {
 
         // Ensure that Rocket Pool's aggregates and the token balances were updated
         // correctly during the trade.
-        verifyRethWithdrawal(
+        verifyWithdrawal(
             bob,
             baseProceeds,
             true,
-            totalRethSupplyBefore,
-            bobBalancesBefore,
-            hyperdriveBalancesBefore
-        );
-    }
-
-    function test_close_long_with_reth(
-        uint256 basePaid,
-        int256 variableRate
-    ) external {
-        // Accrue interest for a term to ensure that the share price is greater
-        // than one.
-        advanceTime(POSITION_DURATION, 0.05e18);
-        vm.startPrank(bob);
-
-        // Calculate the maximum amount of basePaid we can test. The limit is
-        // either the max long that Hyperdrive can open or the amount of RETH
-        // tokens the trader has.
-        uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
-        uint256 maxEthAmount = rocketTokenRETH.getEthValue(
-            rocketTokenRETH.balanceOf(bob)
-        );
-
-        // Bob opens a long by depositing rETH.
-        basePaid = basePaid.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            maxLongAmount > maxEthAmount ? maxEthAmount : maxLongAmount
-        );
-        uint256 sharesPaid = rocketTokenRETH.getRethValue(basePaid);
-        rocketTokenRETH.approve(address(hyperdrive), sharesPaid);
-        (uint256 maturityTime, uint256 longAmount) = openLong(
-            bob,
-            sharesPaid,
-            false
-        );
-
-        // The term passes and some interest accrues.
-        variableRate = variableRate.normalizeToRange(0, 2.5e18);
-        advanceTime(POSITION_DURATION, variableRate);
-
-        // Get some balance information before the withdrawal.
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-        uint256 totalRethSupplyBefore = rocketTokenRETH.totalSupply();
-
-        // Bob closes his long with rETH as the target asset.
-        uint256 shareProceeds = closeLong(bob, maturityTime, longAmount, false);
-        uint256 baseProceeds = rocketTokenRETH.getEthValue(shareProceeds);
-
-        // Ensure Bob is credited the correct amount of bonds.
-        assertLe(baseProceeds, longAmount);
-        assertApproxEqAbs(baseProceeds, longAmount, 10);
-
-        // Ensure that Rocket Pool's aggregates and the token balances were updated
-        // correctly during the trade.
-        verifyRethWithdrawal(
-            bob,
-            shareProceeds,
-            false,
-            totalRethSupplyBefore,
+            totalBaseSupplyBefore,
+            totalShareSupplyBefore,
             bobBalancesBefore,
             hyperdriveBalancesBefore
         );
@@ -426,7 +432,10 @@ contract RETHHyperdriveTest is InstanceTest {
         advanceTime(POSITION_DURATION, variableRate);
 
         // Get some balance information before closing the short.
-        uint256 totalRethSupplyBefore = rocketTokenRETH.totalSupply();
+        (
+            uint256 totalBaseSupplyBefore,
+            uint256 totalShareSupplyBefore
+        ) = getSupply();
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
@@ -444,11 +453,12 @@ contract RETHHyperdriveTest is InstanceTest {
         assertLe(baseProceeds, expectedBaseProceeds);
         assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 100);
 
-        verifyRethWithdrawal(
+        verifyWithdrawal(
             bob,
             baseProceeds,
             true,
-            totalRethSupplyBefore,
+            totalBaseSupplyBefore,
+            totalShareSupplyBefore,
             bobBalancesBefore,
             hyperdriveBalancesBefore
         );
@@ -479,7 +489,10 @@ contract RETHHyperdriveTest is InstanceTest {
         advanceTime(POSITION_DURATION, variableRate);
 
         // Get some balance information before closing the short.
-        uint256 totalRethSupplyBefore = rocketTokenRETH.totalSupply();
+        (
+            uint256 totalBaseSupplyBefore,
+            uint256 totalShareSupplyBefore
+        ) = getSupply();
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
@@ -504,72 +517,15 @@ contract RETHHyperdriveTest is InstanceTest {
 
         // Ensure that Rocket Pool's aggregates and the token balances were updated
         // correctly during the trade.
-        verifyRethWithdrawal(
+        verifyWithdrawal(
             bob,
-            shareProceeds,
+            baseProceeds,
             false,
-            totalRethSupplyBefore,
+            totalBaseSupplyBefore,
+            totalShareSupplyBefore,
             bobBalancesBefore,
             hyperdriveBalancesBefore
         );
-    }
-
-    function verifyRethWithdrawal(
-        address trader,
-        uint256 amount,
-        bool asBase,
-        uint256 totalRethSupplyBefore,
-        AccountBalances memory traderBalancesBefore,
-        AccountBalances memory hyperdriveBalancesBefore
-    ) internal {
-        if (asBase) {
-            uint256 amountAsShares = rocketTokenRETH.getRethValue(amount);
-
-            // Ensure the total amount of rETH were updated correctly.
-            assertApproxEqAbs(
-                rocketTokenRETH.totalSupply(),
-                totalRethSupplyBefore - amountAsShares,
-                1
-            );
-
-            // Ensure that the ETH balances were updated correctly.
-            assertEq(
-                address(hyperdrive).balance,
-                hyperdriveBalancesBefore.ETHBalance
-            );
-            assertEq(trader.balance, traderBalancesBefore.ETHBalance + amount);
-
-            // Ensure the rETH balances were updated correctly.
-            assertApproxEqAbs(
-                rocketTokenRETH.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.sharesBalance - amountAsShares,
-                1
-            );
-            assertEq(
-                rocketTokenRETH.balanceOf(address(trader)),
-                traderBalancesBefore.sharesBalance
-            );
-        } else {
-            // Ensure the total amount of rETH stays the same.
-            assertEq(rocketTokenRETH.totalSupply(), totalRethSupplyBefore);
-
-            // Ensure that the ETH balances were updated correctly.
-            assertEq(
-                address(hyperdrive).balance,
-                hyperdriveBalancesBefore.ETHBalance
-            );
-            assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-            // Ensure the rETH balances were updated correctly.
-            assertEq(
-                rocketTokenRETH.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.sharesBalance - amount
-            );
-            assertEq(
-                rocketTokenRETH.balanceOf(address(trader)),
-                traderBalancesBefore.sharesBalance + amount
-            );
-        }
     }
 
     /// Helpers ///
