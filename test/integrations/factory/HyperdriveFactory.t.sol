@@ -2363,9 +2363,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 deploymentId
             )
         );
-        // FIXME: Check the vault shares token.
         IHyperdrive.PoolConfig memory config_ = hyperdrive.getPoolConfig();
-        assertEq(address(config_.baseToken), address(config.baseToken));
+        assertEq(address(config_.baseToken), address(ETH));
+        assertEq(address(config_.baseToken), address(lido));
         assertEq(config_.linkerFactory, factory.linkerFactory());
         assertEq(config_.linkerCodeHash, factory.linkerCodeHash());
         assertEq(
