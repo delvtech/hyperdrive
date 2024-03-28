@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { ERC4626HyperdriveCoreDeployer } from "contracts/src/deployers/erc4626/ERC4626HyperdriveCoreDeployer.sol";
 import { ERC4626HyperdriveDeployerCoordinator } from "contracts/src/deployers/erc4626/ERC4626HyperdriveDeployerCoordinator.sol";
 import { ERC4626Target0Deployer } from "contracts/src/deployers/erc4626/ERC4626Target0Deployer.sol";
@@ -2365,7 +2368,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         );
         IHyperdrive.PoolConfig memory config_ = hyperdrive.getPoolConfig();
         assertEq(address(config_.baseToken), address(ETH));
-        assertEq(address(config_.baseToken), address(lido));
+        assertEq(address(config_.vaultSharesToken), address(lido));
         assertEq(config_.linkerFactory, factory.linkerFactory());
         assertEq(config_.linkerCodeHash, factory.linkerCodeHash());
         assertEq(
