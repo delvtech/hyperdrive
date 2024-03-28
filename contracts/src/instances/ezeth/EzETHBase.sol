@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
-import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IRestakeManager, IRenzoOracle } from "../../interfaces/IRenzo.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
@@ -18,8 +16,6 @@ import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract EzETHBase is HyperdriveBase {
-    using SafeERC20 for ERC20;
-
     /// @dev The Renzo entrypoint contract.
     IRestakeManager internal immutable _restakeManager;
 
@@ -53,12 +49,12 @@ abstract contract EzETHBase is HyperdriveBase {
         uint256 _shareAmount,
         bytes calldata // unused
     ) internal override {
+        // NOTE: We don't need to use `safeTransfer` since ezETH uses
+        // OpenZeppelin's ERC20Upgradeable implementation and is
+        // standard-compliant.
+        //
         // Transfer ezETH shares into the contract.
-        ERC20(address(_vaultSharesToken)).safeTransferFrom(
-            msg.sender,
-            address(this),
-            _shareAmount
-        );
+        _vaultSharesToken.transferFrom(msg.sender, address(this), _shareAmount);
     }
 
     /// @dev Process a withdrawal in base and send the proceeds to the
@@ -82,11 +78,12 @@ abstract contract EzETHBase is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override {
+        // NOTE: We don't need to use `safeTransfer` since ezETH uses
+        // OpenZeppelin's ERC20Upgradeable implementation and is
+        // standard-compliant.
+        //
         // Transfer the ezETH shares to the destination.
-        ERC20(address(_vaultSharesToken)).safeTransfer(
-            _destination,
-            _shareAmount
-        );
+        _vaultSharesToken.transfer(_destination, _shareAmount);
     }
 
     /// @dev Convert an amount of vault shares to an amount of base.
