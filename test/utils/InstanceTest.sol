@@ -529,7 +529,20 @@ abstract contract InstanceTest is HyperdriveTest {
         uint256 sharesPaid = convertToShares(basePaid);
 
         // Bob opens a long by depositing the share token.
-        openLong(bob, sharesPaid, false);
+        (uint256 maturityTime, uint256 bondAmount) = openLong(
+            bob,
+            sharesPaid,
+            false
+        );
+
+        // Ensure that Bob received the correct amount of bonds.
+        assertEq(
+            hyperdrive.balanceOf(
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+                bob
+            ),
+            bondAmount
+        );
 
         // Ensure the deposit accounting is correct.
         verifyDeposit(
@@ -577,7 +590,9 @@ abstract contract InstanceTest is HyperdriveTest {
 
         // Bob opens a long by depositing the base token.
         vm.startPrank(bob);
-        hyperdrive.openLong{ value: isBaseETH ? basePaid : 0 }(
+        (uint256 maturityTime, uint256 bondAmount) = hyperdrive.openLong{
+            value: isBaseETH ? basePaid : 0
+        }(
             basePaid,
             0,
             0,
@@ -587,9 +602,20 @@ abstract contract InstanceTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
-
-        // If base deposits are supported we ensure the deposit accounting is correct.
         if (config.enableBaseDeposits) {
+            // Ensure that Bob received the correct amount of bonds.
+            assertEq(
+                hyperdrive.balanceOf(
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Long,
+                        maturityTime
+                    ),
+                    bob
+                ),
+                bondAmount
+            );
+
+            // If base deposits are supported we ensure the deposit accounting is correct.
             verifyDeposit(
                 bob,
                 basePaid,
