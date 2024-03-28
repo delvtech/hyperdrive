@@ -86,7 +86,8 @@ mod tests {
         // Spawn a test chain and create two agents -- Alice and Bob. Alice
         // is funded with a large amount of capital so that she can initialize
         // the pool. Bob is funded with a small amount of capital so that we
-        // can test `get_max_short` when budget is the primary constraint.
+        // can test opening a long and verify that the ending spot price is what
+        // we expect.
         let mut rng = thread_rng();
         let chain = TestChain::new(2).await?;
         let (alice, bob) = (chain.accounts()[0].clone(), chain.accounts()[1].clone());
