@@ -12,7 +12,7 @@ impl State {
         current_time: U256,
     ) -> FixedPoint {
         let bond_amount = bond_amount.into();
-        let normalized_time_remaining = self.calculate_time_remaining(maturity_time, current_time);
+        let normalized_time_remaining = self.calculate_normalized_time_remaining(maturity_time, current_time);
 
         // Calculate the flat part of the trade
         let flat = bond_amount.mul_div_down(
@@ -71,7 +71,7 @@ mod tests {
             let maturity_time = state.checkpoint_duration();
             let current_time = rng.gen_range(fixed!(0)..=maturity_time);
             let normalized_time_remaining =
-                state.calculate_time_remaining(maturity_time.into(), current_time.into());
+                state.calculate_normalized_time_remaining(maturity_time.into(), current_time.into());
             let actual = panic::catch_unwind(|| {
                 state.calculate_close_long_flat_plus_curve(
                     in_,

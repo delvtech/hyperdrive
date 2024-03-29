@@ -12,7 +12,7 @@ impl State {
         current_time: U256,
     ) -> FixedPoint {
         let bond_amount = bond_amount.into();
-        let normalized_time_remaining = self.calculate_time_remaining(maturity_time, current_time);
+        let normalized_time_remaining = self.calculate_normalized_time_remaining(maturity_time, current_time);
 
         // NOTE: We overestimate the trader's share payment to avoid sandwiches.
         //
@@ -169,7 +169,7 @@ mod tests {
             });
 
             let normalized_time_remaining =
-                state.calculate_time_remaining(maturity_time.into(), current_time.into());
+                state.calculate_normalized_time_remaining(maturity_time.into(), current_time.into());
             match mock
                 .calculate_close_short(
                     state.effective_share_reserves().into(),

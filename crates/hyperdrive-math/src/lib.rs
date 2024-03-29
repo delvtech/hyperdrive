@@ -143,7 +143,11 @@ impl State {
     }
 
     /// Gets the normalized time remaining
-    fn calculate_time_remaining(&self, maturity_time: U256, current_time: U256) -> FixedPoint {
+    fn calculate_normalized_time_remaining(
+        &self,
+        maturity_time: U256,
+        current_time: U256,
+    ) -> FixedPoint {
         let latest_checkpoint = self.to_checkpoint(current_time);
         let time_remaining = if maturity_time > latest_checkpoint {
             FixedPoint::from(maturity_time - latest_checkpoint)
