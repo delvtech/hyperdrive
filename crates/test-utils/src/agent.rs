@@ -5,6 +5,7 @@ use ethers::{
     contract::ContractCall,
     prelude::EthLogDecode,
     providers::{Http, Middleware, Provider, RetryClient},
+    signers::Signer,
     types::{Address, BlockId, I256, U256},
 };
 use eyre::Result;
@@ -156,11 +157,11 @@ impl<M, D: Detokenize> ContractCall_<M, D> {
 // TODO: This should crash gracefully and would ideally dump the replication
 // information to a file that can be read by the framework to easily debug what
 // happened.
-impl Agent<ChainClient, ChaCha8Rng> {
+impl<S: Signer + 'static> Agent<ChainClient<S>, ChaCha8Rng> {
     /// Setup ///
 
     pub async fn new(
-        client: Arc<ChainClient>,
+        client: Arc<ChainClient<S>>,
         addresses: Addresses,
         maybe_seed: Option<u64>,
     ) -> Result<Self> {

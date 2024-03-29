@@ -1,17 +1,14 @@
-use std::{convert::TryFrom, sync::Arc, time::Duration};
-
+/// This module contains implementations on the `Chain` struct that make it easy
+/// to deploy Hyperdrive pools, factories, and deployer coordinators.
 use ethers::{
     abi,
     abi::Token,
-    core::utils::{keccak256, Anvil},
-    middleware::SignerMiddleware,
+    core::utils::keccak256,
     prelude::EthLogDecode,
-    providers::{Http, Middleware, Provider},
-    signers::{coins_bip39::English, LocalWallet, MnemonicBuilder, Signer},
-    types::{Address, Bytes, U256},
-    utils::AnvilInstance,
+    signers::Signer,
+    types::{Address, U256},
 };
-use eyre::{eyre, Result};
+use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
 use hyperdrive_addresses::Addresses;
@@ -32,18 +29,12 @@ use hyperdrive_wrappers::wrappers::{
     erc4626_target3_deployer::ERC4626Target3Deployer,
     erc4626_target4::ERC4626Target4,
     erc4626_target4_deployer::ERC4626Target4Deployer,
-    etching_vault::EtchingVault,
     hyperdrive_factory::{
         Fees as FactoryFees, HyperdriveFactory, HyperdriveFactoryEvents, Options, PoolDeployConfig,
     },
-    ierc4626_hyperdrive::IERC4626Hyperdrive,
     ihyperdrive::{Fees, PoolConfig},
     mock_erc4626::MockERC4626,
-    mock_fixed_point_math::MockFixedPointMath,
-    mock_hyperdrive_math::MockHyperdriveMath,
     mock_lido::MockLido,
-    mock_lp_math::MockLPMath,
-    mock_yield_space_math::MockYieldSpaceMath,
     steth_hyperdrive_core_deployer::StETHHyperdriveCoreDeployer,
     steth_hyperdrive_deployer_coordinator::StETHHyperdriveDeployerCoordinator,
     steth_target0_deployer::StETHTarget0Deployer,
@@ -54,12 +45,7 @@ use hyperdrive_wrappers::wrappers::{
 };
 use serde::{Deserialize, Deserializer, Serialize};
 
-use super::{dev_chain::MNEMONIC, Chain, ChainClient};
-use crate::{
-    agent::{Agent, TxOptions},
-    constants::MAYBE_ETHEREUM_URL,
-    crash_reports::{ActionType, CrashReport},
-};
+use super::Chain;
 
 fn deserialize_u256<'de, D>(deserializer: D) -> Result<U256, D::Error>
 where
@@ -236,225 +222,16 @@ impl Default for TestChainConfig {
     }
 }
 
-/// A local anvil instance with the Hyperdrive contracts deployed.
-#[derive(Clone)]
-pub struct TestChain {
-    provider: Provider<Http>,
-    addresses: Addresses,
-    accounts: Vec<LocalWallet>,
-    maybe_crash: Option<CrashReport>,
-    _maybe_anvil: Option<Arc<AnvilInstance>>,
-}
-
-#[async_trait::async_trait]
-impl Chain for TestChain {
-    fn provider(&self) -> Provider<Http> {
-        self.provider.clone()
-    }
-
-    fn accounts(&self) -> Vec<LocalWallet> {
-        self.accounts.clone()
-    }
-
-    fn addresses(&self) -> Addresses {
-        self.addresses.clone()
-    }
-}
-
-impl TestChain {
-    /// Instantiates a test chain with a fresh Hyperdrive deployment.
-    pub async fn new(num_accounts: usize) -> Result<Self> {
-        if num_accounts == 0 {
-            panic!("cannot create a test chain with zero accounts");
-        }
-
-        // Connect to the anvil node.
-        let (provider, _maybe_anvil) = Self::connect().await?;
-
-        // Generate a set of accounts from the default mnemonic and fund them.
-        let accounts = Self::fund_accounts(&provider, num_accounts).await?;
-
-        // Deploy the Hyperdrive contracts.
-        let addresses = Self::test_deploy(provider.clone(), accounts[0].clone()).await?;
-
-        Ok(Self {
-            addresses,
-            accounts,
-            provider,
-            maybe_crash: None,
-            _maybe_anvil,
-        })
-    }
-
-    pub async fn new_with_factory(num_accounts: usize, config: TestChainConfig) -> Result<Self> {
-        if num_accounts == 0 {
-            panic!("cannot create a test chain with zero accounts");
-        }
-
-        // Connect to the anvil node.
-        let (provider, _maybe_anvil) = Self::connect().await?;
-
-        // Generate a set of accounts from the default mnemonic and fund them.
-        let accounts = Self::fund_accounts(&provider, num_accounts).await?;
-
-        // Deploy the Hyperdrive contracts.
-        let addresses = Self::full_deploy(provider.clone(), accounts[0].clone(), config).await?;
-
-        Ok(Self {
-            addresses,
-            accounts,
-            provider,
-            maybe_crash: None,
-            _maybe_anvil,
-        })
-    }
-
-    /// Attempts to reproduce a crash from a crash report.
-    ///
-    /// This function sets up a reproduction environment using the information
-    /// provided in the crash report. In particular, it has the following
-    /// features:
-    ///  - Connects to the anvil node specified by `HYPERDRIVE_ETHEREUM_URL`
-    ///    (or spawns a new one if no url is provided).
-    ///  - Loads the chain state from the dump file specified in the crash
-    ///    report.
-    ///  - Etches the latest compiled versions of the smart contracts onto the
-    ///    Hyperdrive instance and dependency contracts so that the contracts
-    ///    can easily be debugged in the reproduction environment.
-    /// -  Creates a set of accounts using the default mnemonic and funds them
-    ///    with ether.
-    pub async fn load_crash(crash_report_path: &str) -> Result<Self> {
-        // Connect to the anvil node.
-        let (provider, _maybe_anvil) = Self::connect().await?;
-
-        // Attempt to load the crash report from the provided path.
-        let crash_report = {
-            let file = std::fs::File::open(crash_report_path)?;
-            serde_json::from_reader::<_, CrashReport>(file)?
-        };
-
-        // Load the chain state from the dump.
-        provider
-            .request::<[Bytes; 1], bool>("anvil_loadState", [crash_report.state_dump.clone()])
-            .await?;
-
-        // Etch the latest contract bytecode onto the contract addresses.
-        let accounts = Self::fund_accounts(&provider, 1).await?;
-        Self::etch(&provider, accounts[0].clone(), &crash_report.addresses).await?;
-
-        // Advance the chain to the timestamp of the crash.
-        provider
-            .request::<[U256; 1], _>(
-                "anvil_setNextBlockTimestamp",
-                [crash_report.block_timestamp.into()],
-            )
-            .await?;
-        provider
-            .request::<[U256; 1], _>("anvil_mine", [1.into()])
-            .await?;
-
-        Ok(Self {
-            addresses: crash_report.addresses.clone(),
-            accounts,
-            provider,
-            maybe_crash: Some(crash_report),
-            _maybe_anvil,
-        })
-    }
-
-    /// Attempts to reproduce the crash that the TestChain was loaded with.
-    pub async fn reproduce_crash(&self) -> Result<()> {
-        let crash_report = if let Some(crash_report) = &self.maybe_crash {
-            crash_report
-        } else {
-            return Err(eyre!("cannot reproduce crash without a crash report"));
-        };
-
-        // Impersonate the agent that experienced the crash.
-        self.provider
-            .request::<[Address; 1], _>(
-                "anvil_impersonateAccount",
-                [crash_report.agent_info.address],
-            )
-            .await?;
-        let mut agent = Agent::new(
-            self.client(self.accounts()[0].clone()).await?,
-            crash_report.addresses.clone(),
-            None,
-        )
-        .await?;
-
-        // Attempt to reproduce the crash by running the trade that failed.
-        let tx_options = Some(TxOptions::new().from(crash_report.agent_info.address));
-        match crash_report.trade.action_type {
-            // Long
-            ActionType::OpenLong => {
-                agent
-                    .open_long(
-                        crash_report.trade.trade_amount.into(),
-                        crash_report.trade.slippage_tolerance.map(|u| u.into()),
-                        tx_options,
-                    )
-                    .await?
-            }
-            ActionType::CloseLong => {
-                agent
-                    .close_long(
-                        U256::from(crash_report.trade.maturity_time).into(),
-                        crash_report.trade.trade_amount.into(),
-                        tx_options,
-                    )
-                    .await?
-            }
-            // Short
-            ActionType::OpenShort => {
-                agent
-                    .open_short(
-                        crash_report.trade.trade_amount.into(),
-                        crash_report.trade.slippage_tolerance.map(|u| u.into()),
-                        tx_options,
-                    )
-                    .await?
-            }
-            ActionType::CloseShort => {
-                agent
-                    .close_short(
-                        U256::from(crash_report.trade.maturity_time).into(),
-                        crash_report.trade.trade_amount.into(),
-                        tx_options,
-                    )
-                    .await?
-            }
-            // LP
-            ActionType::AddLiquidity => {
-                agent
-                    .add_liquidity(crash_report.trade.trade_amount.into(), tx_options)
-                    .await?
-            }
-            ActionType::RemoveLiquidity => {
-                agent
-                    .remove_liquidity(crash_report.trade.trade_amount.into(), tx_options)
-                    .await?
-            }
-            ActionType::RedeemWithdrawalShares => {
-                agent
-                    .redeem_withdrawal_shares(crash_report.trade.trade_amount.into(), tx_options)
-                    .await?
-            }
-            // Failure
-            _ => return Err(eyre!("Unsupported reproduction action")),
-        }
-
-        Ok(())
-    }
-
+// TODO: Ultimately, we'll want to spruce this up to. Keeping these functions
+// as-is is a temporary measure.
+impl Chain {
     /// Deploys a fresh instance of Hyperdrive.
-    async fn test_deploy(provider: Provider<Http>, signer: LocalWallet) -> Result<Addresses> {
+    pub async fn test_deploy<S: Signer + 'static>(&self, signer: S) -> Result<Addresses> {
+        // Create a client using the signer.
+        let address = signer.address();
+        let client = self.client(signer).await?;
+
         // Deploy the base token and vault.
-        let client = Arc::new(SignerMiddleware::new(
-            provider.clone(),
-            signer.with_chain_id(provider.get_chainid().await?.low_u64()),
-        ));
         let base = ERC20Mintable::deploy(
             client.clone(),
             (
@@ -493,9 +270,9 @@ impl TestChain {
             checkpoint_duration: U256::from(60 * 60 * 24),     // 1 day
             time_stretch: get_time_stretch(fixed!(0.05e18), U256::from(60 * 60 * 24 * 365).into())
                 .into(), // time stretch for 5% rate
-            fee_collector: client.address(),
-            sweep_collector: client.address(),
-            governance: client.address(),
+            fee_collector: address,
+            sweep_collector: address,
+            governance: address,
             fees: Fees {
                 curve: uint256!(0.05e18),
                 flat: uint256!(0.0005e18),
@@ -543,16 +320,14 @@ impl TestChain {
 
     /// Deploys the full Hyperdrive system equipped with a Hyperdrive Factory,
     /// an ERC4626Hyperdrive instance, and a StETHHyperdrive instance.
-    async fn full_deploy(
-        provider: Provider<Http>,
-        signer: LocalWallet,
+    pub async fn full_deploy<S: Signer + 'static>(
+        &self,
+        signer: S,
         config: TestChainConfig,
     ) -> Result<Addresses> {
-        // Set up an ethers client with the provider and signer.
-        let client = Arc::new(SignerMiddleware::new(
-            provider.clone(),
-            signer.with_chain_id(provider.get_chainid().await?.low_u64()),
-        ));
+        // Set up a client.
+        let address = signer.address();
+        let client = self.client(signer).await?;
 
         // Deploy the base token and vault.
         let base = ERC20Mintable::deploy(
@@ -561,7 +336,7 @@ impl TestChain {
                 config.base_token_name,
                 config.base_token_symbol,
                 config.base_token_decimals,
-                client.address(),
+                address,
                 config.is_competition_mode,
             ),
         )?
@@ -574,7 +349,7 @@ impl TestChain {
                 config.vault_name,
                 config.vault_symbol,
                 config.vault_starting_rate,
-                client.address(),
+                address,
                 config.is_competition_mode,
             ),
         )?
@@ -605,21 +380,13 @@ impl TestChain {
                 client.clone(),
                 (
                     config.lido_starting_rate,
-                    client.address(),
+                    address,
                     config.is_competition_mode,
                 ),
             )?
             .send()
             .await?;
-            provider
-                .request(
-                    "anvil_setBalance",
-                    (
-                        client.address(),
-                        client.get_balance(client.address(), None).await? + U256::one(),
-                    ),
-                )
-                .await?;
+            self.deal(address, uint256!(1e18)).await?;
             lido.submit(Address::zero())
                 .value(uint256!(1e18))
                 .send()
@@ -637,7 +404,7 @@ impl TestChain {
             HyperdriveFactory::deploy(
                 client.clone(),
                 ((
-                    client.address(),   // governance
+                    address,            // governance
                     config.admin,       // hyperdrive governance
                     vec![config.admin], // default pausers
                     config.admin,       // fee collector
@@ -712,7 +479,7 @@ impl TestChain {
 
         // Deploy and initialize an initial ERC4626Hyperdrive instance.
         let erc4626_hyperdrive = {
-            base.mint_with_destination(client.address(), config.erc4626_hyperdrive_contribution)
+            base.mint_with_destination(address, config.erc4626_hyperdrive_contribution)
                 .send()
                 .await?;
             base.approve(
@@ -816,7 +583,7 @@ impl TestChain {
                     config.erc4626_hyperdrive_time_stretch_apr,
                     Options {
                         as_base: true,
-                        destination: client.address(),
+                        destination: address,
                         extra_data: Vec::new().into(),
                     },
                     [0x01; 32],
@@ -884,15 +651,7 @@ impl TestChain {
 
         // Deploy and initialize an initial StETHHyperdrive instance.
         let steth_hyperdrive = {
-            provider
-                .request(
-                    "anvil_setBalance",
-                    (
-                        client.address(),
-                        client.get_balance(client.address(), None).await?
-                            + config.steth_hyperdrive_contribution,
-                    ),
-                )
+            self.deal(address, config.steth_hyperdrive_contribution)
                 .await?;
             let pool_config = PoolDeployConfig {
                 fee_collector: factory.fee_collector().call().await?,
@@ -989,7 +748,7 @@ impl TestChain {
                     config.steth_hyperdrive_time_stretch_apr,
                     Options {
                         as_base: true,
-                        destination: client.address(),
+                        destination: address,
                         extra_data: Vec::new().into(),
                     },
                     [0x02; 32],
@@ -1030,297 +789,6 @@ impl TestChain {
             steth_hyperdrive,
         })
     }
-
-    /// Etches the latest compiled bytecode onto a target instance of Hyperdrive.
-    async fn etch(
-        provider: &Provider<Http>,
-        signer: LocalWallet,
-        addresses: &Addresses,
-    ) -> Result<()> {
-        // Instantiate a hyperdrive contract wrapper to use during the etching
-        // process.
-        let client = Arc::new(SignerMiddleware::new(
-            provider.clone(),
-            signer.with_chain_id(provider.get_chainid().await?.low_u64()),
-        ));
-        let hyperdrive = IERC4626Hyperdrive::new(addresses.erc4626_hyperdrive, client.clone());
-
-        // Get the contract addresses of the vault and the targets.
-        let target0_address = hyperdrive.target_0().call().await?;
-        let target1_address = hyperdrive.target_1().call().await?;
-        let target2_address = hyperdrive.target_2().call().await?;
-        let target3_address = hyperdrive.target_3().call().await?;
-        let target4_address = hyperdrive.target_4().call().await?;
-        let vault_address = hyperdrive.vault().call().await?;
-
-        // Deploy templates for each of the contracts that should be etched and
-        // get a list of targets and templates. In order for the contracts to
-        // have the same behavior after etching, the storage layout needs to be
-        // identical, and we must faithfully copy over the immutables from the
-        // original contracts to the templates.
-        let etch_pairs = {
-            let mut pairs = Vec::new();
-
-            // Deploy the base token template.
-            let base = ERC20Mintable::new(addresses.base_token, client.clone());
-            let name = base.name().call().await?;
-            let symbol = base.symbol().call().await?;
-            let decimals = base.decimals().call().await?;
-            let is_competition_mode = base.is_competition_mode().call().await?;
-            let base_template = ERC20Mintable::deploy(
-                client.clone(),
-                (name, symbol, decimals, Address::zero(), is_competition_mode),
-            )?
-            .send()
-            .await?;
-            pairs.push((addresses.base_token, base_template.address()));
-
-            // Deploy the vault template.
-            let vault = MockERC4626::new(vault_address, client.clone());
-            let asset = vault.asset().call().await?;
-            let name = vault.name().call().await?;
-            let symbol = vault.symbol().call().await?;
-            let is_competition_mode = vault.is_competition_mode().call().await?;
-            let vault_template = MockERC4626::deploy(
-                client.clone(),
-                (
-                    asset,
-                    name,
-                    symbol,
-                    uint256!(0),
-                    Address::zero(),
-                    is_competition_mode,
-                ),
-            )?
-            .send()
-            .await?;
-            pairs.push((vault_address, vault_template.address()));
-
-            // Deploy the target0 template.
-            let config = hyperdrive.get_pool_config().call().await?;
-            let target0_template =
-                ERC4626Target0::deploy(client.clone(), (config.clone(), vault_address))?
-                    .send()
-                    .await?;
-            pairs.push((target0_address, target0_template.address()));
-
-            // Deploy the target1 template.
-            let target1_template =
-                ERC4626Target1::deploy(client.clone(), (config.clone(), vault_address))?
-                    .send()
-                    .await?;
-            pairs.push((target1_address, target1_template.address()));
-
-            // Deploy the target2 template.
-            let target2_template =
-                ERC4626Target2::deploy(client.clone(), (config.clone(), vault_address))?
-                    .send()
-                    .await?;
-            pairs.push((target2_address, target2_template.address()));
-
-            // Deploy the target3 template.
-            let target3_template =
-                ERC4626Target3::deploy(client.clone(), (config.clone(), vault_address))?
-                    .send()
-                    .await?;
-            pairs.push((target3_address, target3_template.address()));
-
-            // Deploy the target4 template.
-            let target4_template =
-                ERC4626Target4::deploy(client.clone(), (config.clone(), vault_address))?
-                    .send()
-                    .await?;
-            pairs.push((target4_address, target4_template.address()));
-
-            // Etch the "etching vault" onto the current vault contract. The
-            // etching vault implements `convertToAssets` to return the immutable
-            // that was passed on deployment. This is necessary because the
-            // ERC4626Hyperdrive instance verifies that the initial vault share price
-            // is equal to the `_pricePerVaultShare`.
-            let etching_vault_template = EtchingVault::deploy(
-                client.clone(),
-                (addresses.base_token, config.initial_vault_share_price),
-            )?
-            .send()
-            .await?;
-            let code = provider
-                .get_code(etching_vault_template.address(), None)
-                .await?;
-            provider
-                .request::<(Address, Bytes), ()>("anvil_setCode", (vault_address, code))
-                .await?;
-
-            // Deploy the hyperdrive template.
-            let hyperdrive_template = ERC4626Hyperdrive::deploy(
-                client.clone(),
-                (
-                    config,
-                    target0_address,
-                    target1_address,
-                    target2_address,
-                    target3_address,
-                    target4_address,
-                    vault_address,
-                    Vec::<Address>::new(),
-                ),
-            )?
-            .send()
-            .await?;
-            pairs.push((addresses.erc4626_hyperdrive, hyperdrive_template.address()));
-
-            pairs
-        };
-
-        // Etch over the original contracts with the template contracts' code.
-        for (target, template) in etch_pairs {
-            let code = provider.get_code(template, None).await?;
-            provider
-                .request::<(Address, Bytes), ()>("anvil_setCode", (target, code))
-                .await?;
-        }
-
-        Ok(())
-    }
-
-    /// Generates and funds a set of random accounts with ether.
-    async fn fund_accounts(
-        provider: &Provider<Http>,
-        num_accounts: usize,
-    ) -> Result<Vec<LocalWallet>> {
-        // Create a set of accounts using the default mnemonic and fund them
-        // with ether.
-        let mut accounts = vec![];
-        let mut builder = MnemonicBuilder::<English>::default().phrase(MNEMONIC);
-        for i in 0..num_accounts {
-            // Generate the account at the new index using the mnemonic.
-            builder = builder.index(i as u32).unwrap();
-            let account = builder.build()?;
-
-            // Fund the account with some ether and add it to the list of accounts..
-            provider
-                .request(
-                    "anvil_setBalance",
-                    (account.address(), uint256!(100_000e18)),
-                )
-                .await?;
-            accounts.push(account);
-        }
-
-        Ok(accounts)
-    }
-
-    /// Connect to the ethereum node specified by the `HYPERDRIVE_ETHEREUM_URL`
-    /// environment variable. If no url is provided, spawn an in-process anvil
-    /// node.
-    async fn connect() -> Result<(Provider<Http>, Option<Arc<AnvilInstance>>)> {
-        // If an ethereum url is provided, use it. Otherwise, we spawn an
-        // in-process anvil node.
-        if let Some(ethereum_url) = &*MAYBE_ETHEREUM_URL {
-            Ok((
-                Provider::<Http>::try_from(ethereum_url)?.interval(Duration::from_millis(1)),
-                None,
-            ))
-        } else {
-            let anvil = Anvil::new()
-                .arg("--timestamp")
-                // NOTE: Anvil can't increase the time or set the time of the
-                // next block to a time in the past, so we set the genesis block
-                // to 12 AM UTC, January 1, 2000 to avoid issues when reproducing
-                // old crash reports.
-                .arg("946684800")
-                .spawn();
-            Ok((
-                Provider::<Http>::try_from(anvil.endpoint())?.interval(Duration::from_millis(1)),
-                Some(Arc::new(anvil)),
-            ))
-        }
-    }
-}
-
-impl TestChain {
-    pub async fn snapshot(&self) -> Result<U256> {
-        let id = self.provider.request("evm_snapshot", ()).await?;
-        Ok(id)
-    }
-
-    pub async fn revert<U: Into<U256>>(&self, id: U) -> Result<()> {
-        self.provider
-            .request::<[U256; 1], bool>("evm_revert", [id.into()])
-            .await?;
-        Ok(())
-    }
-
-    pub async fn increase_time(&self, duration: u128) -> Result<()> {
-        self.provider
-            .request::<[u128; 1], i128>("anvil_increaseTime", [duration])
-            .await?;
-        self.provider
-            .request::<[u128; 1], ()>("anvil_mine", [1])
-            .await?;
-        Ok(())
-    }
-
-    pub async fn set_balance<U: Into<U256>>(&self, address: Address, balance: U) -> Result<()> {
-        self.provider
-            .request::<(Address, U256), bool>("anvil_setBalance", (address, balance.into()))
-            .await?;
-        Ok(())
-    }
-}
-
-pub struct TestChainWithMocks {
-    chain: TestChain,
-    mock_fixed_point_math: MockFixedPointMath<ChainClient>,
-    mock_hyperdrive_math: MockHyperdriveMath<ChainClient>,
-    mock_lp_math: MockLPMath<ChainClient>,
-    mock_yield_space_math: MockYieldSpaceMath<ChainClient>,
-}
-
-impl TestChainWithMocks {
-    pub async fn new(num_accounts: usize) -> Result<Self> {
-        let chain = TestChain::new(num_accounts).await?;
-        let client = chain.client(chain.accounts()[0].clone()).await?;
-
-        // Deploy the mock contracts.
-        let mock_fixed_point_math = MockFixedPointMath::deploy(client.clone(), ())?
-            .send()
-            .await?;
-        let mock_hyperdrive_math = MockHyperdriveMath::deploy(client.clone(), ())?
-            .send()
-            .await?;
-        let mock_lp_math = MockLPMath::deploy(client.clone(), ())?.send().await?;
-        let mock_yield_space_math = MockYieldSpaceMath::deploy(client.clone(), ())?
-            .send()
-            .await?;
-
-        Ok(Self {
-            chain,
-            mock_fixed_point_math,
-            mock_hyperdrive_math,
-            mock_lp_math,
-            mock_yield_space_math,
-        })
-    }
-
-    pub fn chain(&self) -> TestChain {
-        self.chain.clone()
-    }
-
-    pub fn mock_fixed_point_math(&self) -> MockFixedPointMath<ChainClient> {
-        self.mock_fixed_point_math.clone()
-    }
-
-    pub fn mock_hyperdrive_math(&self) -> MockHyperdriveMath<ChainClient> {
-        self.mock_hyperdrive_math.clone()
-    }
-
-    pub fn mock_lp_math(&self) -> MockLPMath<ChainClient> {
-        self.mock_lp_math.clone()
-    }
-
-    pub fn mock_yield_space_math(&self) -> MockYieldSpaceMath<ChainClient> {
-        self.mock_yield_space_math.clone()
-    }
 }
 
 #[cfg(test)]
@@ -1329,20 +797,28 @@ mod tests {
     use hyperdrive_wrappers::wrappers::ihyperdrive::{Fees, IHyperdrive};
 
     use super::*;
+    use crate::constants::ALICE;
 
     #[tokio::test]
     async fn test_deploy_devnet() -> Result<()> {
+        // Connect to a local anvil chain.
+        let chain = Chain::connect(None).await?;
+        chain.deal(ALICE.address(), uint256!(100_000e18)).await?;
+        let client = chain.client(ALICE.clone()).await?;
+
+        // Deploy the factory and pools.
         let test_chain_config = TestChainConfig::default();
-        let chain = TestChain::new_with_factory(1, test_chain_config.clone()).await?;
-        let client = chain.client(chain.accounts()[0].clone()).await?;
+        let addresses = chain
+            .full_deploy(ALICE.clone(), test_chain_config.clone())
+            .await?;
 
         // Verify that the addresses are non-zero.
-        assert_ne!(chain.addresses, Addresses::default());
+        assert_ne!(addresses, Addresses::default());
 
         // Verify that the erc4626 pool config is correct.
-        let hyperdrive = IHyperdrive::new(chain.addresses.erc4626_hyperdrive, client.clone());
+        let hyperdrive = IHyperdrive::new(addresses.erc4626_hyperdrive, client.clone());
         let config = hyperdrive.get_pool_config().call().await?;
-        assert_eq!(config.base_token, chain.addresses.base_token);
+        assert_eq!(config.base_token, addresses.base_token);
         assert_eq!(
             config.minimum_share_reserves,
             test_chain_config.erc4626_hyperdrive_minimum_share_reserves
@@ -1379,7 +855,7 @@ mod tests {
         );
 
         // Verify that the steth pool config is correct.
-        let hyperdrive = IHyperdrive::new(chain.addresses.steth_hyperdrive, client.clone());
+        let hyperdrive = IHyperdrive::new(addresses.steth_hyperdrive, client.clone());
         let config = hyperdrive.get_pool_config().call().await?;
         assert_eq!(
             config.base_token,
@@ -1422,21 +898,30 @@ mod tests {
 
     #[tokio::test]
     async fn test_deploy_testnet() -> Result<()> {
+        // Get a config that matches the one used for testnet.
         let mut test_chain_config = TestChainConfig::default();
         test_chain_config.erc4626_hyperdrive_position_duration = U256::from(60 * 60 * 24 * 365);
         test_chain_config.erc4626_hyperdrive_flat_fee = uint256!(0.0005e18);
         test_chain_config.steth_hyperdrive_position_duration = U256::from(60 * 60 * 24 * 365);
         test_chain_config.steth_hyperdrive_flat_fee = uint256!(0.0005e18);
-        let chain = TestChain::new_with_factory(1, test_chain_config.clone()).await?;
-        let client = chain.client(chain.accounts()[0].clone()).await?;
+
+        // Connect to a local anvil chain.
+        let chain = Chain::connect(None).await?;
+        chain.deal(ALICE.address(), uint256!(100_000e18)).await?;
+        let client = chain.client(ALICE.clone()).await?;
+
+        // Deploy the factory and pools.
+        let addresses = chain
+            .full_deploy(ALICE.clone(), test_chain_config.clone())
+            .await?;
 
         // Verify that the addresses are non-zero.
-        assert_ne!(chain.addresses, Addresses::default());
+        assert_ne!(addresses, Addresses::default());
 
         // Verify that the erc4626 pool config is correct.
-        let hyperdrive = IHyperdrive::new(chain.addresses.erc4626_hyperdrive, client.clone());
+        let hyperdrive = IHyperdrive::new(addresses.erc4626_hyperdrive, client.clone());
         let config = hyperdrive.get_pool_config().call().await?;
-        assert_eq!(config.base_token, chain.addresses.base_token);
+        assert_eq!(config.base_token, addresses.base_token);
         assert_eq!(
             config.minimum_share_reserves,
             test_chain_config.erc4626_hyperdrive_minimum_share_reserves
@@ -1473,7 +958,7 @@ mod tests {
         );
 
         // Verify that the steth pool config is correct.
-        let hyperdrive = IHyperdrive::new(chain.addresses.steth_hyperdrive, client.clone());
+        let hyperdrive = IHyperdrive::new(addresses.steth_hyperdrive, client.clone());
         let config = hyperdrive.get_pool_config().call().await?;
         assert_eq!(
             config.base_token,

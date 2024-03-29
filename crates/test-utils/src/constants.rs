@@ -1,6 +1,13 @@
 use std::env;
 
+use ethers::{signers::LocalWallet, utils::keccak256};
+
 lazy_static! {
+    // A set of test accounts.
+    pub static ref ALICE: LocalWallet = LocalWallet::from_bytes(&keccak256("alice")).unwrap();
+    pub static ref BOB: LocalWallet = LocalWallet::from_bytes(&keccak256("bob")).unwrap();
+    pub static ref CELINE: LocalWallet = LocalWallet::from_bytes(&keccak256("celine")).unwrap();
+
     // The Ethereum URL the tests should connect to. If None, then the tests
     // will spawn an anvil node.
     pub static ref MAYBE_ETHEREUM_URL: Option<String> = env::var("HYPERDRIVE_ETHEREUM_URL").ok().or(None);
