@@ -90,9 +90,73 @@ contract LsETHHyperdriveTest is InstanceTest {
     /// @dev Converts base amount to the equivalent amount in LsETH.
     function convertToShares(
         uint256 baseAmount
-    ) internal view override returns (uint256 shareAmount) {
+    ) internal view override returns (uint256) {
         // River has a built-in function for computing price in terms of shares.
         return RIVER.sharesFromUnderlyingBalance(baseAmount);
+    }
+
+    /// @dev Converts base amount to the equivalent amount in ETH.
+    function convertToBase(
+        uint256 shareAmount
+    ) internal view override returns (uint256) {
+        // River has a built-in function for computing price in terms of base.
+        return RIVER.underlyingBalanceFromShares(shareAmount);
+    }
+
+    /// @dev Fetches the token balance information of an account.
+    function getTokenBalances(
+        address account
+    ) internal view override returns (uint256, uint256) {
+        return (RIVER.balanceOfUnderlying(account), RIVER.balanceOf(account));
+    }
+
+    /// @dev Fetches the total supply of the base and share tokens.
+    function getSupply() internal view override returns (uint256, uint256) {
+        return (RIVER.totalUnderlyingSupply(), RIVER.totalSupply());
+    }
+
+    /// @dev Verifies that deposit accounting is correct when opening positions.
+    function verifyDeposit(
+        address trader,
+        uint256 amount,
+        bool asBase,
+        uint totalBaseBefore,
+        uint256 totalSharesBefore,
+        AccountBalances memory traderBalancesBefore,
+        AccountBalances memory hyperdriveBalancesBefore
+    ) internal override {
+        // Deposits as base is not supported for this instance.
+        if (asBase) {
+            revert IHyperdrive.NotPayable();
+        }
+
+        // Convert the amount in terms of shares.
+        amount = convertToShares(amount);
+
+        // Ensure that the ETH balances were updated correctly.
+        assertEq(
+            address(hyperdrive).balance,
+            hyperdriveBalancesBefore.ETHBalance
+        );
+        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
+
+        // Ensure that the LsETH balances were updated correctly.
+        assertApproxEqAbs(
+            RIVER.balanceOf(address(hyperdrive)),
+            hyperdriveBalancesBefore.sharesBalance + amount,
+            1
+        );
+        assertApproxEqAbs(
+            RIVER.balanceOf(trader),
+            traderBalancesBefore.sharesBalance - amount,
+            1
+        );
+
+        // Ensure the total base supply was updated correctly.
+        assertEq(RIVER.totalUnderlyingSupply(), totalBaseBefore);
+
+        // Ensure the total supply was updated correctly.
+        assertEq(RIVER.totalSupply(), totalSharesBefore);
     }
 
     /// Price Per Share ///
@@ -120,65 +184,6 @@ contract LsETHHyperdriveTest is InstanceTest {
     }
 
     /// Long ///
-
-    function test_open_long_with_eth(uint256 basePaid) external {
-        // Bob opens a long by depositing ETH. This is not allowed and
-        // should throw an unsupported token exception.
-        vm.startPrank(bob);
-        basePaid = basePaid.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
-        );
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openLong{ value: basePaid }(
-            basePaid,
-            0,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-    }
-
-    function test_open_long_with_lseth(uint256 basePaid) external {
-        // Get some balance information before the deposit.
-        uint256 totalSharesBefore = RIVER.totalSupply();
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-
-        // Calculate the maximum amount of basePaid we can test. The limit is
-        // either the max long that Hyperdrive can open or the amount of LsETH
-        // tokens the trader has.
-        uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
-        uint256 maxEthAmount = RIVER.underlyingBalanceFromShares(
-            RIVER.balanceOf(bob)
-        );
-
-        // Bob opens a long by depositing LsETH.
-        vm.startPrank(bob);
-        basePaid = basePaid.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            maxLongAmount > maxEthAmount ? maxEthAmount : maxLongAmount
-        );
-        uint256 sharesPaid = RIVER.sharesFromUnderlyingBalance(basePaid);
-        RIVER.approve(address(hyperdrive), sharesPaid);
-        openLong(bob, sharesPaid, false);
-
-        // Ensure that River aggregates and the token balances were updated
-        // correctly during the trade.
-        verifyDeposit(
-            bob,
-            sharesPaid,
-            false,
-            totalSharesBefore,
-            bobBalancesBefore,
-            hyperdriveBalancesBefore
-        );
-    }
 
     function test_open_long_refunds() external {
         vm.startPrank(bob);
@@ -327,66 +332,6 @@ contract LsETHHyperdriveTest is InstanceTest {
 
     /// Short ///
 
-    function test_open_short_with_eth(uint256 shortAmount) external {
-        // Bob opens a short by depositing ETH. This is not allowed and
-        // should throw an unsupported token exception.
-        shortAmount = shortAmount.normalizeToRange(
-            100 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxShort(hyperdrive)
-        );
-        vm.deal(bob, shortAmount);
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openShort{ value: shortAmount }(
-            shortAmount,
-            shortAmount,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-    }
-
-    function test_open_short_with_lseth(uint256 shortAmount) external {
-        // Get some balance information before the deposit.
-        uint256 totalLsethSupplyBefore = RIVER.totalSupply();
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-
-        // Bob opens a short by depositing LsETH.
-        vm.startPrank(bob);
-        shortAmount = shortAmount.normalizeToRange(
-            100 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxShort(hyperdrive)
-        );
-        RIVER.approve(address(hyperdrive), shortAmount);
-        (, uint256 sharesPaid) = openShort(bob, shortAmount, false);
-        uint256 basePaid = RIVER.underlyingBalanceFromShares(sharesPaid);
-
-        // Ensure that the amount of base paid by the short is reasonable.
-        uint256 realizedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
-            shortAmount - basePaid,
-            shortAmount,
-            1e18
-        );
-        assertGt(basePaid, 0);
-        assertGe(realizedRate, FIXED_RATE);
-
-        // Ensure that River aggregates and the token balances were updated
-        // correctly during the trade.
-        verifyDeposit(
-            bob,
-            sharesPaid,
-            false,
-            totalLsethSupplyBefore,
-            bobBalancesBefore,
-            hyperdriveBalancesBefore
-        );
-    }
-
     function test_open_short_refunds() external {
         vm.startPrank(bob);
 
@@ -517,39 +462,6 @@ contract LsETHHyperdriveTest is InstanceTest {
         );
     }
 
-    function verifyDeposit(
-        address trader,
-        uint256 amount,
-        bool asBase,
-        uint256 totalSharesBefore,
-        AccountBalances memory traderBalancesBefore,
-        AccountBalances memory hyperdriveBalancesBefore
-    ) internal {
-        if (asBase) {
-            revert IHyperdrive.NotPayable();
-        }
-
-        // Ensure that the ether balances were updated correctly.
-        assertEq(
-            address(hyperdrive).balance,
-            hyperdriveBalancesBefore.ETHBalance
-        );
-        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-        // Ensure that the LsETH balances were updated correctly.
-        assertEq(
-            RIVER.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.lsethBalance + amount
-        );
-        assertEq(
-            RIVER.balanceOf(trader),
-            traderBalancesBefore.lsethBalance - amount
-        );
-
-        // Ensure the total supply was updated correctly.
-        assertEq(RIVER.totalSupply(), totalSharesBefore);
-    }
-
     function verifyLsethWithdrawal(
         address trader,
         uint256 amount,
@@ -575,11 +487,11 @@ contract LsETHHyperdriveTest is InstanceTest {
         // Ensure the LsETH balances were updated correctly.
         assertEq(
             RIVER.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.lsethBalance - amount
+            hyperdriveBalancesBefore.sharesBalance - amount
         );
         assertEq(
             RIVER.balanceOf(address(trader)),
-            traderBalancesBefore.lsethBalance + amount
+            traderBalancesBefore.sharesBalance + amount
         );
     }
 
@@ -625,20 +537,5 @@ contract LsETHHyperdriveTest is InstanceTest {
 
         // Ensure the new rate is higher than the old rate.
         assertGt(RIVER.underlyingBalanceFromShares(1e18), oldRate);
-    }
-
-    struct AccountBalances {
-        uint256 lsethBalance;
-        uint256 ETHBalance;
-    }
-
-    function getAccountBalances(
-        address account
-    ) internal view returns (AccountBalances memory) {
-        return
-            AccountBalances({
-                lsethBalance: RIVER.balanceOf(account),
-                ETHBalance: account.balance
-            });
     }
 }
