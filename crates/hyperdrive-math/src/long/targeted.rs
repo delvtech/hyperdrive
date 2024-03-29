@@ -1,7 +1,7 @@
-use ethers::{
-    providers::maybe,
-    types::{I256, U256},
-};
+use std::result;
+
+use ethers::types::{I256, U256};
+use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
@@ -15,7 +15,7 @@ impl State {
         target_rate: F,
         checkpoint_exposure: I,
         maybe_max_iterations: Option<usize>,
-    ) -> FixedPoint {
+    ) -> Result<FixedPoint> {
         let budget = budget.into();
         let target_rate = target_rate.into();
         let checkpoint_exposure = checkpoint_exposure.into();
@@ -37,21 +37,26 @@ impl State {
             .is_some()
             && abs_rate_error < allowable_error
         {
-            return spot_target_base_amount.min(budget);
+            return Ok(spot_target_base_amount.min(budget));
         } else {
             // Adjust your first guess
-            // TODO: Need to come up with a smarter and safe first guess
-            let mut possible_target_base_amount = if resulting_rate > target_rate {
-                spot_target_base_amount / fixed!(15e17) // overshot; need a smaller long
-            } else {
-                spot_target_base_amount * fixed!(15e17) // undershot; need a larger long
-            };
+            let mut possible_target_base_amount = self.ze() - self.minimum_share_reserves();
+            // // TODO: Need to come up with a smarter and safe first guess
+            // let mut possible_target_base_amount = if resulting_rate > target_rate {
+            //     spot_target_base_amount / fixed!(15e17) // overshot; need a smaller long
+            // } else {
+            //     spot_target_base_amount * fixed!(15e17) // undershot; need a larger long
+            // };
             // Iteratively find a solution
             for _ in 0..maybe_max_iterations.unwrap_or(7) {
                 let possible_target_bond_amount =
                     self.calculate_open_long(possible_target_base_amount);
+                // TODO: make optional bond amount all the way down (through calc_spot_price_after_long) to avoid
+                // extra `calculate_open_long`
                 let resulting_rate = self.rate_after_long(possible_target_base_amount);
                 let abs_rate_error = self.abs_rate_error(target_rate, resulting_rate);
+
+                // If we've done it (solvent & within error), then return the value.
                 if self
                     .solvency_after_long(
                         possible_target_base_amount,
@@ -61,12 +66,29 @@ impl State {
                     .is_some()
                     && abs_rate_error < allowable_error
                 {
-                    return possible_target_base_amount.max(budget);
+                    return Ok(possible_target_base_amount.min(budget));
+
+                // Otherwise perform another iteration.
                 } else {
-                    possible_target_base_amount = possible_target_base_amount
-                        + self.targeted_loss_derivative(target_rate, possible_target_base_amount);
+                    let negative_loss_derivative = match self
+                        .negative_targeted_loss_derivative(possible_target_base_amount)
+                    {
+                        Some(derivative) => derivative,
+                        None => {
+                            return Err(eyre!(
+                            "get_targeted_long: Invalid value when calculating targeted loss derivative.",
+                        ));
+                        }
+                    };
+                    let loss = self.targeted_loss(target_rate, possible_target_base_amount);
+
+                    // adding the negative loss derivative instead of subtracting the loss derivative
+                    possible_target_base_amount =
+                        possible_target_base_amount + loss / negative_loss_derivative;
                 }
             }
+
+            // If we hit max iterations and never were within error, check solvency & return.
             if self
                 .solvency_after_long(
                     possible_target_base_amount,
@@ -75,9 +97,11 @@ impl State {
                 )
                 .is_some()
             {
-                return possible_target_base_amount.max(budget);
+                return Ok(possible_target_base_amount.min(budget));
+
+            // Otherwise we'll return an error.
             } else {
-                panic!("Initial guess in `get_targeted_long` is insolvent.");
+                return Err(eyre!("Initial guess in `get_targeted_long` is insolvent."));
             }
         }
     }
@@ -103,7 +127,7 @@ impl State {
 
     /// The derivative of the equation for calculating the spot rate after a long
     /// TODO: Add docs
-    fn rate_after_long_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
+    fn negative_rate_after_long_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
         let annualized_time =
             self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
         let price = self.get_spot_price_after_long(base_amount);
@@ -111,9 +135,16 @@ impl State {
             Some(derivative) => derivative,
             None => return None,
         };
+
+        // The actual equation we want to solve is:
+        // (-p' * p * d - (1-p) (p'd + p)) / (p * d)^2
+        // We can do a trick to return a positive-only version and
+        // indicate that it should be negative in the fn name.
+        // -1 * -1 * (-p' * p * d - (1-p) (p'*d + p)) / (p * d)^2
+        // -1 * (p' * p * d + (1-p) (p'*d + p)) / (p * d)^2
         Some(
-            (-price_derivative * price * annualized_time
-                - (fixed!(1e18) - price) * (price_derivative * annualized_time + price),)
+            (price_derivative * price * annualized_time
+                + (fixed!(1e18) - price) * (price_derivative * annualized_time + price))
                 / (price * annualized_time).pow(fixed!(2e18)),
         )
     }
@@ -134,9 +165,9 @@ impl State {
                 - self.zeta().into());
         let inner_numerator_derivative = self.mu() / self.vault_share_price() - gov_fee_derivative;
         let inner_denominator = self.bond_reserves() - self.calculate_open_long(base_amount);
-        let inner_denominator_derivative = -long_amount_derivative;
+
         let inner_derivative = (inner_denominator * inner_numerator_derivative
-            - inner_numerator * inner_denominator_derivative)
+            + inner_numerator * long_amount_derivative)
             / inner_denominator.pow(fixed!(2e18));
         return Some(
             inner_derivative
@@ -149,19 +180,20 @@ impl State {
     /// TODO: Add docs
     fn targeted_loss(&self, target_rate: FixedPoint, base_amount: FixedPoint) -> FixedPoint {
         let resulting_rate = self.rate_after_long(base_amount);
-        let abs_rate_error = self.abs_rate_error(target_rate, resulting_rate);
-        (fixed!(1e18) / fixed!(2e18)) * (abs_rate_error).pow(fixed!(2e18))
+        // This should never happen, but jic
+        if target_rate > resulting_rate {
+            panic!("We overshot the zero-crossing!");
+        }
+        resulting_rate - target_rate
     }
 
     /// Derivative of the targeted long loss
     /// TODO: Add docs
-    fn targeted_loss_derivative(
-        &self,
-        target_rate: FixedPoint,
-        base_amount: FixedPoint,
-    ) -> FixedPoint {
-        (self.rate_after_long(base_amount) - target_rate)
-            * self.rate_after_long_derivative(base_amount)
+    fn negative_targeted_loss_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
+        match self.negative_rate_after_long_derivative(base_amount) {
+            Some(derivative) => return Some(derivative),
+            None => return None,
+        }
     }
 
     /// Calculates the long that should be opened to hit a target interest rate.
@@ -204,6 +236,7 @@ impl State {
     }
 }
 
+// TODO: Modify this test to use mock for state updates
 #[cfg(test)]
 mod tests {
     use eyre::Result;
@@ -224,7 +257,7 @@ mod tests {
         // is funded with a large amount of capital so that she can initialize
         // the pool. Bob is funded with a small amount of capital so that we
         // can test `get_targeted_long` when budget is the primary constraint.
-        // Claire is funded with a large amount of capital so tha we can test
+        // Claire is funded with a large amount of capital so that we can test
         // `get_targeted_long` when budget is not a constraint.
         let mut rng = thread_rng();
         let chain = TestChain::new(3).await?;
