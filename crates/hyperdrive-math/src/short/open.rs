@@ -98,13 +98,29 @@ impl State {
 mod tests {
     use std::panic;
 
-    use ethers::types::U256;
+    use ethers::{
+        signers::{LocalWallet, Signer},
+        types::U256,
+    };
     use eyre::Result;
-    use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::MaxTradeParams;
+    use fixed_point_macros::uint256;
+    use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::{MaxTradeParams, MockHyperdriveMath};
     use rand::{thread_rng, Rng};
-    use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};
+    use test_utils::{
+        chain::{Chain, ChainClient},
+        constants::{ALICE, FAST_FUZZ_RUNS},
+    };
 
     use super::*;
+
+    async fn setup() -> Result<MockHyperdriveMath<ChainClient<LocalWallet>>> {
+        let chain = Chain::connect(None).await?;
+        chain.deal(ALICE.address(), uint256!(100_000e18)).await?;
+        let mock = MockHyperdriveMath::deploy(chain.client(ALICE.clone()).await?, ())?
+            .send()
+            .await?;
+        Ok(mock)
+    }
 
     /// This test differentially fuzzes the `get_max_short` function against the
     /// Solidity analogue `calculateMaxShort`. `calculateMaxShort` doesn't take
@@ -114,7 +130,7 @@ mod tests {
     /// functions are equivalent.
     #[tokio::test]
     async fn fuzz_get_max_short_no_budget() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -138,8 +154,7 @@ mod tests {
                     Some(max_iterations),
                 )
             });
-            match chain
-                .mock_hyperdrive_math()
+            match mock
                 .calculate_max_short(
                     MaxTradeParams {
                         share_reserves: state.info.share_reserves,

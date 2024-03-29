@@ -480,11 +480,26 @@ impl UniformSampler for UniformFixedPoint {
 mod tests {
     use std::panic;
 
+    use ethers::signers::{LocalWallet, Signer};
     use eyre::Result;
+    use hyperdrive_wrappers::wrappers::mock_fixed_point_math::MockFixedPointMath;
     use rand::{thread_rng, Rng};
-    use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};
+    use test_utils::{
+        chain::{Chain, ChainClient},
+        constants::{ALICE, FAST_FUZZ_RUNS},
+    };
 
     use super::*;
+
+    async fn setup() -> Result<MockFixedPointMath<ChainClient<LocalWallet>>> {
+        let chain = Chain::connect(None).await?;
+        chain.deal(ALICE.address(), uint256!(100_000e18)).await?;
+        let mock = MockFixedPointMath::deploy(chain.client(ALICE.clone()).await?, ())
+            .unwrap()
+            .send()
+            .await?;
+        Ok(mock)
+    }
 
     #[test]
     fn test_fixed_point_fmt() {
@@ -519,8 +534,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_mul_div_down() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_fixed_point_math();
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -546,8 +560,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_mul_div_up() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_fixed_point_math();
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -567,8 +580,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_mul_down() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_fixed_point_math();
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -587,8 +599,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_mul_up() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_fixed_point_math();
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -613,8 +624,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_div_down() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_fixed_point_math();
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -639,8 +649,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_div_up() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_fixed_point_math();
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -659,8 +668,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_pow_narrow() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_fixed_point_math();
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -681,8 +689,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_pow() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_fixed_point_math();
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -701,8 +708,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_exp_narrow() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_fixed_point_math();
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -720,8 +726,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_exp() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_fixed_point_math();
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -740,8 +745,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_ln_narrow() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_fixed_point_math();
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -759,8 +763,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_ln() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_fixed_point_math();
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();

@@ -1,4 +1,7 @@
-use ethers::types::U256;
+use ethers::{
+    signers::{LocalWallet, Signer},
+    types::U256,
+};
 use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
@@ -8,16 +11,35 @@ use rand::{thread_rng, Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use test_utils::{
     agent::Agent,
-    chain::{Chain, ChainClient, TestChain},
-    constants::FUZZ_RUNS,
+    chain::{Chain, ChainClient},
+    constants::{ALICE, BOB, CELINE, FUZZ_RUNS},
 };
+
+async fn setup() -> Result<(
+    Chain,
+    Agent<ChainClient<LocalWallet>, ChaCha8Rng>,
+    Agent<ChainClient<LocalWallet>, ChaCha8Rng>,
+    Agent<ChainClient<LocalWallet>, ChaCha8Rng>,
+)> {
+    // Initialize the test chain and agents.
+    let chain = Chain::connect(None).await?;
+    let addresses = chain.test_deploy(ALICE.clone()).await?;
+    chain.deal(ALICE.address(), uint256!(100_000e18)).await?;
+    chain.deal(BOB.address(), uint256!(100_000e18)).await?;
+    chain.deal(CELINE.address(), uint256!(100_000e18)).await?;
+    let alice = Agent::new(chain.client(ALICE.clone()).await?, addresses.clone(), None).await?;
+    let bob = Agent::new(chain.client(BOB.clone()).await?, addresses.clone(), None).await?;
+    let celine = Agent::new(chain.client(CELINE.clone()).await?, addresses, None).await?;
+
+    Ok((chain, alice, bob, celine))
+}
 
 /// Executes random trades throughout a Hyperdrive term.
 async fn preamble(
     rng: &mut ChaCha8Rng,
-    alice: &mut Agent<ChainClient, ChaCha8Rng>,
-    bob: &mut Agent<ChainClient, ChaCha8Rng>,
-    celine: &mut Agent<ChainClient, ChaCha8Rng>,
+    alice: &mut Agent<ChainClient<LocalWallet>, ChaCha8Rng>,
+    bob: &mut Agent<ChainClient<LocalWallet>, ChaCha8Rng>,
+    celine: &mut Agent<ChainClient<LocalWallet>, ChaCha8Rng>,
     fixed_rate: FixedPoint,
 ) -> Result<()> {
     // Fund the agent accounts and initialize the pool.
@@ -84,25 +106,7 @@ pub async fn test_integration_get_max_short() -> Result<()> {
     };
 
     // Initialize the test chain and agents.
-    let chain = TestChain::new(3).await?;
-    let mut alice = Agent::new(
-        chain.client(chain.accounts()[0].clone()).await?,
-        chain.addresses(),
-        None,
-    )
-    .await?;
-    let mut bob = Agent::new(
-        chain.client(chain.accounts()[1].clone()).await?,
-        chain.addresses(),
-        None,
-    )
-    .await?;
-    let mut celine = Agent::new(
-        chain.client(chain.accounts()[2].clone()).await?,
-        chain.addresses(),
-        None,
-    )
-    .await?;
+    let (chain, mut alice, mut bob, mut celine) = setup().await?;
 
     for _ in 0..*FUZZ_RUNS {
         // Snapshot the chain.
@@ -176,25 +180,7 @@ pub async fn test_integration_get_max_long() -> Result<()> {
     };
 
     // Initialize the test chain and agents.
-    let chain = TestChain::new(3).await?;
-    let mut alice = Agent::new(
-        chain.client(chain.accounts()[0].clone()).await?,
-        chain.addresses(),
-        None,
-    )
-    .await?;
-    let mut bob = Agent::new(
-        chain.client(chain.accounts()[1].clone()).await?,
-        chain.addresses(),
-        None,
-    )
-    .await?;
-    let mut celine = Agent::new(
-        chain.client(chain.accounts()[2].clone()).await?,
-        chain.addresses(),
-        None,
-    )
-    .await?;
+    let (chain, mut alice, mut bob, mut celine) = setup().await?;
 
     for _ in 0..*FUZZ_RUNS {
         // Snapshot the chain.
@@ -249,29 +235,14 @@ async fn test_calculate_bonds_given_shares_and_rate() -> Result<()> {
         let seed = rng.gen();
         ChaCha8Rng::seed_from_u64(seed)
     };
+
     // Initialize the test chain and agents.
-    let chain = TestChain::new(3).await?;
-    let mut alice = Agent::new(
-        chain.client(chain.accounts()[0].clone()).await?,
-        chain.addresses(),
-        None,
-    )
-    .await?;
-    let mut bob = Agent::new(
-        chain.client(chain.accounts()[1].clone()).await?,
-        chain.addresses(),
-        None,
-    )
-    .await?;
-    let mut celine = Agent::new(
-        chain.client(chain.accounts()[2].clone()).await?,
-        chain.addresses(),
-        None,
-    )
-    .await?;
+    let (chain, mut alice, mut bob, mut celine) = setup().await?;
+
     // Snapshot the chain and run the preamble.
     let fixed_rate = fixed!(0.05e18);
     preamble(&mut rng, &mut alice, &mut bob, &mut celine, fixed_rate).await?;
+
     // Calculate the bond reserves that target the current rate with the current
     // share reserves.
     let state = alice.get_state().await?;
@@ -286,6 +257,7 @@ async fn test_calculate_bonds_given_shares_and_rate() -> Result<()> {
         state.config.position_duration.into(),
         state.config.time_stretch.into(),
     );
+
     // Ensure that the calculated reserves are approximately equal
     // to the starting reserves. These won't be exactly equal because
     // compressing through "rate space" loses information.

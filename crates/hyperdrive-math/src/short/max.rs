@@ -531,20 +531,34 @@ impl State {
 mod tests {
     use std::panic;
 
-    use ethers::types::U256;
+    use ethers::{
+        signers::{LocalWallet, Signer},
+        types::U256,
+    };
     use eyre::Result;
+    use fixed_point_macros::uint256;
     use hyperdrive_wrappers::wrappers::{
-        ihyperdrive::Checkpoint, mock_hyperdrive_math::MaxTradeParams,
+        ihyperdrive::Checkpoint,
+        mock_hyperdrive_math::{MaxTradeParams, MockHyperdriveMath},
     };
     use rand::{thread_rng, Rng};
     use test_utils::{
         agent::Agent,
-        chain::{Chain, TestChain, TestChainWithMocks},
-        constants::{FAST_FUZZ_RUNS, FUZZ_RUNS},
+        chain::{Chain, ChainClient},
+        constants::{ALICE, BOB, FAST_FUZZ_RUNS, FUZZ_RUNS},
     };
     use tracing_test::traced_test;
 
     use super::*;
+
+    async fn setup() -> Result<MockHyperdriveMath<ChainClient<LocalWallet>>> {
+        let chain = Chain::connect(None).await?;
+        chain.deal(ALICE.address(), uint256!(100_000e18)).await?;
+        let mock = MockHyperdriveMath::deploy(chain.client(ALICE.clone()).await?, ())?
+            .send()
+            .await?;
+        Ok(mock)
+    }
 
     /// This test differentially fuzzes the `get_max_short` function against the
     /// Solidity analogue `calculateMaxShort`. `calculateMaxShort` doesn't take
@@ -554,7 +568,7 @@ mod tests {
     /// functions are equivalent.
     #[tokio::test]
     async fn fuzz_get_max_short_no_budget() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -578,8 +592,7 @@ mod tests {
                     Some(max_iterations),
                 )
             });
-            match chain
-                .mock_hyperdrive_math()
+            match mock
                 .calculate_max_short(
                     MaxTradeParams {
                         share_reserves: state.info.share_reserves,
@@ -619,11 +632,13 @@ mod tests {
         // the pool. Bob is funded with a small amount of capital so that we
         // can test `get_max_short` when budget is the primary constraint.
         let mut rng = thread_rng();
-        let chain = TestChain::new(2).await?;
-        let (alice, bob) = (chain.accounts()[0].clone(), chain.accounts()[1].clone());
+        let chain = Chain::connect(None).await?;
+        let addresses = chain.test_deploy(ALICE.clone()).await?;
+        chain.deal(ALICE.address(), uint256!(100_000e18)).await?;
+        chain.deal(BOB.address(), uint256!(100_000e18)).await?;
         let mut alice =
-            Agent::new(chain.client(alice).await?, chain.addresses().clone(), None).await?;
-        let mut bob = Agent::new(chain.client(bob).await?, chain.addresses(), None).await?;
+            Agent::new(chain.client(ALICE.clone()).await?, addresses.clone(), None).await?;
+        let mut bob = Agent::new(chain.client(BOB.clone()).await?, addresses, None).await?;
         let config = alice.get_config().clone();
 
         for _ in 0..*FUZZ_RUNS {

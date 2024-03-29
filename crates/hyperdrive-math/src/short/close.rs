@@ -97,17 +97,31 @@ impl State {
 mod tests {
     use std::panic;
 
+    use ethers::signers::{LocalWallet, Signer};
     use eyre::Result;
+    use fixed_point_macros::uint256;
+    use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::MockHyperdriveMath;
     use rand::{thread_rng, Rng};
-    use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};
+    use test_utils::{
+        chain::{Chain, ChainClient},
+        constants::{ALICE, FAST_FUZZ_RUNS},
+    };
 
     use super::*;
     use crate::State;
 
+    async fn setup() -> Result<MockHyperdriveMath<ChainClient<LocalWallet>>> {
+        let chain = Chain::connect(None).await?;
+        chain.deal(ALICE.address(), uint256!(100_000e18)).await?;
+        let mock = MockHyperdriveMath::deploy(chain.client(ALICE.clone()).await?, ())?
+            .send()
+            .await?;
+        Ok(mock)
+    }
+
     #[tokio::test]
     async fn fuzz_calculate_short_proceeds() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_hyperdrive_math();
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -148,8 +162,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_calculate_close_short_flat_plus_curve() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_hyperdrive_math();
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();

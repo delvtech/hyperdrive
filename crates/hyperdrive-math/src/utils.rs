@@ -102,18 +102,33 @@ pub fn calculate_initial_bond_reserves(
 mod tests {
     use std::panic;
 
+    use ethers::signers::{LocalWallet, Signer};
     use eyre::Result;
+    use fixed_point_macros::uint256;
+    use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::MockHyperdriveMath;
     use rand::{thread_rng, Rng};
-    use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};
+    use test_utils::{
+        chain::{Chain, ChainClient},
+        constants::{ALICE, FAST_FUZZ_RUNS},
+    };
 
     use super::*;
     use crate::State;
 
+    async fn setup() -> Result<MockHyperdriveMath<ChainClient<LocalWallet>>> {
+        let chain = Chain::connect(None).await?;
+        chain.deal(ALICE.address(), uint256!(100_000e18)).await?;
+        let mock = MockHyperdriveMath::deploy(chain.client(ALICE.clone()).await?, ())?
+            .send()
+            .await?;
+        Ok(mock)
+    }
+
     #[tokio::test]
     async fn fuzz_get_time_stretch() -> Result<()> {
         // Spin up a fake chain & deploy mock hyperdrive math.
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_hyperdrive_math();
+        let mock = setup().await?;
+
         // Fuzz the rust and solidity implementations against each other.
         let seconds_in_ten_years = U256::from(10 * 60 * 60 * 24 * 365);
         let seconds_in_a_day = U256::from(60 * 60 * 24);
@@ -143,8 +158,7 @@ mod tests {
     #[tokio::test]
     async fn fuzz_calculate_initial_bond_reserves() -> Result<()> {
         // Spin up a fake chain & deploy mock hyperdrive math.
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_hyperdrive_math();
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
