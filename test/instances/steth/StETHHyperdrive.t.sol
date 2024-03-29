@@ -51,6 +51,8 @@ contract StETHHyperdriveTest is InstanceTest {
             1e15,
             POSITION_DURATION,
             true,
+            true,
+            false,
             true
         );
 
@@ -307,31 +309,6 @@ contract StETHHyperdriveTest is InstanceTest {
             })
         );
         assertEq(address(bob).balance, ethBalanceBefore);
-    }
-
-    function test_close_long_with_ETH(uint256 basePaid) external {
-        // Bob opens a long.
-        basePaid = basePaid.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
-        );
-        (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
-
-        // Bob attempts to close his long with ETH as the target asset. This
-        // fails since ETH isn't supported as a withdrawal asset.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-        hyperdrive.closeLong(
-            maturityTime,
-            longAmount,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
     }
 
     /// Short ///

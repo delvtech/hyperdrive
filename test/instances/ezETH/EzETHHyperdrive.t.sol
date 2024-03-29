@@ -69,6 +69,8 @@ contract EzETHHyperdriveTest is InstanceTest {
             1e15,
             POSITION_DURATION_15_DAYS,
             false,
+            true,
+            false,
             true
         );
 
@@ -313,44 +315,6 @@ contract EzETHHyperdriveTest is InstanceTest {
     }
 
     /// Long ///
-
-    function test_close_long_with_eth(uint256 basePaid) external {
-        vm.stopPrank();
-        vm.startPrank(bob);
-
-        // Calculate the maximum amount of basePaid we can test.
-        uint256 maxLong = HyperdriveUtils.calculateMaxLong(hyperdrive);
-        uint256 maxEzEth = EZETH.balanceOf(address(bob));
-        uint256 maxRange = maxLong > maxEzEth ? maxEzEth : maxLong;
-        basePaid = basePaid.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            maxRange
-        );
-
-        // Convert to shares and approve hyperdrive.
-        uint256 sharesPaid = getAndApproveShares(basePaid);
-
-        // Bob opens a long.
-        (uint256 maturityTime, uint256 longAmount) = openLong(
-            bob,
-            sharesPaid,
-            false
-        );
-
-        // Bob attempts to close his long with ETH as the target asset. This
-        // fails since ETH isn't supported as a withdrawal asset.
-        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-        hyperdrive.closeLong(
-            maturityTime,
-            longAmount,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-    }
 
     function test_close_long_with_shares(
         uint256 basePaid,

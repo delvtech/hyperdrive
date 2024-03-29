@@ -56,6 +56,8 @@ contract LsETHHyperdriveTest is InstanceTest {
             1e15,
             POSITION_DURATION,
             false,
+            true,
+            false,
             true
         );
 
@@ -262,54 +264,6 @@ contract LsETHHyperdriveTest is InstanceTest {
             })
         );
         assertEq(address(bob).balance, ethBalanceBefore);
-    }
-
-    function test_close_long_with_eth(
-        uint256 basePaid,
-        int256 variableRate
-    ) external {
-        // Accrue interest for a term to ensure that the share price is greater
-        // than one.
-        advanceTime(POSITION_DURATION, 0.05e18);
-        vm.startPrank(bob);
-
-        // Calculate the maximum amount of basePaid we can test. The limit is
-        // either the max long that Hyperdrive can open or the amount of LsETH
-        // tokens the trader has.
-        uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
-        uint256 maxEthAmount = RIVER.underlyingBalanceFromShares(
-            RIVER.balanceOf(bob)
-        );
-
-        // Bob opens a long, paying with LsETH.
-        basePaid = basePaid.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            maxLongAmount > maxEthAmount ? maxEthAmount : maxLongAmount
-        );
-        uint256 sharesPaid = RIVER.sharesFromUnderlyingBalance(basePaid);
-        RIVER.approve(address(hyperdrive), sharesPaid);
-        (uint256 maturityTime, uint256 longAmount) = openLong(
-            bob,
-            sharesPaid,
-            false
-        );
-
-        // The term passes and some interest accrues.
-        variableRate = variableRate.normalizeToRange(0, 2.5e18);
-        advanceTime(POSITION_DURATION, variableRate);
-
-        // Bob closes the long with ETH as the target asset.
-        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-        hyperdrive.closeLong(
-            maturityTime,
-            longAmount,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
     }
 
     /// Short ///

@@ -38,6 +38,8 @@ abstract contract InstanceTest is HyperdriveTest {
         uint256 positionDuration;
         bool enableBaseDeposits;
         bool enableShareDeposits;
+        bool enableBaseWithdraws;
+        bool enableShareWithdraws;
     }
 
     // Fixed rate used to configure market.
@@ -825,6 +827,90 @@ abstract contract InstanceTest is HyperdriveTest {
             bob,
             baseProceeds,
             false,
+            totalBaseSupplyBefore,
+            totalShareSupplyBefore,
+            bobBalancesBefore,
+            hyperdriveBalancesBefore
+        );
+    }
+
+    function test_close_long_with_base(
+        uint256 basePaid,
+        int256 variableRate
+    ) external {
+        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
+
+        // Accrue interest for a term to ensure that the share price is greater
+        // than one.
+        advanceTime(POSITION_DURATION, int256(FIXED_RATE));
+
+        /// Calculate the maximum amount of basePaid we can test. The limit is
+        // either the maximum long that Hyperdrive can open or the amount of the
+        // share token the trader has.
+        uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
+        uint256 maxShareAmount = bobBalancesBefore.sharesBalance;
+
+        // We normalize the basePaid variable within a valid range the market can support.
+        basePaid = basePaid.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            maxLongAmount > maxShareAmount ? maxShareAmount : maxLongAmount
+        );
+        // uint256 sharesPaid = rocketTokenRETH.getRethValue(basePaid);
+        // rocketTokenRETH.approve(address(hyperdrive), sharesPaid);
+
+        (uint256 maturityTime, uint256 longAmount) = openLong(
+            bob,
+            convertToShares(basePaid),
+            false
+        );
+
+        // The term passes and some interest accrues.
+        variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        advanceTime(config.positionDuration, variableRate);
+
+        // Get some balance information before opening a short.
+        (
+            uint256 totalBaseSupplyBefore,
+            uint256 totalShareSupplyBefore
+        ) = getSupply();
+        bobBalancesBefore = getAccountBalances(bob);
+        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
+            address(hyperdrive)
+        );
+
+        // Bob opens a short by depositing shares.
+        // We expect the openShort to fail with an UnsupportedToken error
+        // if depositing with shares is not supported.
+        vm.startPrank(bob);
+        if (!config.enableBaseWithdraws) {
+            vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        }
+        uint256 baseProceeds = hyperdrive.closeLong(
+            maturityTime,
+            longAmount,
+            0, // min base proceeds
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0) // unused
+            })
+        );
+
+        // Early termination if base withdraws is not supported.
+        if (!config.enableBaseWithdraws) {
+            return;
+        }
+
+        // Ensure Bob is credited the correct amount of bonds.
+        assertLe(baseProceeds, longAmount);
+        assertApproxEqAbs(baseProceeds, longAmount, 10);
+
+        // Ensure that Rocket Pool's aggregates and the token balances were updated
+        // correctly during the trade.
+        verifyWithdrawal(
+            bob,
+            baseProceeds,
+            true,
             totalBaseSupplyBefore,
             totalShareSupplyBefore,
             bobBalancesBefore,

@@ -60,6 +60,8 @@ contract RETHHyperdriveTest is InstanceTest {
             1e15,
             POSITION_DURATION,
             false,
+            true,
+            true,
             true
         );
 
@@ -298,70 +300,6 @@ contract RETHHyperdriveTest is InstanceTest {
             })
         );
         assertEq(address(bob).balance, ethBalanceBefore);
-    }
-
-    function test_close_long_with_eth(
-        uint256 basePaid,
-        int256 variableRate
-    ) external {
-        // Accrue interest for a term to ensure that the share price is greater
-        // than one.
-        advanceTime(POSITION_DURATION, 0.05e18);
-        vm.startPrank(bob);
-
-        // Calculate the maximum amount of basePaid we can test. The limit is
-        // either the max long that Hyperdrive can open or the amount of rETH
-        // tokens the trader has.
-        uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
-        uint256 maxEthAmount = rocketTokenRETH.getEthValue(
-            rocketTokenRETH.balanceOf(bob)
-        );
-
-        // Bob opens a long, paying with rETH.
-        basePaid = basePaid.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            maxLongAmount > maxEthAmount ? maxEthAmount : maxLongAmount
-        );
-        uint256 sharesPaid = rocketTokenRETH.getRethValue(basePaid);
-        rocketTokenRETH.approve(address(hyperdrive), sharesPaid);
-        (uint256 maturityTime, uint256 longAmount) = openLong(
-            bob,
-            sharesPaid,
-            false
-        );
-
-        // The term passes and some interest accrues.
-        variableRate = variableRate.normalizeToRange(0, 2.5e18);
-        advanceTime(POSITION_DURATION, variableRate);
-
-        // Get some balance information before the withdrawal.
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-        (
-            uint256 totalBaseSupplyBefore,
-            uint256 totalShareSupplyBefore
-        ) = getSupply();
-
-        // Bob closes his long with ETH as the target asset.
-        uint256 baseProceeds = closeLong(bob, maturityTime, longAmount, true);
-
-        // Ensure Bob is credited the correct amount of bonds.
-        assertLe(baseProceeds, longAmount);
-        assertApproxEqAbs(baseProceeds, longAmount, 10);
-
-        // Ensure that Rocket Pool's aggregates and the token balances were updated
-        // correctly during the trade.
-        verifyWithdrawal(
-            bob,
-            baseProceeds,
-            true,
-            totalBaseSupplyBefore,
-            totalShareSupplyBefore,
-            bobBalancesBefore,
-            hyperdriveBalancesBefore
-        );
     }
 
     // /// Short ///
