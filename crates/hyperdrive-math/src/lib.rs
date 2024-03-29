@@ -27,6 +27,9 @@ impl Distribution<State> for Standard {
     // TODO: It may be better for this to be a uniform sampler and have a test
     // sampler that is more restrictive like this.
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> State {
+        let one_day_in_seconds = 60 * 60 * 24;
+        let one_hour_in_seconds = 60 * 60;
+
         let config = PoolConfig {
             base_token: Address::zero(),
             vault_shares_token: Address::zero(),
@@ -47,11 +50,14 @@ impl Distribution<State> for Standard {
             time_stretch: rng.gen_range(fixed!(0.005e18)..=fixed!(0.5e18)).into(),
             position_duration: rng
                 .gen_range(
-                    FixedPoint::from(60 * 60 * 24 * 91)..=FixedPoint::from(60 * 60 * 24 * 365),
+                    FixedPoint::from(91 * one_day_in_seconds)
+                        ..=FixedPoint::from(365 * one_day_in_seconds),
                 )
                 .into(),
             checkpoint_duration: rng
-                .gen_range(FixedPoint::from(60 * 60)..=FixedPoint::from(60 * 60 * 24))
+                .gen_range(
+                    FixedPoint::from(one_hour_in_seconds)..=FixedPoint::from(one_day_in_seconds),
+                )
                 .into(),
         };
         // We need the spot price to be less than or equal to 1, so we need to
@@ -126,20 +132,6 @@ impl State {
     /// Converts a timestamp to the checkpoint timestamp that it corresponds to.
     pub fn to_checkpoint(&self, time: U256) -> U256 {
         time - time % self.config.checkpoint_duration
-    }
-
-    pub fn time_remaining_scaled(
-        &self,
-        current_block_timestamp: U256,
-        maturity_time: U256,
-    ) -> FixedPoint {
-        let latest_checkpoint = self.to_checkpoint(current_block_timestamp) * uint256!(1e18);
-        if maturity_time > latest_checkpoint {
-            FixedPoint::from(maturity_time - latest_checkpoint)
-                / FixedPoint::from(U256::from(self.position_duration()) * uint256!(1e18))
-        } else {
-            fixed!(0)
-        }
     }
 
     /// Gets the normalized time remaining
