@@ -7,7 +7,6 @@ use heck::ToSnakeCase;
 const TARGETS: &[&str] = &[
     // Interfaces
     "IERC20",
-    "IERC4626Hyperdrive",
     "IStETHHyperdrive",
     "IHyperdrive",
     "IHyperdriveFactory",
@@ -118,15 +117,15 @@ fn main() -> Result<()> {
             // Alias the `IHyperdriveDeployerCoordinator.deploy()` to
             // `deploy_hyperdrive()` to avoid conflicts with the builtin
             // `deploy()` in the wrapper used to call the constructor.
-            .add_method_alias("deploy(bytes32,(address,address,bytes32,uint256,uint256,uint256,uint256,uint256,address,address,address,(uint256,uint256,uint256,uint256)),bytes,bytes32)", "deploy_hyperdrive")
+            .add_method_alias("deploy(bytes32,(address,address,address,bytes32,uint256,uint256,uint256,uint256,uint256,address,address,address,(uint256,uint256,uint256,uint256)),bytes,bytes32)", "deploy_hyperdrive")
             // Alias the `IHyperdriveCoreDeployer.deploy()` to
             // `deploy_hyperdrive()` to avoid conflicts with the builtin
             // `deploy()` in the wrapper used to call the constructor.
-            .add_method_alias("deploy((address,address,bytes32,uint256,uint256,uint256,uint256,uint256,uint256,address,address,address,(uint256,uint256,uint256,uint256)),bytes,address,address,address,address,address,bytes32)", "deploy_hyperdrive")
+            .add_method_alias("deploy((address,address,address,bytes32,uint256,uint256,uint256,uint256,uint256,uint256,address,address,address,(uint256,uint256,uint256,uint256)),bytes,address,address,address,address,address,bytes32)", "deploy_hyperdrive")
             // Alias the `IHyperdriveTarget.deploy()` to `deploy_target()`
             // to avoid conflicts with the builtin `deploy()` in the wrapper
             // used to call the constructor.
-            .add_method_alias("deploy((address,address,bytes32,uint256,uint256,uint256,uint256,uint256,uint256,address,address,address,(uint256,uint256,uint256,uint256)),bytes,bytes32)", "deploy_target")
+            .add_method_alias("deploy((address,address,address,bytes32,uint256,uint256,uint256,uint256,uint256,uint256,address,address,address,(uint256,uint256,uint256,uint256)),bytes,bytes32)", "deploy_target")
             .generate()?
             .write_to_file(target_file)?;
 

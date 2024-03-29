@@ -116,8 +116,8 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
             fixedRate,
             positionDuration
         );
-
         _config.baseToken = _deployConfig.baseToken;
+        _config.vaultSharesToken = _deployConfig.vaultSharesToken;
         _config.linkerFactory = _deployConfig.linkerFactory;
         _config.linkerCodeHash = _deployConfig.linkerCodeHash;
         _config.minimumShareReserves = _deployConfig.minimumShareReserves;
@@ -129,7 +129,6 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         _config.governance = _deployConfig.governance;
         _config.feeCollector = _deployConfig.feeCollector;
         _config.fees = _deployConfig.fees;
-
         _config.initialVaultSharePrice = ONE;
     }
 
@@ -146,6 +145,8 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         return
             IHyperdrive.PoolDeployConfig({
                 baseToken: IERC20(address(baseToken)),
+                // NOTE: This isn't used by MockHyperdrive.
+                vaultSharesToken: IERC20(address(0)),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0),
                 minimumShareReserves: MINIMUM_SHARE_RESERVES,
@@ -958,6 +959,10 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
             assertEq(
                 address(eventConfig.baseToken),
                 address(poolConfig.baseToken)
+            );
+            assertEq(
+                address(eventConfig.vaultSharesToken),
+                address(poolConfig.vaultSharesToken)
             );
             assertEq(eventConfig.linkerFactory, poolConfig.linkerFactory);
             assertEq(eventConfig.linkerCodeHash, poolConfig.linkerCodeHash);

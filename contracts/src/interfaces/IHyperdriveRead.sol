@@ -9,6 +9,10 @@ interface IHyperdriveRead is IMultiTokenRead {
     /// @return The base token.
     function baseToken() external view returns (address);
 
+    /// @notice Gets the Hyperdrive pool's vault shares token.
+    /// @return The vault shares token.
+    function vaultSharesToken() external view returns (address);
+
     /// @notice Gets one of the pool's checkpoints.
     /// @param _checkpointTime The checkpoint time.
     /// @return The checkpoint.

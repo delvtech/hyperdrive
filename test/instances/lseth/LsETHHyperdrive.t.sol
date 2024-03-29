@@ -13,8 +13,7 @@ import { LsETHTarget3Deployer } from "contracts/src/deployers/lseth/LsETHTarget3
 import { LsETHTarget4Deployer } from "contracts/src/deployers/lseth/LsETHTarget4Deployer.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { ILsETHHyperdrive } from "contracts/src/interfaces/lseth/ILsETHHyperdrive.sol";
-import { IRiverV1 } from "contracts/src/interfaces/lseth/IRiverV1.sol";
+import { IRiverV1 } from "contracts/src/interfaces/IRiverV1.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ETH } from "contracts/src/libraries/Constants.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
@@ -50,8 +49,8 @@ contract LsETHHyperdriveTest is InstanceTest {
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig(
             whaleAccounts,
-            IERC20(RIVER),
             IERC20(ETH),
+            IERC20(RIVER),
             1e5,
             1e15,
             POSITION_DURATION,
@@ -77,12 +76,12 @@ contract LsETHHyperdriveTest is InstanceTest {
         return
             address(
                 new LsETHHyperdriveDeployerCoordinator(
-                    address(new LsETHHyperdriveCoreDeployer(RIVER)),
-                    address(new LsETHTarget0Deployer(RIVER)),
-                    address(new LsETHTarget1Deployer(RIVER)),
-                    address(new LsETHTarget2Deployer(RIVER)),
-                    address(new LsETHTarget3Deployer(RIVER)),
-                    address(new LsETHTarget4Deployer(RIVER)),
+                    address(new LsETHHyperdriveCoreDeployer()),
+                    address(new LsETHTarget0Deployer()),
+                    address(new LsETHTarget1Deployer()),
+                    address(new LsETHTarget2Deployer()),
+                    address(new LsETHTarget3Deployer()),
+                    address(new LsETHTarget4Deployer()),
                     RIVER
                 )
             );
@@ -94,15 +93,6 @@ contract LsETHHyperdriveTest is InstanceTest {
     ) internal view override returns (uint256 shareAmount) {
         // River has a built-in function for computing price in terms of shares.
         return RIVER.sharesFromUnderlyingBalance(baseAmount);
-    }
-
-    /// Getters ///
-
-    function test_getters() external {
-        assertEq(
-            address(ILsETHHyperdrive(address(hyperdrive)).lsEth()),
-            address(RIVER)
-        );
     }
 
     /// Price Per Share ///

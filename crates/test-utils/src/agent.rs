@@ -14,7 +14,6 @@ use hyperdrive_addresses::Addresses;
 use hyperdrive_math::State;
 use hyperdrive_wrappers::wrappers::{
     erc20_mintable::ERC20Mintable,
-    ierc4626_hyperdrive::IERC4626Hyperdrive,
     ihyperdrive::{Checkpoint, IHyperdrive, IHyperdriveEvents, Options, PoolConfig},
     mock_erc4626::MockERC4626,
 };
@@ -165,8 +164,8 @@ impl Agent<ChainClient, ChaCha8Rng> {
         maybe_seed: Option<u64>,
     ) -> Result<Self> {
         let seed = maybe_seed.unwrap_or(17);
-        let vault = IERC4626Hyperdrive::new(addresses.erc4626_hyperdrive, client.clone())
-            .vault()
+        let vault = IHyperdrive::new(addresses.erc4626_hyperdrive, client.clone())
+            .vault_shares_token()
             .call()
             .await?;
         let vault = MockERC4626::new(vault, client.clone());
@@ -984,6 +983,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         let state = self.get_state().await?;
         let Checkpoint {
             vault_share_price: open_vault_share_price,
+            ..
         } = self
             .hyperdrive
             .get_checkpoint(state.to_checkpoint(self.now().await?))

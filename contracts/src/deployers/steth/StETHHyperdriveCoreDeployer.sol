@@ -3,7 +3,6 @@ pragma solidity 0.8.20;
 
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveCoreDeployer } from "../../interfaces/IHyperdriveCoreDeployer.sol";
-import { ILido } from "../../interfaces/ILido.sol";
 import { StETHHyperdrive } from "../../instances/steth/StETHHyperdrive.sol";
 
 /// @author DELV
@@ -13,15 +12,6 @@ import { StETHHyperdrive } from "../../instances/steth/StETHHyperdrive.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract StETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
-    /// @notice The Lido contract.
-    ILido public immutable lido;
-
-    /// @notice Instantiates the core deployer.
-    /// @param _lido The Lido contract.
-    constructor(ILido _lido) {
-        lido = _lido;
-    }
-
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param target0 The target0 address.
@@ -47,7 +37,7 @@ contract StETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
                 // front-running of deployments.
                 new StETHHyperdrive{
                     salt: keccak256(abi.encode(msg.sender, _salt))
-                }(_config, target0, target1, target2, target3, target4, lido)
+                }(_config, target0, target1, target2, target3, target4)
             )
         );
     }

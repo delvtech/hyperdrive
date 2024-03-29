@@ -27,8 +27,8 @@ abstract contract InstanceTest is HyperdriveTest {
     /// @dev Configuration for the Instance testing suite.
     struct InstanceTestConfig {
         address[] whaleAccounts;
-        IERC20 token;
         IERC20 baseToken;
+        IERC20 vaultSharesToken;
         uint256 shareTolerance;
         uint256 minTransactionAmount;
         uint256 positionDuration;
@@ -78,7 +78,7 @@ abstract contract InstanceTest is HyperdriveTest {
         // Initial contribution.
         uint256 contribution = 5_000e18;
 
-        // Fund accounts with ETH and token from whales.
+        // Fund accounts with ETH and vault shares from whales.
         vm.deal(alice, 100_000e18);
         vm.deal(bob, 100_000e18);
         address[] memory accounts = new address[](2);
@@ -87,7 +87,7 @@ abstract contract InstanceTest is HyperdriveTest {
         for (uint256 i = 0; i < config.whaleAccounts.length; i++) {
             fundAccounts(
                 address(hyperdrive),
-                config.token,
+                config.vaultSharesToken,
                 config.whaleAccounts[i],
                 accounts
             );
@@ -108,9 +108,9 @@ abstract contract InstanceTest is HyperdriveTest {
             false // asBase
         );
 
-        config.token.approve(address(hyperdrive), 100_000e18);
+        config.vaultSharesToken.approve(address(hyperdrive), 100_000e18);
         vm.startPrank(bob);
-        config.token.approve(address(hyperdrive), 100_000e18);
+        config.vaultSharesToken.approve(address(hyperdrive), 100_000e18);
 
         // Ensure that Alice received the correct amount of LP tokens. She should
         // receive LP shares totaling the amount of shares that she contributed
@@ -194,7 +194,7 @@ abstract contract InstanceTest is HyperdriveTest {
         );
 
         // Alice gives approval to the deployer coordinator to fund the market.
-        config.token.approve(deployerCoordinator, 100_000e18);
+        config.vaultSharesToken.approve(deployerCoordinator, 100_000e18);
 
         // We expect the deployAndInitialize to fail with an
         // Unsupported token error if depositing with base is not supported.
@@ -288,6 +288,7 @@ abstract contract InstanceTest is HyperdriveTest {
         // Set the pool configuration that will be used for instance deployments.
         poolConfig = IHyperdrive.PoolDeployConfig({
             baseToken: config.baseToken,
+            vaultSharesToken: config.vaultSharesToken,
             linkerFactory: factory.linkerFactory(),
             linkerCodeHash: factory.linkerCodeHash(),
             minimumShareReserves: 1e15,

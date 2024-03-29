@@ -51,6 +51,7 @@ contract MockMultiToken is HyperdriveMultiToken, MockHyperdriveBase {
         HyperdriveStorage(
             IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(0)),
+                vaultSharesToken: IERC20(address(0)),
                 linkerFactory: _linkerFactory,
                 linkerCodeHash: _linkerCodeHash,
                 initialVaultSharePrice: 1e18,
@@ -79,6 +80,7 @@ contract MockMultiToken is HyperdriveMultiToken, MockHyperdriveBase {
             new MockHyperdriveTarget0(
                 IHyperdrive.PoolConfig({
                     baseToken: IERC20(address(0)),
+                    vaultSharesToken: IERC20(address(0)),
                     linkerFactory: _linkerFactory,
                     linkerCodeHash: _linkerCodeHash,
                     initialVaultSharePrice: 1e18,

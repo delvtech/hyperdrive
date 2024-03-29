@@ -21,6 +21,9 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
     /// @dev The base asset.
     IERC20 internal immutable _baseToken;
 
+    /// @dev The vault shares asset.
+    IERC20 internal immutable _vaultSharesToken;
+
     /// Time ///
 
     /// @dev The amount of seconds between vault share price checkpoints.
@@ -127,8 +130,9 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
     /// @notice Instantiates Hyperdrive's storage.
     /// @param _config The configuration of the Hyperdrive pool.
     constructor(IHyperdrive.PoolConfig memory _config) {
-        // Initialize the base token address.
+        // Initialize the base and vault shares token addresses.
         _baseToken = _config.baseToken;
+        _vaultSharesToken = _config.vaultSharesToken;
 
         // Initialize the initial vault share price.
         _initialVaultSharePrice = _config.initialVaultSharePrice;

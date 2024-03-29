@@ -3,10 +3,8 @@ pragma solidity 0.8.20;
 
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IRestakeManager } from "../../interfaces/IRenzo.sol";
 import { EzETHBase } from "./EzETHBase.sol";
-import { ETH } from "../../libraries/Constants.sol";
 
 ///      ______  __                           _________      _____
 ///      ___  / / /____  ___________________________  /_________(_)__   ______
@@ -63,7 +61,6 @@ contract EzETHHyperdrive is Hyperdrive, EzETHBase {
     /// @param _target3 The target3 address.
     /// @param _target4 The target4 address.
     /// @param _restakeManager The Renzo contract.
-
     constructor(
         IHyperdrive.PoolConfig memory _config,
         address _target0,
@@ -75,10 +72,5 @@ contract EzETHHyperdrive is Hyperdrive, EzETHBase {
     )
         Hyperdrive(_config, _target0, _target1, _target2, _target3, _target4)
         EzETHBase(_restakeManager)
-    {
-        // Ensure that the base token address is properly configured.
-        if (address(_config.baseToken) != ETH) {
-            revert IHyperdrive.InvalidBaseToken();
-        }
-    }
+    {}
 }

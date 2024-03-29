@@ -9,8 +9,4 @@ interface IRETHHyperdriveRead is IHyperdriveRead {
     /// @notice Gets the Rocket Storage contract.
     /// @return The Rocket Storage contract.
     function rocketStorage() external view returns (IRocketStorage);
-
-    /// @notice Gets the Rocket Token rETH contract.
-    /// @return The Rocket Token rETH contract.
-    function rocketTokenRETH() external view returns (IRocketTokenRETH);
 }
