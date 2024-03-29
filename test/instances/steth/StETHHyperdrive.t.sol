@@ -242,15 +242,6 @@ contract StETHHyperdriveTest is InstanceTest {
         );
     }
 
-    /// Getters ///
-
-    function test_getters() external {
-        assertEq(
-            address(IStETHHyperdrive(address(hyperdrive)).lido()),
-            address(LIDO)
-        );
-    }
-
     /// Price Per Share ///
 
     function test__pricePerVaultShare(uint256 basePaid) external {

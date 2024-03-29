@@ -197,15 +197,6 @@ contract LsETHHyperdriveTest is InstanceTest {
         );
     }
 
-    /// Getters ///
-
-    function test_getters() external {
-        assertEq(
-            address(ILsETHHyperdrive(address(hyperdrive)).lsEth()),
-            address(RIVER)
-        );
-    }
-
     /// Price Per Share ///
 
     function test_pricePerVaultShare(uint256 basePaid) external {
