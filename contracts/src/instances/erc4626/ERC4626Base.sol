@@ -5,9 +5,7 @@ import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { IERC4626Hyperdrive } from "../../interfaces/IERC4626Hyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
-import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title ERC4626Base
@@ -19,18 +17,7 @@ import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract ERC4626Base is HyperdriveBase {
-    using FixedPointMath for uint256;
     using SafeERC20 for ERC20;
-
-    /// @dev The ERC4626 vault that this pool uses as a yield source.
-    IERC4626 internal immutable _vault;
-
-    /// @notice Instantiates the ERC4626 Hyperdrive base contract.
-    /// @param __vault The ERC4626 compatible vault.
-    constructor(IERC4626 __vault) {
-        // Initialize the pool immutable.
-        _vault = __vault;
-    }
 
     /// Yield Source ///
 
@@ -56,10 +43,13 @@ abstract contract ERC4626Base is HyperdriveBase {
         // the vault ends with an approval of 1 wei. This makes future
         // approvals cheaper by keeping the storage slot warm.
         ERC20(address(_baseToken)).forceApprove(
-            address(_vault),
+            address(_vaultSharesToken),
             _baseAmount + 1
         );
-        uint256 sharesMinted = _vault.deposit(_baseAmount, address(this));
+        uint256 sharesMinted = IERC4626(address(_vaultSharesToken)).deposit(
+            _baseAmount,
+            address(this)
+        );
 
         return (sharesMinted, 0);
     }
@@ -71,7 +61,7 @@ abstract contract ERC4626Base is HyperdriveBase {
         bytes calldata // unused
     ) internal override {
         // Take custody of the deposit in vault shares.
-        ERC20(address(_vault)).safeTransferFrom(
+        ERC20(address(_vaultSharesToken)).safeTransferFrom(
             msg.sender,
             address(this),
             _shareAmount
@@ -90,7 +80,7 @@ abstract contract ERC4626Base is HyperdriveBase {
     ) internal override returns (uint256 amountWithdrawn) {
         // Redeem from the yield source and transfer the
         // resulting base to the destination address.
-        amountWithdrawn = _vault.redeem(
+        amountWithdrawn = IERC4626(address(_vaultSharesToken)).redeem(
             _shareAmount,
             _destination,
             address(this)
@@ -109,7 +99,10 @@ abstract contract ERC4626Base is HyperdriveBase {
         bytes calldata // unused
     ) internal override {
         // Transfer vault shares to the destination.
-        ERC20(address(_vault)).safeTransfer(_destination, _shareAmount);
+        ERC20(address(_vaultSharesToken)).safeTransfer(
+            _destination,
+            _shareAmount
+        );
     }
 
     /// @dev Ensure that ether wasn't sent because ERC4626 vaults don't support
@@ -126,7 +119,8 @@ abstract contract ERC4626Base is HyperdriveBase {
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
-        return _vault.convertToAssets(_shareAmount);
+        return
+            IERC4626(address(_vaultSharesToken)).convertToAssets(_shareAmount);
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
@@ -135,7 +129,8 @@ abstract contract ERC4626Base is HyperdriveBase {
     function _convertToShares(
         uint256 _baseAmount
     ) internal view override returns (uint256) {
-        return _vault.convertToShares(_baseAmount);
+        return
+            IERC4626(address(_vaultSharesToken)).convertToShares(_baseAmount);
     }
 
     /// @dev Gets the total amount of base held by the pool.
@@ -153,6 +148,6 @@ abstract contract ERC4626Base is HyperdriveBase {
         override
         returns (uint256 shareAmount)
     {
-        return _vault.balanceOf(address(this));
+        return _vaultSharesToken.balanceOf(address(this));
     }
 }

@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
+import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IRocketStorage } from "../../interfaces/IRocketStorage.sol";
 import { IRocketTokenRETH } from "../../interfaces/IRocketTokenRETH.sol";
+import { ETH } from "../../libraries/Constants.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
@@ -15,6 +18,7 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+    using SafeERC20 for ERC20;
     using FixedPointMath for uint256;
 
     /// @notice The Rocket Storage contract.
@@ -67,14 +71,13 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     ///        of `_options.asBase`.
     /// @param _options The options that configure how the initialization is
     ///        settled.
-    /// @return value The value that should be sent in the initialize
-    ///         transaction.
+    /// @return The value that should be sent in the initialize transaction.
     function _prepareInitialize(
         IHyperdrive _hyperdrive,
         address _lp,
         uint256 _contribution,
         IHyperdrive.Options memory _options
-    ) internal override returns (uint256 value) {
+    ) internal override returns (uint256) {
         // If base is the deposit asset, revert because depositing as base
         // is not supported for the rETH integration.
         if (_options.asBase) {
@@ -83,10 +86,18 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
 
         // Otherwise, transfer vault shares from the LP and approve the
         // Hyperdrive pool.
-        rocketTokenReth.transferFrom(_lp, address(this), _contribution);
-        rocketTokenReth.approve(address(_hyperdrive), _contribution);
+        ERC20(address(rocketTokenReth)).safeTransferFrom(
+            _lp,
+            address(this),
+            _contribution
+        );
+        ERC20(address(rocketTokenReth)).forceApprove(
+            address(_hyperdrive),
+            _contribution
+        );
 
-        return value;
+        // NOTE: Return zero since this yield source isn't payable.
+        return 0;
     }
 
     /// @dev Disallows the contract to receive ether, when opening positions.
@@ -103,6 +114,18 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     ) internal view override {
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig);
+
+        // Ensure that the base token address is properly configured.
+        if (address(_deployConfig.baseToken) != ETH) {
+            revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
+        }
+
+        // Ensure that the vault shares token address is properly configured.
+        if (
+            address(_deployConfig.vaultSharesToken) != address(rocketTokenReth)
+        ) {
+            revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
+        }
 
         // Ensure that the minimum share reserves are equal to 1e15. This value
         // has been tested to prevent arithmetic overflows in the
@@ -123,6 +146,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
+        IHyperdrive.PoolDeployConfig memory, // unused pool deploy config
         bytes memory // unused extra data
     ) internal view override returns (uint256) {
         // Returns the value of one RETH token in ETH.

@@ -9,7 +9,6 @@ import { ERC4626Target3 } from "contracts/src/instances/erc4626/ERC4626Target3.s
 import { ERC4626Target4 } from "contracts/src/instances/erc4626/ERC4626Target4.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
-import { IERC4626Hyperdrive } from "contracts/src/interfaces/IERC4626Hyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveEvents } from "contracts/src/interfaces/IHyperdriveEvents.sol";
 import { ONE } from "contracts/src/libraries/FixedPointMath.sol";
@@ -24,7 +23,7 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
     ForwardingToken vaultForwarder;
     ERC20Mintable sweepable;
 
-    IERC4626Hyperdrive hyperdrive;
+    IHyperdrive hyperdrive;
 
     function setUp() public override {
         super.setUp();
@@ -51,6 +50,7 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
         // Deploy Hyperdrive with the leaky vault as the backing vault.
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: IERC20(address(leakyBase)),
+            vaultSharesToken: IERC20(address(leakyVault)),
             linkerFactory: address(0),
             linkerCodeHash: bytes32(0),
             initialVaultSharePrice: ONE,
@@ -65,41 +65,15 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
             fees: IHyperdrive.Fees(0, 0, 0, 0)
         });
         vm.warp(3 * config.positionDuration);
-        hyperdrive = IERC4626Hyperdrive(
+        hyperdrive = IHyperdrive(
             address(
                 new ERC4626Hyperdrive(
                     config,
-                    address(
-                        new ERC4626Target0(
-                            config,
-                            IERC4626(address(leakyVault))
-                        )
-                    ),
-                    address(
-                        new ERC4626Target1(
-                            config,
-                            IERC4626(address(leakyVault))
-                        )
-                    ),
-                    address(
-                        new ERC4626Target2(
-                            config,
-                            IERC4626(address(leakyVault))
-                        )
-                    ),
-                    address(
-                        new ERC4626Target3(
-                            config,
-                            IERC4626(address(leakyVault))
-                        )
-                    ),
-                    address(
-                        new ERC4626Target4(
-                            config,
-                            IERC4626(address(leakyVault))
-                        )
-                    ),
-                    IERC4626(address(leakyVault))
+                    address(new ERC4626Target0(config)),
+                    address(new ERC4626Target1(config)),
+                    address(new ERC4626Target2(config)),
+                    address(new ERC4626Target3(config)),
+                    address(new ERC4626Target4(config))
                 )
             )
         );
@@ -146,7 +120,7 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
         hyperdrive.sweep(IERC20(baseToken));
 
         // Trying to sweep the vault token should fail.
-        address vaultToken = address(hyperdrive.vault());
+        address vaultToken = address(hyperdrive.vaultSharesToken());
         vm.expectRevert(IHyperdrive.SweepFailed.selector);
         hyperdrive.sweep(IERC20(vaultToken));
     }

@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { ETH } from "../../libraries/Constants.sol";
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { IRiverV1 } from "../../interfaces/lseth/IRiverV1.sol";
 import { LsETHBase } from "./LsETHBase.sol";
 
 ///      ______  __                           _________      _____
@@ -62,22 +60,12 @@ contract LsETHHyperdrive is Hyperdrive, LsETHBase {
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
     /// @param _target4 The target4 address.
-    /// @param _river The lsETH contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         address _target0,
         address _target1,
         address _target2,
         address _target3,
-        address _target4,
-        IRiverV1 _river
-    )
-        Hyperdrive(_config, _target0, _target1, _target2, _target3, _target4)
-        LsETHBase(_river)
-    {
-        // Ensure that the base token address is properly configured.
-        if (address(_config.baseToken) != ETH) {
-            revert IHyperdrive.InvalidBaseToken();
-        }
-    }
+        address _target4
+    ) Hyperdrive(_config, _target0, _target1, _target2, _target3, _target4) {}
 }

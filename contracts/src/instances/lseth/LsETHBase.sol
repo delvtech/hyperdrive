@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
+import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { IRiverV1 } from "../../interfaces/lseth/IRiverV1.sol";
+import { IRiverV1 } from "../../interfaces/IRiverV1.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
-import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title LsETHHyperdrive
@@ -17,16 +18,7 @@ import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract LsETHBase is HyperdriveBase {
-    using FixedPointMath for uint256;
-
-    /// @dev The LsETH contract.
-    IRiverV1 internal immutable _river;
-
-    /// @notice Instantiates the LsETH Hyperdrive base contract.
-    /// @param __river The LsETH contract.
-    constructor(IRiverV1 __river) {
-        _river = __river;
-    }
+    using SafeERC20 for ERC20;
 
     /// Yield Source ///
 
@@ -45,7 +37,11 @@ abstract contract LsETHBase is HyperdriveBase {
         bytes calldata // unused
     ) internal override {
         // Transfer LsETH shares into the contract.
-        _river.transferFrom(msg.sender, address(this), _shareAmount);
+        ERC20(address(_vaultSharesToken)).safeTransferFrom(
+            msg.sender,
+            address(this),
+            _shareAmount
+        );
     }
 
     /// @dev Withdrawals as base asset not supported for this integration.
@@ -69,7 +65,10 @@ abstract contract LsETHBase is HyperdriveBase {
         bytes calldata // unused
     ) internal override {
         // Transfer the LsETH shares to the destination.
-        _river.transfer(_destination, _shareAmount);
+        ERC20(address(_vaultSharesToken)).safeTransfer(
+            _destination,
+            _shareAmount
+        );
     }
 
     /// @dev We override the message value check since this integration is
@@ -86,7 +85,10 @@ abstract contract LsETHBase is HyperdriveBase {
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
-        return _river.underlyingBalanceFromShares(_shareAmount);
+        return
+            IRiverV1(address(_vaultSharesToken)).underlyingBalanceFromShares(
+                _shareAmount
+            );
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
@@ -95,7 +97,10 @@ abstract contract LsETHBase is HyperdriveBase {
     function _convertToShares(
         uint256 _baseAmount
     ) internal view override returns (uint256) {
-        return _river.sharesFromUnderlyingBalance(_baseAmount);
+        return
+            IRiverV1(address(_vaultSharesToken)).sharesFromUnderlyingBalance(
+                _baseAmount
+            );
     }
 
     /// @dev Gets the total amount of base held by the pool.
@@ -115,6 +120,6 @@ abstract contract LsETHBase is HyperdriveBase {
         override
         returns (uint256 shareAmount)
     {
-        return _river.balanceOf(address(this));
+        return _vaultSharesToken.balanceOf(address(this));
     }
 }

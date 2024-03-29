@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
+import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IRestakeManager } from "../../interfaces/IRenzo.sol";
+import { ETH } from "../../libraries/Constants.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
@@ -15,6 +18,7 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+    using SafeERC20 for ERC20;
     using FixedPointMath for uint256;
 
     /// @notice The Renzo contract.
@@ -62,23 +66,29 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     ///        of `_options.asBase`.
     /// @param _options The options that configure how the initialization is
     ///        settled.
-    /// @return value The value that should be sent in the initialize
-    ///         transaction.
+    /// @return The value that should be sent in the initialize transaction.
     function _prepareInitialize(
         IHyperdrive _hyperdrive,
         address _lp,
         uint256 _contribution,
         IHyperdrive.Options memory _options
-    ) internal override returns (uint256 value) {
+    ) internal override returns (uint256) {
         // Depositing as base is disallowed.
         if (_options.asBase) {
             revert IHyperdrive.UnsupportedToken();
         }
+
         // Otherwise, transfer vault shares from the LP and approve the
         // Hyperdrive pool.
-        ezETH.transferFrom(_lp, address(this), _contribution);
-        ezETH.approve(address(_hyperdrive), _contribution);
-        return value;
+        ERC20(address(ezETH)).safeTransferFrom(
+            _lp,
+            address(this),
+            _contribution
+        );
+        ERC20(address(ezETH)).forceApprove(address(_hyperdrive), _contribution);
+
+        // NOTE: Return zero since this yield source isn't payable.
+        return 0;
     }
 
     /// @dev Allows the contract to receive ether.
@@ -95,6 +105,16 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     ) internal view override {
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig);
+
+        // Ensure that the base token address is properly configured.
+        if (address(_deployConfig.baseToken) != ETH) {
+            revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
+        }
+
+        // Ensure that the vault shares token address is properly configured.
+        if (address(_deployConfig.vaultSharesToken) != address(ezETH)) {
+            revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
+        }
 
         // Ensure that the minimum share reserves are equal to 1e15. This value
         // has been tested to prevent arithmetic overflows in the
@@ -115,6 +135,7 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
+        IHyperdrive.PoolDeployConfig memory, // unused pool deploy config
         bytes memory // unused extra data
     ) internal view override returns (uint256) {
         // Return ezETH's current vault share price.

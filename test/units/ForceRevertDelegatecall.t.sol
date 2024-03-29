@@ -30,6 +30,7 @@ contract DummyHyperdrive is Hyperdrive, MockHyperdriveBase {
         Hyperdrive(
             IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(0)),
+                vaultSharesToken: IERC20(address(0)),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0),
                 initialVaultSharePrice: 1e18,

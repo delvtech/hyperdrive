@@ -1,12 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
-import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { IERC20 } from "../../interfaces/IERC20.sol";
-import { ILido } from "../../interfaces/ILido.sol";
 import { StETHBase } from "./StETHBase.sol";
 
 /// @author DELV
@@ -18,23 +14,13 @@ import { StETHBase } from "./StETHBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract StETHTarget0 is HyperdriveTarget0, StETHBase {
-    using SafeERC20 for ERC20;
-
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param __lido The Lido contract.
     constructor(
-        IHyperdrive.PoolConfig memory _config,
-        ILido __lido
-    ) HyperdriveTarget0(_config) StETHBase(__lido) {}
+        IHyperdrive.PoolConfig memory _config
+    ) HyperdriveTarget0(_config) {}
 
     /// Getters ///
-
-    /// @notice Returns the Lido contract.
-    /// @return The Lido contract.
-    function lido() external view returns (ILido) {
-        _revert(abi.encode(_lido));
-    }
 
     /// @notice Returns the MultiToken's decimals.
     /// @return The MultiToken's decimals.

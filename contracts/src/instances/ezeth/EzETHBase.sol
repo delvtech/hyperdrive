@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IRestakeManager, IRenzoOracle } from "../../interfaces/IRenzo.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
-import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title ezETH Base Contract
@@ -18,13 +16,8 @@ import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract EzETHBase is HyperdriveBase {
-    using FixedPointMath for uint256;
-
     /// @dev The Renzo entrypoint contract.
     IRestakeManager internal immutable _restakeManager;
-
-    /// @dev The ezETH token contract.
-    IERC20 internal immutable _ezETH;
 
     /// @dev The Renzo Oracle contract.
     IRenzoOracle internal immutable _renzoOracle;
@@ -36,7 +29,6 @@ abstract contract EzETHBase is HyperdriveBase {
     /// @param __restakeManager The Renzo Restakemanager contract.
     constructor(IRestakeManager __restakeManager) {
         _restakeManager = __restakeManager;
-        _ezETH = IERC20(__restakeManager.ezETH());
         _renzoOracle = IRenzoOracle(__restakeManager.renzoOracle());
     }
 
@@ -57,8 +49,12 @@ abstract contract EzETHBase is HyperdriveBase {
         uint256 _shareAmount,
         bytes calldata // unused
     ) internal override {
+        // NOTE: We don't need to use `safeTransfer` since ezETH uses
+        // OpenZeppelin's ERC20Upgradeable implementation and is
+        // standard-compliant.
+        //
         // Transfer ezETH shares into the contract.
-        _ezETH.transferFrom(msg.sender, address(this), _shareAmount);
+        _vaultSharesToken.transferFrom(msg.sender, address(this), _shareAmount);
     }
 
     /// @dev Process a withdrawal in base and send the proceeds to the
@@ -82,8 +78,12 @@ abstract contract EzETHBase is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override {
+        // NOTE: We don't need to use `safeTransfer` since ezETH uses
+        // OpenZeppelin's ERC20Upgradeable implementation and is
+        // standard-compliant.
+        //
         // Transfer the ezETH shares to the destination.
-        _ezETH.transfer(_destination, _shareAmount);
+        _vaultSharesToken.transfer(_destination, _shareAmount);
     }
 
     /// @dev Convert an amount of vault shares to an amount of base.
@@ -96,7 +96,7 @@ abstract contract EzETHBase is HyperdriveBase {
         (, , uint256 totalTVL) = _restakeManager.calculateTVLs();
 
         // Get the total supply of the ezETH token
-        uint256 totalSupply = _ezETH.totalSupply();
+        uint256 totalSupply = _vaultSharesToken.totalSupply();
 
         return
             _renzoOracle.calculateRedeemAmount(
@@ -116,7 +116,7 @@ abstract contract EzETHBase is HyperdriveBase {
         (, , uint256 totalTVL) = _restakeManager.calculateTVLs();
 
         // Get the total supply of the ezETH token
-        uint256 totalSupply = _ezETH.totalSupply();
+        uint256 totalSupply = _vaultSharesToken.totalSupply();
 
         return
             _renzoOracle.calculateMintAmount(
@@ -143,7 +143,7 @@ abstract contract EzETHBase is HyperdriveBase {
         override
         returns (uint256 shareAmount)
     {
-        return _ezETH.balanceOf(address(this));
+        return _vaultSharesToken.balanceOf(address(this));
     }
 
     /// @dev We override the message value check since this integration is

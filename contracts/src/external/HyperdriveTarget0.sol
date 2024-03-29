@@ -237,9 +237,15 @@ abstract contract HyperdriveTarget0 is
     }
 
     /// @notice Gets the base token.
-    /// @return The base token.
+    /// @return The base token address.
     function baseToken() external view returns (address) {
         _revert(abi.encode(_baseToken));
+    }
+
+    /// @notice Gets the vault shares token.
+    /// @return The vault shares token address.
+    function vaultSharesToken() external view returns (address) {
+        _revert(abi.encode(_vaultSharesToken));
     }
 
     /// @notice Gets a specified checkpoint.
@@ -275,6 +281,7 @@ abstract contract HyperdriveTarget0 is
             abi.encode(
                 IHyperdrive.PoolConfig({
                     baseToken: _baseToken,
+                    vaultSharesToken: _vaultSharesToken,
                     linkerFactory: _linkerFactory,
                     linkerCodeHash: _linkerCodeHash,
                     initialVaultSharePrice: _initialVaultSharePrice,
