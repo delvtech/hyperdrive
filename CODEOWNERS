@@ -2,9 +2,9 @@
 * @jalextowle @jrhea @mcclurejt
 
 # Rust SDK Code Owners
-.github/* @dpaiton @slundqui @ryangoree
-crates/* @dpaiton @slundqui @ryangoree
-Cargo.toml @dpaiton @slundqui @ryangoree
-rustfmt.toml @dpaiton @slundqui @ryangoree
-Makefile @dpaiton @slundqui @ryangoree
-README.md @dpaiton @slundqui @ryangoree
+.github/ @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree
+crates/ @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree
+Cargo.toml @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree
+rustfmt.toml @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree
+Makefile @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree
+README.md @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree
