@@ -108,7 +108,7 @@ contract StETHHyperdriveTest is InstanceTest {
     function getTokenBalances(
         address account
     ) internal view override returns (uint256, uint256) {
-        return (LIDO.sharesOf(account), LIDO.balanceOf(account));
+        return (LIDO.balanceOf(account), LIDO.sharesOf(account));
     }
 
     /// @dev Verifies that deposit accounting is correct when opening positions.

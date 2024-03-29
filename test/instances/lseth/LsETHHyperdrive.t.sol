@@ -107,7 +107,7 @@ contract LsETHHyperdriveTest is InstanceTest {
     function getTokenBalances(
         address account
     ) internal view override returns (uint256, uint256) {
-        return (RIVER.balanceOf(account), RIVER.balanceOfUnderlying(account));
+        return (RIVER.balanceOfUnderlying(account), RIVER.balanceOf(account));
     }
 
     /// @dev Fetches the total supply of the base and share tokens.

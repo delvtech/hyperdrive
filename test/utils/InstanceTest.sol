@@ -370,15 +370,11 @@ abstract contract InstanceTest is HyperdriveTest {
 
     /// @dev A virtual function that fetches the token balance information of an account.
     /// @param account The account to fetch token balances of.
-    /// @return sharesBalance The shares token balance of the account.
-    /// @return baseBalance The base token balance of the account.
+    /// @return baseBalance The shares token balance of the account.
+    /// @return shareBalance The base token balance of the account.
     function getTokenBalances(
         address account
-    )
-        internal
-        view
-        virtual
-        returns (uint256 sharesBalance, uint256 baseBalance);
+    ) internal view virtual returns (uint256 baseBalance, uint256 shareBalance);
 
     /// @dev A virtual function that fetches the total supply of the base and share tokens.
     /// @return totalSupplyBase The total supply of the base token.
@@ -659,7 +655,7 @@ abstract contract InstanceTest is HyperdriveTest {
             bondAmount
         );
 
-        // If base deposits are supported we ensure the deposit accounting is correct.
+        // Ensure the deposit accounting is correct.
         verifyDeposit(
             bob,
             basePaid,
@@ -924,7 +920,7 @@ abstract contract InstanceTest is HyperdriveTest {
     function getAccountBalances(
         address account
     ) internal view returns (AccountBalances memory) {
-        (uint256 shares, uint256 base) = getTokenBalances(account);
+        (uint256 base, uint256 shares) = getTokenBalances(account);
 
         return
             AccountBalances({

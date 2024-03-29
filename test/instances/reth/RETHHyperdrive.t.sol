@@ -122,7 +122,7 @@ contract RETHHyperdriveTest is InstanceTest {
         address account
     ) internal view override returns (uint256, uint256) {
         uint256 rethBalance = rocketTokenRETH.balanceOf(account);
-        return (rethBalance, rocketTokenRETH.getEthValue(rethBalance));
+        return (rocketTokenRETH.getEthValue(rethBalance), rethBalance);
     }
 
     /// @dev Verifies that deposit accounting is correct when opening positions.
