@@ -1,8 +1,6 @@
-
 use ethers::types::U256;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
-
 
 use crate::State;
 
@@ -37,7 +35,7 @@ impl State {
         &self,
         bond_amount: FixedPoint,
         maturity_time: U256,
-        current_time: U256 
+        current_time: U256,
     ) -> FixedPoint {
         let normalized_time_remaining = self.calculate_time_remaining(maturity_time, current_time);
         // curve_fee = ((1 - p) * phi_curve * d_y * t) / c
@@ -52,7 +50,7 @@ impl State {
         &self,
         bond_amount: FixedPoint,
         maturity_time: U256,
-        current_time:U256 
+        current_time: U256,
     ) -> FixedPoint {
         let normalized_time_remaining = self.calculate_time_remaining(maturity_time, current_time);
         // flat_fee = (d_y * (1 - t) * phi_flat) / c
@@ -61,23 +59,4 @@ impl State {
             self.vault_share_price(),
         ) * self.flat_fee()
     }
-
-    fn calculate_time_remaining(
-        &self,
-        maturity_time: U256,
-        current_time: U256 
-    ) -> FixedPoint {
-        let latest_checkpoint = self.to_checkpoint(current_time); 
-        let time_remaining = if maturity_time > latest_checkpoint {
-            FixedPoint::from(maturity_time - latest_checkpoint)
-        } else {
-            fixed!(0)
-        };
-
-        // NOTE: Round down to underestimate the time remaining.
-        let time_remaining = time_remaining.div_down(self.position_duration());
-
-        time_remaining
-    }
-
 }

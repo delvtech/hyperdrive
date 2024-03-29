@@ -1,3 +1,4 @@
+use ethers::types::U256;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
@@ -7,10 +8,11 @@ impl State {
     fn calculate_close_long_flat_plus_curve<F: Into<FixedPoint>>(
         &self,
         bond_amount: F,
-        normalized_time_remaining: F,
+        maturity_time: U256,
+        current_time: U256,
     ) -> FixedPoint {
         let bond_amount = bond_amount.into();
-        let normalized_time_remaining = normalized_time_remaining.into();
+        let normalized_time_remaining = self.calculate_time_remaining(maturity_time, current_time);
 
         // Calculate the flat part of the trade
         let flat = bond_amount.mul_div_down(
@@ -33,15 +35,15 @@ impl State {
     pub fn calculate_close_long<F: Into<FixedPoint>>(
         &self,
         bond_amount: F,
-        normalized_time_remaining: F,
+        maturity_time: U256,
+        current_time: U256,
     ) -> FixedPoint {
         let bond_amount = bond_amount.into();
-        let normalized_time_remaining = normalized_time_remaining.into();
 
         // Subtract the fees from the trade
-        self.calculate_close_long_flat_plus_curve(bond_amount, normalized_time_remaining)
-            - self.close_long_curve_fee(bond_amount, normalized_time_remaining)
-            - self.close_long_flat_fee(bond_amount, normalized_time_remaining)
+        self.calculate_close_long_flat_plus_curve(bond_amount, maturity_time, current_time)
+            - self.close_long_curve_fee(bond_amount, maturity_time, current_time)
+            - self.close_long_flat_fee(bond_amount, maturity_time, current_time)
     }
 }
 
@@ -66,9 +68,16 @@ mod tests {
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let in_ = rng.gen_range(fixed!(0)..=state.effective_share_reserves());
-            let normalized_time_remaining = rng.gen_range(fixed!(0)..=fixed!(1e18));
+            let maturity_time = state.checkpoint_duration();
+            let current_time = rng.gen_range(fixed!(0)..=maturity_time);
+            let normalized_time_remaining =
+                state.calculate_time_remaining(maturity_time.into(), current_time.into());
             let actual = panic::catch_unwind(|| {
-                state.calculate_close_long_flat_plus_curve(in_, normalized_time_remaining)
+                state.calculate_close_long_flat_plus_curve(
+                    in_,
+                    maturity_time.into(),
+                    current_time.into(),
+                )
             });
             match mock
                 .calculate_close_long(

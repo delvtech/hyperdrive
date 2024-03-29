@@ -142,6 +142,21 @@ impl State {
         }
     }
 
+    /// Gets the normalized time remaining
+    fn calculate_time_remaining(&self, maturity_time: U256, current_time: U256) -> FixedPoint {
+        let latest_checkpoint = self.to_checkpoint(current_time);
+        let time_remaining = if maturity_time > latest_checkpoint {
+            FixedPoint::from(maturity_time - latest_checkpoint)
+        } else {
+            fixed!(0)
+        };
+
+        // NOTE: Round down to underestimate the time remaining.
+        let time_remaining = time_remaining.div_down(self.position_duration());
+
+        time_remaining
+    }
+
     /// Config ///
 
     fn position_duration(&self) -> FixedPoint {
