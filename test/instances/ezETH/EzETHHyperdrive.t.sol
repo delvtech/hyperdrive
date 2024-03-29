@@ -136,7 +136,8 @@ contract EzETHHyperdriveTest is InstanceTest {
     function getTokenBalances(
         address account
     ) internal view override returns (uint256, uint256) {
-        return (EZETH.balanceOf(account), 0);
+        // EzETH does not have a convenient function for fetching base balance.
+        return (0, EZETH.balanceOf(account));
     }
 
     /// @dev Fetches the total supply of the base and share tokens.
