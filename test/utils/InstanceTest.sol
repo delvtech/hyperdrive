@@ -97,7 +97,7 @@ abstract contract InstanceTest is HyperdriveTest {
         deployFactory();
 
         // Set the deployer coordinator address and add to the factory.
-        deployerCoordinator = deployCoordinator();
+        deployerCoordinator = deployCoordinator(address(factory));
         factory.addDeployerCoordinator(deployerCoordinator);
 
         // Deploy all Hyperdrive contracts using deployer coordinator contract.
@@ -312,7 +312,10 @@ abstract contract InstanceTest is HyperdriveTest {
 
     /// @dev A virtual function that defines the deployer coordinator
     ///      contract that will be used to deploy all the instance targets.
-    function deployCoordinator() internal virtual returns (address);
+    /// @param _factory The address of the Hyperdrive factory contract.
+    function deployCoordinator(
+        address _factory
+    ) internal virtual returns (address);
 
     /// @dev A virtual function that converts an amount in terms of the base token
     ///      to equivalent amount in shares.

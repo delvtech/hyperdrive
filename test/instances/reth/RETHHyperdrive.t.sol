@@ -93,11 +93,14 @@ contract RETHHyperdriveTest is InstanceTest {
     }
 
     /// @dev Deploys the rETH deployer coordinator contract.
-    function deployCoordinator() internal override returns (address) {
+    function deployCoordinator(
+        address _factory
+    ) internal override returns (address) {
         vm.startPrank(alice);
         return
             address(
                 new RETHHyperdriveDeployerCoordinator(
+                    _factory,
                     address(new RETHHyperdriveCoreDeployer(ROCKET_STORAGE)),
                     address(new RETHTarget0Deployer(ROCKET_STORAGE)),
                     address(new RETHTarget1Deployer(ROCKET_STORAGE)),

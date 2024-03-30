@@ -691,6 +691,7 @@ impl TestChain {
             ERC4626HyperdriveDeployerCoordinator::deploy(
                 client.clone(),
                 (
+                    factory.address(),
                     core_deployer.address(),
                     target0.address(),
                     target1.address(),
@@ -862,6 +863,7 @@ impl TestChain {
             StETHHyperdriveDeployerCoordinator::deploy(
                 client.clone(),
                 (
+                    factory.address(),
                     core_deployer.address(),
                     target0.address(),
                     target1.address(),
