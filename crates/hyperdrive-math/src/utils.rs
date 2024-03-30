@@ -102,8 +102,11 @@ pub fn calculate_fees_given_bonds(
     bond_amount: FixedPoint,
     normalized_time_remaining: FixedPoint,
     spot_price: FixedPoint,
-    vault_share_pric: FixedPoint,
-) -> (FixedPoint,FixedPoint,FixedPoint,FixedPoint) {
+    vault_share_price: FixedPoint,
+    curve_fee: FixedPoint,
+    flat_fee: FixedPoint,
+    governance_lp_fee: FixedPoint,
+) -> (FixedPoint, FixedPoint, FixedPoint, FixedPoint) {
     // NOTE: Round up to overestimate the curve fee.
     //
     // p (spot price) tells us how many base a bond is worth -> p = base/bonds
@@ -118,10 +121,10 @@ pub fn calculate_fees_given_bonds(
     //           = (base/bonds * phi_curve * bonds * t) * (shares/base)
     //           = (base * phi_curve * t) * (shares/base)
     //           = phi_curve * t * shares
-    curveFee = _curveFee
-        .mulUp(ONE - _spotPrice)
-        .mulUp(_bondAmount)
-        .mulDivUp(_normalizedTimeRemaining, _vaultSharePrice);
+    let curve_fee = curve_fee
+        .mul_up(fixed!(1e18) - spot_price)
+        .mul_up(bond_amount)
+        .mul_div_up(normalized_time_remaining, vault_share_price);
 
     // NOTE: Round down to underestimate the governance curve fee.
     //
@@ -129,7 +132,7 @@ pub fn calculate_fees_given_bonds(
     //
     // governanceCurveFee = curve_fee * phi_gov
     //                    = shares * phi_gov
-    governanceCurveFee = curveFee.mulDown(_governanceLPFee);
+    let governance_curve_fee = curve_fee.mul_down(governance_lp_fee);
 
     // NOTE: Round up to overestimate the flat fee.
     //
@@ -141,11 +144,8 @@ pub fn calculate_fees_given_bonds(
     //          = (base * (1 - t) * phi_flat) / (base/shares)
     //          = (base * (1 - t) * phi_flat) * (shares/base)
     //          = shares * (1 - t) * phi_flat
-    uint256 flat = _bondAmount.mulDivUp(
-        ONE - _normalizedTimeRemaining,
-        _vaultSharePrice
-    );
-    flatFee = flat.mulUp(_flatFee);
+    let flat = bond_amount.mul_div_up(fixed!(1e18) - normalized_time_remaining, vault_share_price);
+    let flat_fee = flat.mul_up(flat_fee);
 
     // NOTE: Round down to underestimate the total governance fee.
     //
@@ -155,9 +155,14 @@ pub fn calculate_fees_given_bonds(
     //                     = shares * phi_gov
     //
     // The totalGovernanceFee is the sum of the curve and flat governance fees.
-    totalGovernanceFee =
-        governanceCurveFee +
-        flatFee.mulDown(_governanceLPFee);
+    let total_governance_fee = governance_curve_fee + flat_fee.mul_down(governance_lp_fee);
+
+    (
+        curve_fee,
+        flat_fee,
+        governance_curve_fee,
+        total_governance_fee,
+    )
 }
 
 #[cfg(test)]

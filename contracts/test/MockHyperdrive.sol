@@ -280,6 +280,38 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
         _marketState = _marketState_;
     }
 
+    function getTime() external view returns (uint256) {
+        return block.timestamp;
+    }
+
+    function getCheckpointDuration() external view returns (uint256) {
+        return _checkpointDuration;
+    }
+
+    function setCheckpoint(
+        uint256 _checkpointTime,
+        uint256 vaultSharePrice
+    ) external returns (uint256) {
+        if (_checkpointTime % _checkpointDuration != 0) {
+            revert IHyperdrive.InvalidCheckpointTime();
+        }
+
+        // Create the vault share price checkpoint.
+        IHyperdrive.Checkpoint storage checkpoint_ = _checkpoints[
+            _checkpointTime
+        ];
+
+        checkpoint_.vaultSharePrice = uint128(vaultSharePrice);
+
+        return uint256(_checkpoints[_checkpointTime].vaultSharePrice);
+    }
+
+    function getMockCheckpoint(
+        uint256 _checkpointTime
+    ) external view returns (uint256) {
+        return uint256(_checkpoints[_checkpointTime].vaultSharePrice);
+    }
+
     function setTotalShares(uint256 _totalShares) external {
         totalShares = _totalShares;
     }

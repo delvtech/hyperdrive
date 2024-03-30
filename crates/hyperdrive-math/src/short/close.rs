@@ -167,13 +167,15 @@ impl State {
         // Calculate flat + curve for the short.
         let share_reserves_delta =
             self.calculate_close_short_flat_plus_curve(bond_amount, normalized_time_remaining);
+        // let bond_reserves_delta = bond_amount.mul_up(normalized_time_remaining);
 
         // Throw an error if closing the short would result in negative interest.
         let bond_delta = bond_amount * normalized_time_remaining;
         let ending_spot_price = self.spot_price_after_close_short(share_reserves_delta, bond_delta);
         let max_spot_price = self.calculate_close_short_max_spot_price();
-        println!("ending_spot_price {:#?}", ending_spot_price);
-        println!("max_spot_price    {:#?}", max_spot_price);
+        println!("\n  calculate_close_short");
+        println!("ending_spot_price           {:#?}", ending_spot_price);
+        println!("max_spot_price              {:#?}", max_spot_price);
         // TODO: if we support negative interest we'll need to remove this panic and support that path.
         if ending_spot_price > max_spot_price {
             // TODO would be nice to return a `Result` here instead of a panic.
@@ -181,56 +183,47 @@ impl State {
         }
 
         // Subtract the fees from the trade.
-        let share_reserves_delta_with_fees = share_reserves_delta
-            + self.close_short_curve_fee(bond_amount, normalized_time_remaining)
-            + self.close_short_flat_fee(bond_amount, normalized_time_remaining);
+        // let share_reserves_delta_with_fees = share_reserves_delta
+        //     + self.close_short_curve_fee(bond_amount, normalized_time_remaining)
+        //     + self.close_short_flat_fee(bond_amount, normalized_time_remaining);
 
         // Calculate the share proceeds owed to the short.
+        // let short_proceeds = self.calculate_short_proceeds(
+        //     bond_amount,
+        //     share_reserves_delta_with_fees,
+        //     open_vault_share_price,
+        //     close_vault_share_price,
+        //     self.vault_share_price(),
+        //     self.flat_fee(),
+        // );
+
+        // let (curve_fee, flat_fee, governance_curve_fee, total_governance_fee) = self
+        let (curve_fee, flat_fee, _, _) = self.calculate_fees_given_bonds(
+            bond_amount,
+            normalized_time_remaining,
+            self.get_spot_price(),
+            self.vault_share_price(),
+        );
+
+        // let share_curve_delta =
+        //     self.calculate_close_short_curve(bond_amount, normalized_time_remaining);
+        // let share_curve_delta = share_curve_delta + curve_fee - governance_curve_fee;
+        let share_reserves_delta = share_reserves_delta + curve_fee + flat_fee;
+
         let short_proceeds = self.calculate_short_proceeds(
             bond_amount,
-            share_reserves_delta_with_fees,
+            share_reserves_delta,
             open_vault_share_price,
             close_vault_share_price,
             self.vault_share_price(),
             self.flat_fee(),
         );
 
-        let (curve_fee, flat_fee, governance_curve_fee, total_governance_fee) = self
-            .calculate_fees_given_bonds(
-                bond_amount,
-                normalized_time_remaining,
-                self.get_spot_price(),
-                self.vault_share_price(),
-            );
-
-        let share_curve_delta =
-            self.calculate_close_short_curve(bond_amount, normalized_time_remaining);
-        let share_curve_delta = share_curve_delta + curve_fee - governance_curve_fee;
-        let share_reserves_delta = share_reserves_delta + curve_fee + flat_fee;
-
-        return short_proceeds;
-        // Calculate the share proceeds owed to the short and account for
-        // negative interest that accrued over the period.
-        //     uint256 openVaultSharePrice = _checkpoints[
-        //         _maturityTime - _positionDuration
-        //     ].vaultSharePrice;
-        //     uint256 closeVaultSharePrice = block.timestamp < _maturityTime
-        //         ? _vaultSharePrice
-        //         : _checkpoints[_maturityTime].vaultSharePrice;
-
-        // shareProceeds = HyperdriveMath.calculateShortProceedsDown(
-        //     _bondAmount,
-        //     shareReservesDelta,
-        //     openVaultSharePrice,
-        //     closeVaultSharePrice,
-        //     _vaultSharePrice,
-        //     _flatFee
-        // );
-
         // // The governance fee isn't included in the share payment that is
         // // added to the share reserves. We remove it here to simplify the
         // // accounting updates.
         // shareReservesDelta -= totalGovernanceFee;
+        // let share_reserves_delta = share_reserves_delta - total_governance_fee;
 
         // // Ensure that the ending spot price is less than 1.
         // if (
@@ -245,6 +238,9 @@ impl State {
         //         IHyperdrive.InsufficientLiquidityReason.NegativeInterest
         //     );
         // }
+        // let spot_price = self.spot_price_after_close_short(share_curve_delta, bond_reserves_delta);
+
+        return short_proceeds;
     }
 
     /// Gets the spot price after closing a short.
@@ -398,30 +394,68 @@ mod tests {
                 .send()
                 .await?;
 
-            // Get the maturity time.
+            // Figure out the maturity time.
             let timestamp = client
                 .get_block(client.get_block_number().await.unwrap())
                 .await?
                 .unwrap()
                 .timestamp;
-            let time_lapsed_in_seconds = rng.gen_range(fixed!(0)..=state.position_duration());
-            let maturity_time = U256::from(time_lapsed_in_seconds) + timestamp;
+            let checkpoint_duration = U256::from(state.checkpoint_duration());
+            let time_lapsed_in_seconds =
+                U256::from(rng.gen_range(fixed!(0)..=state.position_duration()));
+            let maturity_time =
+                (time_lapsed_in_seconds + timestamp) / checkpoint_duration * checkpoint_duration;
+            let latest_checkpoint_time =
+                (time_lapsed_in_seconds + timestamp) / checkpoint_duration * checkpoint_duration;
 
-            // Use the mock's calculateTimeRemaining function to ensure equal values.
-            let time_remaining = mock.calculate_time_remaining(maturity_time).call().await?;
+            // Set the starting_vault_share_price for the mock.
+            let starting_time = maturity_time - U256::from(state.position_duration());
+            let starting_vault_share_price = rng.gen_range(fixed!(0.5e18)..=fixed!(2.5e18));
 
-            let _time_remaining = maturity_time - mock.latest_checkpoint().call().await?;
+            let remainder = starting_time % checkpoint_duration;
+            println!("remainder {:#?}", remainder);
+
+            let checkpoint_duration = mock.get_checkpoint_duration().call().await?;
+            let remainder = starting_time % checkpoint_duration;
+            println!("remainder {:#?}", remainder);
+
+            // Set the opening checkpoint's vault share price.
+            let _ = mock
+                .set_checkpoint(starting_time, U256::from(starting_vault_share_price))
+                .send()
+                .await?;
+
+            // Get the normalized time remaining for the short.
             let normalized_time_remaining =
-                FixedPoint::from(_time_remaining) / state.position_duration();
-            println!(
-                "time remaining            {:#?}",
-                FixedPoint::from(time_remaining)
-            );
-            println!("normalized time remaining {:#?}", normalized_time_remaining);
+                mock.calculate_time_remaining(maturity_time).call().await?;
 
             // Generate random variables to close the short with.
             let in_ = rng.gen_range(fixed!(0)..=state.bond_reserves());
             let close_vault_share_price = rng.gen_range(fixed!(5e17)..=fixed!(10e18));
+
+            // Check a bunch of stuff
+            let _ = mock.get_mock_checkpoint(starting_time).call().await?;
+            let _ = mock.get_mock_checkpoint(starting_time).call().await?;
+            let _ = mock.get_mock_checkpoint(starting_time).call().await?;
+            let _ = mock.get_mock_checkpoint(starting_time).call().await?;
+            let mock_checkpoint_value = mock.get_mock_checkpoint(starting_time).call().await?;
+            println!("start_time                  {:#?}", starting_time);
+            println!("timestamp                   {:#?}", timestamp);
+            println!("maturity_time               {:#?}", maturity_time);
+            println!(
+                "starting_vault_share_price  {:#?}",
+                starting_vault_share_price
+            );
+            println!("mock_checkpoint_value       {:#?}", mock_checkpoint_value);
+            println!(
+                "mock_checkpoint_value       {:#?}",
+                FixedPoint::from(mock_checkpoint_value)
+            );
+            println!(
+                " normalized_time_remaining  {:#?}",
+                FixedPoint::from(normalized_time_remaining)
+            );
+            println!("close_vault_share_price     {:#?}", close_vault_share_price);
 
             // sanity check to make sure we aren't failing because of a conversion since
             // share_adjustment in PoolInfo is a I256 and an i128 in MarketState.
@@ -433,7 +467,7 @@ mod tests {
                     in_,
                     state.initial_vault_share_price(),
                     close_vault_share_price,
-                    FixedPoint::from(time_remaining),
+                    FixedPoint::from(normalized_time_remaining),
                 )
             });
 
@@ -448,7 +482,7 @@ mod tests {
             // implementation.
             match rust_result {
                 Ok(rust_share_proceeds) => {
-                    println!("result {:#?} ", rust_result);
+                    println!("result      {:#?} ", rust_result);
                     println!("mock_result {:#?}", mock_result);
                     let solidity_share_proceeds = FixedPoint::from(mock_result.unwrap().1);
                     assert_eq!(rust_share_proceeds, solidity_share_proceeds);
@@ -459,6 +493,7 @@ mod tests {
                     assert!(mock_result.is_err());
                 }
             }
+            println!("");
         }
         Ok(())
     }

@@ -29,6 +29,30 @@ impl Distribution<State> for Standard {
     // TODO: It may be better for this to be a uniform sampler and have a test
     // sampler that is more restrictive like this.
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> State {
+        // Generate random position durations that are multiples of checkpoint durations.
+
+        // Generate checkpoint_duration with a step size of 1 hour.
+        let min_hours = 1;
+        let max_hours = 24;
+        let checkpoint_duration_hours: i64 = rng.gen_range(min_hours..=max_hours);
+        let checkpoint_duration_seconds = checkpoint_duration_hours * 60 * 60;
+
+        // Determine the range for the number of checkpoints that can fit within the desired range for position_duration.
+        let min_position_seconds = 60 * 60 * 24 * 91; // Minimum position_duration in seconds.
+        let max_position_seconds = 60 * 60 * 24 * 365; // Maximum position_duration in seconds.
+        let min_checkpoints = min_position_seconds / checkpoint_duration_seconds;
+        let max_checkpoints = max_position_seconds / checkpoint_duration_seconds;
+
+        // Generate a random number of checkpoints within the range, ensuring it's an integer.
+        let num_checkpoints = rng.gen_range(min_checkpoints..=max_checkpoints);
+
+        // Calculate position_duration as a multiple of checkpoint_duration.
+        let position_duration = num_checkpoints * checkpoint_duration_seconds;
+
+        // Convert to U256
+        let checkpoint_duration = U256::from(checkpoint_duration_seconds);
+        let position_duration = U256::from(position_duration);
+
         let config = PoolConfig {
             base_token: Address::zero(),
             linker_factory: Address::zero(),
@@ -46,14 +70,8 @@ impl Distribution<State> for Standard {
             minimum_share_reserves: rng.gen_range(fixed!(0.1e18)..=fixed!(1e18)).into(),
             minimum_transaction_amount: rng.gen_range(fixed!(0.1e18)..=fixed!(1e18)).into(),
             time_stretch: rng.gen_range(fixed!(0.005e18)..=fixed!(0.5e18)).into(),
-            position_duration: rng
-                .gen_range(
-                    FixedPoint::from(60 * 60 * 24 * 91)..=FixedPoint::from(60 * 60 * 24 * 365),
-                )
-                .into(),
-            checkpoint_duration: rng
-                .gen_range(FixedPoint::from(60 * 60)..=FixedPoint::from(60 * 60 * 24))
-                .into(),
+            position_duration: position_duration,
+            checkpoint_duration: checkpoint_duration,
         };
         // We need the spot price to be less than or equal to 1, so we need to
         // generate the bond reserves so that mu * z <= y
