@@ -937,7 +937,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
     /// with the current market state.
     pub async fn calculate_open_long(&self, base_amount: FixedPoint) -> Result<FixedPoint> {
         let state = self.get_state().await?;
-        Ok(state.calculate_open_long(base_amount))
+        state.calculate_open_long(base_amount)
     }
 
     /// Calculates the deposit required to short a given amount of bonds with the
@@ -979,12 +979,14 @@ impl Agent<ChainClient, ChaCha8Rng> {
             .hyperdrive
             .get_checkpoint_exposure(state.to_checkpoint(self.now().await?))
             .await?;
-        Ok(state.get_targeted_long(
-            self.wallet.base,
-            target_rate,
-            checkpoint_exposure,
-            maybe_max_iterations,
-        ))
+        Ok(state
+            .get_targeted_long_with_budget(
+                self.wallet.base,
+                target_rate,
+                checkpoint_exposure,
+                maybe_max_iterations,
+            )
+            .unwrap())
     }
 
     /// Calculates the max short that can be opened in the current checkpoint.

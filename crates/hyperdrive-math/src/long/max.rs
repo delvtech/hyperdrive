@@ -83,7 +83,7 @@ impl State {
             self.max_long_guess(absolute_max_base_amount, checkpoint_exposure);
         let mut maybe_solvency = self.solvency_after_long(
             max_base_amount,
-            self.calculate_open_long(max_base_amount),
+            self.calculate_open_long(max_base_amount).unwrap(),
             checkpoint_exposure,
         );
         if maybe_solvency.is_none() {
@@ -121,7 +121,7 @@ impl State {
             let possible_max_base_amount = max_base_amount + solvency / maybe_derivative.unwrap();
             maybe_solvency = self.solvency_after_long(
                 possible_max_base_amount,
-                self.calculate_open_long(possible_max_base_amount),
+                self.calculate_open_long(possible_max_base_amount).unwrap(),
                 checkpoint_exposure,
             );
             if let Some(s) = maybe_solvency {

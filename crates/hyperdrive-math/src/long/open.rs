@@ -1,3 +1,4 @@
+use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
 
 use crate::{calculate_rate_given_fixed_price, State, YieldSpace};
@@ -22,7 +23,7 @@ impl State {
     ///                \right) \right)^{1 - t_s}
     ///            \right)^{\tfrac{1}{1 - t_s}}
     /// $$
-    pub fn calculate_open_long<F: Into<FixedPoint>>(&self, base_amount: F) -> FixedPoint {
+    pub fn calculate_open_long<F: Into<FixedPoint>>(&self, base_amount: F) -> Result<FixedPoint> {
         let base_amount = base_amount.into();
 
         if base_amount < self.config.minimum_transaction_amount.into() {
@@ -37,12 +38,15 @@ impl State {
         let ending_spot_price =
             self.calculate_spot_price_after_long(base_amount, long_amount.into());
         let max_spot_price = self.calculate_max_spot_price();
+        println!("ending_spot_price {:#?}", ending_spot_price);
+        println!("max_spot_price {:#?}", max_spot_price);
         if ending_spot_price > max_spot_price {
-            // TODO would be nice to return a `Result` here instead of a panic.
-            panic!("InsufficientLiquidity: Negative Interest");
+            return Err(eyre!(
+                "calculate_open_long: InsufficientLiquidity: Negative Interest",
+            ));
         }
 
-        long_amount - self.open_long_curve_fees(base_amount)
+        Ok(long_amount - self.open_long_curve_fees(base_amount))
     }
 
     /// Calculates the spot price after opening a Hyperdrive long.

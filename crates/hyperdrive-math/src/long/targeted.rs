@@ -1,5 +1,3 @@
-use std::result;
-
 use ethers::types::{I256, U256};
 use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
@@ -9,7 +7,7 @@ use crate::{State, YieldSpace};
 
 impl State {
     /// Gets a target long that can be opened given a budget to achieve a desired fixed rate.
-    pub fn get_targeted_long<F: Into<FixedPoint>, I: Into<I256>>(
+    pub fn get_targeted_long_with_budget<F: Into<FixedPoint>, I: Into<I256>>(
         &self,
         budget: F,
         target_rate: F,
@@ -17,27 +15,46 @@ impl State {
         maybe_max_iterations: Option<usize>,
     ) -> Result<FixedPoint> {
         let budget = budget.into();
+        match self.get_targeted_long(target_rate, checkpoint_exposure, maybe_max_iterations) {
+            Ok(long_amount) => Ok(long_amount.min(budget)),
+            Err(error) => Err(error),
+        }
+    }
+
+    /// Gets a target long that can be opened given a desired fixed rate.
+    pub fn get_targeted_long<F: Into<FixedPoint>, I: Into<I256>>(
+        &self,
+        target_rate: F,
+        checkpoint_exposure: I,
+        maybe_max_iterations: Option<usize>,
+    ) -> Result<FixedPoint> {
         let target_rate = target_rate.into();
         let checkpoint_exposure = checkpoint_exposure.into();
 
-        // Estimate the long that achieves a target rate
-        let (spot_target_base_amount, spot_target_bond_amount) =
-            self.spot_targeted_long(target_rate);
-        let resulting_rate = self.rate_after_long(spot_target_base_amount);
+        // Estimate the long that achieves a target rate.
+        let (target_share_reserves, target_bond_reserves) =
+            self.reserves_given_rate_ignoring_exposure(target_rate);
+        let (target_base_delta, target_bond_delta) =
+            self.trade_deltas_from_reserves(target_share_reserves, target_bond_reserves);
+        println!("spot_target_bond_delta {:#?}", target_bond_delta);
+        println!("spot_target_base_delta {:#?}", target_base_delta);
+
+        // Determine what rate was achieved.
+        let resulting_rate = self.rate_after_long(target_base_delta); // ERROR in here
+        let resulting_price = self.price_for_given_rate(resulting_rate);
+        println!("resulting_rate {:#?}", resulting_rate);
+        println!("resulting_price {:#?}", resulting_price);
+
         let abs_rate_error = self.abs_rate_error(target_rate, resulting_rate);
         // TODO: ask alex about an appropriate tolerance for the rate error
         let allowable_error = fixed!(1e5);
-        // Verify solvency and target rate
+        // Verify solvency and target rate.
         if self
-            .solvency_after_long(
-                spot_target_base_amount,
-                spot_target_bond_amount,
-                checkpoint_exposure,
-            )
+            .solvency_after_long(target_base_delta, target_bond_delta, checkpoint_exposure)
             .is_some()
             && abs_rate_error < allowable_error
         {
-            return Ok(spot_target_base_amount.min(budget));
+            return Ok(target_base_delta);
         } else {
             // Adjust your first guess
             let mut possible_target_base_amount = self.ze() - self.minimum_share_reserves();
@@ -49,8 +66,9 @@ impl State {
             // };
             // Iteratively find a solution
             for _ in 0..maybe_max_iterations.unwrap_or(7) {
-                let possible_target_bond_amount =
-                    self.calculate_open_long(possible_target_base_amount);
+                let possible_target_bond_amount = self
+                    .calculate_open_long(possible_target_base_amount)
+                    .unwrap();
                 // TODO: make optional bond amount all the way down (through calc_spot_price_after_long) to avoid
                 // extra `calculate_open_long`
                 let resulting_rate = self.rate_after_long(possible_target_base_amount);
@@ -66,7 +84,7 @@ impl State {
                     .is_some()
                     && abs_rate_error < allowable_error
                 {
-                    return Ok(possible_target_base_amount.min(budget));
+                    return Ok(possible_target_base_amount);
 
                 // Otherwise perform another iteration.
                 } else {
@@ -92,18 +110,25 @@ impl State {
             if self
                 .solvency_after_long(
                     possible_target_base_amount,
-                    self.calculate_open_long(possible_target_base_amount),
+                    self.calculate_open_long(possible_target_base_amount)
+                        .unwrap(),
                     checkpoint_exposure,
                 )
                 .is_some()
             {
-                return Ok(possible_target_base_amount.min(budget));
+                return Ok(possible_target_base_amount);
 
             // Otherwise we'll return an error.
             } else {
                 return Err(eyre!("Initial guess in `get_targeted_long` is insolvent."));
             }
         }
+    }
+
+    fn price_for_given_rate(&self, rate: FixedPoint) -> FixedPoint {
+        let annualized_time =
+            self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
+        fixed!(1e18) / (rate * annualized_time + fixed!(1e18))
     }
 
     /// The non-negative error between a target rate and resulting rate
@@ -164,7 +189,8 @@ impl State {
                 - self.open_long_governance_fee(base_amount)
                 - self.zeta().into());
         let inner_numerator_derivative = self.mu() / self.vault_share_price() - gov_fee_derivative;
-        let inner_denominator = self.bond_reserves() - self.calculate_open_long(base_amount);
+        let inner_denominator =
+            self.bond_reserves() - self.calculate_open_long(base_amount).unwrap();
 
         let inner_derivative = (inner_denominator * inner_numerator_derivative
             + inner_numerator * long_amount_derivative)
@@ -196,17 +222,44 @@ impl State {
         }
     }
 
+    /// Calculate the base & bond deltas from the current state given desired new reserve levels
+    /// TODO: Add docs
+    fn trade_deltas_from_reserves(
+        &self,
+        share_reserves: FixedPoint,
+        bond_reserves: FixedPoint,
+    ) -> (FixedPoint, FixedPoint) {
+        // The spot max base amount is given by:
+        //
+        // spot_target_base_amount = c * (z_t - z)
+        let base_delta =
+            (share_reserves - self.effective_share_reserves()) * self.vault_share_price();
+
+        // The spot max bond amount is given by:
+        //
+        // spot_target_bond_amount = (y - y_t) - c(x)
+        let bond_delta =
+            (self.bond_reserves() - bond_reserves) - self.open_long_curve_fees(base_delta);
+
+        (base_delta, bond_delta)
+    }
+
     /// Calculates the long that should be opened to hit a target interest rate.
     /// This calculation does not take Hyperdrive's solvency constraints into account and shouldn't be used directly.
-    fn spot_targeted_long<F: Into<FixedPoint>>(&self, target_rate: F) -> (FixedPoint, FixedPoint) {
+    fn reserves_given_rate_ignoring_exposure<F: Into<FixedPoint>>(
+        &self,
+        target_rate: F,
+    ) -> (FixedPoint, FixedPoint) {
         //
         // TODO: Docstring
         //
         let target_rate = target_rate.into();
+        let annualized_time =
+            self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
         let c_over_mu = self
             .vault_share_price()
             .div_up(self.initial_vault_share_price());
-        let scaled_rate = (target_rate.mul_up(self.position_duration()) + fixed!(1e18))
+        let scaled_rate = (target_rate.mul_up(annualized_time) + fixed!(1e18))
             .pow(fixed!(1e18) / self.time_stretch());
         let inner = (self.k_down()
             / (c_over_mu + scaled_rate.pow(fixed!(1e18) - self.time_stretch())))
@@ -220,19 +273,7 @@ impl State {
         //
         let target_bond_reserves = inner * scaled_rate;
 
-        // The spot max base amount is given by:
-        //
-        // spot_target_base_amount = c * (z_t - z)
-        let spot_target_base_amount =
-            (target_share_reserves - self.effective_share_reserves()) * self.vault_share_price();
-
-        // The spot max bond amount is given by:
-        //
-        // spot_target_bond_amount = (y - y_t) - c(x)
-        let spot_target_bond_amount = (self.bond_reserves() - target_bond_reserves)
-            - self.open_long_curve_fees(spot_target_base_amount);
-
-        (spot_target_base_amount, spot_target_bond_amount)
+        (target_share_reserves, target_bond_reserves)
     }
 }
 
@@ -250,63 +291,71 @@ mod tests {
 
     use super::*;
 
+    // TODO:
+    // #[traced_test]
+    // #[tokio::test]
+    // async fn test_reserves_given_rate_ignoring_solvency() -> Result<()> {
+    // }
+
     #[traced_test]
     #[tokio::test]
-    async fn test_get_targeted_long() -> Result<()> {
-        // Spawn a test chain and create three agents -- Alice, Bob, and Claire. Alice
-        // is funded with a large amount of capital so that she can initialize
-        // the pool. Bob is funded with a small amount of capital so that we
-        // can test `get_targeted_long` when budget is the primary constraint.
-        // Claire is funded with a large amount of capital so that we can test
-        // `get_targeted_long` when budget is not a constraint.
-        let mut rng = thread_rng();
-        let chain = TestChain::new(3).await?;
-        let (alice, bob, claire) = (
-            chain.accounts()[0].clone(),
-            chain.accounts()[1].clone(),
-            chain.accounts()[2].clone(),
-        );
+    async fn test_get_targeted_long_with_budget() -> Result<()> {
+        // Spawn a test chain and create two agents -- Alice and Bob.
+        // Alice is funded with a large amount of capital so that she can initialize
+        // the pool. Bob is funded with a random amount of capital so that we
+        // can test `get_targeted_long` when budget is the primary constraint
+        // and when it is not.
+
+        // Initialize a test chain; don't need mocks because we want state updates.
+        let chain = TestChain::new(2).await?;
+
+        // Grab accounts for Alice, Bob, and Claire.
+        let (alice, bob) = (chain.accounts()[0].clone(), chain.accounts()[1].clone());
+
+        // Initialize Alice, Bob, and Claire as Agents.
         let mut alice =
             Agent::new(chain.client(alice).await?, chain.addresses().clone(), None).await?;
         let mut bob = Agent::new(chain.client(bob).await?, chain.addresses(), None).await?;
-        let mut claire = Agent::new(chain.client(claire).await?, chain.addresses(), None).await?;
         let config = bob.get_config().clone();
 
+        // Fuzz test
+        let mut rng = thread_rng();
         for _ in 0..*FUZZ_RUNS {
             // Snapshot the chain.
             let id = chain.snapshot().await?;
 
             // Fund Alice and Bob.
-            let fixed_rate = rng.gen_range(fixed!(0.01e18)..=fixed!(0.1e18));
-            let contribution = rng.gen_range(fixed!(10_000e18)..=fixed!(500_000_000e18));
-            let budget = rng.gen_range(fixed!(10e18)..=fixed!(500_000_000e18));
+            let contribution = fixed!(1_000_000e18);
             alice.fund(contribution).await?; // large budget for initializing the pool
+            let budget = rng.gen_range(fixed!(10e18)..=fixed!(500_000_000e18));
             bob.fund(budget).await?; // small budget for resource-constrained targeted longs
-            claire.fund(contribution).await?; // large budget for unconstrained targeted longs
 
             // Alice initializes the pool.
-            alice.initialize(fixed_rate, contribution, None).await?;
+            let initial_fixed_rate = rng.gen_range(fixed!(0.01e18)..=fixed!(0.1e18));
+            alice
+                .initialize(initial_fixed_rate, contribution, None)
+                .await?;
+            println!("initial state: {:#?}", alice.get_state().await?);
+            println!("initial_fixed_rate {:#?}", initial_fixed_rate);
 
             // Some of the checkpoint passes and variable interest accrues.
             alice
                 .checkpoint(alice.latest_checkpoint().await?, None)
                 .await?;
-            let rate = rng.gen_range(fixed!(0)..=fixed!(0.5e18));
+            let variable_rate = rng.gen_range(fixed!(0)..=fixed!(0.5e18));
             alice
                 .advance_time(
-                    rate,
+                    variable_rate,
                     FixedPoint::from(config.checkpoint_duration) * fixed!(0.5e18),
                 )
                 .await?;
 
             // Bob opens a targeted long.
-            let max_spot_price = bob.get_state().await?.get_max_spot_price();
-            let target_rate = fixed_rate - fixed!(1e18); // Bob can't afford this rate
+            let max_spot_price_before_long = bob.get_state().await?.get_max_spot_price();
+            let target_rate = initial_fixed_rate / fixed!(2e18);
+            println!("target_rate {:#?}", target_rate);
             let targeted_long = bob.get_targeted_long(target_rate, None).await?;
-            let spot_price_after_long = bob
-                .get_state()
-                .await?
-                .get_spot_price_after_long(targeted_long);
+            println!("targeted_long {:#?}", targeted_long);
             bob.open_long(targeted_long, None, None).await?;
 
             // Three things should be true after opening the long:
@@ -314,72 +363,38 @@ mod tests {
             // 1. The pool's spot price is under the max spot price prior to
             //    considering fees
             // 2. The pool's solvency is above zero.
-            // 3. Bob's budget is consumed.
-            let is_under_max_price = max_spot_price > spot_price_after_long;
+            // 3. IF Bob's budget is not consumed; then new rate is the target rate
+            let spot_price_after_long = bob.get_state().await?.get_spot_price();
+            let is_under_max_price = max_spot_price_before_long > spot_price_after_long;
             let is_solvent = {
                 let state = bob.get_state().await?;
                 let error_tolerance = fixed!(1e5);
                 state.get_solvency() > error_tolerance
             };
+            assert!(is_under_max_price && is_solvent, "Invalid targeted long.");
+
             let is_budget_consumed = {
                 let error_tolerance = fixed!(1e5);
                 bob.base() < error_tolerance
             };
-            assert!(
-                is_under_max_price && is_solvent && is_budget_consumed,
-                "Invalid targeted long."
-            );
-
-            // Claire opens a targeted long.
-            let max_spot_price = claire.get_state().await?.get_max_spot_price();
-            let target_rate = fixed_rate - fixed!(0.1e18); // Claire can afford this rate
-            let targeted_long = claire.get_targeted_long(target_rate, None).await?;
-            let spot_price_after_long = claire
-                .get_state()
-                .await?
-                .get_spot_price_after_long(targeted_long);
-            claire.open_long(targeted_long, None, None).await?;
-
-            // Four things should be true after opening the long:
-            //
-            // 1. The pool's spot price is under the max spot price prior to
-            //    considering fees
-            // 2. The pool's solvency is above zero.
-            // 3. Claire's budget is not consumed.
-            // 4. The spot rate is close to the target rate
-            let is_under_max_price = max_spot_price > spot_price_after_long;
-            let is_solvent = {
-                let state = claire.get_state().await?;
+            let is_rate_achieved = {
+                let state = bob.get_state().await?;
+                let new_rate = state.get_spot_rate();
                 let error_tolerance = fixed!(1e5);
-                state.get_solvency() > error_tolerance
-            };
-            let is_budget_consumed = {
-                let error_tolerance = fixed!(1e18);
-                claire.base() > error_tolerance
-            };
-            let does_target_match_spot_rate = {
-                let state = claire.get_state().await?;
-                let fixed_rate = state.get_spot_rate();
-                let error_tolerance = fixed!(1e18);
-                if fixed_rate > target_rate {
-                    fixed_rate - target_rate < error_tolerance
+                if new_rate > target_rate {
+                    new_rate - target_rate < error_tolerance
                 } else {
-                    target_rate - fixed_rate < error_tolerance
+                    target_rate - new_rate < error_tolerance
                 }
             };
-            assert!(
-                is_under_max_price
-                    && is_solvent
-                    && is_budget_consumed
-                    && does_target_match_spot_rate,
-                "Invalid targeted long."
-            );
+            if !is_budget_consumed {
+                assert!(is_rate_achieved, "Invalid targeted long.");
+            }
 
             // Revert to the snapshot and reset the agent's wallets.
             chain.revert(id).await?;
             alice.reset(Default::default());
             bob.reset(Default::default());
-            claire.reset(Default::default());
         }
 
         Ok(())
