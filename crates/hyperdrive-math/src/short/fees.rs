@@ -31,7 +31,8 @@ impl State {
         maturity_time: U256,
         current_time: U256,
     ) -> FixedPoint {
-        let normalized_time_remaining = self.calculate_normalized_time_remaining(maturity_time, current_time);
+        let normalized_time_remaining =
+            self.calculate_normalized_time_remaining(maturity_time, current_time);
 
         // ((1 - p) * phi_curve * d_y * t) / c
         self.curve_fee()
@@ -47,7 +48,8 @@ impl State {
         maturity_time: U256,
         current_time: U256,
     ) -> FixedPoint {
-        let normalized_time_remaining = self.calculate_normalized_time_remaining(maturity_time, current_time);
+        let normalized_time_remaining =
+            self.calculate_normalized_time_remaining(maturity_time, current_time);
         // flat fee = (d_y * (1 - t) * phi_flat) / c
         bond_amount.mul_div_down(
             fixed!(1e18) - normalized_time_remaining,
