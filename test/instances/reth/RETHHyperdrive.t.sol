@@ -103,7 +103,8 @@ contract RETHHyperdriveTest is InstanceTest {
                     address(new RETHTarget1Deployer()),
                     address(new RETHTarget2Deployer()),
                     address(new RETHTarget3Deployer()),
-                    address(new RETHTarget4Deployer())
+                    address(new RETHTarget4Deployer()),
+                    rocketTokenRETH
                 )
             );
     }
@@ -166,15 +167,6 @@ contract RETHHyperdriveTest is InstanceTest {
 
         // Ensure the total supply was updated correctly.
         assertEq(rocketTokenRETH.totalSupply(), totalSharesBefore);
-    }
-
-    /// Getters ///
-
-    function test_getters() external {
-        assertEq(
-            address(IRETHHyperdrive(address(hyperdrive)).rocketStorage()),
-            address(ROCKET_STORAGE)
-        );
     }
 
     /// Price Per Share ///

@@ -30,6 +30,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
     /// @param _target4Deployer The target4 deployer.
+    /// @param _rocketTokenReth The rETH token contract.
     constructor(
         address _coreDeployer,
         address _target0Deployer,

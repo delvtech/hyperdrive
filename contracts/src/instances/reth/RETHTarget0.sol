@@ -23,12 +23,6 @@ contract RETHTarget0 is HyperdriveTarget0, RETHBase {
 
     /// Getters ///
 
-    /// @notice Gets the Rocket Storage contract.
-    /// @return The Rocket Storage contract.
-    function rocketStorage() external pure returns (IRocketStorage) {
-        _revert(abi.encode(_rocketStorage));
-    }
-
     /// @notice Returns the MultiToken's decimals.
     /// @return The MultiToken's decimals.
     function decimals() external pure override returns (uint8) {
