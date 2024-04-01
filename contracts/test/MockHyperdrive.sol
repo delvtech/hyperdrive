@@ -197,7 +197,7 @@ abstract contract MockHyperdriveBase is HyperdriveBase {
     // ETH yield source instances to be payable and non-ETH yield
     // source instances non-payable.
     function _checkMessageValue() internal view override {
-        if (address(_baseToken) != ETH && msg.value > 0) {
+        if (address(_baseToken) != ETH && msg.value != 0) {
             revert IHyperdrive.NotPayable();
         }
     }
