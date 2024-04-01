@@ -41,6 +41,11 @@ impl State {
     ) -> FixedPoint {
         let bond_amount = bond_amount.into();
 
+        if bond_amount < self.config.minimum_transaction_amount.into() {
+            // TODO would be nice to return a `Result` here instead of a panic.
+            panic!("MinimumTransactionAmount: Input amount too low");
+        }
+
         // Subtract the fees from the trade
         self.calculate_close_long_flat_plus_curve(bond_amount, maturity_time, current_time)
             - self.close_long_curve_fee(bond_amount, maturity_time, current_time)

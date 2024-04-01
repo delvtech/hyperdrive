@@ -27,8 +27,9 @@ impl State {
         
         if base_amount < self.config.minimum_transaction_amount.into() {
             // TODO would be nice to return a `Result` here instead of a panic.
-            panic!("MinimumTransactionAmount: Base amount too low");
+            panic!("MinimumTransactionAmount: Input amount too low");
         }
+        // TODO do we need to check minimum share price here?
         
         let long_amount =
             self.calculate_bonds_out_given_shares_in_down(base_amount / self.vault_share_price());
