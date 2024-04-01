@@ -33,7 +33,6 @@ impl State {
         spot_price: FixedPoint,
         mut open_vault_share_price: FixedPoint,
     ) -> Result<FixedPoint> {
-
         if short_amount < self.config.minimum_transaction_amount.into() {
             // TODO would be nice to return a `Result` here instead of a panic.
             panic!("MinimumTransactionAmount: Input amount too low");
@@ -47,7 +46,8 @@ impl State {
         }
 
         // TODO solidity uses mulUp here, should we do that here as well?
-        let share_reserves_delta_in_shares = self.vault_share_price() * self.short_principal(short_amount)?;
+        let share_reserves_delta_in_shares =
+            self.vault_share_price() * self.short_principal(short_amount)?;
         // If the base proceeds of selling the bonds is greater than the bond
         // amount, then the trade occurred in the negative interest domain. We
         // revert in these pathological cases.
@@ -61,7 +61,7 @@ impl State {
             short_amount.mul_div_down(self.vault_share_price(), open_vault_share_price)
                 + self.flat_fee() * short_amount
                 + self.curve_fee() * (fixed!(1e18) - spot_price) * short_amount
-                - share_reserves_delta_in_shares
+                - share_reserves_delta_in_shares,
         )
     }
 

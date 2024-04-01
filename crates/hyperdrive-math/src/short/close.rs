@@ -99,7 +99,6 @@ impl State {
             panic!("MinimumTransactionAmount: Input amount too low");
         }
 
-
         // Calculate flat + curve and subtract the fees from the trade.
         let share_reserves_delta =
             self.calculate_close_short_flat_plus_curve(bond_amount, maturity_time, current_time)
