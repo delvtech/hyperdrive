@@ -3,7 +3,6 @@ pragma solidity 0.8.20;
 
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveCoreDeployer } from "../../interfaces/IHyperdriveCoreDeployer.sol";
-import { IRocketStorage } from "../../interfaces/IRocketStorage.sol";
 import { RETHHyperdrive } from "../../instances/reth/RETHHyperdrive.sol";
 
 /// @author DELV
@@ -13,10 +12,6 @@ import { RETHHyperdrive } from "../../instances/reth/RETHHyperdrive.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract RETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
-    /// @dev The Rocket Pool storage contract.
-    IRocketStorage internal constant _rocketStorage =
-        IRocketStorage(0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46);
-
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param target0 The target0 address.
