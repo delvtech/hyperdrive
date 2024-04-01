@@ -65,6 +65,22 @@ impl State {
         }
     }
 
+    /// Since traders pay a curve fee when they close shorts on Hyperdrive,
+    /// it is possible for traders to receive a negative interest rate even
+    /// if curve's spot price is less than or equal to 1.
+    //
+    /// Given the curve fee `phi_c` and the starting spot price `p_0`, the
+    /// maximum spot price is given by:
+    /// $$
+    /// p_max = 1 - phi_c * (1 - p_0)
+    /// $$
+    fn calculate_close_max_short_price(&self) -> FixedPoint {
+        fixed!(1e18)
+            - self
+                .curve_fee()
+                .mul_up(fixed!(1e18) - self.calculate_spot_price())
+    }
+
     /// Calculates the amount of shares the trader will receive after fees for closing a short
     pub fn calculate_close_short<F: Into<FixedPoint>>(
         &self,
@@ -83,6 +99,19 @@ impl State {
             self.calculate_close_short_flat_plus_curve(bond_amount, maturity_time, current_time)
                 + self.close_short_curve_fee(bond_amount, maturity_time, current_time)
                 + self.close_short_flat_fee(bond_amount, maturity_time, current_time);
+
+        // Throw an error if closing the short would result in negative interest.
+        let ending_spot_price = {
+            let mut state: State = self.clone();
+            state.info.bond_reserves -= bond_amount.into();
+            state.info.share_reserves += share_reserves_delta.into();
+            state.calculate_spot_price()
+        };
+        let max_spot_price = self.calculate_close_max_short_price();
+        if ending_spot_price > max_spot_price {
+            // TODO would be nice to return a `Result` here instead of a panic.
+            panic!("InsufficientLiquidity: Negative Interest");
+        }
 
         // Calculate the share proceeds owed to the short.
         self.calculate_short_proceeds(
