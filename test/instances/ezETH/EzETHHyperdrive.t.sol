@@ -283,6 +283,19 @@ contract EzETHHyperdriveTest is InstanceTest {
         );
     }
 
+    /// Getters ///
+
+    function test_getters() external {
+        assertEq(
+            address(IEzETHHyperdriveRead(address(hyperdrive)).renzo()),
+            address(RESTAKE_MANAGER)
+        );
+        assertEq(
+            address(IEzETHHyperdriveRead(address(hyperdrive)).renzoOracle()),
+            address(RENZO_ORACLE)
+        );
+    }
+
     /// Price Per Share ///
 
     function test__pricePerVaultShare(uint256 basePaid) external {
