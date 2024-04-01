@@ -21,8 +21,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     using FixedPointMath for uint256;
 
     /// @dev The Rocket Token RETH contract.
-    IRocketTokenRETH internal constant rocketTokenReth =
-        IRocketTokenRETH(0xae78736Cd615f374D3085123A210448E74Fc6393);
+    IRocketTokenRETH internal immutable rocketTokenReth;
 
     /// @notice Instantiates the deployer coordinator.
     /// @param _coreDeployer The core deployer.
@@ -37,7 +36,8 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _target1Deployer,
         address _target2Deployer,
         address _target3Deployer,
-        address _target4Deployer
+        address _target4Deployer,
+        IRocketTokenRETH _rocketTokenReth
     )
         HyperdriveDeployerCoordinator(
             _coreDeployer,
@@ -47,7 +47,9 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _target3Deployer,
             _target4Deployer
         )
-    {}
+    {
+        rocketTokenReth = _rocketTokenReth;
+    }
 
     /// @dev Prepares the coordinator for initialization by drawing funds from
     ///      the LP, if necessary.
