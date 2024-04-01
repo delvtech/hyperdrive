@@ -141,16 +141,12 @@ impl State {
         current_time: U256,
     ) -> FixedPoint {
         let latest_checkpoint = self.to_checkpoint(current_time);
-        let time_remaining = if maturity_time > latest_checkpoint {
-            FixedPoint::from(maturity_time - latest_checkpoint)
+        if maturity_time > latest_checkpoint {
+            // NOTE: Round down to underestimate the time remaining.
+            FixedPoint::from(maturity_time - latest_checkpoint).div_down(self.position_duration())
         } else {
             fixed!(0)
-        };
-
-        // NOTE: Round down to underestimate the time remaining.
-        let time_remaining = time_remaining.div_down(self.position_duration());
-
-        time_remaining
+        }
     }
 
     /// Config ///
@@ -257,5 +253,32 @@ impl YieldSpace for State {
 
     fn t(&self) -> FixedPoint {
         self.time_stretch()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use eyre::Result;
+    use rand::thread_rng;
+
+    #[tokio::test]
+    async fn test_calculate_normalized_time_remaining() -> Result<()> {
+        // TODO: fuzz test against calculateTimeRemaining in MockHyperdrive.sol
+        let mut rng = thread_rng();
+        let mut state = rng.gen::<State>();
+
+        // Set a snapshot for the values used for calculating normalized time
+        // remaining
+        state.config.position_duration = fixed!(0.000000000028209717e18).into();
+        state.config.checkpoint_duration = fixed!(0.000000000000043394e18).into();
+        let expected_time_remaining = fixed!(0.000003544877816392e18);
+
+        let maturity_time = U256::from(100);
+        let current_time = U256::from(90);
+        let time_remaining = state.calculate_normalized_time_remaining(maturity_time, current_time);
+
+        assert_eq!(expected_time_remaining, time_remaining);
+        Ok(())
     }
 }
