@@ -198,7 +198,9 @@ contract DeployerCoordinatorTest is HyperdriveTest {
         // should revert since the sender is not the factory address.
         vm.stopPrank();
         vm.startPrank(alice);
-        vm.expectRevert(IHyperdriveDeployerCoordinator.InvalidSender.selector);
+        vm.expectRevert(
+            IHyperdriveDeployerCoordinator.SenderIsNotFactory.selector
+        );
         coordinator.deployTarget(DEPLOYMENT_ID, config, new bytes(0), 0, SALT);
     }
 
@@ -392,7 +394,9 @@ contract DeployerCoordinatorTest is HyperdriveTest {
         // should revert since the sender is not the factory address.
         vm.stopPrank();
         vm.startPrank(alice);
-        vm.expectRevert(IHyperdriveDeployerCoordinator.InvalidSender.selector);
+        vm.expectRevert(
+            IHyperdriveDeployerCoordinator.SenderIsNotFactory.selector
+        );
         coordinator.deploy(DEPLOYMENT_ID, config, new bytes(0), SALT);
     }
 
@@ -623,7 +627,9 @@ contract DeployerCoordinatorTest is HyperdriveTest {
         // since the sender is not the factory address.
         vm.stopPrank();
         vm.startPrank(alice);
-        vm.expectRevert(IHyperdriveDeployerCoordinator.InvalidSender.selector);
+        vm.expectRevert(
+            IHyperdriveDeployerCoordinator.SenderIsNotFactory.selector
+        );
         uint256 contribution = 100_000e18;
         coordinator.initialize(
             DEPLOYMENT_ID,

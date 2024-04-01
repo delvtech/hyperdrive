@@ -59,10 +59,6 @@ interface IHyperdriveDeployerCoordinator {
     ///         duration or is not a multiple of the checkpoint duration.
     error InvalidPositionDuration();
 
-    /// @notice Thrown when the sender of a `deploy`, `deployTarget`, or
-    ///         `initialize` transaction isn't the associated factory.
-    error InvalidSender();
-
     /// @notice Thrown when a user attempts to deploy a target using a target
     ///         index that is outside of the accepted range.
     error InvalidTargetIndex();
@@ -80,6 +76,10 @@ interface IHyperdriveDeployerCoordinator {
     /// @notice Thrown when ether is sent to an instance that doesn't accept
     ///         ether as a deposit asset.
     error NotPayable();
+
+    /// @notice Thrown when the sender of a `deploy`, `deployTarget`, or
+    ///         `initialize` transaction isn't the associated factory.
+    error SenderIsNotFactory();
 
     /// @notice Thrown when a user attempts to deploy a target contract after
     ///         it has already been deployed.
