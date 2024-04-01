@@ -98,13 +98,12 @@ contract RETHHyperdriveTest is InstanceTest {
         return
             address(
                 new RETHHyperdriveDeployerCoordinator(
-                    address(new RETHHyperdriveCoreDeployer(ROCKET_STORAGE)),
-                    address(new RETHTarget0Deployer(ROCKET_STORAGE)),
-                    address(new RETHTarget1Deployer(ROCKET_STORAGE)),
-                    address(new RETHTarget2Deployer(ROCKET_STORAGE)),
-                    address(new RETHTarget3Deployer(ROCKET_STORAGE)),
-                    address(new RETHTarget4Deployer(ROCKET_STORAGE)),
-                    ROCKET_STORAGE
+                    address(new RETHHyperdriveCoreDeployer()),
+                    address(new RETHTarget0Deployer()),
+                    address(new RETHTarget1Deployer()),
+                    address(new RETHTarget2Deployer()),
+                    address(new RETHTarget3Deployer()),
+                    address(new RETHTarget4Deployer())
                 )
             );
     }

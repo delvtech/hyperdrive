@@ -23,13 +23,8 @@ abstract contract RETHBase is HyperdriveBase {
     using SafeERC20 for ERC20;
 
     /// @dev The Rocket Pool storage contract.
-    IRocketStorage internal immutable _rocketStorage;
-
-    /// @notice Instantiates the rETH Hyperdrive base contract.
-    /// @param __rocketStorage The Rocket Pool storage contract.
-    constructor(IRocketStorage __rocketStorage) {
-        _rocketStorage = __rocketStorage;
-    }
+    IRocketStorage internal constant _rocketStorage =
+        IRocketStorage(0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46);
 
     /// Yield Source ///
 

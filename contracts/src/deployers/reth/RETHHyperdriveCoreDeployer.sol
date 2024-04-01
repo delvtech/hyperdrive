@@ -13,14 +13,9 @@ import { RETHHyperdrive } from "../../instances/reth/RETHHyperdrive.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract RETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
-    /// @notice The Rocket Storage contract.
-    IRocketStorage public immutable rocketStorage;
-
-    /// @notice Instantiates the core deployer.
-    /// @param _rocketStorage The Rocket Storage contract.
-    constructor(IRocketStorage _rocketStorage) {
-        rocketStorage = _rocketStorage;
-    }
+    /// @dev The Rocket Pool storage contract.
+    IRocketStorage internal constant _rocketStorage =
+        IRocketStorage(0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46);
 
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
@@ -47,15 +42,7 @@ contract RETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
                 // front-running of deployments.
                 new RETHHyperdrive{
                     salt: keccak256(abi.encode(msg.sender, _salt))
-                }(
-                    _config,
-                    target0,
-                    target1,
-                    target2,
-                    target3,
-                    target4,
-                    rocketStorage
-                )
+                }(_config, target0, target1, target2, target3, target4)
             )
         );
     }

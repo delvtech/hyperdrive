@@ -5,7 +5,6 @@ import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
-import { IRocketStorage } from "../../interfaces/IRocketStorage.sol";
 import { IRocketTokenRETH } from "../../interfaces/IRocketTokenRETH.sol";
 import { ETH } from "../../libraries/Constants.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
@@ -21,11 +20,9 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     using SafeERC20 for ERC20;
     using FixedPointMath for uint256;
 
-    /// @notice The Rocket Storage contract.
-    IRocketStorage public immutable rocketStorage;
-
     /// @dev The Rocket Token RETH contract.
-    IRocketTokenRETH internal immutable rocketTokenReth;
+    IRocketTokenRETH internal constant rocketTokenReth =
+        IRocketTokenRETH(0xae78736Cd615f374D3085123A210448E74Fc6393);
 
     /// @notice Instantiates the deployer coordinator.
     /// @param _coreDeployer The core deployer.
@@ -34,15 +31,13 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
     /// @param _target4Deployer The target4 deployer.
-    /// @param _rocketStorage The Rocket Storage contract.
     constructor(
         address _coreDeployer,
         address _target0Deployer,
         address _target1Deployer,
         address _target2Deployer,
         address _target3Deployer,
-        address _target4Deployer,
-        IRocketStorage _rocketStorage
+        address _target4Deployer
     )
         HyperdriveDeployerCoordinator(
             _coreDeployer,
@@ -52,15 +47,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _target3Deployer,
             _target4Deployer
         )
-    {
-        rocketStorage = _rocketStorage;
-
-        // Fetching the RETH token address from the storage contract.
-        address rocketTokenRethAddress = _rocketStorage.getAddress(
-            keccak256(abi.encodePacked("contract.address", "rocketTokenRETH"))
-        );
-        rocketTokenReth = IRocketTokenRETH(rocketTokenRethAddress);
-    }
+    {}
 
     /// @dev Prepares the coordinator for initialization by drawing funds from
     ///      the LP, if necessary.

@@ -3,7 +3,6 @@ pragma solidity 0.8.20;
 
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { IRocketStorage } from "../../interfaces/IRocketStorage.sol";
 import { RETHBase } from "./RETHBase.sol";
 
 ///      ______  __                           _________      _____
@@ -60,17 +59,12 @@ contract RETHHyperdrive is Hyperdrive, RETHBase {
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
     /// @param _target4 The target4 address.
-    /// @param __rocketStorage The Rocket Pool storage contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         address _target0,
         address _target1,
         address _target2,
         address _target3,
-        address _target4,
-        IRocketStorage __rocketStorage
-    )
-        Hyperdrive(_config, _target0, _target1, _target2, _target3, _target4)
-        RETHBase(__rocketStorage)
-    {}
+        address _target4
+    ) Hyperdrive(_config, _target0, _target1, _target2, _target3, _target4) {}
 }
