@@ -270,9 +270,9 @@ mod tests {
 
         // Set a snapshot for the values used for calculating normalized time
         // remaining
-        state.config.position_duration = fixed!(0.000000000028209717e18).into();
-        state.config.checkpoint_duration = fixed!(0.000000000000043394e18).into();
-        let expected_time_remaining = fixed!(0.000003544877816392e18);
+        state.config.position_duration = fixed!(28209717).into();
+        state.config.checkpoint_duration = fixed!(43394).into();
+        let expected_time_remaining = fixed!(3544877816392);
 
         let maturity_time = U256::from(100);
         let current_time = U256::from(90);
