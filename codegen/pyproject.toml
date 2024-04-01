@@ -1,0 +1,25 @@
+[build-system]
+requires = ["flit_core>=3.2"]
+build-backend = "flit_core.buildapi"
+
+[tool.virtualenv]
+create = true
+env-dir = ".venv"
+
+[project]
+name = "hyperdrive-codegen"
+description = "A code generation tool for the Hyperdrive Solidity project."
+version = "0.0.1"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Matthew Brown", email = "matt@delv.tech" }]
+dependencies = ["jinja2", "pydantic", "pyyaml"]
+
+[project.scripts]
+hyperdrive-codegen = "hyperdrive_codegen.main:main"
+
+[tool.black]
+line-length = 120
+
+[tool.pylint]
+max-line-length = 120
