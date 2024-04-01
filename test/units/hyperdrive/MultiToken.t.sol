@@ -22,12 +22,13 @@ contract HyperdriveMultiToken is HyperdriveTest {
     function setUp() public override {
         super.setUp();
 
+        initialize(alice, 0.05e18, 10_000e18);
+
         // Start recording event logs.
         vm.recordLogs();
     }
 
     function test_transferFrom() external {
-        initialize(alice, 0.05e18, 10_000e18);
         // test alice to bob transfer
         (uint256 maturityTime, uint256 bondProceeds) = openLong(alice, 100e18);
 
@@ -38,6 +39,33 @@ contract HyperdriveMultiToken is HyperdriveTest {
 
         vm.startPrank(alice);
 
+        hyperdrive.transferFrom(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+            alice,
+            bob,
+            bondProceeds
+        );
+
+        uint256 bobBalance = hyperdrive.balanceOf(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+            bob
+        );
+
+        assertEq(bobBalance, bondProceeds);
+    }
+
+    function test_setApprovalForAll() external {
+        // test alice to bob transfer
+        (uint256 maturityTime, uint256 bondProceeds) = openLong(alice, 100e18);
+
+        // uint245 bobBalanceBefore = hyperdrive.balanceOf(
+        //     AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+        //     bob
+        // );
+
+        vm.startPrank(alice);
+        hyperdrive.setApprovalForAll(bob, true);
+        vm.startPrank(bob);
         hyperdrive.transferFrom(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             alice,
