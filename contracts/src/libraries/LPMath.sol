@@ -756,9 +756,17 @@ library LPMath {
                 // proceeds couldn't be calculated.
                 return 0;
             }
-            uint256 presentValue = calculatePresentValue(
+
+            uint256 presentValue;
+            (presentValue, success) = calculatePresentValueSafe(
                 _params.presentValueParams
             );
+            if (!success) {
+                // NOTE: If the present value can't be calculated,  we can't
+                // continue the calculation. Return 0 to indicate that the share
+                // proceeds couldn't be calculated.
+                return 0;
+            }
 
             // Short-circuit if we are within the minimum tolerance.
             if (
