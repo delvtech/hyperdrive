@@ -525,7 +525,7 @@ abstract contract HyperdriveLP is
             .calculateDistributeExcessIdle(params);
 
         // Remove the withdrawal pool proceeds from the reserves.
-        success = _updateLiquiditySafe(-shareProceeds.toInt256()); 
+        success = _updateLiquiditySafe(-shareProceeds.toInt256());
         if (!success) {
             return false;
         }
@@ -568,7 +568,9 @@ abstract contract HyperdriveLP is
         }
     }
 
-    function _updateLiquiditySafe(int256 _shareReservesDelta) internal returns (bool) {
+    function _updateLiquiditySafe(
+        int256 _shareReservesDelta
+    ) internal returns (bool) {
         // Calculate the updated reserves.
         uint256 shareReserves_ = _marketState.shareReserves;
         int256 shareAdjustment_ = _marketState.shareAdjustment;
@@ -586,7 +588,7 @@ abstract contract HyperdriveLP is
                 _shareReservesDelta
             );
 
-        if (!success){
+        if (!success) {
             return false;
         }
 
