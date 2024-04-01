@@ -24,7 +24,7 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @notice The Renzo contract.
     IRestakeManager public immutable restakeManager;
 
-    /// @notice The Renzo Oracle contract.
+    /// @notice The RenzoOracle contract.
     IRenzoOracle public immutable renzoOracle;
 
     /// @notice The ezETH token contract.
