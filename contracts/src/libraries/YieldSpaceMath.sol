@@ -505,7 +505,7 @@ library YieldSpaceMath {
         // This gives us the maximum bonds that can be sold to the pool as:
         //
         // y' = (k - (c / mu) * (mu * zMin) ** (1 - tau)) ** (1 / (1 - tau)).
-        (uint256 ze, uint256 success) = HyperdriveMath.calculateEffectiveShareReservesSafe(z, zeta);
+        (uint256 ze, bool success) = HyperdriveMath.calculateEffectiveShareReservesSafe(z, zeta);
         if (!success){
             return (0, false);
         }
