@@ -200,6 +200,7 @@ contract StETHHyperdriveTest is InstanceTest {
         }
     }
 
+    /// @dev Verifies that withdrawal accounting is correct when closing positions.
     function verifyWithdrawal(
         address trader,
         uint256 baseProceeds,

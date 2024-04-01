@@ -517,8 +517,9 @@ abstract contract InstanceTest is HyperdriveTest {
         );
     }
 
-    /// @dev Fuzz Test to ensure deposit accounting is correct when opening longs
-    ///      with the share token.
+    /// @dev Fuzz Test to ensure deposit accounting is correct when opening
+    ///      longs with the share token. This test case is expected to fail if
+    ///      share deposits are not supported.
     /// @param basePaid Amount in terms of base to open a long.
     function test_open_long_with_shares(uint256 basePaid) external {
         // Get balance information before opening a long.
@@ -589,7 +590,7 @@ abstract contract InstanceTest is HyperdriveTest {
         );
     }
 
-    /// @dev Fuzz Test to ensure withdrawal accounting is correct when opening
+    /// @dev Fuzz Test to ensure deposit accounting is correct when opening
     ///      longs with the base token. This test case is expected to fail if
     ///      base deposits are not supported.
     /// @param basePaid Amount in terms of base to open a long.

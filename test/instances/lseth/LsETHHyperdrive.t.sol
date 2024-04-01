@@ -166,6 +166,7 @@ contract LsETHHyperdriveTest is InstanceTest {
         assertEq(RIVER.totalSupply(), totalSharesBefore);
     }
 
+    /// @dev Verifies that withdrawal accounting is correct when closing positions.
     function verifyWithdrawal(
         address trader,
         uint256 baseProceeds,
@@ -175,10 +176,7 @@ contract LsETHHyperdriveTest is InstanceTest {
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
     ) internal override {
-        // if (asBase) {
-        //     revert IHyperdrive.NotPayable();
-        // }
-
+        // Convert baseProceeds to shares to verify accounting.
         uint256 amount = convertToShares(baseProceeds);
 
         // Ensure the total amount of LsETH stays the same.
