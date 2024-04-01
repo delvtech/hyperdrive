@@ -231,6 +231,11 @@ contract EzETHHyperdriveTest is InstanceTest {
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
     ) internal override {
+        // Base withdraws are not supported for this instance.
+        if (asBase) {
+            revert IHyperdrive.UnsupportedToken();
+        }
+
         // Ensure that the total pooled ether and shares stays the same.
         (, uint256 totalPooledEther, ) = getSharePrice();
         assertEq(totalPooledEther, totalPooledEtherBefore);

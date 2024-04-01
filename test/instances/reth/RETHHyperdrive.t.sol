@@ -186,13 +186,13 @@ contract RETHHyperdriveTest is InstanceTest {
         AccountBalances memory hyperdriveBalancesBefore
     ) internal override {
         // Convert baseProceeds to shares to verify accounting.
-        uint256 sharesProceeds = rocketTokenRETH.getRethValue(baseProceeds);
+        uint256 shareProceeds = rocketTokenRETH.getRethValue(baseProceeds);
 
         if (asBase) {
             // Ensure the total amount of rETH were updated correctly.
             assertApproxEqAbs(
                 rocketTokenRETH.totalSupply(),
-                totalSharesBefore - sharesProceeds,
+                totalSharesBefore - shareProceeds,
                 1
             );
 
@@ -201,22 +201,35 @@ contract RETHHyperdriveTest is InstanceTest {
                 address(hyperdrive).balance,
                 hyperdriveBalancesBefore.ETHBalance
             );
-            assertEq(trader.balance, traderBalancesBefore.ETHBalance + amount);
+            assertEq(
+                trader.balance,
+                traderBalancesBefore.ETHBalance + baseProceeds
+            );
 
             // Ensure the rETH balances were updated correctly.
             assertApproxEqAbs(
                 rocketTokenRETH.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.sharesBalance - sharesProceeds,
+                hyperdriveBalancesBefore.sharesBalance - shareProceeds,
                 1
             );
             assertEq(
                 rocketTokenRETH.balanceOf(address(trader)),
                 traderBalancesBefore.sharesBalance
             );
-        } else {
-            // Ensure the total amount of rETH stays the same.
-            assertEq(rocketTokenRETH.totalSupply(), totalSharesBefore);
 
+            // Ensure the total base supply was updated correctly.
+            assertEq(
+                rocketNetworkBalances.getTotalETHBalance(),
+                totalBaseBefore
+            );
+
+            // Ensure the total supply was updated correctly.
+            assertApproxEqAbs(
+                rocketTokenRETH.totalSupply(),
+                totalSharesBefore - shareProceeds,
+                1
+            );
+        } else {
             // Ensure that the ETH balances were updated correctly.
             assertEq(
                 address(hyperdrive).balance,
@@ -227,24 +240,34 @@ contract RETHHyperdriveTest is InstanceTest {
             // Ensure the rETH balances were updated correctly.
             assertApproxEqAbs(
                 rocketTokenRETH.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.sharesBalance - sharesProceeds,
+                hyperdriveBalancesBefore.sharesBalance - shareProceeds,
                 1
             );
             assertApproxEqAbs(
                 rocketTokenRETH.balanceOf(address(trader)),
-                traderBalancesBefore.sharesBalance + sharesProceeds,
+                traderBalancesBefore.sharesBalance + shareProceeds,
                 1
             );
+
+            // Ensure the total base supply was updated correctly.
+            assertEq(
+                rocketNetworkBalances.getTotalETHBalance(),
+                totalBaseBefore
+            );
+
+            // Ensure the total supply was updated correctly.
+            assertEq(rocketTokenRETH.totalSupply(), totalSharesBefore);
         }
     }
 
-        /// Getters ///
+    /// Getters ///
 
     function test_getters() external {
         assertEq(
             address(IRETHHyperdrive(address(hyperdrive)).rocketStorage()),
             address(ROCKET_STORAGE)
         );
+    }
 
     /// Price Per Share ///
 

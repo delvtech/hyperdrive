@@ -176,6 +176,11 @@ contract LsETHHyperdriveTest is InstanceTest {
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
     ) internal override {
+        // Base withdraws are not supported for this instance.
+        if (asBase) {
+            revert IHyperdrive.UnsupportedToken();
+        }
+
         // Convert baseProceeds to shares to verify accounting.
         uint256 amount = convertToShares(baseProceeds);
 
@@ -200,6 +205,12 @@ contract LsETHHyperdriveTest is InstanceTest {
             traderBalancesBefore.sharesBalance + amount,
             1
         );
+
+        // Ensure the total base supply was updated correctly.
+        assertEq(RIVER.totalUnderlyingSupply(), totalBaseBefore);
+
+        // Ensure the total supply was updated correctly.
+        assertEq(RIVER.totalSupply(), totalSharesBefore);
     }
 
     /// Price Per Share ///
