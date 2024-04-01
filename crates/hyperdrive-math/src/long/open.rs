@@ -38,8 +38,6 @@ impl State {
         let ending_spot_price =
             self.calculate_spot_price_after_long(base_amount, long_amount.into());
         let max_spot_price = self.calculate_max_spot_price();
-        println!("ending_spot_price {:#?}", ending_spot_price);
-        println!("max_spot_price {:#?}", max_spot_price);
         if ending_spot_price > max_spot_price {
             return Err(eyre!(
                 "calculate_open_long: InsufficientLiquidity: Negative Interest",
@@ -55,17 +53,17 @@ impl State {
         &self,
         base_amount: FixedPoint,
         bond_amount: Option<FixedPoint>,
-    ) -> FixedPoint {
+    ) -> Result<FixedPoint> {
         let bond_amount = match bond_amount {
             Some(bond_amount) => bond_amount,
-            None => self.calculate_open_long(base_amount),
+            None => self.calculate_open_long(base_amount)?,
         };
         let mut state: State = self.clone();
         state.info.bond_reserves -= bond_amount.into();
         state.info.share_reserves += (base_amount / state.vault_share_price()
             - self.open_long_governance_fee(base_amount) / state.vault_share_price())
         .into();
-        state.calculate_spot_price()
+        Ok(state.calculate_spot_price())
     }
 
     /// Calculate the spot rate after a long has been opened.
@@ -74,11 +72,11 @@ impl State {
         &self,
         base_amount: FixedPoint,
         bond_amount: Option<FixedPoint>,
-    ) -> FixedPoint {
-        calculate_rate_given_fixed_price(
-            self.calculate_spot_price_after_long(base_amount, bond_amount),
+    ) -> Result<FixedPoint> {
+        Ok(calculate_rate_given_fixed_price(
+            self.calculate_spot_price_after_long(base_amount, bond_amount)?,
             self.position_duration(),
-        )
+        ))
     }
 }
 

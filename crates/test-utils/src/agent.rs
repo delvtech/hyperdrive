@@ -4,7 +4,7 @@ use ethers::{
     abi::Detokenize,
     contract::ContractCall,
     prelude::EthLogDecode,
-    providers::{Http, Middleware, Provider, RetryClient},
+    providers::{maybe, Http, Middleware, Provider, RetryClient},
     types::{Address, BlockId, I256, U256},
 };
 use eyre::Result;
@@ -973,6 +973,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         &self,
         target_rate: FixedPoint,
         maybe_max_iterations: Option<usize>,
+        maybe_allowable_error: Option<FixedPoint>,
     ) -> Result<FixedPoint> {
         let state = self.get_state().await?;
         let checkpoint_exposure = self
@@ -985,6 +986,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
                 target_rate,
                 checkpoint_exposure,
                 maybe_max_iterations,
+                maybe_allowable_error,
             )
             .unwrap())
     }

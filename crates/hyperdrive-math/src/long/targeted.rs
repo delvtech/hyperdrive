@@ -13,41 +13,45 @@ impl State {
         target_rate: F,
         checkpoint_exposure: I,
         maybe_max_iterations: Option<usize>,
+        maybe_allowable_error: Option<F>,
     ) -> Result<FixedPoint> {
         let budget = budget.into();
-        match self.get_targeted_long(target_rate, checkpoint_exposure, maybe_max_iterations) {
+        match self.get_targeted_long(
+            target_rate,
+            checkpoint_exposure,
+            maybe_max_iterations,
+            maybe_allowable_error,
+        ) {
             Ok(long_amount) => Ok(long_amount.min(budget)),
             Err(error) => Err(error),
         }
     }
 
     /// Gets a target long that can be opened given a desired fixed rate.
-    pub fn get_targeted_long<F: Into<FixedPoint>, I: Into<I256>>(
+    fn get_targeted_long<F: Into<FixedPoint>, I: Into<I256>>(
         &self,
         target_rate: F,
         checkpoint_exposure: I,
         maybe_max_iterations: Option<usize>,
+        maybe_allowable_error: Option<F>,
     ) -> Result<FixedPoint> {
         let target_rate = target_rate.into();
         let checkpoint_exposure = checkpoint_exposure.into();
+        let allowable_error = match maybe_allowable_error {
+            Some(allowable_error) => allowable_error.into(),
+            None => fixed!(1e14),
+        };
 
         // Estimate the long that achieves a target rate.
         let (target_share_reserves, target_bond_reserves) =
             self.reserves_given_rate_ignoring_exposure(target_rate);
         let (target_base_delta, target_bond_delta) =
             self.trade_deltas_from_reserves(target_share_reserves, target_bond_reserves);
-        println!("spot_target_bond_delta {:#?}", target_bond_delta);
-        println!("spot_target_base_delta {:#?}", target_base_delta);
 
         // Determine what rate was achieved.
-        let resulting_rate = self.rate_after_long(target_base_delta); // ERROR in here
-        let resulting_price = self.price_for_given_rate(resulting_rate);
-        println!("resulting_rate {:#?}", resulting_rate);
-        println!("resulting_price {:#?}", resulting_price);
+        let resulting_rate = self.rate_after_long(target_base_delta, Some(target_bond_delta)); // ERROR in here
 
-        let abs_rate_error = self.abs_rate_error(target_rate, resulting_rate);
-        // TODO: ask alex about an appropriate tolerance for the rate error
-        let allowable_error = fixed!(1e5);
+        let abs_rate_error = self.absolute_difference(target_rate, resulting_rate);
         // Verify solvency and target rate.
         if self
             .solvency_after_long(target_base_delta, target_bond_delta, checkpoint_exposure)
@@ -56,41 +60,42 @@ impl State {
         {
             return Ok(target_base_delta);
         } else {
-            // Adjust your first guess
-            let mut possible_target_base_amount = self.ze() - self.minimum_share_reserves();
-            // // TODO: Need to come up with a smarter and safe first guess
-            // let mut possible_target_base_amount = if resulting_rate > target_rate {
-            //     spot_target_base_amount / fixed!(15e17) // overshot; need a smaller long
-            // } else {
-            //     spot_target_base_amount * fixed!(15e17) // undershot; need a larger long
-            // };
+            // Choose a first guess
+            let mut possible_target_base_delta = if resulting_rate > target_rate {
+                // undershot; use it as our first guess
+                target_base_delta
+            } else {
+                // overshot; use the minimum amount to be safe
+                self.minimum_transaction_amount() // TODO: Base or bonds or shares? probably base.
+            };
+
             // Iteratively find a solution
             for _ in 0..maybe_max_iterations.unwrap_or(7) {
-                let possible_target_bond_amount = self
-                    .calculate_open_long(possible_target_base_amount)
+                let possible_target_bond_delta = self
+                    .calculate_open_long(possible_target_base_delta)
                     .unwrap();
-                // TODO: make optional bond amount all the way down (through calc_spot_price_after_long) to avoid
-                // extra `calculate_open_long`
-                let resulting_rate = self.rate_after_long(possible_target_base_amount);
-                let abs_rate_error = self.abs_rate_error(target_rate, resulting_rate);
+                let resulting_rate = self
+                    .rate_after_long(possible_target_base_delta, Some(possible_target_bond_delta));
+                let abs_rate_error = self.absolute_difference(target_rate, resulting_rate);
 
                 // If we've done it (solvent & within error), then return the value.
                 if self
                     .solvency_after_long(
-                        possible_target_base_amount,
-                        possible_target_bond_amount,
+                        possible_target_base_delta,
+                        possible_target_bond_delta,
                         checkpoint_exposure,
                     )
                     .is_some()
                     && abs_rate_error < allowable_error
                 {
-                    return Ok(possible_target_base_amount);
+                    return Ok(possible_target_base_delta);
 
                 // Otherwise perform another iteration.
                 } else {
-                    let negative_loss_derivative = match self
-                        .negative_targeted_loss_derivative(possible_target_base_amount)
-                    {
+                    let negative_loss_derivative = match self.negative_targeted_loss_derivative(
+                        possible_target_base_delta,
+                        Some(possible_target_bond_delta),
+                    ) {
                         Some(derivative) => derivative,
                         None => {
                             return Err(eyre!(
@@ -98,25 +103,29 @@ impl State {
                         ));
                         }
                     };
-                    let loss = self.targeted_loss(target_rate, possible_target_base_amount);
+                    let loss = self.targeted_loss(
+                        target_rate,
+                        possible_target_base_delta,
+                        Some(possible_target_bond_delta),
+                    );
 
                     // adding the negative loss derivative instead of subtracting the loss derivative
-                    possible_target_base_amount =
-                        possible_target_base_amount + loss / negative_loss_derivative;
+                    possible_target_base_delta =
+                        possible_target_base_delta + loss / negative_loss_derivative;
                 }
             }
 
             // If we hit max iterations and never were within error, check solvency & return.
             if self
                 .solvency_after_long(
-                    possible_target_base_amount,
-                    self.calculate_open_long(possible_target_base_amount)
+                    possible_target_base_delta,
+                    self.calculate_open_long(possible_target_base_delta)
                         .unwrap(),
                     checkpoint_exposure,
                 )
                 .is_some()
             {
-                return Ok(possible_target_base_amount);
+                return Ok(possible_target_base_delta);
 
             // Otherwise we'll return an error.
             } else {
@@ -125,38 +134,40 @@ impl State {
         }
     }
 
-    fn price_for_given_rate(&self, rate: FixedPoint) -> FixedPoint {
-        let annualized_time =
-            self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
-        fixed!(1e18) / (rate * annualized_time + fixed!(1e18))
-    }
-
-    /// The non-negative error between a target rate and resulting rate
+    /// The non-negative difference between two values
     /// TODO: Add docs
-    fn abs_rate_error(&self, target_rate: FixedPoint, resulting_rate: FixedPoint) -> FixedPoint {
-        if resulting_rate > target_rate {
-            resulting_rate - target_rate
+    fn absolute_difference(&self, x: FixedPoint, y: FixedPoint) -> FixedPoint {
+        if y > x {
+            y - x
         } else {
-            target_rate - resulting_rate
+            x - y
         }
     }
 
     /// The spot fixed rate after a long has been opened
     /// TODO: Add docs
-    fn rate_after_long(&self, base_amount: FixedPoint) -> FixedPoint {
+    fn rate_after_long(
+        &self,
+        base_amount: FixedPoint,
+        bond_amount: Option<FixedPoint>,
+    ) -> FixedPoint {
         let annualized_time =
             self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
-        let resulting_price = self.get_spot_price_after_long(base_amount);
+        let resulting_price = self.get_spot_price_after_long(base_amount, bond_amount);
         (fixed!(1e18) - resulting_price) / (resulting_price * annualized_time)
     }
 
     /// The derivative of the equation for calculating the spot rate after a long
     /// TODO: Add docs
-    fn negative_rate_after_long_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
+    fn negative_rate_after_long_derivative(
+        &self,
+        base_amount: FixedPoint,
+        bond_amount: Option<FixedPoint>,
+    ) -> Option<FixedPoint> {
         let annualized_time =
             self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
-        let price = self.get_spot_price_after_long(base_amount);
-        let price_derivative = match self.price_after_long_derivative(base_amount) {
+        let price = self.get_spot_price_after_long(base_amount, bond_amount);
+        let price_derivative = match self.price_after_long_derivative(base_amount, bond_amount) {
             Some(derivative) => derivative,
             None => return None,
         };
@@ -176,7 +187,15 @@ impl State {
 
     /// The derivative of the price after a long
     /// TODO: Add docs
-    fn price_after_long_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
+    fn price_after_long_derivative(
+        &self,
+        base_amount: FixedPoint,
+        bond_amount: Option<FixedPoint>,
+    ) -> Option<FixedPoint> {
+        let bond_amount = match bond_amount {
+            Some(bond_amount) => bond_amount,
+            None => self.calculate_open_long(base_amount).unwrap(),
+        };
         let long_amount_derivative = match self.long_amount_derivative(base_amount) {
             Some(derivative) => derivative,
             None => return None,
@@ -189,23 +208,28 @@ impl State {
                 - self.open_long_governance_fee(base_amount)
                 - self.zeta().into());
         let inner_numerator_derivative = self.mu() / self.vault_share_price() - gov_fee_derivative;
-        let inner_denominator =
-            self.bond_reserves() - self.calculate_open_long(base_amount).unwrap();
+        let inner_denominator = self.bond_reserves() - bond_amount;
 
         let inner_derivative = (inner_denominator * inner_numerator_derivative
             + inner_numerator * long_amount_derivative)
             / inner_denominator.pow(fixed!(2e18));
+        // Second quotient is flipped (denominator / numerator) to avoid negative exponent
         return Some(
             inner_derivative
                 * self.time_stretch()
-                * (inner_numerator / inner_denominator).pow(self.time_stretch() - fixed!(1e18)),
+                * (inner_denominator / inner_numerator).pow(fixed!(1e18) - self.time_stretch()),
         );
     }
 
     /// The loss used for the targeted long optimization process
     /// TODO: Add docs
-    fn targeted_loss(&self, target_rate: FixedPoint, base_amount: FixedPoint) -> FixedPoint {
-        let resulting_rate = self.rate_after_long(base_amount);
+    fn targeted_loss(
+        &self,
+        target_rate: FixedPoint,
+        base_amount: FixedPoint,
+        bond_amount: Option<FixedPoint>,
+    ) -> FixedPoint {
+        let resulting_rate = self.rate_after_long(base_amount, bond_amount);
         // This should never happen, but jic
         if target_rate > resulting_rate {
             panic!("We overshot the zero-crossing!");
@@ -215,8 +239,12 @@ impl State {
 
     /// Derivative of the targeted long loss
     /// TODO: Add docs
-    fn negative_targeted_loss_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
-        match self.negative_rate_after_long_derivative(base_amount) {
+    fn negative_targeted_loss_derivative(
+        &self,
+        base_amount: FixedPoint,
+        bond_amount: Option<FixedPoint>,
+    ) -> Option<FixedPoint> {
+        match self.negative_rate_after_long_derivative(base_amount, bond_amount) {
             Some(derivative) => return Some(derivative),
             None => return None,
         }
@@ -285,7 +313,7 @@ mod tests {
     use test_utils::{
         agent::Agent,
         chain::{Chain, TestChain},
-        constants::FUZZ_RUNS,
+        constants::FAST_FUZZ_RUNS,
     };
     use tracing_test::traced_test;
 
@@ -306,6 +334,11 @@ mod tests {
         // can test `get_targeted_long` when budget is the primary constraint
         // and when it is not.
 
+        let allowable_solvency_error = fixed!(1e5);
+        let allowable_budget_error = fixed!(1e5);
+        let allowable_rate_error = fixed!(1e14);
+        let num_newton_iters = 7;
+
         // Initialize a test chain; don't need mocks because we want state updates.
         let chain = TestChain::new(2).await?;
 
@@ -320,7 +353,7 @@ mod tests {
 
         // Fuzz test
         let mut rng = thread_rng();
-        for _ in 0..*FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             // Snapshot the chain.
             let id = chain.snapshot().await?;
 
@@ -335,8 +368,6 @@ mod tests {
             alice
                 .initialize(initial_fixed_rate, contribution, None)
                 .await?;
-            println!("initial state: {:#?}", alice.get_state().await?);
-            println!("initial_fixed_rate {:#?}", initial_fixed_rate);
 
             // Some of the checkpoint passes and variable interest accrues.
             alice
@@ -353,9 +384,13 @@ mod tests {
             // Bob opens a targeted long.
             let max_spot_price_before_long = bob.get_state().await?.get_max_spot_price();
             let target_rate = initial_fixed_rate / fixed!(2e18);
-            println!("target_rate {:#?}", target_rate);
-            let targeted_long = bob.get_targeted_long(target_rate, None).await?;
-            println!("targeted_long {:#?}", targeted_long);
+            let targeted_long = bob
+                .get_targeted_long(
+                    target_rate,
+                    Some(num_newton_iters),
+                    Some(allowable_rate_error),
+                )
+                .await?;
             bob.open_long(targeted_long, None, None).await?;
 
             // Three things should be true after opening the long:
@@ -368,27 +403,30 @@ mod tests {
             let is_under_max_price = max_spot_price_before_long > spot_price_after_long;
             let is_solvent = {
                 let state = bob.get_state().await?;
-                let error_tolerance = fixed!(1e5);
-                state.get_solvency() > error_tolerance
+                state.get_solvency() > allowable_solvency_error
             };
-            assert!(is_under_max_price && is_solvent, "Invalid targeted long.");
+            assert!(
+                is_under_max_price,
+                "Invalid targeted long: Resulting price is greater than the max."
+            );
+            assert!(
+                is_solvent,
+                "Invalid targeted long: Resulting pool state is not solvent."
+            );
 
-            let is_budget_consumed = {
-                let error_tolerance = fixed!(1e5);
-                bob.base() < error_tolerance
-            };
-            let is_rate_achieved = {
-                let state = bob.get_state().await?;
-                let new_rate = state.get_spot_rate();
-                let error_tolerance = fixed!(1e5);
-                if new_rate > target_rate {
-                    new_rate - target_rate < error_tolerance
-                } else {
-                    target_rate - new_rate < error_tolerance
-                }
+            let new_rate = bob.get_state().await?.get_spot_rate();
+            let is_budget_consumed = bob.base() < allowable_budget_error;
+            let is_rate_achieved = if new_rate > target_rate {
+                new_rate - target_rate < allowable_rate_error
+            } else {
+                target_rate - new_rate < allowable_rate_error
             };
             if !is_budget_consumed {
-                assert!(is_rate_achieved, "Invalid targeted long.");
+                assert!(
+                    is_rate_achieved,
+                    "Invalid targeted long: target_rate was {}, realized rate is {}.",
+                    target_rate, new_rate
+                );
             }
 
             // Revert to the snapshot and reset the agent's wallets.
