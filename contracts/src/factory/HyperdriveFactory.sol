@@ -21,7 +21,9 @@ contract HyperdriveFactory is IHyperdriveFactory {
     /// @dev Locks the receive function. This can be used to prevent stuck ether
     ///      from ending up in the contract but still allowing refunds to be
     ///      received.
-    bool private isReceiveLocked = true;
+    ///      (1) - Unlocked
+    ///      (2) - Locked
+    uint256 private isReceiveLocked = 2;
 
     /// @notice The governance address that updates the factory's configuration.
     address public governance;
@@ -284,7 +286,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
     /// @notice Allows ether to be sent to the contract. This is gated by a lock
     ///         to prevent ether from becoming stuck in the contract.
     receive() external payable {
-        if (isReceiveLocked) {
+        if (isReceiveLocked == 2) {
             revert IHyperdriveFactory.ReceiveLocked();
         }
     }
@@ -670,7 +672,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
         isInstance[address(hyperdrive)] = true;
 
         // Initialize the Hyperdrive instance.
-        isReceiveLocked = false;
+        isReceiveLocked = 1;
         IHyperdriveDeployerCoordinator(_deployerCoordinator).initialize{
             value: msg.value
         }(
@@ -682,7 +684,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
             _fixedAPR,
             _options
         );
-        isReceiveLocked = true;
+        isReceiveLocked = 2;
 
         // Set the default pausers and transfer the governance status to the
         // hyperdrive governance address.
