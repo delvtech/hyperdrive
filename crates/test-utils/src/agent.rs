@@ -4,7 +4,7 @@ use ethers::{
     abi::Detokenize,
     contract::ContractCall,
     prelude::EthLogDecode,
-    providers::{maybe, Http, Middleware, Provider, RetryClient},
+    providers::{Http, Middleware, Provider, RetryClient},
     types::{Address, BlockId, I256, U256},
 };
 use eyre::Result;
