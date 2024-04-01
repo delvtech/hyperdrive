@@ -1326,7 +1326,7 @@ library LPMath {
             rhs = uint256(_params.originalShareAdjustment).divUp(
                 _params.originalShareReserves
             );
-            if (rhs >= ONE) {
+            if (rhs > ONE) {
                 // NOTE: Return a failure flag if the calculation would
                 // underflow.
                 return (0, false);
