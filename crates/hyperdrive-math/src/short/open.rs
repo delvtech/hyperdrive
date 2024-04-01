@@ -179,4 +179,20 @@ mod tests {
 
         Ok(())
     }
+
+    // Tests open short with an amount smaller than the minimum.
+    #[tokio::test]
+    async fn test_open_short_min_txn_amount() -> Result<()> {
+        let mut rng = thread_rng();
+        let state = rng.gen::<State>();
+        let result = std::panic::catch_unwind(|| 
+            state.calculate_open_short(
+                (state.config.minimum_transaction_amount - 10).into(),
+                state.get_spot_price(),
+                state.vault_share_price(),
+            )
+        );
+        assert!(result.is_err());
+        Ok(())
+    }
 }

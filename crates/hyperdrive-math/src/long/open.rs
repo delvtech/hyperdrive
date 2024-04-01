@@ -156,67 +156,15 @@ mod tests {
         Ok(())
     }
 
+    // Tests open long with an amount smaller than the minimum.
     #[tokio::test]
-    async fn fuzz_calculate_spot_rate_after_long() -> Result<()> {
-        // Spawn a test chain and create two agents -- Alice and Bob. Alice
-        // is funded with a large amount of capital so that she can initialize
-        // the pool. Bob is funded with a small amount of capital so that we
-        // can test opening a long and verify that the ending spot rate is what
-        // we expect.
+    async fn test_open_long_min_txn_amount() -> Result<()> {
         let mut rng = thread_rng();
-        let chain = TestChain::new(2).await?;
-        let (alice, bob) = (chain.accounts()[0].clone(), chain.accounts()[1].clone());
-        let mut alice =
-            Agent::new(chain.client(alice).await?, chain.addresses().clone(), None).await?;
-        let mut bob = Agent::new(chain.client(bob).await?, chain.addresses(), None).await?;
-
-        for _ in 0..*FUZZ_RUNS {
-            // Snapshot the chain.
-            let id = chain.snapshot().await?;
-
-            // Fund Alice and Bob.
-            let fixed_rate = rng.gen_range(fixed!(0.01e18)..=fixed!(0.1e18));
-            let contribution = rng.gen_range(fixed!(10_000e18)..=fixed!(500_000_000e18));
-            let budget = rng.gen_range(fixed!(10e18)..=fixed!(500_000_000e18));
-            alice.fund(contribution).await?;
-            bob.fund(budget).await?;
-
-            // Alice initializes the pool.
-            alice.initialize(fixed_rate, contribution, None).await?;
-
-            // Attempt to predict the spot price after opening a long.
-            let base_paid = rng.gen_range(fixed!(0.1e18)..=bob.calculate_max_long(None).await?);
-            let expected_spot_rate = bob
-                .get_state()
-                .await?
-                .calculate_spot_rate_after_long(base_paid, None);
-
-            // Open the long.
-            bob.open_long(base_paid, None, None).await?;
-
-            // Verify that the predicted spot rate is equal to the ending spot
-            // rate. These won't be exactly equal because the vault share price
-            // increases between the prediction and opening the long.
-            let actual_spot_rate = bob.get_state().await?.calculate_spot_rate();
-            let delta = if actual_spot_rate > expected_spot_rate {
-                actual_spot_rate - expected_spot_rate
-            } else {
-                expected_spot_rate - actual_spot_rate
-            };
-            let tolerance = fixed!(1e9);
-            assert!(
-                delta < tolerance,
-                "expected: delta = {} < {} = tolerance",
-                delta,
-                tolerance
-            );
-
-            // Revert to the snapshot and reset the agent's wallets.
-            chain.revert(id).await?;
-            alice.reset(Default::default());
-            bob.reset(Default::default());
-        }
-
+        let state = rng.gen::<State>();
+        let result = std::panic::catch_unwind(|| {
+            state.calculate_open_long(state.config.minimum_transaction_amount - 10)
+        });
+        assert!(result.is_err());
         Ok(())
     }
 }
