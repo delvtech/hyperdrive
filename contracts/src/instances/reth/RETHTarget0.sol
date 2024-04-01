@@ -17,19 +17,11 @@ import { RETHBase } from "./RETHBase.sol";
 contract RETHTarget0 is HyperdriveTarget0, RETHBase {
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param __rocketStorage The Rocket Pool storage contract.
     constructor(
-        IHyperdrive.PoolConfig memory _config,
-        IRocketStorage __rocketStorage
-    ) HyperdriveTarget0(_config) RETHBase(__rocketStorage) {}
+        IHyperdrive.PoolConfig memory _config
+    ) HyperdriveTarget0(_config) {}
 
     /// Getters ///
-
-    /// @notice Gets the Rocket Storage contract.
-    /// @return The Rocket Storage contract.
-    function rocketStorage() external view returns (IRocketStorage) {
-        _revert(abi.encode(_rocketStorage));
-    }
 
     /// @notice Returns the MultiToken's decimals.
     /// @return The MultiToken's decimals.

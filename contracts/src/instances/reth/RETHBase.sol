@@ -6,7 +6,6 @@ import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IRocketDepositPool } from "../../interfaces/IRocketDepositPool.sol";
-import { IRocketStorage } from "../../interfaces/IRocketStorage.sol";
 import { IRocketTokenRETH } from "../../interfaces/IRocketTokenRETH.sol";
 
 /// @author DELV
@@ -21,15 +20,6 @@ import { IRocketTokenRETH } from "../../interfaces/IRocketTokenRETH.sol";
 ///                    particular legal or regulatory significance.
 abstract contract RETHBase is HyperdriveBase {
     using SafeERC20 for ERC20;
-
-    /// @dev The Rocket Pool storage contract.
-    IRocketStorage internal immutable _rocketStorage;
-
-    /// @notice Instantiates the rETH Hyperdrive base contract.
-    /// @param __rocketStorage The Rocket Pool storage contract.
-    constructor(IRocketStorage __rocketStorage) {
-        _rocketStorage = __rocketStorage;
-    }
 
     /// Yield Source ///
 
