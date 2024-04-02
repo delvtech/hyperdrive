@@ -34,9 +34,9 @@ impl State {
         spot_price: FixedPoint,
         mut open_vault_share_price: FixedPoint,
     ) -> Result<FixedPoint> {
-        // If the open share price hasn't been set, we use the current share
-        // price, since this is what will be set as the checkpoint share price
-        // in the next transaction.
+        // If the open vault share price hasn't been set, we use the current
+        // share price, since this is what will be set as the checkpoint share
+        // price in the next transaction.
         if open_vault_share_price == fixed!(0) {
             open_vault_share_price = self.vault_share_price();
         }
