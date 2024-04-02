@@ -80,4 +80,50 @@ contract HyperdriveMultiToken is HyperdriveTest {
 
         assertEq(bobBalance, bondProceeds);
     }
+
+    function test_domainSeparator() external {
+        bytes32 dS = keccak256(
+            abi.encode(
+                keccak256(
+                    "EIP712Domain(string version,uint256 chainId,address verifyingContract)"
+                ),
+                keccak256(bytes("1")),
+                block.chainid,
+                address(this)
+            )
+        );
+
+        assertEq(hyperdrive.domainSeparator(), dS);
+    }
+
+    function test_setApproval() external {
+        // test alice to bob transfer
+        (uint256 maturityTime, uint256 bondProceeds) = openLong(alice, 100e18);
+
+        // uint245 bobBalanceBefore = hyperdrive.balanceOf(
+        //     AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+        //     bob
+        // );
+
+        vm.startPrank(alice);
+        hyperdrive.setApproval(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+            bob,
+            1_000e18
+        );
+        vm.startPrank(bob);
+        hyperdrive.transferFrom(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+            alice,
+            bob,
+            bondProceeds
+        );
+
+        uint256 bobBalance = hyperdrive.balanceOf(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+            bob
+        );
+
+        assertEq(bobBalance, bondProceeds);
+    }
 }
