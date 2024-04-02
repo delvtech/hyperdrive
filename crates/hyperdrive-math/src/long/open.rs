@@ -1,4 +1,6 @@
+use ethers::types::U256;
 use fixed_point::FixedPoint;
+use fixed_point_macros::fixed;
 
 use crate::{State, YieldSpace};
 
@@ -44,8 +46,15 @@ impl State {
     }
 
     /// Calculates the spot price after opening a Hyperdrive long.
-    pub fn calculate_spot_price_after_long(&self, base_amount: FixedPoint) -> FixedPoint {
-        let bond_amount = self.calculate_open_long(base_amount);
+    pub fn calculate_spot_price_after_long(
+        &self,
+        base_amount: FixedPoint,
+        bond_amount: Option<FixedPoint>,
+    ) -> FixedPoint {
+        let bond_amount = match bond_amount {
+            Some(bond_amount) => bond_amount,
+            None => self.calculate_open_long(base_amount),
+        };
         self.spot_price_after_long(base_amount, bond_amount)
     }
 
@@ -60,6 +69,29 @@ impl State {
             - self.open_long_governance_fee(base_amount) / state.vault_share_price())
         .into();
         state.calculate_spot_price()
+    }
+
+    /// Calculate the spot (aka fixed) rate after a long has been opened.
+    ///
+    /// We calculate the rate for a fixed length of time as:
+    /// $$
+    /// r(x) = (1 - p(x)) / (p(x) t)
+    /// $$
+    ///
+    /// where $p(x)$ is the spot price after a long for `delta_bonds`$= x$ and
+    /// t is the normalized position druation.
+    ///
+    /// In this case, we use the resulting spot price after a hypothetical long
+    /// for `base_amount` is opened.
+    pub fn calculate_spot_rate_after_long(
+        &self,
+        base_amount: FixedPoint,
+        bond_amount: Option<FixedPoint>,
+    ) -> FixedPoint {
+        let annualized_time =
+            self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
+        let resulting_price = self.calculate_spot_price_after_long(base_amount, bond_amount);
+        (fixed!(1e18) - resulting_price) / (resulting_price * annualized_time)
     }
 }
 
@@ -109,7 +141,7 @@ mod tests {
             let expected_spot_price = bob
                 .get_state()
                 .await?
-                .calculate_spot_price_after_long(base_paid);
+                .calculate_spot_price_after_long(base_paid, None);
 
             // Open the long.
             bob.open_long(base_paid, None, None).await?;
@@ -122,6 +154,70 @@ mod tests {
                 actual_spot_price - expected_spot_price
             } else {
                 expected_spot_price - actual_spot_price
+            };
+            let tolerance = fixed!(1e9);
+            assert!(
+                delta < tolerance,
+                "expected: delta = {} < {} = tolerance",
+                delta,
+                tolerance
+            );
+
+            // Revert to the snapshot and reset the agent's wallets.
+            chain.revert(id).await?;
+            alice.reset(Default::default());
+            bob.reset(Default::default());
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn fuzz_calculate_spot_rate_after_long() -> Result<()> {
+        // Spawn a test chain and create two agents -- Alice and Bob. Alice
+        // is funded with a large amount of capital so that she can initialize
+        // the pool. Bob is funded with a small amount of capital so that we
+        // can test opening a long and verify that the ending spot rate is what
+        // we expect.
+        let mut rng = thread_rng();
+        let chain = TestChain::new(2).await?;
+        let (alice, bob) = (chain.accounts()[0].clone(), chain.accounts()[1].clone());
+        let mut alice =
+            Agent::new(chain.client(alice).await?, chain.addresses().clone(), None).await?;
+        let mut bob = Agent::new(chain.client(bob).await?, chain.addresses(), None).await?;
+
+        for _ in 0..*FUZZ_RUNS {
+            // Snapshot the chain.
+            let id = chain.snapshot().await?;
+
+            // Fund Alice and Bob.
+            let fixed_rate = rng.gen_range(fixed!(0.01e18)..=fixed!(0.1e18));
+            let contribution = rng.gen_range(fixed!(10_000e18)..=fixed!(500_000_000e18));
+            let budget = rng.gen_range(fixed!(10e18)..=fixed!(500_000_000e18));
+            alice.fund(contribution).await?;
+            bob.fund(budget).await?;
+
+            // Alice initializes the pool.
+            alice.initialize(fixed_rate, contribution, None).await?;
+
+            // Attempt to predict the spot price after opening a long.
+            let base_paid = rng.gen_range(fixed!(0.1e18)..=bob.calculate_max_long(None).await?);
+            let expected_spot_rate = bob
+                .get_state()
+                .await?
+                .calculate_spot_rate_after_long(base_paid, None);
+
+            // Open the long.
+            bob.open_long(base_paid, None, None).await?;
+
+            // Verify that the predicted spot rate is equal to the ending spot
+            // rate. These won't be exactly equal because the vault share price
+            // increases between the prediction and opening the long.
+            let actual_spot_rate = bob.get_state().await?.calculate_spot_rate();
+            let delta = if actual_spot_rate > expected_spot_rate {
+                actual_spot_rate - expected_spot_rate
+            } else {
+                expected_spot_rate - actual_spot_rate
             };
             let tolerance = fixed!(1e9);
             assert!(
