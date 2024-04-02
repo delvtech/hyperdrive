@@ -14,7 +14,7 @@ impl State {
 
         // Calculate the idle base reserves.
         let mut idle_shares_in_base = fixed!(0);
-        if self.share_reserves() > long_exposure + self.minimum_share_reserves() {
+        if self.share_reserves() > (long_exposure + self.minimum_share_reserves()) {
             idle_shares_in_base =
                 (self.share_reserves() - long_exposure - self.minimum_share_reserves())
                     * self.vault_share_price();
