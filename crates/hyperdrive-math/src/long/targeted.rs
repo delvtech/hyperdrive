@@ -7,7 +7,7 @@ use crate::{State, YieldSpace};
 
 impl State {
     /// Gets a target long that can be opened given a budget to achieve a desired fixed rate.
-    pub fn get_targeted_long_with_budget<
+    pub fn calculate_targeted_long_with_budget<
         F1: Into<FixedPoint>,
         F2: Into<FixedPoint>,
         F3: Into<FixedPoint>,
@@ -21,7 +21,7 @@ impl State {
         maybe_allowable_error: Option<F3>,
     ) -> Result<FixedPoint> {
         let budget = budget.into();
-        match self.get_targeted_long(
+        match self.calculate_targeted_long(
             target_rate,
             checkpoint_exposure,
             maybe_max_iterations,
@@ -33,7 +33,7 @@ impl State {
     }
 
     /// Gets a target long that can be opened to achieve a desired fixed rate.
-    fn get_targeted_long<F1: Into<FixedPoint>, F2: Into<FixedPoint>, I: Into<I256>>(
+    fn calculate_targeted_long<F1: Into<FixedPoint>, F2: Into<FixedPoint>, I: Into<I256>>(
         &self,
         target_rate: F1,
         checkpoint_exposure: I,
@@ -181,7 +181,7 @@ impl State {
     ) -> FixedPoint {
         let annualized_time =
             self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
-        let resulting_price = self.get_spot_price_after_long(base_amount, bond_amount);
+        let resulting_price = self.calculate_spot_price_after_long(base_amount, bond_amount);
         (fixed!(1e18) - resulting_price) / (resulting_price * annualized_time)
     }
 
@@ -204,7 +204,7 @@ impl State {
     ) -> Option<FixedPoint> {
         let annualized_time =
             self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
-        let price = self.get_spot_price_after_long(base_amount, Some(bond_amount));
+        let price = self.calculate_spot_price_after_long(base_amount, Some(bond_amount));
         let price_derivative = match self.price_after_long_derivative(base_amount, bond_amount) {
             Some(derivative) => derivative,
             None => return None,
@@ -258,8 +258,9 @@ impl State {
         bond_amount: FixedPoint,
     ) -> Option<FixedPoint> {
         // g'(x)
-        let gov_fee_derivative =
-            self.governance_lp_fee() * self.curve_fee() * (fixed!(1e18) - self.get_spot_price());
+        let gov_fee_derivative = self.governance_lp_fee()
+            * self.curve_fee()
+            * (fixed!(1e18) - self.calculate_spot_price());
 
         // a(x) = u (z_e + x/c - g(x) - zeta)
         let inner_numerator = self.mu()
@@ -390,11 +391,11 @@ mod tests {
 
     #[traced_test]
     #[tokio::test]
-    async fn test_get_targeted_long_with_budget() -> Result<()> {
+    async fn test_calculate_targeted_long_with_budget() -> Result<()> {
         // Spawn a test chain and create two agents -- Alice and Bob.
         // Alice is funded with a large amount of capital so that she can initialize
         // the pool. Bob is funded with a random amount of capital so that we
-        // can test `get_targeted_long` when budget is the primary constraint
+        // can test `calculate_targeted_long` when budget is the primary constraint
         // and when it is not.
 
         let allowable_solvency_error = fixed!(1e5);
@@ -445,10 +446,10 @@ mod tests {
                 .await?;
 
             // Bob opens a targeted long.
-            let max_spot_price_before_long = bob.get_state().await?.get_max_spot_price();
+            let max_spot_price_before_long = bob.get_state().await?.calculate_max_spot_price();
             let target_rate = initial_fixed_rate / fixed!(2e18);
             let targeted_long = bob
-                .get_targeted_long(
+                .calculate_targeted_long(
                     target_rate,
                     Some(num_newton_iters),
                     Some(allowable_rate_error),
@@ -464,7 +465,7 @@ mod tests {
             // 3. IF Bob's budget is not consumed; then new rate is close to the target rate
 
             // Check that our resulting price is under the max
-            let spot_price_after_long = bob.get_state().await?.get_spot_price();
+            let spot_price_after_long = bob.get_state().await?.calculate_spot_price();
             assert!(
                 max_spot_price_before_long > spot_price_after_long,
                 "Resulting price is greater than the max."
@@ -478,7 +479,7 @@ mod tests {
             assert!(is_solvent, "Resulting pool state is not solvent.");
 
             // If the budget was NOT consumed, then we assume the target was hit.
-            let new_rate = bob.get_state().await?.get_spot_rate();
+            let new_rate = bob.get_state().await?.calculate_spot_rate();
             if !(bob.base() <= allowable_budget_error) {
                 // Actual price might result in long overshooting the target.
                 let abs_error = if target_rate > new_rate {
