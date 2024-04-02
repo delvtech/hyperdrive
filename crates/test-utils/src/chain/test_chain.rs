@@ -1,4 +1,4 @@
-use std::{convert::TryFrom, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
 use ethers::{
     core::utils::{keccak256, Anvil},
@@ -1326,9 +1326,6 @@ impl TestChainWithMocks {
 
 #[cfg(test)]
 mod tests {
-    use hyperdrive_math::calculate_time_stretch;
-    use hyperdrive_wrappers::wrappers::ihyperdrive::{Fees, IHyperdrive};
-
     use super::*;
 
     #[tokio::test]

@@ -1,4 +1,3 @@
-use ethers::types::I256;
 use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
@@ -68,16 +67,6 @@ impl State {
         state.calculate_spot_price()
     }
 
-    #[deprecated(since = "0.4.0", note = "please use `calculate_open_short` instead")]
-    pub fn calculate_short_deposit(
-        &self,
-        short_amount: FixedPoint,
-        spot_price: FixedPoint,
-        open_vault_share_price: FixedPoint,
-    ) -> Result<FixedPoint> {
-        self.calculate_open_short(short_amount, spot_price, open_vault_share_price)
-    }
-
     /// Calculates the amount of short principal that the LPs need to pay to back a
     /// short before fees are taken into consideration, $P(x)$.
     ///
@@ -98,8 +87,7 @@ impl State {
 mod tests {
     use std::panic;
 
-    use ethers::types::U256;
-    use eyre::Result;
+    use ethers::types::{I256, U256};
     use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::MaxTradeParams;
     use rand::{thread_rng, Rng};
     use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};
