@@ -71,7 +71,7 @@ impl State {
     ) -> FixedPoint {
         calculate_rate_given_fixed_price(
             self.calculate_spot_price_after_long(base_amount, bond_amount),
-            self.annualized_position_duration(),
+            self.position_duration(),
         )
     }
 }

@@ -119,12 +119,9 @@ impl State {
         YieldSpace::calculate_spot_price(self)
     }
 
-    /// Calculate the spot rate assuming a the pool's spot price is constant over its annualized position duration.
+    /// Calculate the pool's current spot (aka "fixed") rate.
     pub fn calculate_spot_rate(&self) -> FixedPoint {
-        calculate_rate_given_fixed_price(
-            self.calculate_spot_price(),
-            self.annualized_position_duration(),
-        )
+        calculate_rate_given_fixed_price(self.calculate_spot_price(), self.position_duration())
     }
 
     /// Converts a timestamp to the checkpoint timestamp that it corresponds to.
