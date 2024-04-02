@@ -480,8 +480,7 @@ impl UniformSampler for UniformFixedPoint {
 mod tests {
     use std::panic;
 
-    use eyre::Result;
-    use rand::{thread_rng, Rng};
+    use rand::thread_rng;
     use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};
 
     use super::*;

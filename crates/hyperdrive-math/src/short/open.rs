@@ -1,4 +1,3 @@
-use ethers::types::I256;
 use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
@@ -98,8 +97,7 @@ impl State {
 mod tests {
     use std::panic;
 
-    use ethers::types::U256;
-    use eyre::Result;
+    use ethers::types::{I256, U256};
     use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::MaxTradeParams;
     use rand::{thread_rng, Rng};
     use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};

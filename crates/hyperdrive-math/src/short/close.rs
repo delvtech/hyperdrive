@@ -105,7 +105,6 @@ mod tests {
     use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};
 
     use super::*;
-    use crate::State;
 
     #[tokio::test]
     async fn fuzz_calculate_short_proceeds() -> Result<()> {
