@@ -2,7 +2,7 @@ use ethers::types::U256;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
-use crate::{State, YieldSpace};
+use crate::{calculate_fixed_rate_from_price, State, YieldSpace};
 
 impl State {
     /// Calculates the long amount that will be opened for a given base amount.
@@ -55,14 +55,6 @@ impl State {
             Some(bond_amount) => bond_amount,
             None => self.calculate_open_long(base_amount),
         };
-        self.spot_price_after_long(base_amount, bond_amount)
-    }
-
-    fn spot_price_after_long(
-        &self,
-        base_amount: FixedPoint,
-        bond_amount: FixedPoint,
-    ) -> FixedPoint {
         let mut state: State = self.clone();
         state.info.bond_reserves -= bond_amount.into();
         state.info.share_reserves += (base_amount / state.vault_share_price()
@@ -74,12 +66,13 @@ impl State {
     /// Calculate the spot (aka fixed) rate after a long has been opened.
     ///
     /// We calculate the rate for a fixed length of time as:
+    ///
     /// $$
     /// r(x) = (1 - p(x)) / (p(x) t)
     /// $$
     ///
     /// where $p(x)$ is the spot price after a long for `delta_bonds`$= x$ and
-    /// t is the normalized position druation.
+    /// t is the annualized position druation.
     ///
     /// In this case, we use the resulting spot price after a hypothetical long
     /// for `base_amount` is opened.
@@ -91,7 +84,7 @@ impl State {
         let annualized_time =
             self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
         let resulting_price = self.calculate_spot_price_after_long(base_amount, bond_amount);
-        (fixed!(1e18) - resulting_price) / (resulting_price * annualized_time)
+        calculate_fixed_rate_from_price(resulting_price, annualized_time)
     }
 }
 

@@ -98,6 +98,24 @@ pub fn calculate_initial_bond_reserves(
         .mul_down(inner)
 }
 
+/// Calculate the spot (aka fixed) rate for a given price and normalized position duration.
+///
+/// We calculate the rate for a fixed length of time as:
+///
+/// $$
+/// r = (1 - p) / (p t)
+/// $$
+///
+/// where $p$ is the price and $t$ is the length of time that this price is
+/// assumed to be constant, in units of years. For example, if the price is
+/// constant for 6 months, then $t=0.5$.
+pub fn calculate_fixed_rate_from_price(
+    price: FixedPoint,
+    fixed_price_duration_in_years: FixedPoint,
+) -> FixedPoint {
+    (fixed!(1e18) - price) / (price * fixed_price_duration_in_years)
+}
+
 #[cfg(test)]
 mod tests {
     use std::panic;
