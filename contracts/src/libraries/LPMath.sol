@@ -711,7 +711,7 @@ library LPMath {
                 return 0;
             }
 
-            // recalculate the present value
+            // Recalculate the present value
             uint256 presentValue;
             (presentValue, success) = calculatePresentValueSafe(
                 _params.presentValueParams

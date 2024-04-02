@@ -540,7 +540,7 @@ abstract contract HyperdriveLP is
     /// @dev Updates the pool's liquidity and holds the pool's spot price constant.
     /// @param _shareReservesDelta The delta that should be applied to share reserves.
     function _updateLiquidity(int256 _shareReservesDelta) internal {
-        // attempt updating the pool's liquidity, revert if the update fails
+        // Attempt updating the pool's liquidity, revert if the update fails
         if (!_updateLiquiditySafe(_shareReservesDelta)) {
             revert IHyperdrive.UpdateLiquidityFailed();
         }
