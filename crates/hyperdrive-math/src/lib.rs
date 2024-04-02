@@ -258,9 +258,10 @@ impl YieldSpace for State {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use eyre::Result;
     use rand::thread_rng;
+
+    use super::*;
 
     #[tokio::test]
     async fn test_calculate_normalized_time_remaining() -> Result<()> {
