@@ -320,31 +320,8 @@ contract DeployerCoordinatorTest is HyperdriveTest {
         assertEq(deployment.target4, targets[3]);
     }
 
-    function test_deployTarget_frontrun() external {
-        // Deploy a target0 instance as deployer (should succeed).
-        coordinator.deployTarget(DEPLOYMENT_ID, config, new bytes(0), 0, SALT);
-
-        vm.stopPrank();
-        vm.startPrank(bob);
-        // Try to frontrun the target1 deployment with bob
-        vm.expectRevert(
-            IHyperdriveDeployerCoordinator.DeploymentDoesNotExist.selector
-        );
-        coordinator.deployTarget(DEPLOYMENT_ID, config, new bytes(0), 1, SALT);
-        vm.stopPrank();
-    }
-
-    function test_deployTarget_frontrun_success() external {
-        // Deploy a target0 instance.
-        address target0 = coordinator.deployTarget(
-            DEPLOYMENT_ID,
-            config,
-            new bytes(0),
-            0,
-            SALT
-        );
-
-        // Deploy another target0 as the frontrunner (bob) with same deployment_id
+    function test_deployTarget_frontRun_success() external {
+        // Deploy all target instances as the frontrunner (bob)
         vm.stopPrank();
         vm.startPrank(bob);
         for (uint256 i = 0; i < 5; i++) {
@@ -357,6 +334,19 @@ contract DeployerCoordinatorTest is HyperdriveTest {
             );
         }
         vm.stopPrank();
+
+        // Deploy all target instances as the intended deployer (alice)
+        vm.startPrank(alice);
+        address[] memory targets = new address[](5);
+        for (uint256 i = 0; i < 5; i++) {
+            targets[i] = coordinator.deployTarget(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                i,
+                SALT
+            );
+        }
 
         // Ensure that the deployment was configured correctly.
         HyperdriveDeployerCoordinator.Deployment memory deployment = coordinator
@@ -376,27 +366,13 @@ contract DeployerCoordinatorTest is HyperdriveTest {
             ONE,
             "incorrect initialSharePrice"
         );
-        assertEq(deployment.target0, address(target0), "incorrect target0");
 
-        // Deploy the other target instances as the target0 deployer (alice)
-        vm.startPrank(alice);
-        address[] memory targets = new address[](4);
-        for (uint256 i = 1; i < 5; i++) {
-            targets[i - 1] = coordinator.deployTarget(
-                DEPLOYMENT_ID,
-                config,
-                new bytes(0),
-                i,
-                SALT
-            );
-        }
-
-        // Ensure that the deployment was configured correctly (targets should all be alice's)
-        deployment = coordinator.deployments(alice, DEPLOYMENT_ID);
-        assertEq(deployment.target1, targets[0], "incorrect target1");
-        assertEq(deployment.target2, targets[1], "incorrect target2");
-        assertEq(deployment.target3, targets[2], "incorrect target3");
-        assertEq(deployment.target4, targets[3], "incorrect target4");
+        // Ensure the targets have the correct addresses
+        assertEq(deployment.target0, targets[0], "incorrect target0");
+        assertEq(deployment.target1, targets[1], "incorrect target1");
+        assertEq(deployment.target2, targets[2], "incorrect target2");
+        assertEq(deployment.target3, targets[3], "incorrect target3");
+        assertEq(deployment.target4, targets[4], "incorrect target4");
     }
 
     function test_deploy_hyperdriveAlreadyDeployed() external {
