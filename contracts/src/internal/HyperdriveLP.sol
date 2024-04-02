@@ -540,7 +540,7 @@ abstract contract HyperdriveLP is
     /// @dev Updates the pool's liquidity and holds the pool's spot price constant.
     /// @param _shareReservesDelta The delta that should be applied to share reserves.
     function _updateLiquidity(int256 _shareReservesDelta) internal {
-        // Attempt updating the pool's liquidity, revert if the update fails
+        // Attempt updating the pool's liquidity and revert if the update fails.
         if (!_updateLiquiditySafe(_shareReservesDelta)) {
             revert IHyperdrive.UpdateLiquidityFailed();
         }
@@ -552,7 +552,7 @@ abstract contract HyperdriveLP is
     function _updateLiquiditySafe(
         int256 _shareReservesDelta
     ) internal returns (bool) {
-        // Calculate the updated reserves, return false if the calculation fails
+        // Calculate the updated reserves and return false if the calculation fails.
         uint256 shareReserves_ = _marketState.shareReserves;
         int256 shareAdjustment_ = _marketState.shareAdjustment;
         uint256 bondReserves_ = _marketState.bondReserves;
@@ -572,7 +572,7 @@ abstract contract HyperdriveLP is
             return false;
         }
 
-        // Update the market state and return true since the update was successful
+        // Update the market state and return true since the update was successful.
         if (updatedShareReserves != shareReserves_) {
             _marketState.shareReserves = updatedShareReserves.toUint128();
         }
