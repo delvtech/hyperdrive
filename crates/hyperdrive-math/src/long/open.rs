@@ -28,7 +28,8 @@ impl State {
             self.calculate_bonds_out_given_shares_in_down(base_amount / self.vault_share_price());
 
         // Throw an error if opening the long would result in negative interest.
-        let ending_spot_price = self.spot_price_after_long(base_amount, long_amount);
+        let ending_spot_price =
+            self.calculate_spot_price_after_long(base_amount, long_amount.into());
         let max_spot_price = self.calculate_max_spot_price();
         if ending_spot_price > max_spot_price {
             // TODO would be nice to return a `Result` here instead of a panic.
