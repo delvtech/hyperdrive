@@ -108,7 +108,7 @@ impl State {
                     // The derivative of the loss is $l'(x) = r'(x)$.
                     // We return $-l'(x)$ because $r'(x)$ is negative, which
                     // can't be represented with FixedPoint.
-                    let negative_loss_derivative = match self.negative_rate_after_long_derivative(
+                    let negative_loss_derivative = match self.rate_after_long_derivative_negation(
                         possible_target_base_delta,
                         possible_target_bond_delta,
                     ) {
@@ -197,7 +197,7 @@ impl State {
     /// $$
     ///
     /// We return $-r'(x)$ because negative numbers cannot be represented by FixedPoint.
-    fn negative_rate_after_long_derivative(
+    fn rate_after_long_derivative_negation(
         &self,
         base_amount: FixedPoint,
         bond_amount: FixedPoint,
@@ -319,7 +319,7 @@ impl State {
         (base_delta, bond_delta)
     }
 
-    /// Calculates the long that should be opened to hit a target interest rate.
+    /// Calculates the pool reserve levels to achieve a target interest rate.
     /// This calculation does not take Hyperdrive's solvency constraints or exposure
     /// into account and shouldn't be used directly.
     ///
