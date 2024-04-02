@@ -7,7 +7,7 @@ import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IRocketTokenRETH } from "../../interfaces/IRocketTokenRETH.sol";
 import { ETH } from "../../libraries/Constants.sol";
-import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
+import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
 /// @author DELV
