@@ -26,31 +26,37 @@ pub fn open_short_governance_fee(
 /// Gets the curve fee paid by shorts for a given bond amount.
 /// Returns the fee in shares
 pub fn close_short_curve_fee(
-    ze: FixedPoint,
-    y: FixedPoint,
-    c: FixedPoint,
-    mu: FixedPoint,
-    t: FixedPoint,
+    effective_share_reserves: FixedPoint,
+    bond_reserves: FixedPoint,
+    share_price: FixedPoint,
+    initial_share_price: FixedPoint,
+    time_parameter: FixedPoint,
     curve_fee: FixedPoint,
     bond_amount: FixedPoint,
     normalized_time_remaining: FixedPoint,
 ) -> FixedPoint {
     // ((1 - p) * phi_curve * d_y * t) / c
     curve_fee
-        * (fixed!(1e18) - get_spot_price(ze, y, mu, t))
-        * bond_amount.mul_div_down(normalized_time_remaining, c)
+        * (fixed!(1e18)
+            - get_spot_price(
+                effective_share_reserves,
+                bond_reserves,
+                initial_share_price,
+                time_parameter,
+            ))
+        * bond_amount.mul_div_down(normalized_time_remaining, share_price)
 }
 
 /// Gets the flat fee paid by shorts for a given bond amount
 /// Returns the fee in shares
 pub fn close_short_flat_fee(
-    c: FixedPoint,
+    share_price: FixedPoint,
     flat_fee: FixedPoint,
     bond_amount: FixedPoint,
     normalized_time_remaining: FixedPoint,
 ) -> FixedPoint {
     // flat fee = (d_y * (1 - t) * phi_flat) / c
-    bond_amount.mul_div_down(fixed!(1e18) - normalized_time_remaining, c) * flat_fee
+    bond_amount.mul_div_down(fixed!(1e18) - normalized_time_remaining, share_price) * flat_fee
 }
 
 impl State {

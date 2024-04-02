@@ -8,11 +8,11 @@ use crate::{
 };
 
 fn calculate_close_short_flat_plus_curve<F: Into<FixedPoint>>(
-    ze: FixedPoint,
-    y: FixedPoint,
-    c: FixedPoint,
-    mu: FixedPoint,
-    t: FixedPoint,
+    effective_share_reserves: FixedPoint,
+    bond_reserves: FixedPoint,
+    share_price: FixedPoint,
+    initial_share_price: FixedPoint,
+    time_parameter: FixedPoint,
     bond_amount: F,
     normalized_time_remaining: F,
 ) -> FixedPoint {
@@ -22,7 +22,7 @@ fn calculate_close_short_flat_plus_curve<F: Into<FixedPoint>>(
     // NOTE: We overestimate the trader's share payment to avoid sandwiches.
     //
     // Calculate the flat part of the trade
-    let flat = bond_amount.mul_div_up(fixed!(1e18) - normalized_time_remaining, c);
+    let flat = bond_amount.mul_div_up(fixed!(1e18) - normalized_time_remaining, share_price);
 
     // Calculate the curve part of the trade
     let curve = if normalized_time_remaining > fixed!(0) {
@@ -30,7 +30,15 @@ fn calculate_close_short_flat_plus_curve<F: Into<FixedPoint>>(
         // payment.
         //
         let curve_bonds_in = bond_amount * normalized_time_remaining;
-        calculate_shares_in_given_bonds_out_up_safe(ze, y, c, mu, t, curve_bonds_in).unwrap()
+        calculate_shares_in_given_bonds_out_up_safe(
+            effective_share_reserves,
+            bond_reserves,
+            share_price,
+            initial_share_price,
+            time_parameter,
+            curve_bonds_in,
+        )
+        .unwrap()
     } else {
         fixed!(0)
     };
@@ -66,11 +74,11 @@ fn calculate_short_proceeds(
 
 /// Gets the amount of shares the trader will receive after fees for closing a short
 pub fn calculate_close_short<F: Into<FixedPoint>>(
-    ze: FixedPoint,
-    y: FixedPoint,
-    c: FixedPoint,
-    mu: FixedPoint,
-    t: FixedPoint,
+    effective_share_reserves: FixedPoint,
+    bond_reserves: FixedPoint,
+    share_price: FixedPoint,
+    initial_share_price: FixedPoint,
+    time_parameter: FixedPoint,
     curve_fee: FixedPoint,
     flat_fee: FixedPoint,
     bond_amount: F,
@@ -84,25 +92,29 @@ pub fn calculate_close_short<F: Into<FixedPoint>>(
     let normalized_time_remaining = normalized_time_remaining.into();
 
     // Calculate flat + curve and subtract the fees from the trade.
-    let share_reserves_delta =
-        calculate_close_short_flat_plus_curve(
-            ze,
-            y,
-            c,
-            mu,
-            t,
-            bond_amount,
-            normalized_time_remaining,
-        ) + close_short_curve_fee(
-            ze,
-            y,
-            c,
-            mu,
-            t,
-            curve_fee,
-            bond_amount,
-            normalized_time_remaining,
-        ) + close_short_flat_fee(c, flat_fee, bond_amount, normalized_time_remaining);
+    let share_reserves_delta = calculate_close_short_flat_plus_curve(
+        effective_share_reserves,
+        bond_reserves,
+        share_price,
+        initial_share_price,
+        time_parameter,
+        bond_amount,
+        normalized_time_remaining,
+    ) + close_short_curve_fee(
+        effective_share_reserves,
+        bond_reserves,
+        share_price,
+        initial_share_price,
+        time_parameter,
+        curve_fee,
+        bond_amount,
+        normalized_time_remaining,
+    ) + close_short_flat_fee(
+        share_price,
+        flat_fee,
+        bond_amount,
+        normalized_time_remaining,
+    );
 
     // Calculate the share proceeds owed to the short.
     calculate_short_proceeds(
@@ -110,7 +122,7 @@ pub fn calculate_close_short<F: Into<FixedPoint>>(
         share_reserves_delta,
         open_vault_share_price,
         close_vault_share_price,
-        c,
+        share_price,
         flat_fee,
     )
 }

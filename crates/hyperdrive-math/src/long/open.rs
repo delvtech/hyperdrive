@@ -26,52 +26,77 @@ use crate::{
 ///            \right)^{\tfrac{1}{1 - t_s}}
 /// $$
 pub fn calculate_open_long<F: Into<FixedPoint>>(
-    zeta: I256,
-    ze: FixedPoint,
-    z: FixedPoint,
-    y: FixedPoint,
-    c: FixedPoint,
-    mu: FixedPoint,
-    t: FixedPoint,
+    share_adjustment: I256,
+    effective_share_reserves: FixedPoint,
+    share_reserves: FixedPoint,
+    bond_reserves: FixedPoint,
+    share_price: FixedPoint,
+    initial_share_price: FixedPoint,
+    time_parameter: FixedPoint,
     flat_fee: FixedPoint,
     curve_fee: FixedPoint,
     base_amount: F,
 ) -> FixedPoint {
     let base_amount = base_amount.into();
-    let long_amount =
-        self.calculate_bonds_out_given_shares_in_down(base_amount / self.vault_share_price());
+    let long_amount = calculate_bonds_out_given_shares_in_down(
+        effective_share_reserves,
+        bond_reserves,
+        share_price,
+        initial_share_price,
+        time_parameter,
+        base_amount / share_price,
+    );
 
     // Throw an error if opening the long would result in negative interest.
-    let ending_spot_price = {
-        let mut state: State = self.clone();
-        state.info.bond_reserves -= long_amount.into();
-        state.info.share_reserves += (base_amount / self.vault_share_price()).into();
-        state.get_spot_price()
-    };
-    let max_spot_price = self.get_max_spot_price();
+    let ending_spot_price = spot_price_after_long(
+        share_adjustment,
+        share_reserves,
+        bond_reserves,
+        share_price,
+        initial_share_price,
+        time_parameter,
+        base_amount,
+        long_amount,
+    );
+    let max_spot_price = get_max_spot_price(
+        effective_share_reserves,
+        bond_reserves,
+        initial_share_price,
+        time_parameter,
+        flat_fee,
+        curve_fee,
+    );
     if ending_spot_price > max_spot_price {
         // TODO would be nice to return a `Result` here instead of a panic.
         panic!("InsufficientLiquidity: Negative Interest");
     }
 
-    long_amount - self.open_long_curve_fees(base_amount)
+    long_amount
+        - open_long_curve_fees(
+            effective_share_reserves,
+            bond_reserves,
+            initial_share_price,
+            time_parameter,
+            curve_fee,
+            base_amount,
+        )
 }
 
 fn spot_price_after_long(
-    zeta: I256,
-    z: FixedPoint,
-    y: FixedPoint,
-    c: FixedPoint,
-    mu: FixedPoint,
-    t: FixedPoint,
+    share_adjustment: I256,
+    share_reserves: FixedPoint,
+    bond_reserves: FixedPoint,
+    share_price: FixedPoint,
+    initial_share_price: FixedPoint,
+    time_parameter: FixedPoint,
     base_amount: FixedPoint,
     bond_amount: FixedPoint,
 ) -> FixedPoint {
     get_spot_price(
-        get_effective_share_reserves(z + base_amount / c, zeta),
-        y - bond_amount,
-        mu,
-        t,
+        get_effective_share_reserves(share_reserves + base_amount / share_price, share_adjustment),
+        bond_reserves - bond_amount,
+        initial_share_price,
+        time_parameter,
     )
 }
 

@@ -27,11 +27,11 @@ use crate::{yield_space::calculate_shares_out_given_bonds_in_down_safe, State, Y
 /// shares the curve says the LPs need to pay the shorts (i.e. the LP
 /// principal).
 pub fn calculate_open_short(
-    ze: FixedPoint,
-    y: FixedPoint,
-    c: FixedPoint,
-    mu: FixedPoint,
-    t: FixedPoint,
+    effective_share_reserves: FixedPoint,
+    bond_reserves: FixedPoint,
+    share_price: FixedPoint,
+    initial_share_price: FixedPoint,
+    time_parameter: FixedPoint,
     flat_fee: FixedPoint,
     curve_fee: FixedPoint,
     short_amount: FixedPoint,
@@ -42,14 +42,24 @@ pub fn calculate_open_short(
     // price, since this is what will be set as the checkpoint share price
     // in the next transaction.
     if open_vault_share_price == fixed!(0) {
-        open_vault_share_price = c;
+        open_vault_share_price = share_price;
     }
 
     // NOTE: The order of additions and subtractions is important to avoid underflows.
-    Ok(short_amount.mul_div_down(c, open_vault_share_price)
-        + flat_fee * short_amount
-        + curve_fee * (fixed!(1e18) - spot_price) * short_amount
-        - c * short_principal(ze, y, c, mu, t, short_amount)?)
+    Ok(
+        short_amount.mul_div_down(share_price, open_vault_share_price)
+            + flat_fee * short_amount
+            + curve_fee * (fixed!(1e18) - spot_price) * short_amount
+            - share_price
+                * short_principal(
+                    effective_share_reserves,
+                    bond_reserves,
+                    share_price,
+                    initial_share_price,
+                    time_parameter,
+                    short_amount,
+                )?,
+    )
 }
 
 /// Gets the amount of short principal that the LPs need to pay to back a
@@ -64,14 +74,21 @@ pub fn calculate_open_short(
 /// P(x) = z - \tfrac{1}{\mu} \cdot (\tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s}))^{\tfrac{1}{1 - t_s}}
 /// $$
 pub fn short_principal(
-    ze: FixedPoint,
-    y: FixedPoint,
-    c: FixedPoint,
-    mu: FixedPoint,
-    t: FixedPoint,
+    effective_share_reserves: FixedPoint,
+    bond_reserves: FixedPoint,
+    share_price: FixedPoint,
+    initial_share_price: FixedPoint,
+    time_parameter: FixedPoint,
     short_amount: FixedPoint,
 ) -> Result<FixedPoint> {
-    calculate_shares_out_given_bonds_in_down_safe(ze, y, c, mu, t, short_amount)
+    calculate_shares_out_given_bonds_in_down_safe(
+        effective_share_reserves,
+        bond_reserves,
+        share_price,
+        initial_share_price,
+        time_parameter,
+        short_amount,
+    )
 }
 
 impl State {
@@ -168,7 +185,6 @@ mod tests {
     use std::panic;
 
     use ethers::types::{I256, U256};
-    use eyre::Result;
     use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::MaxTradeParams;
     use rand::{thread_rng, Rng};
     use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};

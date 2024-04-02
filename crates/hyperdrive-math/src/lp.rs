@@ -16,18 +16,19 @@ use crate::{
 
 /// Calculates the number of base that are not reserved by open positions.
 pub fn calculate_idle_share_reserves_in_base(
-    z: FixedPoint,
-    c: FixedPoint,
-    z_min: FixedPoint,
+    share_reserves: FixedPoint,
+    share_price: FixedPoint,
+    minimum_share_reserves: FixedPoint,
     long_exposure: FixedPoint,
 ) -> FixedPoint {
     // NOTE: Round up to underestimate the pool's idle.
-    let long_exposure = long_exposure.div_up(c);
+    let long_exposure = long_exposure.div_up(share_price);
 
     // Calculate the idle base reserves.
     let mut idle_shares_in_base = fixed!(0);
-    if z > long_exposure + z_min {
-        idle_shares_in_base = (z - long_exposure - z_min) * c;
+    if share_reserves > long_exposure + minimum_share_reserves {
+        idle_shares_in_base =
+            (share_reserves - long_exposure - minimum_share_reserves) * share_price;
     }
 
     idle_shares_in_base
@@ -35,14 +36,14 @@ pub fn calculate_idle_share_reserves_in_base(
 
 /// Calculates the present value of LPs capital in the pool.
 pub fn calculate_present_value(
-    ze: FixedPoint,
-    z: FixedPoint,
-    y: FixedPoint,
-    c: FixedPoint,
-    mu: FixedPoint,
-    t: FixedPoint,
-    zeta: I256,
-    z_min: FixedPoint,
+    effective_share_reserves: FixedPoint,
+    share_reserves: FixedPoint,
+    bond_reserves: FixedPoint,
+    share_price: FixedPoint,
+    initial_share_price: FixedPoint,
+    time_parameter: FixedPoint,
+    share_adjustment: I256,
+    minimum_share_reserves: FixedPoint,
     minimum_transaction_amount: FixedPoint,
     longs_outstanding: FixedPoint,
     shorts_outstanding: FixedPoint,
@@ -66,15 +67,15 @@ pub fn calculate_present_value(
         short_average_maturity_time.into(),
     );
 
-    let present_value: I256 = I256::try_from(z).unwrap()
+    let present_value: I256 = I256::try_from(share_reserves).unwrap()
         + calculate_net_curve_trade(
-            ze,
-            y,
-            c,
-            mu,
-            t,
-            zeta,
-            z_min,
+            effective_share_reserves,
+            bond_reserves,
+            share_price,
+            initial_share_price,
+            time_parameter,
+            share_adjustment,
+            minimum_share_reserves,
             minimum_transaction_amount,
             longs_outstanding,
             shorts_outstanding,
@@ -82,13 +83,13 @@ pub fn calculate_present_value(
             short_average_time_remaining,
         )
         + calculate_net_flat_trade(
-            c,
+            share_price,
             longs_outstanding,
             shorts_outstanding,
             long_average_time_remaining,
             short_average_time_remaining,
         )
-        - I256::try_from(z_min).unwrap();
+        - I256::try_from(minimum_share_reserves).unwrap();
 
     if present_value < int256!(0) {
         panic!("Negative present value!");
@@ -97,13 +98,13 @@ pub fn calculate_present_value(
 }
 
 pub fn calculate_net_curve_trade(
-    ze: FixedPoint,
-    y: FixedPoint,
-    c: FixedPoint,
-    mu: FixedPoint,
-    t: FixedPoint,
-    zeta: I256,
-    z_min: FixedPoint,
+    effective_share_reserves: FixedPoint,
+    bond_reserves: FixedPoint,
+    share_price: FixedPoint,
+    initial_share_price: FixedPoint,
+    time_parameter: FixedPoint,
+    share_adjustment: I256,
+    minimum_share_reserves: FixedPoint,
     minimum_transaction_amount: FixedPoint,
     longs_outstanding: FixedPoint,
     shorts_outstanding: FixedPoint,
@@ -133,15 +134,23 @@ pub fn calculate_net_curve_trade(
     match net_curve_position.cmp(&int256!(0)) {
         Ordering::Greater => {
             let net_curve_position: FixedPoint = FixedPoint::from(net_curve_position);
-            let max_curve_trade =
-                calculate_max_sell_bonds_in_safe(ze, y, c, mu, t, zeta, z_min).unwrap();
+            let max_curve_trade = calculate_max_sell_bonds_in_safe(
+                effective_share_reserves,
+                bond_reserves,
+                share_price,
+                initial_share_price,
+                time_parameter,
+                share_adjustment,
+                minimum_share_reserves,
+            )
+            .unwrap();
             if max_curve_trade >= net_curve_position {
                 match calculate_shares_out_given_bonds_in_down_safe(
-                    ze,
-                    y,
-                    c,
-                    mu,
-                    t,
+                    effective_share_reserves,
+                    bond_reserves,
+                    share_price,
+                    initial_share_price,
+                    time_parameter,
                     net_curve_position,
                 ) {
                     Ok(net_curve_trade) => -I256::try_from(net_curve_trade).unwrap(),
@@ -158,19 +167,26 @@ pub fn calculate_net_curve_trade(
                     }
                 }
             } else {
-                -I256::try_from(ze - z_min).unwrap()
+                -I256::try_from(effective_share_reserves - minimum_share_reserves).unwrap()
             }
         }
         Ordering::Less => {
             let net_curve_position: FixedPoint = FixedPoint::from(-net_curve_position);
-            let max_curve_trade = calculate_max_buy_bonds_out_safe(ze, y, c, mu, t).unwrap();
+            let max_curve_trade = calculate_max_buy_bonds_out_safe(
+                effective_share_reserves,
+                bond_reserves,
+                share_price,
+                initial_share_price,
+                time_parameter,
+            )
+            .unwrap();
             if max_curve_trade >= net_curve_position {
                 match calculate_shares_in_given_bonds_out_up_safe(
-                    ze,
-                    y,
-                    c,
-                    mu,
-                    t,
+                    effective_share_reserves,
+                    bond_reserves,
+                    share_price,
+                    initial_share_price,
+                    time_parameter,
                     net_curve_position,
                 ) {
                     Ok(net_curve_trade) => I256::try_from(net_curve_trade).unwrap(),
@@ -187,12 +203,20 @@ pub fn calculate_net_curve_trade(
                     }
                 }
             } else {
-                let max_share_payment = calculate_max_buy_shares_in_safe(ze, y, c, mu, t).unwrap();
+                let max_share_payment = calculate_max_buy_shares_in_safe(
+                    effective_share_reserves,
+                    bond_reserves,
+                    share_price,
+                    initial_share_price,
+                    time_parameter,
+                )
+                .unwrap();
 
                 // NOTE: We round the difference down to underestimate the
                 // impact of closing the net curve position.
                 I256::try_from(
-                    max_share_payment + (net_curve_position - max_curve_trade).div_down(c),
+                    max_share_payment
+                        + (net_curve_position - max_curve_trade).div_down(share_price),
                 )
                 .unwrap()
             }

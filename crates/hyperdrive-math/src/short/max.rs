@@ -30,19 +30,24 @@ use crate::{
 /// p = \left( \tfrac{\mu \cdot z_{min}}{y_{max}} \right)^{t_s}
 /// $$
 pub fn get_min_price(
-    ze: FixedPoint,
-    y: FixedPoint,
-    c: FixedPoint,
-    mu: FixedPoint,
-    t: FixedPoint,
-    c_initial: FixedPoint,
-    z_min: FixedPoint,
+    effective_share_reserves: FixedPoint,
+    bond_reserves: FixedPoint,
+    share_price: FixedPoint,
+    initial_share_price: FixedPoint,
+    time_parameter: FixedPoint,
+    minimum_share_reserves: FixedPoint,
     time_stretch: FixedPoint,
 ) -> FixedPoint {
-    let y_max = (k_up(ze, y, c, mu, t)
-        - (c / c_initial) * (c_initial * z_min).pow(fixed!(1e18) - time_stretch))
+    let y_max = (k_up(
+        effective_share_reserves,
+        bond_reserves,
+        share_price,
+        initial_share_price,
+        time_parameter,
+    ) - (share_price / initial_share_price)
+        * (initial_share_price * minimum_share_reserves).pow(fixed!(1e18) - time_stretch))
     .pow(fixed!(1e18).div_up(fixed!(1e18) - time_stretch));
-    ((c_initial * z_min) / y_max).pow(time_stretch)
+    ((initial_share_price * minimum_share_reserves) / y_max).pow(time_stretch)
 }
 
 // TODO: Make it clear to the consumer that the maximum number of iterations
@@ -59,15 +64,14 @@ pub fn get_min_price(
 /// algorithm converge faster in real world situations. If this is `None`,
 /// then we'll use the theoretical worst case realized price.
 pub fn get_max_short<F1: Into<FixedPoint>, F2: Into<FixedPoint>, I: Into<I256>>(
-    ze: FixedPoint,
-    z: FixedPoint,
-    zeta: I256,
-    y: FixedPoint,
-    c: FixedPoint,
-    mu: FixedPoint,
-    t: FixedPoint,
-    c_initial: FixedPoint,
-    z_min: FixedPoint,
+    effective_share_reserves: FixedPoint,
+    share_reserves: FixedPoint,
+    share_adjustment: I256,
+    bond_reserves: FixedPoint,
+    share_price: FixedPoint,
+    initial_share_price: FixedPoint,
+    time_parameter: FixedPoint,
+    minimum_share_reserves: FixedPoint,
     time_stretch: FixedPoint,
     flat_fee: FixedPoint,
     curve_fee: FixedPoint,
@@ -91,26 +95,30 @@ pub fn get_max_short<F1: Into<FixedPoint>, F2: Into<FixedPoint>, I: Into<I256>>(
     // Get the spot price and the open share price. If the open share price
     // is zero, then we'll use the current share price since the checkpoint
     // hasn't been minted yet.
-    let spot_price = get_spot_price(ze, y, mu, t);
+    let spot_price = get_spot_price(
+        effective_share_reserves,
+        bond_reserves,
+        initial_share_price,
+        time_parameter,
+    );
     let open_vault_share_price = if open_vault_share_price != fixed!(0) {
         open_vault_share_price
     } else {
-        c
+        share_price
     };
 
     // Assuming the budget is infinite, find the largest possible short that
     // can be opened. If the short satisfies the budget, this is the max
     // short amount.
     let mut max_bond_amount = absolute_max_short(
-        ze,
-        z,
-        zeta,
-        y,
-        c,
-        mu,
-        t,
-        c_initial,
-        z_min,
+        effective_share_reserves,
+        share_reserves,
+        share_adjustment,
+        bond_reserves,
+        share_price,
+        initial_share_price,
+        time_parameter,
+        minimum_share_reserves,
         time_stretch,
         curve_fee,
         governance_lp_fee,
@@ -120,11 +128,11 @@ pub fn get_max_short<F1: Into<FixedPoint>, F2: Into<FixedPoint>, I: Into<I256>>(
         maybe_max_iterations,
     );
     let deposit = match calculate_open_short(
-        ze,
-        y,
-        c,
-        mu,
-        t,
+        effective_share_reserves,
+        bond_reserves,
+        share_price,
+        initial_share_price,
+        time_parameter,
         flat_fee,
         curve_fee,
         max_bond_amount,
@@ -159,11 +167,11 @@ pub fn get_max_short<F1: Into<FixedPoint>, F2: Into<FixedPoint>, I: Into<I256>>(
     // The guess that we make is very important in determining how quickly
     // we converge to the solution.
     max_bond_amount = max_short_guess(
-        ze,
-        y,
-        c,
-        mu,
-        t,
+        effective_share_reserves,
+        bond_reserves,
+        share_price,
+        initial_share_price,
+        time_parameter,
         flat_fee,
         curve_fee,
         budget,
@@ -173,11 +181,11 @@ pub fn get_max_short<F1: Into<FixedPoint>, F2: Into<FixedPoint>, I: Into<I256>>(
     );
     for _ in 0..maybe_max_iterations.unwrap_or(7) {
         let deposit = match calculate_open_short(
-            ze,
-            y,
-            c,
-            mu,
-            t,
+            effective_share_reserves,
+            bond_reserves,
+            share_price,
+            initial_share_price,
+            time_parameter,
             flat_fee,
             curve_fee,
             max_bond_amount,
@@ -189,12 +197,11 @@ pub fn get_max_short<F1: Into<FixedPoint>, F2: Into<FixedPoint>, I: Into<I256>>(
         };
         max_bond_amount += (budget - deposit)
             / short_deposit_derivative(
-                ze,
-                y,
-                c,
-                mu,
-                t,
-                c_initial,
+                effective_share_reserves,
+                bond_reserves,
+                share_price,
+                initial_share_price,
+                time_parameter,
                 time_stretch,
                 flat_fee,
                 curve_fee,
@@ -207,11 +214,11 @@ pub fn get_max_short<F1: Into<FixedPoint>, F2: Into<FixedPoint>, I: Into<I256>>(
     // Verify that the max short satisfies the budget.
     if budget
         < calculate_open_short(
-            ze,
-            y,
-            c,
-            mu,
-            t,
+            effective_share_reserves,
+            bond_reserves,
+            share_price,
+            initial_share_price,
+            time_parameter,
             flat_fee,
             curve_fee,
             max_bond_amount,
@@ -232,11 +239,11 @@ pub fn get_max_short<F1: Into<FixedPoint>, F2: Into<FixedPoint>, I: Into<I256>>(
 /// the worst-case realized price. This significantly improves the speed of
 /// convergence of Newton's method.
 fn max_short_guess(
-    ze: FixedPoint,
-    y: FixedPoint,
-    c: FixedPoint,
-    mu: FixedPoint,
-    t: FixedPoint,
+    effective_share_reserves: FixedPoint,
+    bond_reserves: FixedPoint,
+    share_price: FixedPoint,
+    initial_share_price: FixedPoint,
+    time_parameter: FixedPoint,
     flat_fee: FixedPoint,
     curve_fee: FixedPoint,
     budget: FixedPoint,
@@ -268,16 +275,16 @@ fn max_short_guess(
         // return it as our guess. Otherwise, we revert to the worst case
         // scenario.
         let guess = budget
-            / (c.div_up(open_vault_share_price)
+            / (share_price.div_up(open_vault_share_price)
                 + flat_fee
                 + curve_fee * (fixed!(1e18) - spot_price)
                 - conservative_price);
         if let Ok(deposit) = calculate_open_short(
-            ze,
-            y,
-            c,
-            mu,
-            t,
+            effective_share_reserves,
+            bond_reserves,
+            share_price,
+            initial_share_price,
+            time_parameter,
             flat_fee,
             curve_fee,
             guess,
@@ -301,11 +308,11 @@ fn max_short_guess(
     // the max bond amount. If subtracting these components results in a
     // negative number, we just 0 as our initial guess.
     let worst_case_deposit = match calculate_open_short(
-        ze,
-        y,
-        c,
-        mu,
-        t,
+        effective_share_reserves,
+        bond_reserves,
+        share_price,
+        initial_share_price,
+        time_parameter,
         flat_fee,
         curve_fee,
         budget,
@@ -325,15 +332,14 @@ fn max_short_guess(
 /// Gets the absolute max short that can be opened without violating the
 /// pool's solvency constraints.
 fn absolute_max_short(
-    ze: FixedPoint,
-    z: FixedPoint,
-    zeta: I256,
-    y: FixedPoint,
-    c: FixedPoint,
-    mu: FixedPoint,
-    t: FixedPoint,
-    c_initial: FixedPoint,
-    z_min: FixedPoint,
+    effective_share_reserves: FixedPoint,
+    share_reserves: FixedPoint,
+    share_adjustment: I256,
+    bond_reserves: FixedPoint,
+    share_price: FixedPoint,
+    initial_share_price: FixedPoint,
+    time_parameter: FixedPoint,
+    minimum_share_reserves: FixedPoint,
     time_stretch: FixedPoint,
     curve_fee: FixedPoint,
     governance_lp_fee: FixedPoint,
@@ -348,7 +354,8 @@ fn absolute_max_short(
         // We have the twin constraints that $z \geq z_{min}$ and
         // $z - \zeta \geq z_{min}$. Combining these together, we calculate
         // the optimal share reserves as $z_{optimal} = z_{min} + max(0, \zeta)$.
-        let optimal_share_reserves = z_min + FixedPoint::from(zeta.max(I256::zero()));
+        let optimal_share_reserves =
+            minimum_share_reserves + FixedPoint::from(share_adjustment.max(I256::zero()));
 
         // We calculate the optimal bond reserves by solving for the bond
         // reserves that is implied by the optimal share reserves. We can do
@@ -358,12 +365,17 @@ fn absolute_max_short(
         //                              =>
         // y' = (k - (c / mu) * (mu * (z' - zeta)) ** (1 - t_s)) ** (1 / (1 - t_s))
         let optimal_effective_share_reserves =
-            get_effective_share_reserves(optimal_share_reserves, zeta);
-        let optimal_bond_reserves = k_down(ze, y, c, mu, t)
-            - c.div_up(c_initial).mul_up(
-                (c_initial.mul_up(optimal_effective_share_reserves))
-                    .pow(fixed!(1e18) - time_stretch),
-            );
+            get_effective_share_reserves(optimal_share_reserves, share_adjustment);
+        let optimal_bond_reserves = k_down(
+            effective_share_reserves,
+            bond_reserves,
+            share_price,
+            initial_share_price,
+            time_parameter,
+        ) - share_price.div_up(initial_share_price).mul_up(
+            (initial_share_price.mul_up(optimal_effective_share_reserves))
+                .pow(fixed!(1e18) - time_stretch),
+        );
         let optimal_bond_reserves = if optimal_bond_reserves >= fixed!(1e18) {
             // Rounding the exponent down results in a smaller outcome.
             optimal_bond_reserves.pow(fixed!(1e18) / (fixed!(1e18) - time_stretch))
@@ -372,16 +384,16 @@ fn absolute_max_short(
             optimal_bond_reserves.pow(fixed!(1e18).div_up(fixed!(1e18) - time_stretch))
         };
 
-        optimal_bond_reserves - y
+        optimal_bond_reserves - bond_reserves
     };
     if solvency_after_short(
-        ze,
-        z,
-        y,
-        c,
-        mu,
-        t,
-        z_min,
+        effective_share_reserves,
+        share_reserves,
+        bond_reserves,
+        share_price,
+        initial_share_price,
+        time_parameter,
+        minimum_share_reserves,
         curve_fee,
         governance_lp_fee,
         long_exposure,
@@ -412,9 +424,9 @@ fn absolute_max_short(
     // The guess that we make is very important in determining how quickly
     // we converge to the solution.
     let mut max_bond_amount = absolute_max_short_guess(
-        z,
-        c,
-        z_min,
+        share_reserves,
+        share_price,
+        minimum_share_reserves,
         long_exposure,
         curve_fee,
         governance_lp_fee,
@@ -422,13 +434,13 @@ fn absolute_max_short(
         checkpoint_exposure,
     );
     let mut maybe_solvency = solvency_after_short(
-        ze,
-        z,
-        y,
-        c,
-        mu,
-        t,
-        z_min,
+        effective_share_reserves,
+        share_reserves,
+        bond_reserves,
+        share_price,
+        initial_share_price,
+        time_parameter,
+        minimum_share_reserves,
         curve_fee,
         governance_lp_fee,
         long_exposure,
@@ -450,12 +462,11 @@ fn absolute_max_short(
         // is larger than the absolute max, we've gone too far and something
         // has gone wrong.
         let maybe_derivative = solvency_after_short_derivative(
-            ze,
-            y,
-            c,
-            mu,
-            t,
-            c_initial,
+            effective_share_reserves,
+            bond_reserves,
+            share_price,
+            initial_share_price,
+            time_parameter,
             time_stretch,
             curve_fee,
             governance_lp_fee,
@@ -473,13 +484,13 @@ fn absolute_max_short(
         // If the candidate is insolvent, we've gone too far and can stop
         // iterating. Otherwise, we update our guess and continue.
         maybe_solvency = solvency_after_short(
-            ze,
-            z,
-            y,
-            c,
-            mu,
-            t,
-            z_min,
+            effective_share_reserves,
+            share_reserves,
+            bond_reserves,
+            share_price,
+            initial_share_price,
+            time_parameter,
+            minimum_share_reserves,
             curve_fee,
             governance_lp_fee,
             long_exposure,
@@ -522,9 +533,9 @@ fn absolute_max_short(
 ///     }
 /// $$
 fn absolute_max_short_guess(
-    z: FixedPoint,
-    c: FixedPoint,
-    z_min: FixedPoint,
+    share_reserves: FixedPoint,
+    share_price: FixedPoint,
+    minimum_share_reserves: FixedPoint,
     long_exposure: FixedPoint,
     curve_fee: FixedPoint,
     governance_lp_fee: FixedPoint,
@@ -532,8 +543,14 @@ fn absolute_max_short_guess(
     checkpoint_exposure: I256,
 ) -> FixedPoint {
     let estimate_price = spot_price;
-    let checkpoint_exposure = FixedPoint::from(checkpoint_exposure.max(I256::zero())) / c;
-    (c * (get_solvency(z, c, z_min, long_exposure) + checkpoint_exposure))
+    let checkpoint_exposure = FixedPoint::from(checkpoint_exposure.max(I256::zero())) / share_price;
+    (share_price
+        * (get_solvency(
+            share_reserves,
+            share_price,
+            minimum_share_reserves,
+            long_exposure,
+        ) + checkpoint_exposure))
         / (estimate_price - curve_fee * (fixed!(1e18) - spot_price)
             + governance_lp_fee * curve_fee * (fixed!(1e18) - spot_price))
 }
@@ -552,12 +569,11 @@ fn absolute_max_short_guess(
 /// P'(x) = \tfrac{1}{c} \cdot (y + x)^{-t_s} \cdot \left(\tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s}) \right)^{\tfrac{t_s}{1 - t_s}}
 /// $$
 fn short_deposit_derivative(
-    ze: FixedPoint,
-    y: FixedPoint,
-    c: FixedPoint,
-    mu: FixedPoint,
-    t: FixedPoint,
-    c_initial: FixedPoint,
+    effective_share_reserves: FixedPoint,
+    bond_reserves: FixedPoint,
+    share_price: FixedPoint,
+    initial_share_price: FixedPoint,
+    time_parameter: FixedPoint,
     time_stretch: FixedPoint,
     flat_fee: FixedPoint,
     curve_fee: FixedPoint,
@@ -566,10 +582,18 @@ fn short_deposit_derivative(
     open_vault_share_price: FixedPoint,
 ) -> FixedPoint {
     // NOTE: The order of additions and subtractions is important to avoid underflows.
-    let payment_factor = (fixed!(1e18) / (y + short_amount).pow(time_stretch))
-        * theta(ze, y, c, mu, t, c_initial, time_stretch, short_amount)
-            .pow(time_stretch / (fixed!(1e18) + time_stretch));
-    (c / open_vault_share_price) + flat_fee + curve_fee * (fixed!(1e18) - spot_price)
+    let payment_factor = (fixed!(1e18) / (bond_reserves + short_amount).pow(time_stretch))
+        * theta(
+            effective_share_reserves,
+            bond_reserves,
+            share_price,
+            initial_share_price,
+            time_parameter,
+            time_stretch,
+            short_amount,
+        )
+        .pow(time_stretch / (fixed!(1e18) + time_stretch));
+    (share_price / open_vault_share_price) + flat_fee + curve_fee * (fixed!(1e18) - spot_price)
         - payment_factor
 }
 
@@ -605,13 +629,13 @@ fn short_deposit_derivative(
 /// e(x) = e_0 - max(e_{c}, 0)
 /// $$
 fn solvency_after_short(
-    ze: FixedPoint,
-    z: FixedPoint,
-    y: FixedPoint,
-    c: FixedPoint,
-    mu: FixedPoint,
-    t: FixedPoint,
-    z_min: FixedPoint,
+    effective_share_reserves: FixedPoint,
+    share_reserves: FixedPoint,
+    bond_reserves: FixedPoint,
+    share_price: FixedPoint,
+    initial_share_price: FixedPoint,
+    time_parameter: FixedPoint,
+    minimum_share_reserves: FixedPoint,
     curve_fee: FixedPoint,
     governance_lp_fee: FixedPoint,
     long_exposure: FixedPoint,
@@ -619,12 +643,19 @@ fn solvency_after_short(
     spot_price: FixedPoint,
     checkpoint_exposure: I256,
 ) -> Option<FixedPoint> {
-    let principal = if let Ok(p) = short_principal(ze, y, c, mu, t, short_amount) {
+    let principal = if let Ok(p) = short_principal(
+        effective_share_reserves,
+        bond_reserves,
+        share_price,
+        initial_share_price,
+        time_parameter,
+        short_amount,
+    ) {
         p
     } else {
         return None;
     };
-    let share_reserves = z
+    let share_reserves = share_reserves
         - (principal
             - (open_short_curve_fee(curve_fee, short_amount, spot_price)
                 - open_short_governance_fee(
@@ -633,13 +664,13 @@ fn solvency_after_short(
                     short_amount,
                     spot_price,
                 ))
-                / c);
+                / share_price);
     let exposure = {
         let checkpoint_exposure: FixedPoint = checkpoint_exposure.max(I256::zero()).into();
-        (long_exposure - checkpoint_exposure) / c
+        (long_exposure - checkpoint_exposure) / share_price
     };
-    if share_reserves >= exposure + z_min {
-        Some(share_reserves - exposure - z_min)
+    if share_reserves >= exposure + minimum_share_reserves {
+        Some(share_reserves - exposure - minimum_share_reserves)
     } else {
         None
     }
@@ -661,20 +692,28 @@ fn solvency_after_short(
 /// derivative. This avoids issues with the fixed point library which
 /// doesn't support negative values.
 fn solvency_after_short_derivative(
-    ze: FixedPoint,
-    y: FixedPoint,
-    c: FixedPoint,
-    mu: FixedPoint,
-    t: FixedPoint,
-    c_initial: FixedPoint,
+    effective_share_reserves: FixedPoint,
+    bond_reserves: FixedPoint,
+    share_price: FixedPoint,
+    initial_share_price: FixedPoint,
+    time_parameter: FixedPoint,
     time_stretch: FixedPoint,
     curve_fee: FixedPoint,
     governance_lp_fee: FixedPoint,
     short_amount: FixedPoint,
     spot_price: FixedPoint,
 ) -> Option<FixedPoint> {
-    let lhs = short_principal_derivative(ze, y, c, mu, t, c_initial, time_stretch, short_amount);
-    let rhs = curve_fee * (fixed!(1e18) - spot_price) * (fixed!(1e18) - governance_lp_fee) / c;
+    let lhs = short_principal_derivative(
+        effective_share_reserves,
+        bond_reserves,
+        share_price,
+        initial_share_price,
+        time_parameter,
+        time_stretch,
+        short_amount,
+    );
+    let rhs =
+        curve_fee * (fixed!(1e18) - spot_price) * (fixed!(1e18) - governance_lp_fee) / share_price;
     if lhs >= rhs {
         Some(lhs - rhs)
     } else {
@@ -693,18 +732,23 @@ fn solvency_after_short_derivative(
 ///         \right)^{\tfrac{t_s}{1 - t_s}}
 /// $$
 fn short_principal_derivative(
-    ze: FixedPoint,
-    y: FixedPoint,
-    c: FixedPoint,
-    mu: FixedPoint,
-    t: FixedPoint,
-    c_initial: FixedPoint,
+    effective_share_reserves: FixedPoint,
+    bond_reserves: FixedPoint,
+    share_price: FixedPoint,
+    initial_share_price: FixedPoint,
+    time_parameter: FixedPoint,
     time_stretch: FixedPoint,
     short_amount: FixedPoint,
 ) -> FixedPoint {
-    let lhs = fixed!(1e18) / (c.mul_up((y + short_amount).pow(time_stretch)));
-    let rhs = ((c_initial / c)
-        * (k_down(ze, y, c, mu, t) - (y + short_amount).pow(fixed!(1e18) - time_stretch)))
+    let lhs = fixed!(1e18) / (share_price.mul_up((bond_reserves + short_amount).pow(time_stretch)));
+    let rhs = ((initial_share_price / share_price)
+        * (k_down(
+            effective_share_reserves,
+            bond_reserves,
+            share_price,
+            initial_share_price,
+            time_parameter,
+        ) - (bond_reserves + short_amount).pow(fixed!(1e18) - time_stretch)))
     .pow(time_stretch.div_up(fixed!(1e18) - time_stretch));
     lhs * rhs
 }
@@ -719,17 +763,22 @@ fn short_principal_derivative(
 /// \theta(x) = \tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s})
 /// $$
 fn theta(
-    ze: FixedPoint,
-    y: FixedPoint,
-    c: FixedPoint,
-    mu: FixedPoint,
-    t: FixedPoint,
-    c_initial: FixedPoint,
+    effective_share_reserves: FixedPoint,
+    bond_reserves: FixedPoint,
+    share_price: FixedPoint,
+    initial_share_price: FixedPoint,
+    time_parameter: FixedPoint,
     time_stretch: FixedPoint,
     short_amount: FixedPoint,
 ) -> FixedPoint {
-    (c_initial / c)
-        * (k_down(ze, y, c, mu, t) - (y + short_amount).pow(fixed!(1e18) - time_stretch))
+    (initial_share_price / share_price)
+        * (k_down(
+            effective_share_reserves,
+            bond_reserves,
+            share_price,
+            initial_share_price,
+            time_parameter,
+        ) - (bond_reserves + short_amount).pow(fixed!(1e18) - time_stretch))
 }
 
 impl State {
@@ -760,7 +809,6 @@ impl State {
             self.c(),
             self.mu(),
             self.t(),
-            self.initial_vault_share_price(),
             self.minimum_share_reserves(),
             self.time_stretch(),
         )
@@ -795,7 +843,6 @@ impl State {
             self.c(),
             self.mu(),
             self.t(),
-            self.initial_vault_share_price(),
             self.minimum_share_reserves(),
             self.time_stretch(),
             self.flat_fee(),

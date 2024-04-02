@@ -264,14 +264,19 @@ impl YieldSpace for State {
 
 /// Gets the pool's spot rate.
 pub fn get_spot_rate(
-    ze: FixedPoint,
-    y: FixedPoint,
-    mu: FixedPoint,
-    t: FixedPoint,
+    effective_share_reserves: FixedPoint,
+    bond_reserves: FixedPoint,
+    initial_share_price: FixedPoint,
+    time_parameter: FixedPoint,
     position_duration: FixedPoint,
 ) -> FixedPoint {
     let annualized_time = position_duration / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
-    let spot_price = get_spot_price(ze, y, mu, t);
+    let spot_price = get_spot_price(
+        effective_share_reserves,
+        bond_reserves,
+        initial_share_price,
+        time_parameter,
+    );
     (fixed!(1e18) - spot_price) / (spot_price * annualized_time)
 }
 

@@ -8,15 +8,24 @@ use crate::{
 };
 
 fn calculate_close_long_flat_plus_curve<F: Into<FixedPoint>>(
-    ze: F,
-    y: F,
-    c: F,
-    mu: F,
-    t: F,
-    dy: F,
-    tr: F,
+    effective_share_reserves: F,
+    bond_reserves: F,
+    share_price: F,
+    initial_share_price: F,
+    time_parameter: F,
+    bond_amount: F,
+    normalized_time_remaining: F,
 ) -> FixedPoint {
-    let [ze, y, c, mu, t, dy, tr] = [ze, y, c, mu, t, dy, tr].map(|v| v.into());
+    let [ze, y, c, mu, t, dy, tr] = [
+        effective_share_reserves,
+        bond_reserves,
+        share_price,
+        initial_share_price,
+        time_parameter,
+        bond_amount,
+        normalized_time_remaining,
+    ]
+    .map(|v| v.into());
 
     // Calculate the flat part of the trade
     let flat = dy.mul_div_down(fixed!(1e18) - tr, c);
@@ -34,18 +43,28 @@ fn calculate_close_long_flat_plus_curve<F: Into<FixedPoint>>(
 
 /// Gets the amount of shares the trader will receive after fees for closing a long
 pub fn calculate_close_long<F: Into<FixedPoint>>(
-    ze: F,
-    y: F,
-    c: F,
-    mu: F,
-    t: F,
+    effective_share_reserves: F,
+    bond_reserves: F,
+    share_price: F,
+    initial_share_price: F,
+    time_parameter: F,
     curve_fee: F,
     flat_fee: F,
-    dy: F,
-    tr: F,
+    bond_amount: F,
+    normalized_time_remaining: F,
 ) -> FixedPoint {
-    let [ze, y, c, mu, t, curve_fee, flat_fee, dy, tr] =
-        [ze, y, c, mu, t, curve_fee, flat_fee, dy, tr].map(|v| v.into());
+    let [ze, y, c, mu, t, curve_fee, flat_fee, dy, tr] = [
+        effective_share_reserves,
+        bond_reserves,
+        share_price,
+        initial_share_price,
+        time_parameter,
+        curve_fee,
+        flat_fee,
+        bond_amount,
+        normalized_time_remaining,
+    ]
+    .map(|v| v.into());
 
     // Subtract the fees from the trade
     calculate_close_long_flat_plus_curve(ze, y, c, mu, t, dy, tr)
@@ -107,7 +126,6 @@ mod tests {
     use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};
 
     use super::*;
-    use crate::State;
 
     #[tokio::test]
     async fn fuzz_calculate_close_long_flat_plus_curve() -> Result<()> {
