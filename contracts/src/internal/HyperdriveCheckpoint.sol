@@ -46,28 +46,8 @@ abstract contract HyperdriveCheckpoint is
             revert IHyperdrive.InvalidCheckpointTime();
         }
 
-        // If the checkpoint time is the latest checkpoint, we use the current
-        // vault share price. Otherwise, we use a linear search to find the
-        // closest vault share price and use that to perform the checkpoint.
-        if (_checkpointTime == latestCheckpoint) {
-            _applyCheckpoint(latestCheckpoint, _pricePerVaultShare());
-        } else {
-            for (
-                uint256 time = _checkpointTime;
-                ;
-                time += _checkpointDuration
-            ) {
-                uint256 closestVaultSharePrice = _checkpoints[time]
-                    .vaultSharePrice;
-                if (time == latestCheckpoint && closestVaultSharePrice == 0) {
-                    closestVaultSharePrice = _pricePerVaultShare();
-                }
-                if (closestVaultSharePrice != 0) {
-                    _applyCheckpoint(_checkpointTime, closestVaultSharePrice);
-                    break;
-                }
-            }
-        }
+        // Apply the checkpoint.
+        _applyCheckpoint(_checkpointTime, _pricePerVaultShare());
     }
 
     /// @dev Creates a new checkpoint if necessary.
@@ -89,8 +69,33 @@ abstract contract HyperdriveCheckpoint is
             return checkpoint_.vaultSharePrice;
         }
 
+        // If the checkpoint time is the latest checkpoint, we use the current
+        // vault share price. Otherwise, we use a linear search to find the
+        // closest vault share price and use that to perform the checkpoint.
+        uint256 checkpointVaultSharePrice;
+        uint256 latestCheckpoint = _latestCheckpoint();
+        if (_checkpointTime == latestCheckpoint) {
+            checkpointVaultSharePrice = _vaultSharePrice;
+        } else {
+            for (
+                uint256 time = _checkpointTime;
+                ;
+                time += _checkpointDuration
+            ) {
+                checkpointVaultSharePrice = _checkpoints[time].vaultSharePrice;
+                if (
+                    time == latestCheckpoint && checkpointVaultSharePrice == 0
+                ) {
+                    checkpointVaultSharePrice = _vaultSharePrice;
+                }
+                if (checkpointVaultSharePrice != 0) {
+                    break;
+                }
+            }
+        }
+
         // Create the vault share price checkpoint.
-        checkpoint_.vaultSharePrice = _vaultSharePrice.toUint128();
+        checkpoint_.vaultSharePrice = checkpointVaultSharePrice.toUint128();
 
         // Collect the interest that has accrued since the last checkpoint.
         _collectZombieInterest(_vaultSharePrice);
@@ -122,17 +127,19 @@ abstract contract HyperdriveCheckpoint is
                 uint256 governanceFee
             ) = _calculateMaturedProceeds(
                     maturedShortsAmount,
-                    _vaultSharePrice,
                     openVaultSharePrice,
+                    checkpointVaultSharePrice,
+                    _vaultSharePrice,
                     false
                 );
             _governanceFeesAccrued += governanceFee;
+            uint256 checkpointTime = _checkpointTime; // avoid stack-too-deep
             _applyCloseShort(
                 maturedShortsAmount,
                 0,
                 shareProceeds,
                 shareProceeds.toInt256(), // keep the effective share reserves constant
-                _checkpointTime
+                checkpointTime
             );
 
             // Add the governance fee back to the share proceeds. We removed it
@@ -146,12 +153,13 @@ abstract contract HyperdriveCheckpoint is
             // shorts earned minus the flat fee.
             //
             // NOTE: Round down to underestimate the short proceeds.
+            uint256 vaultSharePrice = _vaultSharePrice; // avoid stack-too-deep
             shareProceeds = HyperdriveMath.calculateShortProceedsDown(
                 maturedShortsAmount,
                 shareProceeds,
                 openVaultSharePrice,
-                _vaultSharePrice,
-                _vaultSharePrice,
+                checkpointVaultSharePrice,
+                vaultSharePrice,
                 _flatFee
             );
 
@@ -160,7 +168,7 @@ abstract contract HyperdriveCheckpoint is
             //
             // NOTE: Round down to underestimate the short proceeds.
             _marketState.zombieBaseProceeds += shareProceeds
-                .mulDown(_vaultSharePrice)
+                .mulDown(vaultSharePrice)
                 .toUint112();
             _marketState.zombieShareReserves += shareProceeds.toUint128();
         }
@@ -179,17 +187,19 @@ abstract contract HyperdriveCheckpoint is
 
             // Apply the governance and LP proceeds from closing out the matured
             // long positions to the state.
+            uint256 vaultSharePrice = _vaultSharePrice; // avoid stack-too-deep
             (
                 uint256 shareProceeds,
                 uint256 governanceFee
             ) = _calculateMaturedProceeds(
                     maturedLongsAmount,
-                    _vaultSharePrice,
                     openVaultSharePrice,
+                    checkpointVaultSharePrice,
+                    vaultSharePrice,
                     true
                 );
             _governanceFeesAccrued += governanceFee;
-            uint256 checkpointTime = _checkpointTime; // avoid stack too deep error
+            uint256 checkpointTime = _checkpointTime; // avoid stack-too-deep
             _applyCloseLong(
                 maturedLongsAmount,
                 0,
@@ -207,7 +217,7 @@ abstract contract HyperdriveCheckpoint is
             //
             // NOTE: Round down to underestimate the long proceeds.
             _marketState.zombieBaseProceeds += shareProceeds
-                .mulDown(_vaultSharePrice)
+                .mulDown(vaultSharePrice)
                 .toUint112();
             _marketState.zombieShareReserves += shareProceeds.toUint128();
         }
@@ -238,28 +248,32 @@ abstract contract HyperdriveCheckpoint is
         (uint256 lpSharePrice, ) = _calculateLPSharePriceSafe(_vaultSharePrice);
         emit CreateCheckpoint(
             _checkpointTime,
+            checkpointVaultSharePrice,
             _vaultSharePrice,
             maturedShortsAmount,
             maturedLongsAmount,
             lpSharePrice
         );
 
-        return _vaultSharePrice;
+        return checkpointVaultSharePrice;
     }
 
     /// @dev Calculates the proceeds of the holders of a given position at
     ///      maturity.
     /// @param _bondAmount The bond amount of the position.
     /// @param _vaultSharePrice The current vault share price.
-    /// @param _openVaultSharePrice The vault share price at the beginning of
-    ///        the position's checkpoint.
+    /// @param _openVaultSharePrice The vault share price from the position's
+    ///        starting checkpoint.
+    /// @param _closeVaultSharePrice The vault share price from the position's
+    ///        ending checkpoint.
     /// @param _isLong A flag indicating whether or not the position is a long.
     /// @return shareProceeds The proceeds of the holders in shares.
     /// @return governanceFee The fee paid to governance in shares.
     function _calculateMaturedProceeds(
         uint256 _bondAmount,
-        uint256 _vaultSharePrice,
         uint256 _openVaultSharePrice,
+        uint256 _closeVaultSharePrice,
+        uint256 _vaultSharePrice,
         bool _isLong
     ) internal view returns (uint256 shareProceeds, uint256 governanceFee) {
         // Calculate the share proceeds, flat fee, and governance fee. Since the
@@ -293,16 +307,16 @@ abstract contract HyperdriveCheckpoint is
         // If negative interest accrued over the period, the proceeds and
         // governance fee are given a "haircut" proportional to the negative
         // interest that accrued.
-        if (_vaultSharePrice < _openVaultSharePrice) {
+        if (_closeVaultSharePrice < _openVaultSharePrice) {
             // NOTE: Round down to underestimate the proceeds.
             shareProceeds = shareProceeds.mulDivDown(
-                _vaultSharePrice,
+                _closeVaultSharePrice,
                 _openVaultSharePrice
             );
 
             // NOTE: Round down to underestimate the governance fee.
             governanceFee = governanceFee.mulDivDown(
-                _vaultSharePrice,
+                _closeVaultSharePrice,
                 _openVaultSharePrice
             );
         }
