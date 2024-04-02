@@ -65,7 +65,7 @@ impl State {
         }
     }
 
-    /// Gets the amount of shares the trader will receive after fees for closing a short
+    /// Calculates the amount of shares the trader will receive after fees for closing a short
     pub fn calculate_close_short<F: Into<FixedPoint>>(
         &self,
         bond_amount: F,

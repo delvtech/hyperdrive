@@ -928,19 +928,19 @@ impl Agent<ChainClient, ChaCha8Rng> {
         Ok(self.hyperdrive.get_checkpoint_exposure(id).await?)
     }
 
-    /// Gets the spot price.
+    /// Calculates the spot price.
     pub async fn calculate_spot_price(&self) -> Result<FixedPoint> {
         Ok(self.get_state().await?.calculate_spot_price())
     }
 
-    /// Gets the amount of longs that will be opened for a given amount of base
+    /// Calculates the amount of longs that will be opened for a given amount of base
     /// with the current market state.
     pub async fn calculate_open_long(&self, base_amount: FixedPoint) -> Result<FixedPoint> {
         let state = self.get_state().await?;
         Ok(state.calculate_open_long(base_amount))
     }
 
-    /// Gets the deposit required to short a given amount of bonds with the
+    /// Calculates the deposit required to short a given amount of bonds with the
     /// current market state.
     pub async fn calculate_open_short(&self, short_amount: FixedPoint) -> Result<FixedPoint> {
         let state = self.get_state().await?;
@@ -958,7 +958,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         )
     }
 
-    /// Gets the max long that can be opened in the current checkpoint.
+    /// Calculates the max long that can be opened in the current checkpoint.
     pub async fn calculate_max_long(
         &self,
         maybe_max_iterations: Option<usize>,
@@ -971,7 +971,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         Ok(state.calculate_max_long(self.wallet.base, checkpoint_exposure, maybe_max_iterations))
     }
 
-    /// Gets the max short that can be opened in the current checkpoint.
+    /// Calculates the max short that can be opened in the current checkpoint.
     ///
     /// Since interest can accrue between the time the calculation is made and
     /// the transaction is submitted, it's convenient to have a slippage

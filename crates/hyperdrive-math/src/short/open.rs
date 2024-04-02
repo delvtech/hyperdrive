@@ -6,7 +6,7 @@ use fixed_point_macros::fixed;
 use crate::{State, YieldSpace};
 
 impl State {
-    /// Gets the amount of base the trader will need to deposit for a short of
+    /// Calculates the amount of base the trader will need to deposit for a short of
     /// a given size.
     ///
     /// The short deposit is made up of several components:
@@ -50,7 +50,7 @@ impl State {
         )
     }
 
-    /// Gets the spot price after opening the short on the YieldSpace curve and
+    /// Calculates the spot price after opening the short on the YieldSpace curve and
     /// before calculating the fees.
     pub fn calculate_spot_price_after_short(&self, bond_amount: FixedPoint) -> FixedPoint {
         let shares_amount = self.calculate_shares_out_given_bonds_in_down(bond_amount);
@@ -78,7 +78,7 @@ impl State {
         self.calculate_open_short(short_amount, spot_price, open_vault_share_price)
     }
 
-    /// Gets the amount of short principal that the LPs need to pay to back a
+    /// Calculates the amount of short principal that the LPs need to pay to back a
     /// short before fees are taken into consideration, $P(x)$.
     ///
     /// Let the LP principal that backs $x$ shorts be given by $P(x)$. We can

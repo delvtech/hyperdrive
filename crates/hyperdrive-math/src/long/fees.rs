@@ -5,7 +5,7 @@ use fixed_point_macros::fixed;
 use crate::State;
 
 impl State {
-    /// Gets the curve fee paid by longs for a given base amount.
+    /// Calculates the curve fee paid by longs for a given base amount.
     ///
     /// The curve fee $c(x)$ paid by longs is paid in bonds and is given by:
     ///
@@ -18,7 +18,7 @@ impl State {
             * base_amount
     }
 
-    /// Gets the governance fee paid by longs for a given base amount.
+    /// Calculates the governance fee paid by longs for a given base amount.
     ///
     /// Unlike the [curve fee](long_curve_fee) which is paid in bonds, the
     /// governance fee is paid in base. The governance fee $g(x)$ paid by longs
@@ -33,7 +33,7 @@ impl State {
             * self.open_long_curve_fees(base_amount)
     }
 
-    /// Gets the curve fee paid by longs for a given bond amount.
+    /// Calculates the curve fee paid by longs for a given bond amount.
     /// Returns the fee in shares
     pub fn close_long_curve_fee(
         &self,
@@ -49,7 +49,7 @@ impl State {
             * bond_amount.mul_div_down(normalized_time_remaining, self.vault_share_price())
     }
 
-    /// Gets the flat fee paid by longs for a given bond amount
+    /// Calculates the flat fee paid by longs for a given bond amount
     /// Returns the fee in shares
     pub fn close_long_flat_fee(
         &self,

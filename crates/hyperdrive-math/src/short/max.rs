@@ -5,7 +5,7 @@ use fixed_point_macros::fixed;
 use crate::{calculate_effective_share_reserves, State, YieldSpace};
 
 impl State {
-    /// Gets the minimum price that the pool can support.
+    /// Calculates the minimum price that the pool can support.
     ///
     /// YieldSpace intersects the y-axis with a finite slope, so there is a
     /// minimum price that the pool can support. This is the price at which the
@@ -38,7 +38,7 @@ impl State {
     // TODO: Make it clear to the consumer that the maximum number of iterations
     // is 2 * max_iterations.
     //
-    /// Gets the max short that can be opened with the given budget.
+    /// Calculates the max short that can be opened with the given budget.
     ///
     /// We start by finding the largest possible short (irrespective of budget),
     /// and then we iteratively approach a solution using Newton's method if the
@@ -65,7 +65,7 @@ impl State {
             return fixed!(0);
         }
 
-        // Get the spot price and the open share price. If the open share price
+        // Calculate the spot price and the open share price. If the open share price
         // is zero, then we'll use the current share price since the checkpoint
         // hasn't been minted yet.
         let spot_price = self.calculate_spot_price();
@@ -144,7 +144,7 @@ impl State {
         max_bond_amount
     }
 
-    /// Gets an initial guess for the max short calculation.
+    /// Calculates an initial guess for the max short calculation.
     ///
     /// The user can specify a conservative price that they know is less than
     /// the worst-case realized price. This significantly improves the speed of
@@ -215,7 +215,7 @@ impl State {
         }
     }
 
-    /// Gets the absolute max short that can be opened without violating the
+    /// Calculates the absolute max short that can be opened without violating the
     /// pool's solvency constraints.
     fn absolute_max_short(
         &self,
@@ -329,7 +329,7 @@ impl State {
         max_bond_amount
     }
 
-    /// Gets an initial guess for the absolute max short. This is a conservative
+    /// Calculates an initial guess for the absolute max short. This is a conservative
     /// guess that will be less than the true absolute max short, which is what
     /// we need to start Newton's method.
     ///
@@ -365,7 +365,7 @@ impl State {
                 + self.governance_lp_fee() * self.curve_fee() * (fixed!(1e18) - spot_price))
     }
 
-    /// Gets the derivative of the short deposit function with respect to the
+    /// Calculates the derivative of the short deposit function with respect to the
     /// short amount. This allows us to use Newton's method to approximate the
     /// maximum short that a trader can open.
     ///
@@ -396,7 +396,7 @@ impl State {
             - payment_factor
     }
 
-    /// Gets the pool's solvency after opening a short.
+    /// Calculates the pool's solvency after opening a short.
     ///
     /// We can express the pool's solvency after opening a short of $x$ bonds as:
     ///
@@ -454,7 +454,7 @@ impl State {
         }
     }
 
-    /// Gets the derivative of the pool's solvency w.r.t. the short amount.
+    /// Calculates the derivative of the pool's solvency w.r.t. the short amount.
     ///
     /// The derivative is calculated as:
     ///
@@ -486,7 +486,7 @@ impl State {
         }
     }
 
-    /// Gets the derivative of the short principal $P(x)$ w.r.t. the amount of
+    /// Calculates the derivative of the short principal $P(x)$ w.r.t. the amount of
     /// bonds that are shorted $x$.
     ///
     /// The derivative is calculated as:

@@ -3,7 +3,7 @@ use fixed_point::FixedPoint;
 use crate::{State, YieldSpace};
 
 impl State {
-    /// Gets the long amount that will be opened for a given base amount.
+    /// Calculates the long amount that will be opened for a given base amount.
     ///
     /// The long amount $y(x)$ that a trader will receive is given by:
     ///
@@ -48,7 +48,7 @@ impl State {
         self.calculate_open_long(base_amount)
     }
 
-    /// Gets the spot price after opening a Hyperdrive long.
+    /// Calculates the spot price after opening a Hyperdrive long.
     pub fn calculate_spot_price_after_long(&self, base_amount: FixedPoint) -> FixedPoint {
         let bond_amount = self.calculate_open_long(base_amount);
         self.spot_price_after_long(base_amount, bond_amount)

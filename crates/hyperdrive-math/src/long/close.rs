@@ -32,7 +32,7 @@ impl State {
         flat + curve
     }
 
-    /// Gets the amount of shares the trader will receive after fees for closing a long
+    /// Calculates the amount of shares the trader will receive after fees for closing a long
     pub fn calculate_close_long<F: Into<FixedPoint>>(
         &self,
         bond_amount: F,

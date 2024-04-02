@@ -116,12 +116,12 @@ impl State {
         Self { config, info }
     }
 
-    /// Gets the pool's spot price.
+    /// Calculates the pool's spot price.
     pub fn calculate_spot_price(&self) -> FixedPoint {
         YieldSpace::calculate_spot_price(self)
     }
 
-    /// Gets the pool's spot rate.
+    /// Calculates the pool's spot rate.
     pub fn calculate_spot_rate(&self) -> FixedPoint {
         let annualized_time =
             self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
@@ -134,7 +134,7 @@ impl State {
         time - time % self.config.checkpoint_duration
     }
 
-    /// Gets the normalized time remaining
+    /// Calculates the normalized time remaining
     fn calculate_normalized_time_remaining(
         &self,
         maturity_time: U256,

@@ -5,7 +5,7 @@ use fixed_point_macros::{fixed, int256};
 use crate::{State, YieldSpace};
 
 impl State {
-    /// Gets the pool's max spot price.
+    /// Calculates the pool's max spot price.
     ///
     /// Hyperdrive has assertions to ensure that traders don't purchase bonds at
     /// negative interest rates. The maximum spot price that longs can push the
@@ -23,7 +23,7 @@ impl State {
             .mul_up(fixed!(1e18) - self.flat_fee())
     }
 
-    /// Gets the pool's solvency.
+    /// Calculates the pool's solvency.
     ///
     /// $$
     /// s = z - \tfrac{exposure}{c} - z_min
@@ -34,7 +34,7 @@ impl State {
             - self.minimum_share_reserves()
     }
 
-    /// Gets the max long that can be opened given a budget.
+    /// Calculates the max long that can be opened given a budget.
     ///
     /// We start by calculating the long that brings the pool's spot price to 1.
     /// If we are solvent at this point, then we're done. Otherwise, we approach
@@ -48,7 +48,7 @@ impl State {
         let budget = budget.into();
         let checkpoint_exposure = checkpoint_exposure.into();
 
-        // Get the maximum long that brings the spot price to 1. If the pool is
+        // Calculate the maximum long that brings the spot price to 1. If the pool is
         // solvent after opening this long, then we're done.
         let (absolute_max_base_amount, absolute_max_bond_amount) = self.absolute_max_long();
         if self
@@ -223,7 +223,7 @@ impl State {
         (absolute_max_base_amount, absolute_max_bond_amount)
     }
 
-    /// Gets an initial guess of the max long that can be opened. This is a
+    /// Calculates an initial guess of the max long that can be opened. This is a
     /// reasonable estimate that is guaranteed to be less than the true max
     /// long. We use this to get a reasonable starting point for Newton's
     /// method.
@@ -232,7 +232,7 @@ impl State {
         absolute_max_base_amount: FixedPoint,
         checkpoint_exposure: I256,
     ) -> FixedPoint {
-        // Get an initial estimate of the max long by using the spot price as
+        // Calculate an initial estimate of the max long by using the spot price as
         // our conservative price.
         let spot_price = self.calculate_spot_price();
         let guess = self.max_long_estimate(spot_price, spot_price, checkpoint_exposure);
@@ -305,7 +305,7 @@ impl State {
         estimate
     }
 
-    /// Gets the solvency of the pool $S(x)$ after a long is opened with a base
+    /// Calculates the solvency of the pool $S(x)$ after a long is opened with a base
     /// amount $x$.
     ///
     /// Since longs can net out with shorts in this checkpoint, we decrease
@@ -364,7 +364,7 @@ impl State {
         }
     }
 
-    /// Gets the negation of the derivative of the pool's solvency with respect
+    /// Calculates the negation of the derivative of the pool's solvency with respect
     /// to the base amount that the long pays.
     ///
     /// The derivative of the pool's solvency $S(x)$ with respect to the base
@@ -392,7 +392,7 @@ impl State {
         })
     }
 
-    /// Gets the derivative of [long_amount](long_amount) with respect to the
+    /// Calculates the derivative of [long_amount](long_amount) with respect to the
     /// base amount.
     ///
     /// We calculate the derivative of the long amount $y(x)$ as:
