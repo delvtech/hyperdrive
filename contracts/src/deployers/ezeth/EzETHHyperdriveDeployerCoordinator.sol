@@ -142,26 +142,12 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         IHyperdrive.PoolDeployConfig memory, // unused pool deploy config
         bytes memory // unused extra data
     ) internal view override returns (uint256) {
-        return _convertToBase(ONE);
-    }
-
-    /// @dev Convert an amount of vault shares to an amount of base.
-    /// @param _shareAmount The vault shares amount.
-    /// @return baseAmount The base amount.
-    function _convertToBase(
-        uint256 _shareAmount
-    ) internal view returns (uint256) {
         // Get the total TVL priced in ETH from restakeManager
         (, , uint256 totalTVL) = restakeManager.calculateTVLs();
 
         // Get the total supply of the ezETH token
         uint256 totalSupply = ezETH.totalSupply();
 
-        return
-            renzoOracle.calculateRedeemAmount(
-                _shareAmount,
-                totalSupply,
-                totalTVL
-            );
+        return renzoOracle.calculateRedeemAmount(ONE, totalSupply, totalTVL);
     }
 }
