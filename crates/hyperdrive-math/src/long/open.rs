@@ -43,11 +43,6 @@ impl State {
         long_amount - self.open_long_curve_fees(base_amount)
     }
 
-    #[deprecated(since = "0.4.0", note = "please use `calculate_open_long` instead")]
-    pub fn calculate_long_amount<F: Into<FixedPoint>>(&self, base_amount: F) -> FixedPoint {
-        self.calculate_open_long(base_amount)
-    }
-
     /// Calculates the spot price after opening a Hyperdrive long.
     pub fn calculate_spot_price_after_long(&self, base_amount: FixedPoint) -> FixedPoint {
         let bond_amount = self.calculate_open_long(base_amount);
