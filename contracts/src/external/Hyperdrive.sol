@@ -189,7 +189,7 @@ abstract contract Hyperdrive is
         uint256,
         IHyperdrive.Options calldata
     ) external returns (uint256) {
-        _delegate(target2);
+        _delegate(target1);
     }
 
     /// LPs ///
@@ -211,7 +211,7 @@ abstract contract Hyperdrive is
         uint256,
         IHyperdrive.Options calldata
     ) external payable returns (uint256) {
-        _delegate(target1);
+        _delegate(target4);
     }
 
     /// @inheritdoc IHyperdriveCore
@@ -220,7 +220,7 @@ abstract contract Hyperdrive is
         uint256,
         IHyperdrive.Options calldata
     ) external returns (uint256, uint256) {
-        _delegate(target1);
+        _delegate(target2);
     }
 
     /// @inheritdoc IHyperdriveCore
@@ -236,7 +236,7 @@ abstract contract Hyperdrive is
 
     /// @inheritdoc IHyperdriveCore
     function checkpoint(uint256, uint256) external {
-        _delegate(target4);
+        _delegate(target3);
     }
 
     /// Admin ///

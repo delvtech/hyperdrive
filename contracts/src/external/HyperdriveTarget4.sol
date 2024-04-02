@@ -30,6 +30,39 @@ abstract contract HyperdriveTarget4 is
         IHyperdrive.PoolConfig memory _config
     ) HyperdriveStorage(_config) {}
 
+    /// LPs ///
+
+    /// @notice Allows LPs to supply liquidity for LP shares.
+    /// @param _contribution The amount of capital to supply. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
+    /// @param _minLpSharePrice The minimum LP share price the LP is willing
+    ///        to accept for their shares. LPs incur negative slippage when
+    ///        adding liquidity if there is a net curve position in the market,
+    ///        so this allows LPs to protect themselves from high levels of
+    ///        slippage. The units of this quantity are either base or vault
+    ///        shares, depending on the value of `_options.asBase`.
+    /// @param _minApr The minimum APR at which the LP is willing to supply.
+    /// @param _maxApr The maximum APR at which the LP is willing to supply.
+    /// @param _options The options that configure how the operation is settled.
+    /// @return lpShares The number of LP tokens created.
+    function addLiquidity(
+        uint256 _contribution,
+        uint256 _minLpSharePrice,
+        uint256 _minApr,
+        uint256 _maxApr,
+        IHyperdrive.Options calldata _options
+    ) external payable returns (uint256) {
+        return
+            _addLiquidity(
+                _contribution,
+                _minLpSharePrice,
+                _minApr,
+                _maxApr,
+                _options
+            );
+    }
+
     /// Shorts ///
 
     /// @notice Opens a short position.
@@ -54,20 +87,5 @@ abstract contract HyperdriveTarget4 is
     ) external payable returns (uint256, uint256) {
         return
             _openShort(_bondAmount, _maxDeposit, _minVaultSharePrice, _options);
-    }
-
-    /// Checkpoints ///
-
-    /// @notice Allows anyone to mint a new checkpoint.
-    /// @param _checkpointTime The time of the checkpoint to create.
-    /// @param _maxIterations The number of iterations to use in the Newton's
-    ///        method component of `_distributeExcessIdleSafe`. This defaults to
-    ///        `LPMath.SHARE_PROCEEDS_MAX_ITERATIONS` if the specified value is
-    ///        smaller than the constant.
-    function checkpoint(
-        uint256 _checkpointTime,
-        uint256 _maxIterations
-    ) external {
-        _checkpoint(_checkpointTime, _maxIterations);
     }
 }
