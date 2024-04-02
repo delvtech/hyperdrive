@@ -348,69 +348,6 @@ contract LsETHHyperdriveTest is InstanceTest {
         );
     }
 
-    function test_close_short_with_lseth(
-        uint256 shortAmount,
-        int256 variableRate
-    ) external {
-        // Accrue interest for a term to ensure that the share price is greater
-        // than one.
-        advanceTime(POSITION_DURATION, 0.05e18);
-
-        // Bob opens a short by depositing LsETH.
-        vm.startPrank(bob);
-        shortAmount = shortAmount.normalizeToRange(
-            100 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxShort(hyperdrive)
-        );
-        RIVER.approve(address(hyperdrive), shortAmount);
-        (uint256 maturityTime, ) = openShort(bob, shortAmount, false);
-
-        // The term passes and interest accrues.
-        uint256 startingVaultSharePrice = hyperdrive
-            .getPoolInfo()
-            .vaultSharePrice;
-        variableRate = variableRate.normalizeToRange(0.01e18, 2.5e18);
-        advanceTime(POSITION_DURATION, variableRate);
-
-        // Get some balance information before closing the short.
-        (
-            uint256 totalBaseSupplyBefore,
-            uint256 totalShareSupplyBefore
-        ) = getSupply();
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-
-        // Bob closes his short with LsETH as the target asset. Bob's proceeds
-        // should be the variable interest that accrued on the shorted bonds.
-        uint256 expectedBaseProceeds = shortAmount.mulDivDown(
-            hyperdrive.getPoolInfo().vaultSharePrice - startingVaultSharePrice,
-            startingVaultSharePrice
-        );
-        uint256 shareProceeds = closeShort(
-            bob,
-            maturityTime,
-            shortAmount,
-            false
-        );
-        uint256 baseProceeds = RIVER.underlyingBalanceFromShares(shareProceeds);
-        assertLe(baseProceeds, expectedBaseProceeds + 10);
-        assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 100);
-
-        // Ensure that River aggregates and the token balances were updated
-        // correctly during the trade.
-        verifyWithdrawal(
-            bob,
-            baseProceeds,
-            false,
-            totalBaseSupplyBefore,
-            totalShareSupplyBefore,
-            bobBalancesBefore,
-            hyperdriveBalancesBefore
-        );
-    }
-
     /// Helpers ///
 
     function advanceTime(

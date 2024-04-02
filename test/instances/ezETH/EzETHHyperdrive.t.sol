@@ -493,10 +493,10 @@ contract EzETHHyperdriveTest is InstanceTest {
         );
     }
 
-    function test_close_short_with_ezeth(
+    function test_close_short_with_shares(
         uint256 shortAmount,
         int256 variableRate
-    ) external {
+    ) external override {
         // Accrue interest for a term to ensure that the share price is greater
         // than one.
         advanceTime(POSITION_DURATION_15_DAYS, 0.05e18);
