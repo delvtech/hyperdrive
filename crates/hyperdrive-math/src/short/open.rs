@@ -67,16 +67,6 @@ impl State {
         state.calculate_spot_price()
     }
 
-    #[deprecated(since = "0.4.0", note = "please use `calculate_open_short` instead")]
-    pub fn calculate_short_deposit(
-        &self,
-        short_amount: FixedPoint,
-        spot_price: FixedPoint,
-        open_vault_share_price: FixedPoint,
-    ) -> Result<FixedPoint> {
-        self.calculate_open_short(short_amount, spot_price, open_vault_share_price)
-    }
-
     /// Calculates the amount of short principal that the LPs need to pay to back a
     /// short before fees are taken into consideration, $P(x)$.
     ///
