@@ -195,4 +195,21 @@ mod tests {
         assert!(result.is_err());
         Ok(())
     }
+
+    // Tests open short with an amount larger than the maximum.
+    #[tokio::test]
+    async fn test_open_short_max_amount() -> Result<()> {
+        let mut rng = thread_rng();
+        let state = rng.gen::<State>();
+        let max_short_amount = state.calculate_max_short(U256::MAX, fixed!(0), 0, None, Some(7));
+        let result = std::panic::catch_unwind(|| {
+            state.calculate_open_short(
+                max_short_amount + fixed!(10e18),
+                state.calculate_spot_price(),
+                state.vault_share_price(),
+            )
+        });
+        assert!(result.is_err());
+        Ok(())
+    }
 }
