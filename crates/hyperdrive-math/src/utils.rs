@@ -98,7 +98,7 @@ pub fn calculate_initial_bond_reserves(
         .mul_down(inner)
 }
 
-/// Calculate the spot (aka fixed) rate for a given price and normalized position duration.
+/// Calculate the rate assuming a given price is constant for some annualized duration.
 ///
 /// We calculate the rate for a fixed length of time as:
 ///
@@ -109,7 +109,7 @@ pub fn calculate_initial_bond_reserves(
 /// where $p$ is the price and $t$ is the length of time that this price is
 /// assumed to be constant, in units of years. For example, if the price is
 /// constant for 6 months, then $t=0.5$.
-pub fn calculate_fixed_rate_from_price(
+pub fn calculate_rate_given_fixed_price(
     price: FixedPoint,
     fixed_price_duration_in_years: FixedPoint,
 ) -> FixedPoint {

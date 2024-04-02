@@ -119,12 +119,12 @@ impl State {
         YieldSpace::calculate_spot_price(self)
     }
 
-    /// Calculates the pool's spot rate.
+    /// Calculate the spot rate assuming a the pool's spot price is constant over its annualized position duration.
     pub fn calculate_spot_rate(&self) -> FixedPoint {
-        let annualized_time =
-            self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
-        let spot_price = self.calculate_spot_price();
-        calculate_fixed_rate_from_price(spot_price, annualized_time)
+        calculate_rate_given_fixed_price(
+            self.calculate_spot_price(),
+            self.annualized_position_duration(),
+        )
     }
 
     /// Converts a timestamp to the checkpoint timestamp that it corresponds to.
@@ -151,6 +151,10 @@ impl State {
 
     fn position_duration(&self) -> FixedPoint {
         self.config.position_duration.into()
+    }
+
+    fn annualized_position_duration(&self) -> FixedPoint {
+        self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365))
     }
 
     fn checkpoint_duration(&self) -> FixedPoint {

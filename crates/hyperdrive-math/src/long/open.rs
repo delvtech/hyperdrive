@@ -1,8 +1,6 @@
-use ethers::types::U256;
 use fixed_point::FixedPoint;
-use fixed_point_macros::fixed;
 
-use crate::{calculate_fixed_rate_from_price, State, YieldSpace};
+use crate::{calculate_rate_given_fixed_price, State, YieldSpace};
 
 impl State {
     /// Calculates the long amount that will be opened for a given base amount.
@@ -46,6 +44,7 @@ impl State {
     }
 
     /// Calculates the spot price after opening a Hyperdrive long.
+    /// If a bond_amount is not provided, then one is estimated using `calculate_open_long`.
     pub fn calculate_spot_price_after_long(
         &self,
         base_amount: FixedPoint,
@@ -63,28 +62,17 @@ impl State {
         state.calculate_spot_price()
     }
 
-    /// Calculate the spot (aka fixed) rate after a long has been opened.
-    ///
-    /// We calculate the rate for a fixed length of time as:
-    ///
-    /// $$
-    /// r(x) = (1 - p(x)) / (p(x) t)
-    /// $$
-    ///
-    /// where $p(x)$ is the spot price after a long for `delta_bonds`$= x$ and
-    /// t is the annualized position druation.
-    ///
-    /// In this case, we use the resulting spot price after a hypothetical long
-    /// for `base_amount` is opened.
+    /// Calculate the spot rate after a long has been opened.
+    /// If a bond_amount is not provided, then one is estimated using `calculate_open_long`.
     pub fn calculate_spot_rate_after_long(
         &self,
         base_amount: FixedPoint,
         bond_amount: Option<FixedPoint>,
     ) -> FixedPoint {
-        let annualized_time =
-            self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
-        let resulting_price = self.calculate_spot_price_after_long(base_amount, bond_amount);
-        calculate_fixed_rate_from_price(resulting_price, annualized_time)
+        calculate_rate_given_fixed_price(
+            self.calculate_spot_price_after_long(base_amount, bond_amount),
+            self.annualized_position_duration(),
+        )
     }
 }
 
