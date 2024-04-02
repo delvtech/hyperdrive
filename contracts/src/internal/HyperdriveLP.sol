@@ -540,34 +540,15 @@ abstract contract HyperdriveLP is
     /// @dev Updates the pool's liquidity and holds the pool's spot price constant.
     /// @param _shareReservesDelta The delta that should be applied to share reserves.
     function _updateLiquidity(int256 _shareReservesDelta) internal {
-        // Calculate the updated reserves.
-        uint256 shareReserves_ = _marketState.shareReserves;
-        int256 shareAdjustment_ = _marketState.shareAdjustment;
-        uint256 bondReserves_ = _marketState.bondReserves;
-        (
-            uint256 updatedShareReserves,
-            int256 updatedShareAdjustment,
-            uint256 updatedBondReserves
-        ) = LPMath.calculateUpdateLiquidity(
-                shareReserves_,
-                shareAdjustment_,
-                bondReserves_,
-                _minimumShareReserves,
-                _shareReservesDelta
-            );
-
-        // Update the market state.
-        if (updatedShareReserves != shareReserves_) {
-            _marketState.shareReserves = updatedShareReserves.toUint128();
-        }
-        if (updatedShareAdjustment != shareAdjustment_) {
-            _marketState.shareAdjustment = updatedShareAdjustment.toInt128();
-        }
-        if (updatedBondReserves != bondReserves_) {
-            _marketState.bondReserves = updatedBondReserves.toUint128();
+        // attempt updating the pool's liquidity, revert if the update fails
+        if (!_updateLiquiditySafe(_shareReservesDelta)) {
+            revert IHyperdrive.UpdateLiquidityFailed();
         }
     }
 
+    /// @dev Updates the pool's liquidity and holds the pool's spot price constant.
+    /// @param _shareReservesDelta The delta that should be applied to share reserves.
+    /// @return A flag indicating if the update succeeded.
     function _updateLiquiditySafe(
         int256 _shareReservesDelta
     ) internal returns (bool) {
@@ -587,7 +568,6 @@ abstract contract HyperdriveLP is
                 _minimumShareReserves,
                 _shareReservesDelta
             );
-
         if (!success) {
             return false;
         }
