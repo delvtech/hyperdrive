@@ -49,11 +49,15 @@ impl State {
         )
     }
 
-    /// Calculates the spot price after opening the short on the YieldSpace curve and
-    /// before calculating the fees.
-    pub fn calculate_spot_price_after_short(&self, bond_amount: FixedPoint) -> FixedPoint {
-        let shares_amount = self.calculate_shares_out_given_bonds_in_down(bond_amount);
-        self.spot_price_after_short(shares_amount * self.vault_share_price(), bond_amount)
+    /// Calculates the spot price after opening a Hyperdrive short.
+    pub fn calculate_spot_price_after_short(
+        &self,
+        short_amount: FixedPoint,
+        spot_price: FixedPoint,
+        open_vault_share_price: FixedPoint,
+    ) -> Result<FixedPoint> {
+        self.calculate_open_short(short_amount, spot_price, open_vault_share_price)
+            .map(|short_deposit| self.spot_price_after_short(short_amount, short_deposit))
     }
 
     fn spot_price_after_short(
