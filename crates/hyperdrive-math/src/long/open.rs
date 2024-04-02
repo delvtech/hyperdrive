@@ -3,7 +3,7 @@ use fixed_point::FixedPoint;
 use crate::{State, YieldSpace};
 
 impl State {
-    /// Gets the long amount that will be opened for a given base amount.
+    /// Calculates the long amount that will be opened for a given base amount.
     ///
     /// The long amount $y(x)$ that a trader will receive is given by:
     ///
@@ -32,9 +32,9 @@ impl State {
             let mut state: State = self.clone();
             state.info.bond_reserves -= long_amount.into();
             state.info.share_reserves += (base_amount / self.vault_share_price()).into();
-            state.get_spot_price()
+            state.calculate_spot_price()
         };
-        let max_spot_price = self.get_max_spot_price();
+        let max_spot_price = self.calculate_max_spot_price();
         if ending_spot_price > max_spot_price {
             // TODO would be nice to return a `Result` here instead of a panic.
             panic!("InsufficientLiquidity: Negative Interest");
@@ -44,12 +44,12 @@ impl State {
     }
 
     #[deprecated(since = "0.4.0", note = "please use `calculate_open_long` instead")]
-    pub fn get_long_amount<F: Into<FixedPoint>>(&self, base_amount: F) -> FixedPoint {
+    pub fn calculate_long_amount<F: Into<FixedPoint>>(&self, base_amount: F) -> FixedPoint {
         self.calculate_open_long(base_amount)
     }
 
-    /// Gets the spot price after opening a Hyperdrive long.
-    pub fn get_spot_price_after_long(&self, base_amount: FixedPoint) -> FixedPoint {
+    /// Calculates the spot price after opening a Hyperdrive long.
+    pub fn calculate_spot_price_after_long(&self, base_amount: FixedPoint) -> FixedPoint {
         let bond_amount = self.calculate_open_long(base_amount);
         self.spot_price_after_long(base_amount, bond_amount)
     }
@@ -64,7 +64,7 @@ impl State {
         state.info.share_reserves += (base_amount / state.vault_share_price()
             - self.open_long_governance_fee(base_amount) / state.vault_share_price())
         .into();
-        state.get_spot_price()
+        state.calculate_spot_price()
     }
 }
 
@@ -82,7 +82,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn fuzz_get_spot_price_after_long() -> Result<()> {
+    async fn fuzz_calculate_spot_price_after_long() -> Result<()> {
         // Spawn a test chain and create two agents -- Alice and Bob. Alice
         // is funded with a large amount of capital so that she can initialize
         // the pool. Bob is funded with a small amount of capital so that we
@@ -110,8 +110,11 @@ mod tests {
             alice.initialize(fixed_rate, contribution, None).await?;
 
             // Attempt to predict the spot price after opening a long.
-            let base_paid = rng.gen_range(fixed!(0.1e18)..=bob.get_max_long(None).await?);
-            let expected_spot_price = bob.get_state().await?.get_spot_price_after_long(base_paid);
+            let base_paid = rng.gen_range(fixed!(0.1e18)..=bob.calculate_max_long(None).await?);
+            let expected_spot_price = bob
+                .get_state()
+                .await?
+                .calculate_spot_price_after_long(base_paid);
 
             // Open the long.
             bob.open_long(base_paid, None, None).await?;
@@ -119,7 +122,7 @@ mod tests {
             // Verify that the predicted spot price is equal to the ending spot
             // price. These won't be exactly equal because the vault share price
             // increases between the prediction and opening the long.
-            let actual_spot_price = bob.get_state().await?.get_spot_price();
+            let actual_spot_price = bob.get_state().await?.calculate_spot_price();
             let delta = if actual_spot_price > expected_spot_price {
                 actual_spot_price - expected_spot_price
             } else {

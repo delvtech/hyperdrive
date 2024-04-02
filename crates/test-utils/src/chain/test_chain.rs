@@ -13,7 +13,7 @@ use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
 use hyperdrive_addresses::Addresses;
-use hyperdrive_math::get_time_stretch;
+use hyperdrive_math::calculate_time_stretch;
 use hyperdrive_wrappers::wrappers::{
     erc20_forwarder_factory::ERC20ForwarderFactory,
     erc20_mintable::ERC20Mintable,
@@ -489,8 +489,11 @@ impl TestChain {
             minimum_transaction_amount: uint256!(0.001e18),
             position_duration: U256::from(60 * 60 * 24 * 365), // 1 year
             checkpoint_duration: U256::from(60 * 60 * 24),     // 1 day
-            time_stretch: get_time_stretch(fixed!(0.05e18), U256::from(60 * 60 * 24 * 365).into())
-                .into(), // time stretch for 5% rate
+            time_stretch: calculate_time_stretch(
+                fixed!(0.05e18),
+                U256::from(60 * 60 * 24 * 365).into(),
+            )
+            .into(), // time stretch for 5% rate
             fee_collector: client.address(),
             sweep_collector: client.address(),
             governance: client.address(),
@@ -1323,7 +1326,7 @@ impl TestChainWithMocks {
 
 #[cfg(test)]
 mod tests {
-    use hyperdrive_math::get_time_stretch;
+    use hyperdrive_math::calculate_time_stretch;
     use hyperdrive_wrappers::wrappers::ihyperdrive::{Fees, IHyperdrive};
 
     use super::*;
@@ -1355,7 +1358,7 @@ mod tests {
         );
         assert_eq!(
             config.time_stretch,
-            get_time_stretch(
+            calculate_time_stretch(
                 test_chain_config.erc4626_hyperdrive_time_stretch_apr.into(),
                 test_chain_config
                     .erc4626_hyperdrive_position_duration
@@ -1397,7 +1400,7 @@ mod tests {
         );
         assert_eq!(
             config.time_stretch,
-            get_time_stretch(
+            calculate_time_stretch(
                 test_chain_config.steth_hyperdrive_time_stretch_apr.into(),
                 test_chain_config.steth_hyperdrive_position_duration.into(),
             )
@@ -1449,7 +1452,7 @@ mod tests {
         );
         assert_eq!(
             config.time_stretch,
-            get_time_stretch(
+            calculate_time_stretch(
                 test_chain_config.erc4626_hyperdrive_time_stretch_apr.into(),
                 test_chain_config
                     .erc4626_hyperdrive_position_duration
@@ -1491,7 +1494,7 @@ mod tests {
         );
         assert_eq!(
             config.time_stretch,
-            get_time_stretch(
+            calculate_time_stretch(
                 test_chain_config.steth_hyperdrive_time_stretch_apr.into(),
                 test_chain_config.steth_hyperdrive_position_duration.into(),
             )
