@@ -656,9 +656,10 @@ impl Agent<ChainClient, ChaCha8Rng> {
     pub async fn checkpoint(
         &self,
         checkpoint: U256,
+        max_iterations: U256,
         maybe_tx_options: Option<TxOptions>,
     ) -> Result<()> {
-        let tx = ContractCall_(self.hyperdrive.checkpoint(checkpoint))
+        let tx = ContractCall_(self.hyperdrive.checkpoint(checkpoint, max_iterations))
             .apply(self.pre_process_options(maybe_tx_options));
         tx.0.send().await?.await?;
         Ok(())
@@ -835,8 +836,12 @@ impl Agent<ChainClient, ChaCha8Rng> {
             self.provider
                 .request::<_, U256>("evm_mine", None::<()>)
                 .await?;
-            self.checkpoint(self.latest_checkpoint().await?, maybe_tx_options.clone())
-                .await?;
+            self.checkpoint(
+                self.latest_checkpoint().await?,
+                uint256!(0),
+                maybe_tx_options.clone(),
+            )
+            .await?;
             duration -= checkpoint_duration;
         }
 
@@ -848,8 +853,12 @@ impl Agent<ChainClient, ChaCha8Rng> {
         self.provider
             .request::<_, U256>("evm_mine", None::<()>)
             .await?;
-        self.checkpoint(self.latest_checkpoint().await?, maybe_tx_options)
-            .await?;
+        self.checkpoint(
+            self.latest_checkpoint().await?,
+            uint256!(0),
+            maybe_tx_options,
+        )
+        .await?;
 
         Ok(())
     }
