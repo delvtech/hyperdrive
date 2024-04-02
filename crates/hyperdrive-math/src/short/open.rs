@@ -45,13 +45,13 @@ impl State {
             open_vault_share_price = self.vault_share_price();
         }
 
-        // TODO solidity uses mulUp here, should we do that here as well?
-        let share_reserves_delta_in_shares =
-            self.vault_share_price() * self.short_principal(short_amount)?;
+        let share_reserves_delta_in_base = self
+            .vault_share_price()
+            .mul_up(self.short_principal(short_amount)?);
         // If the base proceeds of selling the bonds is greater than the bond
         // amount, then the trade occurred in the negative interest domain. We
         // revert in these pathological cases.
-        if share_reserves_delta_in_shares > short_amount {
+        if share_reserves_delta_in_base > short_amount {
             // TODO would be nice to return a `Result` here instead of a panic.
             panic!("InsufficientLiquidity: Negative Interest");
         }
@@ -61,7 +61,7 @@ impl State {
             short_amount.mul_div_down(self.vault_share_price(), open_vault_share_price)
                 + self.flat_fee() * short_amount
                 + self.curve_fee() * (fixed!(1e18) - spot_price) * short_amount
-                - share_reserves_delta_in_shares,
+                - share_reserves_delta_in_base,
         )
     }
 
