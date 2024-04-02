@@ -1022,6 +1022,7 @@ contract LPMathTest is HyperdriveTest {
                 params.presentValueParams.minimumShareReserves,
                 -int256(maxShareReservesDelta)
             );
+            assertEq(success, true);
             uint256 maxBondAmount;
             (maxBondAmount, success) = YieldSpaceMath
                 .calculateMaxBuyBondsOutSafe(
@@ -1145,7 +1146,7 @@ contract LPMathTest is HyperdriveTest {
                     params.presentValueParams.shareReserves,
                     params.presentValueParams.shareAdjustment,
                     params.presentValueParams.bondReserves
-                ) = LPMath.calculateUpdateLiquidity(
+                ) = lpMath_.calculateUpdateLiquidity(
                     params.originalShareReserves,
                     params.originalShareAdjustment,
                     params.originalBondReserves,
@@ -1252,7 +1253,7 @@ contract LPMathTest is HyperdriveTest {
                     params.presentValueParams.shareReserves,
                     params.presentValueParams.shareAdjustment,
                     params.presentValueParams.bondReserves
-                ) = LPMath.calculateUpdateLiquidity(
+                ) = lpMath_.calculateUpdateLiquidity(
                     params.originalShareReserves,
                     params.originalShareAdjustment,
                     params.originalBondReserves,
@@ -1359,7 +1360,7 @@ contract LPMathTest is HyperdriveTest {
                     params.presentValueParams.shareReserves,
                     params.presentValueParams.shareAdjustment,
                     params.presentValueParams.bondReserves
-                ) = LPMath.calculateUpdateLiquidity(
+                ) = lpMath_.calculateUpdateLiquidity(
                     params.originalShareReserves,
                     params.originalShareAdjustment,
                     params.originalBondReserves,
@@ -1466,7 +1467,7 @@ contract LPMathTest is HyperdriveTest {
                     params.presentValueParams.shareReserves,
                     params.presentValueParams.shareAdjustment,
                     params.presentValueParams.bondReserves
-                ) = LPMath.calculateUpdateLiquidity(
+                ) = lpMath.calculateUpdateLiquidity(
                     params.originalShareReserves,
                     params.originalShareAdjustment,
                     params.originalBondReserves,
@@ -1562,7 +1563,7 @@ contract LPMathTest is HyperdriveTest {
                     params.presentValueParams.shareReserves,
                     params.presentValueParams.shareAdjustment,
                     params.presentValueParams.bondReserves
-                ) = LPMath.calculateUpdateLiquidity(
+                ) = lpMath.calculateUpdateLiquidity(
                     params.originalShareReserves,
                     params.originalShareAdjustment,
                     params.originalBondReserves,
@@ -1658,7 +1659,7 @@ contract LPMathTest is HyperdriveTest {
                     params.presentValueParams.shareReserves,
                     params.presentValueParams.shareAdjustment,
                     params.presentValueParams.bondReserves
-                ) = LPMath.calculateUpdateLiquidity(
+                ) = lpMath.calculateUpdateLiquidity(
                     params.originalShareReserves,
                     params.originalShareAdjustment,
                     params.originalBondReserves,

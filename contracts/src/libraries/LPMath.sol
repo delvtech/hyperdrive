@@ -36,51 +36,6 @@ library LPMath {
     /// @return shareReserves The updated share reserves.
     /// @return shareAdjustment The updated share adjustment.
     /// @return bondReserves The updated bond reserves.
-    function calculateUpdateLiquidity(
-        uint256 _shareReserves,
-        int256 _shareAdjustment,
-        uint256 _bondReserves,
-        uint256 _minimumShareReserves,
-        int256 _shareReservesDelta
-    )
-        internal
-        pure
-        returns (
-            uint256 shareReserves,
-            int256 shareAdjustment,
-            uint256 bondReserves
-        )
-    {
-        bool success;
-        (
-            shareReserves,
-            shareAdjustment,
-            bondReserves,
-            success
-        ) = calculateUpdateLiquiditySafe(
-            _shareReserves,
-            _shareAdjustment,
-            _bondReserves,
-            _minimumShareReserves,
-            _shareReservesDelta
-        );
-        if (!success) {
-            revert IHyperdrive.UpdateLiquidityFailed();
-        }
-    }
-
-    /// @dev Calculates the new share reserves, share adjustment, and bond
-    ///      reserves after liquidity is added or removed from the pool. This
-    ///      update is made in such a way that the pool's spot price remains
-    ///      constant.
-    /// @param _shareReserves The current share reserves.
-    /// @param _shareAdjustment The current share adjustment.
-    /// @param _bondReserves The current bond reserves.
-    /// @param _minimumShareReserves The minimum share reserves.
-    /// @param _shareReservesDelta The change in share reserves.
-    /// @return shareReserves The updated share reserves.
-    /// @return shareAdjustment The updated share adjustment.
-    /// @return bondReserves The updated bond reserves.
     /// @return A flag indicating if the calculation succeeded.
     function calculateUpdateLiquiditySafe(
         uint256 _shareReserves,
