@@ -735,8 +735,7 @@ library LPMath {
             // values above this threshold are always invalid.
             shareProceeds = shareProceeds.min(_maxShareReservesDelta);
 
-            // Simulate applying the share proceeds to the reserves and
-            // recalculate the present value.
+            // Simulate applying the share proceeds to the reserves
             bool success;
             (
                 _params.presentValueParams.shareReserves,
@@ -757,6 +756,7 @@ library LPMath {
                 return 0;
             }
 
+            // recalculate the present value
             uint256 presentValue;
             (presentValue, success) = calculatePresentValueSafe(
                 _params.presentValueParams
