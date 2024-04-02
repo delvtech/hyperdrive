@@ -7,13 +7,18 @@ use crate::{State, YieldSpace};
 
 impl State {
     /// Gets a target long that can be opened given a budget to achieve a desired fixed rate.
-    pub fn get_targeted_long_with_budget<F: Into<FixedPoint>, I: Into<I256>>(
+    pub fn get_targeted_long_with_budget<
+        F1: Into<FixedPoint>,
+        F2: Into<FixedPoint>,
+        F3: Into<FixedPoint>,
+        I: Into<I256>,
+    >(
         &self,
-        budget: F,
-        target_rate: F,
+        budget: F1,
+        target_rate: F2,
         checkpoint_exposure: I,
         maybe_max_iterations: Option<usize>,
-        maybe_allowable_error: Option<F>,
+        maybe_allowable_error: Option<F3>,
     ) -> Result<FixedPoint> {
         let budget = budget.into();
         match self.get_targeted_long(
@@ -28,12 +33,12 @@ impl State {
     }
 
     /// Gets a target long that can be opened to achieve a desired fixed rate.
-    fn get_targeted_long<F: Into<FixedPoint>, I: Into<I256>>(
+    fn get_targeted_long<F1: Into<FixedPoint>, F2: Into<FixedPoint>, I: Into<I256>>(
         &self,
-        target_rate: F,
+        target_rate: F1,
         checkpoint_exposure: I,
         maybe_max_iterations: Option<usize>,
-        maybe_allowable_error: Option<F>,
+        maybe_allowable_error: Option<F2>,
     ) -> Result<FixedPoint> {
         let target_rate = target_rate.into();
         let checkpoint_exposure = checkpoint_exposure.into();
