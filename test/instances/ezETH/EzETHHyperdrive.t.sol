@@ -447,52 +447,6 @@ contract EzETHHyperdriveTest is InstanceTest {
         assertEq(address(bob).balance, ethBalanceBefore);
     }
 
-    function test_close_short_with_eth(
-        uint256 shortAmount,
-        int256 variableRate
-    ) external {
-        // Accrue interest for a term to ensure that the share price is greater
-        // than one.
-        advanceTime(POSITION_DURATION, 0.05e18);
-
-        // Calculate the maximum amount we can short.
-        shortAmount = shortAmount.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxShort(hyperdrive)
-        );
-
-        // Approve hyperdrive to use bob's ezEth.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        EZETH.approve(address(hyperdrive), shortAmount);
-
-        // Bob opens a short.
-        (uint256 maturityTime, ) = openShort(bob, shortAmount, false);
-
-        // NOTE: The variable rate must be greater than 0 since the unsupported
-        // check is only triggered if the shares amount is non-zero.
-        //
-        // The term passes and interest accrues.
-        variableRate = variableRate.normalizeToRange(0.01e18, 2.5e18);
-        advanceTime(POSITION_DURATION_15_DAYS, variableRate);
-
-        // Bob attempts to close his short with ETH as the target asset. This
-        // fails since ETH isn't supported as a withdrawal asset.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-        hyperdrive.closeShort(
-            maturityTime,
-            shortAmount,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-    }
-
     function test_close_short_with_shares(
         uint256 shortAmount,
         int256 variableRate

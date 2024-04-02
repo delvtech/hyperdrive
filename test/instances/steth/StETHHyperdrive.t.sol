@@ -353,44 +353,6 @@ contract StETHHyperdriveTest is InstanceTest {
         assertEq(address(bob).balance, ethBalanceBefore);
     }
 
-    function test_close_short_with_eth(
-        uint256 shortAmount,
-        int256 variableRate
-    ) external {
-        // Bob opens a short.
-        shortAmount = shortAmount.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxShort(hyperdrive)
-        );
-        uint256 balanceBefore = bob.balance;
-        vm.deal(bob, shortAmount);
-        (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
-        vm.deal(bob, balanceBefore - basePaid);
-
-        // NOTE: The variable rate must be greater than 0 since the unsupported
-        // check is only triggered if the shares amount is non-zero.
-        //
-        // The term passes and interest accrues.
-        variableRate = variableRate.normalizeToRange(0.01e18, 2.5e18);
-        advanceTime(POSITION_DURATION, variableRate);
-
-        // Bob attempts to close his short with ETH as the target asset. This
-        // fails since ETH isn't supported as a withdrawal asset.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-        hyperdrive.closeShort(
-            maturityTime,
-            shortAmount,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-    }
-
     function test_attack_long_steth() external {
         // Get some balance information before the deposit.
         LIDO.sharesOf(address(hyperdrive));

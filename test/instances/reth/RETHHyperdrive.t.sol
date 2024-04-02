@@ -371,63 +371,6 @@ contract RETHHyperdriveTest is InstanceTest {
         assertEq(address(bob).balance, ethBalanceBefore);
     }
 
-    function test_close_short_with_eth(
-        uint256 shortAmount,
-        int256 variableRate
-    ) external {
-        // Accrue interest for a term to ensure that the share price is greater
-        // than one.
-        advanceTime(POSITION_DURATION, 0.05e18);
-
-        // Bob opens a short by depositing rETH.
-        vm.startPrank(bob);
-        shortAmount = shortAmount.normalizeToRange(
-            100 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxShort(hyperdrive)
-        );
-        rocketTokenRETH.approve(address(hyperdrive), shortAmount);
-        (uint256 maturityTime, ) = openShort(bob, shortAmount, false);
-
-        // The term passes and interest accrues.
-        uint256 startingVaultSharePrice = hyperdrive
-            .getPoolInfo()
-            .vaultSharePrice;
-        variableRate = variableRate.normalizeToRange(0, 2.5e18);
-        advanceTime(POSITION_DURATION, variableRate);
-
-        // Get some balance information before closing the short.
-        (
-            uint256 totalBaseSupplyBefore,
-            uint256 totalShareSupplyBefore
-        ) = getSupply();
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-
-        // Bob closes his short with rETH as the target asset. Bob's proceeds
-        // should be the variable interest that accrued on the shorted bonds.
-        uint256 expectedBaseProceeds = shortAmount.mulDivDown(
-            hyperdrive.getPoolInfo().vaultSharePrice - startingVaultSharePrice,
-            startingVaultSharePrice
-        );
-
-        uint256 baseProceeds = closeShort(bob, maturityTime, shortAmount, true);
-
-        assertLe(baseProceeds, expectedBaseProceeds);
-        assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 100);
-
-        verifyWithdrawal(
-            bob,
-            baseProceeds,
-            true,
-            totalBaseSupplyBefore,
-            totalShareSupplyBefore,
-            bobBalancesBefore,
-            hyperdriveBalancesBefore
-        );
-    }
-
     /// Helpers ///
 
     function advanceTime(

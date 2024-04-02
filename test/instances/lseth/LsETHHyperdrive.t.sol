@@ -313,41 +313,6 @@ contract LsETHHyperdriveTest is InstanceTest {
         assertEq(address(bob).balance, ethBalanceBefore);
     }
 
-    function test_close_short_with_eth(
-        uint256 shortAmount,
-        int256 variableRate
-    ) external {
-        // Accrue interest for a term to ensure that the share price is greater
-        // than one.
-        advanceTime(POSITION_DURATION, 0.05e18);
-
-        // Bob opens a short by depositing LsETH.
-        vm.startPrank(bob);
-        shortAmount = shortAmount.normalizeToRange(
-            100 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxShort(hyperdrive)
-        );
-        RIVER.approve(address(hyperdrive), shortAmount);
-        (uint256 maturityTime, ) = openShort(bob, shortAmount, false);
-
-        // Bob attempts to close the short after the position
-        // duration for ETH. The interest rate range is limited because
-        // the test case not fail when there is zero accrued interest.
-        variableRate = variableRate.normalizeToRange(0.01e18, 2.5e18);
-        advanceTime(POSITION_DURATION, variableRate);
-        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-        hyperdrive.closeShort(
-            maturityTime,
-            shortAmount,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-    }
-
     /// Helpers ///
 
     function advanceTime(
