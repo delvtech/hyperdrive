@@ -111,7 +111,11 @@ mod tests {
         let mut rng = thread_rng();
         let state = rng.gen::<State>();
         let result = std::panic::catch_unwind(|| {
-            state.calculate_close_long(state.config.minimum_transaction_amount - 10, 0.into())
+            state.calculate_close_long(
+                state.config.minimum_transaction_amount - 10,
+                0.into(),
+                0.into(),
+            )
         });
         assert!(result.is_err());
         Ok(())

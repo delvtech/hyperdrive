@@ -233,8 +233,9 @@ mod tests {
         let result = std::panic::catch_unwind(|| {
             state.calculate_close_short(
                 (state.config.minimum_transaction_amount - 10).into(),
-                state.get_spot_price(),
+                state.calculate_spot_price(),
                 state.vault_share_price(),
+                0.into(),
                 0.into(),
             )
         });
