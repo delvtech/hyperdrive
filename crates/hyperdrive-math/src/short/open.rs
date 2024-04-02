@@ -57,7 +57,7 @@ impl State {
         open_vault_share_price: FixedPoint,
     ) -> Result<FixedPoint> {
         self.calculate_open_short(short_amount, spot_price, open_vault_share_price)
-            .map(|short_deposit| self.spot_price_after_short(short_amount, short_deposit))
+            .map(|short_deposit| self.spot_price_after_short(short_deposit, short_amount))
     }
 
     fn spot_price_after_short(
