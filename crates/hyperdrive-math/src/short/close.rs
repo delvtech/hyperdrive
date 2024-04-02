@@ -1,3 +1,4 @@
+use ethers::types::U256;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
@@ -7,10 +8,12 @@ impl State {
     fn calculate_close_short_flat_plus_curve<F: Into<FixedPoint>>(
         &self,
         bond_amount: F,
-        normalized_time_remaining: F,
+        maturity_time: U256,
+        current_time: U256,
     ) -> FixedPoint {
         let bond_amount = bond_amount.into();
-        let normalized_time_remaining = normalized_time_remaining.into();
+        let normalized_time_remaining =
+            self.calculate_normalized_time_remaining(maturity_time, current_time);
 
         // NOTE: We overestimate the trader's share payment to avoid sandwiches.
         //
@@ -68,18 +71,18 @@ impl State {
         bond_amount: F,
         open_vault_share_price: F,
         close_vault_share_price: F,
-        normalized_time_remaining: F,
+        maturity_time: U256,
+        current_time: U256,
     ) -> FixedPoint {
         let bond_amount = bond_amount.into();
         let open_vault_share_price = open_vault_share_price.into();
         let close_vault_share_price = close_vault_share_price.into();
-        let normalized_time_remaining = normalized_time_remaining.into();
 
         // Calculate flat + curve and subtract the fees from the trade.
-        let share_reserves_delta = self
-            .calculate_close_short_flat_plus_curve(bond_amount, normalized_time_remaining)
-            + self.close_short_curve_fee(bond_amount, normalized_time_remaining)
-            + self.close_short_flat_fee(bond_amount, normalized_time_remaining);
+        let share_reserves_delta =
+            self.calculate_close_short_flat_plus_curve(bond_amount, maturity_time, current_time)
+                + self.close_short_curve_fee(bond_amount, maturity_time, current_time)
+                + self.close_short_flat_fee(bond_amount, maturity_time, current_time);
 
         // Calculate the share proceeds owed to the short.
         self.calculate_short_proceeds(
@@ -156,10 +159,18 @@ mod tests {
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let in_ = rng.gen_range(fixed!(0)..=state.bond_reserves());
-            let normalized_time_remaining = rng.gen_range(fixed!(0)..=fixed!(1e18));
+            let maturity_time = state.position_duration();
+            let current_time = rng.gen_range(fixed!(0)..=maturity_time);
             let actual = panic::catch_unwind(|| {
-                state.calculate_close_short_flat_plus_curve(in_, normalized_time_remaining)
+                state.calculate_close_short_flat_plus_curve(
+                    in_,
+                    maturity_time.into(),
+                    current_time.into(),
+                )
             });
+
+            let normalized_time_remaining = state
+                .calculate_normalized_time_remaining(maturity_time.into(), current_time.into());
             match mock
                 .calculate_close_short(
                     state.effective_share_reserves().into(),

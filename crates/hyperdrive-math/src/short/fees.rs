@@ -1,3 +1,4 @@
+use ethers::types::U256;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
@@ -27,8 +28,12 @@ impl State {
     pub fn close_short_curve_fee(
         &self,
         bond_amount: FixedPoint,
-        normalized_time_remaining: FixedPoint,
+        maturity_time: U256,
+        current_time: U256,
     ) -> FixedPoint {
+        let normalized_time_remaining =
+            self.calculate_normalized_time_remaining(maturity_time, current_time);
+
         // ((1 - p) * phi_curve * d_y * t) / c
         self.curve_fee()
             * (fixed!(1e18) - self.get_spot_price())
@@ -40,8 +45,11 @@ impl State {
     pub fn close_short_flat_fee(
         &self,
         bond_amount: FixedPoint,
-        normalized_time_remaining: FixedPoint,
+        maturity_time: U256,
+        current_time: U256,
     ) -> FixedPoint {
+        let normalized_time_remaining =
+            self.calculate_normalized_time_remaining(maturity_time, current_time);
         // flat fee = (d_y * (1 - t) * phi_flat) / c
         bond_amount.mul_div_down(
             fixed!(1e18) - normalized_time_remaining,

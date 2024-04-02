@@ -27,6 +27,9 @@ impl Distribution<State> for Standard {
     // TODO: It may be better for this to be a uniform sampler and have a test
     // sampler that is more restrictive like this.
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> State {
+        let one_day_in_seconds = 60 * 60 * 24;
+        let one_hour_in_seconds = 60 * 60;
+
         let config = PoolConfig {
             base_token: Address::zero(),
             vault_shares_token: Address::zero(),
@@ -47,11 +50,14 @@ impl Distribution<State> for Standard {
             time_stretch: rng.gen_range(fixed!(0.005e18)..=fixed!(0.5e18)).into(),
             position_duration: rng
                 .gen_range(
-                    FixedPoint::from(60 * 60 * 24 * 91)..=FixedPoint::from(60 * 60 * 24 * 365),
+                    FixedPoint::from(91 * one_day_in_seconds)
+                        ..=FixedPoint::from(365 * one_day_in_seconds),
                 )
                 .into(),
             checkpoint_duration: rng
-                .gen_range(FixedPoint::from(60 * 60)..=FixedPoint::from(60 * 60 * 24))
+                .gen_range(
+                    FixedPoint::from(one_hour_in_seconds)..=FixedPoint::from(one_day_in_seconds),
+                )
                 .into(),
         };
         // We need the spot price to be less than or equal to 1, so we need to
@@ -128,15 +134,16 @@ impl State {
         time - time % self.config.checkpoint_duration
     }
 
-    pub fn time_remaining_scaled(
+    /// Gets the normalized time remaining
+    fn calculate_normalized_time_remaining(
         &self,
-        current_block_timestamp: U256,
         maturity_time: U256,
+        current_time: U256,
     ) -> FixedPoint {
-        let latest_checkpoint = self.to_checkpoint(current_block_timestamp) * uint256!(1e18);
+        let latest_checkpoint = self.to_checkpoint(current_time);
         if maturity_time > latest_checkpoint {
-            FixedPoint::from(maturity_time - latest_checkpoint)
-                / FixedPoint::from(U256::from(self.position_duration()) * uint256!(1e18))
+            // NOTE: Round down to underestimate the time remaining.
+            FixedPoint::from(maturity_time - latest_checkpoint).div_down(self.position_duration())
         } else {
             fixed!(0)
         }
@@ -246,5 +253,33 @@ impl YieldSpace for State {
 
     fn t(&self) -> FixedPoint {
         self.time_stretch()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use eyre::Result;
+    use rand::thread_rng;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_calculate_normalized_time_remaining() -> Result<()> {
+        // TODO: fuzz test against calculateTimeRemaining in MockHyperdrive.sol
+        let mut rng = thread_rng();
+        let mut state = rng.gen::<State>();
+
+        // Set a snapshot for the values used for calculating normalized time
+        // remaining
+        state.config.position_duration = fixed!(28209717).into();
+        state.config.checkpoint_duration = fixed!(43394).into();
+        let expected_time_remaining = fixed!(3544877816392);
+
+        let maturity_time = U256::from(100);
+        let current_time = U256::from(90);
+        let time_remaining = state.calculate_normalized_time_remaining(maturity_time, current_time);
+
+        assert_eq!(expected_time_remaining, time_remaining);
+        Ok(())
     }
 }
