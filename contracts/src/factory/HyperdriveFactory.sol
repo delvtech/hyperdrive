@@ -18,12 +18,16 @@ import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 contract HyperdriveFactory is IHyperdriveFactory {
     using FixedPointMath for uint256;
 
+    /// @dev Signifies an unlocked receive function, used by isReceiveLocked
+    uint256 private constant RECEIVE_UNLOCKED = 1;
+
+    /// @dev Signifies a locked receive function, used by isReceiveLocked
+    uint256 private constant RECEIVE_LOCKED = 2;
+
     /// @dev Locks the receive function. This can be used to prevent stuck ether
     ///      from ending up in the contract but still allowing refunds to be
-    ///      received.
-    ///      (1) - Unlocked
-    ///      (2) - Locked
-    uint256 private isReceiveLocked = 2;
+    ///      received. Defaults to `RECEIVE_LOCKED`
+    uint256 private isReceiveLocked = RECEIVE_LOCKED;
 
     /// @notice The governance address that updates the factory's configuration.
     address public governance;
@@ -286,7 +290,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
     /// @notice Allows ether to be sent to the contract. This is gated by a lock
     ///         to prevent ether from becoming stuck in the contract.
     receive() external payable {
-        if (isReceiveLocked == 2) {
+        if (isReceiveLocked == RECEIVE_LOCKED) {
             revert IHyperdriveFactory.ReceiveLocked();
         }
     }
@@ -672,7 +676,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
         isInstance[address(hyperdrive)] = true;
 
         // Initialize the Hyperdrive instance.
-        isReceiveLocked = 1;
+        isReceiveLocked = RECEIVE_UNLOCKED;
         IHyperdriveDeployerCoordinator(_deployerCoordinator).initialize{
             value: msg.value
         }(
@@ -684,7 +688,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
             _fixedAPR,
             _options
         );
-        isReceiveLocked = 2;
+        isReceiveLocked = RECEIVE_LOCKED;
 
         // Set the default pausers and transfer the governance status to the
         // hyperdrive governance address.
