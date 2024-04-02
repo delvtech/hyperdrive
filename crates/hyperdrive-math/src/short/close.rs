@@ -230,14 +230,14 @@ mod tests {
     async fn test_close_short_min_txn_amount() -> Result<()> {
         let mut rng = thread_rng();
         let state = rng.gen::<State>();
-        let result = std::panic::catch_unwind(|| 
+        let result = std::panic::catch_unwind(|| {
             state.calculate_close_short(
                 (state.config.minimum_transaction_amount - 10).into(),
                 state.get_spot_price(),
                 state.vault_share_price(),
                 0.into(),
             )
-        );
+        });
         assert!(result.is_err());
         Ok(())
     }
