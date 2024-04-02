@@ -3,14 +3,14 @@ use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
-use crate::get_effective_share_reserves;
+use crate::calculate_effective_share_reserves;
 
 pub trait YieldSpace {
     /// Info ///
 
     /// The effective share reserves.
     fn ze(&self) -> FixedPoint {
-        get_effective_share_reserves(self.z(), self.zeta())
+        calculate_effective_share_reserves(self.z(), self.zeta())
     }
 
     /// The share reserves.
@@ -33,7 +33,7 @@ pub trait YieldSpace {
 
     /// Core ///
 
-    fn get_spot_price(&self) -> FixedPoint {
+    fn calculate_spot_price(&self) -> FixedPoint {
         ((self.mu() * self.ze()) / self.y()).pow(self.t())
     }
 

@@ -36,7 +36,7 @@ impl State {
 
         // ((1 - p) * phi_curve * d_y * t) / c
         self.curve_fee()
-            * (fixed!(1e18) - self.get_spot_price())
+            * (fixed!(1e18) - self.calculate_spot_price())
             * bond_amount.mul_div_down(normalized_time_remaining, self.vault_share_price())
     }
 

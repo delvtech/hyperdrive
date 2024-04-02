@@ -2,7 +2,7 @@ use ethers::types::I256;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
-use crate::{get_effective_share_reserves, State, YieldSpace};
+use crate::{calculate_effective_share_reserves, State, YieldSpace};
 
 impl State {
     /// Gets the minimum price that the pool can support.
@@ -25,7 +25,7 @@ impl State {
     /// $$
     /// p = \left( \tfrac{\mu \cdot z_{min}}{y_{max}} \right)^{t_s}
     /// $$
-    pub fn get_min_price(&self) -> FixedPoint {
+    pub fn calculate_min_price(&self) -> FixedPoint {
         let y_max = (self.k_up()
             - (self.vault_share_price() / self.initial_vault_share_price())
                 * (self.initial_vault_share_price() * self.minimum_share_reserves())
@@ -48,7 +48,7 @@ impl State {
     /// on the realized price that the short will pay. This is used to help the
     /// algorithm converge faster in real world situations. If this is `None`,
     /// then we'll use the theoretical worst case realized price.
-    pub fn get_max_short<F1: Into<FixedPoint>, F2: Into<FixedPoint>, I: Into<I256>>(
+    pub fn calculate_max_short<F1: Into<FixedPoint>, F2: Into<FixedPoint>, I: Into<I256>>(
         &self,
         budget: F1,
         open_vault_share_price: F2,
@@ -68,7 +68,7 @@ impl State {
         // Get the spot price and the open share price. If the open share price
         // is zero, then we'll use the current share price since the checkpoint
         // hasn't been minted yet.
-        let spot_price = self.get_spot_price();
+        let spot_price = self.calculate_spot_price();
         let open_vault_share_price = if open_vault_share_price != fixed!(0) {
             open_vault_share_price
         } else {
@@ -240,7 +240,7 @@ impl State {
             //                              =>
             // y' = (k - (c / mu) * (mu * (z' - zeta)) ** (1 - t_s)) ** (1 / (1 - t_s))
             let optimal_effective_share_reserves =
-                get_effective_share_reserves(optimal_share_reserves, self.share_adjustment());
+                calculate_effective_share_reserves(optimal_share_reserves, self.share_adjustment());
             let optimal_bond_reserves = self.k_down()
                 - self
                     .vault_share_price()
@@ -360,7 +360,7 @@ impl State {
         let estimate_price = spot_price;
         let checkpoint_exposure =
             FixedPoint::from(checkpoint_exposure.max(I256::zero())) / self.vault_share_price();
-        (self.vault_share_price() * (self.get_solvency() + checkpoint_exposure))
+        (self.vault_share_price() * (self.calculate_solvency() + checkpoint_exposure))
             / (estimate_price - self.curve_fee() * (fixed!(1e18) - spot_price)
                 + self.governance_lp_fee() * self.curve_fee() * (fixed!(1e18) - spot_price))
     }
@@ -546,14 +546,14 @@ mod tests {
 
     use super::*;
 
-    /// This test differentially fuzzes the `get_max_short` function against the
+    /// This test differentially fuzzes the `calculate_max_short` function against the
     /// Solidity analogue `calculateMaxShort`. `calculateMaxShort` doesn't take
     /// a trader's budget into account, so it only provides a subset of
-    /// `get_max_short`'s functionality. With this in mind, we provide
-    /// `get_max_short` with a budget of `U256::MAX` to ensure that the two
+    /// `calculate_max_short`'s functionality. With this in mind, we provide
+    /// `calculate_max_short` with a budget of `U256::MAX` to ensure that the two
     /// functions are equivalent.
     #[tokio::test]
-    async fn fuzz_get_max_short_no_budget() -> Result<()> {
+    async fn fuzz_calculate_max_short_no_budget() -> Result<()> {
         let chain = TestChainWithMocks::new(1).await?;
 
         // Fuzz the rust and solidity implementations against each other.
@@ -570,7 +570,7 @@ mod tests {
             };
             let max_iterations = 7;
             let actual = panic::catch_unwind(|| {
-                state.get_max_short(
+                state.calculate_max_short(
                     U256::MAX,
                     fixed!(0),
                     checkpoint_exposure,
@@ -613,11 +613,11 @@ mod tests {
 
     #[traced_test]
     #[tokio::test]
-    async fn test_get_max_short() -> Result<()> {
+    async fn test_calculate_max_short() -> Result<()> {
         // Spawn a test chain and create two agents -- Alice and Bob. Alice
         // is funded with a large amount of capital so that she can initialize
         // the pool. Bob is funded with a small amount of capital so that we
-        // can test `get_max_short` when budget is the primary constraint.
+        // can test `calculate_max_short` when budget is the primary constraint.
         let mut rng = thread_rng();
         let chain = TestChain::new(2).await?;
         let (alice, bob) = (chain.accounts()[0].clone(), chain.accounts()[1].clone());
@@ -664,7 +664,7 @@ mod tests {
             let checkpoint_exposure = alice
                 .get_checkpoint_exposure(state.to_checkpoint(alice.now().await?))
                 .await?;
-            let global_max_short = state.get_max_short(
+            let global_max_short = state.calculate_max_short(
                 U256::MAX,
                 open_vault_share_price,
                 checkpoint_exposure,
@@ -676,7 +676,7 @@ mod tests {
             // of slippage to account for interest accrual between the time the
             // calculation is performed and the transaction is submitted.
             let slippage_tolerance = fixed!(0.0001e18);
-            let max_short = bob.get_max_short(Some(slippage_tolerance)).await?;
+            let max_short = bob.calculate_max_short(Some(slippage_tolerance)).await?;
             bob.open_short(max_short, None, None).await?;
 
             // The max short should either be equal to the global max short in

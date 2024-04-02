@@ -52,7 +52,7 @@ impl State {
 
     /// Gets the spot price after opening the short on the YieldSpace curve and
     /// before calculating the fees.
-    pub fn get_spot_price_after_short(&self, bond_amount: FixedPoint) -> FixedPoint {
+    pub fn calculate_spot_price_after_short(&self, bond_amount: FixedPoint) -> FixedPoint {
         let shares_amount = self.calculate_shares_out_given_bonds_in_down(bond_amount);
         self.spot_price_after_short(shares_amount * self.vault_share_price(), bond_amount)
     }
@@ -65,11 +65,11 @@ impl State {
         let mut state: State = self.clone();
         state.info.bond_reserves += bond_amount.into();
         state.info.share_reserves -= (base_amount / state.vault_share_price()).into();
-        state.get_spot_price()
+        state.calculate_spot_price()
     }
 
     #[deprecated(since = "0.4.0", note = "please use `calculate_open_short` instead")]
-    pub fn get_short_deposit(
+    pub fn calculate_short_deposit(
         &self,
         short_amount: FixedPoint,
         spot_price: FixedPoint,
@@ -106,14 +106,14 @@ mod tests {
 
     use super::*;
 
-    /// This test differentially fuzzes the `get_max_short` function against the
+    /// This test differentially fuzzes the `calculate_max_short` function against the
     /// Solidity analogue `calculateMaxShort`. `calculateMaxShort` doesn't take
     /// a trader's budget into account, so it only provides a subset of
-    /// `get_max_short`'s functionality. With this in mind, we provide
-    /// `get_max_short` with a budget of `U256::MAX` to ensure that the two
+    /// `calculate_max_short`'s functionality. With this in mind, we provide
+    /// `calculate_max_short` with a budget of `U256::MAX` to ensure that the two
     /// functions are equivalent.
     #[tokio::test]
-    async fn fuzz_get_max_short_no_budget() -> Result<()> {
+    async fn fuzz_calculate_max_short_no_budget() -> Result<()> {
         let chain = TestChainWithMocks::new(1).await?;
 
         // Fuzz the rust and solidity implementations against each other.
@@ -130,7 +130,7 @@ mod tests {
             };
             let max_iterations = 7;
             let actual = panic::catch_unwind(|| {
-                state.get_max_short(
+                state.calculate_max_short(
                     U256::MAX,
                     fixed!(0),
                     checkpoint_exposure,

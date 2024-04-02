@@ -117,15 +117,15 @@ impl State {
     }
 
     /// Gets the pool's spot price.
-    pub fn get_spot_price(&self) -> FixedPoint {
-        YieldSpace::get_spot_price(self)
+    pub fn calculate_spot_price(&self) -> FixedPoint {
+        YieldSpace::calculate_spot_price(self)
     }
 
     /// Gets the pool's spot rate.
-    pub fn get_spot_rate(&self) -> FixedPoint {
+    pub fn calculate_spot_rate(&self) -> FixedPoint {
         let annualized_time =
             self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
-        let spot_price = self.get_spot_price();
+        let spot_price = self.calculate_spot_price();
         (fixed!(1e18) - spot_price) / (spot_price * annualized_time)
     }
 
@@ -198,7 +198,7 @@ impl State {
     }
 
     fn effective_share_reserves(&self) -> FixedPoint {
-        get_effective_share_reserves(self.share_reserves(), self.share_adjustment())
+        calculate_effective_share_reserves(self.share_reserves(), self.share_adjustment())
     }
 
     fn bond_reserves(&self) -> FixedPoint {
