@@ -126,9 +126,9 @@ impl State {
     /// Gets the pool's spot rate.
     pub fn get_spot_rate(&self) -> FixedPoint {
         get_spot_rate(
-            self.ze(),
-            self.y(),
-            self.mu(),
+            self.effective_share_reserves(),
+            self.bond_reserves(),
+            self.initial_vault_share_price(),
             self.t(),
             self.position_duration(),
         )

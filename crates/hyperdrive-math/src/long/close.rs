@@ -31,7 +31,7 @@ fn calculate_close_long_flat_plus_curve<F: Into<FixedPoint>>(
     let flat = dy.mul_div_down(fixed!(1e18) - tr, c);
 
     // Calculate the curve part of the trade
-    let curve = if t > fixed!(0) {
+    let curve = if tr > fixed!(0) {
         let curve_bonds_in = dy * tr;
         calculate_shares_out_given_bonds_in_down(ze, y, c, mu, t, curve_bonds_in)
     } else {
@@ -80,25 +80,15 @@ impl State {
         maturity_time: U256,
         current_time: U256,
     ) -> FixedPoint {
-        let bond_amount = bond_amount.into();
-        let normalized_time_remaining =
-            self.calculate_normalized_time_remaining(maturity_time, current_time);
-
-        // Calculate the flat part of the trade
-        let flat = bond_amount.mul_div_down(
-            fixed!(1e18) - normalized_time_remaining,
+        calculate_close_long_flat_plus_curve(
+            self.effective_share_reserves(),
+            self.bond_reserves(),
             self.vault_share_price(),
-        );
-
-        // Calculate the curve part of the trade
-        let curve = if normalized_time_remaining > fixed!(0) {
-            let curve_bonds_in = bond_amount * normalized_time_remaining;
-            self.calculate_shares_out_given_bonds_in_down(curve_bonds_in)
-        } else {
-            fixed!(0)
-        };
-
-        flat + curve
+            self.initial_vault_share_price(),
+            self.t(),
+            bond_amount.into(),
+            self.calculate_normalized_time_remaining(maturity_time, current_time),
+        )
     }
 
     /// Gets the amount of shares the trader will receive after fees for closing a long
