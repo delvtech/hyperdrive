@@ -420,7 +420,7 @@ contract OpenShortTest is HyperdriveTest {
         uint256 snapshotId = vm.snapshot();
         uint256 shortAmount = 100_000e18;
         {
-            hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+            hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
             advanceTime(
                 hyperdrive.getPoolConfig().checkpointDuration.mulDown(0.5e18),
                 0
@@ -433,7 +433,7 @@ contract OpenShortTest is HyperdriveTest {
         variableRate = variableRate.normalizeToRange(-100e18, 0);
         uint256 basePaid;
         {
-            hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+            hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
             advanceTime(
                 hyperdrive.getPoolConfig().checkpointDuration.mulDown(0.5e18),
                 variableRate

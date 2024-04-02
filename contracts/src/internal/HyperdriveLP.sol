@@ -490,6 +490,25 @@ abstract contract HyperdriveLP is
     function _distributeExcessIdleSafe(
         uint256 _vaultSharePrice
     ) internal returns (bool) {
+        return
+            _distributeExcessIdleSafe(
+                _vaultSharePrice,
+                LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
+            );
+    }
+
+    /// @dev Distribute as much of the excess idle as possible to the withdrawal
+    ///      pool while holding the LP share price constant.
+    /// @param _vaultSharePrice The current vault share price.
+    /// @param _maxIterations The number of iterations to use in the Newton's
+    ///        method component of `_distributeExcessIdleSafe`. This defaults to
+    ///        `LPMath.SHARE_PROCEEDS_MAX_ITERATIONS` if the specified value is
+    ///        smaller than the constant.
+    /// @return A failure flag indicating if the calculation succeeded.
+    function _distributeExcessIdleSafe(
+        uint256 _vaultSharePrice,
+        uint256 _maxIterations
+    ) internal returns (bool) {
         // If there are no withdrawal shares, then there is nothing to
         // distribute.
         uint256 withdrawalSharesTotalSupply = _totalSupply[
@@ -522,7 +541,7 @@ abstract contract HyperdriveLP is
         // Calculate the amount of withdrawal shares that should be redeemed
         // and their share proceeds.
         (uint256 withdrawalSharesRedeemed, uint256 shareProceeds) = LPMath
-            .calculateDistributeExcessIdle(params);
+            .calculateDistributeExcessIdle(params, _maxIterations);
 
         // Update the withdrawal pool's state.
         _withdrawPool.readyToWithdraw += withdrawalSharesRedeemed.toUint128();

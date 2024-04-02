@@ -11,13 +11,13 @@ contract CheckpointTest is HyperdriveTest {
 
     function test_checkpoint_failure_future_checkpoint() external {
         vm.expectRevert(IHyperdrive.InvalidCheckpointTime.selector);
-        hyperdrive.checkpoint(block.timestamp + CHECKPOINT_DURATION);
+        hyperdrive.checkpoint(block.timestamp + CHECKPOINT_DURATION, 0);
     }
 
     function test_checkpoint_failure_invalid_checkpoint_time() external {
         uint256 checkpointTime = HyperdriveUtils.latestCheckpoint(hyperdrive);
         vm.expectRevert(IHyperdrive.InvalidCheckpointTime.selector);
-        hyperdrive.checkpoint(checkpointTime + 1);
+        hyperdrive.checkpoint(checkpointTime + 1, 0);
     }
 
     function test_checkpoint_preset_checkpoint() external {
@@ -39,7 +39,7 @@ contract CheckpointTest is HyperdriveTest {
 
         // Create a checkpoint.
         uint256 aprBefore = HyperdriveUtils.calculateSpotAPR(hyperdrive);
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
 
         // Ensure that an event wasn't emitted since this checkpoint was already
         // created.
@@ -80,7 +80,7 @@ contract CheckpointTest is HyperdriveTest {
 
         // Create a checkpoint.
         uint256 aprBefore = HyperdriveUtils.calculateSpotAPR(hyperdrive);
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
 
         // Ensure that the correct event was emitted.
         verifyCheckpointEvent(
@@ -118,7 +118,7 @@ contract CheckpointTest is HyperdriveTest {
         vm.recordLogs();
 
         // Create a checkpoint.
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
 
         // Ensure that the correct event was emitted.
         verifyCheckpointEvent(
@@ -156,7 +156,7 @@ contract CheckpointTest is HyperdriveTest {
         initialize(alice, 0.05e18, 500_000_000e18);
 
         // Create a checkpoint.
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
 
         // Update the share price.
         MockHyperdrive(address(hyperdrive)).accrue(CHECKPOINT_DURATION, .1e18);
@@ -168,7 +168,7 @@ contract CheckpointTest is HyperdriveTest {
         uint256 previousCheckpoint = HyperdriveUtils.latestCheckpoint(
             hyperdrive
         ) - hyperdrive.getPoolConfig().checkpointDuration;
-        hyperdrive.checkpoint(previousCheckpoint);
+        hyperdrive.checkpoint(previousCheckpoint, 0);
 
         // Ensure that the correct event was emitted.
         uint256 previousCheckpointSharePrice = hyperdrive

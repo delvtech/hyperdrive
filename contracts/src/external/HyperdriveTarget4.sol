@@ -60,7 +60,14 @@ abstract contract HyperdriveTarget4 is
 
     /// @notice Allows anyone to mint a new checkpoint.
     /// @param _checkpointTime The time of the checkpoint to create.
-    function checkpoint(uint256 _checkpointTime) external {
-        _checkpoint(_checkpointTime);
+    /// @param _maxIterations The number of iterations to use in the Newton's
+    ///        method component of `_distributeExcessIdleSafe`. This defaults to
+    ///        `LPMath.SHARE_PROCEEDS_MAX_ITERATIONS` if the specified value is
+    ///        smaller than the constant.
+    function checkpoint(
+        uint256 _checkpointTime,
+        uint256 _maxIterations
+    ) external {
+        _checkpoint(_checkpointTime, _maxIterations);
     }
 }

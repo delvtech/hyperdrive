@@ -22,7 +22,11 @@ library LPMath {
 
     /// @dev The minimum tolerance for the share proceeds calculation to
     ///      short-circuit.
-    uint256 internal constant SHARE_PROCEEDS_MIN_TOLERANCE = 1e9;
+    uint256 internal constant SHARE_PROCEEDS_SHORT_CIRCUIT_TOLERANCE = 1e9;
+
+    /// @dev The minimum tolerance for the share proceeds calculation to
+    ///      succeed.
+    uint256 internal constant SHARE_PROCEEDS_TOLERANCE = 1e14;
 
     /// @dev Calculates the new share reserves, share adjustment, and bond
     ///      reserves after liquidity is added or removed from the pool. This
@@ -529,10 +533,14 @@ library LPMath {
     ///         method if `y_l * t_l != y_s * t_s` or directly otherwise.
     ///      5. Return `dw` and `dz`.
     /// @param _params The parameters for the distribute excess idle.
+    /// @param _maxIterations The number of iterations to use in the share
+    ///        proceeds. This defaults to `LPMath.SHARE_PROCEEDS_MAX_ITERATIONS`
+    ///        if the specified value is smaller than the constant.
     /// @return The amount of withdrawal shares that can be redeemed.
     /// @return The share proceeds the withdrawal pool should receive.
     function calculateDistributeExcessIdle(
-        DistributeExcessIdleParams memory _params
+        DistributeExcessIdleParams memory _params,
+        uint256 _maxIterations
     ) internal pure returns (uint256, uint256) {
         // Steps 1 and 2: Calculate the maximum amount the share reserves can be
         // debited. If the effective share reserves or the maximum share
@@ -591,7 +599,8 @@ library LPMath {
         uint256 shareProceeds = calculateDistributeExcessIdleShareProceeds(
             _params,
             originalEffectiveShareReserves,
-            maxShareReservesDelta
+            maxShareReservesDelta,
+            _maxIterations
         );
         if (shareProceeds == 0) {
             return (0, 0);
@@ -692,11 +701,15 @@ library LPMath {
     /// @param _maxShareReservesDelta The maximum change in the share reserves
     ///        that can result from distributing excess idle. This provides an
     ///        upper bound on the share proceeds returned from this calculation.
+    /// @param _maxIterations The number of iterations to use in the share
+    ///        proceeds. This defaults to `LPMath.SHARE_PROCEEDS_MAX_ITERATIONS`
+    ///        if the specified value is smaller than the constant.
     /// @return The share proceeds to distribute to the withdrawal pool.
     function calculateDistributeExcessIdleShareProceeds(
         DistributeExcessIdleParams memory _params,
         uint256 _originalEffectiveShareReserves,
-        uint256 _maxShareReservesDelta
+        uint256 _maxShareReservesDelta,
+        uint256 _maxIterations
     ) internal pure returns (uint256) {
         // Calculate the LP total supply.
         uint256 lpTotalSupply = _params.activeLpTotalSupply +
@@ -730,7 +743,11 @@ library LPMath {
         // Newton's method will terminate as soon as the current iteration is
         // within the minimum tolerance or the maximum number of iterations has
         // been reached.
-        for (uint256 i = 0; i < SHARE_PROCEEDS_MAX_ITERATIONS; ) {
+        int256 lastDelta;
+        if (_maxIterations < SHARE_PROCEEDS_MAX_ITERATIONS) {
+            _maxIterations = SHARE_PROCEEDS_MAX_ITERATIONS;
+        }
+        for (uint256 i = 0; i < _maxIterations; ) {
             // Clamp the share proceeds to the max share reserves delta since
             // values above this threshold are always invalid.
             shareProceeds = shareProceeds.min(_maxShareReservesDelta);
@@ -768,7 +785,7 @@ library LPMath {
                     lpTotalSupply
                 )
             ) {
-                break;
+                return shareProceeds;
             }
 
             // If the pool is net long, we can solve for the next iteration of
@@ -838,7 +855,7 @@ library LPMath {
                             params.presentValueParams.shareAdjustment,
                             params.presentValueParams.bondReserves,
                             params.presentValueParams.minimumShareReserves,
-                            ONE - _params.presentValueParams.timeStretch,
+                            ONE - params.presentValueParams.timeStretch,
                             params.presentValueParams.vaultSharePrice,
                             params.presentValueParams.initialVaultSharePrice
                         );
@@ -887,15 +904,23 @@ library LPMath {
 
             // NOTE: Round the delta down to avoid overshooting.
             //
-            // We calculate the updated share proceeds `x_n+1` by proceeding
-            // with Newton's method. This is given by:
-            //
-            // x_n+1 = x_n - F(x_n) / F'(x_n)
+            // Calculate the objective functions value. If the value's magnitude
+            // is greater than the previous iteration, we break out of the loop
+            // since Newton's method has begun to diverge.
             int256 delta = presentValue.mulDown(lpTotalSupply).toInt256() -
                 _params
                     .startingPresentValue
                     .mulUp(_params.activeLpTotalSupply)
                     .toInt256();
+            if (lastDelta != 0 && delta.abs() > lastDelta.abs()) {
+                break;
+            }
+            lastDelta = delta;
+
+            // We calculate the updated share proceeds `x_n+1` by proceeding
+            // with Newton's method. This is given by:
+            //
+            // x_n+1 = x_n - F(x_n) / F'(x_n)
             if (delta > 0) {
                 // NOTE: Round the quotient down to avoid overshooting.
                 shareProceeds =
@@ -923,6 +948,48 @@ library LPMath {
             unchecked {
                 ++i;
             }
+        }
+
+        // Simulate applying the share proceeds to the reserves and
+        // recalculate the present value.
+        bool success_;
+        (
+            _params.presentValueParams.shareReserves,
+            _params.presentValueParams.shareAdjustment,
+            _params.presentValueParams.bondReserves,
+            success_
+        ) = calculateUpdateLiquiditySafe(
+            _params.originalShareReserves,
+            _params.originalShareAdjustment,
+            _params.originalBondReserves,
+            _params.presentValueParams.minimumShareReserves,
+            -shareProceeds.toInt256()
+        );
+        if (!success_) {
+            // NOTE: If the updated reserves can't be calculated,  we can't
+            // continue the calculation. Return 0 to indicate that the share
+            // proceeds couldn't be calculated.
+            return 0;
+        }
+        uint256 presentValue_ = calculatePresentValue(
+            _params.presentValueParams
+        );
+
+        // Verify that the LP share price was conserved within a reasonable
+        // tolerance.
+        if (
+            // NOTE: Round up to make the check stricter.
+            presentValue_.divUp(_params.activeLpTotalSupply) +
+                SHARE_PROCEEDS_TOLERANCE <
+            _params.startingPresentValue.divDown(lpTotalSupply) ||
+            // NOTE: Round down to make the check stricter.
+            presentValue_.divDown(_params.activeLpTotalSupply) >=
+            _params.startingPresentValue.divUp(lpTotalSupply) +
+                SHARE_PROCEEDS_TOLERANCE
+        ) {
+            // NOTE: Return 0 to indicate that the share proceeds couldn't be
+            // calculated.
+            return 0;
         }
 
         return shareProceeds;
@@ -1056,7 +1123,7 @@ library LPMath {
             // NOTE: Round the LHS up to make the check stricter.
             _presentValue.divUp(_params.activeLpTotalSupply) <=
             // NOTE: Round the RHS down to make the check stricter.
-            (ONE + SHARE_PROCEEDS_MIN_TOLERANCE).mulDivDown(
+            (ONE + SHARE_PROCEEDS_SHORT_CIRCUIT_TOLERANCE).mulDivDown(
                 _params.startingPresentValue,
                 _lpTotalSupply
             );

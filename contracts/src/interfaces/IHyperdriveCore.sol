@@ -166,7 +166,14 @@ interface IHyperdriveCore is IMultiTokenCore {
 
     /// @notice Attempts to mint a checkpoint with the specified checkpoint time.
     /// @param _checkpointTime The time of the checkpoint to create.
-    function checkpoint(uint256 _checkpointTime) external;
+    /// @param _maxIterations The number of iterations to use in the Newton's
+    ///        method component of `_distributeExcessIdleSafe`. This defaults to
+    ///        `LPMath.SHARE_PROCEEDS_MAX_ITERATIONS` if the specified value is
+    ///        smaller than the constant.
+    function checkpoint(
+        uint256 _checkpointTime,
+        uint256 _maxIterations
+    ) external;
 
     /// Admin ///
 
