@@ -552,7 +552,7 @@ abstract contract HyperdriveLP is
     function _updateLiquiditySafe(
         int256 _shareReservesDelta
     ) internal returns (bool) {
-        // Calculate the updated reserves.
+        // Calculate the updated reserves, return false if the calculation fails
         uint256 shareReserves_ = _marketState.shareReserves;
         int256 shareAdjustment_ = _marketState.shareAdjustment;
         uint256 bondReserves_ = _marketState.bondReserves;
@@ -572,7 +572,7 @@ abstract contract HyperdriveLP is
             return false;
         }
 
-        // Update the market state.
+        // Update the market state and return true since the update was successful
         if (updatedShareReserves != shareReserves_) {
             _marketState.shareReserves = updatedShareReserves.toUint128();
         }
@@ -582,7 +582,6 @@ abstract contract HyperdriveLP is
         if (updatedBondReserves != bondReserves_) {
             _marketState.bondReserves = updatedBondReserves.toUint128();
         }
-
         return true;
     }
 }
