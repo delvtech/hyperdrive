@@ -74,7 +74,7 @@ impl State {
     /// $$
     /// p_max = 1 - phi_c * (1 - p_0)
     /// $$
-    fn calculate_close_max_short_price(&self) -> FixedPoint {
+    fn calculate_close_short_max_spot_price(&self) -> FixedPoint {
         fixed!(1e18)
             - self
                 .curve_fee()
@@ -112,7 +112,7 @@ impl State {
             state.info.share_reserves += share_reserves_delta.into();
             state.calculate_spot_price()
         };
-        let max_spot_price = self.calculate_close_max_short_price();
+        let max_spot_price = self.calculate_close_short_max_spot_price();
         if ending_spot_price > max_spot_price {
             // TODO would be nice to return a `Result` here instead of a panic.
             panic!("InsufficientLiquidity: Negative Interest");
