@@ -80,7 +80,6 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use ethers::types::U256;
     use eyre::Result;
     use fixed_point_macros::fixed;
     use rand::{thread_rng, Rng};

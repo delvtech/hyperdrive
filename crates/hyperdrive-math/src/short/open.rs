@@ -104,7 +104,6 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use ethers::types::{I256, U256};
     use fixed_point_macros::fixed;
     use rand::{thread_rng, Rng};
     use test_utils::{
