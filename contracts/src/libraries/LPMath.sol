@@ -977,9 +977,9 @@ library LPMath {
             params.presentValueParams
         );
 
-        // Check to see if the current share proceeds is the closer to the
-        // optimal value than the previous closest value. We'll choose whichever
-        // of the share proceeds that is closer to the optimal value.
+        // Check to see if the current share proceeds is closer to the optimal
+        // value than the previous closest value. We'll choose whichever of the
+        // share proceeds that is closer to the optimal value.
         int256 lastDelta = presentValue_.mulDown(lpTotalSupply).toInt256() -
             params
                 .startingPresentValue
