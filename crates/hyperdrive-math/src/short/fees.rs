@@ -40,6 +40,19 @@ impl State {
             * bond_amount.mul_div_down(normalized_time_remaining, self.vault_share_price())
     }
 
+    // Calculate the curve portion of the governance fee for close shorts
+    // NOTE: Round down to underestimate the governance curve fee
+    // TODO: avoid duplicate calculation of close short curve fee
+    pub fn close_short_governance_fee(
+        &self,
+        bond_amount: FixedPoint,
+        maturity_time: U256,
+        current_time: U256,
+    ) -> FixedPoint {
+        self.close_short_curve_fee(bond_amount, maturity_time, current_time)
+            .mul_down(self.governance_lp_fee())
+    }
+
     /// Calculates the flat fee paid by shorts for a given bond amount
     /// Returns the fee in shares
     pub fn close_short_flat_fee(
