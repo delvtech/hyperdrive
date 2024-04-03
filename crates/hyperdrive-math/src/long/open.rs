@@ -216,6 +216,7 @@ mod tests {
             alice.reset(Default::default());
             bob.reset(Default::default());
         }
+        Ok(())
     }
 
     // Tests open long with an amount smaller than the minimum.
