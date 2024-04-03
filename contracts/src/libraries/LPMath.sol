@@ -934,13 +934,13 @@ library LPMath {
     ///      the present value simplifies to the following:
     ///
     ///      PV(dz) = (z - dz) + net_c(dz) + net_f - z_min
-    ///             = (z - dz) - y_max_out(dz) + net_f - z_min
+    ///             = (z - dz) - z_max_in(dz) + net_f - z_min
     ///
     ///      There are two cases to evaluate:
     ///
     ///      (1) zeta > 0:
     ///
-    ///          z_max_out(dz) = ((z - dz) / z) * (z - zeta) - z_min
+    ///          z_max_in(dz) = ((z - dz) / z) * (z - zeta) - z_min
     ///
     ///          =>
     ///
@@ -948,7 +948,7 @@ library LPMath {
     ///
     ///      (2) zeta <= 0:
     ///
-    ///          z_max_out(dz) = (z - dz) - z_min
+    ///          z_max_in(dz) = (z - dz) - z_min
     ///
     ///          =>
     ///
