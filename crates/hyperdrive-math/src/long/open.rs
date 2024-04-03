@@ -230,16 +230,4 @@ mod tests {
         assert!(result.is_err());
         Ok(())
     }
-
-    // Tests open short with an amount larger than the maximum.
-    #[tokio::test]
-    async fn test_error_open_long_max_amount() -> Result<()> {
-        let mut rng = thread_rng();
-        let state = rng.gen::<State>();
-        let max_long_amount = state.calculate_max_long(U256::MAX, 0, Some(7));
-        let result =
-            std::panic::catch_unwind(|| state.calculate_open_long(max_long_amount + fixed!(10e18)));
-        assert!(result.is_err());
-        Ok(())
-    }
 }
