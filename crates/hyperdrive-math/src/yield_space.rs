@@ -344,7 +344,6 @@ pub trait YieldSpace {
 mod tests {
     use std::panic;
 
-    use eyre::Result;
     use rand::{thread_rng, Rng};
     use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};
 
