@@ -978,13 +978,13 @@ library LPMath {
         // Verify that the LP share price was conserved within a reasonable
         // tolerance.
         if (
-            // NOTE: Round up to make the check stricter.
-            presentValue_.divUp(_params.activeLpTotalSupply) +
-                SHARE_PROCEEDS_TOLERANCE <
-            _params.startingPresentValue.divDown(lpTotalSupply) ||
             // NOTE: Round down to make the check stricter.
-            presentValue_.divDown(_params.activeLpTotalSupply) >=
-            _params.startingPresentValue.divUp(lpTotalSupply) +
+            presentValue_.divDown(_params.activeLpTotalSupply) +
+                SHARE_PROCEEDS_TOLERANCE <
+            _params.startingPresentValue.divUp(lpTotalSupply) ||
+            // NOTE: Round up to make the check stricter.
+            presentValue_.divUp(_params.activeLpTotalSupply) >=
+            _params.startingPresentValue.divDown(lpTotalSupply) +
                 SHARE_PROCEEDS_TOLERANCE
         ) {
             // NOTE: Return 0 to indicate that the share proceeds couldn't be
