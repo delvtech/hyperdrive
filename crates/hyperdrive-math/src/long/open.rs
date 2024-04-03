@@ -221,7 +221,7 @@ mod tests {
 
     // Tests open long with an amount smaller than the minimum.
     #[tokio::test]
-    async fn test_open_long_min_txn_amount() -> Result<()> {
+    async fn test_error_open_long_min_txn_amount() -> Result<()> {
         let mut rng = thread_rng();
         let state = rng.gen::<State>();
         let result = std::panic::catch_unwind(|| {
@@ -233,7 +233,7 @@ mod tests {
 
     // Tests open short with an amount larger than the maximum.
     #[tokio::test]
-    async fn test_open_long_max_amount() -> Result<()> {
+    async fn test_error_open_long_max_amount() -> Result<()> {
         let mut rng = thread_rng();
         let state = rng.gen::<State>();
         let max_long_amount = state.calculate_max_long(U256::MAX, 0, Some(7));

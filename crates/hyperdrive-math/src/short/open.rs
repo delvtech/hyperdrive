@@ -104,6 +104,7 @@ impl State {
 
 #[cfg(test)]
 mod tests {
+    use ethers::types::U256;
     use fixed_point_macros::fixed;
     use rand::{thread_rng, Rng};
     use test_utils::{
@@ -182,7 +183,7 @@ mod tests {
 
     // Tests open short with an amount smaller than the minimum.
     #[tokio::test]
-    async fn test_open_short_min_txn_amount() -> Result<()> {
+    async fn test_error_open_short_min_txn_amount() -> Result<()> {
         let mut rng = thread_rng();
         let state = rng.gen::<State>();
         let result = std::panic::catch_unwind(|| {
@@ -198,7 +199,7 @@ mod tests {
 
     // Tests open short with an amount larger than the maximum.
     #[tokio::test]
-    async fn test_open_short_max_amount() -> Result<()> {
+    async fn test_error_open_short_max_amount() -> Result<()> {
         let mut rng = thread_rng();
         let state = rng.gen::<State>();
         let max_short_amount = state.calculate_max_short(U256::MAX, fixed!(0), 0, None, Some(7));
