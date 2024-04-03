@@ -945,10 +945,6 @@ contract HyperdriveFactory is IHyperdriveFactory {
         // The factory assumes the governance role during deployment so that it
         // can set up some initial values; however the governance role will
         // ultimately be transferred to the hyperdrive governance address.
-        _config.linkerFactory = linkerFactory;
-        _config.linkerCodeHash = linkerCodeHash;
-        _config.feeCollector = feeCollector;
-        _config.sweepCollector = sweepCollector;
         _config.governance = address(this);
         _config.timeStretch = timeStretch;
     }
