@@ -140,6 +140,6 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         bytes memory // unused extra data
     ) internal view override returns (uint256) {
         // Returns the value of one RETH token in ETH.
-        return rocketTokenReth.getExchangeRate();
+        return rocketTokenReth.getEthValue(ONE);
     }
 }

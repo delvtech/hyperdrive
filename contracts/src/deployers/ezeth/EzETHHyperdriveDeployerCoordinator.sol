@@ -6,7 +6,7 @@ import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
-import { IRestakeManager } from "../../interfaces/IRenzo.sol";
+import { IRestakeManager, IRenzoOracle } from "../../interfaces/IRenzo.sol";
 import { ETH } from "../../libraries/Constants.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
@@ -23,6 +23,9 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
 
     /// @notice The Renzo contract.
     IRestakeManager public immutable restakeManager;
+
+    /// @notice The RenzoOracle contract.
+    IRenzoOracle public immutable renzoOracle;
 
     /// @notice The ezETH token contract.
     IERC20 public immutable ezETH;
@@ -55,6 +58,7 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     {
         restakeManager = _restakeManager;
         ezETH = IERC20(_restakeManager.ezETH());
+        renzoOracle = IRenzoOracle(restakeManager.renzoOracle());
     }
 
     /// @dev Prepares the coordinator for initialization by drawing funds from
@@ -138,11 +142,12 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         IHyperdrive.PoolDeployConfig memory, // unused pool deploy config
         bytes memory // unused extra data
     ) internal view override returns (uint256) {
-        // Return ezETH's current vault share price.
+        // Get the total TVL priced in ETH from restakeManager
         (, , uint256 totalTVL) = restakeManager.calculateTVLs();
-        uint256 ezETHSupply = ezETH.totalSupply();
 
-        // Price in ETH / ezETH, does not include eigenlayer points.
-        return totalTVL.divDown(ezETHSupply);
+        // Get the total supply of the ezETH token
+        uint256 totalSupply = ezETH.totalSupply();
+
+        return renzoOracle.calculateRedeemAmount(ONE, totalSupply, totalTVL);
     }
 }
