@@ -743,7 +743,10 @@ library LPMath {
         // Newton's method will terminate as soon as the current iteration is
         // within the minimum tolerance or the maximum number of iterations has
         // been reached.
-        int256 lastDelta;
+        int256 smallestDelta;
+        uint256 closestShareProceeds;
+        uint256 closestPresentValue;
+        DistributeExcessIdleParams memory params = _params; // avoid stack-too-deep
         if (_maxIterations < SHARE_PROCEEDS_MAX_ITERATIONS) {
             _maxIterations = SHARE_PROCEEDS_MAX_ITERATIONS;
         }
@@ -756,15 +759,15 @@ library LPMath {
             // recalculate the present value.
             bool success;
             (
-                _params.presentValueParams.shareReserves,
-                _params.presentValueParams.shareAdjustment,
-                _params.presentValueParams.bondReserves,
+                params.presentValueParams.shareReserves,
+                params.presentValueParams.shareAdjustment,
+                params.presentValueParams.bondReserves,
                 success
             ) = calculateUpdateLiquiditySafe(
-                _params.originalShareReserves,
-                _params.originalShareAdjustment,
-                _params.originalBondReserves,
-                _params.presentValueParams.minimumShareReserves,
+                params.originalShareReserves,
+                params.originalShareAdjustment,
+                params.originalBondReserves,
+                params.presentValueParams.minimumShareReserves,
                 -shareProceeds.toInt256()
             );
             if (!success) {
@@ -774,13 +777,13 @@ library LPMath {
                 return 0;
             }
             uint256 presentValue = calculatePresentValue(
-                _params.presentValueParams
+                params.presentValueParams
             );
 
             // Short-circuit if we are within the minimum tolerance.
             if (
                 shouldShortCircuitDistributeExcessIdleShareProceeds(
-                    _params,
+                    params,
                     presentValue,
                     lpTotalSupply
                 )
@@ -791,10 +794,9 @@ library LPMath {
             // If the pool is net long, we can solve for the next iteration of
             // Newton's method directly when the net curve trade is greater than
             // or equal to the max bond amount.
-            if (_params.netCurveTrade > 0) {
+            if (params.netCurveTrade > 0) {
                 // Calculate the max bond amount. If the calculation fails, we
                 // return a failure flag.
-                DistributeExcessIdleParams memory params = _params; // avoid stack-too-deep
                 uint256 maxBondAmount;
                 (maxBondAmount, success) = YieldSpaceMath
                     .calculateMaxSellBondsInSafe(
@@ -889,9 +891,9 @@ library LPMath {
                 derivative,
                 success
             ) = calculateSharesDeltaGivenBondsDeltaDerivativeSafe(
-                _params,
+                params,
                 _originalEffectiveShareReserves,
-                _params.netCurveTrade
+                params.netCurveTrade
             );
             if (!success || derivative >= ONE) {
                 // NOTE: Return 0 to indicate that the share proceeds
@@ -904,18 +906,20 @@ library LPMath {
 
             // NOTE: Round the delta down to avoid overshooting.
             //
-            // Calculate the objective functions value. If the value's magnitude
-            // is greater than the previous iteration, we break out of the loop
-            // since Newton's method has begun to diverge.
+            // Calculate the objective function's value. If the value's magnitude
+            // is smaller than the previous smallest value, then we update the
+            // value and record the share proceeds. We'll ultimately return the
+            // share proceeds that resulted in the smallest value.
             int256 delta = presentValue.mulDown(lpTotalSupply).toInt256() -
-                _params
+                params
                     .startingPresentValue
-                    .mulUp(_params.activeLpTotalSupply)
+                    .mulUp(params.activeLpTotalSupply)
                     .toInt256();
-            if (lastDelta != 0 && delta.abs() > lastDelta.abs()) {
-                break;
+            if (smallestDelta == 0 || delta.abs() < smallestDelta.abs()) {
+                smallestDelta = delta;
+                closestShareProceeds = shareProceeds;
+                closestPresentValue = presentValue;
             }
-            lastDelta = delta;
 
             // We calculate the updated share proceeds `x_n+1` by proceeding
             // with Newton's method. This is given by:
@@ -950,41 +954,52 @@ library LPMath {
             }
         }
 
-        // Simulate applying the share proceeds to the reserves and
-        // recalculate the present value.
+        // Calculate the present value after applying the share proceeds.
         bool success_;
         (
-            _params.presentValueParams.shareReserves,
-            _params.presentValueParams.shareAdjustment,
-            _params.presentValueParams.bondReserves,
+            params.presentValueParams.shareReserves,
+            params.presentValueParams.shareAdjustment,
+            params.presentValueParams.bondReserves,
             success_
         ) = calculateUpdateLiquiditySafe(
-            _params.originalShareReserves,
-            _params.originalShareAdjustment,
-            _params.originalBondReserves,
-            _params.presentValueParams.minimumShareReserves,
+            params.originalShareReserves,
+            params.originalShareAdjustment,
+            params.originalBondReserves,
+            params.presentValueParams.minimumShareReserves,
             -shareProceeds.toInt256()
         );
         if (!success_) {
-            // NOTE: If the updated reserves can't be calculated,  we can't
-            // continue the calculation. Return 0 to indicate that the share
-            // proceeds couldn't be calculated.
+            // NOTE: Return 0 to indicate that the share proceeds couldn't be
+            // calculated.
             return 0;
         }
         uint256 presentValue_ = calculatePresentValue(
-            _params.presentValueParams
+            params.presentValueParams
         );
+
+        // Check to see if the current share proceeds is the closer to the
+        // optimal value than the previous closest value. We'll choose whichever
+        // of the share proceeds that is closer to the optimal value.
+        int256 lastDelta = presentValue_.mulDown(lpTotalSupply).toInt256() -
+            params
+                .startingPresentValue
+                .mulUp(params.activeLpTotalSupply)
+                .toInt256();
+        if (lastDelta.abs() < smallestDelta.abs()) {
+            closestShareProceeds = shareProceeds;
+            closestPresentValue = presentValue_;
+        }
 
         // Verify that the LP share price was conserved within a reasonable
         // tolerance.
         if (
             // NOTE: Round down to make the check stricter.
-            presentValue_.divDown(_params.activeLpTotalSupply) +
+            closestPresentValue.divDown(params.activeLpTotalSupply) +
                 SHARE_PROCEEDS_TOLERANCE <
-            _params.startingPresentValue.divUp(lpTotalSupply) ||
+            params.startingPresentValue.divUp(lpTotalSupply) ||
             // NOTE: Round up to make the check stricter.
-            presentValue_.divUp(_params.activeLpTotalSupply) >=
-            _params.startingPresentValue.divDown(lpTotalSupply) +
+            closestPresentValue.divUp(params.activeLpTotalSupply) >=
+            params.startingPresentValue.divDown(lpTotalSupply) +
                 SHARE_PROCEEDS_TOLERANCE
         ) {
             // NOTE: Return 0 to indicate that the share proceeds couldn't be
@@ -992,7 +1007,7 @@ library LPMath {
             return 0;
         }
 
-        return shareProceeds;
+        return closestShareProceeds;
     }
 
     /// @dev One of the edge cases that occurs when using Newton's method for
