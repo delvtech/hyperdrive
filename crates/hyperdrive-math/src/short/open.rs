@@ -88,7 +88,6 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use eyre::Result;
     use fixed_point_macros::fixed;
     use rand::{thread_rng, Rng};
     use test_utils::{
