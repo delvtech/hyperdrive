@@ -8,3 +8,10 @@ Cargo.toml @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree
 rustfmt.toml @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree
 Makefile @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree
 README.md @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree
+
+# Instance Owners
+contracts/src/deployers/ @mcclurejt @cashd @sentilesdal
+contracts/src/instances/ @mcclurejt @cashd @sentilesdal
+contracts/src/interfaces/ @mcclurejt @cashd @sentilesdal
+contracts/test/ @mcclurejt @cashd @sentilesdal
+test/ @mcclurejt @cashd @sentilesdal
