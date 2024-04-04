@@ -261,11 +261,11 @@ abstract contract HyperdriveCheckpoint is
     /// @dev Calculates the proceeds of the holders of a given position at
     ///      maturity.
     /// @param _bondAmount The bond amount of the position.
-    /// @param _vaultSharePrice The current vault share price.
     /// @param _openVaultSharePrice The vault share price from the position's
     ///        starting checkpoint.
     /// @param _closeVaultSharePrice The vault share price from the position's
     ///        ending checkpoint.
+    /// @param _vaultSharePrice The current vault share price.
     /// @param _isLong A flag indicating whether or not the position is a long.
     /// @return shareProceeds The proceeds of the holders in shares.
     /// @return governanceFee The fee paid to governance in shares.

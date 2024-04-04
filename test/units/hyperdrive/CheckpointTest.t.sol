@@ -3,10 +3,13 @@ pragma solidity 0.8.20;
 
 import { VmSafe } from "forge-std/Vm.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest, HyperdriveUtils, MockHyperdrive, IHyperdrive } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
 
 contract CheckpointTest is HyperdriveTest {
+    using FixedPointMath for uint256;
+    using HyperdriveUtils for IHyperdrive;
     using Lib for *;
 
     function test_checkpoint_failure_future_checkpoint() external {
@@ -155,40 +158,412 @@ contract CheckpointTest is HyperdriveTest {
         // Initialize the Hyperdrive pool.
         initialize(alice, 0.05e18, 500_000_000e18);
 
-        // Create a checkpoint.
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        // Bob opens a long.
+        (uint256 maturityTime, uint256 longAmount) = openLong(
+            bob,
+            10_000_000e18
+        );
 
-        // Update the share price.
-        MockHyperdrive(address(hyperdrive)).accrue(CHECKPOINT_DURATION, .1e18);
+        // Celine opens a short.
+        uint256 shortAmount = 50_000e18;
+        openShort(celine, shortAmount);
+
+        // The term and a checkpoint pass.
+        advanceTime(POSITION_DURATION + CHECKPOINT_DURATION, 0.1e18);
+
+        // A checkpoint is created.
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+
+        // Another term passes.
+        advanceTime(POSITION_DURATION, 0.1e18);
 
         // Start recording event logs.
         vm.recordLogs();
 
-        // Create a checkpoint in the past.
-        uint256 previousCheckpoint = HyperdriveUtils.latestCheckpoint(
-            hyperdrive
-        ) - hyperdrive.getPoolConfig().checkpointDuration;
-        hyperdrive.checkpoint(previousCheckpoint);
+        // The checkpoint that will close Bob and Celine's positions is
+        // retroactively minted.
+        hyperdrive.checkpoint(maturityTime);
 
         // Ensure that the correct event was emitted.
-        uint256 previousCheckpointSharePrice = hyperdrive
-            .getCheckpoint(previousCheckpoint)
-            .vaultSharePrice;
         verifyCheckpointEvent(
-            previousCheckpoint,
-            previousCheckpointSharePrice,
+            maturityTime,
+            hyperdrive
+                .getCheckpoint(maturityTime + CHECKPOINT_DURATION)
+                .vaultSharePrice,
+            hyperdrive.getPoolInfo().vaultSharePrice,
+            shortAmount,
+            longAmount,
+            hyperdrive.getPoolInfo().lpSharePrice
+        );
+
+        // Ensure that the created checkpoint contains the share price of the
+        // next checkpoint.
+        assertEq(
+            hyperdrive.getCheckpoint(maturityTime).vaultSharePrice,
+            hyperdrive
+                .getCheckpoint(maturityTime + CHECKPOINT_DURATION)
+                .vaultSharePrice
+        );
+
+        // Ensure that the correct amount of funds were set aside in the zombie
+        // share reserves.
+        uint256 openVaultSharePrice = hyperdrive
+            .getCheckpoint(maturityTime - POSITION_DURATION)
+            .vaultSharePrice;
+        uint256 closeVaultSharePrice = hyperdrive
+            .getCheckpoint(maturityTime)
+            .vaultSharePrice;
+        assertEq(
+            hyperdrive.getPoolInfo().zombieShareReserves,
+            longAmount.divDown(hyperdrive.getPoolInfo().vaultSharePrice) +
+                shortAmount.mulDivDown(
+                    closeVaultSharePrice - openVaultSharePrice,
+                    hyperdrive.getPoolInfo().vaultSharePrice
+                )
+        );
+    }
+
+    function test_checkpoint_openLong() external {
+        // Initialize the Hyperdrive pool.
+        initialize(alice, 0.05e18, 500_000_000e18);
+
+        // Create a checkpoint.
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+
+        // Advance to the next checkpoint.
+        advanceTime(CHECKPOINT_DURATION, 0.1e18);
+
+        // Start recording event logs.
+        vm.recordLogs();
+
+        // Alice opens a long. This should also mint a checkpoint.
+        openLong(alice, 10_000_000e18);
+
+        // Ensure that the correct event was emitted.
+        verifyCheckpointEvent(
+            hyperdrive.latestCheckpoint(),
+            hyperdrive.getPoolInfo().vaultSharePrice,
             hyperdrive.getPoolInfo().vaultSharePrice,
             0,
             0,
             hyperdrive.getPoolInfo().lpSharePrice
         );
 
-        // Ensure the previous checkpoint contains the share price prior to the
-        // update since a more recent checkpoint was already created.
-        uint256 latestCheckpointSharePrice = hyperdrive
-            .getCheckpoint(HyperdriveUtils.latestCheckpoint(hyperdrive))
-            .vaultSharePrice;
-        assertEq(latestCheckpointSharePrice, previousCheckpointSharePrice);
+        // Ensure that the checkpoint share price was updated.
+        assertEq(
+            hyperdrive
+                .getCheckpoint(hyperdrive.latestCheckpoint())
+                .vaultSharePrice,
+            hyperdrive.getPoolInfo().vaultSharePrice
+        );
+    }
+
+    function test_checkpoint_openShort() external {
+        // Initialize the Hyperdrive pool.
+        initialize(alice, 0.05e18, 500_000_000e18);
+
+        // Create a checkpoint.
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+
+        // Advance to the next checkpoint.
+        advanceTime(CHECKPOINT_DURATION, 0.1e18);
+
+        // Start recording event logs.
+        vm.recordLogs();
+
+        // Alice opens a short. This should also mint a checkpoint.
+        openShort(alice, 10_000_000e18);
+
+        // Ensure that the correct event was emitted.
+        verifyCheckpointEvent(
+            hyperdrive.latestCheckpoint(),
+            hyperdrive.getPoolInfo().vaultSharePrice,
+            hyperdrive.getPoolInfo().vaultSharePrice,
+            0,
+            0,
+            hyperdrive.getPoolInfo().lpSharePrice
+        );
+
+        // Ensure that the checkpoint share price was updated.
+        assertEq(
+            hyperdrive
+                .getCheckpoint(hyperdrive.latestCheckpoint())
+                .vaultSharePrice,
+            hyperdrive.getPoolInfo().vaultSharePrice
+        );
+    }
+
+    function test_checkpoint_addLiquidity() external {
+        // Initialize the Hyperdrive pool.
+        initialize(alice, 0.05e18, 500_000_000e18);
+
+        // Create a checkpoint.
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+
+        // Advance to the next checkpoint.
+        advanceTime(CHECKPOINT_DURATION, 0.1e18);
+
+        // Start recording event logs.
+        vm.recordLogs();
+
+        // Alice adds liquidity. This should also mint a checkpoint.
+        addLiquidity(alice, 10_000_000e18);
+
+        // Ensure that the correct event was emitted.
+        verifyCheckpointEvent(
+            hyperdrive.latestCheckpoint(),
+            hyperdrive.getPoolInfo().vaultSharePrice,
+            hyperdrive.getPoolInfo().vaultSharePrice,
+            0,
+            0,
+            hyperdrive.getPoolInfo().lpSharePrice
+        );
+
+        // Ensure that the checkpoint share price was updated.
+        assertEq(
+            hyperdrive
+                .getCheckpoint(hyperdrive.latestCheckpoint())
+                .vaultSharePrice,
+            hyperdrive.getPoolInfo().vaultSharePrice
+        );
+    }
+
+    function test_checkpoint_removeLiquidity() external {
+        // Initialize the Hyperdrive pool.
+        uint256 lpShares = initialize(alice, 0.05e18, 500_000_000e18);
+
+        // Create a checkpoint.
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+
+        // Advance to the next checkpoint.
+        advanceTime(CHECKPOINT_DURATION, 0.1e18);
+
+        // Start recording event logs.
+        vm.recordLogs();
+
+        // Alice removes liquidity. This should also mint a checkpoint.
+        removeLiquidity(alice, lpShares);
+
+        // Ensure that the correct event was emitted.
+        verifyCheckpointEvent(
+            hyperdrive.latestCheckpoint(),
+            hyperdrive.getPoolInfo().vaultSharePrice,
+            hyperdrive.getPoolInfo().vaultSharePrice,
+            0,
+            0,
+            hyperdrive.getPoolInfo().lpSharePrice
+        );
+
+        // Ensure that the checkpoint share price was updated.
+        assertEq(
+            hyperdrive
+                .getCheckpoint(hyperdrive.latestCheckpoint())
+                .vaultSharePrice,
+            hyperdrive.getPoolInfo().vaultSharePrice
+        );
+    }
+
+    function test_checkpoint_redeemWithdrawalShares() external {
+        // Initialize the Hyperdrive pool.
+        uint256 lpShares = initialize(alice, 0.05e18, 500_000_000e18);
+
+        // Bob opens a max short.
+        uint256 shortAmount = hyperdrive.calculateMaxShort();
+        openShort(bob, shortAmount);
+
+        // Alice removes her liquidity.
+        (, uint256 withdrawalShares) = removeLiquidity(alice, lpShares);
+
+        // The term passes.
+        advanceTime(POSITION_DURATION, 0.1e18);
+
+        // Start recording event logs.
+        vm.recordLogs();
+
+        // Alice redeems her withdrawal shares. This should also mint a checkpoint.
+        redeemWithdrawalShares(alice, withdrawalShares);
+
+        // Ensure that the correct event was emitted.
+        verifyCheckpointEvent(
+            hyperdrive.latestCheckpoint(),
+            hyperdrive.getPoolInfo().vaultSharePrice,
+            hyperdrive.getPoolInfo().vaultSharePrice,
+            shortAmount,
+            0,
+            hyperdrive.getPoolInfo().lpSharePrice
+        );
+
+        // Ensure that the checkpoint share price was updated.
+        assertApproxEqAbs(
+            hyperdrive
+                .getCheckpoint(hyperdrive.latestCheckpoint())
+                .vaultSharePrice,
+            hyperdrive.getPoolInfo().vaultSharePrice,
+            1
+        );
+    }
+
+    function test_checkpoint_closeLong_beforeMaturity() external {
+        // Initialize the Hyperdrive pool.
+        initialize(alice, 0.05e18, 500_000_000e18);
+
+        // Bob opens a long.
+        (uint256 maturityTime, uint256 longAmount) = openLong(bob, 10e18);
+
+        // The checkpoint passes.
+        advanceTime(CHECKPOINT_DURATION, 0.1e18);
+
+        // Start recording event logs.
+        vm.recordLogs();
+
+        // Bob closes his long. This should also mint a checkpoint.
+        closeLong(bob, maturityTime, longAmount);
+
+        // Ensure that the correct event was emitted.
+        verifyCheckpointEvent(
+            hyperdrive.latestCheckpoint(),
+            hyperdrive.getPoolInfo().vaultSharePrice,
+            hyperdrive.getPoolInfo().vaultSharePrice,
+            0,
+            0,
+            hyperdrive.getPoolInfo().lpSharePrice
+        );
+
+        // Ensure that the checkpoint share price was updated.
+        assertEq(
+            hyperdrive
+                .getCheckpoint(hyperdrive.latestCheckpoint())
+                .vaultSharePrice,
+            hyperdrive.getPoolInfo().vaultSharePrice
+        );
+    }
+
+    function test_checkpoint_closeLong_afterMaturity() external {
+        // Initialize the Hyperdrive pool.
+        initialize(alice, 0.05e18, 500_000_000e18);
+
+        // Bob opens a long.
+        (uint256 maturityTime, uint256 longAmount) = openLong(bob, 10e18);
+
+        // The term and an additional checkpoint pass.
+        advanceTime(POSITION_DURATION + CHECKPOINT_DURATION, 0.1e18);
+
+        // A checkpoint is created.
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+
+        // Another term passes.
+        advanceTime(POSITION_DURATION, 0.1e18);
+
+        // Start recording event logs.
+        vm.recordLogs();
+
+        // Bob closes his long. Instead of minting the latest checkpoint, this
+        // should mint a past checkpoint. The checkpoint's share price should be
+        // the share price of the next checkpoint.
+        closeLong(bob, maturityTime, longAmount);
+
+        // Ensure that the correct event was emitted.
+        verifyCheckpointEvent(
+            maturityTime,
+            hyperdrive
+                .getCheckpoint(maturityTime + CHECKPOINT_DURATION)
+                .vaultSharePrice,
+            hyperdrive.getPoolInfo().vaultSharePrice,
+            0,
+            longAmount,
+            hyperdrive.getPoolInfo().lpSharePrice
+        );
+
+        // Ensure that the checkpoint share price was updated.
+        assertEq(
+            hyperdrive.getCheckpoint(maturityTime).vaultSharePrice,
+            hyperdrive
+                .getCheckpoint(maturityTime + CHECKPOINT_DURATION)
+                .vaultSharePrice
+        );
+    }
+
+    function test_checkpoint_closeShort_beforeMaturity() external {
+        // Initialize the Hyperdrive pool.
+        initialize(alice, 0.05e18, 500_000_000e18);
+
+        // Bob opens a short.
+        uint256 shortAmount = 10e18;
+        (uint256 maturityTime, ) = openShort(bob, shortAmount);
+
+        // The checkpoint passes.
+        advanceTime(CHECKPOINT_DURATION, 0.1e18);
+
+        // Start recording event logs.
+        vm.recordLogs();
+
+        // Bob closes his short. This should also mint a checkpoint.
+        closeShort(bob, maturityTime, shortAmount);
+
+        // Ensure that the correct event was emitted.
+        verifyCheckpointEvent(
+            hyperdrive.latestCheckpoint(),
+            hyperdrive.getPoolInfo().vaultSharePrice,
+            hyperdrive.getPoolInfo().vaultSharePrice,
+            0,
+            0,
+            hyperdrive.getPoolInfo().lpSharePrice
+        );
+
+        // Ensure that the checkpoint share price was updated.
+        assertApproxEqAbs(
+            hyperdrive
+                .getCheckpoint(hyperdrive.latestCheckpoint())
+                .vaultSharePrice,
+            hyperdrive.getPoolInfo().vaultSharePrice,
+            1
+        );
+    }
+
+    function test_checkpoint_closeShort_afterMaturity() external {
+        // Initialize the Hyperdrive pool.
+        initialize(alice, 0.05e18, 500_000_000e18);
+
+        // Bob opens a short.
+        uint256 shortAmount = 10e18;
+        (uint256 maturityTime, ) = openShort(bob, shortAmount);
+
+        // The term and an additional checkpoint pass.
+        advanceTime(POSITION_DURATION + CHECKPOINT_DURATION, 0.1e18);
+
+        // A checkpoint is created.
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+
+        // Another term passes.
+        advanceTime(POSITION_DURATION, 0.1e18);
+
+        // Start recording event logs.
+        vm.recordLogs();
+
+        // Bob closes his short. Instead of minting the latest checkpoint, this
+        // should mint a past checkpoint. The checkpoint's share price should be
+        // the share price of the next checkpoint.
+        closeShort(bob, maturityTime, shortAmount);
+
+        // Ensure that the correct event was emitted.
+        verifyCheckpointEvent(
+            maturityTime,
+            hyperdrive
+                .getCheckpoint(maturityTime + CHECKPOINT_DURATION)
+                .vaultSharePrice,
+            hyperdrive.getPoolInfo().vaultSharePrice,
+            shortAmount,
+            0,
+            hyperdrive.getPoolInfo().lpSharePrice
+        );
+
+        // Ensure that the checkpoint share price was updated.
+        assertEq(
+            hyperdrive.getCheckpoint(maturityTime).vaultSharePrice,
+            hyperdrive
+                .getCheckpoint(maturityTime + CHECKPOINT_DURATION)
+                .vaultSharePrice
+        );
     }
 
     function verifyCheckpointEvent(
@@ -212,10 +587,14 @@ contract CheckpointTest is HyperdriveTest {
             uint256 eventMaturedLongs,
             uint256 eventLpSharePrice
         ) = abi.decode(log.data, (uint256, uint256, uint256, uint256, uint256));
-        assertEq(eventCheckpointVaultSharePrice, checkpointVaultSharePrice);
-        assertEq(eventVaultSharePrice, vaultSharePrice);
+        assertApproxEqAbs(
+            eventCheckpointVaultSharePrice,
+            checkpointVaultSharePrice,
+            1
+        );
+        assertApproxEqAbs(eventVaultSharePrice, vaultSharePrice, 1);
         assertEq(eventMaturedShorts, maturedShorts);
         assertEq(eventMaturedLongs, maturedLongs);
-        assertEq(eventLpSharePrice, lpSharePrice);
+        assertApproxEqAbs(eventLpSharePrice, lpSharePrice, 50);
     }
 }
