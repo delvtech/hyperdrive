@@ -105,8 +105,25 @@ impl State {
                         }
                     }
                 } else {
-                    -I256::try_from(self.effective_share_reserves() - self.minimum_share_reserves())
+                    // If the share adjustment is greater than or equal to zero,
+                    // then the effective share reserves are less than or equal to
+                    // the share reserves. In this case, the maximum amount of
+                    // shares that can be removed from the share reserves is
+                    // `effectiveShareReserves - minimumShareReserves`.
+                    if self.share_adjustment() >= I256::from(0) {
+                        -I256::try_from(
+                            self.effective_share_reserves() - self.minimum_share_reserves(),
+                        )
                         .unwrap()
+
+                    // Otherwise, the effective share reserves are greater than the
+                    // share reserves. In this case, the maximum amount of shares
+                    // that can be removed from the share reserves is
+                    // `shareReserves - minimumShareReserves`.
+                    } else {
+                        -I256::try_from(self.share_reserves() - self.minimum_share_reserves())
+                            .unwrap()
+                    }
                 }
             }
             Ordering::Less => {
