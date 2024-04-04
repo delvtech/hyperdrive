@@ -581,6 +581,62 @@ mod tests {
 
     #[traced_test]
     #[tokio::test]
+    async fn test_max_long_derivative() -> Result<()> {
+        let mut rng = thread_rng();
+        // We use a relatively large epsilon here due to the underlying fixed point pow
+        // function not being monotonically increasing.
+        let empirical_derivative_epsilon = fixed!(1e12);
+        // TODO pretty big comparison epsilon here
+        let test_comparison_epsilon = fixed!(10e18);
+
+        for _ in 0..*FAST_FUZZ_RUNS {
+            let state = rng.gen::<State>();
+            // Bind the max amount by the absolute max amount
+            let amount = rng.gen_range(fixed!(10e18)..=fixed!(10_000_000e18));
+
+            let p1_result = std::panic::catch_unwind(|| {
+                state.calculate_open_long(amount - empirical_derivative_epsilon)
+            });
+            let p1;
+            let p2;
+            match p1_result {
+                Ok(p) => {
+                    p1 = p;
+                }
+                Err(_) => continue,
+            }
+
+            let p2_result = std::panic::catch_unwind(|| {
+                state.calculate_open_long(amount + empirical_derivative_epsilon)
+            });
+            match p2_result {
+                Ok(p) => {
+                    p2 = p;
+                }
+                Err(_) => continue,
+            }
+            // Sanity check
+            assert!(p2 > p1);
+
+            let empirical_derivative = (p2 - p1) / (fixed!(2e18) * empirical_derivative_epsilon);
+            let open_long_derivative = state.long_amount_derivative(amount);
+            open_long_derivative.map(|derivative| {
+                let abs_diff;
+                if derivative >= empirical_derivative {
+                    abs_diff = derivative - empirical_derivative;
+                } else {
+                    abs_diff = empirical_derivative - derivative;
+                }
+                println!("abs_diff: {}", abs_diff);
+                assert!(abs_diff < test_comparison_epsilon);
+            });
+        }
+
+        Ok(())
+    }
+
+    #[traced_test]
+    #[tokio::test]
     async fn test_calculate_max_long() -> Result<()> {
         // Spawn a test chain and create two agents -- Alice and Bob. Alice
         // is funded with a large amount of capital so that she can initialize
