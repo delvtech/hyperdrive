@@ -492,7 +492,7 @@ mod tests {
     use super::*;
 
     async fn setup() -> Result<MockFixedPointMath<ChainClient<LocalWallet>>> {
-        let chain = Chain::connect(None).await?;
+        let chain = Chain::connect(std::env::var("HYPERDRIVE_ETHEREUM_URL").ok()).await?;
         chain.deal(ALICE.address(), uint256!(100_000e18)).await?;
         let mock = MockFixedPointMath::deploy(chain.client(ALICE.clone()).await?, ())
             .unwrap()

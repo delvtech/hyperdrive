@@ -22,7 +22,7 @@ async fn setup() -> Result<(
     Agent<ChainClient<LocalWallet>, ChaCha8Rng>,
 )> {
     // Initialize the test chain and agents.
-    let chain = Chain::connect(None).await?;
+    let chain = Chain::connect(std::env::var("HYPERDRIVE_ETHEREUM_URL").ok()).await?;
     let addresses = chain.test_deploy(ALICE.clone()).await?;
     chain.deal(ALICE.address(), uint256!(100_000e18)).await?;
     chain.deal(BOB.address(), uint256!(100_000e18)).await?;

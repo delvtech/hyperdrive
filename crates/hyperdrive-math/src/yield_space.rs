@@ -357,7 +357,7 @@ mod tests {
     use crate::State;
 
     async fn setup() -> Result<MockYieldSpaceMath<ChainClient<LocalWallet>>> {
-        let chain = Chain::connect(None).await?;
+        let chain = Chain::connect(std::env::var("HYPERDRIVE_ETHEREUM_URL").ok()).await?;
         let mock = MockYieldSpaceMath::deploy(chain.client(ALICE.clone()).await?, ())?
             .send()
             .await?;
@@ -366,10 +366,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_calculate_bonds_out_given_shares_in() -> Result<()> {
-        let chain = Chain::connect(None).await?;
-        let mock = MockYieldSpaceMath::deploy(chain.client(ALICE.clone()).await?, ())?
-            .send()
-            .await?;
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -400,10 +397,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_calculate_shares_in_given_bonds_out_up() -> Result<()> {
-        let chain = Chain::connect(None).await?;
-        let mock = MockYieldSpaceMath::deploy(chain.client(ALICE.clone()).await?, ())?
-            .send()
-            .await?;
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -435,10 +429,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_calculate_shares_in_given_bonds_out_down() -> Result<()> {
-        let chain = Chain::connect(None).await?;
-        let mock = MockYieldSpaceMath::deploy(chain.client(ALICE.clone()).await?, ())?
-            .send()
-            .await?;
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -471,10 +462,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_calculate_shares_out_given_bonds_in_down() -> Result<()> {
-        let chain = Chain::connect(None).await?;
-        let mock = MockYieldSpaceMath::deploy(chain.client(ALICE.clone()).await?, ())?
-            .send()
-            .await?;
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -507,10 +495,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_calculate_shares_out_given_bonds_in_down_safe() -> Result<()> {
-        let chain = Chain::connect(None).await?;
-        let mock = MockYieldSpaceMath::deploy(chain.client(ALICE.clone()).await?, ())?
-            .send()
-            .await?;
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -545,10 +530,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_calculate_max_buy_shares_in_safe() -> Result<()> {
-        let chain = Chain::connect(None).await?;
-        let mock = MockYieldSpaceMath::deploy(chain.client(ALICE.clone()).await?, ())?
-            .send()
-            .await?;
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -580,10 +562,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_calculate_max_buy_bounds_out_safe() -> Result<()> {
-        let chain = Chain::connect(None).await?;
-        let mock = MockYieldSpaceMath::deploy(chain.client(ALICE.clone()).await?, ())?
-            .send()
-            .await?;
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -615,10 +594,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_calculate_max_sell_bonds_in_safe() -> Result<()> {
-        let chain = Chain::connect(None).await?;
-        let mock = MockYieldSpaceMath::deploy(chain.client(ALICE.clone()).await?, ())?
-            .send()
-            .await?;
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -653,10 +629,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_k_down() -> Result<()> {
-        let chain = Chain::connect(None).await?;
-        let mock = MockYieldSpaceMath::deploy(chain.client(ALICE.clone()).await?, ())?
-            .send()
-            .await?;
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -684,10 +657,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_k_up() -> Result<()> {
-        let chain = Chain::connect(None).await?;
-        let mock = MockYieldSpaceMath::deploy(chain.client(ALICE.clone()).await?, ())?
-            .send()
-            .await?;
+        let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();

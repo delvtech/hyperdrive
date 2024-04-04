@@ -186,7 +186,7 @@ mod tests {
     use super::*;
 
     async fn setup() -> Result<MockLPMath<ChainClient<LocalWallet>>> {
-        let chain = Chain::connect(None).await?;
+        let chain = Chain::connect(std::env::var("HYPERDRIVE_ETHEREUM_URL").ok()).await?;
         let mock = MockLPMath::deploy(chain.client(ALICE.clone()).await?, ())?
             .send()
             .await?;
