@@ -1444,12 +1444,12 @@ mod tests {
             .get_hyperdrive_info(chain.addresses.erc4626_hyperdrive)
             .call()
             .await?;
-        assert_ne!(registry_data_4626, U256::from(0));
+        assert_ne!(registry_data_4626, uint256!(0));
         let registry_data_steth = registry
             .get_hyperdrive_info(chain.addresses.steth_hyperdrive)
             .call()
             .await?;
-        assert_ne!(registry_data_steth, U256::from(0));
+        assert_ne!(registry_data_steth, uint256!(0));
 
         Ok(())
     }
@@ -1544,6 +1544,19 @@ mod tests {
                 governance_zombie: test_chain_config.steth_hyperdrive_governance_zombie_fee,
             }
         );
+
+        // Verify that the registry data has been set for each Hyperdrive contract.
+        let registry = HyperdriveRegistry::new(chain.addresses.hyperdrive_registry, client.clone());
+        let registry_data_4626 = registry
+            .get_hyperdrive_info(chain.addresses.erc4626_hyperdrive)
+            .call()
+            .await?;
+        assert_ne!(registry_data_4626, uint256!(0));
+        let registry_data_steth = registry
+            .get_hyperdrive_info(chain.addresses.steth_hyperdrive)
+            .call()
+            .await?;
+        assert_ne!(registry_data_steth, uint256!(0));
 
         Ok(())
     }
