@@ -1026,11 +1026,11 @@ impl TestChain {
         // Add the 4626 Hyperdrive instance and the Lido Hyperdrive instance
         // to the registry contract.
         hyperdrive_registry
-            .set_hyperdrive_info(vault.address(), uint256!(1))
+            .set_hyperdrive_info(erc4626_hyperdrive, uint256!(1))
             .send()
             .await?;
         hyperdrive_registry
-            .set_hyperdrive_info(lido.address(), uint256!(1))
+            .set_hyperdrive_info(steth_hyperdrive, uint256!(1))
             .send()
             .await?;
 
@@ -1437,6 +1437,19 @@ mod tests {
                 governance_zombie: test_chain_config.steth_hyperdrive_governance_zombie_fee,
             }
         );
+
+        // Verify that the registry data has been set for each Hyperdrive contract.
+        let registry = HyperdriveRegistry::new(chain.addresses.hyperdrive_registry, client.clone());
+        let registry_data_4626 = registry
+            .get_hyperdrive_info(chain.addresses.erc4626_hyperdrive)
+            .call()
+            .await?;
+        assert_ne!(registry_data_4626, U256::from(0));
+        let registry_data_steth = registry
+            .get_hyperdrive_info(chain.addresses.steth_hyperdrive)
+            .call()
+            .await?;
+        assert_ne!(registry_data_steth, U256::from(0));
 
         Ok(())
     }
