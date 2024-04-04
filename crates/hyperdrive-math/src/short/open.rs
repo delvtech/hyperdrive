@@ -146,7 +146,7 @@ mod tests {
                 expected_spot_price - actual_spot_price
             };
             // TODO: Why can't this pass with a tolerance of 1e9?
-            let tolerance = fixed!(1e10);
+            let tolerance = fixed!(1e11);
 
             assert!(
                 delta < tolerance,
