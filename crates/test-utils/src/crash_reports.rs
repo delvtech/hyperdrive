@@ -302,6 +302,7 @@ mod tests {
                     erc4626_hyperdrive: "0xd8058efe0198ae9dD7D563e1b4938Dcbc86A1F81".parse()?,
                     steth_hyperdrive: Address::zero(),
                     factory: Address::zero(),
+                    hyperdrive_registry: Address::zero()
                 },
                 agent_info: AgentInfo {
                     address: "0x31b86D1eC3DB7f34656B5308DD94C6a29a0226D8".parse()?,
