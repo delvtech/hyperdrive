@@ -154,6 +154,7 @@ impl State {
         // Now calculate short proceeds
         // TODO we've already calculated a couple of internal variables needed by this function,
         // rework to avoid recalculating the curve and bond reserves
+        // https://github.com/delvtech/hyperdrive/issues/943
         let share_reserves_delta =
             self.calculate_close_short_flat_plus_curve(bond_amount, maturity_time, current_time);
         // Calculate flat + curve and subtract the fees from the trade.

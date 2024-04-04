@@ -195,4 +195,16 @@ mod tests {
         assert!(result.is_err());
         Ok(())
     }
+
+    // TODO ideally we would test calculate open short with an amount larger than the maximum size.
+    // However, `calculate_max_short` requires a `checkpoint_exposure`` argument, which requires
+    // implementing checkpointing in the rust sdk.
+    // https://github.com/delvtech/hyperdrive/issues/862
+
+    // TODO ideally we would add a solidity fuzz test that tests `calculate_open_short` against
+    // opening longs in solidity, where we attempt to trade outside of expected values (so that
+    // we can also test error parities as well). However, the current test chain only exposes
+    // the underlying hyperdrive math functions, which doesn't take into account fees and negative
+    // interest checks.
+    // https://github.com/delvtech/hyperdrive/issues/937
 }

@@ -43,6 +43,7 @@ impl State {
     // Calculate the curve portion of the governance fee for close shorts
     // NOTE: Round down to underestimate the governance curve fee
     // TODO: avoid duplicate calculation of close short curve fee
+    // https://github.com/delvtech/hyperdrive/issues/943
     pub fn close_short_governance_fee(
         &self,
         bond_amount: FixedPoint,
