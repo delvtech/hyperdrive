@@ -969,7 +969,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
     }
 
     /// Gets the long that moves the fixed rate to a target value.
-    pub async fn get_targeted_long(
+    pub async fn calculate_targeted_long(
         &self,
         target_rate: FixedPoint,
         maybe_max_iterations: Option<usize>,
@@ -981,7 +981,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
             .get_checkpoint_exposure(state.to_checkpoint(self.now().await?))
             .await?;
         Ok(state
-            .get_targeted_long_with_budget(
+            .calculate_targeted_long_with_budget(
                 self.wallet.base,
                 target_rate,
                 checkpoint_exposure,

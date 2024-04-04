@@ -624,7 +624,7 @@ mod tests {
             let spot_price_after_long = bob
                 .get_state()
                 .await?
-                .calculate_spot_price_after_long(max_long, None);
+                .calculate_spot_price_after_long(max_long, None)?;
             bob.open_long(max_long, None, None).await?;
 
             // One of three things should be true after opening the long:

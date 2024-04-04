@@ -36,7 +36,7 @@ impl State {
 
         // Throw an error if opening the long would result in negative interest.
         let ending_spot_price =
-            self.calculate_spot_price_after_long(base_amount, long_amount.into());
+            self.calculate_spot_price_after_long(base_amount, long_amount.into())?;
         let max_spot_price = self.calculate_max_spot_price();
         if ending_spot_price > max_spot_price {
             return Err(eyre!(
@@ -82,7 +82,6 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use eyre::Result;
     use fixed_point_macros::fixed;
     use rand::{thread_rng, Rng};
     use test_utils::{
@@ -126,7 +125,7 @@ mod tests {
             let expected_spot_price = bob
                 .get_state()
                 .await?
-                .calculate_spot_price_after_long(base_paid, None);
+                .calculate_spot_price_after_long(base_paid, None)?;
 
             // Open the long.
             bob.open_long(base_paid, None, None).await?;
@@ -190,7 +189,7 @@ mod tests {
             let expected_spot_rate = bob
                 .get_state()
                 .await?
-                .calculate_spot_rate_after_long(base_paid, None);
+                .calculate_spot_rate_after_long(base_paid, None)?;
 
             // Open the long.
             bob.open_long(base_paid, None, None).await?;

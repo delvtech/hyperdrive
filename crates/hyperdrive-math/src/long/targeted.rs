@@ -1,4 +1,4 @@
-use ethers::types::{I256, U256};
+use ethers::types::I256;
 use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
@@ -54,7 +54,7 @@ impl State {
             self.trade_deltas_from_reserves(target_share_reserves, target_bond_reserves);
 
         // Determine what rate was achieved.
-        let resulting_rate = self.rate_after_long(target_base_delta, Some(target_bond_delta));
+        let resulting_rate = self.rate_after_long(target_base_delta, Some(target_bond_delta))?;
 
         // The estimated long should always underestimate because the realized price
         // should always be greater than the spot price.
@@ -69,7 +69,7 @@ impl State {
             .is_some()
             && rate_error < allowable_error
         {
-            return Ok(target_base_delta);
+            Ok(target_base_delta)
         } else {
             // We can use the initial guess as a starting point since we know it is less than the target.
             let mut possible_target_base_delta = target_base_delta;
@@ -79,8 +79,10 @@ impl State {
                 let possible_target_bond_delta = self
                     .calculate_open_long(possible_target_base_delta)
                     .unwrap();
-                let resulting_rate = self
-                    .rate_after_long(possible_target_base_delta, Some(possible_target_bond_delta));
+                let resulting_rate = self.rate_after_long(
+                    possible_target_base_delta,
+                    Some(possible_target_bond_delta),
+                )?;
 
                 // We assume that the loss is positive only because Newton's
                 // method and the one-shot approximation will always underestimate.
@@ -108,17 +110,10 @@ impl State {
                     // The derivative of the loss is $l'(x) = r'(x)$.
                     // We return $-l'(x)$ because $r'(x)$ is negative, which
                     // can't be represented with FixedPoint.
-                    let negative_loss_derivative = match self.rate_after_long_derivative_negation(
+                    let negative_loss_derivative = self.rate_after_long_derivative_negation(
                         possible_target_base_delta,
                         possible_target_bond_delta,
-                    ) {
-                        Some(derivative) => derivative,
-                        None => {
-                            return Err(eyre!(
-                            "get_targeted_long: Invalid value when calculating targeted loss derivative.",
-                        ));
-                        }
-                    };
+                    )?;
 
                     // Adding the negative loss derivative instead of subtracting the loss derivative
                     // ∆x_{n+1} = ∆x_{n} - l / l'
@@ -129,14 +124,14 @@ impl State {
             }
 
             // Final solvency check.
-            if !self
+            if self
                 .solvency_after_long(
                     possible_target_base_delta,
                     self.calculate_open_long(possible_target_base_delta)
                         .unwrap(),
                     checkpoint_exposure,
                 )
-                .is_some()
+                .is_none()
             {
                 return Err(eyre!("Guess in `get_targeted_long` is insolvent."));
             }
@@ -146,7 +141,7 @@ impl State {
                 .calculate_open_long(possible_target_base_delta)
                 .unwrap();
             let resulting_rate =
-                self.rate_after_long(possible_target_base_delta, Some(possible_target_bond_delta));
+                self.rate_after_long(possible_target_base_delta, Some(possible_target_bond_delta))?;
             if target_rate > resulting_rate {
                 return Err(eyre!("get_targeted_long: We overshot the zero-crossing.",));
             }
@@ -178,11 +173,10 @@ impl State {
         &self,
         base_amount: FixedPoint,
         bond_amount: Option<FixedPoint>,
-    ) -> FixedPoint {
-        let annualized_time =
-            self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
-        let resulting_price = self.calculate_spot_price_after_long(base_amount, bond_amount);
-        (fixed!(1e18) - resulting_price) / (resulting_price * annualized_time)
+    ) -> Result<FixedPoint> {
+        let resulting_price = self.calculate_spot_price_after_long(base_amount, bond_amount)?;
+        Ok((fixed!(1e18) - resulting_price)
+            / (resulting_price * self.annualized_position_duration()))
     }
 
     /// The derivative of the equation for calculating the rate after a long.
@@ -201,19 +195,14 @@ impl State {
         &self,
         base_amount: FixedPoint,
         bond_amount: FixedPoint,
-    ) -> Option<FixedPoint> {
-        let annualized_time =
-            self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
-        let price = self.calculate_spot_price_after_long(base_amount, Some(bond_amount));
-        let price_derivative = match self.price_after_long_derivative(base_amount, bond_amount) {
-            Some(derivative) => derivative,
-            None => return None,
-        };
+    ) -> Result<FixedPoint> {
+        let price = self.calculate_spot_price_after_long(base_amount, Some(bond_amount))?;
+        let price_derivative = self.price_after_long_derivative(base_amount, bond_amount)?;
         // The actual equation we want to represent is:
         // r' = -p' / (t p^2)
         // We can do a trick to return a positive-only version and
         // indicate that it should be negative in the fn name.
-        Some(price_derivative / (annualized_time * price.pow(fixed!(2e18))))
+        Ok(price_derivative / (self.annualized_position_duration() * price.pow(fixed!(2e18))))
     }
 
     /// The derivative of the price after a long.
@@ -256,7 +245,7 @@ impl State {
         &self,
         base_amount: FixedPoint,
         bond_amount: FixedPoint,
-    ) -> Option<FixedPoint> {
+    ) -> Result<FixedPoint> {
         // g'(x)
         let gov_fee_derivative = self.governance_lp_fee()
             * self.curve_fee()
@@ -277,7 +266,7 @@ impl State {
         // b'(x) = Y'(x)
         let long_amount_derivative = match self.long_amount_derivative(base_amount) {
             Some(derivative) => derivative,
-            None => return None,
+            None => return Err(eyre!("long_amount_derivative failure.")),
         };
 
         // v(x) = a(x) / b(x)
@@ -289,11 +278,9 @@ impl State {
         // p'(x) = v'(x) T v(x)^(T-1)
         // p'(x) = v'(x) T v(x)^(-1)^(1-T)
         // v(x) is flipped to (denominator / numerator) to avoid a negative exponent
-        return Some(
-            inner_derivative
-                * self.time_stretch()
-                * (inner_denominator / inner_numerator).pow(fixed!(1e18) - self.time_stretch()),
-        );
+        Ok(inner_derivative
+            * self.time_stretch()
+            * (inner_denominator / inner_numerator).pow(fixed!(1e18) - self.time_stretch()))
     }
 
     /// Calculate the base & bond deltas from the current state given desired new reserve levels.
@@ -355,14 +342,12 @@ impl State {
         target_rate: F,
     ) -> (FixedPoint, FixedPoint) {
         let target_rate = target_rate.into();
-        let annualized_time =
-            self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
 
         // First get the target share reserves
         let c_over_mu = self
             .vault_share_price()
             .div_up(self.initial_vault_share_price());
-        let scaled_rate = (target_rate.mul_up(annualized_time) + fixed!(1e18))
+        let scaled_rate = (target_rate.mul_up(self.annualized_position_duration()) + fixed!(1e18))
             .pow(fixed!(1e18) / self.time_stretch());
         let target_base_reserves = (self.k_down()
             / (c_over_mu + scaled_rate.pow(fixed!(1e18) - self.time_stretch())))
@@ -378,7 +363,6 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use eyre::Result;
     use rand::{thread_rng, Rng};
     use test_utils::{
         agent::Agent,
@@ -474,7 +458,7 @@ mod tests {
             // Check solvency
             let is_solvent = {
                 let state = bob.get_state().await?;
-                state.get_solvency() > allowable_solvency_error
+                state.calculate_solvency() > allowable_solvency_error
             };
             assert!(is_solvent, "Resulting pool state is not solvent.");
 
