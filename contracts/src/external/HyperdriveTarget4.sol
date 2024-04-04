@@ -45,7 +45,7 @@ abstract contract HyperdriveTarget4 is
     /// @param _minApr The minimum APR at which the LP is willing to supply.
     /// @param _maxApr The maximum APR at which the LP is willing to supply.
     /// @param _options The options that configure how the operation is settled.
-    /// @return lpShares The number of LP tokens created.
+    /// @return The number of LP tokens created.
     function addLiquidity(
         uint256 _contribution,
         uint256 _minLpSharePrice,
