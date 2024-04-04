@@ -41,6 +41,11 @@ impl State {
     ) -> FixedPoint {
         let bond_amount = bond_amount.into();
 
+        if bond_amount < self.config.minimum_transaction_amount.into() {
+            // TODO would be nice to return a `Result` here instead of a panic.
+            panic!("MinimumTransactionAmount: Input amount too low");
+        }
+
         // Subtract the fees from the trade
         self.calculate_close_long_flat_plus_curve(bond_amount, maturity_time, current_time)
             - self.close_long_curve_fee(bond_amount, maturity_time, current_time)
@@ -97,6 +102,22 @@ mod tests {
             }
         }
 
+        Ok(())
+    }
+
+    // Tests close long with an amount smaller than the minimum.
+    #[tokio::test]
+    async fn test_close_long_min_txn_amount() -> Result<()> {
+        let mut rng = thread_rng();
+        let state = rng.gen::<State>();
+        let result = std::panic::catch_unwind(|| {
+            state.calculate_close_long(
+                state.config.minimum_transaction_amount - 10,
+                0.into(),
+                0.into(),
+            )
+        });
+        assert!(result.is_err());
         Ok(())
     }
 }

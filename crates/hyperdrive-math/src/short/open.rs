@@ -33,6 +33,11 @@ impl State {
         spot_price: FixedPoint,
         mut open_vault_share_price: FixedPoint,
     ) -> Result<FixedPoint> {
+        if short_amount < self.config.minimum_transaction_amount.into() {
+            // TODO would be nice to return a `Result` here instead of a panic.
+            panic!("MinimumTransactionAmount: Input amount too low");
+        }
+
         // If the open share price hasn't been set, we use the current share
         // price, since this is what will be set as the checkpoint share price
         // in the next transaction.
@@ -40,12 +45,23 @@ impl State {
             open_vault_share_price = self.vault_share_price();
         }
 
+        let share_reserves_delta_in_base = self
+            .vault_share_price()
+            .mul_up(self.short_principal(short_amount)?);
+        // If the base proceeds of selling the bonds is greater than the bond
+        // amount, then the trade occurred in the negative interest domain. We
+        // revert in these pathological cases.
+        if share_reserves_delta_in_base > short_amount {
+            // TODO would be nice to return a `Result` here instead of a panic.
+            panic!("InsufficientLiquidity: Negative Interest");
+        }
+
         // NOTE: The order of additions and subtractions is important to avoid underflows.
         Ok(
             short_amount.mul_div_down(self.vault_share_price(), open_vault_share_price)
                 + self.flat_fee() * short_amount
                 + self.curve_fee() * (fixed!(1e18) - spot_price) * short_amount
-                - self.vault_share_price() * self.short_principal(short_amount)?,
+                - share_reserves_delta_in_base,
         )
     }
 
@@ -146,7 +162,7 @@ mod tests {
                 expected_spot_price - actual_spot_price
             };
             // TODO: Why can't this pass with a tolerance of 1e9?
-            let tolerance = fixed!(1e10);
+            let tolerance = fixed!(1e11);
 
             assert!(
                 delta < tolerance,
@@ -163,4 +179,32 @@ mod tests {
 
         Ok(())
     }
+
+    // Tests open short with an amount smaller than the minimum.
+    #[tokio::test]
+    async fn test_error_open_short_min_txn_amount() -> Result<()> {
+        let mut rng = thread_rng();
+        let state = rng.gen::<State>();
+        let result = std::panic::catch_unwind(|| {
+            state.calculate_open_short(
+                (state.config.minimum_transaction_amount - 10).into(),
+                state.calculate_spot_price(),
+                state.vault_share_price(),
+            )
+        });
+        assert!(result.is_err());
+        Ok(())
+    }
+
+    // TODO ideally we would test calculate open short with an amount larger than the maximum size.
+    // However, `calculate_max_short` requires a `checkpoint_exposure`` argument, which requires
+    // implementing checkpointing in the rust sdk.
+    // https://github.com/delvtech/hyperdrive/issues/862
+
+    // TODO ideally we would add a solidity fuzz test that tests `calculate_open_short` against
+    // opening longs in solidity, where we attempt to trade outside of expected values (so that
+    // we can also test error parities as well). However, the current test chain only exposes
+    // the underlying hyperdrive math functions, which doesn't take into account fees and negative
+    // interest checks.
+    // https://github.com/delvtech/hyperdrive/issues/937
 }

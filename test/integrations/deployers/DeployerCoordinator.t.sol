@@ -320,6 +320,61 @@ contract DeployerCoordinatorTest is HyperdriveTest {
         assertEq(deployment.target4, targets[3]);
     }
 
+    function test_deployTarget_frontRun_success() external {
+        // Deploy all target instances as the frontrunner (bob)
+        vm.stopPrank();
+        vm.startPrank(bob);
+        for (uint256 i = 0; i < 5; i++) {
+            coordinator.deployTarget(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                i,
+                SALT
+            );
+        }
+        vm.stopPrank();
+
+        // Deploy all target instances as the intended deployer (alice)
+        vm.startPrank(alice);
+        address[] memory targets = new address[](5);
+        for (uint256 i = 0; i < 5; i++) {
+            targets[i] = coordinator.deployTarget(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                i,
+                SALT
+            );
+        }
+
+        // Ensure that the deployment was configured correctly.
+        HyperdriveDeployerCoordinator.Deployment memory deployment = coordinator
+            .deployments(alice, DEPLOYMENT_ID);
+        assertEq(
+            deployment.configHash,
+            keccak256(abi.encode(config)),
+            "incorrect config hash"
+        );
+        assertEq(
+            deployment.extraDataHash,
+            keccak256(new bytes(0)),
+            "incorrect extraData hash"
+        );
+        assertEq(
+            deployment.initialSharePrice,
+            ONE,
+            "incorrect initialSharePrice"
+        );
+
+        // Ensure the targets have the correct addresses
+        assertEq(deployment.target0, targets[0], "incorrect target0");
+        assertEq(deployment.target1, targets[1], "incorrect target1");
+        assertEq(deployment.target2, targets[2], "incorrect target2");
+        assertEq(deployment.target3, targets[3], "incorrect target3");
+        assertEq(deployment.target4, targets[4], "incorrect target4");
+    }
+
     function test_deploy_hyperdriveAlreadyDeployed() external {
         // Deploy the target instances and a Hyperdrive instance.
         for (uint256 i = 0; i < 5; i++) {

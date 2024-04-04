@@ -524,12 +524,15 @@ abstract contract HyperdriveLP is
         (uint256 withdrawalSharesRedeemed, uint256 shareProceeds) = LPMath
             .calculateDistributeExcessIdle(params);
 
+        // Remove the withdrawal pool proceeds from the reserves.
+        success = _updateLiquiditySafe(-shareProceeds.toInt256());
+        if (!success) {
+            return false;
+        }
+
         // Update the withdrawal pool's state.
         _withdrawPool.readyToWithdraw += withdrawalSharesRedeemed.toUint128();
         _withdrawPool.proceeds += shareProceeds.toUint128();
-
-        // Remove the withdrawal pool proceeds from the reserves.
-        _updateLiquidity(-shareProceeds.toInt256());
 
         return true;
     }
@@ -537,23 +540,39 @@ abstract contract HyperdriveLP is
     /// @dev Updates the pool's liquidity and holds the pool's spot price constant.
     /// @param _shareReservesDelta The delta that should be applied to share reserves.
     function _updateLiquidity(int256 _shareReservesDelta) internal {
-        // Calculate the updated reserves.
+        // Attempt updating the pool's liquidity and revert if the update fails.
+        if (!_updateLiquiditySafe(_shareReservesDelta)) {
+            revert IHyperdrive.UpdateLiquidityFailed();
+        }
+    }
+
+    /// @dev Updates the pool's liquidity and holds the pool's spot price constant.
+    /// @param _shareReservesDelta The delta that should be applied to share reserves.
+    /// @return A flag indicating if the update succeeded.
+    function _updateLiquiditySafe(
+        int256 _shareReservesDelta
+    ) internal returns (bool) {
+        // Calculate the updated reserves and return false if the calculation fails.
         uint256 shareReserves_ = _marketState.shareReserves;
         int256 shareAdjustment_ = _marketState.shareAdjustment;
         uint256 bondReserves_ = _marketState.bondReserves;
         (
             uint256 updatedShareReserves,
             int256 updatedShareAdjustment,
-            uint256 updatedBondReserves
-        ) = LPMath.calculateUpdateLiquidity(
+            uint256 updatedBondReserves,
+            bool success
+        ) = LPMath.calculateUpdateLiquiditySafe(
                 shareReserves_,
                 shareAdjustment_,
                 bondReserves_,
                 _minimumShareReserves,
                 _shareReservesDelta
             );
+        if (!success) {
+            return false;
+        }
 
-        // Update the market state.
+        // Update the market state and return true since the update was successful.
         if (updatedShareReserves != shareReserves_) {
             _marketState.shareReserves = updatedShareReserves.toUint128();
         }
@@ -563,5 +582,6 @@ abstract contract HyperdriveLP is
         if (updatedBondReserves != bondReserves_) {
             _marketState.bondReserves = updatedBondReserves.toUint128();
         }
+        return true;
     }
 }

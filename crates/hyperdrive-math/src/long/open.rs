@@ -24,6 +24,12 @@ impl State {
     /// $$
     pub fn calculate_open_long<F: Into<FixedPoint>>(&self, base_amount: F) -> FixedPoint {
         let base_amount = base_amount.into();
+
+        if base_amount < self.config.minimum_transaction_amount.into() {
+            // TODO would be nice to return a `Result` here instead of a panic.
+            panic!("MinimumTransactionAmount: Input amount too low");
+        }
+
         let long_amount =
             self.calculate_bonds_out_given_shares_in_down(base_amount / self.vault_share_price());
 
@@ -209,7 +215,30 @@ mod tests {
             alice.reset(Default::default());
             bob.reset(Default::default());
         }
-
         Ok(())
     }
+
+    // Tests open long with an amount smaller than the minimum.
+    #[tokio::test]
+    async fn test_error_open_long_min_txn_amount() -> Result<()> {
+        let mut rng = thread_rng();
+        let state = rng.gen::<State>();
+        let result = std::panic::catch_unwind(|| {
+            state.calculate_open_long(state.config.minimum_transaction_amount - 10)
+        });
+        assert!(result.is_err());
+        Ok(())
+    }
+
+    // TODO ideally we would test calculate open long with an amount larger than the maximum size.
+    // However, `calculate_max_long` requires a `checkpoint_exposure` argument, which requires
+    // implementing checkpointing in the rust sdk.
+    // https://github.com/delvtech/hyperdrive/issues/862
+
+    // TODO ideally we would add a solidity fuzz test that tests `calculate_open_long` against
+    // opening longs in solidity, where we attempt to trade outside of expected values (so that
+    // we can also test error parities as well). However, the current test chain only exposes
+    // the underlying hyperdrive math functions, which doesn't take into account fees and negative
+    // interest checks.
+    // https://github.com/delvtech/hyperdrive/issues/937
 }

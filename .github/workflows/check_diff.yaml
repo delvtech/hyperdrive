@@ -16,7 +16,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     outputs:
-      changed: ${{ steps.check.outputs.changed }}
+      changed: ${{ steps.check-pr.outputs.changed || steps.check-push.outputs.changed || steps.check-merge-group.outputs.changed }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -25,10 +25,33 @@ jobs:
           submodules: recursive
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check for changes
-        id: check
+      - name: Check for changes (Pull Request)
+        if: github.event_name == 'pull_request'
+        id: check-pr
         run: |
           FILES_CHANGED=$(git diff --name-only ${{ github.event.pull_request.base.sha }} HEAD)
+          if echo "$FILES_CHANGED" | grep -m 1 "${{ inputs.pattern }}"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for changes (Push)
+        if: github.event_name == 'push'
+        id: check-push
+        run: |
+          FILES_CHANGED=$(git diff --name-only HEAD^ HEAD)
+          if echo "$FILES_CHANGED" | grep -m 1 "${{ inputs.pattern }}"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for changes (Merge Group)
+        if: github.event_name == 'merge_group'
+        id: check-merge-group
+        run: |
+          FILES_CHANGED=$(git diff --name-only ${{ github.event.merge_group.head_ref }} HEAD)
           if echo "$FILES_CHANGED" | grep -m 1 "${{ inputs.pattern }}"; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
