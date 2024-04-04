@@ -78,7 +78,7 @@ abstract contract HyperdriveCheckpoint is
             checkpointVaultSharePrice = _vaultSharePrice;
         } else {
             for (
-                uint256 time = _checkpointTime;
+                uint256 time = _checkpointTime + _checkpointDuration;
                 ;
                 time += _checkpointDuration
             ) {
