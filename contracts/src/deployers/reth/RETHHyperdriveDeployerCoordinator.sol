@@ -127,7 +127,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
 
         // Ensure that the minimum transaction amount are equal to 1e15. This
         // value has been tested to prevent precision issues.
-        if (_deployConfig.minimumTransactionAmount != 1e16) {
+        if (_deployConfig.minimumTransactionAmount != 1e15) {
             revert IHyperdriveDeployerCoordinator
                 .InvalidMinimumTransactionAmount();
         }
