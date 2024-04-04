@@ -2,7 +2,7 @@ use ethers::types::U256;
 use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
-use hyperdrive_math::{calculate_initial_bond_reserves, get_effective_share_reserves};
+use hyperdrive_math::{calculate_effective_share_reserves, calculate_initial_bond_reserves};
 use hyperdrive_wrappers::wrappers::ihyperdrive::Checkpoint;
 use rand::{thread_rng, Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
@@ -38,13 +38,14 @@ async fn preamble(
     while time_remaining > uint256!(0) {
         // Bob opens a long.
         let discount = rng.gen_range(fixed!(0.1e18)..=fixed!(0.5e18));
-        let long_amount = rng.gen_range(fixed!(1e12)..=bob.get_max_long(None).await? * discount);
+        let long_amount =
+            rng.gen_range(fixed!(1e12)..=bob.calculate_max_long(None).await? * discount);
         bob.open_long(long_amount, None, None).await?;
 
         // Celine opens a short.
         let discount = rng.gen_range(fixed!(0.1e18)..=fixed!(0.5e18));
         let short_amount =
-            rng.gen_range(fixed!(1e12)..=celine.get_max_short(None).await? * discount);
+            rng.gen_range(fixed!(1e12)..=celine.calculate_max_short(None).await? * discount);
         celine.open_short(short_amount, None, None).await?;
 
         // Advance the time and mint all of the intermediate checkpoints.
@@ -73,7 +74,7 @@ async fn preamble(
 // the max long.
 #[ignore]
 #[tokio::test]
-pub async fn test_integration_get_max_short() -> Result<()> {
+pub async fn test_integration_calculate_max_short() -> Result<()> {
     // Set up a random number generator. We use ChaCha8Rng with a randomly
     // generated seed, which makes it easy to reproduce test failures given
     // the seed.
@@ -124,7 +125,7 @@ pub async fn test_integration_get_max_short() -> Result<()> {
         let checkpoint_exposure = alice
             .get_checkpoint_exposure(state.to_checkpoint(alice.now().await?))
             .await?;
-        let global_max_short = state.get_max_short(
+        let global_max_short = state.calculate_max_short(
             U256::MAX,
             open_vault_share_price,
             checkpoint_exposure,
@@ -133,7 +134,7 @@ pub async fn test_integration_get_max_short() -> Result<()> {
         );
         let budget = bob.base();
         let slippage_tolerance = fixed!(0.001e18);
-        let max_short = bob.get_max_short(Some(slippage_tolerance)).await?;
+        let max_short = bob.calculate_max_short(Some(slippage_tolerance)).await?;
         bob.open_short(max_short, None, None).await?;
 
         if max_short != global_max_short {
@@ -165,7 +166,7 @@ pub async fn test_integration_get_max_short() -> Result<()> {
 // the max long.
 #[ignore]
 #[tokio::test]
-pub async fn test_integration_get_max_long() -> Result<()> {
+pub async fn test_integration_calculate_max_long() -> Result<()> {
     // Set up a random number generator. We use ChaCha8Rng with a randomly
     // generated seed, which makes it easy to reproduce test failures given
     // the seed.
@@ -210,15 +211,18 @@ pub async fn test_integration_get_max_long() -> Result<()> {
         //    considering fees.
         // 2. The pool's solvency is close to zero.
         // 3. Bob's budget is consumed.
-        let max_spot_price = bob.get_state().await?.get_max_spot_price();
-        let max_long = bob.get_max_long(None).await?;
-        let spot_price_after_long = bob.get_state().await?.get_spot_price_after_long(max_long);
+        let max_spot_price = bob.get_state().await?.calculate_max_spot_price();
+        let max_long = bob.calculate_max_long(None).await?;
+        let spot_price_after_long = bob
+            .get_state()
+            .await?
+            .calculate_spot_price_after_long(max_long, None);
         bob.open_long(max_long, None, None).await?;
         let is_max_price = max_spot_price - spot_price_after_long < fixed!(1e15);
         let is_solvency_consumed = {
             let state = bob.get_state().await?;
             let error_tolerance = fixed!(1_000e18).mul_div_down(fixed_rate, fixed!(0.1e18));
-            state.get_solvency() < error_tolerance
+            state.calculate_solvency() < error_tolerance
         };
         let is_budget_consumed = {
             let error_tolerance = fixed!(1e18);
@@ -275,14 +279,14 @@ async fn test_calculate_bonds_given_shares_and_rate() -> Result<()> {
     // Calculate the bond reserves that target the current rate with the current
     // share reserves.
     let state = alice.get_state().await?;
-    let effective_share_reserves = get_effective_share_reserves(
+    let effective_share_reserves = calculate_effective_share_reserves(
         state.info.share_reserves.into(),
         state.info.share_adjustment.into(),
     );
     let rust_reserves = calculate_initial_bond_reserves(
         effective_share_reserves,
         state.config.initial_vault_share_price.into(),
-        state.get_spot_rate(),
+        state.calculate_spot_rate(),
         state.config.position_duration.into(),
         state.config.time_stretch.into(),
     );

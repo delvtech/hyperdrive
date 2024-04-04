@@ -121,6 +121,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         config.linkerCodeHash = factory.linkerCodeHash();
         config.timeStretch = 0;
         config.baseToken = underlyingToken;
+        config.vaultSharesToken = token;
         config.minimumTransactionAmount = 1e6;
         config.minimumShareReserves = 1e6;
         uint256 contribution = 7_500e6;
@@ -136,12 +137,11 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         );
 
         // Deploy and set hyperdrive instance.
-        bytes memory extraData = abi.encode(address(token));
         factory.deployTarget(
             bytes32(uint256(0xbeefbabe)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             FIXED_RATE,
             FIXED_RATE,
             0,
@@ -151,7 +151,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
             bytes32(uint256(0xbeefbabe)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             FIXED_RATE,
             FIXED_RATE,
             1,
@@ -161,7 +161,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
             bytes32(uint256(0xbeefbabe)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             FIXED_RATE,
             FIXED_RATE,
             2,
@@ -171,7 +171,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
             bytes32(uint256(0xbeefbabe)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             FIXED_RATE,
             FIXED_RATE,
             3,
@@ -181,7 +181,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
             bytes32(uint256(0xbeefbabe)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             FIXED_RATE,
             FIXED_RATE,
             4,
@@ -191,7 +191,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
             bytes32(uint256(0xbeefbabe)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             contribution,
             FIXED_RATE,
             FIXED_RATE,

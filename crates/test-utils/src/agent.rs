@@ -14,7 +14,6 @@ use hyperdrive_addresses::Addresses;
 use hyperdrive_math::State;
 use hyperdrive_wrappers::wrappers::{
     erc20_mintable::ERC20Mintable,
-    ierc4626_hyperdrive::IERC4626Hyperdrive,
     ihyperdrive::{Checkpoint, IHyperdrive, IHyperdriveEvents, Options, PoolConfig},
     mock_erc4626::MockERC4626,
 };
@@ -165,8 +164,8 @@ impl Agent<ChainClient, ChaCha8Rng> {
         maybe_seed: Option<u64>,
     ) -> Result<Self> {
         let seed = maybe_seed.unwrap_or(17);
-        let vault = IERC4626Hyperdrive::new(addresses.erc4626_hyperdrive, client.clone())
-            .vault()
+        let vault = IHyperdrive::new(addresses.erc4626_hyperdrive, client.clone())
+            .vault_shares_token()
             .call()
             .await?;
         let vault = MockERC4626::new(vault, client.clone());
@@ -695,8 +694,8 @@ impl Agent<ChainClient, ChaCha8Rng> {
                     .gen_range(fixed!(1)..=self.wallet.withdrawal_shares),
             ));
         }
-        let max_long_base = self.get_max_long(None).await?;
-        let max_short_bonds = self.get_max_short(None).await?;
+        let max_long_base = self.calculate_max_long(None).await?;
+        let max_short_bonds = self.calculate_max_short(None).await?;
         if max_long_base >= fixed!(1e18) {
             actions
                 .push(Action::OpenLong(self.rng.gen_range(
@@ -929,69 +928,65 @@ impl Agent<ChainClient, ChaCha8Rng> {
         Ok(self.hyperdrive.get_checkpoint_exposure(id).await?)
     }
 
-    /// Gets the spot price.
-    pub async fn get_spot_price(&self) -> Result<FixedPoint> {
-        Ok(self.get_state().await?.get_spot_price())
+    /// Calculates the spot price.
+    pub async fn calculate_spot_price(&self) -> Result<FixedPoint> {
+        Ok(self.get_state().await?.calculate_spot_price())
     }
 
-    /// Gets the amount of longs that will be opened for a given amount of base
+    /// Calculates the amount of longs that will be opened for a given amount of base
     /// with the current market state.
     pub async fn calculate_open_long(&self, base_amount: FixedPoint) -> Result<FixedPoint> {
         let state = self.get_state().await?;
         Ok(state.calculate_open_long(base_amount))
     }
 
-    /// Gets the deposit required to short a given amount of bonds with the
+    /// Calculates the deposit required to short a given amount of bonds with the
     /// current market state.
     pub async fn calculate_open_short(&self, short_amount: FixedPoint) -> Result<FixedPoint> {
         let state = self.get_state().await?;
         let Checkpoint {
             vault_share_price: open_vault_share_price,
             ..
-        } = self
-            .hyperdrive
-            .get_checkpoint(state.to_checkpoint(self.now().await?))
-            .await?;
+        } = self.get_checkpoint(self.latest_checkpoint().await?).await?;
         state.calculate_open_short(
             short_amount,
-            state.get_spot_price(),
+            state.calculate_spot_price(),
             open_vault_share_price.into(),
         )
     }
 
-    /// Gets the max long that can be opened in the current checkpoint.
-    pub async fn get_max_long(&self, maybe_max_iterations: Option<usize>) -> Result<FixedPoint> {
+    /// Calculates the max long that can be opened in the current checkpoint.
+    pub async fn calculate_max_long(
+        &self,
+        maybe_max_iterations: Option<usize>,
+    ) -> Result<FixedPoint> {
         let state = self.get_state().await?;
         let checkpoint_exposure = self
             .hyperdrive
             .get_checkpoint_exposure(state.to_checkpoint(self.now().await?))
             .await?;
-        Ok(state.get_max_long(self.wallet.base, checkpoint_exposure, maybe_max_iterations))
+        Ok(state.calculate_max_long(self.wallet.base, checkpoint_exposure, maybe_max_iterations))
     }
 
-    /// Gets the max short that can be opened in the current checkpoint.
+    /// Calculates the max short that can be opened in the current checkpoint.
     ///
     /// Since interest can accrue between the time the calculation is made and
     /// the transaction is submitted, it's convenient to have a slippage
     /// tolerance to lower the revert rate.
-    pub async fn get_max_short(
+    pub async fn calculate_max_short(
         &self,
         maybe_slippage_tolerance: Option<FixedPoint>,
     ) -> Result<FixedPoint> {
         let budget =
             self.wallet.base * (fixed!(1e18) - maybe_slippage_tolerance.unwrap_or(fixed!(0.01e18)));
 
-        let state = self.get_state().await?;
+        let latest_checkpoint = self.latest_checkpoint().await?;
         let Checkpoint {
             vault_share_price: open_vault_share_price,
-        } = self
-            .hyperdrive
-            .get_checkpoint(state.to_checkpoint(self.now().await?))
-            .await?;
-        let checkpoint_exposure = self
-            .hyperdrive
-            .get_checkpoint_exposure(state.to_checkpoint(self.now().await?))
-            .await?;
+            ..
+        } = self.get_checkpoint(latest_checkpoint).await?;
+        let checkpoint_exposure = self.get_checkpoint_exposure(latest_checkpoint).await?;
+        let state = self.get_state().await?;
 
         // We linearly interpolate between the current spot price and the minimum
         // price that the pool can support. This is a conservative estimate of
@@ -1001,8 +996,8 @@ impl Agent<ChainClient, ChaCha8Rng> {
             // weighted average of the spot price and the minimum possible
             // spot price the pool can quote. We choose the weights so that this
             // is an underestimate of the worst case realized price.
-            let spot_price = state.get_spot_price();
-            let min_price = state.get_min_price();
+            let spot_price = state.calculate_spot_price();
+            let min_price = state.calculate_min_price();
 
             // Calculate the linear interpolation.
             let base_reserves = FixedPoint::from(state.info.vault_share_price)
@@ -1012,7 +1007,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
             spot_price * (fixed!(1e18) - weight) + min_price * weight
         };
 
-        Ok(state.get_max_short(
+        Ok(state.calculate_max_short(
             budget,
             open_vault_share_price,
             checkpoint_exposure,

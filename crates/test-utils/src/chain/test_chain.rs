@@ -1,8 +1,6 @@
-use std::{convert::TryFrom, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
 use ethers::{
-    abi,
-    abi::Token,
     core::utils::{keccak256, Anvil},
     middleware::SignerMiddleware,
     prelude::EthLogDecode,
@@ -15,7 +13,7 @@ use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
 use hyperdrive_addresses::Addresses;
-use hyperdrive_math::get_time_stretch;
+use hyperdrive_math::calculate_time_stretch;
 use hyperdrive_wrappers::wrappers::{
     erc20_forwarder_factory::ERC20ForwarderFactory,
     erc20_mintable::ERC20Mintable,
@@ -36,8 +34,7 @@ use hyperdrive_wrappers::wrappers::{
     hyperdrive_factory::{
         Fees as FactoryFees, HyperdriveFactory, HyperdriveFactoryEvents, Options, PoolDeployConfig,
     },
-    ierc4626_hyperdrive::IERC4626Hyperdrive,
-    ihyperdrive::{Fees, PoolConfig},
+    ihyperdrive::{Fees, IHyperdrive, PoolConfig},
     mock_erc4626::MockERC4626,
     mock_fixed_point_math::MockFixedPointMath,
     mock_hyperdrive_math::MockHyperdriveMath,
@@ -484,6 +481,7 @@ impl TestChain {
         // Deploy the Hyperdrive instance.
         let config = PoolConfig {
             base_token: base.address(),
+            vault_shares_token: vault.address(),
             linker_factory: Address::from_low_u64_be(1),
             linker_code_hash: [1; 32],
             initial_vault_share_price: uint256!(1e18),
@@ -491,8 +489,11 @@ impl TestChain {
             minimum_transaction_amount: uint256!(0.001e18),
             position_duration: U256::from(60 * 60 * 24 * 365), // 1 year
             checkpoint_duration: U256::from(60 * 60 * 24),     // 1 day
-            time_stretch: get_time_stretch(fixed!(0.05e18), U256::from(60 * 60 * 24 * 365).into())
-                .into(), // time stretch for 5% rate
+            time_stretch: calculate_time_stretch(
+                fixed!(0.05e18),
+                U256::from(60 * 60 * 24 * 365).into(),
+            )
+            .into(), // time stretch for 5% rate
             fee_collector: client.address(),
             sweep_collector: client.address(),
             governance: client.address(),
@@ -503,19 +504,19 @@ impl TestChain {
                 governance_zombie: uint256!(0.15e18),
             },
         };
-        let target0 = ERC4626Target0::deploy(client.clone(), (config.clone(), vault.address()))?
+        let target0 = ERC4626Target0::deploy(client.clone(), (config.clone(),))?
             .send()
             .await?;
-        let target1 = ERC4626Target1::deploy(client.clone(), (config.clone(), vault.address()))?
+        let target1 = ERC4626Target1::deploy(client.clone(), (config.clone(),))?
             .send()
             .await?;
-        let target2 = ERC4626Target2::deploy(client.clone(), (config.clone(), vault.address()))?
+        let target2 = ERC4626Target2::deploy(client.clone(), (config.clone(),))?
             .send()
             .await?;
-        let target3 = ERC4626Target3::deploy(client.clone(), (config.clone(), vault.address()))?
+        let target3 = ERC4626Target3::deploy(client.clone(), (config.clone(),))?
             .send()
             .await?;
-        let target4 = ERC4626Target4::deploy(client.clone(), (config.clone(), vault.address()))?
+        let target4 = ERC4626Target4::deploy(client.clone(), (config.clone(),))?
             .send()
             .await?;
         let erc4626_hyperdrive = ERC4626Hyperdrive::deploy(
@@ -527,7 +528,6 @@ impl TestChain {
                 target2.address(),
                 target3.address(),
                 target4.address(),
-                vault.address(),
             ),
         )?
         .send()
@@ -729,6 +729,7 @@ impl TestChain {
                 linker_code_hash: factory.linker_code_hash().call().await?,
                 time_stretch: uint256!(0),
                 base_token: base.address(),
+                vault_shares_token: vault.address(),
                 minimum_share_reserves: config.erc4626_hyperdrive_minimum_share_reserves,
                 minimum_transaction_amount: config.erc4626_hyperdrive_minimum_transaction_amount,
                 position_duration: config.erc4626_hyperdrive_position_duration,
@@ -745,7 +746,7 @@ impl TestChain {
                     [0x01; 32],
                     erc4626_deployer_coordinator.address(),
                     pool_config.clone(),
-                    abi::encode(&[Token::Address(vault.address())]).into(),
+                    Vec::new().into(),
                     config.erc4626_hyperdrive_fixed_apr,
                     config.erc4626_hyperdrive_time_stretch_apr,
                     U256::from(0),
@@ -758,7 +759,7 @@ impl TestChain {
                     [0x01; 32],
                     erc4626_deployer_coordinator.address(),
                     pool_config.clone(),
-                    abi::encode(&[Token::Address(vault.address())]).into(),
+                    Vec::new().into(),
                     config.erc4626_hyperdrive_fixed_apr,
                     config.erc4626_hyperdrive_time_stretch_apr,
                     U256::from(1),
@@ -771,7 +772,7 @@ impl TestChain {
                     [0x01; 32],
                     erc4626_deployer_coordinator.address(),
                     pool_config.clone(),
-                    abi::encode(&[Token::Address(vault.address())]).into(),
+                    Vec::new().into(),
                     config.erc4626_hyperdrive_fixed_apr,
                     config.erc4626_hyperdrive_time_stretch_apr,
                     U256::from(2),
@@ -784,7 +785,7 @@ impl TestChain {
                     [0x01; 32],
                     erc4626_deployer_coordinator.address(),
                     pool_config.clone(),
-                    abi::encode(&[Token::Address(vault.address())]).into(),
+                    Vec::new().into(),
                     config.erc4626_hyperdrive_fixed_apr,
                     config.erc4626_hyperdrive_time_stretch_apr,
                     U256::from(3),
@@ -797,7 +798,7 @@ impl TestChain {
                     [0x01; 32],
                     erc4626_deployer_coordinator.address(),
                     pool_config.clone(),
-                    abi::encode(&[Token::Address(vault.address())]).into(),
+                    Vec::new().into(),
                     config.erc4626_hyperdrive_fixed_apr,
                     config.erc4626_hyperdrive_time_stretch_apr,
                     U256::from(4),
@@ -810,7 +811,7 @@ impl TestChain {
                     [0x01; 32],
                     erc4626_deployer_coordinator.address(),
                     pool_config,
-                    abi::encode(&[Token::Address(vault.address())]).into(),
+                    Vec::new().into(),
                     config.erc4626_hyperdrive_contribution,
                     config.erc4626_hyperdrive_fixed_apr,
                     config.erc4626_hyperdrive_time_stretch_apr,
@@ -843,23 +844,22 @@ impl TestChain {
 
         // Deploy the StETHHyperdrive deployers and add them to the factory.
         let steth_deployer_coordinator = {
-            let core_deployer =
-                StETHHyperdriveCoreDeployer::deploy(client.clone(), lido.address())?
-                    .send()
-                    .await?;
-            let target0 = StETHTarget0Deployer::deploy(client.clone(), lido.address())?
+            let core_deployer = StETHHyperdriveCoreDeployer::deploy(client.clone(), ())?
                 .send()
                 .await?;
-            let target1 = StETHTarget1Deployer::deploy(client.clone(), lido.address())?
+            let target0 = StETHTarget0Deployer::deploy(client.clone(), ())?
                 .send()
                 .await?;
-            let target2 = StETHTarget2Deployer::deploy(client.clone(), lido.address())?
+            let target1 = StETHTarget1Deployer::deploy(client.clone(), ())?
                 .send()
                 .await?;
-            let target3 = StETHTarget3Deployer::deploy(client.clone(), lido.address())?
+            let target2 = StETHTarget2Deployer::deploy(client.clone(), ())?
                 .send()
                 .await?;
-            let target4 = StETHTarget4Deployer::deploy(client.clone(), lido.address())?
+            let target3 = StETHTarget3Deployer::deploy(client.clone(), ())?
+                .send()
+                .await?;
+            let target4 = StETHTarget4Deployer::deploy(client.clone(), ())?
                 .send()
                 .await?;
             StETHHyperdriveDeployerCoordinator::deploy(
@@ -902,6 +902,7 @@ impl TestChain {
                 linker_code_hash: factory.linker_code_hash().call().await?,
                 time_stretch: uint256!(0),
                 base_token: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE".parse()?,
+                vault_shares_token: lido.address(),
                 minimum_share_reserves: config.steth_hyperdrive_minimum_share_reserves,
                 minimum_transaction_amount: config.steth_hyperdrive_minimum_transaction_amount,
                 position_duration: config.steth_hyperdrive_position_duration,
@@ -1043,7 +1044,7 @@ impl TestChain {
             provider.clone(),
             signer.with_chain_id(provider.get_chainid().await?.low_u64()),
         ));
-        let hyperdrive = IERC4626Hyperdrive::new(addresses.erc4626_hyperdrive, client.clone());
+        let hyperdrive = IHyperdrive::new(addresses.erc4626_hyperdrive, client.clone());
 
         // Get the contract addresses of the vault and the targets.
         let target0_address = hyperdrive.target_0().call().await?;
@@ -1051,7 +1052,7 @@ impl TestChain {
         let target2_address = hyperdrive.target_2().call().await?;
         let target3_address = hyperdrive.target_3().call().await?;
         let target4_address = hyperdrive.target_4().call().await?;
-        let vault_address = hyperdrive.vault().call().await?;
+        let vault_address = hyperdrive.vault_shares_token().call().await?;
 
         // Deploy templates for each of the contracts that should be etched and
         // get a list of targets and templates. In order for the contracts to
@@ -1325,9 +1326,6 @@ impl TestChainWithMocks {
 
 #[cfg(test)]
 mod tests {
-    use hyperdrive_math::get_time_stretch;
-    use hyperdrive_wrappers::wrappers::ihyperdrive::{Fees, IHyperdrive};
-
     use super::*;
 
     #[tokio::test]
@@ -1357,7 +1355,7 @@ mod tests {
         );
         assert_eq!(
             config.time_stretch,
-            get_time_stretch(
+            calculate_time_stretch(
                 test_chain_config.erc4626_hyperdrive_time_stretch_apr.into(),
                 test_chain_config
                     .erc4626_hyperdrive_position_duration
@@ -1399,7 +1397,7 @@ mod tests {
         );
         assert_eq!(
             config.time_stretch,
-            get_time_stretch(
+            calculate_time_stretch(
                 test_chain_config.steth_hyperdrive_time_stretch_apr.into(),
                 test_chain_config.steth_hyperdrive_position_duration.into(),
             )
@@ -1451,7 +1449,7 @@ mod tests {
         );
         assert_eq!(
             config.time_stretch,
-            get_time_stretch(
+            calculate_time_stretch(
                 test_chain_config.erc4626_hyperdrive_time_stretch_apr.into(),
                 test_chain_config
                     .erc4626_hyperdrive_position_duration
@@ -1493,7 +1491,7 @@ mod tests {
         );
         assert_eq!(
             config.time_stretch,
-            get_time_stretch(
+            calculate_time_stretch(
                 test_chain_config.steth_hyperdrive_time_stretch_apr.into(),
                 test_chain_config.steth_hyperdrive_position_duration.into(),
             )

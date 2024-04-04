@@ -72,6 +72,8 @@ interface IHyperdrive is
     struct PoolDeployConfig {
         /// @dev The address of the base token.
         IERC20 baseToken;
+        /// @dev The address of the vault shares token.
+        IERC20 vaultSharesToken;
         /// @dev The linker factory used by this Hyperdrive instance.
         address linkerFactory;
         /// @dev The hash of the ERC20 linker's code. This is used to derive the
@@ -101,6 +103,8 @@ interface IHyperdrive is
     struct PoolConfig {
         /// @dev The address of the base token.
         IERC20 baseToken;
+        /// @dev The address of the vault shares token.
+        IERC20 vaultSharesToken;
         /// @dev The linker factory used by this Hyperdrive instance.
         address linkerFactory;
         /// @dev The hash of the ERC20 linker's code. This is used to derive the
@@ -221,10 +225,6 @@ interface IHyperdrive is
     /// @notice Thrown when the pool's APR is outside the bounds specified by
     ///         a LP when they are adding liquidity.
     error InvalidApr();
-
-    /// @notice Thrown when the base token isn't valid. Each instance will have
-    ///         different criteria for what constitutes a valid base token.
-    error InvalidBaseToken();
 
     /// @notice Thrown when the checkpoint time provided to `checkpoint` is
     ///         larger than the current checkpoint or isn't divisible by the

@@ -1,2 +1,17 @@
-# All PRs must be approved by code owners
-* @jalextowle @jrhea
+# Global Code Owners
+* @jalextowle @jrhea @mcclurejt
+
+# Rust SDK Code Owners
+.github/ @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree
+crates/ @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree
+Cargo.toml @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree
+rustfmt.toml @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree
+Makefile @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree
+README.md @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree
+
+# Instance Owners
+contracts/src/deployers/ @jalextowle @jrhea @mcclurejt @cashd @sentilesdal
+contracts/src/instances/ @jalextowle @jrhea @mcclurejt @cashd @sentilesdal
+contracts/src/interfaces/ @jalextowle @jrhea @mcclurejt @cashd @sentilesdal
+contracts/test/ @jalextowle @jrhea @mcclurejt @cashd @sentilesdal
+test/ @jalextowle @jrhea @mcclurejt @cashd @sentilesdal

@@ -3,9 +3,6 @@ pragma solidity 0.8.20;
 
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { IERC20 } from "../../interfaces/IERC20.sol";
-import { ILido } from "../../interfaces/ILido.sol";
-import { ETH } from "../../libraries/Constants.sol";
 import { StETHBase } from "./StETHBase.sol";
 
 ///      ______  __                           _________      _____
@@ -62,22 +59,12 @@ contract StETHHyperdrive is Hyperdrive, StETHBase {
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
     /// @param _target4 The target4 address.
-    /// @param _lido The Lido contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         address _target0,
         address _target1,
         address _target2,
         address _target3,
-        address _target4,
-        ILido _lido
-    )
-        Hyperdrive(_config, _target0, _target1, _target2, _target3, _target4)
-        StETHBase(_lido)
-    {
-        // Ensure that the base token address is properly configured.
-        if (address(_config.baseToken) != ETH) {
-            revert IHyperdrive.InvalidBaseToken();
-        }
-    }
+        address _target4
+    ) Hyperdrive(_config, _target0, _target1, _target2, _target3, _target4) {}
 }

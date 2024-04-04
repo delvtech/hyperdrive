@@ -8,7 +8,7 @@ import { ETH } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { InstanceTest } from "test/utils/InstanceTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -28,367 +28,145 @@ import { RETHTarget3Deployer } from "contracts/src/deployers/reth/RETHTarget3Dep
 import { RETHTarget4Deployer } from "contracts/src/deployers/reth/RETHTarget4Deployer.sol";
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 
-contract RETHHyperdriveTest is HyperdriveTest {
+contract RETHHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using Lib for *;
     using stdStorage for StdStorage;
 
-    uint256 internal constant FIXED_RATE = 0.05e18;
+    // Rocket Network contracts can be upgraded and addresses changed.
+    // We can safely assume these addresses are accurate because
+    // this testing suite is forked from block 19429100.
     IRocketStorage internal constant ROCKET_STORAGE =
         IRocketStorage(0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46);
+    IRocketTokenRETH internal constant rocketTokenRETH =
+        IRocketTokenRETH(0xae78736Cd615f374D3085123A210448E74Fc6393);
+    IRocketNetworkBalances internal constant rocketNetworkBalances =
+        IRocketNetworkBalances(0x07FCaBCbe4ff0d80c2b1eb42855C0131b6cba2F4);
+    IRocketDepositPool internal constant rocketDepositPool =
+        IRocketDepositPool(0xDD3f50F8A6CafbE9b31a427582963f465E745AF8);
 
-    IRocketTokenRETH rocketTokenRETH;
-    IRocketNetworkBalances rocketNetworkBalances;
-    IRocketDepositPool rocketDepositPool;
-
+    // Whale accounts.
     address internal RETH_WHALE = 0xCc9EE9483f662091a1de4795249E24aC0aC2630f;
-    address internal ETH_WHALE = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
+    address[] internal whaleAccounts = [RETH_WHALE];
 
-    HyperdriveFactory factory;
-    address deployerCoordinator;
-
-    function setUp() public override __mainnet_fork(19_429_100) {
-        super.setUp();
-
-        // Fetching the rETH token contract address from storage.
-        address rocketTokenRETHAddress = ROCKET_STORAGE.getAddress(
-            keccak256(abi.encodePacked("contract.address", "rocketTokenRETH"))
-        );
-        rocketTokenRETH = IRocketTokenRETH(rocketTokenRETHAddress);
-
-        // Fetching the Rocket Network Balances contract address from storage.
-        address rocketNetworkBalancesAddress = ROCKET_STORAGE.getAddress(
-            keccak256(
-                abi.encodePacked("contract.address", "rocketNetworkBalances")
-            )
-        );
-        rocketNetworkBalances = IRocketNetworkBalances(
-            rocketNetworkBalancesAddress
-        );
-
-        // Fetching the Rocket Deposit Pool contract address from storage.
-        address rocketDepositPoolAddress = ROCKET_STORAGE.getAddress(
-            keccak256(abi.encodePacked("contract.address", "rocketDepositPool"))
-        );
-        rocketDepositPool = IRocketDepositPool(rocketDepositPoolAddress);
-
-        // Fund the test accounts with rETH and ETH.
-        address[] memory accounts = new address[](3);
-        accounts[0] = alice;
-        accounts[1] = bob;
-        accounts[2] = celine;
-        fundAccounts(
-            address(hyperdrive),
+    // The configuration for the Instance testing suite.
+    InstanceTestConfig internal __testConfig =
+        InstanceTestConfig(
+            whaleAccounts,
+            IERC20(ETH),
             IERC20(rocketTokenRETH),
-            RETH_WHALE,
-            accounts
-        );
-        vm.deal(alice, 20_000e18);
-        vm.deal(bob, 20_000e18);
-        vm.deal(celine, 20_000e18);
-        // Deal ETH to the rocket token address to increase liquidity
-        // for withdrawals.
-        vm.deal(rocketTokenRETHAddress, 50_000e18);
-
-        // Deploy the hyperdrive factory.
-        vm.startPrank(deployer);
-        address[] memory defaults = new address[](1);
-        defaults[0] = bob;
-        forwarderFactory = new ERC20ForwarderFactory();
-        factory = new HyperdriveFactory(
-            HyperdriveFactory.FactoryConfig({
-                governance: alice,
-                hyperdriveGovernance: bob,
-                feeCollector: celine,
-                sweepCollector: sweepCollector,
-                defaultPausers: defaults,
-                checkpointDurationResolution: 1 hours,
-                minCheckpointDuration: 8 hours,
-                maxCheckpointDuration: 1 days,
-                minPositionDuration: 7 days,
-                maxPositionDuration: 10 * 365 days,
-                minFixedAPR: 0.001e18,
-                maxFixedAPR: 0.5e18,
-                minTimeStretchAPR: 0.005e18,
-                maxTimeStretchAPR: 0.5e18,
-                minFees: IHyperdrive.Fees({
-                    curve: 0,
-                    flat: 0,
-                    governanceLP: 0,
-                    governanceZombie: 0
-                }),
-                maxFees: IHyperdrive.Fees({
-                    curve: ONE,
-                    flat: ONE,
-                    governanceLP: ONE,
-                    governanceZombie: ONE
-                }),
-                linkerFactory: address(forwarderFactory),
-                linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
-            })
-        );
-
-        // Deploy the hyperdrive deployers and register the deployer coordinator
-        // in the factory.
-        vm.stopPrank();
-        vm.startPrank(alice);
-        deployerCoordinator = address(
-            new RETHHyperdriveDeployerCoordinator(
-                address(new RETHHyperdriveCoreDeployer(ROCKET_STORAGE)),
-                address(new RETHTarget0Deployer(ROCKET_STORAGE)),
-                address(new RETHTarget1Deployer(ROCKET_STORAGE)),
-                address(new RETHTarget2Deployer(ROCKET_STORAGE)),
-                address(new RETHTarget3Deployer(ROCKET_STORAGE)),
-                address(new RETHTarget4Deployer(ROCKET_STORAGE)),
-                ROCKET_STORAGE
-            )
-        );
-        factory.addDeployerCoordinator(address(deployerCoordinator));
-
-        // Alice deploys the hyperdrive instance.
-        IHyperdrive.PoolDeployConfig memory config = IHyperdrive
-            .PoolDeployConfig({
-                baseToken: IERC20(ETH),
-                linkerFactory: factory.linkerFactory(),
-                linkerCodeHash: factory.linkerCodeHash(),
-                minimumShareReserves: 1e15,
-                minimumTransactionAmount: 1e16,
-                positionDuration: POSITION_DURATION,
-                checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: 0,
-                governance: factory.hyperdriveGovernance(),
-                feeCollector: factory.feeCollector(),
-                sweepCollector: factory.sweepCollector(),
-                fees: IHyperdrive.Fees({
-                    curve: 0,
-                    flat: 0,
-                    governanceLP: 0,
-                    governanceZombie: 0
-                })
-            });
-        uint256 contribution = 10_000e18;
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            0,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            1,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            2,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            3,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            4,
-            bytes32(uint256(0xdeadbabe))
-        );
-        rocketTokenRETH.approve(deployerCoordinator, contribution);
-        hyperdrive = factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            contribution,
-            FIXED_RATE,
-            FIXED_RATE,
-            IHyperdrive.Options({
-                asBase: false,
-                destination: alice,
-                extraData: new bytes(0)
-            }),
-            bytes32(uint256(0xdeadbabe))
-        );
-
-        // Ensure that Alice received the correct amount of LP tokens. She should
-        // receive LP shares totaling the amount of shares that she contributed
-        // minus the shares set aside for the minimum share reserves and the
-        // zero address's initial LP contribution.
-        assertApproxEqAbs(
-            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
-            contribution - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
-            1e5
-        );
-
-        // Start recording event logs.
-        vm.recordLogs();
-    }
-
-    /// Getters ///
-
-    function test_getters() external {
-        assertEq(
-            address(IRETHHyperdrive(address(hyperdrive)).rocketStorage()),
-            address(ROCKET_STORAGE)
-        );
-        assertEq(
-            address(IRETHHyperdrive(address(hyperdrive)).rocketTokenRETH()),
-            address(rocketTokenRETH)
-        );
-    }
-
-    /// Deploy and Initialize ///
-
-    function test__reth__deployAndInitialize() external {
-        // Deploy and Initialize the rETH hyperdrive instance.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        uint256 bobBalanceBefore = address(bob).balance;
-        IHyperdrive.PoolDeployConfig memory config = IHyperdrive
-            .PoolDeployConfig({
-                baseToken: IERC20(ETH),
-                governance: factory.hyperdriveGovernance(),
-                feeCollector: factory.feeCollector(),
-                sweepCollector: factory.sweepCollector(),
-                linkerFactory: factory.linkerFactory(),
-                linkerCodeHash: factory.linkerCodeHash(),
-                minimumShareReserves: 1e15,
-                minimumTransactionAmount: 1e16,
-                positionDuration: POSITION_DURATION,
-                checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: 0,
-                fees: IHyperdrive.Fees({
-                    curve: 0,
-                    flat: 0,
-                    governanceLP: 0,
-                    governanceZombie: 0
-                })
-            });
-        uint256 contribution = 5_000e18;
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            0,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            1,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            2,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            3,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            4,
-            bytes32(uint256(0xdeadfade))
-        );
-        rocketTokenRETH.approve(deployerCoordinator, contribution);
-        hyperdrive = factory.deployAndInitialize(
-            bytes32(uint256(0xbeefbabe)),
-            address(deployerCoordinator),
-            config,
-            new bytes(0),
-            contribution,
-            FIXED_RATE,
-            FIXED_RATE,
-            IHyperdrive.Options({
-                asBase: false,
-                destination: bob,
-                extraData: new bytes(0)
-            }),
-            bytes32(uint256(0xdeadfade))
-        );
-        assertEq(address(bob).balance, bobBalanceBefore);
-
-        // Ensure that the decimals are set correctly.
-        assertEq(hyperdrive.decimals(), 18);
-
-        // Ensure that Bob received the correct amount of LP tokens. He should
-        // receive LP shares totaling the amount of shares that he contributed
-        // minus the shares set aside for the minimum share reserves and the
-        // zero address's initial LP contribution.
-        assertApproxEqAbs(
-            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, bob),
-            contribution - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
-            1e5
-        );
-
-        // Ensure that the share reserves and LP total supply are equal and correct.
-        assertEq(hyperdrive.getPoolInfo().shareReserves, contribution);
-        assertEq(
-            hyperdrive.getPoolInfo().lpTotalSupply,
-            hyperdrive.getPoolInfo().shareReserves - config.minimumShareReserves
-        );
-
-        // Verify that the correct events were emitted.
-        verifyFactoryEvents(
-            deployerCoordinator,
-            hyperdrive,
-            bob,
-            contribution,
-            FIXED_RATE,
+            1e5,
+            1e16,
+            POSITION_DURATION,
             false,
-            config.minimumShareReserves,
-            new bytes(0),
-            0
+            true
         );
+
+    /// @dev Instantiates the Instance testing suite with the configuration.
+    constructor() InstanceTest(__testConfig) {}
+
+    /// @dev Forge function that is invoked to setup the testing environment.
+    function setUp() public override __mainnet_fork(19_429_100) {
+        // Give the rETH contract ETH to mimic adequate withdrawable liquidity.
+        vm.deal(address(rocketTokenRETH), 50_000e18);
+
+        // Invoke the Instance testing suite setup.
+        super.setUp();
+    }
+
+    /// Overrides ///
+
+    /// @dev Converts base amount to the equivalent amount in rETH.
+    function convertToShares(
+        uint256 baseAmount
+    ) internal view override returns (uint256) {
+        // Rocket Pool has a built-in function for computing price in terms of shares.
+        return rocketTokenRETH.getRethValue(baseAmount);
+    }
+
+    /// @dev Converts share amount to the equivalent amount in ETH.
+    function convertToBase(
+        uint256 baseAmount
+    ) internal view override returns (uint256) {
+        // Rocket Pool has a built-in function for computing price in terms of base.
+        return rocketTokenRETH.getEthValue(baseAmount);
+    }
+
+    /// @dev Deploys the rETH deployer coordinator contract.
+    function deployCoordinator() internal override returns (address) {
+        vm.startPrank(alice);
+        return
+            address(
+                new RETHHyperdriveDeployerCoordinator(
+                    address(new RETHHyperdriveCoreDeployer()),
+                    address(new RETHTarget0Deployer()),
+                    address(new RETHTarget1Deployer()),
+                    address(new RETHTarget2Deployer()),
+                    address(new RETHTarget3Deployer()),
+                    address(new RETHTarget4Deployer()),
+                    rocketTokenRETH
+                )
+            );
+    }
+
+    /// @dev Fetches the total supply of the base and share tokens.
+    function getSupply() internal view override returns (uint256, uint256) {
+        return (
+            rocketNetworkBalances.getTotalETHBalance(),
+            rocketNetworkBalances.getTotalRETHSupply()
+        );
+    }
+
+    /// @dev Fetches the token balance information of an account.
+    function getTokenBalances(
+        address account
+    ) internal view override returns (uint256, uint256) {
+        uint256 rethBalance = rocketTokenRETH.balanceOf(account);
+        return (rocketTokenRETH.getEthValue(rethBalance), rethBalance);
+    }
+
+    /// @dev Verifies that deposit accounting is correct when opening positions.
+    function verifyDeposit(
+        address trader,
+        uint256 amount,
+        bool asBase,
+        uint256 totalBaseBefore,
+        uint256 totalSharesBefore,
+        AccountBalances memory traderBalancesBefore,
+        AccountBalances memory hyperdriveBalancesBefore
+    ) internal override {
+        // Deposits as base is not supported for this instance.
+        if (asBase) {
+            revert IHyperdrive.UnsupportedToken();
+        }
+
+        // Convert the amount in terms of shares.
+        amount = convertToShares(amount);
+
+        // Ensure that the ETH balances were updated correctly.
+        assertEq(
+            address(hyperdrive).balance,
+            hyperdriveBalancesBefore.ETHBalance
+        );
+        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
+
+        // Ensure that the rETH balances were updated correctly.
+        assertApproxEqAbs(
+            rocketTokenRETH.balanceOf(address(hyperdrive)),
+            hyperdriveBalancesBefore.sharesBalance + amount,
+            1
+        );
+        assertApproxEqAbs(
+            rocketTokenRETH.balanceOf(trader),
+            traderBalancesBefore.sharesBalance - amount,
+            1
+        );
+
+        // Ensure the total base supply was updated correctly.
+        assertEq(rocketNetworkBalances.getTotalETHBalance(), totalBaseBefore);
+
+        // Ensure the total supply was updated correctly.
+        assertEq(rocketTokenRETH.totalSupply(), totalSharesBefore);
     }
 
     /// Price Per Share ///
@@ -417,66 +195,7 @@ contract RETHHyperdriveTest is HyperdriveTest {
         );
     }
 
-    // /// Long ///
-
-    function test_open_long_with_eth(uint256 basePaid) external {
-        // Bob opens a long by depositing ETH. This is not allowed and
-        // should throw an unsupported token exception.
-        vm.startPrank(bob);
-        basePaid = basePaid.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
-        );
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openLong{ value: basePaid }(
-            basePaid,
-            0,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-    }
-
-    function test_open_long_with_reth(uint256 basePaid) external {
-        // Get some balance information before the deposit.
-        uint256 totalSharesBefore = rocketTokenRETH.totalSupply();
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-
-        // Calculate the maximum amount of basePaid we can test. The limit is
-        // either the max long that Hyperdrive can open or the amount of rETH
-        // tokens the trader has.
-        uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
-        uint256 maxEthAmount = rocketTokenRETH.getEthValue(
-            rocketTokenRETH.balanceOf(bob)
-        );
-
-        // Bob opens a long by depositing rETH.
-        vm.startPrank(bob);
-        basePaid = basePaid.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            maxLongAmount > maxEthAmount ? maxEthAmount : maxLongAmount
-        );
-        uint256 sharesPaid = rocketTokenRETH.getRethValue(basePaid);
-        rocketTokenRETH.approve(address(hyperdrive), sharesPaid);
-        openLong(bob, sharesPaid, false);
-
-        // Ensure that Rocket Pool's aggregates and the token balances were updated
-        // correctly during the trade.
-        verifyDeposit(
-            bob,
-            sharesPaid,
-            false,
-            totalSharesBefore,
-            bobBalancesBefore,
-            hyperdriveBalancesBefore
-        );
-    }
+    /// Long ///
 
     function test_open_long_refunds() external {
         vm.startPrank(bob);
@@ -637,66 +356,6 @@ contract RETHHyperdriveTest is HyperdriveTest {
 
     // /// Short ///
 
-    function test_open_short_with_eth(uint256 shortAmount) external {
-        // Bob opens a short by depositing ETH. This is not allowed and
-        // should throw an unsupported token exception.
-        shortAmount = shortAmount.normalizeToRange(
-            100 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxShort(hyperdrive)
-        );
-        vm.deal(bob, shortAmount);
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openShort{ value: shortAmount }(
-            shortAmount,
-            shortAmount,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-    }
-
-    function test_open_short_with_reth(uint256 shortAmount) external {
-        // Get some balance information before the deposit.
-        uint256 totalRethSupplyBefore = rocketTokenRETH.totalSupply();
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-
-        // Bob opens a short by depositing rETH.
-        vm.startPrank(bob);
-        shortAmount = shortAmount.normalizeToRange(
-            100 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxShort(hyperdrive)
-        );
-        rocketTokenRETH.approve(address(hyperdrive), shortAmount);
-        (, uint256 sharesPaid) = openShort(bob, shortAmount, false);
-        uint256 basePaid = rocketTokenRETH.getEthValue(sharesPaid);
-
-        // Ensure that the amount of base paid by the short is reasonable.
-        uint256 realizedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
-            shortAmount - basePaid,
-            shortAmount,
-            1e18
-        );
-        assertGt(basePaid, 0);
-        assertGe(realizedRate, FIXED_RATE);
-
-        // Ensure that Rocket Pool's aggregates and the token balances were updated
-        // correctly during the trade.
-        verifyDeposit(
-            bob,
-            sharesPaid,
-            false,
-            totalRethSupplyBefore,
-            bobBalancesBefore,
-            hyperdriveBalancesBefore
-        );
-    }
-
     function test_open_short_refunds() external {
         vm.startPrank(bob);
 
@@ -846,39 +505,6 @@ contract RETHHyperdriveTest is HyperdriveTest {
         );
     }
 
-    function verifyDeposit(
-        address trader,
-        uint256 amount,
-        bool asBase,
-        uint256 totalSharesBefore,
-        AccountBalances memory traderBalancesBefore,
-        AccountBalances memory hyperdriveBalancesBefore
-    ) internal {
-        if (asBase) {
-            revert IHyperdrive.UnsupportedToken();
-        }
-
-        // Ensure that the ether balances were updated correctly.
-        assertEq(
-            address(hyperdrive).balance,
-            hyperdriveBalancesBefore.ETHBalance
-        );
-        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-        // Ensure that the rETH balances were updated correctly.
-        assertEq(
-            rocketTokenRETH.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.rethBalance + amount
-        );
-        assertEq(
-            rocketTokenRETH.balanceOf(trader),
-            traderBalancesBefore.rethBalance - amount
-        );
-
-        // Ensure the total supply was updated correctly.
-        assertEq(rocketTokenRETH.totalSupply(), totalSharesBefore);
-    }
-
     function verifyRethWithdrawal(
         address trader,
         uint256 amount,
@@ -907,12 +533,12 @@ contract RETHHyperdriveTest is HyperdriveTest {
             // Ensure the rETH balances were updated correctly.
             assertApproxEqAbs(
                 rocketTokenRETH.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.rethBalance - amountAsShares,
+                hyperdriveBalancesBefore.sharesBalance - amountAsShares,
                 1
             );
             assertEq(
                 rocketTokenRETH.balanceOf(address(trader)),
-                traderBalancesBefore.rethBalance
+                traderBalancesBefore.sharesBalance
             );
         } else {
             // Ensure the total amount of rETH stays the same.
@@ -928,11 +554,11 @@ contract RETHHyperdriveTest is HyperdriveTest {
             // Ensure the rETH balances were updated correctly.
             assertEq(
                 rocketTokenRETH.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.rethBalance - amount
+                hyperdriveBalancesBefore.sharesBalance - amount
             );
             assertEq(
                 rocketTokenRETH.balanceOf(address(trader)),
-                traderBalancesBefore.rethBalance + amount
+                traderBalancesBefore.sharesBalance + amount
             );
         }
     }
@@ -976,20 +602,5 @@ contract RETHHyperdriveTest is HyperdriveTest {
 
         // Ensure the new rate is higher than the old rate.
         assertGt(rocketTokenRETH.getExchangeRate(), oldRate);
-    }
-
-    struct AccountBalances {
-        uint256 rethBalance;
-        uint256 ETHBalance;
-    }
-
-    function getAccountBalances(
-        address account
-    ) internal view returns (AccountBalances memory) {
-        return
-            AccountBalances({
-                rethBalance: rocketTokenRETH.balanceOf(account),
-                ETHBalance: account.balance
-            });
     }
 }

@@ -109,6 +109,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             POSITION_DURATION
         );
         config.baseToken = underlyingToken;
+        config.vaultSharesToken = token;
         config.governance = factory.hyperdriveGovernance();
         config.feeCollector = factory.feeCollector();
         config.linkerFactory = factory.linkerFactory();
@@ -131,7 +132,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
-            abi.encode(address(token)),
+            new bytes(0),
             FIXED_RATE,
             FIXED_RATE,
             0,
@@ -141,7 +142,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
-            abi.encode(address(token)),
+            new bytes(0),
             FIXED_RATE,
             FIXED_RATE,
             1,
@@ -151,7 +152,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
-            abi.encode(address(token)),
+            new bytes(0),
             FIXED_RATE,
             FIXED_RATE,
             2,
@@ -161,7 +162,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
-            abi.encode(address(token)),
+            new bytes(0),
             FIXED_RATE,
             FIXED_RATE,
             3,
@@ -171,7 +172,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
-            abi.encode(address(token)),
+            new bytes(0),
             FIXED_RATE,
             FIXED_RATE,
             4,
@@ -181,7 +182,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
-            abi.encode(address(token)),
+            new bytes(0),
             contribution,
             FIXED_RATE,
             FIXED_RATE,
@@ -221,6 +222,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         config.linkerCodeHash = factory.linkerCodeHash();
         config.timeStretch = 0;
         config.baseToken = underlyingToken;
+        config.vaultSharesToken = token;
         // Designed to ensure compatibility ../../contracts/src/instances/ERC4626Hyperdrive.sol#L122C1-L122C1
         config.minimumTransactionAmount = hyperdrive
             .getPoolConfig()
@@ -235,12 +237,11 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         );
 
         // Deploy a new hyperdrive instance
-        bytes memory extraData = abi.encode(address(token));
         factory.deployTarget(
             bytes32(uint256(0xbeef)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             FIXED_RATE,
             FIXED_RATE,
             0,
@@ -250,7 +251,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             bytes32(uint256(0xbeef)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             FIXED_RATE,
             FIXED_RATE,
             1,
@@ -260,7 +261,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             bytes32(uint256(0xbeef)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             FIXED_RATE,
             FIXED_RATE,
             2,
@@ -270,7 +271,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             bytes32(uint256(0xbeef)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             FIXED_RATE,
             FIXED_RATE,
             3,
@@ -280,7 +281,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             bytes32(uint256(0xbeef)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             FIXED_RATE,
             FIXED_RATE,
             4,
@@ -290,7 +291,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             bytes32(uint256(0xbeef)),
             deployerCoordinator,
             config,
-            extraData,
+            new bytes(0),
             contribution,
             FIXED_RATE,
             FIXED_RATE,
@@ -321,7 +322,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             FIXED_RATE,
             true,
             config.minimumShareReserves,
-            extraData,
+            new bytes(0),
             1e5
         );
     }

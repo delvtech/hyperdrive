@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
+import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
+import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IRocketDepositPool } from "../../interfaces/IRocketDepositPool.sol";
-import { IRocketStorage } from "../../interfaces/IRocketStorage.sol";
 import { IRocketTokenRETH } from "../../interfaces/IRocketTokenRETH.sol";
 
 /// @author DELV
@@ -19,25 +19,7 @@ import { IRocketTokenRETH } from "../../interfaces/IRocketTokenRETH.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract RETHBase is HyperdriveBase {
-    using FixedPointMath for uint256;
-
-    /// @dev The Rocket Pool storage contract.
-    IRocketStorage internal immutable _rocketStorage;
-
-    /// @dev The Rocket Token rETH contract.
-    IRocketTokenRETH internal immutable _rocketTokenReth;
-
-    /// @notice Instantiates the rETH Hyperdrive base contract.
-    /// @param __rocketStorage The Rocket Pool storage contract.
-    constructor(IRocketStorage __rocketStorage) {
-        _rocketStorage = __rocketStorage;
-
-        // Fetching the rETH token address from the storage contract.
-        address rocketTokenRethAddress = _rocketStorage.getAddress(
-            keccak256(abi.encodePacked("contract.address", "rocketTokenRETH"))
-        );
-        _rocketTokenReth = IRocketTokenRETH(rocketTokenRethAddress);
-    }
+    using SafeERC20 for ERC20;
 
     /// Yield Source ///
 
@@ -57,7 +39,11 @@ abstract contract RETHBase is HyperdriveBase {
         bytes calldata // unused
     ) internal override {
         // Transfer rETH shares into the contract.
-        _rocketTokenReth.transferFrom(msg.sender, address(this), _shareAmount);
+        ERC20(address(_vaultSharesToken)).safeTransferFrom(
+            msg.sender,
+            address(this),
+            _shareAmount
+        );
     }
 
     /// @dev Process a withdrawal in base and send the proceeds to the
@@ -72,7 +58,7 @@ abstract contract RETHBase is HyperdriveBase {
     ) internal override returns (uint256 amountWithdrawn) {
         // Burning rETH shares in exchange for ether.
         // Ether proceeds are credited to this contract.
-        _rocketTokenReth.burn(_shareAmount);
+        IRocketTokenRETH(address(_vaultSharesToken)).burn(_shareAmount);
 
         // Amount of ETH that was withdrawn from the yield source and
         // will be sent to the destination address.
@@ -97,7 +83,10 @@ abstract contract RETHBase is HyperdriveBase {
         bytes calldata // unused
     ) internal override {
         // Transfer the rETH shares to the destination.
-        _rocketTokenReth.transfer(_destination, _shareAmount);
+        ERC20(address(_vaultSharesToken)).safeTransfer(
+            _destination,
+            _shareAmount
+        );
     }
 
     /// @dev Convert an amount of vault shares to an amount of base.
@@ -106,7 +95,10 @@ abstract contract RETHBase is HyperdriveBase {
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
-        return _rocketTokenReth.getEthValue(_shareAmount);
+        return
+            IRocketTokenRETH(address(_vaultSharesToken)).getEthValue(
+                _shareAmount
+            );
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
@@ -115,7 +107,10 @@ abstract contract RETHBase is HyperdriveBase {
     function _convertToShares(
         uint256 _baseAmount
     ) internal view override returns (uint256) {
-        return _rocketTokenReth.getRethValue(_baseAmount);
+        return
+            IRocketTokenRETH(address(_vaultSharesToken)).getRethValue(
+                _baseAmount
+            );
     }
 
     /// @dev Gets the total amount of base held by the pool.
@@ -135,7 +130,7 @@ abstract contract RETHBase is HyperdriveBase {
         override
         returns (uint256 shareAmount)
     {
-        return _rocketTokenReth.balanceOf(address(this));
+        return _vaultSharesToken.balanceOf(address(this));
     }
 
     /// @dev Disallows the contract to receive ether, when opening positions.
@@ -149,7 +144,7 @@ abstract contract RETHBase is HyperdriveBase {
     ///      token contract. Supports withdrawing as ethers from this
     ///      yield source.
     receive() external payable {
-        if (msg.sender != address(_rocketTokenReth)) {
+        if (msg.sender != address(_vaultSharesToken)) {
             revert IHyperdrive.TransferFailed();
         }
     }

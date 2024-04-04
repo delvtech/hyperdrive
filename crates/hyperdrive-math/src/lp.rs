@@ -14,7 +14,7 @@ impl State {
 
         // Calculate the idle base reserves.
         let mut idle_shares_in_base = fixed!(0);
-        if (self.share_reserves() > long_exposure + self.minimum_share_reserves()) {
+        if self.share_reserves() > (long_exposure + self.minimum_share_reserves()) {
             idle_shares_in_base =
                 (self.share_reserves() - long_exposure - self.minimum_share_reserves())
                     * self.vault_share_price();
@@ -26,13 +26,13 @@ impl State {
     /// Calculates the present value of LPs capital in the pool.
     pub fn calculate_present_value(&self, current_block_timestamp: U256) -> FixedPoint {
         // Calculate the average time remaining for the longs and shorts.
-        let long_average_time_remaining = self.time_remaining_scaled(
-            current_block_timestamp,
+        let long_average_time_remaining = self.calculate_normalized_time_remaining(
             self.long_average_maturity_time().into(),
-        );
-        let short_average_time_remaining = self.time_remaining_scaled(
             current_block_timestamp,
+        );
+        let short_average_time_remaining = self.calculate_normalized_time_remaining(
             self.short_average_maturity_time().into(),
+            current_block_timestamp,
         );
 
         let present_value: I256 = I256::try_from(self.share_reserves()).unwrap()
@@ -206,15 +206,15 @@ mod tests {
                     minimum_share_reserves: state.config.minimum_share_reserves,
                     minimum_transaction_amount: state.config.minimum_transaction_amount,
                     long_average_time_remaining: state
-                        .time_remaining_scaled(
-                            current_block_timestamp.into(),
+                        .calculate_normalized_time_remaining(
                             state.long_average_maturity_time().into(),
+                            current_block_timestamp.into(),
                         )
                         .into(),
                     short_average_time_remaining: state
-                        .time_remaining_scaled(
-                            current_block_timestamp.into(),
+                        .calculate_normalized_time_remaining(
                             state.short_average_maturity_time().into(),
+                            current_block_timestamp.into(),
                         )
                         .into(),
                     shorts_outstanding: state.shorts_outstanding().into(),
@@ -242,13 +242,13 @@ mod tests {
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let current_block_timestamp = rng.gen_range(fixed!(1)..=fixed!(1e4));
-            let long_average_time_remaining = state.time_remaining_scaled(
-                current_block_timestamp.into(),
+            let long_average_time_remaining = state.calculate_normalized_time_remaining(
                 state.long_average_maturity_time().into(),
-            );
-            let short_average_time_remaining = state.time_remaining_scaled(
                 current_block_timestamp.into(),
+            );
+            let short_average_time_remaining = state.calculate_normalized_time_remaining(
                 state.short_average_maturity_time().into(),
+                current_block_timestamp.into(),
             );
             let actual = panic::catch_unwind(|| {
                 state.calculate_net_curve_trade(
@@ -294,13 +294,13 @@ mod tests {
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let current_block_timestamp = rng.gen_range(fixed!(1)..=fixed!(1e4));
-            let long_average_time_remaining = state.time_remaining_scaled(
-                current_block_timestamp.into(),
+            let long_average_time_remaining = state.calculate_normalized_time_remaining(
                 state.long_average_maturity_time().into(),
-            );
-            let short_average_time_remaining = state.time_remaining_scaled(
                 current_block_timestamp.into(),
+            );
+            let short_average_time_remaining = state.calculate_normalized_time_remaining(
                 state.short_average_maturity_time().into(),
+                current_block_timestamp.into(),
             );
             let actual = panic::catch_unwind(|| {
                 state.calculate_net_flat_trade(

@@ -31,18 +31,18 @@ async fn main() -> Result<()> {
     let budget = fixed!(10_000_000e18);
     bob.fund(budget).await?;
     println!("Bob's budget is {}.", budget);
-    let max_short = bob.get_max_short(None).await?;
+    let max_short = bob.calculate_max_short(None).await?;
     println!(
         "Bob's max short is {}. The starting spot price is {}",
         max_short,
-        bob.get_state().await?.get_spot_price()
+        bob.get_state().await?.calculate_spot_price()
     );
 
     // Bob opens a max short position.
     bob.open_short(max_short, None, None).await?;
     println!(
         "Bob successfully opened the short! The ending spot price is {}",
-        bob.get_state().await?.get_spot_price()
+        bob.get_state().await?.calculate_spot_price()
     );
 
     Ok(())

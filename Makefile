@@ -22,6 +22,9 @@ SOLIDITY_ZOMBIE_TESTS = ZombieInterestTest
 test: 
 	make test-sol && make test-rust
 
+test-instances:
+	forge test -vv --match-path test/instances/*.t.sol
+
 test-sol-core:
 	forge test -vv --no-match-contract "$(SOLIDITY_LP_WITHDRAWAL_TESTS)|$(SOLIDITY_NETTING_TESTS)|$(SOLIDITY_ZOMBIE_TESTS)"
 
