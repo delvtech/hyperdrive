@@ -97,6 +97,7 @@ interface IHyperdriveEvents is IMultiTokenEvents {
     /// @notice Emitted when a checkpoint is created.
     event CreateCheckpoint(
         uint256 indexed checkpointTime,
+        uint256 checkpointVaultSharePrice,
         uint256 vaultSharePrice,
         uint256 maturedShorts,
         uint256 maturedLongs,
