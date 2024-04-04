@@ -1,7 +1,7 @@
-use eyre::{eyre, Result};
 use std::cmp::Ordering;
 
 use ethers::types::{I256, U256};
+use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, int256};
 
@@ -68,7 +68,7 @@ impl State {
 
         // Enforce the minimum LP share price slippage guard.
         if contribution.div_down(lp_shares) < min_lp_share_price {
-            return Err(eyre!("OutputLimit: not enough lp shares minted."));
+            return Err(eyre!("OutputLimit: Not enough lp shares minted."));
         }
 
         Ok(lp_shares)
@@ -103,8 +103,8 @@ impl State {
         }
     }
 
-    // Calculates the resulting share_reserves, bond_reserves and
-    // share_adjustment when updating liquidity with a share_reserves_delta.
+    // Calculates the resulting share_reserves, share_adjustment, and
+    // bond_reserves when updating liquidity with a share_reserves_delta.
     fn calculate_update_liquidity(
         &self,
         share_reserves: FixedPoint,
@@ -236,10 +236,8 @@ impl State {
                 let max_curve_trade = self
                     .calculate_max_sell_bonds_in_safe(self.minimum_share_reserves())
                     .unwrap();
-                if max_curve_trade >= net_curve_position.into() {
-                    match self
-                        .calculate_shares_out_given_bonds_in_down_safe(net_curve_position.into())
-                    {
+                if max_curve_trade >= net_curve_position {
+                    match self.calculate_shares_out_given_bonds_in_down_safe(net_curve_position) {
                         Ok(net_curve_trade) => -I256::try_from(net_curve_trade).unwrap(),
                         Err(err) => {
                             // If the net curve position is smaller than the
@@ -279,9 +277,7 @@ impl State {
                 let net_curve_position: FixedPoint = FixedPoint::from(-net_curve_position);
                 let max_curve_trade = self.calculate_max_buy_bonds_out_safe().unwrap();
                 if max_curve_trade >= net_curve_position {
-                    match self
-                        .calculate_shares_in_given_bonds_out_up_safe(net_curve_position.into())
-                    {
+                    match self.calculate_shares_in_given_bonds_out_up_safe(net_curve_position) {
                         Ok(net_curve_trade) => I256::try_from(net_curve_trade).unwrap(),
                         Err(err) => {
                             // If the net curve position is smaller than the
@@ -338,19 +334,103 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use std::panic;
+    use std::{
+        panic,
+        panic::{catch_unwind, AssertUnwindSafe},
+    };
 
-    use eyre::Result;
     use hyperdrive_wrappers::wrappers::mock_lp_math::PresentValueParams;
     use rand::{thread_rng, Rng};
     use test_utils::{
         agent::Agent,
         chain::{Chain, TestChain, TestChainWithMocks},
-        constants::FAST_FUZZ_RUNS,
+        constants::{FAST_FUZZ_RUNS, FUZZ_RUNS},
     };
 
     use super::*;
 
+    #[tokio::test]
+    async fn fuzz_test_calculate_add_liquidity_unhappy_with_random_state() -> Result<()> {
+        // Get the State from solidity before adding liquidity.
+        let mut rng = thread_rng();
+
+        for _ in 0..*FAST_FUZZ_RUNS {
+            let state = rng.gen::<State>();
+            let contribution = rng.gen_range(fixed!(0)..=state.bond_reserves());
+            let current_block_timestamp = U256::from(rng.gen_range(0..=60 * 60 * 24 * 365));
+            let min_lp_share_price = rng.gen_range(fixed!(0)..=fixed!(10e18));
+            let min_apr = rng.gen_range(fixed!(0)..fixed!(1e18));
+            let max_apr = rng.gen_range(fixed!(5e17)..fixed!(1e18));
+
+            // Calculate lp_shares from the rust function.
+            let result = catch_unwind(AssertUnwindSafe(|| {
+                state.calculate_add_liquidity(
+                    current_block_timestamp,
+                    contribution,
+                    min_lp_share_price,
+                    min_apr,
+                    max_apr,
+                    true,
+                )
+            }));
+
+            // Testing mostly unhappy paths here since random state will mostly fail.
+            match result {
+                Ok(result) => match result {
+                    Ok(lp_shares) => {
+                        assert!(lp_shares >= min_lp_share_price);
+                    }
+                    Err(err) => {
+                        let message = err.to_string();
+
+                        if message == "MinimumTransactionAmount: Contribution is smaller than the minimum transaction." {
+                          assert!(contribution < state.minimum_transaction_amount());
+                        }
+
+                        else if message == "InvalidApr: Apr is outside the slippage guard." {
+                            let apr = state.calculate_spot_rate();
+                            assert!(apr < min_apr || apr > max_apr);
+                        }
+
+                        else if message == "DecreasedPresentValueWhenAddingLiquidity: Present value decreased after adding liquidity." {
+                            let share_contribution =
+                                I256::try_from(contribution / state.vault_share_price()).unwrap();
+                            let new_state = state.get_state_after_liquidity_update(share_contribution);
+                            let starting_present_value = state.calculate_present_value(current_block_timestamp);
+                            let ending_present_value = new_state.calculate_present_value(current_block_timestamp);
+                            assert!(ending_present_value < starting_present_value);
+                        }
+
+                        else if message == "MinimumTransactionAmount: Not enough lp shares minted." {
+                            let share_contribution =
+                                I256::try_from(contribution / state.vault_share_price()).unwrap();
+                            let new_state = state.get_state_after_liquidity_update(share_contribution);
+                            let starting_present_value = state.calculate_present_value(current_block_timestamp);
+                            let ending_present_value = new_state.calculate_present_value(current_block_timestamp);
+                            let lp_shares = (ending_present_value - starting_present_value)
+                                .mul_div_down(state.lp_total_supply(), starting_present_value);
+                            assert!(lp_shares < state.minimum_transaction_amount());
+                        }
+
+                        else if message == "OutputLimit: Not enough lp shares minted." {
+                            let share_contribution =
+                                I256::try_from(contribution / state.vault_share_price()).unwrap();
+                            let new_state = state.get_state_after_liquidity_update(share_contribution);
+                            let starting_present_value = state.calculate_present_value(current_block_timestamp);
+                            let ending_present_value = new_state.calculate_present_value(current_block_timestamp);
+                            let lp_shares = (ending_present_value - starting_present_value)
+                                .mul_div_down(state.lp_total_supply(), starting_present_value);
+                            assert!(contribution.div_down(lp_shares) < min_lp_share_price);
+                        }
+                    }
+                },
+                // ignore inner panics
+                Err(_) => {}
+            }
+        }
+
+        Ok(())
+    }
     #[tokio::test]
     async fn fuzz_test_calculate_add_liquidity() -> Result<()> {
         // Spawn a test chain and create two agents -- Alice and Bob.
@@ -362,7 +442,8 @@ mod tests {
         let mut bob = Agent::new(chain.client(bob).await?, chain.addresses(), None).await?;
         let config = bob.get_config().clone();
 
-        for _ in 0..*FAST_FUZZ_RUNS {
+        // Test happy paths.
+        for _ in 0..*FUZZ_RUNS {
             // Snapshot the chain.
             let id = chain.snapshot().await?;
 
