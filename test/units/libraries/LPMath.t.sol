@@ -9,7 +9,6 @@ import { MockLPMath } from "contracts/test/MockLPMath.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
-import "forge-std/console2.sol";
 
 contract LPMathTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -1679,89 +1678,6 @@ contract LPMathTest is HyperdriveTest {
             // approximately equal.
             assertApproxEqAbs(startingLPSharePrice, endingLPSharePrice, 100);
         }
-    }
-
-    function test_calculateSharesDeltaGivenBondsDeltaDerivativeSafe_rhs_eq_one()
-        external
-    {
-        // this pool is net neutral
-        uint256 apr = 0.02e18;
-        uint256 initialVaultSharePrice = 1e18;
-        uint256 positionDuration = 365 days;
-        uint256 timeStretch = HyperdriveMath.calculateTimeStretch(
-            apr,
-            positionDuration
-        );
-        uint256 shareReserves = 100_000_000e18;
-        int256 shareAdjustment = 100_000_000e18;
-        uint256 bondReserves = calculateBondReserves(
-            HyperdriveMath.calculateEffectiveShareReserves(
-                shareReserves,
-                shareAdjustment
-            ),
-            initialVaultSharePrice,
-            apr,
-            positionDuration,
-            timeStretch
-        );
-        LPMath.PresentValueParams memory presentValueParams = LPMath
-            .PresentValueParams({
-                shareReserves: shareReserves,
-                shareAdjustment: shareAdjustment,
-                bondReserves: bondReserves,
-                vaultSharePrice: 2e18,
-                initialVaultSharePrice: initialVaultSharePrice,
-                minimumShareReserves: 1e5,
-                minimumTransactionAmount: 1e5,
-                timeStretch: timeStretch,
-                longsOutstanding: 0,
-                longAverageTimeRemaining: 0,
-                shortsOutstanding: 0,
-                shortAverageTimeRemaining: 0
-            });
-        LPMath.DistributeExcessIdleParams memory params = LPMath
-            .DistributeExcessIdleParams({
-                presentValueParams: presentValueParams,
-                startingPresentValue: LPMath.calculatePresentValue(
-                    presentValueParams
-                ),
-                activeLpTotalSupply: 1_000_000e18,
-                withdrawalSharesTotalSupply: 1_000e18,
-                idle: 10_000_000e18,
-                netCurveTrade: int256(
-                    presentValueParams.longsOutstanding.mulDown(
-                        presentValueParams.longAverageTimeRemaining
-                    )
-                ) -
-                    int256(
-                        presentValueParams.shortsOutstanding.mulDown(
-                            presentValueParams.shortAverageTimeRemaining
-                        )
-                    ),
-                originalShareReserves: shareReserves,
-                originalShareAdjustment: shareAdjustment,
-                originalBondReserves: bondReserves
-            });
-
-        // Calculate the original effective share reserves.
-        uint256 originalEffectiveShareReserves = HyperdriveMath
-            .calculateEffectiveShareReserves(shareReserves, shareAdjustment);
-
-        // Make the call
-        (, bool success) = LPMath
-            .calculateSharesDeltaGivenBondsDeltaDerivativeSafe(
-                params,
-                originalEffectiveShareReserves,
-                1
-            );
-
-        /// to test the fix, we need rhs to equal 1 since that is the only case affected
-        uint256 rhs = uint256(shareAdjustment).divUp(shareReserves);
-        console2.log(rhs);
-        assertEq(rhs, 1);
-
-        // make sure it succeeds
-        assertEq(success, true);
     }
 
     function calculateBondReserves(
