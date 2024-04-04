@@ -30,14 +30,15 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
         _checkOptions(_options);
 
         // Ensure that the destination is set to the fee collector.
-        if (_options.destination != _feeCollector) {
+        address feeCollector = _feeCollector;
+        if (_options.destination != feeCollector) {
             revert IHyperdrive.InvalidFeeDestination();
         }
 
         // Ensure that the caller is authorized to collect fees.
         if (
             !_pausers[msg.sender] &&
-            msg.sender != _feeCollector &&
+            msg.sender != feeCollector &&
             msg.sender != _governance
         ) {
             revert IHyperdrive.Unauthorized();
@@ -49,7 +50,7 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
         delete _governanceFeesAccrued;
         proceeds = _withdraw(governanceFeesAccrued, vaultSharePrice, _options);
         emit CollectGovernanceFee(
-            _feeCollector,
+            feeCollector,
             _convertToBaseFromOption(proceeds, vaultSharePrice, _options)
         );
     }
@@ -128,9 +129,10 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
     /// @param _target The target token to sweep.
     function _sweep(IERC20 _target) internal nonReentrant {
         // Ensure that the caller is authorized to sweep tokens.
+        address sweepCollector = _sweepCollector;
         if (
             !_pausers[msg.sender] &&
-            msg.sender != _sweepCollector &&
+            msg.sender != sweepCollector &&
             msg.sender != _governance
         ) {
             revert IHyperdrive.Unauthorized();
@@ -144,13 +146,13 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
         // Transfer the entire balance of the sweep target to the sweep
         // collector.
         uint256 balance = _target.balanceOf(address(this));
-        ERC20(address(_target)).safeTransfer(_sweepCollector, balance);
+        ERC20(address(_target)).safeTransfer(sweepCollector, balance);
 
         // Ensure that the base and vault shares balance hasn't changed.
         if (_totalBase() != baseBalance || _totalShares() != shareBalance) {
             revert IHyperdrive.SweepFailed();
         }
 
-        emit Sweep(_sweepCollector, address(_target));
+        emit Sweep(sweepCollector, address(_target));
     }
 }
