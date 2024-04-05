@@ -579,6 +579,9 @@ mod tests {
         Ok(())
     }
 
+    /// This test empirically tests the derivative of `long_amount_derivative`
+    /// by calling `calculate_open_long` at two points and comparing the empirical
+    /// result with the output of `long_amount_derivative`.
     #[traced_test]
     #[tokio::test]
     async fn test_max_long_derivative() -> Result<()> {
