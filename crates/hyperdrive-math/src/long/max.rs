@@ -602,9 +602,10 @@ mod tests {
             let p1;
             let p2;
             match p1_result {
-                Ok(p) => {
-                    p1 = p;
-                }
+                Ok(p) => match p {
+                    Ok(p) => p1 = p,
+                    Err(_) => continue,
+                },
                 // If the amount results in the pool being insolvent, skip this iteration
                 Err(_) => continue,
             }
@@ -613,9 +614,10 @@ mod tests {
                 state.calculate_open_long(amount + empirical_derivative_epsilon)
             });
             match p2_result {
-                Ok(p) => {
-                    p2 = p;
-                }
+                Ok(p) => match p {
+                    Ok(p) => p2 = p,
+                    Err(_) => continue,
+                },
                 // If the amount results in the pool being insolvent, skip this iteration
                 Err(_) => continue,
             }
