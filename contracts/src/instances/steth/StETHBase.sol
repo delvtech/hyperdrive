@@ -4,7 +4,7 @@ pragma solidity 0.8.20;
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { ILido } from "../../interfaces/ILido.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
-import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
+import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title StethHyperdrive
@@ -18,15 +18,6 @@ import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 ///                    particular legal or regulatory significance.
 abstract contract StETHBase is HyperdriveBase {
     using FixedPointMath for uint256;
-
-    /// @dev The Lido contract.
-    ILido internal immutable _lido;
-
-    /// @notice Instantiates the stETH Hyperdrive base contract.
-    /// @param __lido The Lido contract.
-    constructor(ILido __lido) {
-        _lido = __lido;
-    }
 
     /// Yield Source ///
 
@@ -54,7 +45,9 @@ abstract contract StETHBase is HyperdriveBase {
         // collector address is passed as the referral address; however,
         // users can specify whatever referrer they'd like by depositing
         // stETH instead of ETH.
-        sharesMinted = _lido.submit{ value: _baseAmount }(_feeCollector);
+        sharesMinted = ILido(address(_vaultSharesToken)).submit{
+            value: _baseAmount
+        }(_feeCollector);
 
         return (sharesMinted, refund);
     }
@@ -66,7 +59,11 @@ abstract contract StETHBase is HyperdriveBase {
         bytes calldata // unused
     ) internal override {
         // Transfer stETH shares into the contract.
-        _lido.transferSharesFrom(msg.sender, address(this), _shareAmount);
+        ILido(address(_vaultSharesToken)).transferSharesFrom(
+            msg.sender,
+            address(this),
+            _shareAmount
+        );
     }
 
     /// @dev Process a withdrawal in base and send the proceeds to the
@@ -91,7 +88,10 @@ abstract contract StETHBase is HyperdriveBase {
         bytes calldata // unused
     ) internal override {
         // Transfer the stETH shares to the destination.
-        _lido.transferShares(_destination, _shareAmount);
+        ILido(address(_vaultSharesToken)).transferShares(
+            _destination,
+            _shareAmount
+        );
     }
 
     /// @dev We override the message value check since this integration is
@@ -104,7 +104,10 @@ abstract contract StETHBase is HyperdriveBase {
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
-        return _lido.getPooledEthByShares(_shareAmount);
+        return
+            ILido(address(_vaultSharesToken)).getPooledEthByShares(
+                _shareAmount
+            );
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
@@ -113,7 +116,8 @@ abstract contract StETHBase is HyperdriveBase {
     function _convertToShares(
         uint256 _baseAmount
     ) internal view override returns (uint256) {
-        return _lido.getSharesByPooledEth(_baseAmount);
+        return
+            ILido(address(_vaultSharesToken)).getSharesByPooledEth(_baseAmount);
     }
 
     /// @dev Gets the total amount of base held by the pool.
@@ -133,6 +137,6 @@ abstract contract StETHBase is HyperdriveBase {
         override
         returns (uint256 shareAmount)
     {
-        return _lido.sharesOf(address(this));
+        return ILido(address(_vaultSharesToken)).sharesOf(address(this));
     }
 }

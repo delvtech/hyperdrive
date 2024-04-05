@@ -13,350 +13,150 @@ import { LsETHTarget3Deployer } from "contracts/src/deployers/lseth/LsETHTarget3
 import { LsETHTarget4Deployer } from "contracts/src/deployers/lseth/LsETHTarget4Deployer.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { ILsETHHyperdrive } from "contracts/src/interfaces/lseth/ILsETHHyperdrive.sol";
-import { IRiverV1 } from "contracts/src/interfaces/lseth/IRiverV1.sol";
+import { IRiverV1 } from "contracts/src/interfaces/IRiverV1.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ETH } from "contracts/src/libraries/Constants.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { InstanceTest } from "test/utils/InstanceTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-contract LsETHHyperdriveTest is HyperdriveTest {
+contract LsETHHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using Lib for *;
     using stdStorage for StdStorage;
 
-    uint256 internal constant FIXED_RATE = 0.05e18;
-
-    bytes32
-        internal constant LAST_CONSENSUS_LAYER_REPORT_VALIDATOR_BALANCE_SLOT =
-        bytes32(uint256(keccak256("river.state.lastConsensusLayerReport")));
-
+    // The LsETH token contract.
     IRiverV1 internal constant RIVER =
         IRiverV1(0x8c1BEd5b9a0928467c9B1341Da1D7BD5e10b6549);
 
-    address internal LSETH_WHALE = 0xF047ab4c75cebf0eB9ed34Ae2c186f3611aEAfa6;
-    address internal LSETH_WHALE_2 = 0xAe60d8180437b5C34bB956822ac2710972584473;
-    address internal ETH_WHALE = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
+    // Whale accounts.
+    address internal constant LSETH_WHALE =
+        0xF047ab4c75cebf0eB9ed34Ae2c186f3611aEAfa6;
+    address internal constant LSETH_WHALE_2 =
+        0xAe60d8180437b5C34bB956822ac2710972584473;
+    address internal constant LSETH_WHALE_3 =
+        0xa6941E15B15fF30F2B2d42AE922134A82F6b7189;
+    address[] internal whaleAccounts = [
+        LSETH_WHALE,
+        LSETH_WHALE_2,
+        LSETH_WHALE_3
+    ];
 
-    HyperdriveFactory factory;
-    address deployerCoordinator;
+    // The configuration for the Instance testing suite.
+    InstanceTestConfig internal __testConfig =
+        InstanceTestConfig(
+            whaleAccounts,
+            IERC20(ETH),
+            IERC20(RIVER),
+            1e5,
+            1e15,
+            POSITION_DURATION,
+            false,
+            true
+        );
+
+    /// @dev Instantiates the Instance testing suite with the configuration.
+    constructor() InstanceTest(__testConfig) {}
+
+    /// @dev Forge function that is invoked to setup the testing environment.
 
     function setUp() public override __mainnet_fork(19_429_100) {
+        // Invoke the Instance testing suite setup.
         super.setUp();
+    }
 
-        // Fund the test accounts with LsETH and ETH.
-        address[] memory accounts = new address[](3);
-        accounts[0] = alice;
-        accounts[1] = bob;
-        accounts[2] = celine;
-        fundAccounts(address(hyperdrive), IERC20(RIVER), LSETH_WHALE, accounts);
-        fundAccounts(
-            address(hyperdrive),
-            IERC20(RIVER),
-            LSETH_WHALE_2,
-            accounts
-        );
-        vm.deal(alice, 20_000e18);
-        vm.deal(bob, 20_000e18);
-        vm.deal(celine, 20_000e18);
+    /// Overrides ///
 
-        // Deploy the hyperdrive factory.
-        vm.startPrank(deployer);
-        address[] memory defaults = new address[](1);
-        defaults[0] = bob;
-        forwarderFactory = new ERC20ForwarderFactory();
-        factory = new HyperdriveFactory(
-            HyperdriveFactory.FactoryConfig({
-                governance: alice,
-                hyperdriveGovernance: bob,
-                feeCollector: celine,
-                sweepCollector: sweepCollector,
-                defaultPausers: defaults,
-                checkpointDurationResolution: 1 hours,
-                minCheckpointDuration: 8 hours,
-                maxCheckpointDuration: 1 days,
-                minPositionDuration: 7 days,
-                maxPositionDuration: 10 * 365 days,
-                minFixedAPR: 0.001e18,
-                maxFixedAPR: 0.5e18,
-                minTimeStretchAPR: 0.005e18,
-                maxTimeStretchAPR: 0.5e18,
-                minFees: IHyperdrive.Fees({
-                    curve: 0,
-                    flat: 0,
-                    governanceLP: 0,
-                    governanceZombie: 0
-                }),
-                maxFees: IHyperdrive.Fees({
-                    curve: ONE,
-                    flat: ONE,
-                    governanceLP: ONE,
-                    governanceZombie: ONE
-                }),
-                linkerFactory: address(forwarderFactory),
-                linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
-            })
-        );
-
-        // Deploy the hyperdrive deployers and register the deployer coordinator
-        // in the factory.
-        vm.stopPrank();
+    /// @dev Deploys the LsETH deployer coordinator contract.
+    function deployCoordinator() internal override returns (address) {
         vm.startPrank(alice);
-        deployerCoordinator = address(
-            new LsETHHyperdriveDeployerCoordinator(
-                address(new LsETHHyperdriveCoreDeployer(RIVER)),
-                address(new LsETHTarget0Deployer(RIVER)),
-                address(new LsETHTarget1Deployer(RIVER)),
-                address(new LsETHTarget2Deployer(RIVER)),
-                address(new LsETHTarget3Deployer(RIVER)),
-                address(new LsETHTarget4Deployer(RIVER)),
-                RIVER
-            )
-        );
-        factory.addDeployerCoordinator(address(deployerCoordinator));
-
-        // Alice deploys the hyperdrive instance.
-        IHyperdrive.PoolDeployConfig memory config = IHyperdrive
-            .PoolDeployConfig({
-                baseToken: IERC20(ETH),
-                linkerFactory: factory.linkerFactory(),
-                linkerCodeHash: factory.linkerCodeHash(),
-                minimumShareReserves: 1e15,
-                minimumTransactionAmount: 1e15,
-                positionDuration: POSITION_DURATION,
-                checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: 0,
-                governance: factory.hyperdriveGovernance(),
-                feeCollector: factory.feeCollector(),
-                sweepCollector: factory.sweepCollector(),
-                fees: IHyperdrive.Fees({
-                    curve: 0,
-                    flat: 0,
-                    governanceLP: 0,
-                    governanceZombie: 0
-                })
-            });
-        uint256 contribution = 5_000e18;
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            0,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            1,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            2,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            3,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            4,
-            bytes32(uint256(0xdeadbabe))
-        );
-        RIVER.approve(deployerCoordinator, contribution);
-        hyperdrive = factory.deployAndInitialize(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            contribution,
-            FIXED_RATE,
-            FIXED_RATE,
-            IHyperdrive.Options({
-                asBase: false,
-                destination: alice,
-                extraData: new bytes(0)
-            }),
-            bytes32(uint256(0xdeadbabe))
-        );
-
-        // Ensure that Alice received the correct amount of LP tokens. She should
-        // receive LP shares totaling the amount of shares that she contributed
-        // minus the shares set aside for the minimum share reserves and the
-        // zero address's initial LP contribution.
-        assertEq(
-            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
-            contribution - 2 * hyperdrive.getPoolConfig().minimumShareReserves
-        );
-
-        // Start recording event logs.
-        vm.recordLogs();
+        return
+            address(
+                new LsETHHyperdriveDeployerCoordinator(
+                    address(new LsETHHyperdriveCoreDeployer()),
+                    address(new LsETHTarget0Deployer()),
+                    address(new LsETHTarget1Deployer()),
+                    address(new LsETHTarget2Deployer()),
+                    address(new LsETHTarget3Deployer()),
+                    address(new LsETHTarget4Deployer()),
+                    RIVER
+                )
+            );
     }
 
-    /// Getters ///
-
-    function test_getters() external {
-        assertEq(
-            address(ILsETHHyperdrive(address(hyperdrive)).lsEth()),
-            address(RIVER)
-        );
+    /// @dev Converts base amount to the equivalent amount in LsETH.
+    function convertToShares(
+        uint256 baseAmount
+    ) internal view override returns (uint256) {
+        // River has a built-in function for computing price in terms of shares.
+        return RIVER.sharesFromUnderlyingBalance(baseAmount);
     }
 
-    /// Deploy and Initialize ///
+    /// @dev Converts base amount to the equivalent amount in ETH.
+    function convertToBase(
+        uint256 shareAmount
+    ) internal view override returns (uint256) {
+        // River has a built-in function for computing price in terms of base.
+        return RIVER.underlyingBalanceFromShares(shareAmount);
+    }
 
-    function test__lseth__deployAndInitialize() external {
-        // Deploy and Initialize the LsETH hyperdrive instance.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        uint256 bobBalanceBefore = address(bob).balance;
-        IHyperdrive.PoolDeployConfig memory config = IHyperdrive
-            .PoolDeployConfig({
-                baseToken: IERC20(ETH),
-                governance: factory.hyperdriveGovernance(),
-                feeCollector: factory.feeCollector(),
-                sweepCollector: factory.sweepCollector(),
-                linkerFactory: factory.linkerFactory(),
-                linkerCodeHash: factory.linkerCodeHash(),
-                minimumShareReserves: 1e15,
-                minimumTransactionAmount: 1e15,
-                positionDuration: POSITION_DURATION,
-                checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: 0,
-                fees: IHyperdrive.Fees({
-                    curve: 0,
-                    flat: 0,
-                    governanceLP: 0,
-                    governanceZombie: 0
-                })
-            });
-        uint256 contribution = 5_000e18;
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            0,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            1,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            2,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            3,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            4,
-            bytes32(uint256(0xdeadfade))
-        );
-        RIVER.approve(deployerCoordinator, contribution);
-        hyperdrive = factory.deployAndInitialize(
-            bytes32(uint256(0xbeefbabe)),
-            address(deployerCoordinator),
-            config,
-            new bytes(0),
-            contribution,
-            FIXED_RATE,
-            FIXED_RATE,
-            IHyperdrive.Options({
-                asBase: false,
-                destination: bob,
-                extraData: new bytes(0)
-            }),
-            bytes32(uint256(0xdeadfade))
-        );
-        assertEq(address(bob).balance, bobBalanceBefore);
+    /// @dev Fetches the token balance information of an account.
+    function getTokenBalances(
+        address account
+    ) internal view override returns (uint256, uint256) {
+        return (RIVER.balanceOfUnderlying(account), RIVER.balanceOf(account));
+    }
 
-        // Ensure that the decimals are set correctly.
-        assertEq(hyperdrive.decimals(), 18);
+    /// @dev Fetches the total supply of the base and share tokens.
+    function getSupply() internal view override returns (uint256, uint256) {
+        return (RIVER.totalUnderlyingSupply(), RIVER.totalSupply());
+    }
 
-        // Ensure that Bob received the correct amount of LP tokens. He should
-        // receive LP shares totaling the amount of shares that he contributed
-        // minus the shares set aside for the minimum share reserves and the
-        // zero address's initial LP contribution.
+    /// @dev Verifies that deposit accounting is correct when opening positions.
+    function verifyDeposit(
+        address trader,
+        uint256 amount,
+        bool asBase,
+        uint totalBaseBefore,
+        uint256 totalSharesBefore,
+        AccountBalances memory traderBalancesBefore,
+        AccountBalances memory hyperdriveBalancesBefore
+    ) internal override {
+        // Deposits as base is not supported for this instance.
+        if (asBase) {
+            revert IHyperdrive.NotPayable();
+        }
+
+        // Convert the amount in terms of shares.
+        amount = convertToShares(amount);
+
+        // Ensure that the ETH balances were updated correctly.
         assertEq(
-            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, bob),
-            contribution - 2 * hyperdrive.getPoolConfig().minimumShareReserves
+            address(hyperdrive).balance,
+            hyperdriveBalancesBefore.ETHBalance
+        );
+        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
+
+        // Ensure that the LsETH balances were updated correctly.
+        assertApproxEqAbs(
+            RIVER.balanceOf(address(hyperdrive)),
+            hyperdriveBalancesBefore.sharesBalance + amount,
+            1
+        );
+        assertApproxEqAbs(
+            RIVER.balanceOf(trader),
+            traderBalancesBefore.sharesBalance - amount,
+            1
         );
 
-        // Ensure that the share reserves and LP total supply are equal and correct.
-        assertEq(hyperdrive.getPoolInfo().shareReserves, contribution);
-        assertEq(
-            hyperdrive.getPoolInfo().lpTotalSupply,
-            hyperdrive.getPoolInfo().shareReserves - config.minimumShareReserves
-        );
+        // Ensure the total base supply was updated correctly.
+        assertEq(RIVER.totalUnderlyingSupply(), totalBaseBefore);
 
-        // Verify that the correct events were emitted.
-        verifyFactoryEvents(
-            deployerCoordinator,
-            hyperdrive,
-            bob,
-            contribution,
-            FIXED_RATE,
-            false,
-            config.minimumShareReserves,
-            new bytes(0),
-            0
-        );
+        // Ensure the total supply was updated correctly.
+        assertEq(RIVER.totalSupply(), totalSharesBefore);
     }
 
     /// Price Per Share ///
@@ -383,66 +183,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         );
     }
 
-    // /// Long ///
-
-    function test_open_long_with_eth(uint256 basePaid) external {
-        // Bob opens a long by depositing ETH. This is not allowed and
-        // should throw an unsupported token exception.
-        vm.startPrank(bob);
-        basePaid = basePaid.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
-        );
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openLong{ value: basePaid }(
-            basePaid,
-            0,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-    }
-
-    function test_open_long_with_lseth(uint256 basePaid) external {
-        // Get some balance information before the deposit.
-        uint256 totalSharesBefore = RIVER.totalSupply();
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-
-        // Calculate the maximum amount of basePaid we can test. The limit is
-        // either the max long that Hyperdrive can open or the amount of LsETH
-        // tokens the trader has.
-        uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
-        uint256 maxEthAmount = RIVER.underlyingBalanceFromShares(
-            RIVER.balanceOf(bob)
-        );
-
-        // Bob opens a long by depositing LsETH.
-        vm.startPrank(bob);
-        basePaid = basePaid.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            maxLongAmount > maxEthAmount ? maxEthAmount : maxLongAmount
-        );
-        uint256 sharesPaid = RIVER.sharesFromUnderlyingBalance(basePaid);
-        RIVER.approve(address(hyperdrive), sharesPaid);
-        openLong(bob, sharesPaid, false);
-
-        // Ensure that River aggregates and the token balances were updated
-        // correctly during the trade.
-        verifyDeposit(
-            bob,
-            sharesPaid,
-            false,
-            totalSharesBefore,
-            bobBalancesBefore,
-            hyperdriveBalancesBefore
-        );
-    }
+    /// Long ///
 
     function test_open_long_refunds() external {
         vm.startPrank(bob);
@@ -591,66 +332,6 @@ contract LsETHHyperdriveTest is HyperdriveTest {
 
     /// Short ///
 
-    function test_open_short_with_eth(uint256 shortAmount) external {
-        // Bob opens a short by depositing ETH. This is not allowed and
-        // should throw an unsupported token exception.
-        shortAmount = shortAmount.normalizeToRange(
-            100 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxShort(hyperdrive)
-        );
-        vm.deal(bob, shortAmount);
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openShort{ value: shortAmount }(
-            shortAmount,
-            shortAmount,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-    }
-
-    function test_open_short_with_lseth(uint256 shortAmount) external {
-        // Get some balance information before the deposit.
-        uint256 totalLsethSupplyBefore = RIVER.totalSupply();
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-
-        // Bob opens a short by depositing LsETH.
-        vm.startPrank(bob);
-        shortAmount = shortAmount.normalizeToRange(
-            100 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxShort(hyperdrive)
-        );
-        RIVER.approve(address(hyperdrive), shortAmount);
-        (, uint256 sharesPaid) = openShort(bob, shortAmount, false);
-        uint256 basePaid = RIVER.underlyingBalanceFromShares(sharesPaid);
-
-        // Ensure that the amount of base paid by the short is reasonable.
-        uint256 realizedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
-            shortAmount - basePaid,
-            shortAmount,
-            1e18
-        );
-        assertGt(basePaid, 0);
-        assertGe(realizedRate, FIXED_RATE);
-
-        // Ensure that River aggregates and the token balances were updated
-        // correctly during the trade.
-        verifyDeposit(
-            bob,
-            sharesPaid,
-            false,
-            totalLsethSupplyBefore,
-            bobBalancesBefore,
-            hyperdriveBalancesBefore
-        );
-    }
-
     function test_open_short_refunds() external {
         vm.startPrank(bob);
 
@@ -781,39 +462,6 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         );
     }
 
-    function verifyDeposit(
-        address trader,
-        uint256 amount,
-        bool asBase,
-        uint256 totalSharesBefore,
-        AccountBalances memory traderBalancesBefore,
-        AccountBalances memory hyperdriveBalancesBefore
-    ) internal {
-        if (asBase) {
-            revert IHyperdrive.NotPayable();
-        }
-
-        // Ensure that the ether balances were updated correctly.
-        assertEq(
-            address(hyperdrive).balance,
-            hyperdriveBalancesBefore.ETHBalance
-        );
-        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-        // Ensure that the LsETH balances were updated correctly.
-        assertEq(
-            RIVER.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.lsethBalance + amount
-        );
-        assertEq(
-            RIVER.balanceOf(trader),
-            traderBalancesBefore.lsethBalance - amount
-        );
-
-        // Ensure the total supply was updated correctly.
-        assertEq(RIVER.totalSupply(), totalSharesBefore);
-    }
-
     function verifyLsethWithdrawal(
         address trader,
         uint256 amount,
@@ -839,11 +487,11 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         // Ensure the LsETH balances were updated correctly.
         assertEq(
             RIVER.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.lsethBalance - amount
+            hyperdriveBalancesBefore.sharesBalance - amount
         );
         assertEq(
             RIVER.balanceOf(address(trader)),
-            traderBalancesBefore.lsethBalance + amount
+            traderBalancesBefore.sharesBalance + amount
         );
     }
 
@@ -853,16 +501,18 @@ contract LsETHHyperdriveTest is HyperdriveTest {
         uint256 timeDelta,
         int256 variableRate
     ) internal override {
+        // Storage slot for LsETH underlying ether balance.
+        bytes32 lastConsensusLayerReportSlot = bytes32(
+            uint256(keccak256("river.state.lastConsensusLayerReport"))
+        );
+
         // Advance the time.
         vm.warp(block.timestamp + timeDelta);
 
         // Load the validator balance from the last consensus
         // layer report slot.
         uint256 validatorBalance = uint256(
-            vm.load(
-                address(RIVER),
-                LAST_CONSENSUS_LAYER_REPORT_VALIDATOR_BALANCE_SLOT
-            )
+            vm.load(address(RIVER), lastConsensusLayerReportSlot)
         );
 
         // Increase the balance by the variable rate.
@@ -871,7 +521,7 @@ contract LsETHHyperdriveTest is HyperdriveTest {
             : validatorBalance.mulDown(uint256(1e18 - variableRate));
         vm.store(
             address(RIVER),
-            LAST_CONSENSUS_LAYER_REPORT_VALIDATOR_BALANCE_SLOT,
+            lastConsensusLayerReportSlot,
             bytes32(newValidatorBalance)
         );
     }
@@ -887,20 +537,5 @@ contract LsETHHyperdriveTest is HyperdriveTest {
 
         // Ensure the new rate is higher than the old rate.
         assertGt(RIVER.underlyingBalanceFromShares(1e18), oldRate);
-    }
-
-    struct AccountBalances {
-        uint256 lsethBalance;
-        uint256 ETHBalance;
-    }
-
-    function getAccountBalances(
-        address account
-    ) internal view returns (AccountBalances memory) {
-        return
-            AccountBalances({
-                lsethBalance: RIVER.balanceOf(account),
-                ETHBalance: account.balance
-            });
     }
 }

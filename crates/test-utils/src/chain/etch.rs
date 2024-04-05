@@ -12,8 +12,8 @@ use hyperdrive_wrappers::wrappers::{
     erc20_mintable::ERC20Mintable, erc4626_hyperdrive::ERC4626Hyperdrive,
     erc4626_target0::ERC4626Target0, erc4626_target1::ERC4626Target1,
     erc4626_target2::ERC4626Target2, erc4626_target3::ERC4626Target3,
-    erc4626_target4::ERC4626Target4, etching_vault::EtchingVault,
-    ierc4626_hyperdrive::IERC4626Hyperdrive, mock_erc4626::MockERC4626,
+    erc4626_target4::ERC4626Target4, etching_vault::EtchingVault, ihyperdrive::IHyperdrive,
+    mock_erc4626::MockERC4626,
 };
 
 use super::Chain;
@@ -26,7 +26,7 @@ impl Chain {
 
         // Instantiate a hyperdrive contract wrapper to use during the etching
         // process.
-        let hyperdrive = IERC4626Hyperdrive::new(addresses.erc4626_hyperdrive, client.clone());
+        let hyperdrive = IHyperdrive::new(addresses.erc4626_hyperdrive, client.clone());
 
         // Get the contract addresses of the vault and the targets.
         let target0_address = hyperdrive.target_0().call().await?;
@@ -34,7 +34,7 @@ impl Chain {
         let target2_address = hyperdrive.target_2().call().await?;
         let target3_address = hyperdrive.target_3().call().await?;
         let target4_address = hyperdrive.target_4().call().await?;
-        let vault_address = hyperdrive.vault().call().await?;
+        let vault_address = hyperdrive.vault_shares_token().call().await?;
 
         // Deploy templates for each of the contracts that should be etched and
         // get a list of targets and templates. In order for the contracts to

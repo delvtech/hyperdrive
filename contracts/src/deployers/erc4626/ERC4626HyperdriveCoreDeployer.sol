@@ -15,7 +15,6 @@ import { ERC4626Hyperdrive } from "../../instances/erc4626/ERC4626Hyperdrive.sol
 contract ERC4626HyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _extraData The extra data that contains the ERC4626 vault.
     /// @param _target0 The target0 address.
     /// @param _target1 The target1 address.
     /// @param _target2 The target2 address.
@@ -25,7 +24,7 @@ contract ERC4626HyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     /// @return The address of the newly deployed ERC4626Hyperdrive instance.
     function deploy(
         IHyperdrive.PoolConfig memory _config,
-        bytes memory _extraData,
+        bytes memory, // unused extra data
         address _target0,
         address _target1,
         address _target2,
@@ -33,22 +32,13 @@ contract ERC4626HyperdriveCoreDeployer is IHyperdriveCoreDeployer {
         address _target4,
         bytes32 _salt
     ) external returns (address) {
-        address vault = abi.decode(_extraData, (address));
         return (
             address(
                 // NOTE: We hash the sender with the salt to prevent the
                 // front-running of deployments.
                 new ERC4626Hyperdrive{
                     salt: keccak256(abi.encode(msg.sender, _salt))
-                }(
-                    _config,
-                    _target0,
-                    _target1,
-                    _target2,
-                    _target3,
-                    _target4,
-                    IERC4626(vault)
-                )
+                }(_config, _target0, _target1, _target2, _target3, _target4)
             )
         );
     }

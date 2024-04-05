@@ -4,7 +4,6 @@ pragma solidity 0.8.20;
 import { RETHTarget4 } from "../../instances/reth/RETHTarget4.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDeployer.sol";
-import { IRocketStorage } from "../../interfaces/IRocketStorage.sol";
 
 /// @author DELV
 /// @title RETHTarget4Deployer
@@ -13,15 +12,6 @@ import { IRocketStorage } from "../../interfaces/IRocketStorage.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract RETHTarget4Deployer is IHyperdriveTargetDeployer {
-    /// @notice The Rocket Storage contract.
-    IRocketStorage public immutable rocketStorage;
-
-    /// @notice Instantiates the target4 deployer.
-    /// @param _rocketStorage The Rocket Storage contract.
-    constructor(IRocketStorage _rocketStorage) {
-        rocketStorage = _rocketStorage;
-    }
-
     /// @notice Deploys a target4 instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _salt The create2 salt used in the deployment.
@@ -37,7 +27,7 @@ contract RETHTarget4Deployer is IHyperdriveTargetDeployer {
                 // front-running of deployments.
                 new RETHTarget4{
                     salt: keccak256(abi.encode(msg.sender, _salt))
-                }(_config, rocketStorage)
+                }(_config)
             );
     }
 }

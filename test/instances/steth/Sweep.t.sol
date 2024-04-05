@@ -10,7 +10,6 @@ import { StETHTarget4 } from "contracts/src/instances/steth/StETHTarget4.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdriveEvents } from "contracts/src/interfaces/IHyperdriveEvents.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
-import { IStETHHyperdrive } from "contracts/src/interfaces/IStETHHyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ETH } from "contracts/src/libraries/Constants.sol";
 import { ONE } from "contracts/src/libraries/FixedPointMath.sol";
@@ -24,7 +23,7 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
     ForwardingToken lidoForwarder;
     ERC20Mintable sweepable;
 
-    IStETHHyperdrive hyperdrive;
+    IHyperdrive hyperdrive;
 
     function setUp() public override {
         super.setUp();
@@ -51,6 +50,7 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
         // Deploy Hyperdrive with the leaky lido.
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: IERC20(address(ETH)),
+            vaultSharesToken: IERC20(address(leakyLido)),
             linkerFactory: address(0),
             linkerCodeHash: bytes32(0),
             initialVaultSharePrice: ONE,
@@ -65,26 +65,15 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
             fees: IHyperdrive.Fees(0, 0, 0, 0)
         });
         vm.warp(3 * config.positionDuration);
-        hyperdrive = IStETHHyperdrive(
+        hyperdrive = IHyperdrive(
             address(
                 new StETHHyperdrive(
                     config,
-                    address(
-                        new StETHTarget0(config, ILido(address(leakyLido)))
-                    ),
-                    address(
-                        new StETHTarget1(config, ILido(address(leakyLido)))
-                    ),
-                    address(
-                        new StETHTarget2(config, ILido(address(leakyLido)))
-                    ),
-                    address(
-                        new StETHTarget3(config, ILido(address(leakyLido)))
-                    ),
-                    address(
-                        new StETHTarget4(config, ILido(address(leakyLido)))
-                    ),
-                    ILido(address(leakyLido))
+                    address(new StETHTarget0(config)),
+                    address(new StETHTarget1(config)),
+                    address(new StETHTarget2(config)),
+                    address(new StETHTarget3(config)),
+                    address(new StETHTarget4(config))
                 )
             )
         );
@@ -120,7 +109,7 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
         vm.startPrank(celine);
 
         // Trying to sweep the stETH token should fail.
-        address lido = address(hyperdrive.lido());
+        address lido = hyperdrive.vaultSharesToken();
         vm.expectRevert(IHyperdrive.SweepFailed.selector);
         hyperdrive.sweep(IERC20(lido));
     }

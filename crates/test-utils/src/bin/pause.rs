@@ -3,7 +3,7 @@ use std::env;
 use dotenvy::dotenv;
 use ethers::signers::LocalWallet;
 use eyre::Result;
-use hyperdrive_wrappers::wrappers::ierc4626_hyperdrive::IERC4626Hyperdrive;
+use hyperdrive_wrappers::wrappers::ihyperdrive::IHyperdrive;
 use test_utils::{chain::Chain, infra::query_addresses};
 
 #[tokio::main]
@@ -18,7 +18,7 @@ async fn main() -> Result<()> {
 
     // Pause the pool.
     println!("Pausing the pool...");
-    let hyperdrive = IERC4626Hyperdrive::new(addresses.erc4626_hyperdrive, client);
+    let hyperdrive = IHyperdrive::new(addresses.erc4626_hyperdrive, client);
     hyperdrive.pause(true).send().await?.await?;
 
     // Check that the pool is paused.

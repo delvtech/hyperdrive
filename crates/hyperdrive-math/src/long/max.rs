@@ -5,7 +5,7 @@ use fixed_point_macros::{fixed, int256};
 use crate::{State, YieldSpace};
 
 impl State {
-    /// Gets the pool's max spot price.
+    /// Calculates the pool's max spot price.
     ///
     /// Hyperdrive has assertions to ensure that traders don't purchase bonds at
     /// negative interest rates. The maximum spot price that longs can push the
@@ -14,32 +14,32 @@ impl State {
     /// $$
     /// p_max = \frac{1 - \phi_f}{1 + \phi_c * \left( p_0^{-1} - 1 \right) * \left( \phi_f - 1 \right)}
     /// $$
-    pub fn get_max_spot_price(&self) -> FixedPoint {
+    pub fn calculate_max_spot_price(&self) -> FixedPoint {
         (fixed!(1e18) - self.flat_fee())
             / (fixed!(1e18)
                 + self
                     .curve_fee()
-                    .mul_up(fixed!(1e18).div_up(self.get_spot_price()) - fixed!(1e18)))
+                    .mul_up(fixed!(1e18).div_up(self.calculate_spot_price()) - fixed!(1e18)))
             .mul_up(fixed!(1e18) - self.flat_fee())
     }
 
-    /// Gets the pool's solvency.
+    /// Calculates the pool's solvency.
     ///
     /// $$
     /// s = z - \tfrac{exposure}{c} - z_min
     /// $$
-    pub fn get_solvency(&self) -> FixedPoint {
+    pub fn calculate_solvency(&self) -> FixedPoint {
         self.share_reserves()
             - self.long_exposure() / self.vault_share_price()
             - self.minimum_share_reserves()
     }
 
-    /// Gets the max long that can be opened given a budget.
+    /// Calculates the max long that can be opened given a budget.
     ///
     /// We start by calculating the long that brings the pool's spot price to 1.
     /// If we are solvent at this point, then we're done. Otherwise, we approach
     /// the max long iteratively using Newton's method.
-    pub fn get_max_long<F: Into<FixedPoint>, I: Into<I256>>(
+    pub fn calculate_max_long<F: Into<FixedPoint>, I: Into<I256>>(
         &self,
         budget: F,
         checkpoint_exposure: I,
@@ -48,7 +48,7 @@ impl State {
         let budget = budget.into();
         let checkpoint_exposure = checkpoint_exposure.into();
 
-        // Get the maximum long that brings the spot price to 1. If the pool is
+        // Calculate the maximum long that brings the spot price to 1. If the pool is
         // solvent after opening this long, then we're done.
         let (absolute_max_base_amount, absolute_max_bond_amount) = self.absolute_max_long();
         if self
@@ -87,7 +87,7 @@ impl State {
             checkpoint_exposure,
         );
         if maybe_solvency.is_none() {
-            panic!("Initial guess in `get_max_long` is insolvent.");
+            panic!("Initial guess in `calculate_max_long` is insolvent.");
         }
         let mut solvency = maybe_solvency.unwrap();
         for _ in 0..maybe_max_iterations.unwrap_or(7) {
@@ -95,7 +95,7 @@ impl State {
             // we've gone too far and the calculation deviated from reality at
             // some point.
             if max_base_amount >= absolute_max_base_amount {
-                panic!("Reached absolute max bond amount in `get_max_long`.");
+                panic!("Reached absolute max bond amount in `calculate_max_long`.");
             }
 
             // If the max base amount exceeds the budget, we know that the
@@ -135,7 +135,7 @@ impl State {
         // Ensure that the final result is less than the absolute max and clamp
         // to the budget.
         if max_base_amount >= absolute_max_base_amount {
-            panic!("Reached absolute max bond amount in `get_max_long`.");
+            panic!("Reached absolute max bond amount in `calculate_max_long`.");
         }
         if max_base_amount >= budget {
             return budget;
@@ -185,7 +185,7 @@ impl State {
                 + ((fixed!(1e18)
                     + self
                         .curve_fee()
-                        .mul_up(fixed!(1e18).div_up(self.get_spot_price()) - fixed!(1e18))
+                        .mul_up(fixed!(1e18).div_up(self.calculate_spot_price()) - fixed!(1e18))
                         .mul_up(fixed!(1e18) - self.flat_fee()))
                 .div_up(fixed!(1e18) - self.flat_fee()))
                 .pow((fixed!(1e18) - self.time_stretch()) / (self.time_stretch()))))
@@ -203,7 +203,7 @@ impl State {
         let target_bond_reserves = inner
             * ((fixed!(1e18)
                 + self.curve_fee()
-                    * (fixed!(1e18) / (self.get_spot_price()) - fixed!(1e18))
+                    * (fixed!(1e18) / (self.calculate_spot_price()) - fixed!(1e18))
                     * (fixed!(1e18) - self.flat_fee()))
                 / (fixed!(1e18) - self.flat_fee()))
             .pow(fixed!(1e18).div_up(self.time_stretch()));
@@ -223,7 +223,7 @@ impl State {
         (absolute_max_base_amount, absolute_max_bond_amount)
     }
 
-    /// Gets an initial guess of the max long that can be opened. This is a
+    /// Calculates an initial guess of the max long that can be opened. This is a
     /// reasonable estimate that is guaranteed to be less than the true max
     /// long. We use this to get a reasonable starting point for Newton's
     /// method.
@@ -232,9 +232,9 @@ impl State {
         absolute_max_base_amount: FixedPoint,
         checkpoint_exposure: I256,
     ) -> FixedPoint {
-        // Get an initial estimate of the max long by using the spot price as
+        // Calculate an initial estimate of the max long by using the spot price as
         // our conservative price.
-        let spot_price = self.get_spot_price();
+        let spot_price = self.calculate_spot_price();
         let guess = self.max_long_estimate(spot_price, spot_price, checkpoint_exposure);
 
         // We know that the spot price is 1 when the absolute max base amount is
@@ -295,7 +295,8 @@ impl State {
         checkpoint_exposure: I256,
     ) -> FixedPoint {
         let checkpoint_exposure = FixedPoint::from(-checkpoint_exposure.min(int256!(0)));
-        let mut estimate = self.get_solvency() + checkpoint_exposure / self.vault_share_price();
+        let mut estimate =
+            self.calculate_solvency() + checkpoint_exposure / self.vault_share_price();
         estimate = estimate.mul_div_down(self.vault_share_price(), fixed!(2e18));
         estimate /= fixed!(1e18) / estimate_price
             + self.governance_lp_fee() * self.curve_fee() * (fixed!(1e18) - spot_price)
@@ -304,7 +305,7 @@ impl State {
         estimate
     }
 
-    /// Gets the solvency of the pool $S(x)$ after a long is opened with a base
+    /// Calculates the solvency of the pool $S(x)$ after a long is opened with a base
     /// amount $x$.
     ///
     /// Since longs can net out with shorts in this checkpoint, we decrease
@@ -363,7 +364,7 @@ impl State {
         }
     }
 
-    /// Gets the negation of the derivative of the pool's solvency with respect
+    /// Calculates the negation of the derivative of the pool's solvency with respect
     /// to the base amount that the long pays.
     ///
     /// The derivative of the pool's solvency $S(x)$ with respect to the base
@@ -385,13 +386,13 @@ impl State {
             (derivative
                 + self.governance_lp_fee()
                     * self.curve_fee()
-                    * (fixed!(1e18) - self.get_spot_price())
+                    * (fixed!(1e18) - self.calculate_spot_price())
                 - fixed!(1e18))
             .mul_div_down(fixed!(1e18), self.vault_share_price())
         })
     }
 
-    /// Gets the derivative of [long_amount](long_amount) with respect to the
+    /// Calculates the derivative of [long_amount](long_amount) with respect to the
     /// base amount.
     ///
     /// We calculate the derivative of the long amount $y(x)$ as:
@@ -441,7 +442,8 @@ impl State {
         );
 
         // Finish computing the derivative.
-        derivative -= self.curve_fee() * ((fixed!(1e18) / self.get_spot_price()) - fixed!(1e18));
+        derivative -=
+            self.curve_fee() * ((fixed!(1e18) / self.calculate_spot_price()) - fixed!(1e18));
 
         Some(derivative)
     }
@@ -467,7 +469,7 @@ mod tests {
     use tracing_test::traced_test;
 
     use super::*;
-    use crate::get_effective_share_reserves;
+    use crate::calculate_effective_share_reserves;
 
     async fn setup() -> Result<MockHyperdriveMath<ChainClient<LocalWallet>>> {
         let chain = Chain::connect(std::env::var("HYPERDRIVE_ETHEREUM_URL").ok()).await?;
@@ -505,12 +507,12 @@ mod tests {
                         flat_fee: state.config.fees.flat,
                         governance_lp_fee: state.config.fees.governance_lp,
                     },
-                    get_effective_share_reserves(
+                    calculate_effective_share_reserves(
                         state.info.share_reserves.into(),
                         state.info.share_adjustment,
                     )
                     .into(),
-                    state.get_spot_price().into(),
+                    state.calculate_spot_price().into(),
                 )
                 .call()
                 .await
@@ -527,14 +529,14 @@ mod tests {
         Ok(())
     }
 
-    /// This test differentially fuzzes the `get_max_long` function against the
+    /// This test differentially fuzzes the `calculate_max_long` function against the
     /// Solidity analogue `calculateMaxLong`. `calculateMaxLong` doesn't take
     /// a trader's budget into account, so it only provides a subset of
-    /// `get_max_long`'s functionality. With this in mind, we provide
-    /// `get_max_long` with a budget of `U256::MAX` to ensure that the two
+    /// `calculate_max_long`'s functionality. With this in mind, we provide
+    /// `calculate_max_long` with a budget of `U256::MAX` to ensure that the two
     /// functions are equivalent.
     #[tokio::test]
-    async fn fuzz_get_max_long() -> Result<()> {
+    async fn fuzz_calculate_max_long() -> Result<()> {
         let mock = setup().await?;
 
         // Fuzz the rust and solidity implementations against each other.
@@ -550,8 +552,9 @@ mod tests {
                     I256::try_from(value).unwrap()
                 }
             };
-            let actual =
-                panic::catch_unwind(|| state.get_max_long(U256::MAX, checkpoint_exposure, None));
+            let actual = panic::catch_unwind(|| {
+                state.calculate_max_long(U256::MAX, checkpoint_exposure, None)
+            });
             match mock
                 .calculate_max_long(
                     MaxTradeParams {
@@ -586,13 +589,13 @@ mod tests {
 
     #[traced_test]
     #[tokio::test]
-    async fn test_get_max_long() -> Result<()> {
+    async fn test_calculate_max_long() -> Result<()> {
         // Spawn a test chain and create two agents -- Alice and Bob. Alice
         // is funded with a large amount of capital so that she can initialize
         // the pool. Bob is funded with a small amount of capital so that we
-        // can test `get_max_short` when budget is the primary constraint.
+        // can test `calculate_max_long` when budget is the primary constraint.
         let mut rng = thread_rng();
-        let chain = Chain::connect(None).await?;
+        let chain = Chain::connect(std::env::var("HYPERDRIVE_ETHEREUM_URL").ok()).await?;
         chain.deal(ALICE.address(), uint256!(100_000e18)).await?;
         chain.deal(BOB.address(), uint256!(100_000e18)).await?;
         let addresses = chain.test_deploy(ALICE.clone()).await?;
@@ -628,9 +631,12 @@ mod tests {
                 .await?;
 
             // Bob opens a max long.
-            let max_spot_price = bob.get_state().await?.get_max_spot_price();
-            let max_long = bob.get_max_long(None).await?;
-            let spot_price_after_long = bob.get_state().await?.get_spot_price_after_long(max_long);
+            let max_spot_price = bob.get_state().await?.calculate_max_spot_price();
+            let max_long = bob.calculate_max_long(None).await?;
+            let spot_price_after_long = bob
+                .get_state()
+                .await?
+                .calculate_spot_price_after_long(max_long, None);
             bob.open_long(max_long, None, None).await?;
 
             // One of three things should be true after opening the long:
@@ -644,7 +650,7 @@ mod tests {
             let is_solvency_consumed = {
                 let state = bob.get_state().await?;
                 let error_tolerance = fixed!(1_000e18).mul_div_down(fixed_rate, fixed!(0.1e18));
-                state.get_solvency() < error_tolerance
+                state.calculate_solvency() < error_tolerance
             };
             let is_budget_consumed = {
                 let error_tolerance = fixed!(1e18);

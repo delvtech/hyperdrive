@@ -16,7 +16,6 @@ import { ERC4626Target3 } from "contracts/src/instances/erc4626/ERC4626Target3.s
 import { ERC4626Target4 } from "contracts/src/instances/erc4626/ERC4626Target4.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
-import { IERC4626Hyperdrive } from "contracts/src/interfaces/IERC4626Hyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -125,6 +124,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // Deploy a MockHyperdrive instance.
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
+            vaultSharesToken: pool,
             linkerFactory: address(0),
             linkerCodeHash: bytes32(0),
             initialVaultSharePrice: ONE,
@@ -138,19 +138,18 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             sweepCollector: celine,
             fees: IHyperdrive.Fees(0, 0, 0, 0)
         });
-        address target0 = address(new ERC4626Target0(config, pool));
-        address target1 = address(new ERC4626Target1(config, pool));
-        address target2 = address(new ERC4626Target2(config, pool));
-        address target3 = address(new ERC4626Target3(config, pool));
-        address target4 = address(new ERC4626Target4(config, pool));
+        address target0 = address(new ERC4626Target0(config));
+        address target1 = address(new ERC4626Target1(config));
+        address target2 = address(new ERC4626Target2(config));
+        address target3 = address(new ERC4626Target3(config));
+        address target4 = address(new ERC4626Target4(config));
         mockHyperdrive = new MockERC4626Hyperdrive(
             config,
             target0,
             target1,
             target2,
             target3,
-            target4,
-            pool
+            target4
         );
 
         vm.stopPrank();
@@ -287,6 +286,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         IHyperdrive.PoolDeployConfig memory config = IHyperdrive
             .PoolDeployConfig({
                 baseToken: dai,
+                vaultSharesToken: pool,
                 linkerFactory: factory.linkerFactory(),
                 linkerCodeHash: factory.linkerCodeHash(),
                 minimumShareReserves: ONE,
@@ -304,7 +304,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
-            abi.encode(address(pool)),
+            new bytes(0),
             apr,
             apr,
             0,
@@ -314,7 +314,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
-            abi.encode(address(pool)),
+            new bytes(0),
             apr,
             apr,
             1,
@@ -324,7 +324,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
-            abi.encode(address(pool)),
+            new bytes(0),
             apr,
             apr,
             2,
@@ -334,7 +334,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
-            abi.encode(address(pool)),
+            new bytes(0),
             apr,
             apr,
             3,
@@ -344,7 +344,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
-            abi.encode(address(pool)),
+            new bytes(0),
             apr,
             apr,
             4,
@@ -354,7 +354,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
             config,
-            abi.encode(address(pool)),
+            new bytes(0),
             contribution,
             apr,
             apr,
@@ -384,7 +384,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             apr,
             true,
             config.minimumShareReserves,
-            abi.encode(address(pool)),
+            new bytes(0),
             0
         );
     }
@@ -397,6 +397,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         IHyperdrive.PoolDeployConfig memory config = IHyperdrive
             .PoolDeployConfig({
                 baseToken: dai,
+                vaultSharesToken: pool,
                 linkerFactory: factory.linkerFactory(),
                 linkerCodeHash: factory.linkerCodeHash(),
                 minimumShareReserves: ONE,

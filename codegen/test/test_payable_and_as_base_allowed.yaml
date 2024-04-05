@@ -1,0 +1,23 @@
+# Template configuration
+
+# Vault naming formats.
+name:
+  # Capitalized version of the name to be used i.e. for contract names, file
+  # names, and comments.
+  capitalized: "TestETH"
+
+  # All lower case name to be used for directories.
+  lowercase: "testeth"
+
+  # Camel case name to be used i.e. for variables.
+  camelcase: "testEth"
+
+# Configuration parameters for the hyperdrive instance.
+contract:
+  # If the contract is payable in Ether.  If it is, then logic should be added
+  # to accept Ether, and deposit into the vault to obtain vault shares.
+  payable: true
+
+  # If the contract can accept base to convert to valut shares on behalf of the
+  # user.
+  as_base_allowed: true
