@@ -637,6 +637,9 @@ mod tests {
         Ok(())
     }
 
+    /// This test empirically tests the derivative of `short_deposit_derivative`
+    /// by calling `calculate_open_short` at two points and comparing the empirical
+    /// result with the output of `short_deposit_derivative`.
     #[traced_test]
     #[tokio::test]
     async fn test_short_deposit_derivative() -> Result<()> {
@@ -645,7 +648,7 @@ mod tests {
         // function not being monotonically increasing.
         let empirical_derivative_epsilon = fixed!(1e12);
         // TODO pretty big comparison epsilon here
-        let test_comparison_epsilon = fixed!(1e18);
+        let test_comparison_epsilon = fixed!(1e15);
 
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
@@ -705,15 +708,14 @@ mod tests {
         Ok(())
     }
 
+    /// Tests that the absolute max short can be executed on chain.
     #[traced_test]
     #[tokio::test]
     async fn test_calculate_absolute_max_short_execute() -> Result<()> {
-        // Tests that the absolute max short can be executed on chain.
-
         // Spawn a test chain and create two agents -- Alice and Bob. Alice
         // is funded with a large amount of capital so that she can initialize
-        // the pool. Bob is funded with a small amount of capital so that we
-        // can test `calculate_max_short` when budget is the primary constraint.
+        // the pool. Bob is funded with plenty of capital to ensure we can execute
+        // the absolute maximum short.
         let mut rng = thread_rng();
         let chain = TestChain::new(2).await?;
         let (alice, bob) = (chain.accounts()[0].clone(), chain.accounts()[1].clone());
