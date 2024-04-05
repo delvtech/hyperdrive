@@ -4,21 +4,19 @@ mod test_chain;
 
 use std::{sync::Arc, time::Duration};
 
-use async_trait::async_trait;
 pub use deploy::TestChainConfig;
 use ethers::{
     core::utils::Anvil,
     middleware::{
         gas_escalator::{Frequency, GeometricGasPrice},
-        nonce_manager::NonceManagerError,
-        GasEscalatorMiddleware, MiddlewareError, NonceManagerMiddleware, SignerMiddleware,
+        GasEscalatorMiddleware, SignerMiddleware,
     },
     providers::{
-        Http, HttpClientError, HttpRateLimitRetryPolicy, Middleware, PendingTransaction, Provider,
-        RetryClient, RetryClientBuilder, RetryPolicy,
+        Http, HttpClientError, HttpRateLimitRetryPolicy, Middleware, Provider, RetryClient,
+        RetryClientBuilder, RetryPolicy,
     },
     signers::Signer,
-    types::{transaction::eip2718::TypedTransaction, Address, BlockId, U256},
+    types::{Address, U256},
     utils::AnvilInstance,
 };
 use eyre::Result;
@@ -48,82 +46,8 @@ impl RetryPolicy<HttpClientError> for ChainRetryPolicy {
     }
 }
 
-type ChainClientProvider = Arc<RetryClient<Http>>;
-
-type ChainClientInner<S> = NonceManagerMiddleware<
-    SignerMiddleware<GasEscalatorMiddleware<Provider<Arc<RetryClient<Http>>>>, S>,
->;
-
-#[derive(Debug)]
-pub struct ChainClient<S: Signer + 'static> {
-    inner: NonceManagerMiddleware<
-        SignerMiddleware<GasEscalatorMiddleware<Provider<Arc<RetryClient<Http>>>>, S>,
-    >,
-    address: Address,
-}
-
-/// A client with a provider stack that includes a retry policy, nonce manager,
-/// signer, and gas escalator.
-impl<S: Signer + 'static> ChainClient<S> {
-    pub async fn new(provider: Provider<Http>, signer: S) -> Result<Self> {
-        // Build a provider with a retry policy that will retry on rate limit
-        // errors, timeout errors, and "intrinsic gas too high".
-        let provider = RetryClientBuilder::default()
-            .rate_limit_retries(10)
-            .timeout_retries(3)
-            .initial_backoff(Duration::from_millis(1))
-            .build(
-                provider.as_ref().clone(),
-                Box::<ChainRetryPolicy>::default(),
-            );
-        let provider = Provider::new(Arc::new(provider)).interval(Duration::from_millis(1));
-
-        // Build a client with signer, nonce management, and gas escalator
-        // middleware.
-        let inner = GasEscalatorMiddleware::new(
-            provider,
-            GeometricGasPrice::new(1.125, 10u64, None::<u64>),
-            Frequency::PerBlock,
-        );
-        let inner = SignerMiddleware::new_with_provider_chain(inner, signer).await?;
-        let address = inner.address();
-        let inner = NonceManagerMiddleware::new(inner, address);
-
-        Ok(Self { inner, address })
-    }
-
-    /// Gets the client's address.
-    pub fn address(&self) -> Address {
-        self.address
-    }
-}
-
-#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
-#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-impl<S: Signer + 'static> Middleware for ChainClient<S> {
-    // NOTE: This is a pass-through middleware implementation, so we just use
-    // the error from the top of the middleware stack.
-    type Error = NonceManagerError<Self::Inner>;
-
-    type Provider = ChainClientProvider;
-    type Inner = ChainClientInner<S>;
-
-    fn inner(&self) -> &Self::Inner {
-        &self.inner
-    }
-
-    async fn send_transaction<T: Into<TypedTransaction> + Send + Sync>(
-        &self,
-        tx: T,
-        block: Option<BlockId>,
-    ) -> Result<PendingTransaction<'_, Self::Provider>, Self::Error> {
-        Ok(self
-            .inner
-            .send_transaction(tx, block)
-            .await
-            .map_err(MiddlewareError::from_err)?)
-    }
-}
+pub type ChainClient<S> =
+    SignerMiddleware<GasEscalatorMiddleware<Provider<Arc<RetryClient<Http>>>>, S>;
 
 /// An abstraction over Ethereum chains that provides convenience methods for
 /// constructing providers and clients with useful middleware. Additionally, it
@@ -176,7 +100,27 @@ impl Chain {
 
     /// A client that can access the chain.
     pub async fn client<S: Signer + 'static>(&self, signer: S) -> Result<Arc<ChainClient<S>>> {
-        Ok(Arc::new(ChainClient::new(self.provider(), signer).await?))
+        // Build a provider with a retry policy that will retry on rate limit
+        // errors, timeout errors, and "intrinsic gas too high".
+        let provider = RetryClientBuilder::default()
+            .rate_limit_retries(10)
+            .timeout_retries(3)
+            .initial_backoff(Duration::from_millis(1))
+            .build(
+                self.provider().as_ref().clone(),
+                Box::<ChainRetryPolicy>::default(),
+            );
+        let provider = Provider::new(Arc::new(provider)).interval(Duration::from_millis(1));
+
+        // Build a client with signer and gas escalator middleware.
+        let client = GasEscalatorMiddleware::new(
+            provider,
+            GeometricGasPrice::new(1.125, 10u64, None::<u64>),
+            Frequency::PerBlock,
+        );
+        let client = SignerMiddleware::new_with_provider_chain(client, signer).await?;
+
+        Ok(Arc::new(client))
     }
 
     /// Snapshots the chain. This only works for anvil chains.

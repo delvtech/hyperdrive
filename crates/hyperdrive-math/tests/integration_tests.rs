@@ -86,13 +86,13 @@ pub async fn test_integration_calculate_max_short() -> Result<()> {
 
     // Initialize the test chain.
     let chain = TestChain::new().await?;
+    let mut alice = chain.alice().await?;
+    let mut bob = chain.bob().await?;
+    let mut celine = chain.celine().await?;
 
     for _ in 0..*FUZZ_RUNS {
         // Snapshot the chain.
         let id = chain.snapshot().await?;
-        let mut alice = chain.alice().await?;
-        let mut bob = chain.bob().await?;
-        let mut celine = chain.celine().await?;
 
         // Run the preamble.
         let fixed_rate = fixed!(0.05e18);
@@ -139,6 +139,9 @@ pub async fn test_integration_calculate_max_short() -> Result<()> {
 
         // Revert to the snapshot and reset the agent's wallets.
         chain.revert(id).await?;
+        alice.reset(Default::default());
+        bob.reset(Default::default());
+        celine.reset(Default::default());
     }
 
     Ok(())
@@ -160,13 +163,13 @@ pub async fn test_integration_calculate_max_long() -> Result<()> {
 
     // Initialize the test chain.
     let chain = TestChain::new().await?;
+    let mut alice = chain.alice().await?;
+    let mut bob = chain.bob().await?;
+    let mut celine = chain.celine().await?;
 
     for _ in 0..*FUZZ_RUNS {
         // Snapshot the chain.
         let id = chain.snapshot().await?;
-        let mut alice = chain.alice().await?;
-        let mut bob = chain.bob().await?;
-        let mut celine = chain.celine().await?;
 
         // Run the preamble.
         let fixed_rate = fixed!(0.05e18);
@@ -202,6 +205,9 @@ pub async fn test_integration_calculate_max_long() -> Result<()> {
 
         // Revert to the snapshot and reset the agent's wallets.
         chain.revert(id).await?;
+        alice.reset(Default::default());
+        bob.reset(Default::default());
+        celine.reset(Default::default());
     }
 
     Ok(())
