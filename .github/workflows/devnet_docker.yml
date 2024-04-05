@@ -52,6 +52,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
+            ADMIN=${{ vars.DEVNET_ADMIN }}
             FACTORY_MIN_CURVE_FEE=0
             FACTORY_MIN_FLAT_FEE=0
             FACTORY_MIN_GOVERNANCE_LP_FEE=0

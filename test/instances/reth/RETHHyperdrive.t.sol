@@ -56,7 +56,7 @@ contract RETHHyperdriveTest is InstanceTest {
             IERC20(ETH),
             IERC20(rocketTokenRETH),
             1e5,
-            1e16,
+            1e15,
             POSITION_DURATION,
             false,
             true

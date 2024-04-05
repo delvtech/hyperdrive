@@ -51,7 +51,7 @@ jobs:
         if: github.event_name == 'merge_group'
         id: check-merge-group
         run: |
-          FILES_CHANGED=$(git diff --name-only ${{ github.event.merge_group.base_ref }} HEAD)
+          FILES_CHANGED=$(git diff --name-only ${{ github.event.merge_group.head_ref }} HEAD)
           if echo "$FILES_CHANGED" | grep -m 1 "${{ inputs.pattern }}"; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else

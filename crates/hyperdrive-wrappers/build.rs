@@ -15,6 +15,8 @@ const TARGETS: &[&str] = &[
     "ERC20ForwarderFactory",
     // Hyperdrive Factory
     "HyperdriveFactory",
+    // Hyperdrive Registry
+    "HyperdriveRegistry",
     // ERC4626 Hyperdrive
     "ERC4626Hyperdrive",
     "ERC4626HyperdriveCoreDeployer",
