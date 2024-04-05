@@ -86,4 +86,17 @@ contract MockLPMath {
                 _originalEffectiveShareReserves
             );
     }
+
+    function calculateSharesDeltaGivenBondsDeltaDerivativeSafe(
+        LPMath.DistributeExcessIdleParams memory _params,
+        uint256 _originalEffectiveShareReserves,
+        int256 _bondAmount
+    ) external pure returns (uint256, bool) {
+        return
+            LPMath.calculateSharesDeltaGivenBondsDeltaDerivativeSafe(
+                _params,
+                _originalEffectiveShareReserves,
+                _bondAmount
+            );
+    }
 }
