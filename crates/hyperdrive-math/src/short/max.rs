@@ -118,8 +118,7 @@ impl State {
         );
         let mut previous_max_bond_amount = max_bond_amount;
         let mut step_size = fixed!(1e18);
-        println!("maybe_max_iterations: {}", maybe_max_iterations.unwrap());
-        for i in 0..maybe_max_iterations.unwrap_or(7) {
+        for i in 0..maybe_max_iterations.unwrap_or(10) {
             println!("iteration: {}", i);
             let deposit = match self.calculate_open_short(
                 max_bond_amount,
@@ -127,9 +126,16 @@ impl State {
                 open_vault_share_price,
             ) {
                 Ok(d) => d,
-                Err(_) => return max_bond_amount,
+                Err(_) => {
+                    // The pool is insolvent at this point
+                    // we break out of the function for final checks
+                    // and return
+                    break;
+                }
             };
 
+            // If we overshot, we undo a step and cut the
+            // step size by half
             if deposit > budget {
                 max_bond_amount = previous_max_bond_amount;
                 step_size *= fixed!(5e17)
@@ -142,6 +148,9 @@ impl State {
                             spot_price,
                             open_vault_share_price,
                         ));
+                // TODO this always iterates for max_iterations (unless)
+                // it makes the pool insolvent. Lilely want to check an
+                // epsilon to early break
             }
         }
 
@@ -154,8 +163,9 @@ impl State {
             panic!("max short exceeded budget");
         }
 
+        // Verify that the max bond amount is within the absolute max bond amount.
         if max_bond_amount > absolute_max_bond_amount {
-            panic!("Absolute max bond amount exceeded");
+            max_bond_amount = absolute_max_bond_amount;
         }
 
         max_bond_amount
