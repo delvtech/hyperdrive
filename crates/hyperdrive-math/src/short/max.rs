@@ -760,7 +760,7 @@ mod tests {
             // It's known that global max short is in units of bonds,
             // but we fund bob with this amount regardless, since the amount required
             // for deposit << the global max short number of bonds.
-            bob.fund(global_max_short + fixed!(10e18));
+            bob.fund(global_max_short + fixed!(10e18)).await?;
             bob.open_short(global_max_short, None, None).await?;
 
             // Revert to the snapshot and reset the agent's wallets.
