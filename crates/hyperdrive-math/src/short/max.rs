@@ -118,8 +118,7 @@ impl State {
         );
         let mut previous_max_bond_amount = max_bond_amount;
         let mut step_size = fixed!(1e18);
-        for i in 0..maybe_max_iterations.unwrap_or(10) {
-            println!("iteration: {}", i);
+        for _ in 0..maybe_max_iterations.unwrap_or(10) {
             let deposit = match self.calculate_open_short(
                 max_bond_amount,
                 spot_price,
@@ -149,7 +148,7 @@ impl State {
                             open_vault_share_price,
                         ));
                 // TODO this always iterates for max_iterations (unless)
-                // it makes the pool insolvent. Lilely want to check an
+                // it makes the pool insolvent. Likely want to check an
                 // epsilon to early break
             }
         }
@@ -163,7 +162,7 @@ impl State {
             panic!("max short exceeded budget");
         }
 
-        // Verify that the max bond amount is within the absolute max bond amount.
+        // Ensure that the max bond amount is within the absolute max bond amount.
         if max_bond_amount > absolute_max_bond_amount {
             max_bond_amount = absolute_max_bond_amount;
         }
@@ -700,7 +699,6 @@ mod tests {
             } else {
                 abs_diff = empirical_derivative - short_deposit_derivative;
             }
-            println!("abs_diff: {}", abs_diff);
             assert!(abs_diff < test_comparison_epsilon);
         }
 
@@ -710,6 +708,8 @@ mod tests {
     #[traced_test]
     #[tokio::test]
     async fn test_calculate_absolute_max_short_execute() -> Result<()> {
+        // Tests that the absolute max short can be executed on chain.
+
         // Spawn a test chain and create two agents -- Alice and Bob. Alice
         // is funded with a large amount of capital so that she can initialize
         // the pool. Bob is funded with a small amount of capital so that we
@@ -778,7 +778,6 @@ mod tests {
             alice.reset(Default::default());
             bob.reset(Default::default());
         }
-        assert!(false);
 
         Ok(())
     }
@@ -847,9 +846,7 @@ mod tests {
             // calculation is performed and the transaction is submitted.
             let slippage_tolerance = fixed!(0.0001e18);
             let max_short = bob.calculate_max_short(Some(slippage_tolerance)).await?;
-            println!("Calling open_short with max_short = {}", max_short);
             bob.open_short(max_short, None, None).await?;
-            println!("called");
 
             // The max short should either be equal to the global max short in
             // the case that the trader isn't budget constrained or the budget
@@ -859,7 +856,6 @@ mod tests {
                 // that the max short is always consuming at least 99.9% of
                 // the budget.
                 let error_tolerance = fixed!(0.001e18);
-                println!("checking");
                 assert!(
                     bob.base() < budget * (fixed!(1e18) - slippage_tolerance) * error_tolerance,
                     "expected (base={}) < (budget={}) * {} = {}",
@@ -875,7 +871,6 @@ mod tests {
             alice.reset(Default::default());
             bob.reset(Default::default());
         }
-        assert!(false);
 
         Ok(())
     }
