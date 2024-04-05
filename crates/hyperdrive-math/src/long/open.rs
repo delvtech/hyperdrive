@@ -1,3 +1,4 @@
+use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
 
 use crate::{calculate_rate_given_fixed_price, State, YieldSpace};
@@ -22,7 +23,7 @@ impl State {
     ///                \right) \right)^{1 - t_s}
     ///            \right)^{\tfrac{1}{1 - t_s}}
     /// $$
-    pub fn calculate_open_long<F: Into<FixedPoint>>(&self, base_amount: F) -> FixedPoint {
+    pub fn calculate_open_long<F: Into<FixedPoint>>(&self, base_amount: F) -> Result<FixedPoint> {
         let base_amount = base_amount.into();
 
         if base_amount < self.config.minimum_transaction_amount.into() {
@@ -35,14 +36,15 @@ impl State {
 
         // Throw an error if opening the long would result in negative interest.
         let ending_spot_price =
-            self.calculate_spot_price_after_long(base_amount, long_amount.into());
+            self.calculate_spot_price_after_long(base_amount, long_amount.into())?;
         let max_spot_price = self.calculate_max_spot_price();
         if ending_spot_price > max_spot_price {
-            // TODO would be nice to return a `Result` here instead of a panic.
-            panic!("InsufficientLiquidity: Negative Interest");
+            return Err(eyre!(
+                "calculate_open_long: InsufficientLiquidity: Negative Interest",
+            ));
         }
 
-        long_amount - self.open_long_curve_fees(base_amount)
+        Ok(long_amount - self.open_long_curve_fees(base_amount))
     }
 
     /// Calculates the spot price after opening a Hyperdrive long.
@@ -51,17 +53,17 @@ impl State {
         &self,
         base_amount: FixedPoint,
         bond_amount: Option<FixedPoint>,
-    ) -> FixedPoint {
+    ) -> Result<FixedPoint> {
         let bond_amount = match bond_amount {
             Some(bond_amount) => bond_amount,
-            None => self.calculate_open_long(base_amount),
+            None => self.calculate_open_long(base_amount)?,
         };
         let mut state: State = self.clone();
         state.info.bond_reserves -= bond_amount.into();
         state.info.share_reserves += (base_amount / state.vault_share_price()
             - self.open_long_governance_fee(base_amount) / state.vault_share_price())
         .into();
-        state.calculate_spot_price()
+        Ok(state.calculate_spot_price())
     }
 
     /// Calculate the spot rate after a long has been opened.
@@ -70,17 +72,16 @@ impl State {
         &self,
         base_amount: FixedPoint,
         bond_amount: Option<FixedPoint>,
-    ) -> FixedPoint {
-        calculate_rate_given_fixed_price(
-            self.calculate_spot_price_after_long(base_amount, bond_amount),
+    ) -> Result<FixedPoint> {
+        Ok(calculate_rate_given_fixed_price(
+            self.calculate_spot_price_after_long(base_amount, bond_amount)?,
             self.position_duration(),
-        )
+        ))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use eyre::Result;
     use fixed_point_macros::fixed;
     use rand::{thread_rng, Rng};
     use test_utils::{
@@ -124,7 +125,7 @@ mod tests {
             let expected_spot_price = bob
                 .get_state()
                 .await?
-                .calculate_spot_price_after_long(base_paid, None);
+                .calculate_spot_price_after_long(base_paid, None)?;
 
             // Open the long.
             bob.open_long(base_paid, None, None).await?;
@@ -188,7 +189,7 @@ mod tests {
             let expected_spot_rate = bob
                 .get_state()
                 .await?
-                .calculate_spot_rate_after_long(base_paid, None);
+                .calculate_spot_rate_after_long(base_paid, None)?;
 
             // Open the long.
             bob.open_long(base_paid, None, None).await?;
