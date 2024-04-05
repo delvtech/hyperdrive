@@ -1053,7 +1053,7 @@ impl Agent<ChainClient<LocalWallet>, ChaCha8Rng> {
             open_vault_share_price,
             checkpoint_exposure,
             Some(conservative_price),
-            None,
+            Some(20),
         ))
     }
 

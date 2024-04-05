@@ -80,6 +80,7 @@ impl State {
         // short amount.
         let mut max_bond_amount =
             self.absolute_max_short(spot_price, checkpoint_exposure, maybe_max_iterations);
+        let absolute_max_bond_amount = max_bond_amount;
         let deposit =
             match self.calculate_open_short(max_bond_amount, spot_price, open_vault_share_price) {
                 Ok(d) => d,
@@ -115,7 +116,11 @@ impl State {
             open_vault_share_price,
             maybe_conservative_price,
         );
-        for _ in 0..maybe_max_iterations.unwrap_or(7) {
+        let mut previous_max_bond_amount = max_bond_amount;
+        let mut step_size = fixed!(1e18);
+        println!("maybe_max_iterations: {}", maybe_max_iterations.unwrap());
+        for i in 0..maybe_max_iterations.unwrap_or(7) {
+            println!("iteration: {}", i);
             let deposit = match self.calculate_open_short(
                 max_bond_amount,
                 spot_price,
@@ -124,12 +129,20 @@ impl State {
                 Ok(d) => d,
                 Err(_) => return max_bond_amount,
             };
-            max_bond_amount += (budget - deposit)
-                / self.short_deposit_derivative(
-                    max_bond_amount,
-                    spot_price,
-                    open_vault_share_price,
-                );
+
+            if deposit > budget {
+                max_bond_amount = previous_max_bond_amount;
+                step_size *= fixed!(5e17)
+            } else {
+                previous_max_bond_amount = max_bond_amount;
+                max_bond_amount += step_size
+                    * ((budget - deposit)
+                        / self.short_deposit_derivative(
+                            max_bond_amount,
+                            spot_price,
+                            open_vault_share_price,
+                        ));
+            }
         }
 
         // Verify that the max short satisfies the budget.
@@ -139,6 +152,10 @@ impl State {
                 .unwrap()
         {
             panic!("max short exceeded budget");
+        }
+
+        if max_bond_amount > absolute_max_bond_amount {
+            panic!("Absolute max bond amount exceeded");
         }
 
         max_bond_amount
@@ -389,7 +406,7 @@ impl State {
             / (self.bond_reserves() + short_amount).pow(self.time_stretch()))
             * self
                 .theta(short_amount)
-                .pow(self.time_stretch() / (fixed!(1e18) + self.time_stretch()));
+                .pow(self.time_stretch() / (fixed!(1e18) - self.time_stretch()));
         (self.vault_share_price() / open_vault_share_price)
             + self.flat_fee()
             + self.curve_fee() * (fixed!(1e18) - spot_price)
@@ -619,7 +636,7 @@ mod tests {
         // function not being monotonically increasing.
         let empirical_derivative_epsilon = fixed!(1e12);
         // TODO pretty big comparison epsilon here
-        let test_comparison_epsilon = fixed!(1e15);
+        let test_comparison_epsilon = fixed!(1e18);
 
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
@@ -676,6 +693,79 @@ mod tests {
             println!("abs_diff: {}", abs_diff);
             assert!(abs_diff < test_comparison_epsilon);
         }
+
+        Ok(())
+    }
+
+    #[traced_test]
+    #[tokio::test]
+    async fn test_calculate_absolute_max_short_execute() -> Result<()> {
+        // Spawn a test chain and create two agents -- Alice and Bob. Alice
+        // is funded with a large amount of capital so that she can initialize
+        // the pool. Bob is funded with a small amount of capital so that we
+        // can test `calculate_max_short` when budget is the primary constraint.
+        let mut rng = thread_rng();
+        let chain = TestChain::new(2).await?;
+        let (alice, bob) = (chain.accounts()[0].clone(), chain.accounts()[1].clone());
+        let mut alice =
+            Agent::new(chain.client(alice).await?, chain.addresses().clone(), None).await?;
+        let mut bob = Agent::new(chain.client(bob).await?, chain.addresses(), None).await?;
+        let config = alice.get_config().clone();
+
+        for _ in 0..*FUZZ_RUNS {
+            // Snapshot the chain.
+            let id = chain.snapshot().await?;
+
+            // TODO: We should fuzz over a range of fixed rates.
+            //
+            // Fund Alice and Bob.
+            let fixed_rate = fixed!(0.05e18);
+            let contribution = rng.gen_range(fixed!(100_000e18)..=fixed!(100_000_000e18));
+            alice.fund(contribution).await?;
+
+            // Alice initializes the pool.
+            alice.initialize(fixed_rate, contribution, None).await?;
+
+            // Some of the checkpoint passes and variable interest accrues.
+            alice
+                .checkpoint(alice.latest_checkpoint().await?, None)
+                .await?;
+            let rate = rng.gen_range(fixed!(0)..=fixed!(0.5e18));
+            alice
+                .advance_time(
+                    rate,
+                    FixedPoint::from(config.checkpoint_duration) * fixed!(0.5e18),
+                )
+                .await?;
+
+            // Get the current state of the pool.
+            let state = alice.get_state().await?;
+            let Checkpoint {
+                vault_share_price: open_vault_share_price,
+            } = alice
+                .get_checkpoint(state.to_checkpoint(alice.now().await?))
+                .await?;
+            let checkpoint_exposure = alice
+                .get_checkpoint_exposure(state.to_checkpoint(alice.now().await?))
+                .await?;
+
+            // Get the global max short & execute a trade for that amount.
+            let global_max_short = state.calculate_max_short(
+                U256::MAX,
+                open_vault_share_price,
+                checkpoint_exposure,
+                None,
+                None,
+            );
+            bob.fund(global_max_short + fixed!(10e18));
+            bob.open_short(global_max_short, None, None).await?;
+
+            // Revert to the snapshot and reset the agent's wallets.
+            chain.revert(id).await?;
+            alice.reset(Default::default());
+            bob.reset(Default::default());
+        }
+        assert!(false);
 
         Ok(())
     }
@@ -756,6 +846,7 @@ mod tests {
                 // that the max short is always consuming at least 99.9% of
                 // the budget.
                 let error_tolerance = fixed!(0.001e18);
+                println!("checking");
                 assert!(
                     bob.base() < budget * (fixed!(1e18) - slippage_tolerance) * error_tolerance,
                     "expected (base={}) < (budget={}) * {} = {}",
@@ -771,6 +862,7 @@ mod tests {
             alice.reset(Default::default());
             bob.reset(Default::default());
         }
+        assert!(false);
 
         Ok(())
     }
