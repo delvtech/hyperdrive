@@ -7,6 +7,10 @@ use crate::{State, YieldSpace};
 
 impl State {
     /// Gets a target long that can be opened given a budget to achieve a desired fixed rate.
+    ///
+    /// If the long amount to reach the target is greater than the budget, the budget is returned.
+    /// If the long amount to reach the target is invalid (i.e. it would produce an insolvent pool), then
+    /// an error is thrown, and the user is advised to use [calculate_max_long](long::max::calculate_max_long).
     pub fn calculate_targeted_long_with_budget<
         F1: Into<FixedPoint>,
         F2: Into<FixedPoint>,
@@ -63,14 +67,16 @@ impl State {
         }
         let rate_error = resulting_rate - target_rate;
 
-        // Verify solvency and target rate.
+        // If solvent & within the allowable error, stop here.
         if self
             .solvency_after_long(target_base_delta, target_bond_delta, checkpoint_exposure)
             .is_some()
             && rate_error < allowable_error
         {
             Ok(target_base_delta)
-        } else {
+        }
+        // Else, iterate to find a solution.
+        else {
             // We can use the initial guess as a starting point since we know it is less than the target.
             let mut possible_target_base_delta = target_base_delta;
 
@@ -104,9 +110,9 @@ impl State {
                     && loss < allowable_error
                 {
                     return Ok(possible_target_base_delta);
-
+                }
                 // Otherwise perform another iteration.
-                } else {
+                else {
                     // The derivative of the loss is $l'(x) = r'(x)$.
                     // We return $-l'(x)$ because $r'(x)$ is negative, which
                     // can't be represented with FixedPoint.
@@ -146,9 +152,9 @@ impl State {
                 return Err(eyre!("get_targeted_long: We overshot the zero-crossing.",));
             }
             let loss = resulting_rate - target_rate;
-            if !(loss < allowable_error) {
+            if loss >= allowable_error {
                 return Err(eyre!(
-                    "get_targeted_long: Unable to find an acceptible loss. Final loss = {}.",
+                    "get_targeted_long: Unable to find an acceptable loss. Final loss = {}.",
                     loss
                 ));
             }
@@ -181,13 +187,13 @@ impl State {
 
     /// The derivative of the equation for calculating the rate after a long.
     ///
-    /// For some $r = (1 - p(x)) / (p(x) * t)$, where $p(x)$
+    /// For some $r = (1 - p(x)) / (p(x) \cdot t)$, where $p(x)$
     /// is the spot price after a long of `delta_base`$= x$ was opened and $t$
     /// is the annualized position duration, the rate derivative is:
     ///
     /// $$
-    /// r'(x) = \frac{(-p'(x) p(x) t - (1 - p(x)) (p'(x) t))}{(p(x) t)^2} //
-    /// r'(x) = \frac{-p'(x)}{t p(x)^2}
+    /// r'(x) = \frac{(-p'(x) \cdot p(x) t - (1 - p(x)) (p'(x) \cdot t))}{(p(x) \cdot t)^2} //
+    /// r'(x) = \frac{-p'(x)}{t \cdot p(x)^2}
     /// $$
     ///
     /// We return $-r'(x)$ because negative numbers cannot be represented by FixedPoint.
@@ -199,46 +205,56 @@ impl State {
         let price = self.calculate_spot_price_after_long(base_amount, Some(bond_amount))?;
         let price_derivative = self.price_after_long_derivative(base_amount, bond_amount)?;
         // The actual equation we want to represent is:
-        // r' = -p' / (t p^2)
+        // r' = -p' / (t \cdot p^2)
         // We can do a trick to return a positive-only version and
         // indicate that it should be negative in the fn name.
-        Ok(price_derivative / (self.annualized_position_duration() * price.pow(fixed!(2e18))))
+        // We use price * price instead of price.pow(fixed!(2e18)) to avoid error introduced by pow.
+        Ok(price_derivative / (self.annualized_position_duration() * price * price))
     }
 
     /// The derivative of the price after a long.
     ///
     /// The price after a long that moves shares by $\Delta z$ and bonds by $\Delta y$
-    /// is equal to $P(\Delta z) = \frac{\mu (z_e + \Delta z)}{y - \Delta y}^T$,
-    /// where $T$ is the time stretch constant and $z_e$ is the initial effective share reserves.
-    /// Equivalently, for some amount of `delta_base`$= x$ provided to open a long,
-    /// we can write:
+    /// is equal to
     ///
     /// $$
-    /// p(x) = \frac{\mu (z_e + \frac{x}{c} - g(x) - \zeta)}{y_0 - Y(x)}^{T}
+    /// p(\Delta z) = (\frac{\mu \cdot (z_{0} + \Delta z - (\zeta_{0} + \Delta \zeta))}{y - \Delta y})^{t_{s}}
     /// $$
+    ///
+    /// where $t_{s}$ is the time stretch constant and $z_{e,0}$ is the initial
+    /// effective share reserves, and $\zeta$ is the zeta adjustment.
+    /// The zeta adjustment is constant when opening a long, i.e.
+    /// $\Delta \zeta = 0$, so we drop the subscript. Equivalently, for some
+    /// amount of `delta_base`$= x$ provided to open a long, we can write:
+    ///
+    /// $$
+    /// p(x) = (\frac{\mu \cdot (z_{e,0} + \frac{x}{c} - g(x) - \zeta)}{y_0 - y(x)})^{t_{s}}
+    /// $$
+    ///
     /// where $g(x)$ is the [open_long_governance_fee](long::fees::open_long_governance_fee),
-    /// $Y(x)$ is the [long_amount](long::open::calculate_open_long), and $\zeta$ is the
-    /// zeta adjustment.
+    /// $y(x)$ is the [long_amount](long::open::calculate_open_long),
+    ///
     ///
     /// To compute the derivative, we first define some auxiliary variables:
+    ///
     /// $$
-    /// a(x) = \mu (z_e + \frac{x}{c} - g(x) - \zeta) \\
-    /// b(x) = y_0 - Y(x) \\
+    /// a(x) = \mu (z_{0} + \frac{x}{c} - g(x) - \zeta) \\
+    /// b(x) = y_0 - y(x) \\
     /// v(x) = \frac{a(x)}{b(x)}
     /// $$
     ///
-    /// and thus $p(x) = v(x)^T$. Given these, we can write out intermediate derivatives:
+    /// and thus $p(x) = v(x)^t_{s}$. Given these, we can write out intermediate derivatives:
     ///
     /// $$
     /// a'(x) = \frac{\mu}{c} - g'(x) \\
-    /// b'(x) = -Y'(x) \\
-    /// v'(x) = \frac{b a' - a b'}{b^2}
+    /// b'(x) = -y'(x) \\
+    /// v'(x) = \frac{b(x) \cdot a'(x) - a(x) \cdot b'(x)}{b(x)^2}
     /// $$
     ///
     /// And finally, the price after long derivative is:
     ///
     /// $$
-    /// p'(x) = v'(x) T v(x)^(T-1)
+    /// p'(x) = v'(x) \cdot t_{s} \cdot v(x)^(t_{s} - 1)
     /// $$
     ///
     fn price_after_long_derivative(
@@ -251,32 +267,33 @@ impl State {
             * self.curve_fee()
             * (fixed!(1e18) - self.calculate_spot_price());
 
-        // a(x) = u (z_e + x/c - g(x) - zeta)
+        // a(x) = mu * (z_{e,0} + x/c - g(x))
         let inner_numerator = self.mu()
             * (self.ze() + base_amount / self.vault_share_price()
-                - self.open_long_governance_fee(base_amount)
-                - self.zeta().into());
+                - self.open_long_governance_fee(base_amount));
 
-        // a'(x) = u / c - g'(x)
+        // a'(x) = mu / c - g'(x)
         let inner_numerator_derivative = self.mu() / self.vault_share_price() - gov_fee_derivative;
 
-        // b(x) = y_0 - Y(x)
+        // b(x) = y_0 - y(x)
         let inner_denominator = self.bond_reserves() - bond_amount;
 
-        // b'(x) = Y'(x)
+        // b'(x) = -y'(x)
         let long_amount_derivative = match self.long_amount_derivative(base_amount) {
             Some(derivative) => derivative,
             None => return Err(eyre!("long_amount_derivative failure.")),
         };
 
         // v(x) = a(x) / b(x)
-        // v'(x) = ( b(x) * a'(x) + a(x) * b'(x) ) / b(x)^2
+        // v'(x) = ( b(x) * a'(x) - a(x) * b'(x) ) / b(x)^2
+        //       = ( b(x) * a'(x) + a(x) * -b'(x) ) / b(x)^2
+        // Note that we are adding the negative b'(x) to avoid negative fixedpoint numbers
         let inner_derivative = (inner_denominator * inner_numerator_derivative
             + inner_numerator * long_amount_derivative)
-            / inner_denominator.pow(fixed!(2e18));
+            / (inner_denominator * inner_denominator);
 
-        // p'(x) = v'(x) T v(x)^(T-1)
-        // p'(x) = v'(x) T v(x)^(-1)^(1-T)
+        // p'(x) = v'(x) * t_s * v(x)^(t_s - 1)
+        // p'(x) = v'(x) * t_s * v(x)^(-1)^(1 - t_s)
         // v(x) is flipped to (denominator / numerator) to avoid a negative exponent
         Ok(inner_derivative
             * self.time_stretch()
@@ -289,7 +306,7 @@ impl State {
     /// the trade deltas to achieve that state would be:
     ///
     /// $$
-    /// \Delta x = c * (z_t - z_e) \\
+    /// \Delta x = c \cdot (z_t - z_{e,0}) \\
     /// \Delta y = y - y_t - c(\Delta x)
     /// $$
     ///
@@ -311,10 +328,10 @@ impl State {
     /// This calculation does not take Hyperdrive's solvency constraints or exposure
     /// into account and shouldn't be used directly.
     ///
-    /// The price for a given fixed-rate is given by $p = 1 / (r t + 1)$, where
+    /// The price for a given fixed-rate is given by $p = 1 / (r \cdot t + 1)$, where
     /// $r$ is the fixed-rate and $t$ is the annualized position duration. The
-    /// price for a given pool reserves is given by $p = \frac{\mu z}{y}^T$,
-    /// where $\mu$ is the initial share price and $T$ is the time stretch
+    /// price for a given pool reserves is given by $p = \frac{\mu z}{y}^t_{s}$,
+    /// where $\mu$ is the initial share price and $t_{s}$ is the time stretch
     /// constant. By setting these equal we can solve for the pool reserve levels
     /// as a function of a target rate.
     ///
@@ -323,9 +340,9 @@ impl State {
     /// $$
     /// z_t = \frac{1}{\mu} \left(
     ///   \frac{k}{\frac{c}{\mu} + \left(
-    ///     (r_t t + 1)^{\frac{1}{T}}
-    ///   \right)^{1 - T}}
-    /// \right)^{\tfrac{1}{1 - T}}
+    ///     (r_t \cdot t + 1)^{\frac{1}{t_{s}}}
+    ///   \right)^{1 - t_{s}}}
+    /// \right)^{\tfrac{1}{1 - t_{s}}}
     /// $$
     ///
     /// and the pool bond reserves, $y_t$, must be:
@@ -333,9 +350,9 @@ impl State {
     /// $$
     /// y_t = \left(
     ///   \frac{k}{ \frac{c}{\mu} +  \left(
-    ///     \left( r_t t + 1 \right)^{\frac{1}{T}}
-    ///   \right)^{1-T}}
-    /// \right)^{1-T} \left( r_t t + 1 \right)^{\frac{1}{T}}
+    ///     \left( r_t \cdot t + 1 \right)^{\frac{1}{t_{s}}}
+    ///   \right)^{1 - t_{s}}}
+    /// \right)^{1 - t_{s}} \left( r_t t + 1 \right)^{\frac{1}{t_{s}}}
     /// $$
     fn reserves_given_rate_ignoring_exposure<F: Into<FixedPoint>>(
         &self,
@@ -349,13 +366,13 @@ impl State {
             .div_up(self.initial_vault_share_price());
         let scaled_rate = (target_rate.mul_up(self.annualized_position_duration()) + fixed!(1e18))
             .pow(fixed!(1e18) / self.time_stretch());
-        let target_base_reserves = (self.k_down()
+        let inner = (self.k_down()
             / (c_over_mu + scaled_rate.pow(fixed!(1e18) - self.time_stretch())))
         .pow(fixed!(1e18) / (fixed!(1e18) - self.time_stretch()));
-        let target_share_reserves = target_base_reserves / self.initial_vault_share_price();
+        let target_share_reserves = inner / self.initial_vault_share_price();
 
         // Then get the target bond reserves.
-        let target_bond_reserves = target_base_reserves * scaled_rate;
+        let target_bond_reserves = inner * scaled_rate;
 
         (target_share_reserves, target_bond_reserves)
     }
@@ -363,6 +380,9 @@ impl State {
 
 #[cfg(test)]
 mod tests {
+    use std::panic;
+
+    use ethers::types::U256;
     use rand::{thread_rng, Rng};
     use test_utils::{
         agent::Agent,
@@ -385,9 +405,9 @@ mod tests {
         let allowable_solvency_error = fixed!(1e5);
         let allowable_budget_error = fixed!(1e5);
         let allowable_rate_error = fixed!(1e10);
-        let num_newton_iters = 3;
+        let num_newton_iters = 5;
 
-        // Initialize a test chain; don't need mocks because we want state updates.
+        // Initialize a test chain. We don't need mocks because we want state updates.
         let chain = TestChain::new(2).await?;
 
         // Grab accounts for Alice and Bob.
@@ -406,16 +426,42 @@ mod tests {
             let id = chain.snapshot().await?;
 
             // Fund Alice and Bob.
+            // Large budget for initializing the pool.
             let contribution = fixed!(1_000_000e18);
-            alice.fund(contribution).await?; // large budget for initializing the pool
+            alice.fund(contribution).await?;
+            // Small lower bound on the budget for resource-constrained targeted longs.
             let budget = rng.gen_range(fixed!(10e18)..=fixed!(500_000_000e18));
-            bob.fund(budget).await?; // small budget for resource-constrained targeted longs
 
             // Alice initializes the pool.
             let initial_fixed_rate = rng.gen_range(fixed!(0.01e18)..=fixed!(0.1e18));
             alice
                 .initialize(initial_fixed_rate, contribution, None)
                 .await?;
+
+            // Half the time we will open a long & let it mature.
+            if rng.gen_range(0..=1) == 0 {
+                // Open a long.
+                let max_long =
+                    bob.get_state()
+                        .await?
+                        .calculate_max_long(U256::MAX, I256::from(0), None);
+                let long_amount =
+                    (max_long / fixed!(100e18)).max(config.minimum_transaction_amount.into());
+                bob.fund(long_amount + budget).await?;
+                bob.open_long(long_amount, None, None).await?;
+                // Advance time to just after maturity.
+                let variable_rate = rng.gen_range(fixed!(0)..=fixed!(0.5e18));
+                let time_amount = FixedPoint::from(config.position_duration) * fixed!(105e17); // 1.05 * position_duraiton
+                alice.advance_time(variable_rate, time_amount).await?;
+                // Checkpoint to auto-close the position.
+                alice
+                    .checkpoint(alice.latest_checkpoint().await?, None)
+                    .await?;
+            }
+            // Else we will just fund a random budget amount and do the targeted long.
+            else {
+                bob.fund(budget).await?;
+            }
 
             // Some of the checkpoint passes and variable interest accrues.
             alice
@@ -456,14 +502,12 @@ mod tests {
             );
 
             // Check solvency
-            let is_solvent = {
-                let state = bob.get_state().await?;
-                state.calculate_solvency() > allowable_solvency_error
-            };
+            let is_solvent =
+                { bob.get_state().await?.calculate_solvency() > allowable_solvency_error };
             assert!(is_solvent, "Resulting pool state is not solvent.");
 
-            // If the budget was NOT consumed, then we assume the target was hit.
             let new_rate = bob.get_state().await?.calculate_spot_rate();
+            // If the budget was NOT consumed, then we assume the target was hit.
             if !(bob.base() <= allowable_budget_error) {
                 // Actual price might result in long overshooting the target.
                 let abs_error = if target_rate > new_rate {
@@ -479,11 +523,11 @@ mod tests {
                     abs_error,
                     allowable_rate_error
                 );
-
+            }
             // Else, we should have undershot,
             // or by some coincidence the budget was the perfect amount
             // and we hit the rate exactly.
-            } else {
+            else {
                 assert!(
                     new_rate <= target_rate,
                     "The new_rate={} should be <= target_rate={} when budget constrained.",

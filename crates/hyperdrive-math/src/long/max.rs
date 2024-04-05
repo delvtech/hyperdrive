@@ -340,7 +340,7 @@ impl State {
     /// It's possible that the pool is insolvent after opening a long. In this
     /// case, we return `None` since the fixed point library can't represent
     /// negative numbers.
-    pub fn solvency_after_long(
+    pub(super) fn solvency_after_long(
         &self,
         base_amount: FixedPoint,
         bond_amount: FixedPoint,
@@ -380,7 +380,10 @@ impl State {
     /// This derivative is negative since solvency decreases as more longs are
     /// opened. We use the negation of the derivative to stay in the positive
     /// domain, which allows us to use the fixed point library.
-    pub fn solvency_after_long_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
+    pub(super) fn solvency_after_long_derivative(
+        &self,
+        base_amount: FixedPoint,
+    ) -> Option<FixedPoint> {
         let maybe_derivative = self.long_amount_derivative(base_amount);
         maybe_derivative.map(|derivative| {
             (derivative
@@ -419,7 +422,7 @@ impl State {
     /// $$
     /// c'(x) = \phi_{c} \cdot \left( \tfrac{1}{p} - 1 \right)
     /// $$
-    pub fn long_amount_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
+    pub(super) fn long_amount_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
         let share_amount = base_amount / self.vault_share_price();
         let inner =
             self.initial_vault_share_price() * (self.effective_share_reserves() + share_amount);
