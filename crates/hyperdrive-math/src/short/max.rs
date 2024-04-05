@@ -147,7 +147,7 @@ impl State {
                             spot_price,
                             open_vault_share_price,
                         ));
-                // TODO this always iterates for max_iterations (unless)
+                // TODO this always iterates for max_iterations unless
                 // it makes the pool insolvent. Likely want to check an
                 // epsilon to early break
             }
