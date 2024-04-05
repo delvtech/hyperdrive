@@ -591,7 +591,6 @@ mod tests {
 
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
-            // Bind the max amount by the absolute max amount
             let amount = rng.gen_range(fixed!(10e18)..=fixed!(10_000_000e18));
 
             let p1_result = std::panic::catch_unwind(|| {
@@ -603,6 +602,7 @@ mod tests {
                 Ok(p) => {
                     p1 = p;
                 }
+                // If the amount results in the pool being insolvent, skip this iteration
                 Err(_) => continue,
             }
 
@@ -613,6 +613,7 @@ mod tests {
                 Ok(p) => {
                     p2 = p;
                 }
+                // If the amount results in the pool being insolvent, skip this iteration
                 Err(_) => continue,
             }
             // Sanity check
@@ -621,14 +622,21 @@ mod tests {
             let empirical_derivative = (p2 - p1) / (fixed!(2e18) * empirical_derivative_epsilon);
             let open_long_derivative = state.long_amount_derivative(amount);
             open_long_derivative.map(|derivative| {
-                let abs_diff;
+                let derivative_diff;
                 if derivative >= empirical_derivative {
-                    abs_diff = derivative - empirical_derivative;
+                    derivative_diff = derivative - empirical_derivative;
                 } else {
-                    abs_diff = empirical_derivative - derivative;
+                    derivative_diff = empirical_derivative - derivative;
                 }
-                println!("abs_diff: {}", abs_diff);
-                assert!(abs_diff < test_comparison_epsilon);
+                assert!(
+                    derivative_diff < test_comparison_epsilon,
+                    "expected (derivative_diff={}) < (test_comparison_epsilon={}), \
+                    calculated_derivative={}, emperical_derivative={}",
+                    derivative_diff,
+                    test_comparison_epsilon,
+                    derivative,
+                    empirical_derivative
+                );
             });
         }
 

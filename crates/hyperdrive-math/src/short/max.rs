@@ -696,13 +696,21 @@ mod tests {
                 state.vault_share_price(),
             );
 
-            let abs_diff;
+            let derivative_diff;
             if short_deposit_derivative >= empirical_derivative {
-                abs_diff = short_deposit_derivative - empirical_derivative;
+                derivative_diff = short_deposit_derivative - empirical_derivative;
             } else {
-                abs_diff = empirical_derivative - short_deposit_derivative;
+                derivative_diff = empirical_derivative - short_deposit_derivative;
             }
-            assert!(abs_diff < test_comparison_epsilon);
+            assert!(
+                derivative_diff < test_comparison_epsilon,
+                "expected (derivative_diff={}) < (test_comparison_epsilon={}), \
+                calculated_derivative={}, emperical_derivative={}",
+                derivative_diff,
+                test_comparison_epsilon,
+                derivative,
+                empirical_derivative
+            );
         }
 
         Ok(())
