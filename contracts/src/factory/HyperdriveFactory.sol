@@ -894,14 +894,16 @@ contract HyperdriveFactory is IHyperdriveFactory {
         // term lengths.
         if (
             _config.fees.curve > _maxFees.curve ||
-            // NOTE: Round down to make the check stricter.
-            _config.fees.flat.mulDivDown(365 days, _config.positionDuration) >
+            // NOTE: Round up here to make the check stricter
+            ///      since truthy values causes revert.
+            _config.fees.flat.mulDivUp(365 days, _config.positionDuration) >
             _maxFees.flat ||
             _config.fees.governanceLP > _maxFees.governanceLP ||
             _config.fees.governanceZombie > _maxFees.governanceZombie ||
             _config.fees.curve < _minFees.curve ||
-            // NOTE: Round up to make the check stricter.
-            _config.fees.flat.mulDivUp(365 days, _config.positionDuration) <
+            // NOTE: Round down here to make the check stricter
+            ///      since truthy values causes revert.
+            _config.fees.flat.mulDivDown(365 days, _config.positionDuration) <
             _minFees.flat ||
             _config.fees.governanceLP < _minFees.governanceLP ||
             _config.fees.governanceZombie < _minFees.governanceZombie
