@@ -708,7 +708,7 @@ mod tests {
                 calculated_derivative={}, emperical_derivative={}",
                 derivative_diff,
                 test_comparison_epsilon,
-                derivative,
+                short_deposit_derivative,
                 empirical_derivative
             );
         }
