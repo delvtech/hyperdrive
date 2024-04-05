@@ -19,14 +19,16 @@ contract MockLPMath {
             uint256 bondReserves
         )
     {
-        return
-            LPMath.calculateUpdateLiquidity(
+        bool success;
+        (shareReserves, shareAdjustment, bondReserves, success) = LPMath
+            .calculateUpdateLiquiditySafe(
                 _shareReserves,
                 _shareAdjustment,
                 _bondReserves,
                 _minimumShareReserves,
                 _shareReservesDelta
             );
+        require(success, "MockLPMath: calculateUpdateLiquiditySafe failed");
     }
 
     function calculatePresentValue(

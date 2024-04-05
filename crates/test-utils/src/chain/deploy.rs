@@ -30,6 +30,7 @@ use hyperdrive_wrappers::wrappers::{
     hyperdrive_factory::{
         Fees as FactoryFees, HyperdriveFactory, HyperdriveFactoryEvents, Options, PoolDeployConfig,
     },
+    hyperdrive_registry::HyperdriveRegistry,
     ihyperdrive::{Fees, PoolConfig},
     mock_erc4626::MockERC4626,
     mock_lido::MockLido,
@@ -315,6 +316,7 @@ impl Chain {
             erc4626_hyperdrive: erc4626_hyperdrive.address(),
             steth_hyperdrive: Address::zero(),
             factory: Address::zero(),
+            hyperdrive_registry: Address::zero(),
         })
     }
 
@@ -372,6 +374,11 @@ impl Chain {
             .send()
             .await?;
         }
+
+        // Deploy the HyperdriveRegistry contract to track familiar instances.
+        let hyperdrive_registry = HyperdriveRegistry::deploy(client.clone(), ())?
+            .send()
+            .await?;
 
         // Deploy the mock Lido system. We fund Lido with 1 eth to start to
         // avoid reverts when we initialize the pool.
@@ -775,6 +782,21 @@ impl Chain {
             logs[0].clone().hyperdrive
         };
 
+        // Add the 4626 Hyperdrive instance and the Lido Hyperdrive instance
+        // to the registry contract.
+        hyperdrive_registry
+            .set_hyperdrive_info(erc4626_hyperdrive, uint256!(1))
+            .send()
+            .await?;
+        hyperdrive_registry
+            .set_hyperdrive_info(steth_hyperdrive, uint256!(1))
+            .send()
+            .await?;
+        hyperdrive_registry
+            .update_governance(config.admin)
+            .send()
+            .await?;
+
         // Transfer ownership of the base token, factory, vault, and lido to the
         // admin address now that we're done minting tokens and updating the
         // configuration.
@@ -788,6 +810,7 @@ impl Chain {
             factory: factory.address(),
             erc4626_hyperdrive,
             steth_hyperdrive,
+            hyperdrive_registry: hyperdrive_registry.address(),
         })
     }
 }
@@ -893,6 +916,19 @@ mod tests {
             }
         );
 
+        // Verify that the registry data has been set for each Hyperdrive contract.
+        let registry = HyperdriveRegistry::new(addresses.hyperdrive_registry, client.clone());
+        let registry_data_4626 = registry
+            .get_hyperdrive_info(addresses.erc4626_hyperdrive)
+            .call()
+            .await?;
+        assert_ne!(registry_data_4626, uint256!(0));
+        let registry_data_steth = registry
+            .get_hyperdrive_info(addresses.steth_hyperdrive)
+            .call()
+            .await?;
+        assert_ne!(registry_data_steth, uint256!(0));
+
         Ok(())
     }
 
@@ -995,6 +1031,19 @@ mod tests {
                 governance_zombie: test_chain_config.steth_hyperdrive_governance_zombie_fee,
             }
         );
+
+        // Verify that the registry data has been set for each Hyperdrive contract.
+        let registry = HyperdriveRegistry::new(addresses.hyperdrive_registry, client.clone());
+        let registry_data_4626 = registry
+            .get_hyperdrive_info(addresses.erc4626_hyperdrive)
+            .call()
+            .await?;
+        assert_ne!(registry_data_4626, uint256!(0));
+        let registry_data_steth = registry
+            .get_hyperdrive_info(addresses.steth_hyperdrive)
+            .call()
+            .await?;
+        assert_ne!(registry_data_steth, uint256!(0));
 
         Ok(())
     }
