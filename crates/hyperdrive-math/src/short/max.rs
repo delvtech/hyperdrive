@@ -652,7 +652,6 @@ mod tests {
 
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
-            // Bind the max amount by the absolute max amount
             let amount = rng.gen_range(fixed!(10e18)..=fixed!(10_000_000e18));
 
             let p1_result = std::panic::catch_unwind(|| {
@@ -665,6 +664,7 @@ mod tests {
             let p1;
             let p2;
             match p1_result {
+                // If the amount results in the pool being insolvent, skip this iteration
                 Ok(p) => match p {
                     Ok(p) => p1 = p,
                     Err(_) => continue,
@@ -680,6 +680,7 @@ mod tests {
                 )
             });
             match p2_result {
+                // If the amount results in the pool being insolvent, skip this iteration
                 Ok(p) => match p {
                     Ok(p) => p2 = p,
                     Err(_) => continue,
