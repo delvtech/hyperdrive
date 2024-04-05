@@ -1,5 +1,6 @@
 mod deploy;
 mod etch;
+mod test_chain;
 
 use std::{sync::Arc, time::Duration};
 
@@ -21,6 +22,7 @@ use ethers::{
     utils::AnvilInstance,
 };
 use eyre::Result;
+pub use test_chain::TestChain;
 
 /// A retry policy that will retry on rate limit errors, timeout errors, and
 /// "intrinsic gas too high".
@@ -52,7 +54,6 @@ type ChainClientInner<S> = NonceManagerMiddleware<
     SignerMiddleware<GasEscalatorMiddleware<Provider<Arc<RetryClient<Http>>>>, S>,
 >;
 
-// FIXME
 #[derive(Debug)]
 pub struct ChainClient<S: Signer + 'static> {
     inner: NonceManagerMiddleware<
@@ -61,6 +62,8 @@ pub struct ChainClient<S: Signer + 'static> {
     address: Address,
 }
 
+/// A client with a provider stack that includes a retry policy, nonce manager,
+/// signer, and gas escalator.
 impl<S: Signer + 'static> ChainClient<S> {
     pub async fn new(provider: Provider<Http>, signer: S) -> Result<Self> {
         // Build a provider with a retry policy that will retry on rate limit
@@ -89,12 +92,12 @@ impl<S: Signer + 'static> ChainClient<S> {
         Ok(Self { inner, address })
     }
 
+    /// Gets the client's address.
     pub fn address(&self) -> Address {
         self.address
     }
 }
 
-// FIXME: Implement middleware for the chain client.
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 impl<S: Signer + 'static> Middleware for ChainClient<S> {
@@ -122,28 +125,13 @@ impl<S: Signer + 'static> Middleware for ChainClient<S> {
     }
 }
 
-// FIXME: What are the abstractions that I want?
-//
-// - [x] There should be an abstraction that makes it easy to connect to a
-//       remote chain or dev chain.
-// - [ ] There should be an abstraction that makes it easy to deploy new pools
-//       or whole factories given a config.
-//
-// FIXME: What are some changes that should be made?
-//
-// - [ ] We should create a deployments module to create new pools and full
-//       deployments using the factory.
-//    - We need to support deploying pools.
-//    - We need to support deploying the factory.
-//    - It would be nice to support deploying the full deployment with the
-//      factory, the sDAI and Lido deployer coordinators, and two initial pools.
-//      That said, instead of doing it like that, I could write the migration
-//      script using more orthogonal tools.
-// - [ ] Add some address constants that can be used.
+/// An abstraction over Ethereum chains that provides convenience methods for
+/// constructing providers and clients with useful middleware. Additionally, it
+/// provides methods for interacting with the chain that are specific to anvil
+/// chains.
 pub struct Chain {
     provider: Provider<Http>,
     client_version: String,
-    chain_id: u64,
     _maybe_anvil: Option<AnvilInstance>,
 }
 
@@ -154,11 +142,9 @@ impl Chain {
         if let Some(rpc_url) = maybe_rpc_url {
             let provider = Provider::<Http>::try_from(rpc_url)?.interval(Duration::from_millis(1));
             let client_version = provider.client_version().await?;
-            let chain_id = provider.get_chainid().await?.low_u64();
             Ok(Self {
                 provider,
                 client_version,
-                chain_id,
                 _maybe_anvil: None,
             })
         } else {
@@ -173,11 +159,9 @@ impl Chain {
             let provider =
                 Provider::<Http>::try_from(anvil.endpoint())?.interval(Duration::from_millis(1));
             let client_version = provider.client_version().await?;
-            let chain_id = provider.get_chainid().await?.low_u64();
             Ok(Self {
                 provider,
                 client_version,
-                chain_id,
                 _maybe_anvil: Some(anvil),
             })
         }
@@ -190,11 +174,6 @@ impl Chain {
         self.provider.clone()
     }
 
-    // FIXME: It would be nice if our ChainClient had a way to get the address
-    // in a convenient way. I think that I should create a `ChainClient` struct
-    // that implements the `Middleware` trait. This would allow me to add this
-    // functionality.
-    //
     /// A client that can access the chain.
     pub async fn client<S: Signer + 'static>(&self, signer: S) -> Result<Arc<ChainClient<S>>> {
         Ok(Arc::new(ChainClient::new(self.provider(), signer).await?))

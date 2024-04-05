@@ -531,34 +531,20 @@ impl State {
 mod tests {
     use std::panic;
 
-    use ethers::{
-        signers::{LocalWallet, Signer},
-        types::U256,
-    };
+    use ethers::types::U256;
     use eyre::Result;
     use fixed_point_macros::uint256;
     use hyperdrive_wrappers::wrappers::{
-        ihyperdrive::Checkpoint,
-        mock_hyperdrive_math::{MaxTradeParams, MockHyperdriveMath},
+        ihyperdrive::Checkpoint, mock_hyperdrive_math::MaxTradeParams,
     };
     use rand::{thread_rng, Rng};
     use test_utils::{
-        agent::Agent,
-        chain::{Chain, ChainClient},
-        constants::{ALICE, BOB, FAST_FUZZ_RUNS, FUZZ_RUNS},
+        chain::TestChain,
+        constants::{FAST_FUZZ_RUNS, FUZZ_RUNS},
     };
     use tracing_test::traced_test;
 
     use super::*;
-
-    async fn setup() -> Result<MockHyperdriveMath<ChainClient<LocalWallet>>> {
-        let chain = Chain::connect(std::env::var("HYPERDRIVE_ETHEREUM_URL").ok()).await?;
-        chain.deal(ALICE.address(), uint256!(100_000e18)).await?;
-        let mock = MockHyperdriveMath::deploy(chain.client(ALICE.clone()).await?, ())?
-            .send()
-            .await?;
-        Ok(mock)
-    }
 
     /// This test differentially fuzzes the `calculate_max_short` function against
     /// the Solidity analogue `calculateMaxShort`. `calculateMaxShort` doesn't take
@@ -568,7 +554,7 @@ mod tests {
     /// functions are equivalent.
     #[tokio::test]
     async fn fuzz_calculate_max_short_no_budget() -> Result<()> {
-        let mock = setup().await?;
+        let chain = TestChain::new().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -592,7 +578,8 @@ mod tests {
                     Some(max_iterations),
                 )
             });
-            match mock
+            match chain
+                .mock_hyperdrive_math()
                 .calculate_max_short(
                     MaxTradeParams {
                         share_reserves: state.info.share_reserves,
@@ -632,18 +619,14 @@ mod tests {
         // the pool. Bob is funded with a small amount of capital so that we
         // can test `calculate_max_short` when budget is the primary constraint.
         let mut rng = thread_rng();
-        let chain = Chain::connect(None).await?;
-        let addresses = chain.test_deploy(ALICE.clone()).await?;
-        chain.deal(ALICE.address(), uint256!(100_000e18)).await?;
-        chain.deal(BOB.address(), uint256!(100_000e18)).await?;
-        let mut alice =
-            Agent::new(chain.client(ALICE.clone()).await?, addresses.clone(), None).await?;
-        let mut bob = Agent::new(chain.client(BOB.clone()).await?, addresses, None).await?;
-        let config = alice.get_config().clone();
+        let chain = TestChain::new().await?;
 
         for _ in 0..*FUZZ_RUNS {
             // Snapshot the chain.
             let id = chain.snapshot().await?;
+            let mut alice = chain.alice().await?;
+            let mut bob = chain.bob().await?;
+            let config = alice.get_config().clone();
 
             // TODO: We should fuzz over a range of fixed rates.
             //
@@ -714,8 +697,6 @@ mod tests {
 
             // Revert to the snapshot and reset the agent's wallets.
             chain.revert(id).await?;
-            alice.reset(Default::default());
-            bob.reset(Default::default());
         }
 
         Ok(())

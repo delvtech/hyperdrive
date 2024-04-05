@@ -1,10 +1,7 @@
-use std::{sync::Arc, time::Duration};
-
 /// This module contains implementations on the `Chain` struct that make it easy
 /// to deploy Hyperdrive pools, factories, and deployer coordinators.
 use ethers::{
-    core::utils::{keccak256, Anvil},
-    middleware::SignerMiddleware,
+    core::utils::keccak256,
     prelude::EthLogDecode,
     signers::Signer,
     types::{Address, U256},
@@ -33,7 +30,7 @@ use hyperdrive_wrappers::wrappers::{
     hyperdrive_factory::{
         Fees as FactoryFees, HyperdriveFactory, HyperdriveFactoryEvents, Options, PoolDeployConfig,
     },
-    ihyperdrive::{Fees, IHyperdrive, PoolConfig},
+    ihyperdrive::{Fees, PoolConfig},
     mock_erc4626::MockERC4626,
     mock_lido::MockLido,
     steth_hyperdrive_core_deployer::StETHHyperdriveCoreDeployer,
@@ -229,7 +226,6 @@ impl Chain {
     /// Deploys a fresh instance of Hyperdrive.
     pub async fn test_deploy<S: Signer + 'static>(&self, signer: S) -> Result<Addresses> {
         // Create a client using the signer.
-        let address = signer.address();
         let client = self.client(signer).await?;
 
         // Deploy the base token and vault.
@@ -798,6 +794,8 @@ impl Chain {
 
 #[cfg(test)]
 mod tests {
+    use hyperdrive_wrappers::wrappers::ihyperdrive::IHyperdrive;
+
     use super::*;
     use crate::constants::ALICE;
 

@@ -104,33 +104,12 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use ethers::signers::{LocalWallet, Signer};
     use eyre::Result;
-    use fixed_point_macros::{fixed, uint256};
+    use fixed_point_macros::fixed;
     use rand::{thread_rng, Rng};
-    use rand_chacha::ChaCha8Rng;
-    use test_utils::{
-        agent::Agent,
-        chain::{Chain, ChainClient},
-        constants::{ALICE, BOB, FUZZ_RUNS},
-    };
+    use test_utils::{chain::TestChain, constants::FUZZ_RUNS};
 
     use super::*;
-
-    async fn setup() -> Result<(
-        Chain,
-        Agent<ChainClient<LocalWallet>, ChaCha8Rng>,
-        Agent<ChainClient<LocalWallet>, ChaCha8Rng>,
-    )> {
-        let chain = Chain::connect(std::env::var("HYPERDRIVE_ETHEREUM_URL").ok()).await?;
-        chain.deal(ALICE.address(), uint256!(100_000e18)).await?;
-        chain.deal(BOB.address(), uint256!(100_000e18)).await?;
-        let addresses = chain.test_deploy(ALICE.clone()).await?;
-        let alice = Agent::new(chain.client(ALICE.clone()).await?, addresses.clone(), None).await?;
-        let bob = Agent::new(chain.client(BOB.clone()).await?, addresses.clone(), None).await?;
-
-        Ok((chain, alice, bob))
-    }
 
     #[tokio::test]
     async fn fuzz_calculate_spot_price_after_short() -> Result<()> {
@@ -140,11 +119,13 @@ mod tests {
         // test opening a short and verify that the ending spot price is what we
         // expect.
         let mut rng = thread_rng();
-        let (chain, mut alice, mut bob) = setup().await?;
+        let chain = TestChain::new().await?;
 
         for _ in 0..*FUZZ_RUNS {
             // Snapshot the chain.
             let id = chain.snapshot().await?;
+            let mut alice = chain.alice().await?;
+            let mut bob = chain.bob().await?;
 
             // Fund Alice and Bob.
             let fixed_rate = rng.gen_range(fixed!(0.01e18)..=fixed!(0.1e18));
@@ -187,8 +168,6 @@ mod tests {
 
             // Revert to the snapshot and reset the agent's wallets.
             chain.revert(id).await?;
-            alice.reset(Default::default());
-            bob.reset(Default::default());
         }
 
         Ok(())

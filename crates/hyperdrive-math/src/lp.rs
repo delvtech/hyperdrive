@@ -191,28 +191,16 @@ impl State {
 mod tests {
     use std::panic;
 
-    use ethers::signers::LocalWallet;
     use eyre::Result;
-    use hyperdrive_wrappers::wrappers::mock_lp_math::{MockLPMath, PresentValueParams};
+    use hyperdrive_wrappers::wrappers::mock_lp_math::PresentValueParams;
     use rand::{thread_rng, Rng};
-    use test_utils::{
-        chain::{Chain, ChainClient},
-        constants::{ALICE, FAST_FUZZ_RUNS},
-    };
+    use test_utils::{chain::TestChain, constants::FAST_FUZZ_RUNS};
 
     use super::*;
 
-    async fn setup() -> Result<MockLPMath<ChainClient<LocalWallet>>> {
-        let chain = Chain::connect(std::env::var("HYPERDRIVE_ETHEREUM_URL").ok()).await?;
-        let mock = MockLPMath::deploy(chain.client(ALICE.clone()).await?, ())?
-            .send()
-            .await?;
-        Ok(mock)
-    }
-
     #[tokio::test]
     async fn fuzz_calculate_present_value() -> Result<()> {
-        let mock = setup().await?;
+        let chain = TestChain::new().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -222,7 +210,8 @@ mod tests {
             let actual = panic::catch_unwind(|| {
                 state.calculate_present_value(current_block_timestamp.into())
             });
-            match mock
+            match chain
+                .mock_lp_math()
                 .calculate_present_value(PresentValueParams {
                     share_reserves: state.info.share_reserves,
                     bond_reserves: state.info.bond_reserves,
@@ -262,7 +251,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_calculate_net_curve_trade() -> Result<()> {
-        let mock = setup().await?;
+        let chain = TestChain::new().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -283,7 +272,8 @@ mod tests {
                     short_average_time_remaining,
                 )
             });
-            match mock
+            match chain
+                .mock_lp_math()
                 .calculate_net_curve_trade(PresentValueParams {
                     share_reserves: state.info.share_reserves,
                     bond_reserves: state.info.bond_reserves,
@@ -313,7 +303,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_calculate_net_flat_trade() -> Result<()> {
-        let mock = setup().await?;
+        let chain = TestChain::new().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -334,7 +324,8 @@ mod tests {
                     short_average_time_remaining,
                 )
             });
-            match mock
+            match chain
+                .mock_lp_math()
                 .calculate_net_flat_trade(PresentValueParams {
                     share_reserves: state.info.share_reserves,
                     bond_reserves: state.info.bond_reserves,

@@ -453,45 +453,33 @@ impl State {
 mod tests {
     use std::panic;
 
-    use ethers::{
-        signers::{LocalWallet, Signer},
-        types::U256,
-    };
+    use ethers::types::U256;
     use eyre::Result;
     use fixed_point_macros::uint256;
-    use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::{MaxTradeParams, MockHyperdriveMath};
+    use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::MaxTradeParams;
     use rand::{thread_rng, Rng};
     use test_utils::{
-        agent::Agent,
-        chain::{Chain, ChainClient},
-        constants::{ALICE, BOB, FAST_FUZZ_RUNS, FUZZ_RUNS},
+        chain::TestChain,
+        constants::{FAST_FUZZ_RUNS, FUZZ_RUNS},
     };
     use tracing_test::traced_test;
 
     use super::*;
     use crate::calculate_effective_share_reserves;
 
-    async fn setup() -> Result<MockHyperdriveMath<ChainClient<LocalWallet>>> {
-        let chain = Chain::connect(std::env::var("HYPERDRIVE_ETHEREUM_URL").ok()).await?;
-        chain.deal(ALICE.address(), uint256!(100_000e18)).await?;
-        let mock = MockHyperdriveMath::deploy(chain.client(ALICE.clone()).await?, ())?
-            .send()
-            .await?;
-        Ok(mock)
-    }
-
     /// This test differentially fuzzes the `absolute_max_long` function against
     /// the Solidity analogue `calculateAbsoluteMaxLong`.
     #[tokio::test]
     async fn fuzz_absolute_max_long() -> Result<()> {
-        let mock = setup().await?;
+        let chain = TestChain::new().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let actual = panic::catch_unwind(|| state.absolute_max_long());
-            match mock
+            match chain
+                .mock_hyperdrive_math()
                 .calculate_absolute_max_long(
                     MaxTradeParams {
                         share_reserves: state.info.share_reserves,
@@ -537,7 +525,7 @@ mod tests {
     /// functions are equivalent.
     #[tokio::test]
     async fn fuzz_calculate_max_long() -> Result<()> {
-        let mock = setup().await?;
+        let chain = TestChain::new().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -555,7 +543,8 @@ mod tests {
             let actual = panic::catch_unwind(|| {
                 state.calculate_max_long(U256::MAX, checkpoint_exposure, None)
             });
-            match mock
+            match chain
+                .mock_hyperdrive_math()
                 .calculate_max_long(
                     MaxTradeParams {
                         share_reserves: state.info.share_reserves,
@@ -595,16 +584,13 @@ mod tests {
         // the pool. Bob is funded with a small amount of capital so that we
         // can test `calculate_max_long` when budget is the primary constraint.
         let mut rng = thread_rng();
-        let chain = Chain::connect(std::env::var("HYPERDRIVE_ETHEREUM_URL").ok()).await?;
-        chain.deal(ALICE.address(), uint256!(100_000e18)).await?;
-        chain.deal(BOB.address(), uint256!(100_000e18)).await?;
-        let addresses = chain.test_deploy(ALICE.clone()).await?;
-        let mut alice =
-            Agent::new(chain.client(ALICE.clone()).await?, addresses.clone(), None).await?;
-        let mut bob = Agent::new(chain.client(BOB.clone()).await?, addresses.clone(), None).await?;
-        let config = bob.get_config().clone();
+        let chain = TestChain::new().await?;
 
         for _ in 0..*FUZZ_RUNS {
+            let mut alice = chain.alice().await?;
+            let mut bob = chain.bob().await?;
+            let config = bob.get_config().clone();
+
             // Snapshot the chain.
             let id = chain.snapshot().await?;
 
@@ -663,8 +649,6 @@ mod tests {
 
             // Revert to the snapshot and reset the agent's wallets.
             chain.revert(id).await?;
-            alice.reset(Default::default());
-            bob.reset(Default::default());
         }
 
         Ok(())
