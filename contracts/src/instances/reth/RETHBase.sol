@@ -5,7 +5,6 @@ import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { IRocketDepositPool } from "../../interfaces/IRocketDepositPool.sol";
 import { IRocketTokenRETH } from "../../interfaces/IRocketTokenRETH.sol";
 
 /// @author DELV

@@ -3,7 +3,6 @@ pragma solidity 0.8.20;
 
 import { IHyperdriveRead } from "./IHyperdriveRead.sol";
 import { IRocketStorage } from "./IRocketStorage.sol";
-import { IRocketTokenRETH } from "./IRocketTokenRETH.sol";
 
 interface IRETHHyperdriveRead is IHyperdriveRead {
     /// @notice Gets the Rocket Storage contract.

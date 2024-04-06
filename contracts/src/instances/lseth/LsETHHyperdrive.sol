@@ -2,7 +2,6 @@
 pragma solidity 0.8.20;
 
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
-import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { LsETHBase } from "./LsETHBase.sol";
 
