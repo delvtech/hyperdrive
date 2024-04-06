@@ -81,12 +81,12 @@ impl State {
         let mut max_bond_amount =
             self.absolute_max_short(spot_price, checkpoint_exposure, maybe_max_iterations);
         let absolute_max_bond_amount = max_bond_amount;
-        let deposit =
+        let absolute_max_deposit =
             match self.calculate_open_short(max_bond_amount, spot_price, open_vault_share_price) {
                 Ok(d) => d,
                 Err(_) => return max_bond_amount,
             };
-        if deposit <= budget {
+        if absolute_max_deposit <= budget {
             return max_bond_amount;
         }
 
@@ -116,9 +116,15 @@ impl State {
             open_vault_share_price,
             maybe_conservative_price,
         );
-        let mut previous_max_bond_amount = max_bond_amount;
-        let mut step_size = fixed!(1e18);
-        for _ in 0..maybe_max_iterations.unwrap_or(10) {
+        let mut best_valid_max_bond_amount = max_bond_amount;
+
+        // To avoid the case where Newton's method overshoots and stays on
+        // the invalid side of the optimization equation (i.e., when deposit > budget),
+        // we artificially set the target budget to be less than the actual budget.
+        // We use the minimum transaction amount here to avoid the underflow
+        // where budget is less than this bias.
+        let target_budget = budget - self.minimum_transaction_amount();
+        for _ in 0..maybe_max_iterations.unwrap_or(7) {
             let deposit = match self.calculate_open_short(
                 max_bond_amount,
                 spot_price,
@@ -126,48 +132,57 @@ impl State {
             ) {
                 Ok(d) => d,
                 Err(_) => {
-                    // The pool is insolvent at this point
-                    // we break out of the function for final checks
-                    // and return
-                    break;
+                    // The pool is insolvent for the guess at this point.
+                    // We use the absolute max bond amount and deposit
+                    // for the next guess iteration
+                    max_bond_amount = absolute_max_bond_amount;
+                    absolute_max_deposit
                 }
             };
 
-            // If we overshot, we undo a step and cut the
-            // step size by half
-            if deposit > budget {
-                max_bond_amount = previous_max_bond_amount;
-                step_size *= fixed!(5e17)
-            } else {
-                previous_max_bond_amount = max_bond_amount;
-                max_bond_amount += step_size
-                    * ((budget - deposit)
-                        / self.short_deposit_derivative(
-                            max_bond_amount,
-                            spot_price,
-                            open_vault_share_price,
-                        ));
-                // TODO this always iterates for max_iterations unless
-                // it makes the pool insolvent. Likely want to check an
-                // epsilon to early break
+            let derivative =
+                self.short_deposit_derivative(max_bond_amount, spot_price, open_vault_share_price);
+
+            // We update the best valid max bond amount if the deposit amount
+            // is valid and the current guess is better than the current estimate.
+            if (deposit < budget) && (best_valid_max_bond_amount < max_bond_amount) {
+                best_valid_max_bond_amount = max_bond_amount;
             }
+
+            // Iteratively update max_bond_amount via newton's method
+            if deposit < target_budget {
+                max_bond_amount += (target_budget - deposit) / derivative;
+            } else if deposit > target_budget {
+                max_bond_amount -= (deposit - target_budget) / derivative;
+            } else {
+                // If we find the exact solution, we set the result and stop
+                best_valid_max_bond_amount = max_bond_amount;
+                break;
+            }
+            // TODO this always iterates for max_iterations unless
+            // it makes the pool insolvent. Likely want to check an
+            // epsilon to early break
         }
 
         // Verify that the max short satisfies the budget.
         if budget
             < self
-                .calculate_open_short(max_bond_amount, spot_price, open_vault_share_price)
+                .calculate_open_short(
+                    best_valid_max_bond_amount,
+                    spot_price,
+                    open_vault_share_price,
+                )
                 .unwrap()
         {
             panic!("max short exceeded budget");
         }
 
         // Ensure that the max bond amount is within the absolute max bond amount.
-        if max_bond_amount > absolute_max_bond_amount {
-            max_bond_amount = absolute_max_bond_amount;
+        if best_valid_max_bond_amount > absolute_max_bond_amount {
+            best_valid_max_bond_amount = absolute_max_bond_amount;
         }
 
-        max_bond_amount
+        best_valid_max_bond_amount
     }
 
     /// Calculates an initial guess for the max short calculation.
