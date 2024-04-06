@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { Authority } from "solmate/auth/Auth.sol";
 import { MultiRolesAuthority } from "solmate/auth/authorities/MultiRolesAuthority.sol";
-import { ILido } from "../src/interfaces/ILido.sol";
 import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "./ERC20Mintable.sol";
 

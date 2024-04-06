@@ -15,7 +15,9 @@
     "no-empty-blocks": "off",
     "no-complex-fallback": "off",
     "payable-fallback": "off",
-    "max-states-count": ["off", 15]
+    "max-states-count": ["off", 15],
+    "no-unused-import": "error",
+    "immutable-vars-naming": "off"
   },
   "plugins": ["prettier"]
 }

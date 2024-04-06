@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { AssetId } from "../libraries/AssetId.sol";
