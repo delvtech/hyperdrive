@@ -946,7 +946,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
     /// with the current market state.
     pub async fn calculate_open_long(&self, base_amount: FixedPoint) -> Result<FixedPoint> {
         let state = self.get_state().await?;
-        Ok(state.calculate_open_long(base_amount))
+        state.calculate_open_long(base_amount)
     }
 
     /// Calculates the deposit required to short a given amount of bonds with the
@@ -956,10 +956,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         let Checkpoint {
             vault_share_price: open_vault_share_price,
             ..
-        } = self
-            .hyperdrive
-            .get_checkpoint(state.to_checkpoint(self.now().await?))
-            .await?;
+        } = self.get_checkpoint(self.latest_checkpoint().await?).await?;
         state.calculate_open_short(
             short_amount,
             state.calculate_spot_price(),
@@ -980,6 +977,29 @@ impl Agent<ChainClient, ChaCha8Rng> {
         Ok(state.calculate_max_long(self.wallet.base, checkpoint_exposure, maybe_max_iterations))
     }
 
+    /// Gets the long that moves the fixed rate to a target value.
+    pub async fn calculate_targeted_long(
+        &self,
+        target_rate: FixedPoint,
+        maybe_max_iterations: Option<usize>,
+        maybe_allowable_error: Option<FixedPoint>,
+    ) -> Result<FixedPoint> {
+        let state = self.get_state().await?;
+        let checkpoint_exposure = self
+            .hyperdrive
+            .get_checkpoint_exposure(state.to_checkpoint(self.now().await?))
+            .await?;
+        Ok(state
+            .calculate_targeted_long_with_budget(
+                self.wallet.base,
+                target_rate,
+                checkpoint_exposure,
+                maybe_max_iterations,
+                maybe_allowable_error,
+            )
+            .unwrap())
+    }
+
     /// Calculates the max short that can be opened in the current checkpoint.
     ///
     /// Since interest can accrue between the time the calculation is made and
@@ -992,18 +1012,13 @@ impl Agent<ChainClient, ChaCha8Rng> {
         let budget =
             self.wallet.base * (fixed!(1e18) - maybe_slippage_tolerance.unwrap_or(fixed!(0.01e18)));
 
-        let state = self.get_state().await?;
+        let latest_checkpoint = self.latest_checkpoint().await?;
         let Checkpoint {
             vault_share_price: open_vault_share_price,
             ..
-        } = self
-            .hyperdrive
-            .get_checkpoint(state.to_checkpoint(self.now().await?))
-            .await?;
-        let checkpoint_exposure = self
-            .hyperdrive
-            .get_checkpoint_exposure(state.to_checkpoint(self.now().await?))
-            .await?;
+        } = self.get_checkpoint(latest_checkpoint).await?;
+        let checkpoint_exposure = self.get_checkpoint_exposure(latest_checkpoint).await?;
+        let state = self.get_state().await?;
 
         // We linearly interpolate between the current spot price and the minimum
         // price that the pool can support. This is a conservative estimate of

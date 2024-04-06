@@ -280,7 +280,7 @@ pub trait YieldSpace {
         // fall below the minimum share reserves. Otherwise, the minimum share
         // reserves is just zMin.
         if self.zeta() < I256::zero() {
-            z_min = z_min + FixedPoint::from(-self.zeta());
+            z_min += FixedPoint::from(-self.zeta());
         }
 
         // We solve for the maximum sell using the constraint that the pool's
@@ -344,7 +344,6 @@ pub trait YieldSpace {
 mod tests {
     use std::panic;
 
-    use eyre::Result;
     use rand::{thread_rng, Rng};
     use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};
 

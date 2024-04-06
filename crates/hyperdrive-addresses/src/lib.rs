@@ -19,4 +19,7 @@ pub struct Addresses {
     #[serde(alias = "stethHyperdrive")]
     pub steth_hyperdrive: Address,
     pub factory: Address,
+    #[serde(alias = "hyperdriveRegistry")]
+    #[serde(alias = "hyperdrive_registry_address")]
+    pub hyperdrive_registry: Address,
 }

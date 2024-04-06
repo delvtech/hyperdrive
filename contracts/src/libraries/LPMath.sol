@@ -40,51 +40,6 @@ library LPMath {
     /// @return shareReserves The updated share reserves.
     /// @return shareAdjustment The updated share adjustment.
     /// @return bondReserves The updated bond reserves.
-    function calculateUpdateLiquidity(
-        uint256 _shareReserves,
-        int256 _shareAdjustment,
-        uint256 _bondReserves,
-        uint256 _minimumShareReserves,
-        int256 _shareReservesDelta
-    )
-        internal
-        pure
-        returns (
-            uint256 shareReserves,
-            int256 shareAdjustment,
-            uint256 bondReserves
-        )
-    {
-        bool success;
-        (
-            shareReserves,
-            shareAdjustment,
-            bondReserves,
-            success
-        ) = calculateUpdateLiquiditySafe(
-            _shareReserves,
-            _shareAdjustment,
-            _bondReserves,
-            _minimumShareReserves,
-            _shareReservesDelta
-        );
-        if (!success) {
-            revert IHyperdrive.UpdateLiquidityFailed();
-        }
-    }
-
-    /// @dev Calculates the new share reserves, share adjustment, and bond
-    ///      reserves after liquidity is added or removed from the pool. This
-    ///      update is made in such a way that the pool's spot price remains
-    ///      constant.
-    /// @param _shareReserves The current share reserves.
-    /// @param _shareAdjustment The current share adjustment.
-    /// @param _bondReserves The current bond reserves.
-    /// @param _minimumShareReserves The minimum share reserves.
-    /// @param _shareReservesDelta The change in share reserves.
-    /// @return shareReserves The updated share reserves.
-    /// @return shareAdjustment The updated share adjustment.
-    /// @return bondReserves The updated bond reserves.
     /// @return A flag indicating if the calculation succeeded.
     function calculateUpdateLiquiditySafe(
         uint256 _shareReserves,
@@ -755,8 +710,7 @@ library LPMath {
             // values above this threshold are always invalid.
             shareProceeds = shareProceeds.min(_maxShareReservesDelta);
 
-            // Simulate applying the share proceeds to the reserves and
-            // recalculate the present value.
+            // Simulate applying the share proceeds to the reserves.
             bool success;
             (
                 params.presentValueParams.shareReserves,
@@ -776,9 +730,18 @@ library LPMath {
                 // proceeds couldn't be calculated.
                 return 0;
             }
-            uint256 presentValue = calculatePresentValue(
-                params.presentValueParams
+
+            // Recalculate the present value.
+            uint256 presentValue;
+            (presentValue, success) = calculatePresentValueSafe(
+                _params.presentValueParams
             );
+            if (!success) {
+                // NOTE: If the present value can't be calculated,  we can't
+                // continue the calculation. Return 0 to indicate that the share
+                // proceeds couldn't be calculated.
+                return 0;
+            }
 
             // Short-circuit if we are within the minimum tolerance.
             if (
@@ -994,13 +957,17 @@ library LPMath {
         // tolerance.
         if (
             // NOTE: Round down to make the check stricter.
-            closestPresentValue.divDown(params.activeLpTotalSupply) +
-                SHARE_PROCEEDS_TOLERANCE <
-            params.startingPresentValue.divUp(lpTotalSupply) ||
+            closestPresentValue.divDown(params.activeLpTotalSupply) <
+            params.startingPresentValue.mulDivUp(
+                ONE - SHARE_PROCEEDS_TOLERANCE,
+                lpTotalSupply
+            ) ||
             // NOTE: Round up to make the check stricter.
-            closestPresentValue.divUp(params.activeLpTotalSupply) >=
-            params.startingPresentValue.divDown(lpTotalSupply) +
-                SHARE_PROCEEDS_TOLERANCE
+            closestPresentValue.divUp(params.activeLpTotalSupply) >
+            params.startingPresentValue.mulDivDown(
+                ONE + SHARE_PROCEEDS_TOLERANCE,
+                lpTotalSupply
+            )
         ) {
             // NOTE: Return 0 to indicate that the share proceeds couldn't be
             // calculated.
@@ -1016,13 +983,13 @@ library LPMath {
     ///      the present value simplifies to the following:
     ///
     ///      PV(dz) = (z - dz) + net_c(dz) + net_f - z_min
-    ///             = (z - dz) - y_max_out(dz) + net_f - z_min
+    ///             = (z - dz) - z_max_in(dz) + net_f - z_min
     ///
     ///      There are two cases to evaluate:
     ///
     ///      (1) zeta > 0:
     ///
-    ///          z_max_out(dz) = ((z - dz) / z) * (z - zeta) - z_min
+    ///          z_max_in(dz) = ((z - dz) / z) * (z - zeta) - z_min
     ///
     ///          =>
     ///
@@ -1030,7 +997,7 @@ library LPMath {
     ///
     ///      (2) zeta <= 0:
     ///
-    ///          z_max_out(dz) = (z - dz) - z_min
+    ///          z_max_in(dz) = (z - dz) - z_min
     ///
     ///          =>
     ///
@@ -1408,7 +1375,7 @@ library LPMath {
             rhs = uint256(_params.originalShareAdjustment).divUp(
                 _params.originalShareReserves
             );
-            if (rhs >= ONE) {
+            if (rhs > ONE) {
                 // NOTE: Return a failure flag if the calculation would
                 // underflow.
                 return (0, false);

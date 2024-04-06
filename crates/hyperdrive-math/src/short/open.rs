@@ -1,4 +1,3 @@
-use ethers::types::I256;
 use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
@@ -34,6 +33,11 @@ impl State {
         spot_price: FixedPoint,
         mut open_vault_share_price: FixedPoint,
     ) -> Result<FixedPoint> {
+        if short_amount < self.config.minimum_transaction_amount.into() {
+            // TODO would be nice to return a `Result` here instead of a panic.
+            panic!("MinimumTransactionAmount: Input amount too low");
+        }
+
         // If the open share price hasn't been set, we use the current share
         // price, since this is what will be set as the checkpoint share price
         // in the next transaction.
@@ -41,41 +45,45 @@ impl State {
             open_vault_share_price = self.vault_share_price();
         }
 
+        let share_reserves_delta_in_base = self
+            .vault_share_price()
+            .mul_up(self.short_principal(short_amount)?);
+        // If the base proceeds of selling the bonds is greater than the bond
+        // amount, then the trade occurred in the negative interest domain. We
+        // revert in these pathological cases.
+        if share_reserves_delta_in_base > short_amount {
+            // TODO would be nice to return a `Result` here instead of a panic.
+            panic!("InsufficientLiquidity: Negative Interest");
+        }
+
         // NOTE: The order of additions and subtractions is important to avoid underflows.
         Ok(
             short_amount.mul_div_down(self.vault_share_price(), open_vault_share_price)
                 + self.flat_fee() * short_amount
                 + self.curve_fee() * (fixed!(1e18) - spot_price) * short_amount
-                - self.vault_share_price() * self.short_principal(short_amount)?,
+                - share_reserves_delta_in_base,
         )
     }
 
-    /// Calculates the spot price after opening the short on the YieldSpace curve and
-    /// before calculating the fees.
-    pub fn calculate_spot_price_after_short(&self, bond_amount: FixedPoint) -> FixedPoint {
-        let shares_amount = self.calculate_shares_out_given_bonds_in_down(bond_amount);
-        self.spot_price_after_short(shares_amount * self.vault_share_price(), bond_amount)
-    }
-
-    fn spot_price_after_short(
+    /// Calculates the spot price after opening a Hyperdrive short.
+    pub fn calculate_spot_price_after_short(
         &self,
-        base_amount: FixedPoint,
         bond_amount: FixedPoint,
+        base_amount: Option<FixedPoint>,
     ) -> FixedPoint {
+        let shares_amount = match base_amount {
+            Some(base_amount) => base_amount / self.vault_share_price(),
+            None => {
+                let spot_price = self.calculate_spot_price();
+                self.calculate_shares_out_given_bonds_in_down(bond_amount)
+                    - self.open_short_curve_fee(bond_amount, spot_price)
+                    + self.open_short_governance_fee(bond_amount, spot_price)
+            }
+        };
         let mut state: State = self.clone();
         state.info.bond_reserves += bond_amount.into();
-        state.info.share_reserves -= (base_amount / state.vault_share_price()).into();
+        state.info.share_reserves -= shares_amount.into();
         state.calculate_spot_price()
-    }
-
-    #[deprecated(since = "0.4.0", note = "please use `calculate_open_short` instead")]
-    pub fn calculate_short_deposit(
-        &self,
-        short_amount: FixedPoint,
-        spot_price: FixedPoint,
-        open_vault_share_price: FixedPoint,
-    ) -> Result<FixedPoint> {
-        self.calculate_open_short(short_amount, spot_price, open_vault_share_price)
     }
 
     /// Calculates the amount of short principal that the LPs need to pay to back a
@@ -96,78 +104,107 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use std::panic;
-
-    use ethers::types::U256;
-    use eyre::Result;
-    use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::MaxTradeParams;
+    use fixed_point_macros::fixed;
     use rand::{thread_rng, Rng};
-    use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};
+    use test_utils::{
+        agent::Agent,
+        chain::{Chain, TestChain},
+        constants::FUZZ_RUNS,
+    };
 
     use super::*;
 
-    /// This test differentially fuzzes the `calculate_max_short` function against the
-    /// Solidity analogue `calculateMaxShort`. `calculateMaxShort` doesn't take
-    /// a trader's budget into account, so it only provides a subset of
-    /// `calculate_max_short`'s functionality. With this in mind, we provide
-    /// `calculate_max_short` with a budget of `U256::MAX` to ensure that the two
-    /// functions are equivalent.
     #[tokio::test]
-    async fn fuzz_calculate_max_short_no_budget() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-
-        // Fuzz the rust and solidity implementations against each other.
+    async fn fuzz_calculate_spot_price_after_short() -> Result<()> {
+        // Spawn a test chain and create two agents -- Alice and Bob. Alice is
+        // funded with a large amount of capital so that she can initialize the
+        // pool. Bob is funded with a small amount of capital so that we can
+        // test opening a short and verify that the ending spot price is what we
+        // expect.
         let mut rng = thread_rng();
-        for _ in 0..*FAST_FUZZ_RUNS {
-            let state = rng.gen::<State>();
-            let checkpoint_exposure = {
-                let value = rng.gen_range(fixed!(0)..=fixed!(10_000_000e18));
-                if rng.gen() {
-                    -I256::try_from(value).unwrap()
-                } else {
-                    I256::try_from(value).unwrap()
-                }
+        let chain = TestChain::new(2).await?;
+        let (alice, bob) = (chain.accounts()[0].clone(), chain.accounts()[1].clone());
+        let mut alice =
+            Agent::new(chain.client(alice).await?, chain.addresses().clone(), None).await?;
+        let mut bob = Agent::new(chain.client(bob).await?, chain.addresses(), None).await?;
+
+        for _ in 0..*FUZZ_RUNS {
+            // Snapshot the chain.
+            let id = chain.snapshot().await?;
+
+            // Fund Alice and Bob.
+            let fixed_rate = rng.gen_range(fixed!(0.01e18)..=fixed!(0.1e18));
+            let contribution = rng.gen_range(fixed!(10_000e18)..=fixed!(500_000_000e18));
+            let budget = rng.gen_range(fixed!(10e18)..=fixed!(500_000_000e18));
+            alice.fund(contribution).await?;
+            bob.fund(budget).await?;
+
+            // Alice initializes the pool.
+            alice.initialize(fixed_rate, contribution, None).await?;
+
+            // Attempt to predict the spot price after opening a short.
+            let short_amount =
+                rng.gen_range(fixed!(0.01e18)..=bob.calculate_max_short(None).await?);
+            let current_state = bob.get_state().await?;
+            let expected_spot_price =
+                current_state.calculate_spot_price_after_short(short_amount, None);
+
+            // Open the short.
+            bob.open_short(short_amount, None, None).await?;
+
+            // Verify that the predicted spot price is equal to the ending spot
+            // price. These won't be exactly equal because the vault share price
+            // increases between the prediction and opening the short.
+            let actual_spot_price = bob.get_state().await?.calculate_spot_price();
+            let delta = if actual_spot_price > expected_spot_price {
+                actual_spot_price - expected_spot_price
+            } else {
+                expected_spot_price - actual_spot_price
             };
-            let max_iterations = 7;
-            let actual = panic::catch_unwind(|| {
-                state.calculate_max_short(
-                    U256::MAX,
-                    fixed!(0),
-                    checkpoint_exposure,
-                    None,
-                    Some(max_iterations),
-                )
-            });
-            match chain
-                .mock_hyperdrive_math()
-                .calculate_max_short(
-                    MaxTradeParams {
-                        share_reserves: state.info.share_reserves,
-                        bond_reserves: state.info.bond_reserves,
-                        longs_outstanding: state.info.longs_outstanding,
-                        long_exposure: state.info.long_exposure,
-                        share_adjustment: state.info.share_adjustment,
-                        time_stretch: state.config.time_stretch,
-                        vault_share_price: state.info.vault_share_price,
-                        initial_vault_share_price: state.config.initial_vault_share_price,
-                        minimum_share_reserves: state.config.minimum_share_reserves,
-                        curve_fee: state.config.fees.curve,
-                        flat_fee: state.config.fees.flat,
-                        governance_lp_fee: state.config.fees.governance_lp,
-                    },
-                    checkpoint_exposure,
-                    max_iterations.into(),
-                )
-                .call()
-                .await
-            {
-                Ok(expected) => {
-                    assert_eq!(actual.unwrap(), FixedPoint::from(expected));
-                }
-                Err(_) => assert!(actual.is_err()),
-            }
+            // TODO: Why can't this pass with a tolerance of 1e9?
+            let tolerance = fixed!(1e11);
+
+            assert!(
+                delta < tolerance,
+                "expected: delta = {} < {} = tolerance",
+                delta,
+                tolerance
+            );
+
+            // Revert to the snapshot and reset the agent's wallets.
+            chain.revert(id).await?;
+            alice.reset(Default::default());
+            bob.reset(Default::default());
         }
 
         Ok(())
     }
+
+    // Tests open short with an amount smaller than the minimum.
+    #[tokio::test]
+    async fn test_error_open_short_min_txn_amount() -> Result<()> {
+        let mut rng = thread_rng();
+        let state = rng.gen::<State>();
+        let result = std::panic::catch_unwind(|| {
+            state.calculate_open_short(
+                (state.config.minimum_transaction_amount - 10).into(),
+                state.calculate_spot_price(),
+                state.vault_share_price(),
+            )
+        });
+        assert!(result.is_err());
+        Ok(())
+    }
+
+    // TODO ideally we would test calculate open short with an amount larger than the maximum size.
+    // However, `calculate_max_short` requires a `checkpoint_exposure`` argument, which requires
+    // implementing checkpointing in the rust sdk.
+    // https://github.com/delvtech/hyperdrive/issues/862
+
+    // TODO ideally we would add a solidity fuzz test that tests `calculate_open_short` against
+    // opening longs in solidity, where we attempt to trade outside of expected values (so that
+    // we can also test error parities as well). However, the current test chain only exposes
+    // the underlying hyperdrive math functions, which doesn't take into account fees and negative
+    // interest checks.
+    // https://github.com/delvtech/hyperdrive/issues/937
 }

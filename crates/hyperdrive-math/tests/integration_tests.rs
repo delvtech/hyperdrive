@@ -216,7 +216,7 @@ pub async fn test_integration_calculate_max_long() -> Result<()> {
         let spot_price_after_long = bob
             .get_state()
             .await?
-            .calculate_spot_price_after_long(max_long);
+            .calculate_spot_price_after_long(max_long, None)?;
         bob.open_long(max_long, None, None).await?;
         let is_max_price = max_spot_price - spot_price_after_long < fixed!(1e15);
         let is_solvency_consumed = {

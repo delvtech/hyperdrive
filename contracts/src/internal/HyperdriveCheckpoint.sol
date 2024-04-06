@@ -114,7 +114,7 @@ abstract contract HyperdriveCheckpoint is
             checkpointVaultSharePrice = _vaultSharePrice;
         } else {
             for (
-                uint256 time = _checkpointTime;
+                uint256 time = _checkpointTime + _checkpointDuration;
                 ;
                 time += _checkpointDuration
             ) {
@@ -297,7 +297,8 @@ abstract contract HyperdriveCheckpoint is
     /// @param _bondAmount The bond amount of the position.
     /// @param _openVaultSharePrice The vault share price from the position's
     ///        starting checkpoint.
-    /// @param _closeVaultSharePrice The current vault share price.
+    /// @param _closeVaultSharePrice The vault share price from the position's
+    ///        ending checkpoint.
     /// @param _vaultSharePrice The current vault share price.
     /// @param _isLong A flag indicating whether or not the position is a long.
     /// @return shareProceeds The proceeds of the holders in shares.

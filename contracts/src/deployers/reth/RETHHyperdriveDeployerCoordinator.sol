@@ -92,7 +92,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
 
     /// @dev Disallows the contract to receive ether, when opening positions.
     function _checkMessageValue() internal view override {
-        if (msg.value > 0) {
+        if (msg.value != 0) {
             revert IHyperdrive.NotPayable();
         }
     }
@@ -127,7 +127,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
 
         // Ensure that the minimum transaction amount are equal to 1e15. This
         // value has been tested to prevent precision issues.
-        if (_deployConfig.minimumTransactionAmount != 1e16) {
+        if (_deployConfig.minimumTransactionAmount != 1e15) {
             revert IHyperdriveDeployerCoordinator
                 .InvalidMinimumTransactionAmount();
         }
@@ -140,6 +140,6 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         bytes memory // unused extra data
     ) internal view override returns (uint256) {
         // Returns the value of one RETH token in ETH.
-        return rocketTokenReth.getExchangeRate();
+        return rocketTokenReth.getEthValue(ONE);
     }
 }

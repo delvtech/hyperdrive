@@ -98,6 +98,27 @@ pub fn calculate_initial_bond_reserves(
         .mul_down(inner)
 }
 
+/// Calculate the rate assuming a given price is constant for some annualized duration.
+///
+/// We calculate the rate for a fixed length of time as:
+///
+/// $$
+/// r = (1 - p) / (p t)
+/// $$
+///
+/// where $p$ is the price and $t$ is the length of time that this price is
+/// assumed to be constant, in units of years. For example, if the price is
+/// constant for 6 months, then $t=0.5$.
+/// In our case, $t = \text{position_duration} / (60*60*24*365)$.
+pub fn calculate_rate_given_fixed_price(
+    price: FixedPoint,
+    position_duration: FixedPoint,
+) -> FixedPoint {
+    let fixed_price_duration_in_years =
+        position_duration / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
+    (fixed!(1e18) - price) / (price * fixed_price_duration_in_years)
+}
+
 #[cfg(test)]
 mod tests {
     use std::panic;
