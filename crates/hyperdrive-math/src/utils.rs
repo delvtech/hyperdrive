@@ -2,7 +2,7 @@ use ethers::types::{I256, U256};
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
 
-pub fn get_time_stretch(rate: FixedPoint, position_duration: FixedPoint) -> FixedPoint {
+pub fn calculate_time_stretch(rate: FixedPoint, position_duration: FixedPoint) -> FixedPoint {
     let seconds_in_a_year = FixedPoint::from(U256::from(60 * 60 * 24 * 365));
     // Calculate the benchmark time stretch. This time stretch is tuned for
     // a position duration of 1 year.
@@ -34,7 +34,7 @@ pub fn get_time_stretch(rate: FixedPoint, position_duration: FixedPoint) -> Fixe
         * time_stretch
 }
 
-pub fn get_effective_share_reserves(
+pub fn calculate_effective_share_reserves(
     share_reserves: FixedPoint,
     share_adjustment: I256,
 ) -> FixedPoint {
@@ -98,6 +98,27 @@ pub fn calculate_initial_bond_reserves(
         .mul_down(inner)
 }
 
+/// Calculate the rate assuming a given price is constant for some annualized duration.
+///
+/// We calculate the rate for a fixed length of time as:
+///
+/// $$
+/// r = (1 - p) / (p t)
+/// $$
+///
+/// where $p$ is the price and $t$ is the length of time that this price is
+/// assumed to be constant, in units of years. For example, if the price is
+/// constant for 6 months, then $t=0.5$.
+/// In our case, $t = \text{position_duration} / (60*60*24*365)$.
+pub fn calculate_rate_given_fixed_price(
+    price: FixedPoint,
+    position_duration: FixedPoint,
+) -> FixedPoint {
+    let fixed_price_duration_in_years =
+        position_duration / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
+    (fixed!(1e18) - price) / (price * fixed_price_duration_in_years)
+}
+
 #[cfg(test)]
 mod tests {
     use std::panic;
@@ -110,7 +131,7 @@ mod tests {
     use crate::State;
 
     #[tokio::test]
-    async fn fuzz_get_time_stretch() -> Result<()> {
+    async fn fuzz_calculate_time_stretch() -> Result<()> {
         // Spin up a fake chain & deploy mock hyperdrive math.
         let chain = TestChainWithMocks::new(1).await?;
         let mock = chain.mock_hyperdrive_math();
@@ -124,7 +145,7 @@ mod tests {
                 FixedPoint::from(seconds_in_a_day)..=FixedPoint::from(seconds_in_ten_years),
             );
             let apr = rng.gen_range(fixed!(0.001e18)..=fixed!(10.0e18));
-            let actual_t = get_time_stretch(apr, position_duration);
+            let actual_t = calculate_time_stretch(apr, position_duration);
             match mock
                 .calculate_time_stretch(apr.into(), position_duration.into())
                 .call()
@@ -151,7 +172,7 @@ mod tests {
         for _ in 0..*FAST_FUZZ_RUNS {
             // Get the current state of the mock contract
             let state = rng.gen::<State>();
-            let effective_share_reserves = get_effective_share_reserves(
+            let effective_share_reserves = calculate_effective_share_reserves(
                 state.info.share_reserves.into(),
                 state.info.share_adjustment.into(),
             );

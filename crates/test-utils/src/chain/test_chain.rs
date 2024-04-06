@@ -1,4 +1,4 @@
-use std::{convert::TryFrom, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
 use ethers::{
     core::utils::{keccak256, Anvil},
@@ -13,7 +13,7 @@ use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
 use hyperdrive_addresses::Addresses;
-use hyperdrive_math::get_time_stretch;
+use hyperdrive_math::calculate_time_stretch;
 use hyperdrive_wrappers::wrappers::{
     erc20_forwarder_factory::ERC20ForwarderFactory,
     erc20_mintable::ERC20Mintable,
@@ -34,6 +34,7 @@ use hyperdrive_wrappers::wrappers::{
     hyperdrive_factory::{
         Fees as FactoryFees, HyperdriveFactory, HyperdriveFactoryEvents, Options, PoolDeployConfig,
     },
+    hyperdrive_registry::HyperdriveRegistry,
     ihyperdrive::{Fees, IHyperdrive, PoolConfig},
     mock_erc4626::MockERC4626,
     mock_fixed_point_math::MockFixedPointMath,
@@ -489,8 +490,11 @@ impl TestChain {
             minimum_transaction_amount: uint256!(0.001e18),
             position_duration: U256::from(60 * 60 * 24 * 365), // 1 year
             checkpoint_duration: U256::from(60 * 60 * 24),     // 1 day
-            time_stretch: get_time_stretch(fixed!(0.05e18), U256::from(60 * 60 * 24 * 365).into())
-                .into(), // time stretch for 5% rate
+            time_stretch: calculate_time_stretch(
+                fixed!(0.05e18),
+                U256::from(60 * 60 * 24 * 365).into(),
+            )
+            .into(), // time stretch for 5% rate
             fee_collector: client.address(),
             sweep_collector: client.address(),
             governance: client.address(),
@@ -535,6 +539,7 @@ impl TestChain {
             erc4626_hyperdrive: erc4626_hyperdrive.address(),
             steth_hyperdrive: Address::zero(),
             factory: Address::zero(),
+            hyperdrive_registry: Address::zero(),
         })
     }
 
@@ -594,6 +599,11 @@ impl TestChain {
             .send()
             .await?;
         }
+
+        // Deploy the HyperdriveRegistry contract to track familiar instances.
+        let hyperdrive_registry = HyperdriveRegistry::deploy(client.clone(), ())?
+            .send()
+            .await?;
 
         // Deploy the mock Lido system. We fund Lido with 1 eth to start to
         // avoid reverts when we initialize the pool.
@@ -1015,19 +1025,35 @@ impl TestChain {
             logs[0].clone().hyperdrive
         };
 
-        // Transfer ownership of the base token, factory, vault, and lido to the
-        // admin address now that we're done minting tokens and updating the
-        // configuration.
+        // Add the 4626 Hyperdrive instance and the Lido Hyperdrive instance
+        // to the registry contract.
+        hyperdrive_registry
+            .set_hyperdrive_info(erc4626_hyperdrive, uint256!(1))
+            .send()
+            .await?;
+        hyperdrive_registry
+            .set_hyperdrive_info(steth_hyperdrive, uint256!(1))
+            .send()
+            .await?;
+
+        // Transfer ownership of the base token, factory, vault, lido,
+        // and the registry to the admin address now that we're done
+        // minting tokens and updating the configuration.
         base.transfer_ownership(config.admin).send().await?;
         vault.transfer_ownership(config.admin).send().await?;
         lido.transfer_ownership(config.admin).send().await?;
         factory.update_governance(config.admin).send().await?;
+        hyperdrive_registry
+            .update_governance(config.admin)
+            .send()
+            .await?;
 
         Ok(Addresses {
             base_token: base.address(),
             factory: factory.address(),
             erc4626_hyperdrive,
             steth_hyperdrive,
+            hyperdrive_registry: hyperdrive_registry.address(),
         })
     }
 
@@ -1325,9 +1351,6 @@ impl TestChainWithMocks {
 
 #[cfg(test)]
 mod tests {
-    use hyperdrive_math::get_time_stretch;
-    use hyperdrive_wrappers::wrappers::ihyperdrive::{Fees, IHyperdrive};
-
     use super::*;
 
     #[tokio::test]
@@ -1357,7 +1380,7 @@ mod tests {
         );
         assert_eq!(
             config.time_stretch,
-            get_time_stretch(
+            calculate_time_stretch(
                 test_chain_config.erc4626_hyperdrive_time_stretch_apr.into(),
                 test_chain_config
                     .erc4626_hyperdrive_position_duration
@@ -1399,7 +1422,7 @@ mod tests {
         );
         assert_eq!(
             config.time_stretch,
-            get_time_stretch(
+            calculate_time_stretch(
                 test_chain_config.steth_hyperdrive_time_stretch_apr.into(),
                 test_chain_config.steth_hyperdrive_position_duration.into(),
             )
@@ -1416,6 +1439,19 @@ mod tests {
                 governance_zombie: test_chain_config.steth_hyperdrive_governance_zombie_fee,
             }
         );
+
+        // Verify that the registry data has been set for each Hyperdrive contract.
+        let registry = HyperdriveRegistry::new(chain.addresses.hyperdrive_registry, client.clone());
+        let registry_data_4626 = registry
+            .get_hyperdrive_info(chain.addresses.erc4626_hyperdrive)
+            .call()
+            .await?;
+        assert_ne!(registry_data_4626, uint256!(0));
+        let registry_data_steth = registry
+            .get_hyperdrive_info(chain.addresses.steth_hyperdrive)
+            .call()
+            .await?;
+        assert_ne!(registry_data_steth, uint256!(0));
 
         Ok(())
     }
@@ -1451,7 +1487,7 @@ mod tests {
         );
         assert_eq!(
             config.time_stretch,
-            get_time_stretch(
+            calculate_time_stretch(
                 test_chain_config.erc4626_hyperdrive_time_stretch_apr.into(),
                 test_chain_config
                     .erc4626_hyperdrive_position_duration
@@ -1493,7 +1529,7 @@ mod tests {
         );
         assert_eq!(
             config.time_stretch,
-            get_time_stretch(
+            calculate_time_stretch(
                 test_chain_config.steth_hyperdrive_time_stretch_apr.into(),
                 test_chain_config.steth_hyperdrive_position_duration.into(),
             )
@@ -1510,6 +1546,19 @@ mod tests {
                 governance_zombie: test_chain_config.steth_hyperdrive_governance_zombie_fee,
             }
         );
+
+        // Verify that the registry data has been set for each Hyperdrive contract.
+        let registry = HyperdriveRegistry::new(chain.addresses.hyperdrive_registry, client.clone());
+        let registry_data_4626 = registry
+            .get_hyperdrive_info(chain.addresses.erc4626_hyperdrive)
+            .call()
+            .await?;
+        assert_ne!(registry_data_4626, uint256!(0));
+        let registry_data_steth = registry
+            .get_hyperdrive_info(chain.addresses.steth_hyperdrive)
+            .call()
+            .await?;
+        assert_ne!(registry_data_steth, uint256!(0));
 
         Ok(())
     }

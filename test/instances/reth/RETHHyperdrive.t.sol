@@ -56,7 +56,7 @@ contract RETHHyperdriveTest is InstanceTest {
             IERC20(ETH),
             IERC20(rocketTokenRETH),
             1e5,
-            1e16,
+            1e15,
             POSITION_DURATION,
             false,
             true
@@ -101,13 +101,13 @@ contract RETHHyperdriveTest is InstanceTest {
             address(
                 new RETHHyperdriveDeployerCoordinator(
                     _factory,
-                    address(new RETHHyperdriveCoreDeployer(ROCKET_STORAGE)),
-                    address(new RETHTarget0Deployer(ROCKET_STORAGE)),
-                    address(new RETHTarget1Deployer(ROCKET_STORAGE)),
-                    address(new RETHTarget2Deployer(ROCKET_STORAGE)),
-                    address(new RETHTarget3Deployer(ROCKET_STORAGE)),
-                    address(new RETHTarget4Deployer(ROCKET_STORAGE)),
-                    ROCKET_STORAGE
+                    address(new RETHHyperdriveCoreDeployer()),
+                    address(new RETHTarget0Deployer()),
+                    address(new RETHTarget1Deployer()),
+                    address(new RETHTarget2Deployer()),
+                    address(new RETHTarget3Deployer()),
+                    address(new RETHTarget4Deployer()),
+                    rocketTokenRETH
                 )
             );
     }
@@ -170,15 +170,6 @@ contract RETHHyperdriveTest is InstanceTest {
 
         // Ensure the total supply was updated correctly.
         assertEq(rocketTokenRETH.totalSupply(), totalSharesBefore);
-    }
-
-    /// Getters ///
-
-    function test_getters() external {
-        assertEq(
-            address(IRETHHyperdrive(address(hyperdrive)).rocketStorage()),
-            address(ROCKET_STORAGE)
-        );
     }
 
     /// Price Per Share ///

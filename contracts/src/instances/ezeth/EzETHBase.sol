@@ -19,7 +19,7 @@ abstract contract EzETHBase is HyperdriveBase {
     /// @dev The Renzo entrypoint contract.
     IRestakeManager internal immutable _restakeManager;
 
-    /// @dev The Renzo Oracle contract.
+    /// @dev The RenzoOracle contract.
     IRenzoOracle internal immutable _renzoOracle;
 
     /// @dev Error for zero total supply or total pooled ether.
@@ -149,7 +149,7 @@ abstract contract EzETHBase is HyperdriveBase {
     /// @dev We override the message value check since this integration is
     ///      payable.
     function _checkMessageValue() internal view override {
-        if (msg.value > 0) {
+        if (msg.value != 0) {
             revert IHyperdrive.NotPayable();
         }
     }

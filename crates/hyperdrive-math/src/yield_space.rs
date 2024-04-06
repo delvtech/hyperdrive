@@ -3,14 +3,14 @@ use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
-use crate::get_effective_share_reserves;
+use crate::calculate_effective_share_reserves;
 
 pub trait YieldSpace {
     /// Info ///
 
     /// The effective share reserves.
     fn ze(&self) -> FixedPoint {
-        get_effective_share_reserves(self.z(), self.zeta())
+        calculate_effective_share_reserves(self.z(), self.zeta())
     }
 
     /// The share reserves.
@@ -33,7 +33,7 @@ pub trait YieldSpace {
 
     /// Core ///
 
-    fn get_spot_price(&self) -> FixedPoint {
+    fn calculate_spot_price(&self) -> FixedPoint {
         ((self.mu() * self.ze()) / self.y()).pow(self.t())
     }
 
@@ -280,7 +280,7 @@ pub trait YieldSpace {
         // fall below the minimum share reserves. Otherwise, the minimum share
         // reserves is just zMin.
         if self.zeta() < I256::zero() {
-            z_min = z_min + FixedPoint::from(-self.zeta());
+            z_min += FixedPoint::from(-self.zeta());
         }
 
         // We solve for the maximum sell using the constraint that the pool's
@@ -344,7 +344,6 @@ pub trait YieldSpace {
 mod tests {
     use std::panic;
 
-    use eyre::Result;
     use rand::{thread_rng, Rng};
     use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};
 

@@ -285,7 +285,7 @@ abstract contract HyperdriveDeployerCoordinator is
             target = IHyperdriveTargetDeployer(target1Deployer).deploy(
                 config,
                 _extraData,
-                _salt
+                keccak256(abi.encode(msg.sender, _deploymentId, _salt))
             );
             deployment.target1 = target;
         } else if (_targetIndex == 2) {
@@ -295,7 +295,7 @@ abstract contract HyperdriveDeployerCoordinator is
             target = IHyperdriveTargetDeployer(target2Deployer).deploy(
                 config,
                 _extraData,
-                _salt
+                keccak256(abi.encode(msg.sender, _deploymentId, _salt))
             );
             deployment.target2 = target;
         } else if (_targetIndex == 3) {
@@ -305,7 +305,7 @@ abstract contract HyperdriveDeployerCoordinator is
             target = IHyperdriveTargetDeployer(target3Deployer).deploy(
                 config,
                 _extraData,
-                _salt
+                keccak256(abi.encode(msg.sender, _deploymentId, _salt))
             );
             deployment.target3 = target;
         } else if (_targetIndex == 4) {
@@ -315,7 +315,7 @@ abstract contract HyperdriveDeployerCoordinator is
             target = IHyperdriveTargetDeployer(target4Deployer).deploy(
                 config,
                 _extraData,
-                _salt
+                keccak256(abi.encode(msg.sender, _deploymentId, _salt))
             );
             deployment.target4 = target;
         } else {

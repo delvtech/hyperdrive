@@ -19,14 +19,16 @@ contract MockLPMath {
             uint256 bondReserves
         )
     {
-        return
-            LPMath.calculateUpdateLiquidity(
+        bool success;
+        (shareReserves, shareAdjustment, bondReserves, success) = LPMath
+            .calculateUpdateLiquiditySafe(
                 _shareReserves,
                 _shareAdjustment,
                 _bondReserves,
                 _minimumShareReserves,
                 _shareReservesDelta
             );
+        require(success, "MockLPMath: calculateUpdateLiquiditySafe failed");
     }
 
     function calculatePresentValue(
@@ -82,6 +84,19 @@ contract MockLPMath {
             LPMath.calculateMaxShareReservesDeltaSafe(
                 _params,
                 _originalEffectiveShareReserves
+            );
+    }
+
+    function calculateSharesDeltaGivenBondsDeltaDerivativeSafe(
+        LPMath.DistributeExcessIdleParams memory _params,
+        uint256 _originalEffectiveShareReserves,
+        int256 _bondAmount
+    ) external pure returns (uint256, bool) {
+        return
+            LPMath.calculateSharesDeltaGivenBondsDeltaDerivativeSafe(
+                _params,
+                _originalEffectiveShareReserves,
+                _bondAmount
             );
     }
 }

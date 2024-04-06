@@ -5,7 +5,6 @@ import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
-import { IRocketStorage } from "../../interfaces/IRocketStorage.sol";
 import { IRocketTokenRETH } from "../../interfaces/IRocketTokenRETH.sol";
 import { ETH } from "../../libraries/Constants.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
@@ -21,9 +20,6 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     using SafeERC20 for ERC20;
     using FixedPointMath for uint256;
 
-    /// @notice The Rocket Storage contract.
-    IRocketStorage public immutable rocketStorage;
-
     /// @dev The Rocket Token RETH contract.
     IRocketTokenRETH internal immutable rocketTokenReth;
 
@@ -35,7 +31,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
     /// @param _target4Deployer The target4 deployer.
-    /// @param _rocketStorage The Rocket Storage contract.
+    /// @param _rocketTokenReth The rETH token contract.
     constructor(
         address _factory,
         address _coreDeployer,
@@ -44,7 +40,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _target2Deployer,
         address _target3Deployer,
         address _target4Deployer,
-        IRocketStorage _rocketStorage
+        IRocketTokenRETH _rocketTokenReth
     )
         HyperdriveDeployerCoordinator(
             _factory,
@@ -56,13 +52,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _target4Deployer
         )
     {
-        rocketStorage = _rocketStorage;
-
-        // Fetching the RETH token address from the storage contract.
-        address rocketTokenRethAddress = _rocketStorage.getAddress(
-            keccak256(abi.encodePacked("contract.address", "rocketTokenRETH"))
-        );
-        rocketTokenReth = IRocketTokenRETH(rocketTokenRethAddress);
+        rocketTokenReth = _rocketTokenReth;
     }
 
     /// @dev Prepares the coordinator for initialization by drawing funds from
@@ -105,7 +95,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
 
     /// @dev Disallows the contract to receive ether, when opening positions.
     function _checkMessageValue() internal view override {
-        if (msg.value > 0) {
+        if (msg.value != 0) {
             revert IHyperdrive.NotPayable();
         }
     }
@@ -140,7 +130,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
 
         // Ensure that the minimum transaction amount are equal to 1e15. This
         // value has been tested to prevent precision issues.
-        if (_deployConfig.minimumTransactionAmount != 1e16) {
+        if (_deployConfig.minimumTransactionAmount != 1e15) {
             revert IHyperdriveDeployerCoordinator
                 .InvalidMinimumTransactionAmount();
         }
@@ -153,6 +143,6 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         bytes memory // unused extra data
     ) internal view override returns (uint256) {
         // Returns the value of one RETH token in ETH.
-        return rocketTokenReth.getExchangeRate();
+        return rocketTokenReth.getEthValue(ONE);
     }
 }
