@@ -146,11 +146,7 @@ library HyperdriveMath {
             _shareAdjustment
         );
         if (!success) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive
-                    .InsufficientLiquidityReason
-                    .InvalidEffectiveShareReserves
-            );
+            Errors.throwInsufficientLiquidityError();
         }
     }
 

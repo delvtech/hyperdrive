@@ -18,10 +18,7 @@ contract YieldSpaceMathTest is Test {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IHyperdrive.InsufficientLiquidity.selector,
-                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
-            )
+            abi.encodeWithSelector(IHyperdrive.InsufficientLiquidity.selector)
         );
         yieldSpaceMath.calculateSharesInGivenBondsOutDown(
             1_000_000e18, // shareReserves

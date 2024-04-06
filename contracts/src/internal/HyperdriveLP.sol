@@ -102,7 +102,11 @@ abstract contract HyperdriveLP is
         _mint(AssetId._LP_ASSET_ID, _options.destination, lpShares);
 
         // Create an initial checkpoint.
-        _applyCheckpoint(_latestCheckpoint(), vaultSharePrice);
+        _applyCheckpoint(
+            _latestCheckpoint(),
+            vaultSharePrice,
+            LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
+        );
 
         // Emit an Initialize event.
         uint256 baseContribution = _convertToBaseFromOption(
@@ -174,7 +178,11 @@ abstract contract HyperdriveLP is
         );
 
         // Perform a checkpoint.
-        _applyCheckpoint(_latestCheckpoint(), vaultSharePrice);
+        _applyCheckpoint(
+            _latestCheckpoint(),
+            vaultSharePrice,
+            LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
+        );
 
         // Get the initial value for the total LP supply and the total supply
         // of withdrawal shares before the liquidity is added. The total LP
@@ -305,7 +313,11 @@ abstract contract HyperdriveLP is
 
         // Perform a checkpoint.
         uint256 vaultSharePrice = _pricePerVaultShare();
-        _applyCheckpoint(_latestCheckpoint(), vaultSharePrice);
+        _applyCheckpoint(
+            _latestCheckpoint(),
+            vaultSharePrice,
+            LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
+        );
 
         // Burn the LP's shares.
         _burn(AssetId._LP_ASSET_ID, msg.sender, _lpShares);
@@ -380,7 +392,11 @@ abstract contract HyperdriveLP is
 
         // Perform a checkpoint.
         uint256 vaultSharePrice = _pricePerVaultShare();
-        _applyCheckpoint(_latestCheckpoint(), vaultSharePrice);
+        _applyCheckpoint(
+            _latestCheckpoint(),
+            vaultSharePrice,
+            LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
+        );
 
         // Redeem as many of the withdrawal shares as possible.
         (proceeds, withdrawalSharesRedeemed) = _redeemWithdrawalSharesInternal(

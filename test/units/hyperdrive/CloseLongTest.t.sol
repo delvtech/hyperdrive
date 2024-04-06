@@ -177,10 +177,7 @@ contract CloseLongTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IHyperdrive.InsufficientLiquidity.selector,
-                IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
-            )
+            abi.encodeWithSelector(IHyperdrive.InsufficientLiquidity.selector)
         );
         hyperdrive.closeLong(
             maturityTime,
@@ -226,12 +223,7 @@ contract CloseLongTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IHyperdrive.InsufficientLiquidity.selector,
-                IHyperdrive
-                    .InsufficientLiquidityReason
-                    .InvalidEffectiveShareReserves
-            )
+            abi.encodeWithSelector(IHyperdrive.InsufficientLiquidity.selector)
         );
         hyperdrive.closeLong(
             maturityTime,

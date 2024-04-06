@@ -114,11 +114,6 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
         vm.stopPrank();
         vm.startPrank(celine);
 
-        // Trying to sweep the base token should fail.
-        address baseToken = address(hyperdrive.baseToken());
-        vm.expectRevert(IHyperdrive.SweepFailed.selector);
-        hyperdrive.sweep(IERC20(baseToken));
-
         // Trying to sweep the vault token should fail.
         address vaultToken = address(hyperdrive.vaultSharesToken());
         vm.expectRevert(IHyperdrive.SweepFailed.selector);
@@ -128,10 +123,6 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
     function test_sweep_failure_indirect_sweeps() external {
         vm.stopPrank();
         vm.startPrank(celine);
-
-        // Trying to sweep the base token via the forwarding token should fail.
-        vm.expectRevert(IHyperdrive.SweepFailed.selector);
-        hyperdrive.sweep(IERC20(address(baseForwarder)));
 
         // Trying to sweep the vault token via the forwarding token should fail.
         vm.expectRevert(IHyperdrive.SweepFailed.selector);

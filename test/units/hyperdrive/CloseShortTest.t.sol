@@ -194,12 +194,7 @@ contract CloseShortTest is HyperdriveTest {
             MINIMUM_TRANSACTION_AMOUNT,
             initialShortAmount
         );
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IHyperdrive.InsufficientLiquidity.selector,
-                IHyperdrive.InsufficientLiquidityReason.NegativeInterest
-            )
-        );
+        vm.expectRevert(IHyperdrive.InsufficientLiquidity.selector);
         hyperdrive.closeShort(
             maturityTime,
             finalShortAmount,

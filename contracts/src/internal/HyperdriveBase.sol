@@ -231,11 +231,16 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
     /// @dev Creates a new checkpoint if necessary.
     /// @param _checkpointTime The time of the checkpoint to create.
     /// @param _vaultSharePrice The current vault share price.
+    /// @param _maxIterations The number of iterations to use in the Newton's
+    ///        method component of `_distributeExcessIdleSafe`. This defaults to
+    ///        `LPMath.SHARE_PROCEEDS_MAX_ITERATIONS` if the specified value is
+    ///        smaller than the constant.
     /// @return openVaultSharePrice The open vault share price of the latest
     ///         checkpoint.
     function _applyCheckpoint(
         uint256 _checkpointTime,
-        uint256 _vaultSharePrice
+        uint256 _vaultSharePrice,
+        uint256 _maxIterations
     ) internal virtual returns (uint256 openVaultSharePrice);
 
     /// Helpers ///

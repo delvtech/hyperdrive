@@ -62,23 +62,7 @@ abstract contract HyperdriveCheckpoint is
         }
 
         // Apply the checkpoint.
-        _applyCheckpoint(_checkpointTime, vaultSharePrice);
-    }
-
-    /// @dev Creates a new checkpoint if necessary.
-    /// @param _checkpointTime The time of the checkpoint to create.
-    /// @param _vaultSharePrice The current vault share price.
-    /// @return The opening vault share price of the latest checkpoint.
-    function _applyCheckpoint(
-        uint256 _checkpointTime,
-        uint256 _vaultSharePrice
-    ) internal override returns (uint256) {
-        return
-            _applyCheckpoint(
-                _checkpointTime,
-                _vaultSharePrice,
-                LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
-            );
+        _applyCheckpoint(_checkpointTime, vaultSharePrice, _maxIterations);
     }
 
     /// @dev Creates a new checkpoint if necessary.
@@ -93,7 +77,7 @@ abstract contract HyperdriveCheckpoint is
         uint256 _checkpointTime,
         uint256 _vaultSharePrice,
         uint256 _maxIterations
-    ) internal returns (uint256) {
+    ) internal override returns (uint256) {
         // Return early if the checkpoint has already been updated.
         IHyperdrive.Checkpoint storage checkpoint_ = _checkpoints[
             _checkpointTime

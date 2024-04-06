@@ -7,6 +7,7 @@ import { AssetId } from "../libraries/AssetId.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
+import { LPMath } from "../libraries/LPMath.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 
@@ -76,7 +77,11 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
 
         // Perform a checkpoint.
         uint256 latestCheckpoint = _latestCheckpoint();
-        _applyCheckpoint(latestCheckpoint, vaultSharePrice);
+        _applyCheckpoint(
+            latestCheckpoint,
+            vaultSharePrice,
+            LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
+        );
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds purchased to the beginning of the checkpoint.
@@ -164,9 +169,17 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         // checkpoint are closed.
         uint256 vaultSharePrice = _pricePerVaultShare();
         if (block.timestamp < _maturityTime) {
-            _applyCheckpoint(_latestCheckpoint(), vaultSharePrice);
+            _applyCheckpoint(
+                _latestCheckpoint(),
+                vaultSharePrice,
+                LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
+            );
         } else {
-            _applyCheckpoint(_maturityTime, vaultSharePrice);
+            _applyCheckpoint(
+                _maturityTime,
+                vaultSharePrice,
+                LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
+            );
         }
 
         // Burn the longs that are being closed.
@@ -308,9 +321,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
 
         // We need to check solvency because longs increase the system's exposure.
         if (!_isSolvent(_vaultSharePrice)) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
-            );
+            Errors.throwInsufficientLiquidityError();
         }
 
         // Distribute the excess idle to the withdrawal pool. If the distribute
@@ -343,9 +354,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             shareReserves < _shareReservesDelta ||
             shareReserves - _shareReservesDelta < _minimumShareReserves
         ) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
-            );
+            Errors.throwInsufficientLiquidityError();
         }
         unchecked {
             shareReserves -= _shareReservesDelta;
@@ -368,11 +377,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             ) <
             _minimumShareReserves
         ) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive
-                    .InsufficientLiquidityReason
-                    .InvalidEffectiveShareReserves
-            );
+            Errors.throwInsufficientLiquidityError();
         }
 
         // Update the long average maturity time.
@@ -453,9 +458,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
                 )
             )
         ) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive.InsufficientLiquidityReason.NegativeInterest
-            );
+            Errors.throwInsufficientLiquidityError();
         }
 
         // Calculate the fees charged to the user (curveFee) and the portion
@@ -508,9 +511,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
                 _timeStretch
             ) > ONE
         ) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive.InsufficientLiquidityReason.NegativeInterest
-            );
+            Errors.throwInsufficientLiquidityError();
         }
 
         return (shareReservesDelta, bondReservesDelta, totalGovernanceFee);
