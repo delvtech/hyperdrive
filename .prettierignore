@@ -3,3 +3,6 @@
 *.md
 *.yaml
 lib/
+target/
+forge-cache/
+node_modules/
