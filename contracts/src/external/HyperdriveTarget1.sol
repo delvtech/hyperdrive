@@ -30,61 +30,28 @@ abstract contract HyperdriveTarget1 is
         IHyperdrive.PoolConfig memory _config
     ) HyperdriveStorage(_config) {}
 
+    /// Shorts ///
+
+    /// @notice Closes a short position with a specified maturity time.
+    /// @param _maturityTime The maturity time of the short.
+    /// @param _bondAmount The amount of shorts to close.
+    /// @param _minOutput The minimum output of this trade. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
+    /// @param _options The options that configure how the trade is settled.
+    /// @return The proceeds of closing this short. The units of this quantity
+    ///         are either base or vault shares, depending on the value of
+    ///         `_options.asBase`.
+    function closeShort(
+        uint256 _maturityTime,
+        uint256 _bondAmount,
+        uint256 _minOutput,
+        IHyperdrive.Options calldata _options
+    ) external returns (uint256) {
+        return _closeShort(_maturityTime, _bondAmount, _minOutput, _options);
+    }
+
     /// LPs ///
-
-    /// @notice Allows LPs to supply liquidity for LP shares.
-    /// @param _contribution The amount of capital to supply. The units of this
-    ///        quantity are either base or vault shares, depending on the value
-    ///        of `_options.asBase`.
-    /// @param _minLpSharePrice The minimum LP share price the LP is willing
-    ///        to accept for their shares. LPs incur negative slippage when
-    ///        adding liquidity if there is a net curve position in the market,
-    ///        so this allows LPs to protect themselves from high levels of
-    ///        slippage. The units of this quantity are either base or vault
-    ///        shares, depending on the value of `_options.asBase`.
-    /// @param _minApr The minimum APR at which the LP is willing to supply.
-    /// @param _maxApr The maximum APR at which the LP is willing to supply.
-    /// @param _options The options that configure how the operation is settled.
-    /// @return lpShares The number of LP tokens created.
-    function addLiquidity(
-        uint256 _contribution,
-        uint256 _minLpSharePrice,
-        uint256 _minApr,
-        uint256 _maxApr,
-        IHyperdrive.Options calldata _options
-    ) external payable returns (uint256) {
-        return
-            _addLiquidity(
-                _contribution,
-                _minLpSharePrice,
-                _minApr,
-                _maxApr,
-                _options
-            );
-    }
-
-    /// @notice Allows an LP to burn shares and withdraw from the pool.
-    /// @param _lpShares The LP shares to burn.
-    /// @param _minOutputPerShare The minimum amount the LP expects to receive
-    ///        for each withdrawal share that is burned. The units of this
-    ///        quantity are either base or vault shares, depending on the value
-    ///        of `_options.asBase`.
-    /// @param _options The options that configure how the operation is settled.
-    /// @return The amount the LP removing liquidity receives. The
-    ///        units of this quantity are either base or vault shares, depending
-    ///        on the value of `_options.asBase`.
-    /// @return The base that the LP receives buys out some of their LP shares,
-    ///         but it may not be sufficient to fully buy the LP out. In this
-    ///         case, the LP receives withdrawal shares equal in value to the
-    ///         present value they are owed. As idle capital becomes available,
-    ///         the pool will buy back these shares.
-    function removeLiquidity(
-        uint256 _lpShares,
-        uint256 _minOutputPerShare,
-        IHyperdrive.Options calldata _options
-    ) external returns (uint256, uint256) {
-        return _removeLiquidity(_lpShares, _minOutputPerShare, _options);
-    }
 
     /// @notice Redeems withdrawal shares by giving the LP a pro-rata amount of
     ///         the withdrawal pool's proceeds. This function redeems the

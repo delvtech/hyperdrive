@@ -64,7 +64,7 @@ async fn preamble(
     // Mint a checkpoint to close any matured positions from the first checkpoint
     // of trading.
     alice
-        .checkpoint(alice.latest_checkpoint().await?, None)
+        .checkpoint(alice.latest_checkpoint().await?, uint256!(0), None)
         .await?;
 
     Ok(())

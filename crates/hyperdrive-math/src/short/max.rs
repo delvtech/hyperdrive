@@ -1,6 +1,6 @@
 use ethers::types::I256;
 use fixed_point::FixedPoint;
-use fixed_point_macros::fixed;
+use fixed_point_macros::{fixed, uint256};
 
 use crate::{calculate_effective_share_reserves, State, YieldSpace};
 
@@ -644,7 +644,7 @@ mod tests {
 
             // Some of the checkpoint passes and variable interest accrues.
             alice
-                .checkpoint(alice.latest_checkpoint().await?, None)
+                .checkpoint(alice.latest_checkpoint().await?, uint256!(0), None)
                 .await?;
             let rate = rng.gen_range(fixed!(0)..=fixed!(0.5e18));
             alice

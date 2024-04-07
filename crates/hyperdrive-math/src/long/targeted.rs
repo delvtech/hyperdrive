@@ -383,6 +383,7 @@ mod tests {
     use std::panic;
 
     use ethers::types::U256;
+    use fixed_point_macros::uint256;
     use rand::{thread_rng, Rng};
     use test_utils::{
         agent::Agent,
@@ -455,7 +456,7 @@ mod tests {
                 alice.advance_time(variable_rate, time_amount).await?;
                 // Checkpoint to auto-close the position.
                 alice
-                    .checkpoint(alice.latest_checkpoint().await?, None)
+                    .checkpoint(alice.latest_checkpoint().await?, uint256!(0), None)
                     .await?;
             }
             // Else we will just fund a random budget amount and do the targeted long.
@@ -465,7 +466,7 @@ mod tests {
 
             // Some of the checkpoint passes and variable interest accrues.
             alice
-                .checkpoint(alice.latest_checkpoint().await?, None)
+                .checkpoint(alice.latest_checkpoint().await?, uint256!(0), None)
                 .await?;
             let variable_rate = rng.gen_range(fixed!(0)..=fixed!(0.5e18));
             alice

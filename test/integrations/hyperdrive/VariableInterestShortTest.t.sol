@@ -35,7 +35,7 @@ contract VariableInterestShortTest is HyperdriveTest {
         advanceTime(POSITION_DURATION, -0.01e18);
 
         // A checkpoint is created to lock in the close price.
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
 
         // Interest accrues for a term.
         vm.assume(postTradingApr >= -1e18 && postTradingApr <= 1e18);

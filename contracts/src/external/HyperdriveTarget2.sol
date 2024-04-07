@@ -51,24 +51,28 @@ abstract contract HyperdriveTarget2 is
         return _closeLong(_maturityTime, _bondAmount, _minOutput, _options);
     }
 
-    /// Shorts ///
+    /// LPs ///
 
-    /// @notice Closes a short position with a specified maturity time.
-    /// @param _maturityTime The maturity time of the short.
-    /// @param _bondAmount The amount of shorts to close.
-    /// @param _minOutput The minimum output of this trade. The units of this
+    /// @notice Allows an LP to burn shares and withdraw from the pool.
+    /// @param _lpShares The LP shares to burn.
+    /// @param _minOutputPerShare The minimum amount the LP expects to receive
+    ///        for each withdrawal share that is burned. The units of this
     ///        quantity are either base or vault shares, depending on the value
     ///        of `_options.asBase`.
-    /// @param _options The options that configure how the trade is settled.
-    /// @return The proceeds of closing this short. The units of this quantity
-    ///         are either base or vault shares, depending on the value of
-    ///         `_options.asBase`.
-    function closeShort(
-        uint256 _maturityTime,
-        uint256 _bondAmount,
-        uint256 _minOutput,
+    /// @param _options The options that configure how the operation is settled.
+    /// @return The amount the LP removing liquidity receives. The
+    ///        units of this quantity are either base or vault shares, depending
+    ///        on the value of `_options.asBase`.
+    /// @return The base that the LP receives buys out some of their LP shares,
+    ///         but it may not be sufficient to fully buy the LP out. In this
+    ///         case, the LP receives withdrawal shares equal in value to the
+    ///         present value they are owed. As idle capital becomes available,
+    ///         the pool will buy back these shares.
+    function removeLiquidity(
+        uint256 _lpShares,
+        uint256 _minOutputPerShare,
         IHyperdrive.Options calldata _options
-    ) external returns (uint256) {
-        return _closeShort(_maturityTime, _bondAmount, _minOutput, _options);
+    ) external returns (uint256, uint256) {
+        return _removeLiquidity(_lpShares, _minOutputPerShare, _options);
     }
 }

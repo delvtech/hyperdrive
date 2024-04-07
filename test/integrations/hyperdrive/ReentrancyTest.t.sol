@@ -256,7 +256,7 @@ contract ReentrancyTest is HyperdriveTest {
                 })
             )
         );
-        data[8] = abi.encodeCall(hyperdrive.checkpoint, (block.timestamp));
+        data[8] = abi.encodeCall(hyperdrive.checkpoint, (block.timestamp, 0));
 
         return data;
     }
