@@ -56,7 +56,7 @@ code-size-check:
 	FOUNDRY_PROFILE=production forge build && python3 python/contract_size.py out
 
 solhint:
-	npx solhint -f table contracts/src/*.sol contracts/src/**/*.sol
+	npx solhint -f table 'contracts/src/**/*.sol'
 
 spell-check:
 	npx cspell ./**/**/**.sol --gitignore

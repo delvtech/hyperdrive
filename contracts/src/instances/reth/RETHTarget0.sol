@@ -3,7 +3,6 @@ pragma solidity 0.8.20;
 
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { IRocketStorage } from "../../interfaces/IRocketStorage.sol";
 import { RETHBase } from "./RETHBase.sol";
 
 /// @author DELV

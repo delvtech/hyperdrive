@@ -22,9 +22,6 @@ abstract contract EzETHBase is HyperdriveBase {
     /// @dev The RenzoOracle contract.
     IRenzoOracle internal immutable _renzoOracle;
 
-    /// @dev Error for zero total supply or total pooled ether.
-    error InvalidZeroInput();
-
     /// @notice Instantiates the ezETH Hyperdrive base contract.
     /// @param __restakeManager The Renzo Restakemanager contract.
     constructor(IRestakeManager __restakeManager) {
