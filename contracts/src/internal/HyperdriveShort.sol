@@ -7,6 +7,7 @@ import { AssetId } from "../libraries/AssetId.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
+import { LPMath } from "../libraries/LPMath.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 
@@ -63,8 +64,9 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         }
         uint256 latestCheckpoint = _latestCheckpoint();
         uint256 openVaultSharePrice = _applyCheckpoint(
-            latestCheckpoint,
-            vaultSharePrice
+            _latestCheckpoint(),
+            vaultSharePrice,
+            LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
         );
 
         // Calculate the pool and user deltas using the trading function. We
@@ -176,9 +178,17 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // checkpoint are closed.
         uint256 vaultSharePrice = _pricePerVaultShare();
         if (block.timestamp < _maturityTime) {
-            _applyCheckpoint(_latestCheckpoint(), vaultSharePrice);
+            _applyCheckpoint(
+                _latestCheckpoint(),
+                vaultSharePrice,
+                LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
+            );
         } else {
-            _applyCheckpoint(_maturityTime, vaultSharePrice);
+            _applyCheckpoint(
+                _maturityTime,
+                vaultSharePrice,
+                LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
+            );
         }
 
         // Burn the shorts that are being closed.
@@ -228,9 +238,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             // Closing shorts increases the share reserves, but it also
             // increases the long exposure.
             if (!_isSolvent(vaultSharePrice)) {
-                Errors.throwInsufficientLiquidityError(
-                    IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
-                );
+                Errors.throwInsufficientLiquidityError();
             }
 
             // Distribute the excess idle to the withdrawal pool. If the
@@ -316,9 +324,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // we revert with an insufficient liquidity error.
         uint256 shareReserves = _marketState.shareReserves;
         if (shareReserves < _shareReservesDelta) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
-            );
+            Errors.throwInsufficientLiquidityError();
         }
         unchecked {
             shareReserves -= _shareReservesDelta;
@@ -335,11 +341,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
                 _marketState.shareAdjustment
             ) < _minimumShareReserves
         ) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive
-                    .InsufficientLiquidityReason
-                    .InvalidEffectiveShareReserves
-            );
+            Errors.throwInsufficientLiquidityError();
         }
 
         // Update the average maturity time of short positions.
@@ -376,9 +378,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // of capital available to back non-netted long exposure. Since both
         // quantities decrease, we need to check that the system is still solvent.
         if (!_isSolvent(_vaultSharePrice)) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
-            );
+            Errors.throwInsufficientLiquidityError();
         }
 
         // Distribute the excess idle to the withdrawal pool. If the distribute
@@ -468,9 +468,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // amount, then the trade occurred in the negative interest domain. We
         // revert in these pathological cases.
         if (shareReservesDelta.mulUp(_vaultSharePrice) > _bondAmount) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive.InsufficientLiquidityReason.NegativeInterest
-            );
+            Errors.throwInsufficientLiquidityError();
         }
 
         // Calculate the fees charged to the user (curveFee) and the portion
@@ -604,9 +602,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
                     )
                 )
             ) {
-                Errors.throwInsufficientLiquidityError(
-                    IHyperdrive.InsufficientLiquidityReason.NegativeInterest
-                );
+                Errors.throwInsufficientLiquidityError();
             }
 
             // Calculate the fees charged to the user (curveFee and
@@ -689,9 +685,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
                     _timeStretch
                 ) > ONE
             ) {
-                Errors.throwInsufficientLiquidityError(
-                    IHyperdrive.InsufficientLiquidityReason.NegativeInterest
-                );
+                Errors.throwInsufficientLiquidityError();
             }
 
             // Adjust the computed proceeds and delta for negative interest.

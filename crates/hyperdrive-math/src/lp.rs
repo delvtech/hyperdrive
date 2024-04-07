@@ -339,6 +339,7 @@ mod tests {
         panic::{catch_unwind, AssertUnwindSafe},
     };
 
+    use fixed_point_macros::uint256;
     use hyperdrive_wrappers::wrappers::mock_lp_math::PresentValueParams;
     use rand::{thread_rng, Rng};
     use test_utils::{
@@ -459,7 +460,7 @@ mod tests {
 
             // Some of the checkpoint passes and variable interest accrues.
             alice
-                .checkpoint(alice.latest_checkpoint().await?, None)
+                .checkpoint(alice.latest_checkpoint().await?, uint256!(0), None)
                 .await?;
             let rate = rng.gen_range(fixed!(0)..=fixed!(0.5e18));
             alice

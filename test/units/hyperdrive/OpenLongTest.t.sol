@@ -142,12 +142,7 @@ contract OpenLongTest is HyperdriveTest {
         uint256 basePaid = hyperdrive.calculateMaxLong() + 0.0001e18;
         baseToken.mint(bob, basePaid);
         baseToken.approve(address(hyperdrive), basePaid);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IHyperdrive.InsufficientLiquidity.selector,
-                IHyperdrive.InsufficientLiquidityReason.NegativeInterest
-            )
-        );
+        vm.expectRevert(IHyperdrive.InsufficientLiquidity.selector);
         hyperdrive.openLong(
             basePaid,
             0,
@@ -189,12 +184,7 @@ contract OpenLongTest is HyperdriveTest {
         uint256 baseAmount = hyperdrive.getPoolInfo().bondReserves;
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IHyperdrive.InsufficientLiquidity.selector,
-                IHyperdrive.InsufficientLiquidityReason.NegativeInterest
-            )
-        );
+        vm.expectRevert(IHyperdrive.InsufficientLiquidity.selector);
         hyperdrive.openLong(
             baseAmount,
             0,
@@ -347,13 +337,7 @@ contract OpenLongTest is HyperdriveTest {
         vm.startPrank(bob);
         baseToken.mint(longAmount);
         baseToken.approve(address(hyperdrive), longAmount);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IHyperdrive.InsufficientLiquidity.selector,
-                IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
-            )
-        );
+        vm.expectRevert(IHyperdrive.InsufficientLiquidity.selector);
         hyperdrive.openLong(
             longAmount,
             0,

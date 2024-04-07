@@ -117,7 +117,7 @@ contract ZombieInterestTest is HyperdriveTest {
 
         // Random amount of time passes before first trade.
         advanceTime(delayTimeFirstTrade, variableRate);
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
 
         // Celine opens a long.
         (uint256 maturityTime, uint256 bondsReceived) = openLong(
@@ -137,7 +137,7 @@ contract ZombieInterestTest is HyperdriveTest {
 
         // One term passes and longs mature.
         advanceTime(POSITION_DURATION, variableRate);
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
 
         // One term passes while we collect zombie interest. This is
         // necessary to show that the zombied base amount stays constant.
@@ -348,7 +348,7 @@ contract ZombieInterestTest is HyperdriveTest {
 
         // Random amount of time passes before first trade.
         advanceTime(delayTimeFirstTrade, variableRate);
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
 
         // Celine opens a short.
         (uint256 maturityTime, ) = openShort(celine, shortTradeSize);
@@ -365,7 +365,7 @@ contract ZombieInterestTest is HyperdriveTest {
 
         // One term passes and shorts mature.
         advanceTime(POSITION_DURATION, variableRate);
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
 
         // One term passes while we collect zombie interest. This is
         // necessary to show that the zombied base amount stays constant.
@@ -469,7 +469,10 @@ contract ZombieInterestTest is HyperdriveTest {
 
             // One term passes and longs mature.
             advanceTime(POSITION_DURATION, variableRate);
-            hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+            hyperdrive.checkpoint(
+                HyperdriveUtils.latestCheckpoint(hyperdrive),
+                0
+            );
 
             // A checkpoints is missed.
             advanceTime(CHECKPOINT_DURATION, variableRate);
@@ -511,7 +514,10 @@ contract ZombieInterestTest is HyperdriveTest {
 
             // One term passes and longs mature.
             advanceTime(POSITION_DURATION, variableRate);
-            hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+            hyperdrive.checkpoint(
+                HyperdriveUtils.latestCheckpoint(hyperdrive),
+                0
+            );
 
             // Several checkpoints are minted.
             advanceTimeWithCheckpoints2(4 * CHECKPOINT_DURATION, variableRate);
@@ -568,7 +574,7 @@ contract ZombieInterestTest is HyperdriveTest {
 
         // Time passes before first trade.
         advanceTime(36 seconds, variableRate);
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
 
         // Celine opens a long.
         openLong(celine, longTradeSize);
@@ -656,7 +662,7 @@ contract ZombieInterestTest is HyperdriveTest {
 
         // Time passes before first trade.
         advanceTime(36 seconds, variableRate);
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
 
         // Celine opens a long.
         openLong(celine, longTradeSize);
@@ -734,7 +740,7 @@ contract ZombieInterestTest is HyperdriveTest {
 
         // Time passes before first trade.
         advanceTime(36 seconds, variableRate);
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
 
         // Celine opens a short.
         openShort(celine, shortTradeSize);

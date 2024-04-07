@@ -69,4 +69,19 @@ abstract contract HyperdriveTarget3 is
     ) external payable returns (uint256, uint256) {
         return _openLong(_amount, _minOutput, _minVaultSharePrice, _options);
     }
+
+    /// Checkpoints ///
+
+    /// @notice Allows anyone to mint a new checkpoint.
+    /// @param _checkpointTime The time of the checkpoint to create.
+    /// @param _maxIterations The number of iterations to use in the Newton's
+    ///        method component of `_distributeExcessIdleSafe`. This defaults to
+    ///        `LPMath.SHARE_PROCEEDS_MAX_ITERATIONS` if the specified value is
+    ///        smaller than the constant.
+    function checkpoint(
+        uint256 _checkpointTime,
+        uint256 _maxIterations
+    ) external {
+        _checkpoint(_checkpointTime, _maxIterations);
+    }
 }

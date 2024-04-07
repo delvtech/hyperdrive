@@ -743,7 +743,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
 
         // fast forward time and accrue interest
         advanceTime(POSITION_DURATION, variableInterest);
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
 
         // open positions
         uint256[] memory longMaturityTimes = new uint256[](numTrades);
@@ -823,7 +823,10 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
 
             // fast forward time and accrue interest
             advanceTime(POSITION_DURATION, variableInterest);
-            hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+            hyperdrive.checkpoint(
+                HyperdriveUtils.latestCheckpoint(hyperdrive),
+                0
+            );
         }
 
         // open positions
@@ -1026,6 +1029,6 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
 
         // A checkpoint is minted which should succeed. This indicates that
         // all of the longs and shorts could be closed.
-        hyperdrive.checkpoint(maturityTime);
+        hyperdrive.checkpoint(maturityTime, 0);
     }
 }

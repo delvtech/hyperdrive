@@ -28,9 +28,24 @@ abstract contract HyperdriveCheckpoint is
 
     /// @dev Attempts to mint a checkpoint with the specified checkpoint time.
     /// @param _checkpointTime The time of the checkpoint to create.
-    function _checkpoint(uint256 _checkpointTime) internal nonReentrant {
-        // If the checkpoint has already been set, return early.
+    /// @param _maxIterations The number of iterations to use in the Newton's
+    ///        method component of `_distributeExcessIdleSafe`. This defaults to
+    ///        `LPMath.SHARE_PROCEEDS_MAX_ITERATIONS` if the specified value is
+    ///        smaller than the constant.
+    function _checkpoint(
+        uint256 _checkpointTime,
+        uint256 _maxIterations
+    ) internal nonReentrant {
+        // If the checkpoint has already been set, attempt to distribute excess
+        // idle and return early.
+        uint256 vaultSharePrice = _pricePerVaultShare();
         if (_checkpoints[_checkpointTime].vaultSharePrice != 0) {
+            // Distribute the excess idle to the withdrawal pool. If the
+            // distribute excess idle calculation fails, we proceed with the
+            // calculation since checkpoints should be minted regardless of
+            // whether idle could be distributed.
+            _distributeExcessIdleSafe(vaultSharePrice, _maxIterations);
+
             return;
         }
 
@@ -46,16 +61,21 @@ abstract contract HyperdriveCheckpoint is
         }
 
         // Apply the checkpoint.
-        _applyCheckpoint(_checkpointTime, _pricePerVaultShare());
+        _applyCheckpoint(_checkpointTime, vaultSharePrice, _maxIterations);
     }
 
     /// @dev Creates a new checkpoint if necessary.
     /// @param _checkpointTime The time of the checkpoint to create.
     /// @param _vaultSharePrice The current vault share price.
-    /// @return The opening vault share price of the latest checkpoint.
+    /// @param _maxIterations The number of iterations to use in the Newton's
+    ///        method component of `_distributeExcessIdleSafe`. This defaults to
+    ///        `LPMath.SHARE_PROCEEDS_MAX_ITERATIONS` if the specified value is
+    ///        smaller than the constant.
+    /// @return The opening vault share price of the checkpoint.
     function _applyCheckpoint(
         uint256 _checkpointTime,
-        uint256 _vaultSharePrice
+        uint256 _vaultSharePrice,
+        uint256 _maxIterations
     ) internal override returns (uint256) {
         // Return early if the checkpoint has already been updated.
         IHyperdrive.Checkpoint storage checkpoint_ = _checkpoints[
@@ -114,6 +134,8 @@ abstract contract HyperdriveCheckpoint is
         );
         uint256 maturedShortsAmount = _totalSupply[shortAssetId];
         bool positionsClosed;
+        uint256 checkpointTime = _checkpointTime; // avoid stack-too-deep
+        uint256 vaultSharePrice = _vaultSharePrice; // avoid stack-too-deep
         if (maturedShortsAmount > 0) {
             // Since we're closing out short positions, we'll need to distribute
             // excess idle once the accounting updates have been performed.
@@ -128,11 +150,10 @@ abstract contract HyperdriveCheckpoint is
                     maturedShortsAmount,
                     openVaultSharePrice,
                     checkpointVaultSharePrice,
-                    _vaultSharePrice,
+                    vaultSharePrice,
                     false
                 );
             _governanceFeesAccrued += governanceFee;
-            uint256 checkpointTime = _checkpointTime; // avoid stack-too-deep
             _applyCloseShort(
                 maturedShortsAmount,
                 0,
@@ -152,7 +173,6 @@ abstract contract HyperdriveCheckpoint is
             // shorts earned minus the flat fee.
             //
             // NOTE: Round down to underestimate the short proceeds.
-            uint256 vaultSharePrice = _vaultSharePrice; // avoid stack-too-deep
             shareProceeds = HyperdriveMath.calculateShortProceedsDown(
                 maturedShortsAmount,
                 shareProceeds,
@@ -176,7 +196,7 @@ abstract contract HyperdriveCheckpoint is
         // this checkpoint.
         uint256 longAssetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,
-            _checkpointTime
+            checkpointTime
         );
         uint256 maturedLongsAmount = _totalSupply[longAssetId];
         if (maturedLongsAmount > 0) {
@@ -186,7 +206,6 @@ abstract contract HyperdriveCheckpoint is
 
             // Apply the governance and LP proceeds from closing out the matured
             // long positions to the state.
-            uint256 vaultSharePrice = _vaultSharePrice; // avoid stack-too-deep
             (
                 uint256 shareProceeds,
                 uint256 governanceFee
@@ -198,7 +217,6 @@ abstract contract HyperdriveCheckpoint is
                     true
                 );
             _governanceFeesAccrued += governanceFee;
-            uint256 checkpointTime = _checkpointTime; // avoid stack-too-deep
             _applyCloseLong(
                 maturedLongsAmount,
                 0,
@@ -236,7 +254,7 @@ abstract contract HyperdriveCheckpoint is
             // distribute excess idle calculation fails, we proceed with the
             // calculation since checkpoints should be minted regardless of
             // whether idle could be distributed.
-            _distributeExcessIdleSafe(_vaultSharePrice);
+            _distributeExcessIdleSafe(_vaultSharePrice, _maxIterations);
         }
 
         // Emit an event about the checkpoint creation that includes the LP
@@ -248,7 +266,7 @@ abstract contract HyperdriveCheckpoint is
         emit CreateCheckpoint(
             _checkpointTime,
             checkpointVaultSharePrice,
-            _vaultSharePrice,
+            vaultSharePrice,
             maturedShortsAmount,
             maturedLongsAmount,
             lpSharePrice

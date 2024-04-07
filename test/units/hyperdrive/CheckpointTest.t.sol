@@ -14,13 +14,13 @@ contract CheckpointTest is HyperdriveTest {
 
     function test_checkpoint_failure_future_checkpoint() external {
         vm.expectRevert(IHyperdrive.InvalidCheckpointTime.selector);
-        hyperdrive.checkpoint(block.timestamp + CHECKPOINT_DURATION);
+        hyperdrive.checkpoint(block.timestamp + CHECKPOINT_DURATION, 0);
     }
 
     function test_checkpoint_failure_invalid_checkpoint_time() external {
         uint256 checkpointTime = HyperdriveUtils.latestCheckpoint(hyperdrive);
         vm.expectRevert(IHyperdrive.InvalidCheckpointTime.selector);
-        hyperdrive.checkpoint(checkpointTime + 1);
+        hyperdrive.checkpoint(checkpointTime + 1, 0);
     }
 
     function test_checkpoint_preset_checkpoint() external {
@@ -42,7 +42,7 @@ contract CheckpointTest is HyperdriveTest {
 
         // Create a checkpoint.
         uint256 aprBefore = HyperdriveUtils.calculateSpotAPR(hyperdrive);
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
 
         // Ensure that an event wasn't emitted since this checkpoint was already
         // created.
@@ -83,7 +83,7 @@ contract CheckpointTest is HyperdriveTest {
 
         // Create a checkpoint.
         uint256 aprBefore = HyperdriveUtils.calculateSpotAPR(hyperdrive);
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
 
         // Ensure that the correct event was emitted.
         verifyCheckpointEvent(
@@ -121,7 +121,7 @@ contract CheckpointTest is HyperdriveTest {
         vm.recordLogs();
 
         // Create a checkpoint.
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
 
         // Ensure that the correct event was emitted.
         verifyCheckpointEvent(
@@ -167,12 +167,11 @@ contract CheckpointTest is HyperdriveTest {
         // Celine opens a short.
         uint256 shortAmount = 50_000e18;
         openShort(celine, shortAmount);
-
         // The term and a checkpoint pass.
         advanceTime(POSITION_DURATION + CHECKPOINT_DURATION, 0.1e18);
 
         // A checkpoint is created.
-        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
         // Another term passes.
         advanceTime(POSITION_DURATION, 0.1e18);
@@ -182,7 +181,7 @@ contract CheckpointTest is HyperdriveTest {
 
         // The checkpoint that will close Bob and Celine's positions is
         // retroactively minted.
-        hyperdrive.checkpoint(maturityTime);
+        hyperdrive.checkpoint(maturityTime, 0);
 
         // Ensure that the correct event was emitted.
         verifyCheckpointEvent(
@@ -228,7 +227,7 @@ contract CheckpointTest is HyperdriveTest {
         initialize(alice, 0.05e18, 500_000_000e18);
 
         // Create a checkpoint.
-        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
         // Advance to the next checkpoint.
         advanceTime(CHECKPOINT_DURATION, 0.1e18);
@@ -263,7 +262,7 @@ contract CheckpointTest is HyperdriveTest {
         initialize(alice, 0.05e18, 500_000_000e18);
 
         // Create a checkpoint.
-        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
         // Advance to the next checkpoint.
         advanceTime(CHECKPOINT_DURATION, 0.1e18);
@@ -298,7 +297,7 @@ contract CheckpointTest is HyperdriveTest {
         initialize(alice, 0.05e18, 500_000_000e18);
 
         // Create a checkpoint.
-        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
         // Advance to the next checkpoint.
         advanceTime(CHECKPOINT_DURATION, 0.1e18);
@@ -333,7 +332,7 @@ contract CheckpointTest is HyperdriveTest {
         uint256 lpShares = initialize(alice, 0.05e18, 500_000_000e18);
 
         // Create a checkpoint.
-        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
         // Advance to the next checkpoint.
         advanceTime(CHECKPOINT_DURATION, 0.1e18);
@@ -449,7 +448,7 @@ contract CheckpointTest is HyperdriveTest {
         advanceTime(POSITION_DURATION + CHECKPOINT_DURATION, 0.1e18);
 
         // A checkpoint is created.
-        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
         // Another term passes.
         advanceTime(POSITION_DURATION, 0.1e18);
@@ -532,7 +531,7 @@ contract CheckpointTest is HyperdriveTest {
         advanceTime(POSITION_DURATION + CHECKPOINT_DURATION, 0.1e18);
 
         // A checkpoint is created.
-        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
         // Another term passes.
         advanceTime(POSITION_DURATION, 0.1e18);

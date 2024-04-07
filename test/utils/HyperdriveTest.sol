@@ -797,7 +797,10 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         // advancing time to the next checkpoint.
         while (block.timestamp - startTimeElapsed < time) {
             advanceTime(CHECKPOINT_DURATION, variableRate);
-            hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+            hyperdrive.checkpoint(
+                HyperdriveUtils.latestCheckpoint(hyperdrive),
+                0
+            );
         }
     }
 
@@ -817,7 +820,8 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
             ) {
                 advanceTime(CHECKPOINT_DURATION, variableRate);
                 hyperdrive.checkpoint(
-                    HyperdriveUtils.latestCheckpoint(hyperdrive)
+                    HyperdriveUtils.latestCheckpoint(hyperdrive),
+                    0
                 );
             }
             advanceTime(time % CHECKPOINT_DURATION, variableRate);
@@ -898,7 +902,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         params.activeLpTotalSupply -= _lpShares;
         params.withdrawalSharesTotalSupply += _lpShares;
         (uint256 withdrawalSharesRedeemed, uint256 shareProceeds) = LPMath
-            .calculateDistributeExcessIdle(params);
+            .calculateDistributeExcessIdle(params, 0);
         return (
             shareProceeds.mulDown(hyperdrive.getPoolInfo().vaultSharePrice),
             _lpShares - withdrawalSharesRedeemed

@@ -116,11 +116,15 @@ contract EzETHHyperdriveTest is InstanceTest {
     }
 
     /// @dev Deploys the EzETH deployer coordinator contract.
-    function deployCoordinator() internal override returns (address) {
+    /// @param _factory The address of the Hyperdrive factory contract.
+    function deployCoordinator(
+        address _factory
+    ) internal override returns (address) {
         vm.startPrank(alice);
         return
             address(
                 new EzETHHyperdriveDeployerCoordinator(
+                    _factory,
                     address(new EzETHHyperdriveCoreDeployer(RESTAKE_MANAGER)),
                     address(new EzETHTarget0Deployer(RESTAKE_MANAGER)),
                     address(new EzETHTarget1Deployer(RESTAKE_MANAGER)),

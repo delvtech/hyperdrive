@@ -72,7 +72,8 @@ contract MockLPMath {
             LPMath.calculateDistributeExcessIdleShareProceeds(
                 _params,
                 _originalEffectiveShareReserves,
-                _maxShareReservesDelta
+                _maxShareReservesDelta,
+                LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
             );
     }
 

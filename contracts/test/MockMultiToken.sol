@@ -155,6 +155,7 @@ contract MockMultiToken is HyperdriveMultiToken, MockHyperdriveBase {
     // needs this to be defined.
     function _applyCheckpoint(
         uint256,
+        uint256,
         uint256
     ) internal pure override returns (uint256) {
         return 0;
