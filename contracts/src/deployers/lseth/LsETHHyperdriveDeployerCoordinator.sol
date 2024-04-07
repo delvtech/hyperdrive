@@ -24,6 +24,7 @@ contract LsETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     IRiverV1 internal immutable river;
 
     /// @notice Instantiates the deployer coordinator.
+    /// @param _factory The factory that this deployer will be registered with.
     /// @param _coreDeployer The core deployer.
     /// @param _target0Deployer The target0 deployer.
     /// @param _target1Deployer The target1 deployer.
@@ -32,6 +33,7 @@ contract LsETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target4Deployer The target4 deployer.
     /// @param _river The LsETH contract.
     constructor(
+        address _factory,
         address _coreDeployer,
         address _target0Deployer,
         address _target1Deployer,
@@ -41,6 +43,7 @@ contract LsETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         IRiverV1 _river
     )
         HyperdriveDeployerCoordinator(
+            _factory,
             _coreDeployer,
             _target0Deployer,
             _target1Deployer,

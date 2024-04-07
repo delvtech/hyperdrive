@@ -31,6 +31,7 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     IERC20 public immutable ezETH;
 
     /// @notice Instantiates the deployer coordinator.
+    /// @param _factory The factory that this deployer will be registered with.
     /// @param _coreDeployer The core deployer.
     /// @param _target0Deployer The target0 deployer.
     /// @param _target1Deployer The target1 deployer.
@@ -39,6 +40,7 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target4Deployer The target4 deployer.
     /// @param _restakeManager The Renzo contract.
     constructor(
+        address _factory,
         address _coreDeployer,
         address _target0Deployer,
         address _target1Deployer,
@@ -48,6 +50,7 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         IRestakeManager _restakeManager
     )
         HyperdriveDeployerCoordinator(
+            _factory,
             _coreDeployer,
             _target0Deployer,
             _target1Deployer,

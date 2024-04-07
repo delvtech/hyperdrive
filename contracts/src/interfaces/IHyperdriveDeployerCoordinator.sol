@@ -77,6 +77,10 @@ interface IHyperdriveDeployerCoordinator {
     ///         ether as a deposit asset.
     error NotPayable();
 
+    /// @notice Thrown when the sender of a `deploy`, `deployTarget`, or
+    ///         `initialize` transaction isn't the associated factory.
+    error SenderIsNotFactory();
+
     /// @notice Thrown when a user attempts to deploy a target contract after
     ///         it has already been deployed.
     error TargetAlreadyDeployed();

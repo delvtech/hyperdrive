@@ -65,22 +65,6 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 )
             )
         );
-        coreDeployer = address(new ERC4626HyperdriveCoreDeployer());
-        target0Deployer = address(new ERC4626Target0Deployer());
-        target1Deployer = address(new ERC4626Target1Deployer());
-        target2Deployer = address(new ERC4626Target2Deployer());
-        target3Deployer = address(new ERC4626Target3Deployer());
-        target4Deployer = address(new ERC4626Target4Deployer());
-        deployerCoordinator = address(
-            new ERC4626HyperdriveDeployerCoordinator(
-                coreDeployer,
-                target0Deployer,
-                target1Deployer,
-                target2Deployer,
-                target3Deployer,
-                target4Deployer
-            )
-        );
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ERC20ForwarderFactory();
@@ -115,6 +99,23 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 linkerFactory: address(forwarderFactory),
                 linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
             })
+        );
+        coreDeployer = address(new ERC4626HyperdriveCoreDeployer());
+        target0Deployer = address(new ERC4626Target0Deployer());
+        target1Deployer = address(new ERC4626Target1Deployer());
+        target2Deployer = address(new ERC4626Target2Deployer());
+        target3Deployer = address(new ERC4626Target3Deployer());
+        target4Deployer = address(new ERC4626Target4Deployer());
+        deployerCoordinator = address(
+            new ERC4626HyperdriveDeployerCoordinator(
+                address(factory),
+                coreDeployer,
+                target0Deployer,
+                target1Deployer,
+                target2Deployer,
+                target3Deployer,
+                target4Deployer
+            )
         );
 
         // Transfer a large amount of DAI to Alice.

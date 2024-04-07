@@ -71,11 +71,15 @@ contract LsETHHyperdriveTest is InstanceTest {
     /// Overrides ///
 
     /// @dev Deploys the LsETH deployer coordinator contract.
-    function deployCoordinator() internal override returns (address) {
+    /// @param _factory The address of the Hyperdrive factory contract.
+    function deployCoordinator(
+        address _factory
+    ) internal override returns (address) {
         vm.startPrank(alice);
         return
             address(
                 new LsETHHyperdriveDeployerCoordinator(
+                    _factory,
                     address(new LsETHHyperdriveCoreDeployer()),
                     address(new LsETHTarget0Deployer()),
                     address(new LsETHTarget1Deployer()),
