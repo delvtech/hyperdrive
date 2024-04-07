@@ -133,7 +133,7 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
         vm.stopPrank();
         vm.startPrank(celine);
 
-        // Trying to sweep the base token should succeed since any lingering amount is a mistake
+        // Trying to sweep the base token should succeed since any lingering amount is a mistake.
         address baseToken = address(hyperdrive.baseToken());
         hyperdrive.sweep(IERC20(baseToken));
     }
@@ -142,7 +142,7 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
         vm.stopPrank();
         vm.startPrank(celine);
 
-        // Trying to sweep the base token should succeed since any lingering amount is a mistake
+        // Trying to sweep the base token should succeed since any lingering amount is a mistake.
         hyperdrive.sweep(IERC20(address(baseForwarder)));
     }
 
