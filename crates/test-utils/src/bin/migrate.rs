@@ -3,6 +3,7 @@ use std::{
     fs::{create_dir_all, File},
 };
 
+use ethers::signers::LocalWallet;
 use eyre::Result;
 use test_utils::{
     chain::{Chain, TestChainConfig},
@@ -16,9 +17,10 @@ async fn main() -> Result<()> {
 
     // Connect to the chain.
     let chain = Chain::connect(Some(env::var("HYPERDRIVE_ETHEREUM_URL")?), None).await?;
+    let deployer = env::var("DEPLOYER_PRIVATE_KEY")?.parse::<LocalWallet>()?;
 
     // Deploy the factory.
-    let addresses = chain.full_deploy(ALICE.clone(), config).await?;
+    let addresses = chain.full_deploy(deployer, config).await?;
 
     // Write the chain's addresses to a file.
     create_dir_all("./artifacts")?;
