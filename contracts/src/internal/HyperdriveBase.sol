@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { AssetId } from "../libraries/AssetId.sol";
@@ -211,10 +210,6 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         uint256 _baseAmount
     ) internal view virtual returns (uint256 shareAmount);
 
-    /// @dev Gets the total amount of base held by the pool.
-    /// @return baseAmount The total amount of base.
-    function _totalBase() internal view virtual returns (uint256 baseAmount);
-
     /// @dev Gets the total amount of shares held by the pool in the yield
     ///      source.
     /// @return shareAmount The total amount of shares.
@@ -235,11 +230,16 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
     /// @dev Creates a new checkpoint if necessary.
     /// @param _checkpointTime The time of the checkpoint to create.
     /// @param _vaultSharePrice The current vault share price.
+    /// @param _maxIterations The number of iterations to use in the Newton's
+    ///        method component of `_distributeExcessIdleSafe`. This defaults to
+    ///        `LPMath.SHARE_PROCEEDS_MAX_ITERATIONS` if the specified value is
+    ///        smaller than the constant.
     /// @return openVaultSharePrice The open vault share price of the latest
     ///         checkpoint.
     function _applyCheckpoint(
         uint256 _checkpointTime,
-        uint256 _vaultSharePrice
+        uint256 _vaultSharePrice,
+        uint256 _maxIterations
     ) internal virtual returns (uint256 openVaultSharePrice);
 
     /// Helpers ///

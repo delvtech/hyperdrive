@@ -177,10 +177,7 @@ contract CloseLongTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IHyperdrive.InsufficientLiquidity.selector,
-                IHyperdrive.InsufficientLiquidityReason.SolvencyViolated
-            )
+            abi.encodeWithSelector(IHyperdrive.InsufficientLiquidity.selector)
         );
         hyperdrive.closeLong(
             maturityTime,
@@ -211,7 +208,7 @@ contract CloseLongTest is HyperdriveTest {
 
         // The term passes, and Alice's short matures.
         advanceTime(POSITION_DURATION, 0);
-        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
         // Open a long position.
         uint256 baseAmount = 2 * minimumShareReserves;
@@ -226,12 +223,7 @@ contract CloseLongTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IHyperdrive.InsufficientLiquidity.selector,
-                IHyperdrive
-                    .InsufficientLiquidityReason
-                    .InvalidEffectiveShareReserves
-            )
+            abi.encodeWithSelector(IHyperdrive.InsufficientLiquidity.selector)
         );
         hyperdrive.closeLong(
             maturityTime,
@@ -652,12 +644,12 @@ contract CloseLongTest is HyperdriveTest {
         advanceTime(POSITION_DURATION, apr);
 
         // A checkpoint is created to lock in the close price.
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
         uint256 closeVaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
 
         // Another term passes and a large amount of positive interest accrues.
         advanceTime(POSITION_DURATION, 0.7e18);
-        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
         // Get the reserves and base balances before closing the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -718,13 +710,13 @@ contract CloseLongTest is HyperdriveTest {
         advanceTime(POSITION_DURATION, apr);
 
         // A checkpoint is created to lock in the close price.
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
         uint256 closeVaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
 
         // Another term passes and a large amount of negative interest accrues.
         int256 negativeApr = -0.2e18;
         advanceTime(POSITION_DURATION, negativeApr);
-        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
         // Get the reserves and base balances before closing the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -781,7 +773,7 @@ contract CloseLongTest is HyperdriveTest {
             hyperdrive.calculateMaxLong() / 2
         );
         advanceTime(hyperdrive.getPoolConfig().positionDuration, 0);
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
         assertEq(
             hyperdrive.getPoolInfo().shareAdjustment,
             shareAdjustmentBefore - int256(longAmount)
@@ -813,7 +805,7 @@ contract CloseLongTest is HyperdriveTest {
         uint256 shortAmount = hyperdrive.calculateMaxShort() / 2;
         openShort(celine, shortAmount);
         advanceTime(hyperdrive.getPoolConfig().positionDuration, 0);
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
         assertEq(
             hyperdrive.getPoolInfo().shareAdjustment,
             shareAdjustmentBefore + int256(shortAmount)

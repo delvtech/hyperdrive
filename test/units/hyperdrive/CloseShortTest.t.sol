@@ -194,12 +194,7 @@ contract CloseShortTest is HyperdriveTest {
             MINIMUM_TRANSACTION_AMOUNT,
             initialShortAmount
         );
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IHyperdrive.InsufficientLiquidity.selector,
-                IHyperdrive.InsufficientLiquidityReason.NegativeInterest
-            )
-        );
+        vm.expectRevert(IHyperdrive.InsufficientLiquidity.selector);
         hyperdrive.closeShort(
             maturityTime,
             finalShortAmount,
@@ -456,7 +451,7 @@ contract CloseShortTest is HyperdriveTest {
         advanceTime(POSITION_DURATION, -0.2e18);
 
         // A checkpoint is created to lock in the close price.
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
 
         // Another term passes and positive interest accrues.
         advanceTime(POSITION_DURATION, 0.5e18);
@@ -503,7 +498,7 @@ contract CloseShortTest is HyperdriveTest {
         advanceTime(POSITION_DURATION, 0.5e18);
 
         // A checkpoint is created to lock in the close price.
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
         uint256 closeVaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
 
         // Another term passes and positive interest accrues.

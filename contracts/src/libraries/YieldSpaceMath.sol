@@ -64,9 +64,7 @@ library YieldSpaceMath {
 
         // If k < ze, we have no choice but to revert.
         if (k < ze) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
-            );
+            Errors.throwInsufficientLiquidityError();
         }
 
         // NOTE: We round _y up to make the rhs of the equation larger.
@@ -86,9 +84,7 @@ library YieldSpaceMath {
 
         // If y < _y, we have no choice but to revert.
         if (y < _y) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
-            );
+            Errors.throwInsufficientLiquidityError();
         }
 
         // Δy = y - (k - (c / µ) * (µ * (ze + dz))^(1 - t))^(1 / (1 - t))
@@ -125,9 +121,7 @@ library YieldSpaceMath {
             mu
         );
         if (!success) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
-            );
+            Errors.throwInsufficientLiquidityError();
         }
     }
 
@@ -229,9 +223,7 @@ library YieldSpaceMath {
 
         // If y < dy, we have no choice but to revert.
         if (y < dy) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
-            );
+            Errors.throwInsufficientLiquidityError();
         }
 
         // (y - dy)^(1 - t)
@@ -242,9 +234,7 @@ library YieldSpaceMath {
 
         // If k < y, we have no choice but to revert.
         if (k < y) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
-            );
+            Errors.throwInsufficientLiquidityError();
         }
 
         // NOTE: We round _z down to make the lhs of the equation smaller.
@@ -267,9 +257,7 @@ library YieldSpaceMath {
 
         // If _z < ze, we have no choice but to revert.
         if (_z < ze) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
-            );
+            Errors.throwInsufficientLiquidityError();
         }
 
         // Δz = (((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ - ze
@@ -307,9 +295,7 @@ library YieldSpaceMath {
             mu
         );
         if (!success) {
-            Errors.throwInsufficientLiquidityError(
-                IHyperdrive.InsufficientLiquidityReason.ArithmeticUnderflow
-            );
+            Errors.throwInsufficientLiquidityError();
         }
     }
 

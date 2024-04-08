@@ -45,6 +45,9 @@ abstract contract HyperdriveDeployerCoordinator is
         address target4;
     }
 
+    /// @notice The factory that this deployer will be registered with.
+    address public immutable factory;
+
     /// @notice The contract used to deploy new instances of Hyperdrive.
     address public immutable coreDeployer;
 
@@ -63,16 +66,18 @@ abstract contract HyperdriveDeployerCoordinator is
     /// @notice The contract used to deploy new instances of HyperdriveTarget4.
     address public immutable target4Deployer;
 
-    /// @notice A mapping from deployer to deployment ID to deployment.
-    mapping(address => mapping(bytes32 => Deployment)) internal _deployments;
+    /// @notice A mapping from deployment ID to deployment.
+    mapping(bytes32 => Deployment) internal _deployments;
 
     /// @notice Instantiates the deployer coordinator.
+    /// @param _factory The factory that this deployer will be registered with.
     /// @param _coreDeployer The core deployer.
     /// @param _target0Deployer The target0 deployer.
     /// @param _target1Deployer The target1 deployer.
     /// @param _target2Deployer The target2 deployer.
     /// @param _target4Deployer The target4 deployer.
     constructor(
+        address _factory,
         address _coreDeployer,
         address _target0Deployer,
         address _target1Deployer,
@@ -80,6 +85,7 @@ abstract contract HyperdriveDeployerCoordinator is
         address _target3Deployer,
         address _target4Deployer
     ) {
+        factory = _factory;
         coreDeployer = _coreDeployer;
         target0Deployer = _target0Deployer;
         target1Deployer = _target1Deployer;
@@ -88,7 +94,17 @@ abstract contract HyperdriveDeployerCoordinator is
         target4Deployer = _target4Deployer;
     }
 
+    /// @dev Ensures that the contract is being called by the associated
+    ///      factory.
+    modifier onlyFactory() {
+        if (msg.sender != factory) {
+            revert IHyperdriveDeployerCoordinator.SenderIsNotFactory();
+        }
+        _;
+    }
+
     /// @notice Deploys a Hyperdrive instance with the given parameters.
+    /// @dev This can only be deployed by the associated factory.
     /// @param _deploymentId The ID of the deployment.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     /// @param _extraData The extra data that contains the pool and sweep targets.
@@ -99,9 +115,9 @@ abstract contract HyperdriveDeployerCoordinator is
         IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory _extraData,
         bytes32 _salt
-    ) external returns (address) {
+    ) external onlyFactory returns (address) {
         // Ensure that the Hyperdrive entrypoint has not already been deployed.
-        Deployment memory deployment = _deployments[msg.sender][_deploymentId];
+        Deployment memory deployment = _deployments[_deploymentId];
         if (deployment.hyperdrive != address(0)) {
             revert IHyperdriveDeployerCoordinator.HyperdriveAlreadyDeployed();
         }
@@ -155,16 +171,17 @@ abstract contract HyperdriveDeployerCoordinator is
             deployment.target2,
             deployment.target3,
             deployment.target4,
-            // NOTE: We hash the sender and deployment ID with the salt to
-            // prevent the front-running of deployments.
-            keccak256(abi.encode(msg.sender, deploymentId, salt))
+            // NOTE: We hash the deployment ID with the salt to prevent the
+            // front-running of deployments.
+            keccak256(abi.encode(deploymentId, salt))
         );
-        _deployments[msg.sender][_deploymentId].hyperdrive = hyperdrive;
+        _deployments[_deploymentId].hyperdrive = hyperdrive;
 
         return hyperdrive;
     }
 
     /// @notice Deploys a Hyperdrive target instance with the given parameters.
+    /// @dev This can only be deployed by the associated factory.
     /// @dev As a convention, target0 must be deployed first. After this, the
     ///      targets can be deployed in any order.
     /// @param _deploymentId The ID of the deployment.
@@ -179,16 +196,15 @@ abstract contract HyperdriveDeployerCoordinator is
         bytes memory _extraData,
         uint256 _targetIndex,
         bytes32 _salt
-    ) external returns (address target) {
+    ) external onlyFactory returns (address target) {
         // If the target index is 0, then we're deploying the target0 instance.
         // By convention, this target must be deployed first, and as part of the
         // deployment of target0, we will register the deployment in the state.
+        Deployment storage deployment = _deployments[_deploymentId];
         if (_targetIndex == 0) {
-            // Ensure that the deployment is a fresh deployment. We can check this
-            // by ensuring that the config hash is not set.
-            if (
-                _deployments[msg.sender][_deploymentId].configHash != bytes32(0)
-            ) {
+            // Ensure that the deployment is a fresh deployment. We can check
+            // this by ensuring that the config hash is not set.
+            if (deployment.configHash != bytes32(0)) {
                 revert IHyperdriveDeployerCoordinator.DeploymentAlreadyExists();
             }
 
@@ -216,25 +232,23 @@ abstract contract HyperdriveDeployerCoordinator is
             target = IHyperdriveTargetDeployer(target0Deployer).deploy(
                 config_,
                 _extraData,
-                // NOTE: We hash the sender and deployment ID with the salt to
-                // prevent the front-running of deployments.
-                keccak256(abi.encode(msg.sender, _deploymentId, _salt))
+                // NOTE: We hash the deployment ID with the salt to prevent the
+                // front-running of deployments.
+                keccak256(abi.encode(_deploymentId, _salt))
             );
 
             // Store the deployment.
-            _deployments[msg.sender][_deploymentId].configHash = configHash_;
-            _deployments[msg.sender][_deploymentId]
-                .extraDataHash = extraDataHash;
-            _deployments[msg.sender][_deploymentId]
-                .initialSharePrice = initialSharePrice;
-            _deployments[msg.sender][_deploymentId].target0 = target;
+            deployment.configHash = configHash_;
+            deployment.extraDataHash = extraDataHash;
+            deployment.initialSharePrice = initialSharePrice;
+            deployment.target0 = target;
 
             return target;
         }
 
         // Ensure that the deployment is not a fresh deployment. We can check
         // this by ensuring that the config hash is set.
-        bytes32 configHash = _deployments[msg.sender][_deploymentId].configHash;
+        bytes32 configHash = _deployments[_deploymentId].configHash;
         if (configHash == bytes32(0)) {
             revert IHyperdriveDeployerCoordinator.DeploymentDoesNotExist();
         }
@@ -245,10 +259,7 @@ abstract contract HyperdriveDeployerCoordinator is
         }
 
         // Ensure that the provided extra data matches the extra data hash.
-        if (
-            keccak256(_extraData) !=
-            _deployments[msg.sender][_deploymentId].extraDataHash
-        ) {
+        if (keccak256(_extraData) != deployment.extraDataHash) {
             revert IHyperdriveDeployerCoordinator.MismatchedExtraData();
         }
 
@@ -261,15 +272,14 @@ abstract contract HyperdriveDeployerCoordinator is
         // Convert the deploy config into the pool config and set the initial
         // vault share price.
         IHyperdrive.PoolConfig memory config = _copyPoolConfig(_deployConfig);
-        config.initialVaultSharePrice = _deployments[msg.sender][_deploymentId]
-            .initialSharePrice;
+        config.initialVaultSharePrice = deployment.initialSharePrice;
 
         // If the target index is greater than 0, then we're deploying one of
         // the other target instances. We don't allow targets to be deployed
         // more than once, and their addresses are stored in the deployment
         // state.
         if (_targetIndex == 1) {
-            if (_deployments[msg.sender][_deploymentId].target1 != address(0)) {
+            if (deployment.target1 != address(0)) {
                 revert IHyperdriveDeployerCoordinator.TargetAlreadyDeployed();
             }
             target = IHyperdriveTargetDeployer(target1Deployer).deploy(
@@ -277,9 +287,9 @@ abstract contract HyperdriveDeployerCoordinator is
                 _extraData,
                 keccak256(abi.encode(msg.sender, _deploymentId, _salt))
             );
-            _deployments[msg.sender][_deploymentId].target1 = target;
+            deployment.target1 = target;
         } else if (_targetIndex == 2) {
-            if (_deployments[msg.sender][_deploymentId].target2 != address(0)) {
+            if (deployment.target2 != address(0)) {
                 revert IHyperdriveDeployerCoordinator.TargetAlreadyDeployed();
             }
             target = IHyperdriveTargetDeployer(target2Deployer).deploy(
@@ -287,9 +297,9 @@ abstract contract HyperdriveDeployerCoordinator is
                 _extraData,
                 keccak256(abi.encode(msg.sender, _deploymentId, _salt))
             );
-            _deployments[msg.sender][_deploymentId].target2 = target;
+            deployment.target2 = target;
         } else if (_targetIndex == 3) {
-            if (_deployments[msg.sender][_deploymentId].target3 != address(0)) {
+            if (deployment.target3 != address(0)) {
                 revert IHyperdriveDeployerCoordinator.TargetAlreadyDeployed();
             }
             target = IHyperdriveTargetDeployer(target3Deployer).deploy(
@@ -297,9 +307,9 @@ abstract contract HyperdriveDeployerCoordinator is
                 _extraData,
                 keccak256(abi.encode(msg.sender, _deploymentId, _salt))
             );
-            _deployments[msg.sender][_deploymentId].target3 = target;
+            deployment.target3 = target;
         } else if (_targetIndex == 4) {
-            if (_deployments[msg.sender][_deploymentId].target4 != address(0)) {
+            if (deployment.target4 != address(0)) {
                 revert IHyperdriveDeployerCoordinator.TargetAlreadyDeployed();
             }
             target = IHyperdriveTargetDeployer(target4Deployer).deploy(
@@ -307,7 +317,7 @@ abstract contract HyperdriveDeployerCoordinator is
                 _extraData,
                 keccak256(abi.encode(msg.sender, _deploymentId, _salt))
             );
-            _deployments[msg.sender][_deploymentId].target4 = target;
+            deployment.target4 = target;
         } else {
             revert IHyperdriveDeployerCoordinator.InvalidTargetIndex();
         }
@@ -316,6 +326,7 @@ abstract contract HyperdriveDeployerCoordinator is
     }
 
     /// @notice Initializes a pool that was deployed by this coordinator.
+    /// @dev This can only be deployed by the associated factory.
     /// @dev This function utilizes several helper functions that provide
     ///      flexibility to implementations.
     /// @param _deploymentId The ID of the deployment.
@@ -333,13 +344,13 @@ abstract contract HyperdriveDeployerCoordinator is
         uint256 _contribution,
         uint256 _apr,
         IHyperdrive.Options memory _options
-    ) external payable returns (uint256 lpShares) {
+    ) external payable onlyFactory returns (uint256 lpShares) {
         // Check that the message value is valid.
         _checkMessageValue();
 
         // Ensure that the instance has been fully deployed.
         IHyperdrive hyperdrive = IHyperdrive(
-            _deployments[msg.sender][_deploymentId].hyperdrive
+            _deployments[_deploymentId].hyperdrive
         );
         if (address(hyperdrive) == address(0)) {
             revert IHyperdriveDeployerCoordinator.HyperdriveIsNotDeployed();
@@ -372,15 +383,13 @@ abstract contract HyperdriveDeployerCoordinator is
         return lpShares;
     }
 
-    /// @notice Gets the deployment specified by the deployer and deployment ID.
-    /// @param _deployer The deployer.
+    /// @notice Gets the deployment specified by the deployment ID.
     /// @param _deploymentId The deployment ID.
     /// @return The deployment.
     function deployments(
-        address _deployer,
         bytes32 _deploymentId
     ) external view returns (Deployment memory) {
-        return _deployments[_deployer][_deploymentId];
+        return _deployments[_deploymentId];
     }
 
     /// @dev Prepares the coordinator for initialization by drawing funds from

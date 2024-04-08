@@ -19,6 +19,7 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     using SafeERC20 for ERC20;
 
     /// @notice Instantiates the deployer coordinator.
+    /// @param _factory The factory that this deployer will be registered with.
     /// @param _coreDeployer The core deployer.
     /// @param _target0Deployer The target0 deployer.
     /// @param _target1Deployer The target1 deployer.
@@ -26,6 +27,7 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target3Deployer The target3 deployer.
     /// @param _target4Deployer The target4 deployer.
     constructor(
+        address _factory,
         address _coreDeployer,
         address _target0Deployer,
         address _target1Deployer,
@@ -34,6 +36,7 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _target4Deployer
     )
         HyperdriveDeployerCoordinator(
+            _factory,
             _coreDeployer,
             _target0Deployer,
             _target1Deployer,

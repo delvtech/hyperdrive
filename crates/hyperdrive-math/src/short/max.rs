@@ -533,6 +533,7 @@ mod tests {
 
     use ethers::types::U256;
     use eyre::Result;
+    use fixed_point_macros::uint256;
     use hyperdrive_wrappers::wrappers::{
         ihyperdrive::Checkpoint, mock_hyperdrive_math::MaxTradeParams,
     };
@@ -641,7 +642,7 @@ mod tests {
 
             // Some of the checkpoint passes and variable interest accrues.
             alice
-                .checkpoint(alice.latest_checkpoint().await?, None)
+                .checkpoint(alice.latest_checkpoint().await?, uint256!(0), None)
                 .await?;
             let rate = rng.gen_range(fixed!(0)..=fixed!(0.5e18));
             alice

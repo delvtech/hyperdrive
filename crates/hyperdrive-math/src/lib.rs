@@ -227,6 +227,18 @@ impl State {
     fn share_adjustment(&self) -> I256 {
         self.info.share_adjustment
     }
+
+    fn lp_total_supply(&self) -> FixedPoint {
+        self.info.lp_total_supply.into()
+    }
+
+    fn withdrawal_shares_proceeds(&self) -> FixedPoint {
+        self.info.withdrawal_shares_proceeds.into()
+    }
+
+    fn withdrawal_shares_ready_to_withdraw(&self) -> FixedPoint {
+        self.info.withdrawal_shares_ready_to_withdraw.into()
+    }
 }
 
 impl YieldSpace for State {

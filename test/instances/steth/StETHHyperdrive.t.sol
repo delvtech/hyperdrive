@@ -83,11 +83,15 @@ contract StETHHyperdriveTest is InstanceTest {
     }
 
     /// @dev Deploys the rETH deployer coordinator contract.
-    function deployCoordinator() internal override returns (address) {
+    /// @param _factory The address of the Hyperdrive factory.
+    function deployCoordinator(
+        address _factory
+    ) internal override returns (address) {
         vm.startPrank(alice);
         return
             address(
                 new StETHHyperdriveDeployerCoordinator(
+                    _factory,
                     address(new StETHHyperdriveCoreDeployer()),
                     address(new StETHTarget0Deployer()),
                     address(new StETHTarget1Deployer()),

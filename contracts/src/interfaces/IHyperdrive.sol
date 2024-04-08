@@ -180,22 +180,6 @@ interface IHyperdrive is
         bytes extraData;
     }
 
-    /// Enums ///
-
-    /// @notice The reason for an InsufficientLiquidity error.
-    enum InsufficientLiquidityReason {
-        /// @dev The trade resulted in an arithmetic underflow.
-        ArithmeticUnderflow,
-        /// @dev The trade brought the effective share reserves below the
-        ///      minimum share reserves.
-        InvalidEffectiveShareReserves,
-        /// @dev The trade resulted in negative interest on some or all of the
-        ///      bonds.
-        NegativeInterest,
-        /// @dev The trade violated our solvency requirements.
-        SolvencyViolated
-    }
-
     /// Errors ///
 
     /// @notice Thrown when the inputs to a batch transfer don't match in
@@ -220,7 +204,7 @@ interface IHyperdrive is
 
     /// @notice Thrown when the pool doesn't have sufficient liquidity to
     ///         complete the trade.
-    error InsufficientLiquidity(InsufficientLiquidityReason reason);
+    error InsufficientLiquidity();
 
     /// @notice Thrown when the pool's APR is outside the bounds specified by
     ///         a LP when they are adding liquidity.

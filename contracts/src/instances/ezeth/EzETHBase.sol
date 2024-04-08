@@ -22,9 +22,6 @@ abstract contract EzETHBase is HyperdriveBase {
     /// @dev The RenzoOracle contract.
     IRenzoOracle internal immutable _renzoOracle;
 
-    /// @dev Error for zero total supply or total pooled ether.
-    error InvalidZeroInput();
-
     /// @notice Instantiates the ezETH Hyperdrive base contract.
     /// @param __restakeManager The Renzo Restakemanager contract.
     constructor(IRestakeManager __restakeManager) {
@@ -126,14 +123,6 @@ abstract contract EzETHBase is HyperdriveBase {
             );
     }
 
-    /// @dev Gets the total amount of base held by the pool.
-    /// @return baseAmount The total amount of base.
-    function _totalBase() internal pure override returns (uint256) {
-        // NOTE: Since ETH is the base token and can't be swept, we can safely
-        // return zero.
-        return 0;
-    }
-
     /// @dev Gets the total amount of shares held by the pool in the yield
     ///      source.
     /// @return shareAmount The total amount of shares.
@@ -149,7 +138,7 @@ abstract contract EzETHBase is HyperdriveBase {
     /// @dev We override the message value check since this integration is
     ///      payable.
     function _checkMessageValue() internal view override {
-        if (msg.value > 0) {
+        if (msg.value != 0) {
             revert IHyperdrive.NotPayable();
         }
     }

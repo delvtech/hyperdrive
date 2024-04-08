@@ -1454,6 +1454,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(factory.governance());
         address deployerCoordinator = address(
             new StETHHyperdriveDeployerCoordinator(
+                address(factory),
                 address(new StETHHyperdriveCoreDeployer()),
                 address(new StETHTarget0Deployer()),
                 address(new StETHTarget1Deployer()),
@@ -2496,23 +2497,6 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
         vm.startPrank(deployer);
 
         // Deploy the ERC4626Hyperdrive factory and deployer.
-        coreDeployer = address(new ERC4626HyperdriveCoreDeployer());
-        target0Deployer = address(new ERC4626Target0Deployer());
-        target1Deployer = address(new ERC4626Target1Deployer());
-        target2Deployer = address(new ERC4626Target2Deployer());
-        target3Deployer = address(new ERC4626Target3Deployer());
-        target4Deployer = address(new ERC4626Target4Deployer());
-
-        deployerCoordinator = address(
-            new ERC4626HyperdriveDeployerCoordinator(
-                coreDeployer,
-                target0Deployer,
-                target1Deployer,
-                target2Deployer,
-                target3Deployer,
-                target4Deployer
-            )
-        );
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ERC20ForwarderFactory();
@@ -2547,6 +2531,23 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
                 linkerFactory: address(0xdeadbeef),
                 linkerCodeHash: bytes32(uint256(0xdeadbabe))
             })
+        );
+        coreDeployer = address(new ERC4626HyperdriveCoreDeployer());
+        target0Deployer = address(new ERC4626Target0Deployer());
+        target1Deployer = address(new ERC4626Target1Deployer());
+        target2Deployer = address(new ERC4626Target2Deployer());
+        target3Deployer = address(new ERC4626Target3Deployer());
+        target4Deployer = address(new ERC4626Target4Deployer());
+        deployerCoordinator = address(
+            new ERC4626HyperdriveDeployerCoordinator(
+                address(factory),
+                coreDeployer,
+                target0Deployer,
+                target1Deployer,
+                target2Deployer,
+                target3Deployer,
+                target4Deployer
+            )
         );
 
         // Initialize this test's pool config.
@@ -2701,6 +2702,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
         // the logic is the same, but future implementations may have different logic.
         deployerCoordinator1 = address(
             new ERC4626HyperdriveDeployerCoordinator(
+                address(factory),
                 address(new ERC4626HyperdriveCoreDeployer()),
                 address(new ERC4626Target0Deployer()),
                 address(new ERC4626Target1Deployer()),
@@ -3168,6 +3170,7 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
         for (uint256 i; i < numberOfDeployerCoordinators; i++) {
             deployerCoordinators[i] = address(
                 new ERC4626HyperdriveDeployerCoordinator(
+                    address(factory),
                     address(new ERC4626HyperdriveCoreDeployer()),
                     address(new ERC4626Target0Deployer()),
                     address(new ERC4626Target1Deployer()),
@@ -3203,6 +3206,7 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
         for (uint256 i; i < numberOfDeployerCoordinators; i++) {
             deployerCoordinators[i] = address(
                 new ERC4626HyperdriveDeployerCoordinator(
+                    address(factory),
                     address(new ERC4626HyperdriveCoreDeployer()),
                     address(new ERC4626Target0Deployer()),
                     address(new ERC4626Target1Deployer()),
@@ -3252,6 +3256,7 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
         for (uint256 i; i < numberOfDeployerCoordinators; i++) {
             deployerCoordinators[i] = address(
                 new ERC4626HyperdriveDeployerCoordinator(
+                    address(factory),
                     address(new ERC4626HyperdriveCoreDeployer()),
                     address(new ERC4626Target0Deployer()),
                     address(new ERC4626Target1Deployer()),

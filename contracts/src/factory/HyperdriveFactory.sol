@@ -4,7 +4,6 @@ pragma solidity 0.8.20;
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveFactory } from "../interfaces/IHyperdriveFactory.sol";
 import { IHyperdriveDeployerCoordinator } from "../interfaces/IHyperdriveDeployerCoordinator.sol";
-import { ETH } from "../libraries/Constants.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 
@@ -894,14 +893,16 @@ contract HyperdriveFactory is IHyperdriveFactory {
         // term lengths.
         if (
             _config.fees.curve > _maxFees.curve ||
-            // NOTE: Round down to make the check stricter.
-            _config.fees.flat.mulDivDown(365 days, _config.positionDuration) >
+            // NOTE: Round up here to make the check stricter
+            ///      since truthy values causes revert.
+            _config.fees.flat.mulDivUp(365 days, _config.positionDuration) >
             _maxFees.flat ||
             _config.fees.governanceLP > _maxFees.governanceLP ||
             _config.fees.governanceZombie > _maxFees.governanceZombie ||
             _config.fees.curve < _minFees.curve ||
-            // NOTE: Round up to make the check stricter.
-            _config.fees.flat.mulDivUp(365 days, _config.positionDuration) <
+            // NOTE: Round down here to make the check stricter
+            ///      since truthy values causes revert.
+            _config.fees.flat.mulDivDown(365 days, _config.positionDuration) <
             _minFees.flat ||
             _config.fees.governanceLP < _minFees.governanceLP ||
             _config.fees.governanceZombie < _minFees.governanceZombie
@@ -951,10 +952,6 @@ contract HyperdriveFactory is IHyperdriveFactory {
         // The factory assumes the governance role during deployment so that it
         // can set up some initial values; however the governance role will
         // ultimately be transferred to the hyperdrive governance address.
-        _config.linkerFactory = linkerFactory;
-        _config.linkerCodeHash = linkerCodeHash;
-        _config.feeCollector = feeCollector;
-        _config.sweepCollector = sweepCollector;
         _config.governance = address(this);
         _config.timeStretch = timeStretch;
     }

@@ -24,6 +24,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     IRocketTokenRETH internal immutable rocketTokenReth;
 
     /// @notice Instantiates the deployer coordinator.
+    /// @param _factory The factory that this deployer will be registered with.
     /// @param _coreDeployer The core deployer.
     /// @param _target0Deployer The target0 deployer.
     /// @param _target1Deployer The target1 deployer.
@@ -32,6 +33,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target4Deployer The target4 deployer.
     /// @param _rocketTokenReth The rETH token contract.
     constructor(
+        address _factory,
         address _coreDeployer,
         address _target0Deployer,
         address _target1Deployer,
@@ -41,6 +43,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         IRocketTokenRETH _rocketTokenReth
     )
         HyperdriveDeployerCoordinator(
+            _factory,
             _coreDeployer,
             _target0Deployer,
             _target1Deployer,
@@ -92,7 +95,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
 
     /// @dev Disallows the contract to receive ether, when opening positions.
     function _checkMessageValue() internal view override {
-        if (msg.value > 0) {
+        if (msg.value != 0) {
             revert IHyperdrive.NotPayable();
         }
     }

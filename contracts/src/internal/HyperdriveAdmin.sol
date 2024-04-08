@@ -138,9 +138,8 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
             revert IHyperdrive.Unauthorized();
         }
 
-        // Gets the Hyperdrive's balance of base and vault shares prior to
+        // Gets the Hyperdrive's balance of vault shares prior to
         // sweeping.
-        uint256 baseBalance = _totalBase();
         uint256 shareBalance = _totalShares();
 
         // Transfer the entire balance of the sweep target to the sweep
@@ -148,8 +147,8 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
         uint256 balance = _target.balanceOf(address(this));
         ERC20(address(_target)).safeTransfer(sweepCollector, balance);
 
-        // Ensure that the base and vault shares balance hasn't changed.
-        if (_totalBase() != baseBalance || _totalShares() != shareBalance) {
+        // Ensure that the vault shares balance hasn't changed.
+        if (_totalShares() != shareBalance) {
             revert IHyperdrive.SweepFailed();
         }
 

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveGovernedRegistry } from "../interfaces/IHyperdriveGovernedRegistry.sol";
 import { IHyperdriveRegistry } from "../interfaces/IHyperdriveRegistry.sol";
 

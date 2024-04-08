@@ -7,7 +7,6 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveCore } from "../interfaces/IHyperdriveCore.sol";
 import { IMultiTokenCore } from "../interfaces/IMultiTokenCore.sol";
 import { HyperdriveAdmin } from "../internal/HyperdriveAdmin.sol";
-import { HyperdriveBase } from "../internal/HyperdriveBase.sol";
 import { HyperdriveCheckpoint } from "../internal/HyperdriveCheckpoint.sol";
 import { HyperdriveLong } from "../internal/HyperdriveLong.sol";
 import { HyperdriveLP } from "../internal/HyperdriveLP.sol";
@@ -189,7 +188,7 @@ abstract contract Hyperdrive is
         uint256,
         IHyperdrive.Options calldata
     ) external returns (uint256) {
-        _delegate(target2);
+        _delegate(target1);
     }
 
     /// LPs ///
@@ -211,7 +210,7 @@ abstract contract Hyperdrive is
         uint256,
         IHyperdrive.Options calldata
     ) external payable returns (uint256) {
-        _delegate(target1);
+        _delegate(target4);
     }
 
     /// @inheritdoc IHyperdriveCore
@@ -220,7 +219,7 @@ abstract contract Hyperdrive is
         uint256,
         IHyperdrive.Options calldata
     ) external returns (uint256, uint256) {
-        _delegate(target1);
+        _delegate(target2);
     }
 
     /// @inheritdoc IHyperdriveCore
@@ -235,8 +234,8 @@ abstract contract Hyperdrive is
     /// Checkpoints ///
 
     /// @inheritdoc IHyperdriveCore
-    function checkpoint(uint256) external {
-        _delegate(target4);
+    function checkpoint(uint256, uint256) external {
+        _delegate(target3);
     }
 
     /// Admin ///

@@ -197,7 +197,7 @@ abstract contract MockHyperdriveBase is HyperdriveBase {
     // ETH yield source instances to be payable and non-ETH yield
     // source instances non-payable.
     function _checkMessageValue() internal view override {
-        if (address(_baseToken) != ETH && msg.value > 0) {
+        if (address(_baseToken) != ETH && msg.value != 0) {
             revert IHyperdrive.NotPayable();
         }
     }
@@ -237,12 +237,6 @@ abstract contract MockHyperdriveBase is HyperdriveBase {
         return _baseAmount.mulDivDown(totalShares, assets);
     }
 
-    /// @dev Gets the total amount of base held by the pool.
-    /// @return baseAmount The total amount of base.
-    function _totalBase() internal view override returns (uint256) {
-        return _baseToken.balanceOf(address(this));
-    }
-
     /// @dev Gets the total amount of shares held by the pool in the yield
     ///      source.
     /// @return shareAmount The total amount of shares.
@@ -252,7 +246,7 @@ abstract contract MockHyperdriveBase is HyperdriveBase {
         override
         returns (uint256 shareAmount)
     {
-        return _convertToShares(_totalBase());
+        return _convertToShares(_baseToken.balanceOf(address(this)));
     }
 }
 

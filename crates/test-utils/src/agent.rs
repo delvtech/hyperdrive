@@ -658,9 +658,10 @@ impl Agent<ChainClient<LocalWallet>, ChaCha8Rng> {
     pub async fn checkpoint(
         &self,
         checkpoint: U256,
+        max_iterations: U256,
         maybe_tx_options: Option<TxOptions>,
     ) -> Result<()> {
-        let tx = ContractCall_(self.hyperdrive.checkpoint(checkpoint))
+        let tx = ContractCall_(self.hyperdrive.checkpoint(checkpoint, max_iterations))
             .apply(self.pre_process_options(maybe_tx_options));
         tx.0.send().await?.await?;
         Ok(())
@@ -841,8 +842,12 @@ impl Agent<ChainClient<LocalWallet>, ChaCha8Rng> {
                 .provider()
                 .request::<_, U256>("evm_mine", None::<()>)
                 .await?;
-            self.checkpoint(self.latest_checkpoint().await?, maybe_tx_options.clone())
-                .await?;
+            self.checkpoint(
+                self.latest_checkpoint().await?,
+                uint256!(0),
+                maybe_tx_options.clone(),
+            )
+            .await?;
             duration -= checkpoint_duration;
         }
 
@@ -856,8 +861,12 @@ impl Agent<ChainClient<LocalWallet>, ChaCha8Rng> {
             .provider()
             .request::<_, U256>("evm_mine", None::<()>)
             .await?;
-        self.checkpoint(self.latest_checkpoint().await?, maybe_tx_options)
-            .await?;
+        self.checkpoint(
+            self.latest_checkpoint().await?,
+            uint256!(0),
+            maybe_tx_options,
+        )
+        .await?;
 
         Ok(())
     }
@@ -946,7 +955,7 @@ impl Agent<ChainClient<LocalWallet>, ChaCha8Rng> {
     /// with the current market state.
     pub async fn calculate_open_long(&self, base_amount: FixedPoint) -> Result<FixedPoint> {
         let state = self.get_state().await?;
-        Ok(state.calculate_open_long(base_amount))
+        state.calculate_open_long(base_amount)
     }
 
     /// Calculates the deposit required to short a given amount of bonds with the
@@ -975,6 +984,29 @@ impl Agent<ChainClient<LocalWallet>, ChaCha8Rng> {
             .get_checkpoint_exposure(state.to_checkpoint(self.now().await?))
             .await?;
         Ok(state.calculate_max_long(self.wallet.base, checkpoint_exposure, maybe_max_iterations))
+    }
+
+    /// Gets the long that moves the fixed rate to a target value.
+    pub async fn calculate_targeted_long(
+        &self,
+        target_rate: FixedPoint,
+        maybe_max_iterations: Option<usize>,
+        maybe_allowable_error: Option<FixedPoint>,
+    ) -> Result<FixedPoint> {
+        let state = self.get_state().await?;
+        let checkpoint_exposure = self
+            .hyperdrive
+            .get_checkpoint_exposure(state.to_checkpoint(self.now().await?))
+            .await?;
+        Ok(state
+            .calculate_targeted_long_with_budget(
+                self.wallet.base,
+                target_rate,
+                checkpoint_exposure,
+                maybe_max_iterations,
+                maybe_allowable_error,
+            )
+            .unwrap())
     }
 
     /// Calculates the max short that can be opened in the current checkpoint.

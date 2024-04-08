@@ -9,7 +9,6 @@ import { HyperdriveMultiToken } from "contracts/src/internal/HyperdriveMultiToke
 import { HyperdriveStorage } from "contracts/src/internal/HyperdriveStorage.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { MockHyperdriveBase, MockHyperdriveTarget0 } from "contracts/test/MockHyperdrive.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
 /// DEPRECATED: Don't use this for new tests.
 interface IMockMultiToken is IMultiToken {
@@ -155,6 +154,7 @@ contract MockMultiToken is HyperdriveMultiToken, MockHyperdriveBase {
     // HACK: This is a hack to get around the fact that MockHyperdriveBase
     // needs this to be defined.
     function _applyCheckpoint(
+        uint256,
         uint256,
         uint256
     ) internal pure override returns (uint256) {

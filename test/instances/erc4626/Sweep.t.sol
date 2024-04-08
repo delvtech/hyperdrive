@@ -110,14 +110,9 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
         hyperdrive.sweep(IERC20(address(sweepable)));
     }
 
-    function test_sweep_failure_direct_sweeps() external {
+    function test_sweep_failure_direct_vaultToken() external {
         vm.stopPrank();
         vm.startPrank(celine);
-
-        // Trying to sweep the base token should fail.
-        address baseToken = address(hyperdrive.baseToken());
-        vm.expectRevert(IHyperdrive.SweepFailed.selector);
-        hyperdrive.sweep(IERC20(baseToken));
 
         // Trying to sweep the vault token should fail.
         address vaultToken = address(hyperdrive.vaultSharesToken());
@@ -125,17 +120,30 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
         hyperdrive.sweep(IERC20(vaultToken));
     }
 
-    function test_sweep_failure_indirect_sweeps() external {
+    function test_sweep_failure_indirect_vaultToken() external {
         vm.stopPrank();
         vm.startPrank(celine);
-
-        // Trying to sweep the base token via the forwarding token should fail.
-        vm.expectRevert(IHyperdrive.SweepFailed.selector);
-        hyperdrive.sweep(IERC20(address(baseForwarder)));
 
         // Trying to sweep the vault token via the forwarding token should fail.
         vm.expectRevert(IHyperdrive.SweepFailed.selector);
         hyperdrive.sweep(IERC20(address(vaultForwarder)));
+    }
+
+    function test_sweep_success_direct_baseToken() external {
+        vm.stopPrank();
+        vm.startPrank(celine);
+
+        // Trying to sweep the base token should succeed since any lingering amount is a mistake.
+        address baseToken = address(hyperdrive.baseToken());
+        hyperdrive.sweep(IERC20(baseToken));
+    }
+
+    function test_sweep_success_indirect_baseToken() external {
+        vm.stopPrank();
+        vm.startPrank(celine);
+
+        // Trying to sweep the base token should succeed since any lingering amount is a mistake.
+        hyperdrive.sweep(IERC20(address(baseForwarder)));
     }
 
     function test_sweep_success_sweepCollector() external {

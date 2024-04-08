@@ -170,7 +170,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         // withdrawal shares will be accounted for properly.
         variableRate = variableRate.normalizeToRange(0, 2e18);
         advanceTime(CHECKPOINT_DURATION, variableRate);
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
         advanceTime(POSITION_DURATION - CHECKPOINT_DURATION, variableRate);
 
         // Bob closes his long. He should receive the full bond amount since he
@@ -1582,7 +1582,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         // The term advances and interest accrues.
         variableRate = variableRate.normalizeToRange(0.00001e18, 2e18);
         advanceTime(POSITION_DURATION, variableRate);
-        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
         // Alice redeems her withdrawal shares.
         uint256 lpSharePrice = hyperdrive.lpSharePrice();
@@ -1748,7 +1748,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         // The term advances and interest accrues.
         variableRate = variableRate.normalizeToRange(0.00001e18, 2e18);
         advanceTime(POSITION_DURATION, variableRate);
-        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
         // Alice redeems her withdrawal shares.
         uint256 lpSharePrice = hyperdrive.lpSharePrice();
@@ -1810,7 +1810,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         // The term passes and a checkpoint is minted.
         variableRate = variableRate.normalizeToRange(0.01e18, 0.2e18);
         advanceTime(POSITION_DURATION, variableRate);
-        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
         // A large short is opened.
         //
@@ -1874,7 +1874,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         // The term passes and a checkpoint is minted.
         variableRate = variableRate.normalizeToRange(0.01e18, 0.2e18);
         advanceTime(POSITION_DURATION, variableRate);
-        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
         // A large long is opened.
         openLong(bob, hyperdrive.calculateMaxLong());
@@ -1950,7 +1950,7 @@ contract LPWithdrawalTest is HyperdriveTest {
             2.5e18
         );
         advanceTime(CHECKPOINT_DURATION, postRemovalVariableRate);
-        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
         // Bob should be able to open a reasonably sized long despite the small
         // effective share reserves.

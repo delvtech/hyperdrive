@@ -1,6 +1,6 @@
 use ethers::types::I256;
 use fixed_point::FixedPoint;
-use fixed_point_macros::{fixed, int256};
+use fixed_point_macros::{fixed, int256, uint256};
 
 use crate::{State, YieldSpace};
 
@@ -83,7 +83,7 @@ impl State {
             self.max_long_guess(absolute_max_base_amount, checkpoint_exposure);
         let mut maybe_solvency = self.solvency_after_long(
             max_base_amount,
-            self.calculate_open_long(max_base_amount),
+            self.calculate_open_long(max_base_amount).unwrap(),
             checkpoint_exposure,
         );
         if maybe_solvency.is_none() {
@@ -121,7 +121,7 @@ impl State {
             let possible_max_base_amount = max_base_amount + solvency / maybe_derivative.unwrap();
             maybe_solvency = self.solvency_after_long(
                 possible_max_base_amount,
-                self.calculate_open_long(possible_max_base_amount),
+                self.calculate_open_long(possible_max_base_amount).unwrap(),
                 checkpoint_exposure,
             );
             if let Some(s) = maybe_solvency {
@@ -340,7 +340,7 @@ impl State {
     /// It's possible that the pool is insolvent after opening a long. In this
     /// case, we return `None` since the fixed point library can't represent
     /// negative numbers.
-    fn solvency_after_long(
+    pub(super) fn solvency_after_long(
         &self,
         base_amount: FixedPoint,
         bond_amount: FixedPoint,
@@ -380,7 +380,10 @@ impl State {
     /// This derivative is negative since solvency decreases as more longs are
     /// opened. We use the negation of the derivative to stay in the positive
     /// domain, which allows us to use the fixed point library.
-    fn solvency_after_long_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
+    pub(super) fn solvency_after_long_derivative(
+        &self,
+        base_amount: FixedPoint,
+    ) -> Option<FixedPoint> {
         let maybe_derivative = self.long_amount_derivative(base_amount);
         maybe_derivative.map(|derivative| {
             (derivative
@@ -419,7 +422,7 @@ impl State {
     /// $$
     /// c'(x) = \phi_{c} \cdot \left( \tfrac{1}{p} - 1 \right)
     /// $$
-    fn long_amount_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
+    pub(super) fn long_amount_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
         let share_amount = base_amount / self.vault_share_price();
         let inner =
             self.initial_vault_share_price() * (self.effective_share_reserves() + share_amount);
@@ -605,7 +608,7 @@ mod tests {
 
             // Some of the checkpoint passes and variable interest accrues.
             alice
-                .checkpoint(alice.latest_checkpoint().await?, None)
+                .checkpoint(alice.latest_checkpoint().await?, uint256!(0), None)
                 .await?;
             let rate = rng.gen_range(fixed!(0)..=fixed!(0.5e18));
             alice
@@ -621,7 +624,7 @@ mod tests {
             let spot_price_after_long = bob
                 .get_state()
                 .await?
-                .calculate_spot_price_after_long(max_long, None);
+                .calculate_spot_price_after_long(max_long, None)?;
             bob.open_long(max_long, None, None).await?;
 
             // One of three things should be true after opening the long:

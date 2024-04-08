@@ -54,29 +54,10 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         ERC20Mintable(address(underlyingToken)).mint(alice, monies);
         ERC20Mintable(address(underlyingToken)).mint(bob, monies);
 
-        // Initialize deployer contracts and forwarder.
-        coreDeployer = address(new ERC4626HyperdriveCoreDeployer());
-        target0Deployer = address(new ERC4626Target0Deployer());
-        target1Deployer = address(new ERC4626Target1Deployer());
-        target2Deployer = address(new ERC4626Target2Deployer());
-        target3Deployer = address(new ERC4626Target3Deployer());
-        target4Deployer = address(new ERC4626Target4Deployer());
-        deployerCoordinator = address(
-            new ERC4626HyperdriveDeployerCoordinator(
-                coreDeployer,
-                target0Deployer,
-                target1Deployer,
-                target2Deployer,
-                target3Deployer,
-                target4Deployer
-            )
-        );
-
+        // Deploy the Hyperdrive factory and deployer coordinator.
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ERC20ForwarderFactory();
-
-        // Hyperdrive factory to produce ERC4626 instances for UsdcERC4626.
         factory = new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -108,6 +89,23 @@ contract UsdcERC4626 is ERC4626ValidationTest {
                 linkerFactory: address(0xdeadbeef),
                 linkerCodeHash: bytes32(uint256(0xdeadbabe))
             })
+        );
+        coreDeployer = address(new ERC4626HyperdriveCoreDeployer());
+        target0Deployer = address(new ERC4626Target0Deployer());
+        target1Deployer = address(new ERC4626Target1Deployer());
+        target2Deployer = address(new ERC4626Target2Deployer());
+        target3Deployer = address(new ERC4626Target3Deployer());
+        target4Deployer = address(new ERC4626Target4Deployer());
+        deployerCoordinator = address(
+            new ERC4626HyperdriveDeployerCoordinator(
+                address(factory),
+                coreDeployer,
+                target0Deployer,
+                target1Deployer,
+                target2Deployer,
+                target3Deployer,
+                target4Deployer
+            )
         );
 
         // Config changes required to support ERC4626 with the correct initial vault share price.

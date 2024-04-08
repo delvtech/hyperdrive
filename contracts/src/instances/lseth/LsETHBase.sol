@@ -74,7 +74,7 @@ abstract contract LsETHBase is HyperdriveBase {
     /// @dev We override the message value check since this integration is
     ///      not payable.
     function _checkMessageValue() internal view override {
-        if (msg.value > 0) {
+        if (msg.value != 0) {
             revert IHyperdrive.NotPayable();
         }
     }
@@ -101,14 +101,6 @@ abstract contract LsETHBase is HyperdriveBase {
             IRiverV1(address(_vaultSharesToken)).sharesFromUnderlyingBalance(
                 _baseAmount
             );
-    }
-
-    /// @dev Gets the total amount of base held by the pool.
-    /// @return baseAmount The total amount of base.
-    function _totalBase() internal pure override returns (uint256) {
-        // NOTE: Since ETH is the base token and can't be swept, we can safely
-        // return zero.
-        return 0;
     }
 
     /// @dev Gets the total amount of shares held by the pool in the yield
