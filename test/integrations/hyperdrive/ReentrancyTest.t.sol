@@ -56,7 +56,14 @@ contract ReentrantEthReceiver is ReentrancyTester {
 
 contract ReentrantERC20 is ERC20Mintable, ReentrancyTester {
     constructor()
-        ERC20Mintable("ReentrantERC20", "REENT", 18, address(0), false)
+        ERC20Mintable(
+            "ReentrantERC20",
+            "REENT",
+            18,
+            address(0),
+            false,
+            type(uint256).max
+        )
     {}
 
     function transfer(

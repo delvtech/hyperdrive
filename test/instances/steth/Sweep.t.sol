@@ -37,7 +37,8 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
             "SWEEP",
             18,
             address(0),
-            false
+            false,
+            type(uint256).max
         );
 
         // Deploy the leaky lido instance. Then deploy forwarding tokens for
@@ -193,7 +194,7 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
 }
 
 contract LeakyLido is MockLido {
-    constructor() MockLido(0, address(0), false) {}
+    constructor() MockLido(0, address(0), false, type(uint256).max) {}
 
     // This function allows other addresses to transfer tokens from a spender.
     // This is obviously insecure, but it's an easy way to expose a forwarding

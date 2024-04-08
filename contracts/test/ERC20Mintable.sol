@@ -7,18 +7,21 @@ import { ERC20 } from "solmate/tokens/ERC20.sol";
 
 contract ERC20Mintable is ERC20, MultiRolesAuthority {
     bool public immutable isCompetitionMode;
+    uint256 public immutable maxMintAmount;
 
     constructor(
         string memory name,
         string memory symbol,
         uint8 decimals,
         address admin,
-        bool isCompetitionMode_
+        bool isCompetitionMode_,
+        uint256 maxMintAmount_
     )
         ERC20(name, symbol, decimals)
         MultiRolesAuthority(admin, Authority(address(address(this))))
     {
         isCompetitionMode = isCompetitionMode_;
+        maxMintAmount = maxMintAmount_;
     }
 
     modifier requiresAuthDuringCompetition() {
@@ -32,6 +35,7 @@ contract ERC20Mintable is ERC20, MultiRolesAuthority {
     }
 
     function mint(uint256 amount) external requiresAuthDuringCompetition {
+        require(amount <= maxMintAmount, "MockERC4626: Invalid mint amount");
         _mint(msg.sender, amount);
     }
 
@@ -39,6 +43,7 @@ contract ERC20Mintable is ERC20, MultiRolesAuthority {
         address destination,
         uint256 amount
     ) external requiresAuthDuringCompetition {
+        require(amount <= maxMintAmount, "MockERC4626: Invalid mint amount");
         _mint(destination, amount);
     }
 

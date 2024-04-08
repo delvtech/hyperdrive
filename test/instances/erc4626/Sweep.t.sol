@@ -37,7 +37,8 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
             "SWEEP",
             18,
             address(0),
-            false
+            false,
+            type(uint256).max
         );
 
         // Deploy the leaky vault with the leaky ERC20 as the asset. Then deploy
@@ -218,7 +219,17 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
 contract LeakyVault is MockERC4626 {
     constructor(
         ERC20Mintable _asset
-    ) MockERC4626(_asset, "Leaky Vault", "LEAK", 0, address(0), false) {}
+    )
+        MockERC4626(
+            _asset,
+            "Leaky Vault",
+            "LEAK",
+            0,
+            address(0),
+            false,
+            type(uint256).max
+        )
+    {}
 
     // This function allows other addresses to transfer tokens from a spender.
     // This is obviously insecure, but it's an easy way to expose a forwarding
@@ -244,7 +255,16 @@ contract LeakyVault is MockERC4626 {
 }
 
 contract LeakyERC20 is ERC20Mintable {
-    constructor() ERC20Mintable("Leaky ERC20", "LEAK", 0, address(0), false) {}
+    constructor()
+        ERC20Mintable(
+            "Leaky ERC20",
+            "LEAK",
+            0,
+            address(0),
+            false,
+            type(uint256).max
+        )
+    {}
 
     // This function allows other addresses to transfer tokens from a spender.
     // This is obviously insecure, but it's an easy way to expose a forwarding

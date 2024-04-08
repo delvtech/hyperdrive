@@ -35,7 +35,16 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         vm.startPrank(deployer);
         decimals = 6;
         underlyingToken = IERC20(
-            address(new ERC20Mintable("usdc", "USDC", 6, address(this), false))
+            address(
+                new ERC20Mintable(
+                    "usdc",
+                    "USDC",
+                    6,
+                    address(this),
+                    false,
+                    type(uint256).max
+                )
+            )
         );
         token = IERC4626(
             address(
@@ -45,7 +54,8 @@ contract UsdcERC4626 is ERC4626ValidationTest {
                     "yUSDC",
                     0,
                     address(0),
-                    false
+                    false,
+                    type(uint256).max
                 )
             )
         );

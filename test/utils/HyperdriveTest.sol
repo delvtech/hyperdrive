@@ -38,7 +38,14 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         vm.startPrank(alice);
 
         // Instantiate the base token.
-        baseToken = new ERC20Mintable("Base", "BASE", 18, address(0), false);
+        baseToken = new ERC20Mintable(
+            "Base",
+            "BASE",
+            18,
+            address(0),
+            false,
+            type(uint256).max
+        );
 
         // Instantiate Hyperdrive.
         IHyperdrive.PoolConfig memory config = testConfig(

@@ -1446,7 +1446,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
     function test_deployAndInitialize() external {
         // Deploy a mock lido instance.
-        ILido lido = ILido(address(new MockLido(0.05e18, alice, true)));
+        ILido lido = ILido(
+            address(new MockLido(0.05e18, alice, true, type(uint256).max))
+        );
         lido.submit{ value: 1e18 }(address(0));
 
         // Add a deployer coordinator to the factory.
@@ -2582,7 +2584,8 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
                     "yDai",
                     0,
                     address(0),
-                    false
+                    false,
+                    type(uint256).max
                 )
             )
         );
@@ -2594,7 +2597,8 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
                     "sDai",
                     0,
                     address(0),
-                    false
+                    false,
+                    type(uint256).max
                 )
             )
         );

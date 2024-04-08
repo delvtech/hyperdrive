@@ -239,6 +239,7 @@ impl Chain {
                 18_u8,
                 Address::zero(),
                 false,
+                U256::MAX,
             ),
         )?
         .send()
@@ -252,6 +253,7 @@ impl Chain {
                 uint256!(0.05e18),
                 Address::zero(),
                 false,
+                U256::MAX,
             ),
         )?
         .send()
@@ -341,6 +343,7 @@ impl Chain {
                 config.base_token_decimals,
                 address,
                 config.is_competition_mode,
+                U256::MAX,
             ),
         )?
         .send()
@@ -354,6 +357,7 @@ impl Chain {
                 config.vault_starting_rate,
                 address,
                 config.is_competition_mode,
+                U256::MAX,
             ),
         )?
         .send()
@@ -390,6 +394,7 @@ impl Chain {
                     config.lido_starting_rate,
                     address,
                     config.is_competition_mode,
+                    U256::MAX,
                 ),
             )?
             .send()
