@@ -28,14 +28,16 @@ contract MockLido is MultiRolesAuthority, ERC20Mintable {
     constructor(
         uint256 _initialRate,
         address _admin,
-        bool _isCompetitionMode
+        bool _isCompetitionMode,
+        uint256 _maxMintAmount
     )
         ERC20Mintable(
             "Liquid staked Ether 2.0",
             "stETH",
             18,
             _admin,
-            _isCompetitionMode
+            _isCompetitionMode,
+            _maxMintAmount
         )
     {
         _rate = _initialRate;

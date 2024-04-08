@@ -25,7 +25,16 @@ contract UpdateLiquidityTest is HyperdriveTest {
             POSITION_DURATION
         );
         config.baseToken = IERC20(
-            address(new ERC20Mintable("Base", "BASE", 18, address(0), false))
+            address(
+                new ERC20Mintable(
+                    "Base",
+                    "BASE",
+                    18,
+                    address(0),
+                    false,
+                    type(uint256).max
+                )
+            )
         );
         config.minimumShareReserves = 1e15;
         mockHyperdrive = new MockHyperdrive(config);

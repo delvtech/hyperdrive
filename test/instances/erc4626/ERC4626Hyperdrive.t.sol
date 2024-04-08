@@ -61,7 +61,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                     "yDai",
                     0,
                     address(0),
-                    false
+                    false,
+                    type(uint256).max
                 )
             )
         );

@@ -124,7 +124,8 @@ contract DeployerCoordinatorTest is HyperdriveTest {
             "BASE",
             18,
             address(0),
-            false
+            false,
+            type(uint256).max
         );
         vault = new MockERC4626(
             baseToken,
@@ -132,7 +133,8 @@ contract DeployerCoordinatorTest is HyperdriveTest {
             "VAULT",
             18,
             address(0),
-            false
+            false,
+            type(uint256).max
         );
 
         // Create a deployment config.

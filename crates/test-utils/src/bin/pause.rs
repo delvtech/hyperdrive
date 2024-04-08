@@ -10,7 +10,7 @@ use test_utils::{chain::Chain, infra::query_addresses};
 async fn main() -> Result<()> {
     // Connect to the chain and set up an agent with the provided envvars.
     dotenv().expect("Failed to load .env file");
-    let chain = Chain::connect(Some(env::var("HYPERDRIVE_ETHEREUM_URL")?)).await?;
+    let chain = Chain::connect(Some(env::var("HYPERDRIVE_ETHEREUM_URL")?), None).await?;
     let client = chain
         .client(env::var("HYPERDRIVE_PRIVATE_KEY")?.parse::<LocalWallet>()?)
         .await?;
