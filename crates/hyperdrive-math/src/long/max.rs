@@ -462,8 +462,7 @@ mod tests {
     use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::MaxTradeParams;
     use rand::{thread_rng, Rng};
     use test_utils::{
-        agent::Agent,
-        chain::{Chain, TestChain, TestChainWithMocks},
+        chain::TestChain,
         constants::{FAST_FUZZ_RUNS, FUZZ_RUNS},
     };
     use tracing_test::traced_test;
@@ -475,15 +474,15 @@ mod tests {
     /// the Solidity analogue `calculateAbsoluteMaxLong`.
     #[tokio::test]
     async fn fuzz_absolute_max_long() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_hyperdrive_math();
+        let chain = TestChain::new().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let actual = panic::catch_unwind(|| state.absolute_max_long());
-            match mock
+            match chain
+                .mock_hyperdrive_math()
                 .calculate_absolute_max_long(
                     MaxTradeParams {
                         share_reserves: state.info.share_reserves,
@@ -529,8 +528,7 @@ mod tests {
     /// functions are equivalent.
     #[tokio::test]
     async fn fuzz_calculate_max_long() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_hyperdrive_math();
+        let chain = TestChain::new().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -548,7 +546,8 @@ mod tests {
             let actual = panic::catch_unwind(|| {
                 state.calculate_max_long(U256::MAX, checkpoint_exposure, None)
             });
-            match mock
+            match chain
+                .mock_hyperdrive_math()
                 .calculate_max_long(
                     MaxTradeParams {
                         share_reserves: state.info.share_reserves,
@@ -588,11 +587,9 @@ mod tests {
         // the pool. Bob is funded with a small amount of capital so that we
         // can test `calculate_max_long` when budget is the primary constraint.
         let mut rng = thread_rng();
-        let chain = TestChain::new(2).await?;
-        let (alice, bob) = (chain.accounts()[0].clone(), chain.accounts()[1].clone());
-        let mut alice =
-            Agent::new(chain.client(alice).await?, chain.addresses().clone(), None).await?;
-        let mut bob = Agent::new(chain.client(bob).await?, chain.addresses(), None).await?;
+        let chain = TestChain::new().await?;
+        let mut alice = chain.alice().await?;
+        let mut bob = chain.bob().await?;
         let config = bob.get_config().clone();
 
         for _ in 0..*FUZZ_RUNS {

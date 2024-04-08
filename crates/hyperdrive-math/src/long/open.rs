@@ -84,11 +84,7 @@ impl State {
 mod tests {
     use fixed_point_macros::fixed;
     use rand::{thread_rng, Rng};
-    use test_utils::{
-        agent::Agent,
-        chain::{Chain, TestChain},
-        constants::FUZZ_RUNS,
-    };
+    use test_utils::{chain::TestChain, constants::FUZZ_RUNS};
 
     use super::*;
 
@@ -100,11 +96,9 @@ mod tests {
         // can test opening a long and verify that the ending spot price is what
         // we expect.
         let mut rng = thread_rng();
-        let chain = TestChain::new(2).await?;
-        let (alice, bob) = (chain.accounts()[0].clone(), chain.accounts()[1].clone());
-        let mut alice =
-            Agent::new(chain.client(alice).await?, chain.addresses().clone(), None).await?;
-        let mut bob = Agent::new(chain.client(bob).await?, chain.addresses(), None).await?;
+        let chain = TestChain::new().await?;
+        let mut alice = chain.alice().await?;
+        let mut bob = chain.bob().await?;
 
         for _ in 0..*FUZZ_RUNS {
             // Snapshot the chain.
@@ -164,11 +158,9 @@ mod tests {
         // can test opening a long and verify that the ending spot rate is what
         // we expect.
         let mut rng = thread_rng();
-        let chain = TestChain::new(2).await?;
-        let (alice, bob) = (chain.accounts()[0].clone(), chain.accounts()[1].clone());
-        let mut alice =
-            Agent::new(chain.client(alice).await?, chain.addresses().clone(), None).await?;
-        let mut bob = Agent::new(chain.client(bob).await?, chain.addresses(), None).await?;
+        let chain = TestChain::new().await?;
+        let mut alice = chain.alice().await?;
+        let mut bob = chain.bob().await?;
 
         for _ in 0..*FUZZ_RUNS {
             // Snapshot the chain.
@@ -216,6 +208,7 @@ mod tests {
             alice.reset(Default::default());
             bob.reset(Default::default());
         }
+
         Ok(())
     }
 

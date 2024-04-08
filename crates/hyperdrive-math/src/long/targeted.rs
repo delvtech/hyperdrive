@@ -383,11 +383,7 @@ mod tests {
     use ethers::types::U256;
     use fixed_point_macros::uint256;
     use rand::{thread_rng, Rng};
-    use test_utils::{
-        agent::Agent,
-        chain::{Chain, TestChain},
-        constants::FUZZ_RUNS,
-    };
+    use test_utils::{chain::TestChain, constants::FUZZ_RUNS};
     use tracing_test::traced_test;
 
     use super::*;
@@ -406,16 +402,10 @@ mod tests {
         let allowable_rate_error = fixed!(1e11);
         let num_newton_iters = 7;
 
-        // Initialize a test chain. We don't need mocks because we want state updates.
-        let chain = TestChain::new(2).await?;
-
-        // Grab accounts for Alice and Bob.
-        let (alice, bob) = (chain.accounts()[0].clone(), chain.accounts()[1].clone());
-
-        // Initialize Alice and Bob as Agents.
-        let mut alice =
-            Agent::new(chain.client(alice).await?, chain.addresses().clone(), None).await?;
-        let mut bob = Agent::new(chain.client(bob).await?, chain.addresses(), None).await?;
+        // Initialize a test chain.
+        let chain = TestChain::new().await?;
+        let mut alice = chain.alice().await?;
+        let mut bob = chain.bob().await?;
         let config = bob.get_config().clone();
 
         // Fuzz test

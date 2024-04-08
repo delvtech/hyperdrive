@@ -125,16 +125,15 @@ mod tests {
 
     use eyre::Result;
     use rand::{thread_rng, Rng};
-    use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};
+    use test_utils::{chain::TestChain, constants::FAST_FUZZ_RUNS};
 
     use super::*;
     use crate::State;
 
     #[tokio::test]
     async fn fuzz_calculate_time_stretch() -> Result<()> {
-        // Spin up a fake chain & deploy mock hyperdrive math.
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_hyperdrive_math();
+        let chain = TestChain::new().await?;
+
         // Fuzz the rust and solidity implementations against each other.
         let seconds_in_ten_years = U256::from(10 * 60 * 60 * 24 * 365);
         let seconds_in_a_day = U256::from(60 * 60 * 24);
@@ -146,7 +145,8 @@ mod tests {
             );
             let apr = rng.gen_range(fixed!(0.001e18)..=fixed!(10.0e18));
             let actual_t = calculate_time_stretch(apr, position_duration);
-            match mock
+            match chain
+                .mock_hyperdrive_math()
                 .calculate_time_stretch(apr.into(), position_duration.into())
                 .call()
                 .await
@@ -163,9 +163,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_calculate_initial_bond_reserves() -> Result<()> {
-        // Spin up a fake chain & deploy mock hyperdrive math.
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_hyperdrive_math();
+        let chain = TestChain::new().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -184,7 +182,8 @@ mod tests {
                 state.config.position_duration.into(),
                 state.config.time_stretch.into(),
             );
-            match mock
+            match chain
+                .mock_hyperdrive_math()
                 .calculate_initial_bond_reserves(
                     effective_share_reserves.into(),
                     state.config.initial_vault_share_price,

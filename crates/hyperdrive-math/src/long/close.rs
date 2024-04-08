@@ -59,14 +59,13 @@ mod tests {
 
     use eyre::Result;
     use rand::{thread_rng, Rng};
-    use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};
+    use test_utils::{chain::TestChain, constants::FAST_FUZZ_RUNS};
 
     use super::*;
 
     #[tokio::test]
     async fn fuzz_calculate_close_long_flat_plus_curve() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_hyperdrive_math();
+        let chain = TestChain::new().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -84,7 +83,8 @@ mod tests {
                     current_time.into(),
                 )
             });
-            match mock
+            match chain
+                .mock_hyperdrive_math()
                 .calculate_close_long(
                     state.effective_share_reserves().into(),
                     state.bond_reserves().into(),

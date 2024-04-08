@@ -8,16 +8,7 @@ name = "pause"
 path = "src/bin/pause.rs"
 
 [[example]]
-name = "dev_chain"
-
-[[example]]
-name = "max_short"
-
-[[example]]
-name = "test_chain_new"
-
-[[example]]
-name = "test_chain_load_crash"
+name = "test_chain"
 
 [dependencies]
 

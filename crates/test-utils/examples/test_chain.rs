@@ -1,22 +1,15 @@
 use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
-use test_utils::{
-    agent::Agent,
-    chain::{Chain, TestChain},
-};
+use test_utils::chain::TestChain;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     // Spin up a new test chain.
-    let chain = TestChain::new(
-        1, // the number of accounts to fund
-    )
-    .await?;
+    let chain = TestChain::new().await?;
 
-    // Create an agent to interact with the chain.
-    let alice = chain.accounts()[0].clone();
-    let mut alice = Agent::new(chain.client(alice).await?, chain.addresses(), None).await?;
+    // Get an agent instance for Alice.
+    let mut alice = chain.alice().await?;
 
     // Initialize the pool. In order for Alice to initialize the pool, she'll
     // need to mint base tokens and approve the Hyperdrive pool. We can

@@ -4,7 +4,8 @@ use ethers::{
     abi::Detokenize,
     contract::ContractCall,
     prelude::EthLogDecode,
-    providers::{Http, Middleware, Provider, RetryClient},
+    providers::Middleware,
+    signers::LocalWallet,
     types::{Address, BlockId, I256, U256},
 };
 use eyre::Result;
@@ -45,12 +46,13 @@ pub struct Wallet {
     shorts: BTreeMap<FixedPoint, FixedPoint>,
 }
 
+// TODO: This struct needs to be cleaned up.
+//
 /// An agent that interacts with the Hyperdrive protocol and records its
 /// balances of longs, shorts, base, and lp shares (both active and withdrawal
 /// shares).
 pub struct Agent<M, R: Rng + SeedableRng> {
-    address: Address,
-    provider: Provider<Arc<RetryClient<Http>>>,
+    client: Arc<ChainClient<LocalWallet>>,
     hyperdrive: IHyperdrive<M>,
     vault: MockERC4626<M>,
     base: ERC20Mintable<M>,
@@ -65,7 +67,7 @@ pub struct Agent<M, R: Rng + SeedableRng> {
 impl<M, R: Rng + SeedableRng> fmt::Debug for Agent<M, R> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Agent")
-            .field("address", &self.address)
+            .field("address", &self.client.address())
             .field("seed", &self.seed)
             .field("base", &self.wallet.base)
             .field("lp_shares", &self.wallet.lp_shares)
@@ -155,15 +157,16 @@ impl<M, D: Detokenize> ContractCall_<M, D> {
 // TODO: This should crash gracefully and would ideally dump the replication
 // information to a file that can be read by the framework to easily debug what
 // happened.
-impl Agent<ChainClient, ChaCha8Rng> {
+impl Agent<ChainClient<LocalWallet>, ChaCha8Rng> {
     /// Setup ///
 
     pub async fn new(
-        client: Arc<ChainClient>,
+        client: Arc<ChainClient<LocalWallet>>,
         addresses: Addresses,
         maybe_seed: Option<u64>,
     ) -> Result<Self> {
         let seed = maybe_seed.unwrap_or(17);
+        let base = ERC20Mintable::new(addresses.base_token, client.clone());
         let vault = IHyperdrive::new(addresses.erc4626_hyperdrive, client.clone())
             .vault_shares_token()
             .call()
@@ -173,11 +176,10 @@ impl Agent<ChainClient, ChaCha8Rng> {
         // different pools simultaneously.
         let hyperdrive = IHyperdrive::new(addresses.erc4626_hyperdrive, client.clone());
         Ok(Self {
-            address: client.address(),
-            provider: client.provider().clone(),
+            client,
             hyperdrive: hyperdrive.clone(),
             vault,
-            base: ERC20Mintable::new(addresses.base_token, client),
+            base,
             config: hyperdrive.get_pool_config().call().await?,
             wallet: Wallet::default(),
             rng: ChaCha8Rng::seed_from_u64(seed),
@@ -217,7 +219,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
                 min_output.into(),
                 fixed!(0).into(), // TODO: This is fine for testing, but not prod.
                 Options {
-                    destination: self.address,
+                    destination: self.client.address(),
                     as_base: true,
                     extra_data: [].into(),
                 },
@@ -284,7 +286,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
                 bond_amount.into(),
                 uint256!(0),
                 Options {
-                    destination: self.address,
+                    destination: self.client.address(),
                     as_base: true,
                     extra_data: [].into(),
                 },
@@ -334,7 +336,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
                 max_deposit.into(),
                 fixed!(0).into(), // TODO: This is fine for testing, but not prod.
                 Options {
-                    destination: self.address,
+                    destination: self.client.address(),
                     as_base: true,
                     extra_data: [].into(),
                 },
@@ -400,7 +402,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
                 bond_amount.into(),
                 uint256!(0),
                 Options {
-                    destination: self.address,
+                    destination: self.client.address(),
                     as_base: true,
                     extra_data: [].into(),
                 },
@@ -455,7 +457,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
                 contribution.into(),
                 rate.into(),
                 Options {
-                    destination: self.address,
+                    destination: self.client.address(),
                     as_base: true,
                     extra_data: [].into(),
                 },
@@ -509,7 +511,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
                 uint256!(0),
                 U256::MAX,
                 Options {
-                    destination: self.address,
+                    destination: self.client.address(),
                     as_base: true,
                     extra_data: [].into(),
                 },
@@ -564,7 +566,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
                 shares.into(),
                 uint256!(0),
                 Options {
-                    destination: self.address,
+                    destination: self.client.address(),
                     as_base: true,
                     extra_data: [].into(),
                 },
@@ -617,7 +619,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
                 shares.into(),
                 uint256!(0),
                 Options {
-                    destination: self.address,
+                    destination: self.client.address(),
                     as_base: true,
                     extra_data: [].into(),
                 },
@@ -771,7 +773,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         // Mint some base tokens.
         self.base
             .mint(amount.into())
-            .from(self.address)
+            .from(self.client.address())
             .send()
             .await?;
 
@@ -783,7 +785,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         // Approve hyperdrive to spend the base tokens.
         self.base
             .approve(self.hyperdrive.address(), amount.into())
-            .from(self.address)
+            .from(self.client.address())
             .send()
             .await?;
 
@@ -802,10 +804,12 @@ impl Agent<ChainClient, ChaCha8Rng> {
         // Advance the chain's time and mine a block. Mining a block is
         // important because client's check the current block time by looking
         // at the latest block's timestamp.
-        self.provider
+        self.client
+            .provider()
             .request::<[u128; 1], i128>("anvil_increaseTime", [duration.into()])
             .await?;
-        self.provider
+        self.client
+            .provider()
             .request::<[u128; 1], ()>("anvil_mine", [1])
             .await?;
 
@@ -830,10 +834,12 @@ impl Agent<ChainClient, ChaCha8Rng> {
         while duration > checkpoint_duration {
             // Advance the chain's time by the checkpoint duration and mint a
             // new checkpoint.
-            self.provider
+            self.client
+                .provider()
                 .request::<[U256; 1], u64>("evm_increaseTime", [checkpoint_duration.into()])
                 .await?;
-            self.provider
+            self.client
+                .provider()
                 .request::<_, U256>("evm_mine", None::<()>)
                 .await?;
             self.checkpoint(
@@ -847,10 +853,12 @@ impl Agent<ChainClient, ChaCha8Rng> {
 
         // Advance the chain's time by the remaining duration and mint a new
         // checkpoint.
-        self.provider
+        self.client
+            .provider()
             .request::<[U256; 1], u64>("evm_increaseTime", [duration.into()])
             .await?;
-        self.provider
+        self.client
+            .provider()
             .request::<_, U256>("evm_mine", None::<()>)
             .await?;
         self.checkpoint(
@@ -868,13 +876,14 @@ impl Agent<ChainClient, ChaCha8Rng> {
     /// This is useful for testing because it makes it easy to use the agent
     /// across multiple snapshots.
     pub fn reset(&mut self, wallet: Wallet) {
+        // Reset the wallet.
         self.wallet = wallet;
     }
 
     /// Getters ///
 
     pub fn address(&self) -> Address {
-        self.address
+        self.client.address()
     }
 
     // TODO: It may be better to group these into a single getter that returns
@@ -902,8 +911,8 @@ impl Agent<ChainClient, ChaCha8Rng> {
     /// Gets the current timestamp.
     pub async fn now(&self) -> Result<U256> {
         Ok(self
-            .provider
-            .get_block(self.provider.get_block_number().await?)
+            .client
+            .get_block(self.client.get_block_number().await?)
             .await?
             .unwrap()
             .timestamp)
@@ -1057,7 +1066,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         maybe_tx_options
             .map(|mut tx_options| {
                 if tx_options.from.is_none() {
-                    tx_options.from = Some(self.address);
+                    tx_options.from = Some(self.client.address());
                 }
                 tx_options
             })

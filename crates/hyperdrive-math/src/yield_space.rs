@@ -344,16 +344,16 @@ pub trait YieldSpace {
 mod tests {
     use std::panic;
 
+    use eyre::Result;
     use rand::{thread_rng, Rng};
-    use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};
+    use test_utils::{chain::TestChain, constants::FAST_FUZZ_RUNS};
 
     use super::*;
     use crate::State;
 
     #[tokio::test]
     async fn fuzz_calculate_bonds_out_given_shares_in() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_yield_space_math();
+        let chain = TestChain::new().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -362,7 +362,8 @@ mod tests {
             let in_ = rng.gen::<FixedPoint>();
             let actual =
                 panic::catch_unwind(|| state.calculate_bonds_out_given_shares_in_down(in_));
-            match mock
+            match chain
+                .mock_yield_space_math()
                 .calculate_bonds_out_given_shares_in_down(
                     state.ze().into(),
                     state.y().into(),
@@ -384,8 +385,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_calculate_shares_in_given_bonds_out_up() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_yield_space_math();
+        let chain = TestChain::new().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -393,7 +393,8 @@ mod tests {
             let state = rng.gen::<State>();
             let in_ = rng.gen::<FixedPoint>();
             let actual = state.calculate_shares_in_given_bonds_out_up_safe(in_);
-            match mock
+            match chain
+                .mock_yield_space_math()
                 .calculate_shares_in_given_bonds_out_up(
                     state.ze().into(),
                     state.y().into(),
@@ -417,8 +418,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_calculate_shares_in_given_bonds_out_down() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_yield_space_math();
+        let chain = TestChain::new().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -427,7 +427,8 @@ mod tests {
             let out = rng.gen::<FixedPoint>();
             let actual =
                 panic::catch_unwind(|| state.calculate_shares_in_given_bonds_out_down(out));
-            match mock
+            match chain
+                .mock_yield_space_math()
                 .calculate_shares_in_given_bonds_out_down(
                     state.ze().into(),
                     state.y().into(),
@@ -451,8 +452,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_calculate_shares_out_given_bonds_in_down() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_yield_space_math();
+        let chain = TestChain::new().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -461,7 +461,8 @@ mod tests {
             let in_ = rng.gen::<FixedPoint>();
             let actual =
                 panic::catch_unwind(|| state.calculate_shares_out_given_bonds_in_down(in_));
-            match mock
+            match chain
+                .mock_yield_space_math()
                 .calculate_shares_out_given_bonds_in_down(
                     state.ze().into(),
                     state.y().into(),
@@ -485,8 +486,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_calculate_shares_out_given_bonds_in_down_safe() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_yield_space_math();
+        let chain = TestChain::new().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -495,7 +495,8 @@ mod tests {
             let in_ = rng.gen::<FixedPoint>();
             let actual =
                 panic::catch_unwind(|| state.calculate_shares_out_given_bonds_in_down_safe(in_));
-            match mock
+            match chain
+                .mock_yield_space_math()
                 .calculate_shares_out_given_bonds_in_down_safe(
                     state.ze().into(),
                     state.y().into(),
@@ -521,15 +522,15 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_calculate_max_buy_shares_in_safe() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_yield_space_math();
+        let chain = TestChain::new().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let actual = panic::catch_unwind(|| state.calculate_max_buy_shares_in_safe());
-            match mock
+            match chain
+                .mock_yield_space_math()
                 .calculate_max_buy_shares_in_safe(
                     state.ze().into(),
                     state.y().into(),
@@ -554,15 +555,15 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_calculate_max_buy_bounds_out_safe() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_yield_space_math();
+        let chain = TestChain::new().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let actual = panic::catch_unwind(|| state.calculate_max_buy_bonds_out_safe());
-            match mock
+            match chain
+                .mock_yield_space_math()
                 .calculate_max_buy_bonds_out_safe(
                     state.ze().into(),
                     state.y().into(),
@@ -587,8 +588,7 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_calculate_max_sell_bonds_in_safe() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_yield_space_math();
+        let chain = TestChain::new().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -596,7 +596,8 @@ mod tests {
             let state = rng.gen::<State>();
             let z_min = rng.gen::<FixedPoint>();
             let actual = panic::catch_unwind(|| state.calculate_max_sell_bonds_in_safe(z_min));
-            match mock
+            match chain
+                .mock_yield_space_math()
                 .calculate_max_sell_bonds_in_safe(
                     state.z().into(),
                     state.zeta().into(),
@@ -623,15 +624,15 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_k_down() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_yield_space_math();
+        let chain = TestChain::new().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let actual = panic::catch_unwind(|| state.k_down());
-            match mock
+            match chain
+                .mock_yield_space_math()
                 .k_down(
                     state.ze().into(),
                     state.y().into(),
@@ -652,15 +653,15 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_k_up() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_yield_space_math();
+        let chain = TestChain::new().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let actual = panic::catch_unwind(|| state.k_up());
-            match mock
+            match chain
+                .mock_yield_space_math()
                 .k_up(
                     state.ze().into(),
                     state.y().into(),

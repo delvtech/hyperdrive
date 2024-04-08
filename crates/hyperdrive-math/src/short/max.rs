@@ -539,23 +539,22 @@ mod tests {
     };
     use rand::{thread_rng, Rng};
     use test_utils::{
-        agent::Agent,
-        chain::{Chain, TestChain, TestChainWithMocks},
+        chain::TestChain,
         constants::{FAST_FUZZ_RUNS, FUZZ_RUNS},
     };
     use tracing_test::traced_test;
 
     use super::*;
 
-    /// This test differentially fuzzes the `calculate_max_short` function against the
-    /// Solidity analogue `calculateMaxShort`. `calculateMaxShort` doesn't take
+    /// This test differentially fuzzes the `calculate_max_short` function against
+    /// the Solidity analogue `calculateMaxShort`. `calculateMaxShort` doesn't take
     /// a trader's budget into account, so it only provides a subset of
     /// `calculate_max_short`'s functionality. With this in mind, we provide
     /// `calculate_max_short` with a budget of `U256::MAX` to ensure that the two
     /// functions are equivalent.
     #[tokio::test]
     async fn fuzz_calculate_max_short_no_budget() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
+        let chain = TestChain::new().await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -620,11 +619,9 @@ mod tests {
         // the pool. Bob is funded with a small amount of capital so that we
         // can test `calculate_max_short` when budget is the primary constraint.
         let mut rng = thread_rng();
-        let chain = TestChain::new(2).await?;
-        let (alice, bob) = (chain.accounts()[0].clone(), chain.accounts()[1].clone());
-        let mut alice =
-            Agent::new(chain.client(alice).await?, chain.addresses().clone(), None).await?;
-        let mut bob = Agent::new(chain.client(bob).await?, chain.addresses(), None).await?;
+        let chain = TestChain::new().await?;
+        let mut alice = chain.alice().await?;
+        let mut bob = chain.bob().await?;
         let config = alice.get_config().clone();
 
         for _ in 0..*FUZZ_RUNS {
