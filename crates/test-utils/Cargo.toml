@@ -7,6 +7,9 @@ edition = "2021"
 name = "pause"
 path = "src/bin/pause.rs"
 
+[[example]]
+name = "test_chain"
+
 [dependencies]
 
 # External dependencies.

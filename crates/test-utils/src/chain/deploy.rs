@@ -45,6 +45,7 @@ use hyperdrive_wrappers::wrappers::{
 use serde::{Deserialize, Deserializer, Serialize};
 
 use super::Chain;
+use crate::constants::ETH;
 
 fn deserialize_u256<'de, D>(deserializer: D) -> Result<U256, D::Error>
 where
@@ -667,7 +668,7 @@ impl Chain {
                 linker_factory: factory.linker_factory().call().await?,
                 linker_code_hash: factory.linker_code_hash().call().await?,
                 time_stretch: uint256!(0),
-                base_token: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE".parse()?,
+                base_token: *ETH,
                 vault_shares_token: lido.address(),
                 minimum_share_reserves: config.steth_hyperdrive_minimum_share_reserves,
                 minimum_transaction_amount: config.steth_hyperdrive_minimum_transaction_amount,
@@ -880,10 +881,7 @@ mod tests {
         // Verify that the steth pool config is correct.
         let hyperdrive = IHyperdrive::new(addresses.steth_hyperdrive, client.clone());
         let config = hyperdrive.get_pool_config().call().await?;
-        assert_eq!(
-            config.base_token,
-            "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE".parse::<Address>()?
-        );
+        assert_eq!(config.base_token, *ETH);
         assert_eq!(
             config.minimum_share_reserves,
             test_chain_config.steth_hyperdrive_minimum_share_reserves
@@ -996,10 +994,7 @@ mod tests {
         // Verify that the steth pool config is correct.
         let hyperdrive = IHyperdrive::new(addresses.steth_hyperdrive, client.clone());
         let config = hyperdrive.get_pool_config().call().await?;
-        assert_eq!(
-            config.base_token,
-            "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE".parse::<Address>()?
-        );
+        assert_eq!(config.base_token, *ETH);
         assert_eq!(
             config.minimum_share_reserves,
             test_chain_config.steth_hyperdrive_minimum_share_reserves
