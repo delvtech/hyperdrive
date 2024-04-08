@@ -501,11 +501,12 @@ mod tests {
                         let max_long = bob.calculate_max_long(None).await?;
                         let rate_after_max_long =
                             state.calculate_spot_rate_after_long(max_long, None)?;
-                        // Fail if there was a long to hit the rate (which means the max is >= the target)
-                        // Otherwise the target would have resulted in insolvency and wasn't worth it.
+                        // If the rate after the max long is at or below the target, then we could have hit it.
                         if rate_after_max_long <= target_rate {
+                            // Fail if there was a long to hit the rate (which means the max is <= the target)
                             return Err(eyre!("Calculate max long failed; a long that hits the target rate exists but was not found."));
                         }
+                        // Otherwise the target would have resulted in insolvency and wasn't possible.
                     }
                     // If the error is not the one we're looking for, return it, causing the test to fail.
                     else {
