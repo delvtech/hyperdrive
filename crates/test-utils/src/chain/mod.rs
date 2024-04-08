@@ -62,9 +62,15 @@ pub struct Chain {
 impl Chain {
     /// Constructs a new `Chain` from an Ethereum RPC URL. If the RPC URL is
     /// excluded, a local anvil node is spun up.
-    pub async fn connect(maybe_rpc_url: Option<String>) -> Result<Self> {
+    pub async fn connect(
+        maybe_rpc_url: Option<String>,
+        maybe_interval: Option<u64>,
+    ) -> Result<Self> {
         if let Some(rpc_url) = maybe_rpc_url {
-            let provider = Provider::<Http>::try_from(rpc_url)?.interval(Duration::from_millis(1));
+            let mut provider = Provider::<Http>::try_from(rpc_url)?;
+            if let Some(interval) = maybe_interval {
+                provider = provider.interval(Duration::from_millis(interval));
+            }
             let client_version = provider.client_version().await?;
             Ok(Self {
                 provider,
@@ -80,8 +86,10 @@ impl Chain {
                 // old crash reports.
                 .arg("946684800")
                 .spawn();
-            let provider =
-                Provider::<Http>::try_from(anvil.endpoint())?.interval(Duration::from_millis(1));
+            let mut provider = Provider::<Http>::try_from(anvil.endpoint())?;
+            if let Some(interval) = maybe_interval {
+                provider = provider.interval(Duration::from_millis(interval));
+            }
             let client_version = provider.client_version().await?;
             Ok(Self {
                 provider,

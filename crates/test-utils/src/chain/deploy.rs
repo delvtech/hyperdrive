@@ -833,7 +833,7 @@ mod tests {
     #[tokio::test]
     async fn test_deploy_devnet() -> Result<()> {
         // Connect to a local anvil chain.
-        let chain = Chain::connect(None).await?;
+        let chain = Chain::connect(None, Some(1)).await?;
         chain.deal(ALICE.address(), uint256!(100_000e18)).await?;
         let client = chain.client(ALICE.clone()).await?;
 
@@ -947,7 +947,7 @@ mod tests {
         test_chain_config.steth_hyperdrive_flat_fee = uint256!(0.0005e18);
 
         // Connect to a local anvil chain.
-        let chain = Chain::connect(None).await?;
+        let chain = Chain::connect(None, Some(1)).await?;
         chain.deal(ALICE.address(), uint256!(100_000e18)).await?;
         let client = chain.client(ALICE.clone()).await?;
 

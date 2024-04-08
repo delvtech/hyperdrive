@@ -59,7 +59,7 @@ async fn main() -> Result<()> {
     let deployer = env::var("DEPLOYER_PRIVATE_KEY")?.parse::<LocalWallet>()?;
 
     // Connect to the chain and get a client for the deployer.
-    let chain = Chain::connect(Some(ethereum_rpc_url)).await?;
+    let chain = Chain::connect(Some(ethereum_rpc_url), None).await?;
     let client = chain.client(deployer).await?;
 
     // Deploy the contracts.

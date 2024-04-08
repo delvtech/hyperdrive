@@ -41,7 +41,7 @@ impl TestChain {
     /// and Celine.
     pub async fn new() -> Result<Self> {
         // Spin up the chain.
-        let chain = Chain::connect(std::env::var("HYPERDRIVE_ETHEREUM_URL").ok())
+        let chain = Chain::connect(std::env::var("HYPERDRIVE_ETHEREUM_URL").ok(), None)
             .await
             .unwrap();
 

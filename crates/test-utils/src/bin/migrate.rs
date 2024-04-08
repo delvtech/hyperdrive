@@ -15,7 +15,7 @@ async fn main() -> Result<()> {
     let config = envy::from_env::<TestChainConfig>()?;
 
     // Connect to the chain.
-    let chain = Chain::connect(Some(env::var("HYPERDRIVE_ETHEREUM_URL")?)).await?;
+    let chain = Chain::connect(Some(env::var("HYPERDRIVE_ETHEREUM_URL")?), None).await?;
 
     // Deploy the factory.
     let addresses = chain.full_deploy(ALICE.clone(), config).await?;
