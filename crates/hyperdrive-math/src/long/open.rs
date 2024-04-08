@@ -159,12 +159,12 @@ mod tests {
         // we expect.
         let mut rng = thread_rng();
         let chain = TestChain::new().await?;
+        let mut alice = chain.alice().await?;
+        let mut bob = chain.bob().await?;
 
         for _ in 0..*FUZZ_RUNS {
             // Snapshot the chain.
             let id = chain.snapshot().await?;
-            let mut alice = chain.alice().await?;
-            let mut bob = chain.bob().await?;
 
             // Fund Alice and Bob.
             let fixed_rate = rng.gen_range(fixed!(0.01e18)..=fixed!(0.1e18));
@@ -205,6 +205,8 @@ mod tests {
 
             // Revert to the snapshot and reset the agent's wallets.
             chain.revert(id).await?;
+            alice.reset(Default::default());
+            bob.reset(Default::default());
         }
 
         Ok(())
