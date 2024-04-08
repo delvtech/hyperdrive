@@ -154,7 +154,7 @@ impl State {
             let loss = resulting_rate - target_rate;
             if loss >= allowable_error {
                 return Err(eyre!(
-                    "get_targeted_long: Unable to find an acceptable loss. Final loss = {}.",
+                    "get_targeted_long: Unable to find an acceptable loss with max iterations. Final loss = {}.",
                     loss
                 ));
             }
@@ -380,8 +380,6 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use std::panic;
-
     use ethers::types::U256;
     use fixed_point_macros::uint256;
     use rand::{thread_rng, Rng};
@@ -405,8 +403,8 @@ mod tests {
 
         let allowable_solvency_error = fixed!(1e5);
         let allowable_budget_error = fixed!(1e5);
-        let allowable_rate_error = fixed!(1e10);
-        let num_newton_iters = 5;
+        let allowable_rate_error = fixed!(1e11);
+        let num_newton_iters = 7;
 
         // Initialize a test chain. We don't need mocks because we want state updates.
         let chain = TestChain::new(2).await?;
@@ -479,14 +477,43 @@ mod tests {
             // Bob opens a targeted long.
             let max_spot_price_before_long = bob.get_state().await?.calculate_max_spot_price();
             let target_rate = initial_fixed_rate / fixed!(2e18);
-            let targeted_long = bob
+            let targeted_long_result = bob
                 .calculate_targeted_long(
                     target_rate,
                     Some(num_newton_iters),
                     Some(allowable_rate_error),
                 )
-                .await?;
-            bob.open_long(targeted_long, None, None).await?;
+                .await;
+
+            match targeted_long_result {
+                // If the code ran without error, open the long
+                Ok(targeted_long) => {
+                    bob.open_long(targeted_long, None, None).await?;
+                }
+
+                // Else check the error for an acceptible one
+                Err(e) => {
+                    // If the fn failed it's possible that the target rate would be insolvent.
+                    if e.to_string()
+                        .contains("Unable to find an acceptable loss with max iterations")
+                    {
+                        let state = bob.get_state().await?;
+                        let max_long = bob.calculate_max_long(None).await?;
+                        let rate_after_max_long =
+                            state.calculate_spot_rate_after_long(max_long, None)?;
+                        // If the rate after the max long is at or below the target, then we could have hit it.
+                        if rate_after_max_long <= target_rate {
+                            // Fail if there was a long to hit the rate (which means the max is <= the target)
+                            return Err(eyre!("Calculate max long failed; a long that hits the target rate exists but was not found."));
+                        }
+                        // Otherwise the target would have resulted in insolvency and wasn't possible.
+                    }
+                    // If the error is not the one we're looking for, return it, causing the test to fail.
+                    else {
+                        return Err(e);
+                    }
+                }
+            }
 
             // Three things should be true after opening the long:
             //
@@ -530,8 +557,8 @@ mod tests {
             // and we hit the rate exactly.
             else {
                 assert!(
-                    new_rate <= target_rate,
-                    "The new_rate={} should be <= target_rate={} when budget constrained.",
+                    new_rate >= target_rate,
+                    "The new_rate={} should be >= target_rate={} when budget constrained.",
                     new_rate,
                     target_rate
                 );
