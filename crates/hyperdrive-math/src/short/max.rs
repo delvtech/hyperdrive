@@ -80,12 +80,13 @@ impl State {
         // short amount.
         let mut max_bond_amount =
             self.absolute_max_short(spot_price, checkpoint_exposure, maybe_max_iterations);
-        let deposit =
+        let absolute_max_bond_amount = max_bond_amount;
+        let absolute_max_deposit =
             match self.calculate_open_short(max_bond_amount, spot_price, open_vault_share_price) {
                 Ok(d) => d,
                 Err(_) => return max_bond_amount,
             };
-        if deposit <= budget {
+        if absolute_max_deposit <= budget {
             return max_bond_amount;
         }
 
@@ -115,6 +116,14 @@ impl State {
             open_vault_share_price,
             maybe_conservative_price,
         );
+        let mut best_valid_max_bond_amount = max_bond_amount;
+
+        // To avoid the case where Newton's method overshoots and stays on
+        // the invalid side of the optimization equation (i.e., when deposit > budget),
+        // we artificially set the target budget to be less than the actual budget.
+        // We use the minimum transaction amount here to avoid the underflow
+        // where budget is less than this bias.
+        let target_budget = budget - self.minimum_transaction_amount();
         for _ in 0..maybe_max_iterations.unwrap_or(7) {
             let deposit = match self.calculate_open_short(
                 max_bond_amount,
@@ -122,26 +131,57 @@ impl State {
                 open_vault_share_price,
             ) {
                 Ok(d) => d,
-                Err(_) => return max_bond_amount,
+                Err(_) => {
+                    // The pool is insolvent for the guess at this point.
+                    // We use the absolute max bond amount and deposit
+                    // for the next guess iteration
+                    max_bond_amount = absolute_max_bond_amount;
+                    absolute_max_deposit
+                }
             };
-            max_bond_amount += (budget - deposit)
-                / self.short_deposit_derivative(
-                    max_bond_amount,
-                    spot_price,
-                    open_vault_share_price,
-                );
+
+            // We update the best valid max bond amount if the deposit amount
+            // is valid and the current guess is better than the current estimate.
+            if deposit < budget && best_valid_max_bond_amount < max_bond_amount {
+                best_valid_max_bond_amount = max_bond_amount;
+            }
+
+            // Iteratively update max_bond_amount via newton's method.
+            let derivative =
+                self.short_deposit_derivative(max_bond_amount, spot_price, open_vault_share_price);
+            if deposit < target_budget {
+                max_bond_amount += (target_budget - deposit) / derivative;
+            } else if deposit > target_budget {
+                max_bond_amount -= (deposit - target_budget) / derivative;
+            } else {
+                // If we find the exact solution, we set the result and stop
+                best_valid_max_bond_amount = max_bond_amount;
+                break;
+            }
+            // TODO this always iterates for max_iterations unless
+            // it makes the pool insolvent. Likely want to check an
+            // epsilon to early break
         }
 
         // Verify that the max short satisfies the budget.
         if budget
             < self
-                .calculate_open_short(max_bond_amount, spot_price, open_vault_share_price)
+                .calculate_open_short(
+                    best_valid_max_bond_amount,
+                    spot_price,
+                    open_vault_share_price,
+                )
                 .unwrap()
         {
             panic!("max short exceeded budget");
         }
 
-        max_bond_amount
+        // Ensure that the max bond amount is within the absolute max bond amount.
+        if best_valid_max_bond_amount > absolute_max_bond_amount {
+            panic!("max short bond amount exceeded absolute max bond amount");
+        }
+
+        best_valid_max_bond_amount
     }
 
     /// Calculates an initial guess for the max short calculation.
@@ -389,7 +429,7 @@ impl State {
             / (self.bond_reserves() + short_amount).pow(self.time_stretch()))
             * self
                 .theta(short_amount)
-                .pow(self.time_stretch() / (fixed!(1e18) + self.time_stretch()));
+                .pow(self.time_stretch() / (fixed!(1e18) - self.time_stretch()));
         (self.vault_share_price() / open_vault_share_price)
             + self.flat_fee()
             + self.curve_fee() * (fixed!(1e18) - spot_price)
@@ -606,6 +646,160 @@ mod tests {
                 }
                 Err(_) => assert!(actual.is_err()),
             }
+        }
+
+        Ok(())
+    }
+
+    /// This test empirically tests the derivative of `short_deposit_derivative`
+    /// by calling `calculate_open_short` at two points and comparing the empirical
+    /// result with the output of `short_deposit_derivative`.
+    #[traced_test]
+    #[tokio::test]
+    async fn test_short_deposit_derivative() -> Result<()> {
+        let mut rng = thread_rng();
+        // We use a relatively large epsilon here due to the underlying fixed point pow
+        // function not being monotonically increasing.
+        let empirical_derivative_epsilon = fixed!(1e12);
+        // TODO pretty big comparison epsilon here
+        let test_comparison_epsilon = fixed!(1e15);
+
+        for _ in 0..*FAST_FUZZ_RUNS {
+            let state = rng.gen::<State>();
+            let amount = rng.gen_range(fixed!(10e18)..=fixed!(10_000_000e18));
+
+            let p1_result = std::panic::catch_unwind(|| {
+                state.calculate_open_short(
+                    amount - empirical_derivative_epsilon,
+                    state.calculate_spot_price(),
+                    state.vault_share_price(),
+                )
+            });
+            let p1;
+            let p2;
+            match p1_result {
+                // If the amount results in the pool being insolvent, skip this iteration
+                Ok(p) => match p {
+                    Ok(p) => p1 = p,
+                    Err(_) => continue,
+                },
+                Err(_) => continue,
+            }
+
+            let p2_result = std::panic::catch_unwind(|| {
+                state.calculate_open_short(
+                    amount + empirical_derivative_epsilon,
+                    state.calculate_spot_price(),
+                    state.vault_share_price(),
+                )
+            });
+            match p2_result {
+                // If the amount results in the pool being insolvent, skip this iteration
+                Ok(p) => match p {
+                    Ok(p) => p2 = p,
+                    Err(_) => continue,
+                },
+                Err(_) => continue,
+            }
+            // Sanity check
+            assert!(p2 > p1);
+
+            let empirical_derivative = (p2 - p1) / (fixed!(2e18) * empirical_derivative_epsilon);
+            let short_deposit_derivative = state.short_deposit_derivative(
+                amount,
+                state.calculate_spot_price(),
+                state.vault_share_price(),
+            );
+
+            let derivative_diff;
+            if short_deposit_derivative >= empirical_derivative {
+                derivative_diff = short_deposit_derivative - empirical_derivative;
+            } else {
+                derivative_diff = empirical_derivative - short_deposit_derivative;
+            }
+            assert!(
+                derivative_diff < test_comparison_epsilon,
+                "expected (derivative_diff={}) < (test_comparison_epsilon={}), \
+                calculated_derivative={}, emperical_derivative={}",
+                derivative_diff,
+                test_comparison_epsilon,
+                short_deposit_derivative,
+                empirical_derivative
+            );
+        }
+
+        Ok(())
+    }
+
+    /// Tests that the absolute max short can be executed on chain.
+    #[traced_test]
+    #[tokio::test]
+    async fn test_calculate_absolute_max_short_execute() -> Result<()> {
+        // Spawn a test chain and create two agents -- Alice and Bob. Alice
+        // is funded with a large amount of capital so that she can initialize
+        // the pool. Bob is funded with plenty of capital to ensure we can execute
+        // the absolute maximum short.
+        let mut rng = thread_rng();
+        let chain = TestChain::new().await?;
+        let mut alice = chain.alice().await?;
+        let mut bob = chain.bob().await?;
+        let config = alice.get_config().clone();
+
+        for _ in 0..*FUZZ_RUNS {
+            // Snapshot the chain.
+            let id = chain.snapshot().await?;
+
+            // TODO: We should fuzz over a range of fixed rates.
+            //
+            // Fund Alice and Bob.
+            let fixed_rate = fixed!(0.05e18);
+            let contribution = rng.gen_range(fixed!(100_000e18)..=fixed!(100_000_000e18));
+            alice.fund(contribution).await?;
+
+            // Alice initializes the pool.
+            alice.initialize(fixed_rate, contribution, None).await?;
+
+            // Some of the checkpoint passes and variable interest accrues.
+            alice
+                .checkpoint(alice.latest_checkpoint().await?, uint256!(0), None)
+                .await?;
+            let rate = rng.gen_range(fixed!(0)..=fixed!(0.5e18));
+            alice
+                .advance_time(
+                    rate,
+                    FixedPoint::from(config.checkpoint_duration) * fixed!(0.5e18),
+                )
+                .await?;
+
+            // Get the current state of the pool.
+            let state = alice.get_state().await?;
+            let Checkpoint {
+                vault_share_price: open_vault_share_price,
+            } = alice
+                .get_checkpoint(state.to_checkpoint(alice.now().await?))
+                .await?;
+            let checkpoint_exposure = alice
+                .get_checkpoint_exposure(state.to_checkpoint(alice.now().await?))
+                .await?;
+
+            // Get the global max short & execute a trade for that amount.
+            let global_max_short = state.calculate_max_short(
+                U256::MAX,
+                open_vault_share_price,
+                checkpoint_exposure,
+                None,
+                None,
+            );
+            // It's known that global max short is in units of bonds,
+            // but we fund bob with this amount regardless, since the amount required
+            // for deposit << the global max short number of bonds.
+            bob.fund(global_max_short + fixed!(10e18)).await?;
+            bob.open_short(global_max_short, None, None).await?;
+
+            // Revert to the snapshot and reset the agent's wallets.
+            chain.revert(id).await?;
+            alice.reset(Default::default());
+            bob.reset(Default::default());
         }
 
         Ok(())

@@ -579,6 +579,75 @@ mod tests {
         Ok(())
     }
 
+    /// This test empirically tests the derivative of `long_amount_derivative`
+    /// by calling `calculate_open_long` at two points and comparing the empirical
+    /// result with the output of `long_amount_derivative`.
+    #[traced_test]
+    #[tokio::test]
+    async fn test_max_long_derivative() -> Result<()> {
+        let mut rng = thread_rng();
+        // We use a relatively large epsilon here due to the underlying fixed point pow
+        // function not being monotonically increasing.
+        let empirical_derivative_epsilon = fixed!(1e12);
+        // TODO pretty big comparison epsilon here
+        let test_comparison_epsilon = fixed!(10e18);
+
+        for _ in 0..*FAST_FUZZ_RUNS {
+            let state = rng.gen::<State>();
+            let amount = rng.gen_range(fixed!(10e18)..=fixed!(10_000_000e18));
+
+            let p1_result = std::panic::catch_unwind(|| {
+                state.calculate_open_long(amount - empirical_derivative_epsilon)
+            });
+            let p1;
+            let p2;
+            match p1_result {
+                Ok(p) => match p {
+                    Ok(p) => p1 = p,
+                    Err(_) => continue,
+                },
+                // If the amount results in the pool being insolvent, skip this iteration
+                Err(_) => continue,
+            }
+
+            let p2_result = std::panic::catch_unwind(|| {
+                state.calculate_open_long(amount + empirical_derivative_epsilon)
+            });
+            match p2_result {
+                Ok(p) => match p {
+                    Ok(p) => p2 = p,
+                    Err(_) => continue,
+                },
+                // If the amount results in the pool being insolvent, skip this iteration
+                Err(_) => continue,
+            }
+            // Sanity check
+            assert!(p2 > p1);
+
+            let empirical_derivative = (p2 - p1) / (fixed!(2e18) * empirical_derivative_epsilon);
+            let open_long_derivative = state.long_amount_derivative(amount);
+            open_long_derivative.map(|derivative| {
+                let derivative_diff;
+                if derivative >= empirical_derivative {
+                    derivative_diff = derivative - empirical_derivative;
+                } else {
+                    derivative_diff = empirical_derivative - derivative;
+                }
+                assert!(
+                    derivative_diff < test_comparison_epsilon,
+                    "expected (derivative_diff={}) < (test_comparison_epsilon={}), \
+                    calculated_derivative={}, emperical_derivative={}",
+                    derivative_diff,
+                    test_comparison_epsilon,
+                    derivative,
+                    empirical_derivative
+                );
+            });
+        }
+
+        Ok(())
+    }
+
     #[traced_test]
     #[tokio::test]
     async fn test_calculate_max_long() -> Result<()> {
