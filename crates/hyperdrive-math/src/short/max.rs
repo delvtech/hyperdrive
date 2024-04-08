@@ -740,11 +740,9 @@ mod tests {
         // the pool. Bob is funded with plenty of capital to ensure we can execute
         // the absolute maximum short.
         let mut rng = thread_rng();
-        let chain = TestChain::new(2).await?;
-        let (alice, bob) = (chain.accounts()[0].clone(), chain.accounts()[1].clone());
-        let mut alice =
-            Agent::new(chain.client(alice).await?, chain.addresses().clone(), None).await?;
-        let mut bob = Agent::new(chain.client(bob).await?, chain.addresses(), None).await?;
+        let chain = TestChain::new().await?;
+        let mut alice = chain.alice().await?;
+        let mut bob = chain.bob().await?;
         let config = alice.get_config().clone();
 
         for _ in 0..*FUZZ_RUNS {
