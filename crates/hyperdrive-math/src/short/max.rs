@@ -140,16 +140,15 @@ impl State {
                 }
             };
 
-            let derivative =
-                self.short_deposit_derivative(max_bond_amount, spot_price, open_vault_share_price);
-
             // We update the best valid max bond amount if the deposit amount
             // is valid and the current guess is better than the current estimate.
-            if (deposit < budget) && (best_valid_max_bond_amount < max_bond_amount) {
+            if deposit < budget && best_valid_max_bond_amount < max_bond_amount {
                 best_valid_max_bond_amount = max_bond_amount;
             }
 
-            // Iteratively update max_bond_amount via newton's method
+            // Iteratively update max_bond_amount via newton's method.
+            let derivative =
+                self.short_deposit_derivative(max_bond_amount, spot_price, open_vault_share_price);
             if deposit < target_budget {
                 max_bond_amount += (target_budget - deposit) / derivative;
             } else if deposit > target_budget {
@@ -179,7 +178,7 @@ impl State {
 
         // Ensure that the max bond amount is within the absolute max bond amount.
         if best_valid_max_bond_amount > absolute_max_bond_amount {
-            best_valid_max_bond_amount = absolute_max_bond_amount;
+            panic!("max short bond amount exceeded absolute max bond amount");
         }
 
         best_valid_max_bond_amount
