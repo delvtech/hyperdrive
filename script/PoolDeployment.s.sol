@@ -33,7 +33,7 @@ contract PoolDeployment is Script {
         bytes32(
             0xbce832c0ea372ef949945c6a4846b1439b728e08890b93c2aa99e2e3c50ece34
         );
-    bytes32 internal constant DEPLOYMENT_ID = bytes32(uint256(0x666666));
+    bytes32 internal constant DEPLOYMENT_ID = bytes32(uint256(0x80085));
     bytes32 internal constant SALT = bytes32(uint256(0xdefeca8));
 
     uint256 internal constant CONTRIBUTION = 100e18;
@@ -53,7 +53,7 @@ contract PoolDeployment is Script {
                 linkerCodeHash: LINKER_CODE_HASH,
                 minimumShareReserves: 10e18,
                 minimumTransactionAmount: 1e15,
-                positionDuration: 14 days,
+                positionDuration: 30 days,
                 checkpointDuration: 1 days,
                 timeStretch: 0, // NOTE: Will be overridden.
                 governance: FACTORY.hyperdriveGovernance(),
@@ -61,7 +61,7 @@ contract PoolDeployment is Script {
                 sweepCollector: FACTORY.sweepCollector(),
                 fees: IHyperdrive.Fees({
                     curve: 0.01e18, // 100 bps
-                    flat: 0.0005e18.mulDivDown(14 days, 365 days), // 5 bps
+                    flat: 0.0005e18.mulDivDown(30 days, 365 days), // 5 bps
                     governanceLP: 0.15e18, // 1500 bps
                     governanceZombie: 0.03e18 // 300 bps
                 })
@@ -145,6 +145,27 @@ contract PoolDeployment is Script {
             SALT
         );
         console.log("pool = %s", address(hyperdrive));
+
+        IHyperdrive.PoolInfo memory p = hyperdrive.getPoolInfo();
+
+        console.log("shareReserves: %s", p.shareReserves);
+        console.log("shareAdjustment: %s", p.shareAdjustment);
+        console.log("zombieBaseProceeds: %s", p.zombieBaseProceeds);
+        console.log("zombieShareReserves: %s", p.zombieShareReserves);
+        console.log("bondReserves: %s", p.bondReserves);
+        console.log("lpTotalSupply: %s", p.lpTotalSupply);
+        console.log("vaultSharePrice: %s", p.vaultSharePrice);
+        console.log("longsOutstanding: %s", p.longsOutstanding);
+        console.log("longAverageMaturityTime: %s", p.longAverageMaturityTime);
+        console.log("shortsOutstanding: %s", p.shortsOutstanding);
+        console.log("shortAverageMaturityTime: %s", p.shortAverageMaturityTime);
+        console.log(
+            "withdrawalSharesReadyToWithdraw: %s",
+            p.withdrawalSharesReadyToWithdraw
+        );
+        console.log("withdrawalSharesProceeds: %s", p.withdrawalSharesProceeds);
+        console.log("lpSharePrice: %s", p.lpSharePrice);
+        console.log("longExposure: %s", p.longExposure);
 
         vm.stopBroadcast();
     }
