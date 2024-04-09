@@ -21,7 +21,7 @@ contract VerifierHelper is Script {
     HyperdriveFactory internal constant FACTORY =
         HyperdriveFactory(payable(0x338D5634c391ef47FB797417542aa75F4f71A4a6));
     IHyperdrive POOL =
-        IHyperdrive(address(0xdb0275129e4107e41AD79C799e1B59a6B9bF4eb0));
+        IHyperdrive(address(0x4E38fd41c03ff11b3426efaE53138b86116797b8));
 
     address internal constant DAI =
         address(0x58fa9611D2a14CBec045b92Cef06b600897a4fB6);
