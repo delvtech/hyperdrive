@@ -70,20 +70,19 @@ impl State {
         &self,
         bond_amount: FixedPoint,
         base_amount: Option<FixedPoint>,
-    ) -> FixedPoint {
-        let shares_amount = match base_amount {
-            Some(base_amount) => base_amount / self.vault_share_price(),
-            None => {
-                let spot_price = self.calculate_spot_price();
-                self.calculate_shares_out_given_bonds_in_down(bond_amount)
-                    - self.open_short_curve_fee(bond_amount, spot_price)
-                    + self.open_short_governance_fee(bond_amount, spot_price)
-            }
+    ) -> Result<FixedPoint> {
+        let base_amount = match base_amount {
+            Some(base_amount) => base_amount,
+            None => self.calculate_open_short(
+                bond_amount,
+                self.calculate_spot_price(),
+                self.vault_share_price(),
+            )?,
         };
         let mut state: State = self.clone();
         state.info.bond_reserves += bond_amount.into();
-        state.info.share_reserves -= shares_amount.into();
-        state.calculate_spot_price()
+        state.info.share_reserves -= (base_amount / state.vault_share_price()).into();
+        Ok(state.calculate_spot_price())
     }
 
     /// Calculates the amount of short principal that the LPs need to pay to back a
@@ -142,7 +141,7 @@ mod tests {
                 rng.gen_range(fixed!(0.01e18)..=bob.calculate_max_short(None).await?);
             let current_state = bob.get_state().await?;
             let expected_spot_price =
-                current_state.calculate_spot_price_after_short(short_amount, None);
+                current_state.calculate_spot_price_after_short(short_amount, None)?;
 
             // Open the short.
             bob.open_short(short_amount, None, None).await?;
