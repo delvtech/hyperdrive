@@ -1,4 +1,4 @@
-use eyre::Result;
+use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
@@ -34,8 +34,7 @@ impl State {
         mut open_vault_share_price: FixedPoint,
     ) -> Result<FixedPoint> {
         if short_amount < self.config.minimum_transaction_amount.into() {
-            // TODO would be nice to return a `Result` here instead of a panic.
-            panic!("MinimumTransactionAmount: Input amount too low");
+            return Err(eyre!("MinimumTransactionAmount: Input amount too low",));
         }
 
         // If the open share price hasn't been set, we use the current share
@@ -52,8 +51,7 @@ impl State {
         // amount, then the trade occurred in the negative interest domain. We
         // revert in these pathological cases.
         if share_reserves_delta_in_base > short_amount {
-            // TODO would be nice to return a `Result` here instead of a panic.
-            panic!("InsufficientLiquidity: Negative Interest");
+            return Err(eyre!("InsufficientLiquidity: Negative Interest",));
         }
 
         // NOTE: The order of additions and subtractions is important to avoid underflows.
@@ -71,17 +69,18 @@ impl State {
         bond_amount: FixedPoint,
         base_amount: Option<FixedPoint>,
     ) -> Result<FixedPoint> {
-        let base_amount = match base_amount {
-            Some(base_amount) => base_amount,
-            None => self.calculate_open_short(
-                bond_amount,
-                self.calculate_spot_price(),
-                self.vault_share_price(),
-            )?,
+        let shares_amount = match base_amount {
+            Some(base_amount) => base_amount / self.vault_share_price(),
+            None => {
+                let spot_price = self.calculate_spot_price();
+                self.calculate_shares_out_given_bonds_in_down(bond_amount)
+                    - self.open_short_curve_fee(bond_amount, spot_price)
+                    + self.open_short_governance_fee(bond_amount, spot_price)
+            }
         };
         let mut state: State = self.clone();
         state.info.bond_reserves += bond_amount.into();
-        state.info.share_reserves -= (base_amount / state.vault_share_price()).into();
+        state.info.share_reserves -= shares_amount.into();
         Ok(state.calculate_spot_price())
     }
 
@@ -103,7 +102,6 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use eyre::Result;
     use fixed_point_macros::fixed;
     use rand::{thread_rng, Rng};
     use test_utils::{chain::TestChain, constants::FUZZ_RUNS};
