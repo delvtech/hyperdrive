@@ -58,6 +58,11 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
 
     function mint(uint256 amount) external requiresAuthDuringCompetition {
         require(amount <= maxMintAmount, "MockERC4626: Invalid mint amount");
+
+        // Mint more assets.
+        ERC20Mintable(address(asset)).mint(convertToAssets(amount));
+
+        // Mint more shares.
         _mint(msg.sender, amount);
     }
 
@@ -66,10 +71,19 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
         uint256 amount
     ) external requiresAuthDuringCompetition {
         require(amount <= maxMintAmount, "MockERC4626: Invalid mint amount");
+
+        // Mint more assets.
+        ERC20Mintable(address(asset)).mint(convertToAssets(amount));
+
+        // Mint more shares.
         _mint(destination, amount);
     }
 
     function burn(uint256 amount) external requiresAuthDuringCompetition {
+        // Burn the assets.
+        ERC20Mintable(address(asset)).mint(convertToAssets(amount));
+
+        // Burn the shares.
         _burn(msg.sender, amount);
     }
 
@@ -77,6 +91,10 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
         address destination,
         uint256 amount
     ) external requiresAuthDuringCompetition {
+        // Burn the assets.
+        ERC20Mintable(address(asset)).mint(convertToAssets(amount));
+
+        // Burn the shares.
         _burn(destination, amount);
     }
 
