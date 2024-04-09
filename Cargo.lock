@@ -3174,6 +3174,7 @@ dependencies = [
  "eyre",
  "fixed-point",
  "fixed-point-macros",
+ "hex",
  "hyperdrive-addresses",
  "hyperdrive-math",
  "hyperdrive-wrappers",

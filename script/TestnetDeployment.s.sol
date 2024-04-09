@@ -26,7 +26,7 @@ import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockERC4626 } from "contracts/test/MockERC4626.sol";
 import { MockLido } from "contracts/test/MockLido.sol";
 
-contract TestDeploymentScript is Script {
+contract TestnetDeploymentScript is Script {
     address internal constant GOVERNANCE_ADDRESS =
         address(0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b);
 
