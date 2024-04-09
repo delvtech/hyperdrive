@@ -12,9 +12,13 @@ import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockERC4626 } from "contracts/test/MockERC4626.sol";
 import { MockLido } from "contracts/test/MockLido.sol";
+import { AssetId } from "contracts/src/libraries/AssetId.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract VerifierHelper is Script {
     using FixedPointMath for *;
+    using AssetId for *;
+    using Lib for *;
 
     HyperdriveFactory internal constant FACTORY =
         HyperdriveFactory(payable(0x338D5634c391ef47FB797417542aa75F4f71A4a6));
@@ -35,28 +39,36 @@ contract VerifierHelper is Script {
     function setUp() external {}
 
     function run() external view {
-        console.log("base token = %s", POOL.baseToken());
+        IHyperdrive.PoolInfo memory p = IHyperdrive(
+            address(0xdb0275129e4107e41AD79C799e1B59a6B9bF4eb0)
+        ).getPoolInfo();
+        console.log("shareReserves: %s", p.shareReserves);
+        console.log("shareAdjustment: %s", p.shareAdjustment);
+        console.log("zombieBaseProceeds: %s", p.zombieBaseProceeds);
+        console.log("zombieShareReserves: %s", p.zombieShareReserves);
+        console.log("bondReserves: %s", p.bondReserves);
+        console.log("lpTotalSupply: %s", p.lpTotalSupply);
+        console.log("vaultSharePrice: %s", p.vaultSharePrice);
+        console.log("longsOutstanding: %s", p.longsOutstanding);
+        console.log("longAverageMaturityTime: %s", p.longAverageMaturityTime);
+        console.log("shortsOutstanding: %s", p.shortsOutstanding);
+        console.log("shortAverageMaturityTime: %s", p.shortAverageMaturityTime);
         console.log(
-            "initial vault share price = %s",
-            POOL.getPoolConfig().initialVaultSharePrice
+            "withdrawalSharesReadyToWithdraw: %s",
+            p.withdrawalSharesReadyToWithdraw
         );
-        console.log("target0 = %s", POOL.target0());
-        console.log("target1 = %s", POOL.target1());
-        console.log("target2 = %s", POOL.target2());
-        console.log("target3 = %s", POOL.target3());
-        console.log("target4 = %s", POOL.target4());
-        console.log("target4 = %s", POOL.target4());
+        console.log("withdrawalSharesProceeds: %s", p.withdrawalSharesProceeds);
+        console.log("lpSharePrice: %s", p.lpSharePrice);
+        console.log("longExposure: %s", p.longExposure);
 
-        console.log("constructor args:");
-        console.logBytes(
-            abi.encode(
-                POOL.getPoolConfig(),
-                POOL.target0(),
-                POOL.target1(),
-                POOL.target2(),
-                POOL.target3(),
-                POOL.target4()
-            )
+        console.log(
+            "lp asset balance: %s",
+            IHyperdrive(address(0x1b812C782469e17ef4FA57A0de02Ffd3Df2c5A21))
+                .balanceOf(
+                    AssetId._LP_ASSET_ID,
+                    address(0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8)
+                )
+                .toString(18)
         );
     }
 }
