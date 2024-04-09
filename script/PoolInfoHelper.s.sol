@@ -23,7 +23,7 @@ contract VerifierHelper is Script {
     HyperdriveFactory internal constant FACTORY =
         HyperdriveFactory(payable(0x338D5634c391ef47FB797417542aa75F4f71A4a6));
     IHyperdrive POOL =
-        IHyperdrive(address(0xdb0275129e4107e41AD79C799e1B59a6B9bF4eb0));
+        IHyperdrive(address(0x1b812C782469e17ef4FA57A0de02Ffd3Df2c5A21));
 
     address internal constant DAI =
         address(0x58fa9611D2a14CBec045b92Cef06b600897a4fB6);
@@ -39,31 +39,53 @@ contract VerifierHelper is Script {
     function setUp() external {}
 
     function run() external view {
-        IHyperdrive.PoolInfo memory p = IHyperdrive(
-            address(0xdb0275129e4107e41AD79C799e1B59a6B9bF4eb0)
-        ).getPoolInfo();
-        console.log("shareReserves: %s", p.shareReserves);
-        console.log("shareAdjustment: %s", p.shareAdjustment);
-        console.log("zombieBaseProceeds: %s", p.zombieBaseProceeds);
-        console.log("zombieShareReserves: %s", p.zombieShareReserves);
-        console.log("bondReserves: %s", p.bondReserves);
-        console.log("lpTotalSupply: %s", p.lpTotalSupply);
-        console.log("vaultSharePrice: %s", p.vaultSharePrice);
-        console.log("longsOutstanding: %s", p.longsOutstanding);
-        console.log("longAverageMaturityTime: %s", p.longAverageMaturityTime);
-        console.log("shortsOutstanding: %s", p.shortsOutstanding);
-        console.log("shortAverageMaturityTime: %s", p.shortAverageMaturityTime);
+        IHyperdrive.PoolInfo memory p = POOL.getPoolInfo();
+        console.log("shareReserves: %s", p.shareReserves.toString(18));
+        console.log("shareAdjustment: %s", p.shareAdjustment.toString(18));
+        console.log(
+            "zombieBaseProceeds: %s",
+            p.zombieBaseProceeds.toString(18)
+        );
+        console.log(
+            "zombieShareReserves: %s",
+            p.zombieShareReserves.toString(18)
+        );
+        console.log("bondReserves: %s", p.bondReserves.toString(18));
+        console.log("lpTotalSupply: %s", p.lpTotalSupply.toString(18));
+        console.log("vaultSharePrice: %s", p.vaultSharePrice.toString(18));
+        console.log("longsOutstanding: %s", p.longsOutstanding.toString(18));
+        console.log(
+            "longAverageMaturityTime: %s",
+            p.longAverageMaturityTime.toString(18)
+        );
+        console.log("shortsOutstanding: %s", p.shortsOutstanding.toString(18));
+        console.log(
+            "shortAverageMaturityTime: %s",
+            p.shortAverageMaturityTime.toString(18)
+        );
         console.log(
             "withdrawalSharesReadyToWithdraw: %s",
-            p.withdrawalSharesReadyToWithdraw
+            p.withdrawalSharesReadyToWithdraw.toString(18)
         );
-        console.log("withdrawalSharesProceeds: %s", p.withdrawalSharesProceeds);
-        console.log("lpSharePrice: %s", p.lpSharePrice);
-        console.log("longExposure: %s", p.longExposure);
+        console.log(
+            "withdrawalSharesProceeds: %s",
+            p.withdrawalSharesProceeds.toString(18)
+        );
+        console.log("lpSharePrice: %s", p.lpSharePrice.toString(18));
+        console.log("longExposure: %s", p.longExposure.toString(18));
 
         console.log(
+            "shares asset balance: %s",
+            POOL
+                .balanceOf(
+                    AssetId._LP_ASSET_ID,
+                    address(0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8)
+                )
+                .toString(18)
+        );
+        console.log(
             "lp asset balance: %s",
-            IHyperdrive(address(0x1b812C782469e17ef4FA57A0de02Ffd3Df2c5A21))
+            POOL
                 .balanceOf(
                     AssetId._LP_ASSET_ID,
                     address(0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8)
