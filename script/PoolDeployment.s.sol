@@ -25,8 +25,8 @@ contract PoolDeployment is Script {
         address(0x58fa9611D2a14CBec045b92Cef06b600897a4fB6);
     address internal constant SDAI =
         address(0xC672A891525532d29b842B9753046F6d30ce613c);
-    address internal constant ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR =
-        address(0x28273c4E6c69317626E14AF3020e063ab215e2b4);
+    address internal constant STETH_HYPERDRIVE_DEPLOYER_COORDINATOR =
+        address(0x6aa9615F0dF3F3891e8d2723A6b2A7973b5da299);
     address internal constant LINKER_FACTORY =
         address(0x13b0AcFA6B77C0464Ce26Ff80da7758b8e1f526E);
     bytes32 internal constant LINKER_CODE_HASH =
