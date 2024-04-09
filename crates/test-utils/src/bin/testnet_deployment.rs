@@ -21,13 +21,11 @@
 ///
 /// After deploying these contracts and setting up the deployer coordinators,
 /// this script will transfer ownership of the factory to a specified address.
-use std::fs::{create_dir_all, File};
 use std::{env, sync::Arc};
 
 use ethers::{
     core::utils::keccak256,
-    middleware::Middleware,
-    signers::{LocalWallet, Signer},
+    signers::LocalWallet,
     types::{Address, U256},
 };
 use eyre::Result;
@@ -61,6 +59,7 @@ async fn main() -> Result<()> {
     // Connect to the chain and get a client for the deployer.
     let chain = Chain::connect(Some(ethereum_rpc_url), None).await?;
     let client = chain.client(deployer).await?;
+    println!("deployer address = {:?}", client.address());
 
     // Deploy the contracts.
     testnet_deployment(client, admin_address, governance_address).await?;
@@ -87,6 +86,11 @@ async fn testnet_deployment(
     )?
     .send()
     .await?;
+    // let dai = ERC20Mintable::new(
+    //     "0x47c64cd9d93849846bb86e07e26179025500eef0".parse::<Address>()?,
+    //     client.clone(),
+    // );
+    println!("dai address = {:?}", dai.address());
     let sdai = MockERC4626::deploy(
         client.clone(),
         (
@@ -101,6 +105,11 @@ async fn testnet_deployment(
     )?
     .send()
     .await?;
+    // let sdai = ERC20Mintable::new(
+    //     "0xeaea8e8ae6aba591e5d5e792ecbd5da29aa3eb3e".parse::<Address>()?,
+    //     client.clone(),
+    // );
+    println!("sdai address = {:?}", sdai.address());
 
     // Deploy the mock Lido system. We fund Lido with 0.001 eth to start to
     // avoid reverts when we initialize the pool.
@@ -117,17 +126,14 @@ async fn testnet_deployment(
             .await?;
         lido
     };
+    // let lido = MockLido::new(
+    //     "0x04523c2c050c9e9899ef916c2107e59a449f415e".parse::<Address>()?,
+    //     client.clone(),
+    // );
+    println!("lido address = {:?}", lido.address());
 
     // Set minting as a public capability on all tokens and vaults and allow the
     // vault to burn tokens.
-    dai.set_user_role(sdai.address(), 1, true).send().await?;
-    dai.set_role_capability(
-        1,
-        keccak256("burn(uint256)".as_bytes())[0..4].try_into()?,
-        true,
-    )
-    .send()
-    .await?;
     dai.set_public_capability(
         keccak256("mint(uint256)".as_bytes())[0..4].try_into()?,
         true,
@@ -142,6 +148,14 @@ async fn testnet_deployment(
     .await?;
     lido.set_public_capability(
         keccak256("mint(uint256)".as_bytes())[0..4].try_into()?,
+        true,
+    )
+    .send()
+    .await?;
+    dai.set_user_role(sdai.address(), 1, true).send().await?;
+    dai.set_role_capability(
+        1,
+        keccak256("burn(uint256)".as_bytes())[0..4].try_into()?,
         true,
     )
     .send()
@@ -190,40 +204,47 @@ async fn testnet_deployment(
         .send()
         .await?
     };
+    println!("factory address = {:?}", factory.address());
 
     // Deploy the ERC4626 deployer coordinator.
-    let core_deployer = ERC4626HyperdriveCoreDeployer::deploy(client.clone(), ())?
+    let erc4626_deployer_coordinator = {
+        let core_deployer = ERC4626HyperdriveCoreDeployer::deploy(client.clone(), ())?
+            .send()
+            .await?;
+        let target0 = ERC4626Target0Deployer::deploy(client.clone(), ())?
+            .send()
+            .await?;
+        let target1 = ERC4626Target1Deployer::deploy(client.clone(), ())?
+            .send()
+            .await?;
+        let target2 = ERC4626Target2Deployer::deploy(client.clone(), ())?
+            .send()
+            .await?;
+        let target3 = ERC4626Target3Deployer::deploy(client.clone(), ())?
+            .send()
+            .await?;
+        let target4 = ERC4626Target4Deployer::deploy(client.clone(), ())?
+            .send()
+            .await?;
+        ERC4626HyperdriveDeployerCoordinator::deploy(
+            client.clone(),
+            (
+                factory.address(),
+                core_deployer.address(),
+                target0.address(),
+                target1.address(),
+                target2.address(),
+                target3.address(),
+                target4.address(),
+            ),
+        )?
         .send()
-        .await?;
-    let target0 = ERC4626Target0Deployer::deploy(client.clone(), ())?
-        .send()
-        .await?;
-    let target1 = ERC4626Target1Deployer::deploy(client.clone(), ())?
-        .send()
-        .await?;
-    let target2 = ERC4626Target2Deployer::deploy(client.clone(), ())?
-        .send()
-        .await?;
-    let target3 = ERC4626Target3Deployer::deploy(client.clone(), ())?
-        .send()
-        .await?;
-    let target4 = ERC4626Target4Deployer::deploy(client.clone(), ())?
-        .send()
-        .await?;
-    ERC4626HyperdriveDeployerCoordinator::deploy(
-        client.clone(),
-        (
-            factory.address(),
-            core_deployer.address(),
-            target0.address(),
-            target1.address(),
-            target2.address(),
-            target3.address(),
-            target4.address(),
-        ),
-    )?
-    .send()
-    .await?;
+        .await?
+    };
+    println!(
+        "erc4626 deployer coordinator address = {:?}",
+        erc4626_deployer_coordinator.address()
+    );
 
     // Deploy the stETH deployer coordinator.
     let steth_deployer_coordinator = {
@@ -261,6 +282,10 @@ async fn testnet_deployment(
         .send()
         .await?
     };
+    println!(
+        "steth deployer coordinator address = {:?}",
+        steth_deployer_coordinator.address()
+    );
 
     // Deploy the HyperdriveRegistry contract to track familiar instances.
     let hyperdrive_registry = HyperdriveRegistry::deploy(client.clone(), ())?
@@ -270,6 +295,10 @@ async fn testnet_deployment(
         .update_governance(admin_address)
         .send()
         .await?;
+    println!(
+        "hyperdrive registry address = {:?}",
+        hyperdrive_registry.address()
+    );
 
     Ok(())
 }

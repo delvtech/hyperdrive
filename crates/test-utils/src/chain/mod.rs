@@ -46,8 +46,7 @@ impl RetryPolicy<HttpClientError> for ChainRetryPolicy {
     }
 }
 
-pub type ChainClient<S> =
-    SignerMiddleware<GasEscalatorMiddleware<Provider<Arc<RetryClient<Http>>>>, S>;
+pub type ChainClient<S> = SignerMiddleware<Provider<Arc<RetryClient<Http>>>, S>;
 
 /// An abstraction over Ethereum chains that provides convenience methods for
 /// constructing providers and clients with useful middleware. Additionally, it
@@ -113,20 +112,14 @@ impl Chain {
         let provider = RetryClientBuilder::default()
             .rate_limit_retries(10)
             .timeout_retries(3)
-            .initial_backoff(Duration::from_millis(1))
             .build(
                 self.provider().as_ref().clone(),
                 Box::<ChainRetryPolicy>::default(),
             );
-        let provider = Provider::new(Arc::new(provider)).interval(Duration::from_millis(1));
+        let provider = Provider::new(Arc::new(provider));
 
         // Build a client with signer and gas escalator middleware.
-        let client = GasEscalatorMiddleware::new(
-            provider,
-            GeometricGasPrice::new(1.125, 10u64, None::<u64>),
-            Frequency::PerBlock,
-        );
-        let client = SignerMiddleware::new_with_provider_chain(client, signer).await?;
+        let client = SignerMiddleware::new_with_provider_chain(provider, signer).await?;
 
         Ok(Arc::new(client))
     }
