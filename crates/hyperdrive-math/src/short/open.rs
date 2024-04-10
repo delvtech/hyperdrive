@@ -177,13 +177,11 @@ mod tests {
     async fn test_error_open_short_min_txn_amount() -> Result<()> {
         let mut rng = thread_rng();
         let state = rng.gen::<State>();
-        let result = std::panic::catch_unwind(|| {
-            state.calculate_open_short(
-                (state.config.minimum_transaction_amount - 10).into(),
-                state.calculate_spot_price(),
-                state.vault_share_price(),
-            )
-        });
+        let result = state.calculate_open_short(
+            (state.config.minimum_transaction_amount - 10).into(),
+            state.calculate_spot_price(),
+            state.vault_share_price(),
+        );
         assert!(result.is_err());
         Ok(())
     }
