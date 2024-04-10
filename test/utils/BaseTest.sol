@@ -31,6 +31,7 @@ contract BaseTest is Test {
     uint256 __init__; // time setup function was ran
 
     string MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
+    string SEPOLIA_RPC_URL = vm.envString("SEPOLIA_RPC_URL");
     string GOERLI_RPC_URL = vm.envString("GOERLI_RPC_URL");
 
     bool isForked;
@@ -55,6 +56,15 @@ contract BaseTest is Test {
     modifier __mainnet_fork(uint256 blockNumber) {
         mainnetForkId = vm.createFork(MAINNET_RPC_URL);
         vm.selectFork(mainnetForkId);
+        vm.rollFork(blockNumber);
+        isForked = true;
+
+        _;
+    }
+
+    modifier __sepolia_fork(uint256 blockNumber) {
+        uint256 sepoliaForkId = vm.createFork(SEPOLIA_RPC_URL);
+        vm.selectFork(sepoliaForkId);
         vm.rollFork(blockNumber);
         isForked = true;
 
