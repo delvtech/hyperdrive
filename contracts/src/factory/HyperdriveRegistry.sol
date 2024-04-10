@@ -43,7 +43,7 @@ contract HyperdriveRegistry is
     /// @inheritdoc IHyperdriveRegistry
     function getHyperdriveInfo(
         address _hyperdriveInstance
-    ) external view override returns (uint256) {
+    ) external view returns (uint256) {
         return _hyperdriveInfo[_hyperdriveInstance];
     }
 }
