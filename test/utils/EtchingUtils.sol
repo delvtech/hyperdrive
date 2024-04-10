@@ -114,20 +114,6 @@ contract EtchingUtils is Test {
         // used to load immutables that will be used during the etching process.
         IHyperdrive hyperdrive = IHyperdrive(_hyperdrive);
 
-        // Etch the base contract.
-        {
-            ERC20Mintable target = ERC20Mintable(hyperdrive.baseToken());
-            ERC20Mintable template = new ERC20Mintable(
-                target.name(),
-                target.symbol(),
-                target.decimals(),
-                address(0),
-                target.isCompetitionMode(),
-                target.maxMintAmount()
-            );
-            vm.etch(address(target), address(template).code);
-        }
-
         // Etch the vault contract.        {
         {
             MockLido target = MockLido(hyperdrive.vaultSharesToken());
