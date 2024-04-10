@@ -495,7 +495,8 @@ mod tests {
 
             // Get a targeted long amount.
             // TODO: explore tighter bounds on this.
-            let target_rate = initial_fixed_rate / rng.gen_range(fixed!(1.0001e18)..=fixed!(10e18));
+            let target_rate = bob.get_state().await?.calculate_spot_rate()
+                / rng.gen_range(fixed!(1.0001e18)..=fixed!(10e18));
             // let target_rate = initial_fixed_rate / fixed!(2e18);
             let targeted_long_result = bob
                 .calculate_targeted_long(
