@@ -24,20 +24,24 @@ contract PoolDeployment is Script {
 
     address internal constant SENDER =
         address(0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8);
+    address internal constant DAI =
+        address(0x552ceaDf3B47609897279F42D3B3309B604896f3);
+    address internal constant SDAI =
+        address(0xECa45b0391E81c311F1b390808a3BA3214d35eAA);
     address internal constant LIDO =
         address(0x6977eC5fae3862D3471f0f5B6Dcc64cDF5Cfd959);
-    address internal constant STETH_HYPERDRIVE_DEPLOYER_COORDINATOR =
-        address(0x6aa9615F0dF3F3891e8d2723A6b2A7973b5da299);
+    address internal constant ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR =
+        address(0x28273c4E6c69317626E14AF3020e063ab215e2b4);
     address internal constant LINKER_FACTORY =
         address(0x13b0AcFA6B77C0464Ce26Ff80da7758b8e1f526E);
     bytes32 internal constant LINKER_CODE_HASH =
         bytes32(
             0xbce832c0ea372ef949945c6a4846b1439b728e08890b93c2aa99e2e3c50ece34
         );
-    bytes32 internal constant DEPLOYMENT_ID = bytes32(uint256(0xf00b00));
-    bytes32 internal constant SALT = bytes32(uint256(0xB00B5));
+    bytes32 internal constant DEPLOYMENT_ID = bytes32(uint256(0xA55555));
+    bytes32 internal constant SALT = bytes32(uint256(0x666));
 
-    uint256 internal constant CONTRIBUTION = 1e18;
+    uint256 internal constant CONTRIBUTION = 100e18;
     uint256 internal constant FIXED_APR = 0.05e18;
     uint256 internal constant POSITION_DURATION = 30 days;
 
@@ -49,11 +53,11 @@ contract PoolDeployment is Script {
         // Set up the pool config.
         IHyperdrive.PoolDeployConfig memory config = IHyperdrive
             .PoolDeployConfig({
-                baseToken: IERC20(ETH),
-                vaultSharesToken: IERC20(LIDO),
+                baseToken: IERC20(DAI),
+                vaultSharesToken: IERC20(SDAI),
                 linkerFactory: LINKER_FACTORY,
                 linkerCodeHash: LINKER_CODE_HASH,
-                minimumShareReserves: 1e15,
+                minimumShareReserves: 10e18,
                 minimumTransactionAmount: 1e15,
                 positionDuration: POSITION_DURATION,
                 checkpointDuration: 1 days,
@@ -69,30 +73,19 @@ contract PoolDeployment is Script {
                 })
             });
 
-        // Mint LIDO.
-        // ERC20Mintable(LIDO).mint(500e18);
+        // Mint the contribution tokens.
+        ERC20Mintable(DAI).mint(CONTRIBUTION);
 
         // Approve the deployer coordinator.
-        ERC20Mintable(LIDO).approve(
-            STETH_HYPERDRIVE_DEPLOYER_COORDINATOR,
-            2 * CONTRIBUTION
-        );
-
-        console.log(
-            "balance of = %s",
-            ERC20Mintable(LIDO).balanceOf(SENDER).toString(18)
-        );
-        console.log(
-            "allowance of = %s",
-            ERC20Mintable(LIDO)
-                .allowance(SENDER, STETH_HYPERDRIVE_DEPLOYER_COORDINATOR)
-                .toString(18)
+        ERC20Mintable(DAI).approve(
+            ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR,
+            CONTRIBUTION
         );
 
         // Deploy the targets.
         FACTORY.deployTarget(
             DEPLOYMENT_ID,
-            STETH_HYPERDRIVE_DEPLOYER_COORDINATOR,
+            ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR,
             config,
             new bytes(0),
             FIXED_APR,
@@ -102,7 +95,7 @@ contract PoolDeployment is Script {
         );
         FACTORY.deployTarget(
             DEPLOYMENT_ID,
-            STETH_HYPERDRIVE_DEPLOYER_COORDINATOR,
+            ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR,
             config,
             new bytes(0),
             FIXED_APR,
@@ -112,7 +105,7 @@ contract PoolDeployment is Script {
         );
         FACTORY.deployTarget(
             DEPLOYMENT_ID,
-            STETH_HYPERDRIVE_DEPLOYER_COORDINATOR,
+            ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR,
             config,
             new bytes(0),
             FIXED_APR,
@@ -122,7 +115,7 @@ contract PoolDeployment is Script {
         );
         FACTORY.deployTarget(
             DEPLOYMENT_ID,
-            STETH_HYPERDRIVE_DEPLOYER_COORDINATOR,
+            ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR,
             config,
             new bytes(0),
             FIXED_APR,
@@ -132,7 +125,7 @@ contract PoolDeployment is Script {
         );
         FACTORY.deployTarget(
             DEPLOYMENT_ID,
-            STETH_HYPERDRIVE_DEPLOYER_COORDINATOR,
+            ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR,
             config,
             new bytes(0),
             FIXED_APR,
@@ -144,7 +137,7 @@ contract PoolDeployment is Script {
         // Deploy a pool.
         IHyperdrive hyperdrive = FACTORY.deployAndInitialize(
             DEPLOYMENT_ID,
-            STETH_HYPERDRIVE_DEPLOYER_COORDINATOR,
+            ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR,
             config,
             new bytes(0),
             CONTRIBUTION,
@@ -152,33 +145,12 @@ contract PoolDeployment is Script {
             FIXED_APR,
             IHyperdrive.Options({
                 destination: SENDER,
-                asBase: false,
+                asBase: true,
                 extraData: new bytes(0)
             }),
             SALT
         );
         console.log("pool = %s", address(hyperdrive));
-
-        IHyperdrive.PoolInfo memory p = hyperdrive.getPoolInfo();
-
-        console.log("shareReserves: %s", p.shareReserves);
-        console.log("shareAdjustment: %s", p.shareAdjustment);
-        console.log("zombieBaseProceeds: %s", p.zombieBaseProceeds);
-        console.log("zombieShareReserves: %s", p.zombieShareReserves);
-        console.log("bondReserves: %s", p.bondReserves);
-        console.log("lpTotalSupply: %s", p.lpTotalSupply);
-        console.log("vaultSharePrice: %s", p.vaultSharePrice);
-        console.log("longsOutstanding: %s", p.longsOutstanding);
-        console.log("longAverageMaturityTime: %s", p.longAverageMaturityTime);
-        console.log("shortsOutstanding: %s", p.shortsOutstanding);
-        console.log("shortAverageMaturityTime: %s", p.shortAverageMaturityTime);
-        console.log(
-            "withdrawalSharesReadyToWithdraw: %s",
-            p.withdrawalSharesReadyToWithdraw
-        );
-        console.log("withdrawalSharesProceeds: %s", p.withdrawalSharesProceeds);
-        console.log("lpSharePrice: %s", p.lpSharePrice);
-        console.log("longExposure: %s", p.longExposure);
 
         vm.stopBroadcast();
     }
