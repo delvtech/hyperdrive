@@ -1,4 +1,4 @@
-use eyre::Result;
+use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
@@ -34,8 +34,7 @@ impl State {
         mut open_vault_share_price: FixedPoint,
     ) -> Result<FixedPoint> {
         if short_amount < self.config.minimum_transaction_amount.into() {
-            // TODO would be nice to return a `Result` here instead of a panic.
-            panic!("MinimumTransactionAmount: Input amount too low");
+            return Err(eyre!("MinimumTransactionAmount: Input amount too low",));
         }
 
         // If the open share price hasn't been set, we use the current share
@@ -52,8 +51,7 @@ impl State {
         // amount, then the trade occurred in the negative interest domain. We
         // revert in these pathological cases.
         if share_reserves_delta_in_base > short_amount {
-            // TODO would be nice to return a `Result` here instead of a panic.
-            panic!("InsufficientLiquidity: Negative Interest");
+            return Err(eyre!("InsufficientLiquidity: Negative Interest",));
         }
 
         // NOTE: The order of additions and subtractions is important to avoid underflows.
@@ -70,7 +68,7 @@ impl State {
         &self,
         bond_amount: FixedPoint,
         base_amount: Option<FixedPoint>,
-    ) -> FixedPoint {
+    ) -> Result<FixedPoint> {
         let shares_amount = match base_amount {
             Some(base_amount) => base_amount / self.vault_share_price(),
             None => {
@@ -83,7 +81,7 @@ impl State {
         let mut state: State = self.clone();
         state.info.bond_reserves += bond_amount.into();
         state.info.share_reserves -= shares_amount.into();
-        state.calculate_spot_price()
+        Ok(state.calculate_spot_price())
     }
 
     /// Calculates the amount of short principal that the LPs need to pay to back a
@@ -104,7 +102,6 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use eyre::Result;
     use fixed_point_macros::fixed;
     use rand::{thread_rng, Rng};
     use test_utils::{chain::TestChain, constants::FUZZ_RUNS};
@@ -142,7 +139,7 @@ mod tests {
                 rng.gen_range(fixed!(0.01e18)..=bob.calculate_max_short(None).await?);
             let current_state = bob.get_state().await?;
             let expected_spot_price =
-                current_state.calculate_spot_price_after_short(short_amount, None);
+                current_state.calculate_spot_price_after_short(short_amount, None)?;
 
             // Open the short.
             bob.open_short(short_amount, None, None).await?;
@@ -180,13 +177,11 @@ mod tests {
     async fn test_error_open_short_min_txn_amount() -> Result<()> {
         let mut rng = thread_rng();
         let state = rng.gen::<State>();
-        let result = std::panic::catch_unwind(|| {
-            state.calculate_open_short(
-                (state.config.minimum_transaction_amount - 10).into(),
-                state.calculate_spot_price(),
-                state.vault_share_price(),
-            )
-        });
+        let result = state.calculate_open_short(
+            (state.config.minimum_transaction_amount - 10).into(),
+            state.calculate_spot_price(),
+            state.vault_share_price(),
+        );
         assert!(result.is_err());
         Ok(())
     }

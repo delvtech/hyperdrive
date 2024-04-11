@@ -27,8 +27,7 @@ impl State {
         let base_amount = base_amount.into();
 
         if base_amount < self.config.minimum_transaction_amount.into() {
-            // TODO would be nice to return a `Result` here instead of a panic.
-            panic!("MinimumTransactionAmount: Input amount too low");
+            return Err(eyre!("MinimumTransactionAmount: Input amount too low",));
         }
 
         let long_amount =
@@ -217,9 +216,7 @@ mod tests {
     async fn test_error_open_long_min_txn_amount() -> Result<()> {
         let mut rng = thread_rng();
         let state = rng.gen::<State>();
-        let result = std::panic::catch_unwind(|| {
-            state.calculate_open_long(state.config.minimum_transaction_amount - 10)
-        });
+        let result = state.calculate_open_long(state.config.minimum_transaction_amount - 10);
         assert!(result.is_err());
         Ok(())
     }

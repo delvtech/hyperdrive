@@ -51,116 +51,142 @@ impl State {
             None => fixed!(1e14),
         };
 
+        // Check input args.
+        let current_rate = self.calculate_spot_rate();
+        if target_rate > current_rate {
+            return Err(eyre!(
+                "target_rate = {} argument must be less than the current_rate = {} for a targeted long.",
+                target_rate, current_rate,
+            ));
+        }
+
         // Estimate the long that achieves a target rate.
         let (target_share_reserves, target_bond_reserves) =
             self.reserves_given_rate_ignoring_exposure(target_rate);
-        let (target_base_delta, target_bond_delta) =
+        let (mut target_base_delta, target_bond_delta) =
             self.trade_deltas_from_reserves(target_share_reserves, target_bond_reserves);
 
         // Determine what rate was achieved.
         let resulting_rate = self.rate_after_long(target_base_delta, Some(target_bond_delta))?;
 
-        // The estimated long should always underestimate because the realized price
+        // The estimated long will usually underestimate because the realized price
         // should always be greater than the spot price.
+        //
+        // However, if we overshot the zero-crossing (due to errors arising from FixedPoint arithmetic),
+        // then either return or reduce the starting base amount and start on Newton's method.
         if target_rate > resulting_rate {
-            return Err(eyre!("get_targeted_long: We overshot the zero-crossing.",));
-        }
-        let rate_error = resulting_rate - target_rate;
+            let rate_error = target_rate - resulting_rate;
 
-        // If solvent & within the allowable error, stop here.
-        if self
-            .solvency_after_long(target_base_delta, target_bond_delta, checkpoint_exposure)
-            .is_some()
-            && rate_error < allowable_error
-        {
-            Ok(target_base_delta)
-        }
-        // Else, iterate to find a solution.
-        else {
-            // We can use the initial guess as a starting point since we know it is less than the target.
-            let mut possible_target_base_delta = target_base_delta;
-
-            // Iteratively find a solution
-            for _ in 0..maybe_max_iterations.unwrap_or(7) {
-                let possible_target_bond_delta = self
-                    .calculate_open_long(possible_target_base_delta)
-                    .unwrap();
-                let resulting_rate = self.rate_after_long(
-                    possible_target_base_delta,
-                    Some(possible_target_bond_delta),
-                )?;
-
-                // We assume that the loss is positive only because Newton's
-                // method and the one-shot approximation will always underestimate.
-                if target_rate > resulting_rate {
-                    return Err(eyre!("get_targeted_long: We overshot the zero-crossing.",));
-                }
-                // The loss is $l(x) = r(x) - r_t$ for some rate after a long
-                // is opened, $r(x)$, and target rate, $r_t$.
-                let loss = resulting_rate - target_rate;
-
-                // If we've done it (solvent & within error), then return the value.
-                if self
-                    .solvency_after_long(
-                        possible_target_base_delta,
-                        possible_target_bond_delta,
-                        checkpoint_exposure,
-                    )
-                    .is_some()
-                    && loss < allowable_error
-                {
-                    return Ok(possible_target_base_delta);
-                }
-                // Otherwise perform another iteration.
-                else {
-                    // The derivative of the loss is $l'(x) = r'(x)$.
-                    // We return $-l'(x)$ because $r'(x)$ is negative, which
-                    // can't be represented with FixedPoint.
-                    let negative_loss_derivative = self.rate_after_long_derivative_negation(
-                        possible_target_base_delta,
-                        possible_target_bond_delta,
-                    )?;
-
-                    // Adding the negative loss derivative instead of subtracting the loss derivative
-                    // ∆x_{n+1} = ∆x_{n} - l / l'
-                    //          = ∆x_{n} + l / (-l')
-                    possible_target_base_delta =
-                        possible_target_base_delta + loss / negative_loss_derivative;
-                }
-            }
-
-            // Final solvency check.
+            // If we were still close enough and solvent, return.
             if self
-                .solvency_after_long(
-                    possible_target_base_delta,
-                    self.calculate_open_long(possible_target_base_delta)
-                        .unwrap(),
-                    checkpoint_exposure,
-                )
-                .is_none()
+                .solvency_after_long(target_base_delta, target_bond_delta, checkpoint_exposure)
+                .is_some()
+                && rate_error < allowable_error
             {
-                return Err(eyre!("Guess in `get_targeted_long` is insolvent."));
+                return Ok(target_base_delta);
             }
+            // Else, cut the initial guess down by an order of magnitude and go to Newton's method.
+            else {
+                target_base_delta = target_base_delta / fixed!(10e18);
+            }
+        }
+        // Else check if we are close enough to return.
+        else {
+            // If solvent & within the allowable error, stop here.
+            let rate_error = resulting_rate - target_rate;
+            if self
+                .solvency_after_long(target_base_delta, target_bond_delta, checkpoint_exposure)
+                .is_some()
+                && rate_error < allowable_error
+            {
+                return Ok(target_base_delta);
+            }
+        }
 
-            // Final accuracy check.
+        // Iterate to find a solution.
+        // We can use the initial guess as a starting point since we know it is less than the target.
+        let mut possible_target_base_delta = target_base_delta;
+
+        // Iteratively find a solution
+        for _ in 0..maybe_max_iterations.unwrap_or(7) {
             let possible_target_bond_delta = self
                 .calculate_open_long(possible_target_base_delta)
                 .unwrap();
             let resulting_rate =
                 self.rate_after_long(possible_target_base_delta, Some(possible_target_bond_delta))?;
+
+            // We assume that the loss is positive only because Newton's
+            // method will always underestimate.
             if target_rate > resulting_rate {
-                return Err(eyre!("get_targeted_long: We overshot the zero-crossing.",));
-            }
-            let loss = resulting_rate - target_rate;
-            if loss >= allowable_error {
                 return Err(eyre!(
-                    "get_targeted_long: Unable to find an acceptable loss with max iterations. Final loss = {}.",
-                    loss
+                    "We overshot the zero-crossing during Newton's method.",
                 ));
             }
+            let loss = resulting_rate - target_rate;
 
-            Ok(possible_target_base_delta)
+            // If we've done it (solvent & within error), then return the value.
+            if self
+                .solvency_after_long(
+                    possible_target_base_delta,
+                    possible_target_bond_delta,
+                    checkpoint_exposure,
+                )
+                .is_some()
+                && loss < allowable_error
+            {
+                return Ok(possible_target_base_delta);
+            }
+            // Otherwise perform another iteration.
+            else {
+                // The derivative of the loss is $l'(x) = r'(x)$.
+                // We return $-l'(x)$ because $r'(x)$ is negative, which
+                // can't be represented with FixedPoint.
+                let negative_loss_derivative = self.rate_after_long_derivative_negation(
+                    possible_target_base_delta,
+                    possible_target_bond_delta,
+                )?;
+
+                // Adding the negative loss derivative instead of subtracting the loss derivative
+                // ∆x_{n+1} = ∆x_{n} - l / l'
+                //          = ∆x_{n} + l / (-l')
+                possible_target_base_delta =
+                    possible_target_base_delta + loss / negative_loss_derivative;
+            }
         }
+
+        // Final solvency check.
+        if self
+            .solvency_after_long(
+                possible_target_base_delta,
+                self.calculate_open_long(possible_target_base_delta)
+                    .unwrap(),
+                checkpoint_exposure,
+            )
+            .is_none()
+        {
+            return Err(eyre!("Guess in `calculate_targeted_long` is insolvent."));
+        }
+
+        // Final accuracy check.
+        let possible_target_bond_delta = self
+            .calculate_open_long(possible_target_base_delta)
+            .unwrap();
+        let resulting_rate =
+            self.rate_after_long(possible_target_base_delta, Some(possible_target_bond_delta))?;
+        if target_rate > resulting_rate {
+            return Err(eyre!(
+                "We overshot the zero-crossing after Newton's method.",
+            ));
+        }
+        let loss = resulting_rate - target_rate;
+        if loss >= allowable_error {
+            return Err(eyre!(
+                "Unable to find an acceptable loss with max iterations. Final loss = {}.",
+                loss
+            ));
+        }
+
+        Ok(possible_target_base_delta)
     }
 
     /// The fixed rate after a long has been opened.
@@ -178,9 +204,10 @@ impl State {
     fn rate_after_long(
         &self,
         base_amount: FixedPoint,
-        bond_amount: Option<FixedPoint>,
+        maybe_bond_amount: Option<FixedPoint>,
     ) -> Result<FixedPoint> {
-        let resulting_price = self.calculate_spot_price_after_long(base_amount, bond_amount)?;
+        let resulting_price =
+            self.calculate_spot_price_after_long(base_amount, maybe_bond_amount)?;
         Ok((fixed!(1e18) - resulting_price)
             / (resulting_price * self.annualized_position_duration()))
     }
@@ -464,9 +491,11 @@ mod tests {
                 )
                 .await?;
 
-            // Bob opens a targeted long.
-            let max_spot_price_before_long = bob.get_state().await?.calculate_max_spot_price();
-            let target_rate = initial_fixed_rate / fixed!(2e18);
+            // Get a targeted long amount.
+            // TODO: explore tighter bounds on this.
+            let target_rate = bob.get_state().await?.calculate_spot_rate()
+                / rng.gen_range(fixed!(1.0001e18)..=fixed!(10e18));
+            // let target_rate = initial_fixed_rate / fixed!(2e18);
             let targeted_long_result = bob
                 .calculate_targeted_long(
                     target_rate,
@@ -475,28 +504,38 @@ mod tests {
                 )
                 .await;
 
+            // Bob opens a targeted long.
+            let current_state = bob.get_state().await?;
+            let max_spot_price_before_long = current_state.calculate_max_spot_price();
             match targeted_long_result {
                 // If the code ran without error, open the long
                 Ok(targeted_long) => {
                     bob.open_long(targeted_long, None, None).await?;
                 }
 
-                // Else check the error for an acceptible one
+                // Else parse the error for a to improve error messaging.
                 Err(e) => {
                     // If the fn failed it's possible that the target rate would be insolvent.
                     if e.to_string()
                         .contains("Unable to find an acceptable loss with max iterations")
                     {
-                        let state = bob.get_state().await?;
                         let max_long = bob.calculate_max_long(None).await?;
                         let rate_after_max_long =
-                            state.calculate_spot_rate_after_long(max_long, None)?;
+                            current_state.calculate_spot_rate_after_long(max_long, None)?;
                         // If the rate after the max long is at or below the target, then we could have hit it.
                         if rate_after_max_long <= target_rate {
-                            // Fail if there was a long to hit the rate (which means the max is <= the target)
-                            return Err(eyre!("Calculate max long failed; a long that hits the target rate exists but was not found."));
+                            return Err(eyre!(
+                                "ERROR {}\nA long that hits the target rate exists but was not found.",
+                                e
+                            ));
                         }
                         // Otherwise the target would have resulted in insolvency and wasn't possible.
+                        else {
+                            return Err(eyre!(
+                                "ERROR {}\nThe target rate would result in insolvency.",
+                                e
+                            ));
+                        }
                     }
                     // If the error is not the one we're looking for, return it, causing the test to fail.
                     else {
@@ -513,18 +552,18 @@ mod tests {
             // 3. IF Bob's budget is not consumed; then new rate is close to the target rate
 
             // Check that our resulting price is under the max
-            let spot_price_after_long = bob.get_state().await?.calculate_spot_price();
+            let current_state = bob.get_state().await?;
+            let spot_price_after_long = current_state.calculate_spot_price();
             assert!(
                 max_spot_price_before_long > spot_price_after_long,
                 "Resulting price is greater than the max."
             );
 
             // Check solvency
-            let is_solvent =
-                { bob.get_state().await?.calculate_solvency() > allowable_solvency_error };
+            let is_solvent = { current_state.calculate_solvency() > allowable_solvency_error };
             assert!(is_solvent, "Resulting pool state is not solvent.");
 
-            let new_rate = bob.get_state().await?.calculate_spot_rate();
+            let new_rate = current_state.calculate_spot_rate();
             // If the budget was NOT consumed, then we assume the target was hit.
             if !(bob.base() <= allowable_budget_error) {
                 // Actual price might result in long overshooting the target.
