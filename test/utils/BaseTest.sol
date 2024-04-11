@@ -7,8 +7,6 @@ import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 
 contract BaseTest is Test {
-    ERC20ForwarderFactory forwarderFactory;
-
     address alice;
     address bob;
     address celine;

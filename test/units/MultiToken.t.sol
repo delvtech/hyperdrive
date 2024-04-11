@@ -5,41 +5,24 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { MockAssetId } from "contracts/test/MockAssetId.sol";
-import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
-import { BaseTest } from "test/utils/BaseTest.sol";
+import { IMockHyperdrive } from "contracts/test/MockHyperdrive.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-contract MultiTokenTest is BaseTest {
+contract MultiTokenTest is HyperdriveTest {
     using Lib for *;
-    IMockMultiToken multiToken;
-
-    bytes32 public constant PERMIT_TYPEHASH =
-        keccak256(
-            "PermitForAll(address owner,address spender,bool _approved,uint256 nonce,uint256 deadline)"
-        );
-
-    function setUp() public override {
-        super.setUp();
-        vm.startPrank(deployer);
-        forwarderFactory = new ERC20ForwarderFactory();
-        multiToken = IMockMultiToken(
-            address(new MockMultiToken(bytes32(0), address(forwarderFactory)))
-        );
-        vm.stopPrank();
-    }
 
     function testFactory() public {
         assertEq(
-            IHyperdrive(address(multiToken)).getPoolConfig().linkerFactory,
+            hyperdrive.getPoolConfig().linkerFactory,
             address(forwarderFactory)
         );
     }
 
-    // TODO - really needs a better test
     function testLinkerCodeHash() public {
         assertEq(
-            IHyperdrive(address(multiToken)).getPoolConfig().linkerCodeHash,
-            bytes32(0)
+            hyperdrive.getPoolConfig().linkerCodeHash,
+            forwarderFactory.ERC20LINK_HASH()
         );
     }
 
@@ -57,8 +40,8 @@ contract MultiTokenTest is BaseTest {
         string memory expectedSymbol = "HYPERDRIVE-LONG:126144000";
 
         // Test that the name and symbol are correct.
-        assertEq(multiToken.name(id), expectedName);
-        assertEq(multiToken.symbol(id), expectedSymbol);
+        assertEq(hyperdrive.name(id), expectedName);
+        assertEq(hyperdrive.symbol(id), expectedSymbol);
     }
 
     function testPermitForAll() public {
@@ -67,15 +50,15 @@ contract MultiTokenTest is BaseTest {
 
         uint256 deadline = block.timestamp + 1000;
 
-        uint256 nonce = multiToken.nonces(owner);
+        uint256 nonce = hyperdrive.nonces(owner);
 
         bytes32 structHash = keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                multiToken.domainSeparator(),
+                hyperdrive.domainSeparator(),
                 keccak256(
                     abi.encode(
-                        PERMIT_TYPEHASH,
+                        hyperdrive.PERMIT_TYPEHASH(),
                         owner,
                         address(0xCAFE),
                         true,
@@ -88,7 +71,7 @@ contract MultiTokenTest is BaseTest {
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, structHash);
 
-        multiToken.permitForAll(
+        hyperdrive.permitForAll(
             owner,
             address(0xCAFE),
             true,
@@ -98,10 +81,10 @@ contract MultiTokenTest is BaseTest {
             s
         );
 
-        assertEq(multiToken.isApprovedForAll(owner, address(0xCAFE)), true);
+        assertEq(hyperdrive.isApprovedForAll(owner, address(0xCAFE)), true);
 
         // Check that nonce increments
-        assertEq(multiToken.nonces(owner), nonce + 1);
+        assertEq(hyperdrive.nonces(owner), nonce + 1);
     }
 
     function testNegativePermitBadNonce() public {
@@ -110,15 +93,15 @@ contract MultiTokenTest is BaseTest {
 
         uint256 deadline = block.timestamp + 1000;
 
-        uint256 nonce = multiToken.nonces(owner);
+        uint256 nonce = hyperdrive.nonces(owner);
 
         bytes32 structHash = keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                multiToken.domainSeparator(),
+                hyperdrive.domainSeparator(),
                 keccak256(
                     abi.encode(
-                        PERMIT_TYPEHASH,
+                        hyperdrive.PERMIT_TYPEHASH(),
                         owner,
                         address(0xCAFE),
                         true,
@@ -132,7 +115,7 @@ contract MultiTokenTest is BaseTest {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, structHash);
 
         vm.expectRevert();
-        multiToken.permitForAll(
+        hyperdrive.permitForAll(
             owner,
             address(0xCAFE),
             true,
@@ -142,7 +125,7 @@ contract MultiTokenTest is BaseTest {
             s
         );
 
-        assertEq(multiToken.isApprovedForAll(owner, address(0xCAFE)), false);
+        assertEq(hyperdrive.isApprovedForAll(owner, address(0xCAFE)), false);
     }
 
     function testNegativePermitExpired() public {
@@ -151,15 +134,15 @@ contract MultiTokenTest is BaseTest {
 
         uint256 deadline = block.timestamp - 1;
 
-        uint256 nonce = multiToken.nonces(owner);
+        uint256 nonce = hyperdrive.nonces(owner);
 
         bytes32 structHash = keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                multiToken.domainSeparator(),
+                hyperdrive.domainSeparator(),
                 keccak256(
                     abi.encode(
-                        PERMIT_TYPEHASH,
+                        hyperdrive.PERMIT_TYPEHASH(),
                         owner,
                         address(0xCAFE),
                         true,
@@ -173,7 +156,7 @@ contract MultiTokenTest is BaseTest {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, structHash);
 
         vm.expectRevert();
-        multiToken.permitForAll(
+        hyperdrive.permitForAll(
             owner,
             address(0xCAFE),
             true,
@@ -183,7 +166,7 @@ contract MultiTokenTest is BaseTest {
             s
         );
 
-        assertEq(multiToken.isApprovedForAll(owner, address(0xCAFE)), false);
+        assertEq(hyperdrive.isApprovedForAll(owner, address(0xCAFE)), false);
     }
 
     function testNegativePermitBadSignature() public {
@@ -192,15 +175,15 @@ contract MultiTokenTest is BaseTest {
 
         uint256 deadline = block.timestamp + 1000;
 
-        uint256 nonce = multiToken.nonces(owner);
+        uint256 nonce = hyperdrive.nonces(owner);
 
         bytes32 structHash = keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                multiToken.domainSeparator(),
+                hyperdrive.domainSeparator(),
                 keccak256(
                     abi.encode(
-                        PERMIT_TYPEHASH,
+                        hyperdrive.PERMIT_TYPEHASH(),
                         owner,
                         address(0xCAFE),
                         true,
@@ -214,7 +197,7 @@ contract MultiTokenTest is BaseTest {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, structHash);
 
         vm.expectRevert();
-        multiToken.permitForAll(
+        hyperdrive.permitForAll(
             owner,
             address(0xF00DBABE),
             true,
@@ -225,14 +208,14 @@ contract MultiTokenTest is BaseTest {
         );
 
         assertEq(
-            multiToken.isApprovedForAll(owner, address(0xF00DBABE)),
+            hyperdrive.isApprovedForAll(owner, address(0xF00DBABE)),
             false
         );
     }
 
     function testCannotTransferZeroAddrBatchTransferFrom() public {
         vm.expectRevert();
-        multiToken.batchTransferFrom(
+        hyperdrive.batchTransferFrom(
             alice,
             address(0),
             new uint256[](0),
@@ -240,7 +223,7 @@ contract MultiTokenTest is BaseTest {
         );
 
         vm.expectRevert();
-        multiToken.batchTransferFrom(
+        hyperdrive.batchTransferFrom(
             address(0),
             alice,
             new uint256[](0),
@@ -250,7 +233,7 @@ contract MultiTokenTest is BaseTest {
 
     function testCannotSendInconsistentLengths() public {
         vm.expectRevert();
-        multiToken.batchTransferFrom(
+        hyperdrive.batchTransferFrom(
             alice,
             bob,
             new uint256[](0),
@@ -258,7 +241,7 @@ contract MultiTokenTest is BaseTest {
         );
 
         vm.expectRevert();
-        multiToken.batchTransferFrom(
+        hyperdrive.batchTransferFrom(
             alice,
             bob,
             new uint256[](1),
@@ -272,15 +255,15 @@ contract MultiTokenTest is BaseTest {
 
         uint256 deadline = block.timestamp + 1000;
 
-        uint256 nonce = multiToken.nonces(owner);
+        uint256 nonce = hyperdrive.nonces(owner);
 
         bytes32 structHash = keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                multiToken.domainSeparator(),
+                hyperdrive.domainSeparator(),
                 keccak256(
                     abi.encode(
-                        PERMIT_TYPEHASH,
+                        hyperdrive.PERMIT_TYPEHASH(),
                         owner,
                         address(0xCAFE),
                         true,
@@ -293,7 +276,7 @@ contract MultiTokenTest is BaseTest {
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, structHash);
 
-        multiToken.permitForAll(
+        hyperdrive.permitForAll(
             owner,
             address(0xCAFE),
             true,
@@ -303,9 +286,9 @@ contract MultiTokenTest is BaseTest {
             s
         );
 
-        multiToken.mint(1, owner, 100 ether);
-        multiToken.mint(2, owner, 50 ether);
-        multiToken.mint(3, owner, 10 ether);
+        IMockHyperdrive(address(hyperdrive)).mint(1, owner, 100 ether);
+        IMockHyperdrive(address(hyperdrive)).mint(2, owner, 50 ether);
+        IMockHyperdrive(address(hyperdrive)).mint(3, owner, 10 ether);
 
         uint256[] memory ids = new uint256[](3);
         ids[0] = 1;
@@ -317,17 +300,17 @@ contract MultiTokenTest is BaseTest {
         amounts[1] = 50 ether;
         amounts[2] = 10 ether;
 
-        vm.prank(address(0xCAFE));
-        multiToken.batchTransferFrom(owner, bob, ids, amounts);
+        vm.startPrank(address(0xCAFE));
+        hyperdrive.batchTransferFrom(owner, bob, ids, amounts);
     }
 
     function testBatchTransferFromFailsWithoutApproval() public {
         uint256 privateKey = 0xBEEF;
         address owner = vm.addr(privateKey);
 
-        multiToken.mint(1, owner, 100 ether);
-        multiToken.mint(2, owner, 50 ether);
-        multiToken.mint(3, owner, 10 ether);
+        IMockHyperdrive(address(hyperdrive)).mint(1, owner, 100 ether);
+        IMockHyperdrive(address(hyperdrive)).mint(2, owner, 50 ether);
+        IMockHyperdrive(address(hyperdrive)).mint(3, owner, 10 ether);
 
         uint256[] memory ids = new uint256[](3);
         ids[0] = 1;
@@ -340,6 +323,6 @@ contract MultiTokenTest is BaseTest {
         amounts[2] = 10 ether;
 
         vm.expectRevert();
-        multiToken.batchTransferFrom(owner, bob, ids, amounts);
+        hyperdrive.batchTransferFrom(owner, bob, ids, amounts);
     }
 }

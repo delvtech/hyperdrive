@@ -24,6 +24,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
 
+    ERC20ForwarderFactory forwarderFactory;
     ERC20Mintable baseToken;
     IHyperdrive hyperdrive;
 
@@ -46,6 +47,9 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
             false,
             type(uint256).max
         );
+
+        // Instantiate the forwarder factory.
+        forwarderFactory = new ERC20ForwarderFactory();
 
         // Instantiate Hyperdrive.
         IHyperdrive.PoolConfig memory config = testConfig(
@@ -154,8 +158,8 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 baseToken: IERC20(address(baseToken)),
                 // NOTE: This isn't used by MockHyperdrive.
                 vaultSharesToken: IERC20(address(0)),
-                linkerFactory: address(0),
-                linkerCodeHash: bytes32(0),
+                linkerFactory: address(forwarderFactory),
+                linkerCodeHash: forwarderFactory.ERC20LINK_HASH(),
                 minimumShareReserves: MINIMUM_SHARE_RESERVES,
                 minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
                 positionDuration: positionDuration,

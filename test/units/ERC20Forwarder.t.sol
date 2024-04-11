@@ -7,14 +7,13 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ERC20Forwarder } from "contracts/src/token/ERC20Forwarder.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { MockAssetId } from "contracts/test/MockAssetId.sol";
-import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
-import { BaseTest } from "test/utils/BaseTest.sol";
+import { IMockHyperdrive } from "contracts/test/MockHyperdrive.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-contract ERC20ERC20ForwarderFactoryTest is BaseTest {
+contract ERC20ForwarderFactoryTest is HyperdriveTest {
     using Lib for *;
 
-    IMockMultiToken multiToken;
     IERC20Forwarder forwarder;
 
     bytes32 public constant PERMIT_TYPEHASH =
@@ -24,21 +23,21 @@ contract ERC20ERC20ForwarderFactoryTest is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        vm.startPrank(deployer);
-        forwarderFactory = new ERC20ForwarderFactory();
-        bytes32 codeHash = keccak256(type(ERC20Forwarder).creationCode);
-        multiToken = IMockMultiToken(
-            address(new MockMultiToken(codeHash, address(forwarderFactory)))
-        );
 
-        forwarder = forwarderFactory.create(multiToken, 9);
+        // Deploy the forwarder
+        vm.startPrank(deployer);
+
+        forwarder = forwarderFactory.create(
+            IMultiToken(address(hyperdrive)),
+            9
+        );
 
         vm.stopPrank();
     }
 
     function testTransfer(uint256 AMOUNT) public {
         uint8 TOKEN_ID = 9;
-        multiToken.mint(TOKEN_ID, alice, AMOUNT);
+        IMockHyperdrive(address(hyperdrive)).mint(TOKEN_ID, alice, AMOUNT);
 
         assertEq(forwarder.balanceOf(alice), AMOUNT);
 
@@ -55,7 +54,10 @@ contract ERC20ERC20ForwarderFactoryTest is BaseTest {
         assertEq(address(token), address((IMultiToken(address(1)))));
         assertEq(tokenID, 1);
 
-        forwarder = forwarderFactory.create(multiToken, 5);
+        forwarder = forwarderFactory.create(
+            IMultiToken(address(hyperdrive)),
+            5
+        );
 
         // Transient variable should be reset after each create
         (token, tokenID) = forwarderFactory.getDeployDetails();
@@ -63,7 +65,7 @@ contract ERC20ERC20ForwarderFactoryTest is BaseTest {
         assertEq(tokenID, 1);
 
         address retrievedForwarder = forwarderFactory.getForwarder(
-            multiToken,
+            IMultiToken(address(hyperdrive)),
             5
         );
 
@@ -81,7 +83,10 @@ contract ERC20ERC20ForwarderFactoryTest is BaseTest {
         );
 
         // Create a forwarder.
-        forwarder = forwarderFactory.create(multiToken, id);
+        forwarder = forwarderFactory.create(
+            IMultiToken(address(hyperdrive)),
+            id
+        );
         assertEq(forwarder.decimals(), 18);
 
         // Generate expected token name and symbol.
@@ -96,9 +101,12 @@ contract ERC20ERC20ForwarderFactoryTest is BaseTest {
     function testForwarderERC20() public {
         uint256 AMOUNT = 10000 ether;
         uint256 TOKEN_ID = 8;
-        forwarder = forwarderFactory.create(multiToken, TOKEN_ID);
+        forwarder = forwarderFactory.create(
+            IMultiToken(address(hyperdrive)),
+            TOKEN_ID
+        );
 
-        multiToken.mint(TOKEN_ID, alice, AMOUNT);
+        IMockHyperdrive(address(hyperdrive)).mint(TOKEN_ID, alice, AMOUNT);
 
         assertEq(forwarder.balanceOf(address(alice)), AMOUNT);
         assertEq(forwarder.totalSupply(), AMOUNT);
@@ -402,12 +410,12 @@ contract ERC20ERC20ForwarderFactoryTest is BaseTest {
 
         uint256 deadline = block.timestamp + 1000;
 
-        uint256 nonce = multiToken.nonces(owner);
+        uint256 nonce = hyperdrive.nonces(owner);
 
         bytes32 structHash = keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                multiToken.domainSeparator(),
+                hyperdrive.domainSeparator(),
                 keccak256(
                     abi.encode(
                         MULTITOKEN_PERMIT_TYPEHASH,
@@ -423,7 +431,7 @@ contract ERC20ERC20ForwarderFactoryTest is BaseTest {
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, structHash);
 
-        multiToken.permitForAll(
+        hyperdrive.permitForAll(
             owner,
             address(0xCAFE),
             true,

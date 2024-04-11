@@ -33,6 +33,24 @@ interface IMockHyperdrive {
     function setReserves(uint256 shareReserves, uint256 bondReserves) external;
 
     function getGovernanceFeesAccrued() external view returns (uint256);
+
+    function __setBalanceOf(
+        uint256 _tokenId,
+        address _who,
+        uint256 _amount
+    ) external;
+
+    function __external_transferFrom(
+        uint256 tokenID,
+        address from,
+        address to,
+        uint256 amount,
+        address caller
+    ) external;
+
+    function mint(uint256 tokenID, address to, uint256 amount) external;
+
+    function burn(uint256 tokenID, address from, uint256 amount) external;
 }
 
 abstract contract MockHyperdriveBase is HyperdriveBase {
@@ -400,6 +418,32 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
 
     function setLongExposure(uint128 longExposure) external {
         _marketState.longExposure = longExposure;
+    }
+
+    function __setBalanceOf(
+        uint256 _tokenId,
+        address _who,
+        uint256 _amount
+    ) external {
+        _balanceOf[_tokenId][_who] = _amount;
+    }
+
+    function __external_transferFrom(
+        uint256 tokenID,
+        address from,
+        address to,
+        uint256 amount,
+        address caller
+    ) external {
+        _transferFrom(tokenID, from, to, amount, caller);
+    }
+
+    function mint(uint256 tokenID, address to, uint256 amount) external {
+        _mint(tokenID, to, amount);
+    }
+
+    function burn(uint256 tokenID, address from, uint256 amount) external {
+        _burn(tokenID, from, amount);
     }
 }
 
