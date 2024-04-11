@@ -114,7 +114,7 @@ contract EtchingUtils is Test {
         // used to load immutables that will be used during the etching process.
         IHyperdrive hyperdrive = IHyperdrive(_hyperdrive);
 
-        // Etch the vault contract.        {
+        // Etch the vault contract.
         {
             MockLido target = MockLido(hyperdrive.vaultSharesToken());
             MockLido template = new MockLido(
