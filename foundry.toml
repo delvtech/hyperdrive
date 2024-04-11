@@ -37,7 +37,6 @@ via_ir = false
 # Enable gas-reporting for all contracts
 gas_reports = ["*"]
 evm_version = "paris"
-
 [fuzz]
 runs = 1000
 
