@@ -5,6 +5,7 @@ import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveFactory } from "contracts/src/interfaces/IHyperdriveFactory.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ETH } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
@@ -142,56 +143,18 @@ abstract contract InstanceTest is HyperdriveTest {
         vm.startPrank(alice);
 
         // Deploy Hyperdrive target contracts.
-        factory.deployTarget(
-            deploymentId,
-            deployerCoordinator,
-            poolConfig,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            0,
-            deploymentSalt
-        );
-        factory.deployTarget(
-            deploymentId,
-            deployerCoordinator,
-            poolConfig,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            1,
-            deploymentSalt
-        );
-        factory.deployTarget(
-            deploymentId,
-            deployerCoordinator,
-            poolConfig,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            2,
-            deploymentSalt
-        );
-        factory.deployTarget(
-            deploymentId,
-            deployerCoordinator,
-            poolConfig,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            3,
-            deploymentSalt
-        );
-        factory.deployTarget(
-            deploymentId,
-            deployerCoordinator,
-            poolConfig,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            4,
-            deploymentSalt
-        );
+        for (uint256 i = 0; i < 5; i++) {
+            factory.deployTarget(
+                deploymentId,
+                deployerCoordinator,
+                poolConfig,
+                new bytes(0),
+                FIXED_RATE,
+                FIXED_RATE,
+                i,
+                deploymentSalt
+            );
+        }
 
         // Alice gives approval to the deployer coordinator to fund the market.
         config.vaultSharesToken.approve(deployerCoordinator, 100_000e18);
@@ -216,10 +179,10 @@ abstract contract InstanceTest is HyperdriveTest {
         // Record Alice's ETH balance before the deployment call.
         uint256 aliceBalanceBefore = address(alice).balance;
 
-        // Deploy and initialize the market. If the base token is ETH we pass the
-        // contribution through the call.
+        // Deploy and initialize the market. If the base token is ETH we pass
+        // twice the contribution through the call to test refunds.
         hyperdrive = factory.deployAndInitialize{
-            value: asBase && isBaseETH ? contribution : 0
+            value: asBase && isBaseETH ? 2 * contribution : 0
         }(
             deploymentId,
             deployerCoordinator,
@@ -238,6 +201,7 @@ abstract contract InstanceTest is HyperdriveTest {
 
         // Ensure that refunds are handled properly.
         if (config.enableBaseDeposits && asBase && isBaseETH) {
+            // Ensure that alice's ETH balance only decreased by the contribution.
             assertEq(aliceBalanceBefore - contribution, address(alice).balance);
         } else {
             assertEq(aliceBalanceBefore, address(alice).balance);
@@ -840,5 +804,62 @@ abstract contract InstanceTest is HyperdriveTest {
                 baseBalance: base,
                 ETHBalance: account.balance
             });
+    }
+}
+
+/// @author DELV
+/// @title NonPayableDeployer
+/// @dev A testing contract that will call `deployAndInitialize` on the
+///      specified hyperdrive factory and will revert if ether is refunded.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
+contract NonPayableDeployer {
+    function deployTarget(
+        HyperdriveFactory _factory,
+        bytes32 _deploymentId,
+        address _deployerCoordinator,
+        IHyperdrive.PoolDeployConfig memory _config,
+        bytes memory _extraData,
+        uint256 _fixedAPR,
+        uint256 _timeStretchAPR,
+        uint256 _targetIndex,
+        bytes32 _salt
+    ) external {
+        _factory.deployTarget(
+            _deploymentId,
+            _deployerCoordinator,
+            _config,
+            _extraData,
+            _fixedAPR,
+            _timeStretchAPR,
+            _targetIndex,
+            _salt
+        );
+    }
+
+    function deployAndInitialize(
+        HyperdriveFactory _factory,
+        bytes32 _deploymentId,
+        address _deployerCoordinator,
+        IHyperdrive.PoolDeployConfig memory _config,
+        bytes memory _extraData,
+        uint256 _contribution,
+        uint256 _fixedAPR,
+        uint256 _timeStretchAPR,
+        IHyperdrive.Options memory _options,
+        bytes32 _salt
+    ) external payable {
+        _factory.deployAndInitialize{ value: msg.value }(
+            _deploymentId,
+            _deployerCoordinator,
+            _config,
+            _extraData,
+            _contribution,
+            _fixedAPR,
+            _timeStretchAPR,
+            _options,
+            _salt
+        );
     }
 }
