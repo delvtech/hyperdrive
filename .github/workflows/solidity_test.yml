@@ -19,7 +19,6 @@ jobs:
     env:
       MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
       SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
-      GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -42,7 +41,6 @@ jobs:
     env:
       MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
       SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
-      GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -65,7 +63,6 @@ jobs:
     env:
       MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
       SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
-      GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -88,7 +85,6 @@ jobs:
     env:
       MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
       SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
-      GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
     steps:
       - uses: actions/checkout@v3
         with:
