@@ -15,31 +15,33 @@ import { EtchingUtils } from "test/utils/EtchingUtils.sol";
 ///                    particular legal or regulatory significance.
 contract Debugging is BaseTest, EtchingUtils {
     /// @dev The block to fork. If you're debugging a failing transaction, this
-    ///      should be the block at which the transaction was failing.
-    uint256 internal constant FORK_BLOCK = 5669822;
+    ///      should be the block at which the transaction was failing. If you're
+    ///      debugging a successful transaction, you may need to subtract one
+    ///      from the block.
+    uint256 internal constant FORK_BLOCK = 5676348;
 
     /// @dev The hyperdrive instance to connect to. If you're debugging a
-    ///      failing Hyperdrive transaction, this should probably be the `to`
-    ///      address in the failing transaction.
+    ///      Hyperdrive transaction, this should probably be the `to` address in
+    ///      the failing transaction.
     IHyperdrive internal constant HYPERDRIVE =
-        IHyperdrive(address(0xff33bd6d7ED4119c99C310F3e5f0Fa467796Ee23));
+        IHyperdrive(address(0x392839dA0dACAC790bd825C81ce2c5E264D793a8));
 
     /// @dev The sender to use in the debugging call. If you're debugging a
-    ///      failing Hyperdrive transaction, this should probably be the `from`
+    ///      Hyperdrive transaction, this should probably be the `from`
     ///      address in the failing transaction.
     address internal constant SENDER =
-        address(0x0076b154e60BF0E9088FcebAAbd4A778deC5ce2c);
+        address(0x2C76cc659ec83E36323f32E6a9789C29e7b56c4B);
 
     /// @dev The value to use in the debugging call. If you're debugging a
-    ///      failing Hyperdrive transaction, this should probably be the `value`
+    ///      Hyperdrive transaction, this should probably be the `value`
     ///      sent in the failing transaction.
     uint256 internal constant VALUE = 0;
 
     /// @dev The calldata to use in the debugging call. If you're debugging a
-    ///      failing Hyperdrive transaction, this should probably be the
-    ///      calldata from the failing transaction.
+    ///      Hyperdrive transaction, this should probably be the calldata from
+    ///      the failing transaction (remove the "0x" prefix from the calldata.
     bytes internal constant CALLDATA =
-        hex"cba2e58d0000000000000000000000000000000000000000000000220753ac4022f618be000000000000000000000000000000000000000000000021ce4c1a12ccde2ed00000000000000000000000000000000000000000000000000de10e96f727627a00000000000000000000000000000000000000000000000000000000000000800000000000000000000000000076b154e60bf0e9088fcebaabd4a778dec5ce2c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000";
+        hex"cba2e58d0000000000000000000000000000000000000000000007d9a5405edc26fa36b50000000000000000000000000000000000000000000007d7f3c7d8d354cd71990000000000000000000000000000000000000000000000000de326f195450cd200000000000000000000000000000000000000000000000000000000000000800000000000000000000000002c76cc659ec83e36323f32e6a9789c29e7b56c4b0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000";
 
     function test_debug() external __sepolia_fork(FORK_BLOCK) {
         // Etch the hyperdrive instance to add console logs.
