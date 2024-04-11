@@ -116,14 +116,12 @@ impl State {
                 self.rate_after_long(possible_target_base_delta, Some(possible_target_bond_delta))?;
 
             // We assume that the loss is positive only because Newton's
-            // method and the one-shot approximation will always underestimate.
+            // method will always underestimate.
             if target_rate > resulting_rate {
                 return Err(eyre!(
                     "We overshot the zero-crossing during Newton's method.",
                 ));
             }
-            // The loss is $l(x) = r(x) - r_t$ for some rate after a long
-            // is opened, $r(x)$, and target rate, $r_t$.
             let loss = resulting_rate - target_rate;
 
             // If we've done it (solvent & within error), then return the value.
@@ -507,28 +505,37 @@ mod tests {
                 .await;
 
             // Bob opens a targeted long.
+            let current_state = bob.get_state().await?;
+            let max_spot_price_before_long = current_state.calculate_max_spot_price();
             match targeted_long_result {
                 // If the code ran without error, open the long
                 Ok(targeted_long) => {
                     bob.open_long(targeted_long, None, None).await?;
                 }
 
-                // Else check the error for an acceptible one
+                // Else parse the error for a to improve error messaging.
                 Err(e) => {
                     // If the fn failed it's possible that the target rate would be insolvent.
                     if e.to_string()
                         .contains("Unable to find an acceptable loss with max iterations")
                     {
-                        let state = bob.get_state().await?;
                         let max_long = bob.calculate_max_long(None).await?;
                         let rate_after_max_long =
-                            state.calculate_spot_rate_after_long(max_long, None)?;
+                            current_state.calculate_spot_rate_after_long(max_long, None)?;
                         // If the rate after the max long is at or below the target, then we could have hit it.
                         if rate_after_max_long <= target_rate {
-                            // Fail if there was a long to hit the rate (which means the max is <= the target)
-                            return Err(eyre!("Calculate max long failed; a long that hits the target rate exists but was not found."));
+                            return Err(eyre!(
+                                "ERROR {}\nA long that hits the target rate exists but was not found.",
+                                e
+                            ));
                         }
                         // Otherwise the target would have resulted in insolvency and wasn't possible.
+                        else {
+                            return Err(eyre!(
+                                "ERROR {}\nThe target rate would result in insolvency.",
+                                e
+                            ));
+                        }
                     }
                     // If the error is not the one we're looking for, return it, causing the test to fail.
                     else {
@@ -546,7 +553,6 @@ mod tests {
 
             // Check that our resulting price is under the max
             let current_state = bob.get_state().await?;
-            let max_spot_price_before_long = current_state.calculate_max_spot_price();
             let spot_price_after_long = current_state.calculate_spot_price();
             assert!(
                 max_spot_price_before_long > spot_price_after_long,
