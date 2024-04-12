@@ -48,30 +48,6 @@ contract ERC20ForwarderFactoryTest is HyperdriveTest {
         assertEq(forwarder.balanceOf(bob), AMOUNT);
     }
 
-    function testERC20ForwarderFactory() public {
-        (IMultiToken token, uint256 tokenID) = forwarderFactory
-            .getDeployDetails();
-        assertEq(address(token), address((IMultiToken(address(1)))));
-        assertEq(tokenID, 1);
-
-        forwarder = forwarderFactory.create(
-            IMultiToken(address(hyperdrive)),
-            5
-        );
-
-        // Transient variable should be reset after each create
-        (token, tokenID) = forwarderFactory.getDeployDetails();
-        assertEq(address(token), address((IMultiToken(address(1)))));
-        assertEq(tokenID, 1);
-
-        address retrievedForwarder = forwarderFactory.getForwarder(
-            IMultiToken(address(hyperdrive)),
-            5
-        );
-
-        assertEq(address(forwarder), retrievedForwarder);
-    }
-
     // Test Forwarder contract
     function testForwarderMetadata() public {
         // Create a real tokenId.

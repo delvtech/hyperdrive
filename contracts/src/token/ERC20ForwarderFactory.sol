@@ -77,7 +77,7 @@ contract ERC20ForwarderFactory is IERC20ForwarderFactory {
     function getForwarder(
         IMultiToken __token,
         uint256 __tokenId
-    ) public view returns (address) {
+    ) public view virtual returns (address) {
         // Get the salt and hash to predict the address.
         bytes32 salt = keccak256(abi.encode(__token, __tokenId));
         bytes32 addressBytes = keccak256(
