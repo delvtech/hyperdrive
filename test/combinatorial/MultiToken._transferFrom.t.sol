@@ -5,22 +5,10 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
-import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
+import { IMockHyperdrive } from "contracts/test/MockHyperdrive.sol";
 import { CombinatorialTest } from "test/utils/CombinatorialTest.sol";
 
 contract MultiToken__transferFrom is CombinatorialTest {
-    IMockMultiToken multiToken;
-
-    function setUp() public override {
-        // MultiToken deployment
-        super.setUp();
-        vm.startPrank(deployer);
-        multiToken = IMockMultiToken(
-            address(new MockMultiToken(bytes32(0), address(forwarderFactory)))
-        );
-        vm.stopPrank();
-    }
-
     struct TestCase {
         uint256 index;
         // -- args
@@ -80,12 +68,12 @@ contract MultiToken__transferFrom is CombinatorialTest {
 
     function __setup(TestCase memory testCase) internal __combinatorial_setup {
         // Set balances of the "from" and "to" addresses
-        multiToken.__setBalanceOf(
+        IMockHyperdrive(address(hyperdrive)).__setBalanceOf(
             testCase.tokenId,
             testCase.from,
             testCase.balanceFrom
         );
-        multiToken.__setBalanceOf(
+        IMockHyperdrive(address(hyperdrive)).__setBalanceOf(
             testCase.tokenId,
             testCase.to,
             testCase.balanceTo
@@ -96,10 +84,10 @@ contract MultiToken__transferFrom is CombinatorialTest {
         if (testCase.caller != testCase.from) {
             vm.startPrank(testCase.from);
             if (testCase.approvedForAll) {
-                multiToken.setApprovalForAll(testCase.caller, true);
+                hyperdrive.setApprovalForAll(testCase.caller, true);
             } else {
-                multiToken.setApprovalForAll(testCase.caller, false);
-                multiToken.setApproval(
+                hyperdrive.setApprovalForAll(testCase.caller, false);
+                hyperdrive.setApproval(
                     testCase.tokenId,
                     testCase.caller,
                     testCase.approvals
@@ -132,7 +120,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
         // _transferFrom. If the call succeeds then code execution should revert
         if (approvalUnderflows || balanceFromUnderflows || balanceToOverflows) {
             try
-                multiToken.__external_transferFrom(
+                IMockHyperdrive(address(hyperdrive)).__external_transferFrom(
                     testCase.tokenId,
                     testCase.from,
                     testCase.to,
@@ -151,31 +139,23 @@ contract MultiToken__transferFrom is CombinatorialTest {
         }
     }
 
-    event TransferSingle(
-        address indexed operator,
-        address indexed from,
-        address indexed to,
-        uint256 id,
-        uint256 value
-    );
-
     function __success(
         TestCase memory testCase
     ) internal __combinatorial_success {
         // Fetch "from" and "to" balances prior to function under testing being
         // executed to perform differential checking
-        uint256 preBalanceFrom = multiToken.balanceOf(
+        uint256 preBalanceFrom = hyperdrive.balanceOf(
             testCase.tokenId,
             testCase.from
         );
-        uint256 preBalanceTo = multiToken.balanceOf(
+        uint256 preBalanceTo = hyperdrive.balanceOf(
             testCase.tokenId,
             testCase.to
         );
         // Fetch "from's" approvals for "caller" prior to function under testing
         // being executed to perform differential checking in the case of
         // non-infinite approvals being set
-        uint256 preCallerApprovals = multiToken.perTokenApprovals(
+        uint256 preCallerApprovals = hyperdrive.perTokenApprovals(
             testCase.tokenId,
             testCase.from,
             testCase.caller
@@ -194,7 +174,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
         // Execute the function under test. It is expected to succeed and any
         // failure will cause the code execution to revert
         try
-            multiToken.__external_transferFrom(
+            IMockHyperdrive(address(hyperdrive)).__external_transferFrom(
                 testCase.tokenId,
                 testCase.from,
                 testCase.to,
@@ -215,7 +195,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
             testCase.approvals != type(uint256).max
         ) {
             uint256 callerApprovalsDiff = preCallerApprovals -
-                multiToken.perTokenApprovals(
+                hyperdrive.perTokenApprovals(
                     testCase.tokenId,
                     testCase.from,
                     testCase.caller
@@ -233,7 +213,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
 
         // Difference of before and after "from" balances should be "amount"
         uint256 fromBalanceDiff = preBalanceFrom -
-            multiToken.balanceOf(testCase.tokenId, testCase.from);
+            hyperdrive.balanceOf(testCase.tokenId, testCase.from);
         if (fromBalanceDiff != testCase.amount) {
             __log(unicode"❎", testCase);
             assertEq(
@@ -244,7 +224,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
         }
 
         // Difference of before and after "to" balances should be "amount"
-        uint256 toBalanceDiff = multiToken.balanceOf(
+        uint256 toBalanceDiff = hyperdrive.balanceOf(
             testCase.tokenId,
             testCase.to
         ) - preBalanceTo;

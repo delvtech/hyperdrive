@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-
 import { ERC4626HyperdriveCoreDeployer } from "contracts/src/deployers/erc4626/ERC4626HyperdriveCoreDeployer.sol";
 import { ERC4626HyperdriveDeployerCoordinator } from "contracts/src/deployers/erc4626/ERC4626HyperdriveDeployerCoordinator.sol";
 import { ERC4626Target0Deployer } from "contracts/src/deployers/erc4626/ERC4626Target0Deployer.sol";
@@ -3084,6 +3081,21 @@ contract ERC4626InstanceGetterTest is HyperdriveFactoryBaseTest {
         }
     }
 
+    function test_hyperdriveFactory_getInstancesInRange_failure_invalidIndexes()
+        external
+    {
+        vm.expectRevert(IHyperdriveFactory.InvalidIndexes.selector);
+        factory.getInstancesInRange(1, 0);
+    }
+
+    function test_hyperdriveFactory_getInstancesInRange_failure_endIndexTooLarge()
+        external
+    {
+        uint256 endIndex = factory.getNumberOfInstances();
+        vm.expectRevert(IHyperdriveFactory.EndIndexTooLarge.selector);
+        factory.getInstancesInRange(0, endIndex);
+    }
+
     function testFuzz_erc4626Factory_getInstancesInRange(
         uint256 numberOfInstances,
         uint256 startingIndex,
@@ -3230,6 +3242,21 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
                 address(deployerCoordinators[i])
             );
         }
+    }
+
+    function test_hyperdriveFactory_getDeployerCoordinatorsInRange_failure_invalidIndexes()
+        external
+    {
+        vm.expectRevert(IHyperdriveFactory.InvalidIndexes.selector);
+        factory.getDeployerCoordinatorsInRange(1, 0);
+    }
+
+    function test_hyperdriveFactory_getDeployerCoordinatorsInRange_failure_endIndexTooLarge()
+        external
+    {
+        uint256 endIndex = factory.getNumberOfDeployerCoordinators();
+        vm.expectRevert(IHyperdriveFactory.EndIndexTooLarge.selector);
+        factory.getDeployerCoordinatorsInRange(0, endIndex);
     }
 
     function testFuzz_hyperdriveFactory_getDeployerCoordinatorsInRange(

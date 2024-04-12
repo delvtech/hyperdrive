@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { BaseTest } from "./BaseTest.sol";
-import { Lib as lib } from "./Lib.sol";
+import { HyperdriveTest } from "./HyperdriveTest.sol";
+import { Lib } from "./Lib.sol";
 
-contract CombinatorialTest is BaseTest {
+contract CombinatorialTest is HyperdriveTest {
     enum CombinatorialTestKind {
         Fail,
         Success
@@ -43,7 +43,7 @@ contract CombinatorialTest is BaseTest {
         _;
         // Detect if the __fail call was caught
         if (
-            lib.neq(__error, abi.encodeWithSelector(UnassignedCatch.selector))
+            Lib.neq(__error, abi.encodeWithSelector(UnassignedCatch.selector))
         ) {
             // If a __fail call was caught then a __fail_error must be assigned
             assertTrue(
@@ -55,7 +55,7 @@ contract CombinatorialTest is BaseTest {
             );
             // If the caught error and the expected error do not match then
             // cause a test revert
-            if (lib.neq(__error, __fail_error)) {
+            if (Lib.neq(__error, __fail_error)) {
                 assertEq(__error, __fail_error, "Expected different error");
             }
 
