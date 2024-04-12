@@ -21,13 +21,11 @@
 ///
 /// After deploying these contracts and setting up the deployer coordinators,
 /// this script will transfer ownership of the factory to a specified address.
-use std::fs::{create_dir_all, File};
 use std::{env, sync::Arc};
 
 use ethers::{
     core::utils::keccak256,
-    middleware::Middleware,
-    signers::{LocalWallet, Signer},
+    signers::LocalWallet,
     types::{Address, U256},
 };
 use eyre::Result;

@@ -5,10 +5,7 @@ use std::{
 
 use ethers::signers::LocalWallet;
 use eyre::Result;
-use test_utils::{
-    chain::{Chain, TestChainConfig},
-    constants::ALICE,
-};
+use test_utils::chain::{Chain, TestChainConfig};
 
 #[tokio::main]
 async fn main() -> Result<()> {
