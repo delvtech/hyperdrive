@@ -14,9 +14,9 @@ import { Lib } from "test/utils/Lib.sol";
 
 contract DummyForwarderFactory is ERC20ForwarderFactory {
     function getForwarder(
-        IMultiToken __token,
-        uint256 __tokenId
-    ) public view override returns (address) {
+        IMultiToken, // unused
+        uint256 // unused
+    ) public pure override returns (address) {
         return address(0);
     }
 }
