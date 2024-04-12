@@ -1681,6 +1681,200 @@ contract LPMathTest is HyperdriveTest {
         }
     }
 
+    function test__calculateDistributeExcessIdleShareProceedsNetLongEdgeCaseSafe()
+        external
+    {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockLPMath lpMath = new MockLPMath();
+
+        uint256 apr = 0.02e18;
+        uint256 initialVaultSharePrice = 1e18;
+        uint256 positionDuration = 365 days;
+        uint256 timeStretch = HyperdriveMath.calculateTimeStretch(
+            apr,
+            positionDuration
+        );
+
+        // The pool has a shareAdjustment <= 0.
+        {
+            uint256 shareReserves = 100_000_000e18;
+            int256 shareAdjustment = -1;
+            uint256 bondReserves = calculateBondReserves(
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    shareReserves,
+                    shareAdjustment
+                ),
+                initialVaultSharePrice,
+                apr,
+                positionDuration,
+                timeStretch
+            );
+            LPMath.PresentValueParams memory presentValueParams = LPMath
+                .PresentValueParams({
+                    shareReserves: shareReserves,
+                    shareAdjustment: shareAdjustment,
+                    bondReserves: bondReserves,
+                    vaultSharePrice: 2e18,
+                    initialVaultSharePrice: initialVaultSharePrice,
+                    minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 0,
+                    longAverageTimeRemaining: 0,
+                    shortsOutstanding: 0,
+                    shortAverageTimeRemaining: 0
+                });
+            LPMath.DistributeExcessIdleParams memory params = LPMath
+                .DistributeExcessIdleParams({
+                    presentValueParams: presentValueParams,
+                    startingPresentValue: LPMath.calculatePresentValue(
+                        presentValueParams
+                    ),
+                    activeLpTotalSupply: 1_000_000e18,
+                    withdrawalSharesTotalSupply: 1_000_000e18,
+                    idle: 100e18,
+                    netCurveTrade: int256(
+                        presentValueParams.longsOutstanding.mulDown(
+                            presentValueParams.longAverageTimeRemaining
+                        )
+                    ) -
+                        int256(
+                            presentValueParams.shortsOutstanding.mulDown(
+                                presentValueParams.shortAverageTimeRemaining
+                            )
+                        ),
+                    originalShareReserves: shareReserves,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves
+                });
+
+            (uint256 shareProceeds, bool success) = lpMath
+                .calculateDistributeExcessIdleShareProceedsNetLongEdgeCaseSafe(
+                    params
+                );
+            assertEq(shareProceeds, 0);
+            assertEq(success, false);
+        }
+
+        // The pool's netFlatTrade >= rhs.
+        {
+            uint256 shareReserves = 100_000_000e18;
+            int256 shareAdjustment = 1;
+            uint256 bondReserves = calculateBondReserves(
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    shareReserves,
+                    shareAdjustment
+                ),
+                initialVaultSharePrice,
+                apr,
+                positionDuration,
+                timeStretch
+            );
+            LPMath.PresentValueParams memory presentValueParams = LPMath
+                .PresentValueParams({
+                    shareReserves: shareReserves,
+                    shareAdjustment: shareAdjustment,
+                    bondReserves: bondReserves,
+                    vaultSharePrice: 2e18,
+                    initialVaultSharePrice: initialVaultSharePrice,
+                    minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 0,
+                    longAverageTimeRemaining: 0,
+                    shortsOutstanding: 1e18,
+                    shortAverageTimeRemaining: 0
+                });
+            LPMath.DistributeExcessIdleParams memory params = LPMath
+                .DistributeExcessIdleParams({
+                    presentValueParams: presentValueParams,
+                    startingPresentValue: 0,
+                    activeLpTotalSupply: 1_000_000e18,
+                    withdrawalSharesTotalSupply: 1_000_000e18,
+                    idle: 100e18,
+                    netCurveTrade: int256(
+                        presentValueParams.longsOutstanding.mulDown(
+                            presentValueParams.longAverageTimeRemaining
+                        )
+                    ) -
+                        int256(
+                            presentValueParams.shortsOutstanding.mulDown(
+                                presentValueParams.shortAverageTimeRemaining
+                            )
+                        ),
+                    originalShareReserves: 0,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves
+                });
+
+            (uint256 shareProceeds, bool success) = lpMath
+                .calculateDistributeExcessIdleShareProceedsNetLongEdgeCaseSafe(
+                    params
+                );
+            assertEq(shareProceeds, 0);
+            assertEq(success, false);
+        }
+
+        // The pool's originalShareReserves < rhs.
+        {
+            uint256 shareReserves = 100_000_000e18;
+            int256 shareAdjustment = 1;
+            uint256 bondReserves = calculateBondReserves(
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    shareReserves,
+                    shareAdjustment
+                ),
+                initialVaultSharePrice,
+                apr,
+                positionDuration,
+                timeStretch
+            );
+            LPMath.PresentValueParams memory presentValueParams = LPMath
+                .PresentValueParams({
+                    shareReserves: shareReserves,
+                    shareAdjustment: shareAdjustment,
+                    bondReserves: bondReserves,
+                    vaultSharePrice: 2e18,
+                    initialVaultSharePrice: initialVaultSharePrice,
+                    minimumShareReserves: 1e5,
+                    minimumTransactionAmount: 1e5,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 1e18,
+                    longAverageTimeRemaining: 0,
+                    shortsOutstanding: 0,
+                    shortAverageTimeRemaining: 0
+                });
+            LPMath.DistributeExcessIdleParams memory params = LPMath
+                .DistributeExcessIdleParams({
+                    presentValueParams: presentValueParams,
+                    startingPresentValue: 0,
+                    activeLpTotalSupply: 1_000_000e18,
+                    withdrawalSharesTotalSupply: 1_000_000e18,
+                    idle: 100e18,
+                    netCurveTrade: int256(
+                        presentValueParams.longsOutstanding.mulDown(
+                            presentValueParams.longAverageTimeRemaining
+                        )
+                    ) -
+                        int256(
+                            presentValueParams.shortsOutstanding.mulDown(
+                                presentValueParams.shortAverageTimeRemaining
+                            )
+                        ),
+                    originalShareReserves: shareReserves,
+                    originalShareAdjustment: shareAdjustment,
+                    originalBondReserves: bondReserves
+                });
+
+            (uint256 shareProceeds, bool success) = lpMath
+                .calculateDistributeExcessIdleShareProceedsNetLongEdgeCaseSafe(
+                    params
+                );
+            assertEq(shareProceeds, 0);
+            assertEq(success, false);
+        }
+    }
+
     function calculateBondReserves(
         uint256 _shareReserves,
         uint256 _initialVaultSharePrice,
