@@ -101,11 +101,12 @@ impl State {
         &self,
         bond_amount: FixedPoint,
         base_amount: Option<FixedPoint>,
-    ) -> FixedPoint {
-        calculate_rate_given_fixed_price(
-            self.calculate_spot_price_after_short(bond_amount, base_amount),
+    ) -> Result<FixedPoint> {
+        let price = self.calculate_spot_price_after_short(bond_amount, base_amount)?;
+        Ok(calculate_rate_given_fixed_price(
+            price,
             self.position_duration(),
-        )
+        ))
     }
 
     /// Calculates the amount of short principal that the LPs need to pay to back a

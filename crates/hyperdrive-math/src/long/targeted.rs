@@ -125,8 +125,8 @@ impl State {
                     "We overshot the zero-crossing during Newton's method.",
                 ));
             }
-            // The loss is $l(x) = r(x) - r_t$ for some rate after a long
-            // is opened, $r(x)$, and target rate, $r_t$.
+            // The optimization loss can be the difference without abs or squaring
+            // because of the above check.
             let loss = resulting_rate - target_rate;
 
             // If we've done it (solvent & within error), then return the value.
