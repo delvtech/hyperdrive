@@ -100,4 +100,14 @@ contract MockLPMath {
                 _bondAmount
             );
     }
+
+    function calculateDistributeExcessIdleShareProceedsNetLongEdgeCaseSafe(
+        LPMath.DistributeExcessIdleParams memory _params
+    ) external pure returns (uint256, bool) {
+        return
+            LPMath
+                .calculateDistributeExcessIdleShareProceedsNetLongEdgeCaseSafe(
+                    _params
+                );
+    }
 }
