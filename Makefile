@@ -4,7 +4,7 @@
 
 ### Build ###
 
-build: 
+build:
 	make build-sol
 
 build-sol:
@@ -19,7 +19,7 @@ SOLIDITY_LP_WITHDRAWAL_TESTS = LPWithdrawalTest
 SOLIDITY_NETTING_TESTS = IntraCheckpointNettingTest
 SOLIDITY_ZOMBIE_TESTS = ZombieInterestTest
 
-test: 
+test:
 	make test-sol
 
 test-sol: test-sol-core test-sol-instances test-sol-lp-withdrawal test-sol-netting test-sol-zombie
@@ -82,3 +82,8 @@ lint-rust:
 
 prettier:
 	npx prettier --write .
+
+### Deploy ###
+
+deploy:
+	forge script ./script/deploy/Deploy.s.sol --broadcast --slow --verify --resume --multi --isolate --legacy

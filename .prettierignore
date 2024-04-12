@@ -1,4 +1,3 @@
-*.json
 *.js
 *.md
 *.yaml
@@ -8,3 +7,4 @@ forge-cache/
 node_modules/
 out/
 coverage_report/
+*.toml

@@ -1,50 +1,55 @@
 [profile.default]
-solc_version = '0.8.20'
-# The source directory
-src = 'contracts'
-# The artifact directory
-out = 'out'
-# A list of paths to look for libraries in
-libs = ['node_modules', 'lib']
-# The test directory
-test = 'test'
-# Whether to cache builds or not
-cache = true
-# The cache directory if enabled
-cache_path = 'forge-cache'
-# Enables or disables the optimizer
-remappings = [
-  'forge-std=lib/forge-std/src',
-  'openzeppelin=lib/openzeppelin-contracts/contracts',
-  'solmate=lib/solmate/src',
-]
-# gas limit - max u64
-gas_limit = "18446744073709551615"
-# Allows the scripts to write the addresses to a file.
-fs_permissions = [
-  { access = "write", path = "./artifacts/script_addresses.json" },
-  { access = "write", path = "./test/Generated.t.sol" },
-]
-# See more config options https://github.com/foundry-rs/foundry/tree/master/config
+  solc_version='0.8.20'
+  # The source directory
+  src='contracts'
+  # The artifact directory
+  out='out'
+  # A list of paths to look for libraries in
+  libs=['node_modules', 'lib']
+  # The test directory
+  test='test'
+  # Whether to cache builds or not
+  cache=true
+  # The cache directory if enabled
+  cache_path='forge-cache'
+  # Enables or disables the optimizer
+  remappings=[
+    'forge-std=lib/forge-std/src',
+    'openzeppelin=lib/openzeppelin-contracts/contracts',
+    'solmate=lib/solmate/src',
+  ]
+  # gas limit - max u64
+  gas_limit="18446744073709551615"
+  # Allows the scripts to write the addresses to a file.
+  fs_permissions=[
+    {access="write", path="./artifacts/script_addresses.json"},
+    {access="write", path="./test/Generated.t.sol"},
+    {access="read", path="./script/deploy"},
+    {access="write", path="./script/deploy/summaries"}
+  ]
+  # See more config options https://github.com/foundry-rs/foundry/tree/master/config
 
 [profile.production]
-# strict warnings
-deny_warnings = true
-# optimizer settings
-optimizer = true
-optimizer_runs = 10000000 # 10 million runs
-via_ir = false
-# Enable gas-reporting for all contracts
-gas_reports = ["*"]
-evm_version = "paris"
+  # strict warnings
+  # deny_warnings=true
+  # optimizer settings
+  optimizer     =true
+  optimizer_runs=10000000 # 10 million runs
+  via_ir        =false
+  # Enable gas-reporting for all contracts
+  gas_reports=["*"]
+  evm_version="paris"
+  verbosity = 4
 
 [profile.lite]
 optimizer = false
 via_ir = false
 
 [fuzz]
-runs = 1000
+  runs=1000
 
 [rpc_endpoints]
-mainnet = "${MAINNET_RPC_URL}"
-sepolia = "${SEPOLIA_RPC_URL}"
+  mainnet     ="${MAINNET_RPC_URL}"
+  gnosis      ="${GNOSIS_RPC_URL}"
+  sepolia           ="${SEPOLIA_RPC_URL}"
+  optimism_sepolia ="${OPTIMISM_SEPOLIA_RPC_URL}"

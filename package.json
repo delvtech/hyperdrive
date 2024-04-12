@@ -1,40 +1,57 @@
 {
-    "name": "hyperdrive",
-    "version": "1.0.0",
-    "description": "Hyperdrive Smart Contracts",
-    "engines": {
-        "node": "^18"
-    },
-    "scripts": {
-        "postinstall": "patch-package --patch-dir .patches",
-        "configure-husky": "npx husky install && npx husky add .husky/pre-commit \"npx --no-install lint-staged\""
-    },
-    "_moduleAliases": {
-        "test": "./test"
-    },
-    "lint-staged": {
-        "**/**/*.sol": [
-            "npx prettier --write"
-        ]
-    },
-    "husky": {
-        "hooks": {
-            "pre-commit": "lint-staged"
-        }
-    },
-    "license": "Apache-2.0",
-    "devDependencies": {
-        "coveralls": "^3.1.1",
-        "cspell": "^6.1.1",
-        "husky": "^8.0.0",
-        "lint-staged": "^13.0.0",
-        "patch-package": "^6.4.7",
-        "prettier": "^2.6.2",
-        "prettier-plugin-solidity": "^1.0.0-beta.19",
-        "solhint": "^4.5.2",
-        "solhint-plugin-prettier": "0.0.5"
-    },
-    "dependencies": {
-        "yarn": "^1.22.19"
+  "name": "hyperdrive",
+  "version": "1.0.0",
+  "description": "Hyperdrive Smart Contracts",
+  "engines": {
+    "node": "^18"
+  },
+  "scripts": {
+    "postinstall": "patch-package --patch-dir .patches",
+    "configure-husky": "npx husky install && npx husky add .husky/pre-commit \"npx --no-install lint-staged\"",
+    "generate": "typescript-json-schema ./script/deploy/schema/schema.ts 'NetworkDeployment' --ref false --topRef false --aliasRef false -o ./script/deploy/schema/schema.json"
+  },
+  "_moduleAliases": {
+    "test": "./test"
+  },
+  "lint-staged": {
+    "**/**/*.sol": [
+      "npx prettier --write"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
     }
+  },
+  "prettier": {
+    "bracketSpacing": true,
+    "plugins": [
+      "solhint-plugin-prettier",
+      "prettier-plugin-solidity"
+    ]
+  },
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "abitype": "^1.0.2",
+    "coveralls": "^3.1.1",
+    "cspell": "^6.1.1",
+    "husky": "^8.0.0",
+    "lint-staged": "^13.0.0",
+    "patch-package": "^6.4.7",
+    "prettier": "^3.2.5",
+    "prettier-plugin-multiline-arrays": "^3.0.4",
+    "prettier-plugin-solidity": "^1.3.1",
+    "solhint": "^4.5.2",
+    "solhint-plugin-prettier": "^0.1.0",
+    "typescript-json-schema": "^0.63.0",
+    "viem": "^2.9.16"
+  },
+  "dependencies": {
+    "yarn": "^1.22.19"
+  },
+  "module": "index.ts",
+  "type": "module",
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
 }
