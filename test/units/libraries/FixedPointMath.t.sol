@@ -240,6 +240,16 @@ contract FixedPointMathTest is Test {
             ),
             1e18
         );
+        assertEq(
+            mockFixedPointMath.updateWeightedAverage(
+                100e18,
+                10e18,
+                200e18,
+                10e18,
+                true
+            ),
+            150e18
+        );
     }
 
     // This test verifies that update weighted average always performs as a
