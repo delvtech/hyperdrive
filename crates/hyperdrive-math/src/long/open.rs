@@ -67,6 +67,17 @@ impl State {
 
     /// Calculate the spot rate after a long has been opened.
     /// If a bond_amount is not provided, then one is estimated using `calculate_open_long`.
+    ///
+    /// We calculate the rate for a fixed length of time as:
+    /// $$
+    /// r(x) = (1 - p(x)) / (p(x) t)
+    /// $$
+    ///
+    /// where $p(x)$ is the spot price after a long for `delta_base`$= x$ and
+    /// t is the normalized position druation.
+    ///
+    /// In this case, we use the resulting spot price after a hypothetical long
+    /// for `base_amount` is opened.
     pub fn calculate_spot_rate_after_long(
         &self,
         base_amount: FixedPoint,

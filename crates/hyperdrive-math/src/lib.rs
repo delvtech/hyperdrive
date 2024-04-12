@@ -146,6 +146,59 @@ impl State {
         }
     }
 
+    /// Calculates the pool reserve levels to achieve a target interest rate.
+    /// This calculation does not take Hyperdrive's solvency constraints or exposure
+    /// into account and shouldn't be used directly.
+    ///
+    /// The price for a given fixed-rate is given by $p = 1 / (r \cdot t + 1)$, where
+    /// $r$ is the fixed-rate and $t$ is the annualized position duration. The
+    /// price for a given pool reserves is given by $p = \frac{\mu z}{y}^t_{s}$,
+    /// where $\mu$ is the initial share price and $t_{s}$ is the time stretch
+    /// constant. By setting these equal we can solve for the pool reserve levels
+    /// as a function of a target rate.
+    ///
+    /// For some target rate, $r_t$, the pool share reserves, $z_t$, must be:
+    ///
+    /// $$
+    /// z_t = \frac{1}{\mu} \left(
+    ///   \frac{k}{\frac{c}{\mu} + \left(
+    ///     (r_t \cdot t + 1)^{\frac{1}{t_{s}}}
+    ///   \right)^{1 - t_{s}}}
+    /// \right)^{\tfrac{1}{1 - t_{s}}}
+    /// $$
+    ///
+    /// and the pool bond reserves, $y_t$, must be:
+    ///
+    /// $$
+    /// y_t = \left(
+    ///   \frac{k}{ \frac{c}{\mu} +  \left(
+    ///     \left( r_t \cdot t + 1 \right)^{\frac{1}{t_{s}}}
+    ///   \right)^{1 - t_{s}}}
+    /// \right)^{1 - t_{s}} \left( r_t t + 1 \right)^{\frac{1}{t_{s}}}
+    /// $$
+    fn reserves_given_rate_ignoring_exposure<F: Into<FixedPoint>>(
+        &self,
+        target_rate: F,
+    ) -> (FixedPoint, FixedPoint) {
+        let target_rate = target_rate.into();
+
+        // First get the target share reserves
+        let c_over_mu = self
+            .vault_share_price()
+            .div_up(self.initial_vault_share_price());
+        let scaled_rate = (target_rate.mul_up(self.annualized_position_duration()) + fixed!(1e18))
+            .pow(fixed!(1e18) / self.time_stretch());
+        let inner = (self.k_down()
+            / (c_over_mu + scaled_rate.pow(fixed!(1e18) - self.time_stretch())))
+        .pow(fixed!(1e18) / (fixed!(1e18) - self.time_stretch()));
+        let target_share_reserves = inner / self.initial_vault_share_price();
+
+        // Then get the target bond reserves.
+        let target_bond_reserves = inner * scaled_rate;
+
+        (target_share_reserves, target_bond_reserves)
+    }
+
     /// Config ///
 
     fn position_duration(&self) -> FixedPoint {
