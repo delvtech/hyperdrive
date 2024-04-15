@@ -180,8 +180,8 @@ impl State {
         // we scale the block timestamp and position duration by 1e18 to calculate
         // the normalized time remaining.
         let scaled_latest_checkpoint =
-            FixedPoint::from(self.to_checkpoint(current_block_timestamp)) * fixed!(1e18);
-        let scaled_position_duration = self.position_duration() * fixed!(1e18);
+            FixedPoint::from(self.to_checkpoint(current_block_timestamp)) * fixed!(1e36);
+        let scaled_position_duration = self.position_duration() * fixed!(1e36);
         let long_average_maturity_time = self.long_average_maturity_time();
         let short_average_maturity_time = self.short_average_maturity_time();
 
