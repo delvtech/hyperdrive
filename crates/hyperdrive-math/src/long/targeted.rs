@@ -64,10 +64,11 @@ impl State {
         let (target_share_reserves, target_bond_reserves) =
             self.reserves_given_rate_ignoring_exposure(target_rate);
         let (mut target_base_delta, target_bond_delta) =
-            self.trade_deltas_from_reserves(target_share_reserves, target_bond_reserves);
+            self.long_trade_deltas_from_reserves(target_share_reserves, target_bond_reserves);
 
         // Determine what rate was achieved.
-        let resulting_rate = self.rate_after_long(target_base_delta, Some(target_bond_delta))?;
+        let resulting_rate =
+            self.calculate_spot_rate_after_long(target_base_delta, Some(target_bond_delta))?;
 
         // The estimated long will usually underestimate because the realized price
         // should always be greater than the spot price.
@@ -112,8 +113,10 @@ impl State {
             let possible_target_bond_delta = self
                 .calculate_open_long(possible_target_base_delta)
                 .unwrap();
-            let resulting_rate =
-                self.rate_after_long(possible_target_base_delta, Some(possible_target_bond_delta))?;
+            let resulting_rate = self.calculate_spot_rate_after_long(
+                possible_target_base_delta,
+                Some(possible_target_bond_delta),
+            )?;
 
             // We assume that the loss is positive only because Newton's
             // method will always underestimate.
@@ -122,6 +125,9 @@ impl State {
                     "We overshot the zero-crossing during Newton's method.",
                 ));
             }
+            // We choose the difference between the rates as the loss because it
+            // is convex given the above check, differentiable almost everywhere,
+            // and has a simple derivative.
             let loss = resulting_rate - target_rate;
 
             // If we've done it (solvent & within error), then return the value.
@@ -171,8 +177,10 @@ impl State {
         let possible_target_bond_delta = self
             .calculate_open_long(possible_target_base_delta)
             .unwrap();
-        let resulting_rate =
-            self.rate_after_long(possible_target_base_delta, Some(possible_target_bond_delta))?;
+        let resulting_rate = self.calculate_spot_rate_after_long(
+            possible_target_base_delta,
+            Some(possible_target_bond_delta),
+        )?;
         if target_rate > resulting_rate {
             return Err(eyre!(
                 "We overshot the zero-crossing after Newton's method.",
@@ -187,29 +195,6 @@ impl State {
         }
 
         Ok(possible_target_base_delta)
-    }
-
-    /// The fixed rate after a long has been opened.
-    ///
-    /// We calculate the rate for a fixed length of time as:
-    /// $$
-    /// r(x) = (1 - p(x)) / (p(x) t)
-    /// $$
-    ///
-    /// where $p(x)$ is the spot price after a long for `delta_bonds`$= x$ and
-    /// t is the normalized position druation.
-    ///
-    /// In this case, we use the resulting spot price after a hypothetical long
-    /// for `base_amount` is opened.
-    fn rate_after_long(
-        &self,
-        base_amount: FixedPoint,
-        maybe_bond_amount: Option<FixedPoint>,
-    ) -> Result<FixedPoint> {
-        let resulting_price =
-            self.calculate_spot_price_after_long(base_amount, maybe_bond_amount)?;
-        Ok((fixed!(1e18) - resulting_price)
-            / (resulting_price * self.annualized_position_duration()))
     }
 
     /// The derivative of the equation for calculating the rate after a long.
@@ -327,7 +312,8 @@ impl State {
             * (inner_denominator / inner_numerator).pow(fixed!(1e18) - self.time_stretch()))
     }
 
-    /// Calculate the base & bond deltas from the current state given desired new reserve levels.
+    /// Calculate the base & bond deltas for a long trade that moves the current
+    /// state to the given desired ending reserve levels.
     ///
     /// Given a target ending pool share reserves, $z_t$, and bond reserves, $y_t$,
     /// the trade deltas to achieve that state would be:
@@ -339,69 +325,16 @@ impl State {
     ///
     /// where $c$ is the vault share price and
     /// $c(\Delta x)$ is the (open_long_curve_fee)[long::fees::open_long_curve_fees].
-    fn trade_deltas_from_reserves(
+    fn long_trade_deltas_from_reserves(
         &self,
-        share_reserves: FixedPoint,
-        bond_reserves: FixedPoint,
+        ending_share_reserves: FixedPoint,
+        ending_bond_reserves: FixedPoint,
     ) -> (FixedPoint, FixedPoint) {
         let base_delta =
-            (share_reserves - self.effective_share_reserves()) * self.vault_share_price();
+            (ending_share_reserves - self.effective_share_reserves()) * self.vault_share_price();
         let bond_delta =
-            (self.bond_reserves() - bond_reserves) - self.open_long_curve_fees(base_delta);
+            (self.bond_reserves() - ending_bond_reserves) - self.open_long_curve_fees(base_delta);
         (base_delta, bond_delta)
-    }
-
-    /// Calculates the pool reserve levels to achieve a target interest rate.
-    /// This calculation does not take Hyperdrive's solvency constraints or exposure
-    /// into account and shouldn't be used directly.
-    ///
-    /// The price for a given fixed-rate is given by $p = 1 / (r \cdot t + 1)$, where
-    /// $r$ is the fixed-rate and $t$ is the annualized position duration. The
-    /// price for a given pool reserves is given by $p = \frac{\mu z}{y}^t_{s}$,
-    /// where $\mu$ is the initial share price and $t_{s}$ is the time stretch
-    /// constant. By setting these equal we can solve for the pool reserve levels
-    /// as a function of a target rate.
-    ///
-    /// For some target rate, $r_t$, the pool share reserves, $z_t$, must be:
-    ///
-    /// $$
-    /// z_t = \frac{1}{\mu} \left(
-    ///   \frac{k}{\frac{c}{\mu} + \left(
-    ///     (r_t \cdot t + 1)^{\frac{1}{t_{s}}}
-    ///   \right)^{1 - t_{s}}}
-    /// \right)^{\tfrac{1}{1 - t_{s}}}
-    /// $$
-    ///
-    /// and the pool bond reserves, $y_t$, must be:
-    ///
-    /// $$
-    /// y_t = \left(
-    ///   \frac{k}{ \frac{c}{\mu} +  \left(
-    ///     \left( r_t \cdot t + 1 \right)^{\frac{1}{t_{s}}}
-    ///   \right)^{1 - t_{s}}}
-    /// \right)^{1 - t_{s}} \left( r_t t + 1 \right)^{\frac{1}{t_{s}}}
-    /// $$
-    fn reserves_given_rate_ignoring_exposure<F: Into<FixedPoint>>(
-        &self,
-        target_rate: F,
-    ) -> (FixedPoint, FixedPoint) {
-        let target_rate = target_rate.into();
-
-        // First get the target share reserves
-        let c_over_mu = self
-            .vault_share_price()
-            .div_up(self.initial_vault_share_price());
-        let scaled_rate = (target_rate.mul_up(self.annualized_position_duration()) + fixed!(1e18))
-            .pow(fixed!(1e18) / self.time_stretch());
-        let inner = (self.k_down()
-            / (c_over_mu + scaled_rate.pow(fixed!(1e18) - self.time_stretch())))
-        .pow(fixed!(1e18) / (fixed!(1e18) - self.time_stretch()));
-        let target_share_reserves = inner / self.initial_vault_share_price();
-
-        // Then get the target bond reserves.
-        let target_bond_reserves = inner * scaled_rate;
-
-        (target_share_reserves, target_bond_reserves)
     }
 }
 

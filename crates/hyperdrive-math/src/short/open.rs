@@ -2,7 +2,7 @@ use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
-use crate::{State, YieldSpace};
+use crate::{calculate_rate_given_fixed_price, State, YieldSpace};
 
 impl State {
     /// Calculates the amount of base the trader will need to deposit for a short of
@@ -82,6 +82,31 @@ impl State {
         state.info.bond_reserves += bond_amount.into();
         state.info.share_reserves -= shares_amount.into();
         Ok(state.calculate_spot_price())
+    }
+
+    /// Calculate the spot rate after a short has been opened.
+    /// If a base_amount is not provided, then one is estimated using `calculate_open_short`.
+    ///
+    /// We calculate the rate for a fixed length of time as:
+    /// $$
+    /// r(y) = (1 - p(y)) / (p(y) t)
+    /// $$
+    ///
+    /// where $p(y)$ is the spot price after a short for `delta_bonds`$= y$ and
+    /// t is the normalized position druation.
+    ///
+    /// In this case, we use the resulting spot price after a hypothetical short
+    /// for `bond_amount` is opened.
+    pub fn calculate_spot_rate_after_short(
+        &self,
+        bond_amount: FixedPoint,
+        base_amount: Option<FixedPoint>,
+    ) -> Result<FixedPoint> {
+        let price = self.calculate_spot_price_after_short(bond_amount, base_amount)?;
+        Ok(calculate_rate_given_fixed_price(
+            price,
+            self.position_duration(),
+        ))
     }
 
     /// Calculates the amount of short principal that the LPs need to pay to back a
