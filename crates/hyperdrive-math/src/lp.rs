@@ -175,14 +175,32 @@ impl State {
     /// Calculates the present value of LPs capital in the pool.
     pub fn calculate_present_value(&self, current_block_timestamp: U256) -> FixedPoint {
         // Calculate the average time remaining for the longs and shorts.
-        let long_average_time_remaining = self.calculate_normalized_time_remaining(
-            self.long_average_maturity_time().into(),
-            current_block_timestamp,
-        );
-        let short_average_time_remaining = self.calculate_normalized_time_remaining(
-            self.short_average_maturity_time().into(),
-            current_block_timestamp,
-        );
+
+        // To keep precision of long and short average maturity time (from contract call)
+        // we scale the block timestamp and position duration by 1e18 to calculate
+        // the normalized time remaining.
+        let scaled_latest_checkpoint =
+            FixedPoint::from(self.to_checkpoint(current_block_timestamp)) * fixed!(1e18);
+        let scaled_position_duration = self.position_duration() * fixed!(1e18);
+        let long_average_maturity_time = self.long_average_maturity_time();
+        let short_average_maturity_time = self.short_average_maturity_time();
+
+        let long_average_time_remaining = if long_average_maturity_time > scaled_latest_checkpoint {
+            // NOTE: Round down to underestimate the time remaining.
+            FixedPoint::from(long_average_maturity_time - scaled_latest_checkpoint)
+                .div_down(scaled_position_duration)
+        } else {
+            fixed!(0)
+        };
+
+        let short_average_time_remaining = if short_average_maturity_time > scaled_latest_checkpoint
+        {
+            // NOTE: Round down to underestimate the time remaining.
+            FixedPoint::from(short_average_maturity_time - scaled_latest_checkpoint)
+                .div_down(scaled_position_duration)
+        } else {
+            fixed!(0)
+        };
 
         let present_value: I256 = I256::try_from(self.share_reserves()).unwrap()
             + self.calculate_net_curve_trade(
