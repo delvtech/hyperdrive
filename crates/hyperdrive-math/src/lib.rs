@@ -164,7 +164,7 @@ impl State {
     ///   \frac{k}{\frac{c}{\mu} + \left(
     ///     (r_t \cdot t + 1)^{\frac{1}{t_{s}}}
     ///   \right)^{1 - t_{s}}}
-    /// \right)^{\tfrac{1}{1 - t_{s}}}
+    /// \right)^{\frac{1}{1 - t_{s}}}
     /// $$
     ///
     /// and the pool bond reserves, $y_t$, must be:
