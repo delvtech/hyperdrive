@@ -88,11 +88,13 @@ impl Distribution<State> for Standard {
                     .unwrap()
                 }
             },
+            // If this range returns greater than position duration, then both rust and solidity will fail
+            // on calls that depend on this value.
             long_average_maturity_time: rng
-                .gen_range(fixed!(0)..=FixedPoint::from(60 * 60 * 24 * 365))
+                .gen_range(fixed!(0)..=FixedPoint::from(365 * one_day_in_seconds) * fixed!(1e18))
                 .into(),
             short_average_maturity_time: rng
-                .gen_range(fixed!(0)..=FixedPoint::from(60 * 60 * 24 * 365))
+                .gen_range(fixed!(0)..=FixedPoint::from(365 * one_day_in_seconds) * fixed!(1e18))
                 .into(),
             lp_total_supply: rng
                 .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
