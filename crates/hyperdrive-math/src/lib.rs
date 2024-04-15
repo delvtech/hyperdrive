@@ -89,10 +89,10 @@ impl Distribution<State> for Standard {
                 }
             },
             long_average_maturity_time: rng
-                .gen_range(fixed!(0)..=FixedPoint::from(60 * 60 * 24 * 365) * fixed!(1e18))
+                .gen_range(fixed!(0)..=FixedPoint::from(config.position_duration) * fixed!(1e18))
                 .into(),
             short_average_maturity_time: rng
-                .gen_range(fixed!(0)..=FixedPoint::from(60 * 60 * 24 * 365) * fixed!(1e18))
+                .gen_range(fixed!(0)..=FixedPoint::from(config.position_duration) * fixed!(1e18))
                 .into(),
             lp_total_supply: rng
                 .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
