@@ -125,8 +125,9 @@ impl State {
                     "We overshot the zero-crossing during Newton's method.",
                 ));
             }
-            // The optimization loss can be the difference without abs or squaring
-            // because of the above check.
+            // We choose the difference between the rates as the loss because it
+            // is convex given the above check, differentiable almost everywhere,
+            // and has a simple derivative.
             let loss = resulting_rate - target_rate;
 
             // If we've done it (solvent & within error), then return the value.
