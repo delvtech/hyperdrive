@@ -152,7 +152,7 @@ impl State {
     ///
     /// The price for a given fixed-rate is given by $p = 1 / (r \cdot t + 1)$, where
     /// $r$ is the fixed-rate and $t$ is the annualized position duration. The
-    /// price for a given pool reserves is given by $p = \frac{\mu z}{y}^t_{s}$,
+    /// price for a given pool reserves is given by $p = \frac{\mu z}{y}^{t_{s}}$,
     /// where $\mu$ is the initial share price and $t_{s}$ is the time stretch
     /// constant. By setting these equal we can solve for the pool reserve levels
     /// as a function of a target rate.
