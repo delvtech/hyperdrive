@@ -598,10 +598,11 @@ mod tests {
                 }
             };
             let max_iterations = 7;
+            let open_vault_share_price = rng.gen_range(fixed!(0)..=state.vault_share_price());
             let actual = panic::catch_unwind(|| {
                 state.calculate_max_short(
                     U256::MAX,
-                    fixed!(0),
+                    open_vault_share_price,
                     checkpoint_exposure,
                     None,
                     Some(max_iterations),
