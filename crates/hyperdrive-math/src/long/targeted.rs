@@ -460,7 +460,7 @@ mod tests {
                 let max_long =
                     bob.get_state()
                         .await?
-                        .calculate_max_long(U256::MAX, I256::from(0), None);
+                        .calculate_max_long(U256::MAX, I256::from(0), None).unwrap();
                 let long_amount =
                     (max_long / fixed!(100e18)).max(config.minimum_transaction_amount.into());
                 bob.fund(long_amount + budget).await?;

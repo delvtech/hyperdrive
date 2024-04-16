@@ -1,4 +1,7 @@
+use std::panic;
+
 use ethers::types::I256;
+use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, int256};
 
@@ -44,13 +47,16 @@ impl State {
         budget: F,
         checkpoint_exposure: I,
         maybe_max_iterations: Option<usize>,
-    ) -> FixedPoint {
+    ) -> Result<FixedPoint> {
         let budget = budget.into();
         let checkpoint_exposure = checkpoint_exposure.into();
 
         // Calculate the maximum long that brings the spot price to 1. If the pool is
         // solvent after opening this long, then we're done.
-        let (absolute_max_base_amount, absolute_max_bond_amount) = self.absolute_max_long();
+        let (absolute_max_base_amount, absolute_max_bond_amount) = match self.absolute_max_long() {
+            Ok(v) => v,
+            Err(e) => return Err(e),
+        };
         if self
             .solvency_after_long(
                 absolute_max_base_amount,
@@ -59,7 +65,7 @@ impl State {
             )
             .is_some()
         {
-            return absolute_max_base_amount.min(budget);
+            return Ok(absolute_max_base_amount.min(budget));
         }
 
         // Use Newton's method to iteratively approach a solution. We use pool's
@@ -102,7 +108,7 @@ impl State {
             // entire budget can be consumed without running into solvency
             // constraints.
             if max_base_amount >= budget {
-                return budget;
+                return Ok(budget);
             }
 
             // TODO: It may be better to gracefully handle crossing over the
@@ -138,16 +144,16 @@ impl State {
             panic!("Reached absolute max bond amount in `calculate_max_long`.");
         }
         if max_base_amount >= budget {
-            return budget;
+            return Ok(budget);
         }
 
-        max_base_amount
+        Ok(max_base_amount)
     }
 
     /// Calculates the largest long that can be opened without buying bonds at a
     /// negative interest rate. This calculation does not take Hyperdrive's
     /// solvency constraints into account and shouldn't be used directly.
-    fn absolute_max_long(&self) -> (FixedPoint, FixedPoint) {
+    fn absolute_max_long(&self) -> Result<(FixedPoint, FixedPoint)> {
         // We are targeting the pool's max spot price of:
         //
         // p_max = (1 - flatFee) / (1 + curveFee * (1 / p_0 - 1) * (1 - flatFee))
@@ -208,11 +214,18 @@ impl State {
                 / (fixed!(1e18) - self.flat_fee()))
             .pow(fixed!(1e18).div_up(self.time_stretch()));
 
+        let effective_share_reserves = self.effective_share_reserves();
+        if effective_share_reserves > target_share_reserves {
+            return Err(eyre!(
+                "Effective share reserves exceed target share reserves."
+            ));
+        }
+
         // The absolute max base amount is given by:
         //
         // absoluteMaxBaseAmount = c * (z_t - z)
         let absolute_max_base_amount =
-            (target_share_reserves - self.effective_share_reserves()) * self.vault_share_price();
+            (target_share_reserves - effective_share_reserves) * self.vault_share_price();
 
         // The absolute max bond amount is given by:
         //
@@ -220,7 +233,7 @@ impl State {
         let absolute_max_bond_amount = (self.bond_reserves() - target_bond_reserves)
             - self.open_long_curve_fees(absolute_max_base_amount);
 
-        (absolute_max_base_amount, absolute_max_bond_amount)
+        Ok((absolute_max_base_amount, absolute_max_bond_amount))
     }
 
     /// Calculates an initial guess of the max long that can be opened. This is a
@@ -480,7 +493,7 @@ mod tests {
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
-            let actual = panic::catch_unwind(|| state.absolute_max_long());
+            let actual = state.absolute_max_long();
             match chain
                 .mock_hyperdrive_math()
                 .calculate_absolute_max_long(
@@ -509,7 +522,12 @@ mod tests {
                 .await
             {
                 Ok((expected_base_amount, expected_bond_amount)) => {
-                    let (actual_base_amount, actual_bond_amount) = actual.unwrap();
+                    let (actual_base_amount, actual_bond_amount) = actual.unwrap_or_else(|err| {
+                        panic!(
+                            "Expected ({}, {}), but got an error: {}",
+                            expected_base_amount, expected_bond_amount, err
+                        )
+                    });
                     assert_eq!(actual_base_amount, FixedPoint::from(expected_base_amount));
                     assert_eq!(actual_bond_amount, FixedPoint::from(expected_bond_amount));
                 }
@@ -543,9 +561,7 @@ mod tests {
                     I256::try_from(value).unwrap()
                 }
             };
-            let actual = panic::catch_unwind(|| {
-                state.calculate_max_long(U256::MAX, checkpoint_exposure, None)
-            });
+            let actual = state.calculate_max_long(U256::MAX, checkpoint_exposure, None);
             match chain
                 .mock_hyperdrive_math()
                 .calculate_max_long(

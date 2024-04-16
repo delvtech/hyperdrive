@@ -983,7 +983,7 @@ impl Agent<ChainClient<LocalWallet>, ChaCha8Rng> {
             .hyperdrive
             .get_checkpoint_exposure(state.to_checkpoint(self.now().await?))
             .await?;
-        Ok(state.calculate_max_long(self.wallet.base, checkpoint_exposure, maybe_max_iterations))
+        state.calculate_max_long(self.wallet.base, checkpoint_exposure, maybe_max_iterations)
     }
 
     /// Gets the long that moves the fixed rate to a target value.
