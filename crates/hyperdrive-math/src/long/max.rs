@@ -248,7 +248,7 @@ impl State {
             * fixed!(0.8e18);
         let estimate_price = spot_price * (fixed!(1e18) - t) + fixed!(1e18) * t;
 
-        // Recalculate our intial guess using the bootstrapped conservative
+        // Recalculate our initial guess using the bootstrapped conservative
         // estimate of the realized price.
         self.max_long_estimate(estimate_price, spot_price, checkpoint_exposure)
     }
@@ -270,7 +270,7 @@ impl State {
     ///
     /// We debit and negative checkpoint exposure from $e_0$ since the
     /// global exposure doesn't take into account the negative exposure
-    /// from non-netted shorts in the checkpoint. These forumulas allow us
+    /// from non-netted shorts in the checkpoint. These formulas allow us
     /// to calculate the approximate ending solvency of:
     ///
     /// $$
