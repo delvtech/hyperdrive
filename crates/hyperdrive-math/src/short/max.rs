@@ -645,7 +645,7 @@ mod tests {
     /// result with the output of `short_deposit_derivative`.
     #[traced_test]
     #[tokio::test]
-    async fn test_short_deposit_derivative() -> Result<()> {
+    async fn fuzz_short_deposit_derivative() -> Result<()> {
         let mut rng = thread_rng();
         // We use a relatively large epsilon here due to the underlying fixed point pow
         // function not being monotonically increasing.
@@ -721,7 +721,7 @@ mod tests {
     /// Tests that the absolute max short can be executed on chain.
     #[traced_test]
     #[tokio::test]
-    async fn test_calculate_absolute_max_short_execute() -> Result<()> {
+    async fn fuzz_calculate_absolute_max_short_execute() -> Result<()> {
         // Spawn a test chain and create two agents -- Alice and Bob. Alice
         // is funded with a large amount of capital so that she can initialize
         // the pool. Bob is funded with plenty of capital to ensure we can execute
@@ -794,7 +794,7 @@ mod tests {
 
     #[traced_test]
     #[tokio::test]
-    async fn test_calculate_max_short() -> Result<()> {
+    async fn fuzz_calculate_max_short() -> Result<()> {
         // Spawn a test chain and create two agents -- Alice and Bob. Alice
         // is funded with a large amount of capital so that she can initialize
         // the pool. Bob is funded with a small amount of capital so that we
