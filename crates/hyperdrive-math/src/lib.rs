@@ -143,7 +143,11 @@ impl State {
             fixed!(0)
         }
     }
+}
 
+// Suppress dead code warnings for the config and info getters.
+#[allow(dead_code)]
+impl State {
     /// Config ///
 
     fn position_duration(&self) -> FixedPoint {
