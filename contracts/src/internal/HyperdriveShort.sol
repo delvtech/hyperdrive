@@ -471,8 +471,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             Errors.throwInsufficientLiquidityError();
         }
 
-        // Calculate the fees charged to the user (curveFee) and the portion
-        // of those fees that are paid to governance (governanceCurveFee).
+        // Calculate the current spot price.
         uint256 curveFee;
         uint256 governanceCurveFee;
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
