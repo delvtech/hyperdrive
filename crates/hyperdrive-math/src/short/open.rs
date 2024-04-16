@@ -29,10 +29,10 @@ impl State {
     /// principal).
     pub fn calculate_open_short(
         &self,
-        short_amount: FixedPoint,
+        bond_amount: FixedPoint,
         mut open_vault_share_price: FixedPoint,
     ) -> Result<FixedPoint> {
-        if short_amount < self.config.minimum_transaction_amount.into() {
+        if bond_amount < self.config.minimum_transaction_amount.into() {
             return Err(eyre!("MinimumTransactionAmount: Input amount too low",));
         }
 
@@ -45,20 +45,20 @@ impl State {
 
         let share_reserves_delta_in_base = self
             .vault_share_price()
-            .mul_up(self.short_principal(short_amount)?);
+            .mul_up(self.short_principal(bond_amount)?);
         // If the base proceeds of selling the bonds is greater than the bond
         // amount, then the trade occurred in the negative interest domain. We
         // revert in these pathological cases.
-        if share_reserves_delta_in_base > short_amount {
+        if share_reserves_delta_in_base > bond_amount {
             return Err(eyre!("InsufficientLiquidity: Negative Interest",));
         }
 
         // NOTE: The order of additions and subtractions is important to avoid underflows.
         let spot_price = self.calculate_spot_price();
         Ok(
-            short_amount.mul_div_down(self.vault_share_price(), open_vault_share_price)
-                + self.flat_fee() * short_amount
-                + self.curve_fee() * (fixed!(1e18) - spot_price) * short_amount
+            bond_amount.mul_div_down(self.vault_share_price(), open_vault_share_price)
+                + self.flat_fee() * bond_amount
+                + self.curve_fee() * (fixed!(1e18) - spot_price) * bond_amount
                 - share_reserves_delta_in_base,
         )
     }
@@ -67,9 +67,9 @@ impl State {
     pub fn calculate_spot_price_after_short(
         &self,
         bond_amount: FixedPoint,
-        base_amount: Option<FixedPoint>,
+        maybe_base_amount: Option<FixedPoint>,
     ) -> Result<FixedPoint> {
-        let shares_amount = match base_amount {
+        let shares_amount = match maybe_base_amount {
             Some(base_amount) => base_amount / self.vault_share_price(),
             None => {
                 let spot_price = self.calculate_spot_price();
@@ -100,9 +100,9 @@ impl State {
     pub fn calculate_spot_rate_after_short(
         &self,
         bond_amount: FixedPoint,
-        base_amount: Option<FixedPoint>,
+        maybe_base_amount: Option<FixedPoint>,
     ) -> Result<FixedPoint> {
-        let price = self.calculate_spot_price_after_short(bond_amount, base_amount)?;
+        let price = self.calculate_spot_price_after_short(bond_amount, maybe_base_amount)?;
         Ok(calculate_rate_given_fixed_price(
             price,
             self.position_duration(),
@@ -120,8 +120,8 @@ impl State {
     /// \implies \\
     /// P(x) = z - \tfrac{1}{\mu} \cdot (\tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s}))^{\tfrac{1}{1 - t_s}}
     /// $$
-    pub fn short_principal(&self, short_amount: FixedPoint) -> Result<FixedPoint> {
-        self.calculate_shares_out_given_bonds_in_down_safe(short_amount)
+    pub fn short_principal(&self, bond_amount: FixedPoint) -> Result<FixedPoint> {
+        self.calculate_shares_out_given_bonds_in_down_safe(bond_amount)
     }
 }
 
@@ -160,14 +160,13 @@ mod tests {
             alice.initialize(fixed_rate, contribution, None).await?;
 
             // Attempt to predict the spot price after opening a short.
-            let short_amount =
-                rng.gen_range(fixed!(0.01e18)..=bob.calculate_max_short(None).await?);
+            let bond_amount = rng.gen_range(fixed!(0.01e18)..=bob.calculate_max_short(None).await?);
             let current_state = bob.get_state().await?;
             let expected_spot_price =
-                current_state.calculate_spot_price_after_short(short_amount, None)?;
+                current_state.calculate_spot_price_after_short(bond_amount, None)?;
 
             // Open the short.
-            bob.open_short(short_amount, None, None).await?;
+            bob.open_short(bond_amount, None, None).await?;
 
             // Verify that the predicted spot price is equal to the ending spot
             // price. These won't be exactly equal because the vault share price

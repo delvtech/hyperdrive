@@ -409,15 +409,15 @@ impl State {
     /// $$
     fn short_deposit_derivative(
         &self,
-        short_amount: FixedPoint,
+        bond_amount: FixedPoint,
         spot_price: FixedPoint,
         open_vault_share_price: FixedPoint,
     ) -> FixedPoint {
         // NOTE: The order of additions and subtractions is important to avoid underflows.
         let payment_factor = (fixed!(1e18)
-            / (self.bond_reserves() + short_amount).pow(self.time_stretch()))
+            / (self.bond_reserves() + bond_amount).pow(self.time_stretch()))
             * self
-                .theta(short_amount)
+                .theta(bond_amount)
                 .pow(self.time_stretch() / (fixed!(1e18) - self.time_stretch()));
         (self.vault_share_price() / open_vault_share_price)
             + self.flat_fee()
@@ -458,19 +458,19 @@ impl State {
     /// $$
     fn solvency_after_short(
         &self,
-        short_amount: FixedPoint,
+        bond_amount: FixedPoint,
         spot_price: FixedPoint,
         checkpoint_exposure: I256,
     ) -> Option<FixedPoint> {
-        let principal = if let Ok(p) = self.short_principal(short_amount) {
+        let principal = if let Ok(p) = self.short_principal(bond_amount) {
             p
         } else {
             return None;
         };
         let share_reserves = self.share_reserves()
             - (principal
-                - (self.open_short_curve_fee(short_amount, spot_price)
-                    - self.open_short_governance_fee(short_amount, spot_price))
+                - (self.open_short_curve_fee(bond_amount, spot_price)
+                    - self.open_short_governance_fee(bond_amount, spot_price))
                     / self.vault_share_price());
         let exposure = {
             let checkpoint_exposure: FixedPoint = checkpoint_exposure.max(I256::zero()).into();
@@ -500,10 +500,10 @@ impl State {
     /// doesn't support negative values.
     fn solvency_after_short_derivative(
         &self,
-        short_amount: FixedPoint,
+        bond_amount: FixedPoint,
         spot_price: FixedPoint,
     ) -> Option<FixedPoint> {
-        let lhs = self.short_principal_derivative(short_amount);
+        let lhs = self.short_principal_derivative(bond_amount);
         let rhs = self.curve_fee()
             * (fixed!(1e18) - spot_price)
             * (fixed!(1e18) - self.governance_lp_fee())
@@ -525,14 +525,14 @@ impl State {
     ///             \tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s})
     ///         \right)^{\tfrac{t_s}{1 - t_s}}
     /// $$
-    fn short_principal_derivative(&self, short_amount: FixedPoint) -> FixedPoint {
+    fn short_principal_derivative(&self, bond_amount: FixedPoint) -> FixedPoint {
         let lhs = fixed!(1e18)
             / (self
                 .vault_share_price()
-                .mul_up((self.bond_reserves() + short_amount).pow(self.time_stretch())));
+                .mul_up((self.bond_reserves() + bond_amount).pow(self.time_stretch())));
         let rhs = ((self.initial_vault_share_price() / self.vault_share_price())
             * (self.k_down()
-                - (self.bond_reserves() + short_amount).pow(fixed!(1e18) - self.time_stretch())))
+                - (self.bond_reserves() + bond_amount).pow(fixed!(1e18) - self.time_stretch())))
         .pow(
             self.time_stretch()
                 .div_up(fixed!(1e18) - self.time_stretch()),
@@ -549,10 +549,10 @@ impl State {
     /// $$
     /// \theta(x) = \tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s})
     /// $$
-    fn theta(&self, short_amount: FixedPoint) -> FixedPoint {
+    fn theta(&self, bond_amount: FixedPoint) -> FixedPoint {
         (self.initial_vault_share_price() / self.vault_share_price())
             * (self.k_down()
-                - (self.bond_reserves() + short_amount).pow(fixed!(1e18) - self.time_stretch()))
+                - (self.bond_reserves() + bond_amount).pow(fixed!(1e18) - self.time_stretch()))
     }
 }
 

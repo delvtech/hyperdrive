@@ -960,13 +960,13 @@ impl Agent<ChainClient<LocalWallet>, ChaCha8Rng> {
 
     /// Calculates the deposit required to short a given amount of bonds with the
     /// current market state.
-    pub async fn calculate_open_short(&self, short_amount: FixedPoint) -> Result<FixedPoint> {
+    pub async fn calculate_open_short(&self, bond_amount: FixedPoint) -> Result<FixedPoint> {
         let state = self.get_state().await?;
         let Checkpoint {
             vault_share_price: open_vault_share_price,
             ..
         } = self.get_checkpoint(self.latest_checkpoint().await?).await?;
-        state.calculate_open_short(short_amount, open_vault_share_price.into())
+        state.calculate_open_short(bond_amount, open_vault_share_price.into())
     }
 
     /// Calculates the max long that can be opened in the current checkpoint.
