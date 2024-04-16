@@ -127,9 +127,15 @@ impl State {
 
 #[cfg(test)]
 mod tests {
+    use std::panic;
+
+    use ethers::types::{I256, U256};
     use fixed_point_macros::fixed;
     use rand::{thread_rng, Rng};
-    use test_utils::{chain::TestChain, constants::FUZZ_RUNS};
+    use test_utils::{
+        chain::TestChain,
+        constants::{FAST_FUZZ_RUNS, FUZZ_RUNS},
+    };
 
     use super::*;
 
@@ -209,10 +215,53 @@ mod tests {
         Ok(())
     }
 
-    // TODO ideally we would test calculate open short with an amount larger than the maximum size.
-    // However, `calculate_max_short` requires a `checkpoint_exposure`` argument, which requires
-    // implementing checkpointing in the rust sdk.
-    // https://github.com/delvtech/hyperdrive/issues/862
+    // Tests open short with an amount larger than the maximum.
+    #[tokio::test]
+    async fn test_error_open_short_max_txn_amount() -> Result<()> {
+        let mut rng = thread_rng();
+        for _ in 0..*FAST_FUZZ_RUNS {
+            let state = rng.gen::<State>();
+            let checkpoint_exposure = {
+                let value = rng.gen_range(fixed!(0)..=fixed!(10_000_000e18));
+                if rng.gen() {
+                    -I256::try_from(value).unwrap()
+                } else {
+                    I256::try_from(value).unwrap()
+                }
+            };
+            let max_iterations = 7;
+            let open_vault_share_price = rng.gen_range(fixed!(0)..=state.vault_share_price());
+            let max_trade = panic::catch_unwind(|| {
+                state.calculate_max_short(
+                    U256::MAX,
+                    open_vault_share_price,
+                    checkpoint_exposure,
+                    None,
+                    Some(max_iterations),
+                )
+            });
+            // Since we're fuzzing it's possible that the max can fail.
+            // We're only going to use it in this test if it succeeded.
+            match max_trade {
+                Ok(max_trade) => {
+                    // TODO: You should be able to add a small amount (e.g. 1e18) to max to fail.
+                    // calc_open_short must be incorrect for the additional amount to have to be so large.
+                    let result = state.calculate_open_short(
+                        (max_trade + fixed!(100_000_000e18)).into(),
+                        state.calculate_spot_price(),
+                        state.vault_share_price(),
+                    );
+                    match result {
+                        Ok(_) => panic!("calculate_open_short should have failed but succeeded."),
+                        Err(_) => continue,
+                    }
+                }
+                Err(_) => continue,
+            }
+        }
+
+        Ok(())
+    }
 
     // TODO ideally we would add a solidity fuzz test that tests `calculate_open_short` against
     // opening longs in solidity, where we attempt to trade outside of expected values (so that
