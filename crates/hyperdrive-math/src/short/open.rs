@@ -44,24 +44,109 @@ impl State {
             open_vault_share_price = self.vault_share_price();
         }
 
-        let share_reserves_delta_in_base = self
-            .vault_share_price()
-            .mul_up(self.calculate_short_principal(bond_amount)?);
+        let share_reserves_delta = self.calculate_short_principal(bond_amount)?;
         // If the base proceeds of selling the bonds is greater than the bond
         // amount, then the trade occurred in the negative interest domain. We
         // revert in these pathological cases.
-        if share_reserves_delta_in_base > bond_amount {
+        if share_reserves_delta.mul_up(self.vault_share_price()) > bond_amount {
             return Err(eyre!("InsufficientLiquidity: Negative Interest",));
         }
 
-        // NOTE: The order of additions and subtractions is important to avoid underflows.
+        // NOTE: Round up to overestimate the base deposit.
+        //
+        // The trader will need to deposit capital to pay for the fixed rate,
+        // the curve fee, the flat fee, and any back-paid interest that will be
+        // received back upon closing the trade. If negative interest has
+        // accrued during the current checkpoint, we set the close vault share
+        // price to equal the open vault share price. This ensures that shorts
+        // don't benefit from negative interest that accrued during the current
+        // checkpoint.
         let spot_price = self.calculate_spot_price();
-        Ok(
-            bond_amount.mul_div_down(self.vault_share_price(), open_vault_share_price)
-                + self.flat_fee() * bond_amount
-                + self.curve_fee() * (fixed!(1e18) - spot_price) * bond_amount
-                - share_reserves_delta_in_base,
-        )
+        let curve_fee = self.open_short_curve_fee(bond_amount, spot_price);
+        // Use the position duraiton as the current time and maturity time to simulate closing at maturity.
+        let flat_fee = self.close_short_flat_fee(
+            bond_amount,
+            self.position_duration().into(),
+            self.position_duration().into(),
+        );
+
+        // Now we can calculate the proceeds in a way that adjusts for the backdated vault price.
+        // $$
+        // \text{base_proceeds} = (
+        //    \frac{c1 \cdot \Delta y}{c0 \cdot c}
+        //    + \frac{\Delta y \cdot \phi_f}{c} - \Delta z
+        // ) \cdot c
+        // $$
+        let base_deposit = self
+            .calculate_short_proceeds_up(
+                bond_amount,
+                share_reserves_delta - curve_fee,
+                open_vault_share_price,
+                self.vault_share_price().max(open_vault_share_price),
+                self.vault_share_price(),
+                flat_fee,
+            )
+            .mul_up(self.vault_share_price());
+
+        Ok(base_deposit)
+    }
+
+    /// Calculates the proceeds in shares of closing a short position. This
+    /// takes into account the trading profits, the interest that was
+    /// earned by the short, the flat fee the short pays, and the amount of
+    /// margin that was released by closing the short. The math for the
+    /// short's proceeds in base is given by:
+    ///
+    /// $$
+    /// \begin{aligned}
+    /// proceeds & = (1 + \text{flat_fee}) \cdot \Delta y - c \cdot \Delta z
+    ///                 + (c1 - c_0) \cdot (\Delta y / c_0) \\
+    ///          & = (1 + \text{flat_fee}) \cdot \Delta y - c \cdot \Delta z
+    ///                 + (c1 / c_0) \cdot \Delta y - \Delta y \\
+    ///          & = (\frac{c1}{c_0} + \text{flat_fee}) \cdot \Delta y - c \cdot dz
+    /// \end{aligned}
+    /// $$
+    ///
+    /// We convert the proceeds to shares by dividing by the current vault
+    /// share price. In the event that the interest is negative and
+    /// outweighs the trading profits and margin released, the short's
+    /// proceeds are marked to zero.
+    fn calculate_short_proceeds_up(
+        &self,
+        bond_amount: FixedPoint,
+        share_amount: FixedPoint,
+        open_vault_share_price: FixedPoint,
+        close_vault_share_price: FixedPoint,
+        vault_share_price: FixedPoint,
+        flat_fee: FixedPoint,
+    ) -> FixedPoint {
+        // NOTE: Round up to overestimate the short proceeds.
+        //
+        // The total value is the amount of shares that underlies the bonds that
+        // were shorted. The bonds start by being backed 1:1 with base, and the
+        // total value takes into account all of the interest that has accrued
+        // since the short was opened.
+        //
+        // total_value = (c1 / (c0 * c)) * dy
+        let mut total_value = bond_amount
+            .mul_div_up(close_vault_share_price, open_vault_share_price)
+            .div_up(vault_share_price);
+
+        // NOTE: Round up to overestimate the short proceeds.
+        //
+        // We increase the total value by the flat fee amount, because it is
+        // included in the total amount of capital underlying the short.
+        total_value += bond_amount.mul_div_up(flat_fee, vault_share_price);
+
+        // If the interest is more negative than the trading profits and margin
+        // released, then the short proceeds are marked to zero. Otherwise, we
+        // calculate the proceeds as the sum of the trading proceeds, the
+        // interest proceeds, and the margin released.
+        if total_value > share_amount {
+            total_value - share_amount
+        } else {
+            fixed!(0)
+        }
     }
 
     /// Calculates the spot price after opening a Hyperdrive short.
@@ -584,11 +669,8 @@ mod tests {
                 .gen_range(FixedPoint::from(state.config.minimum_transaction_amount)..=max_short);
 
             // Compare the open short call output against calculate_open_short.
-            let acutal_base_amount = state.calculate_open_short(
-                short_amount,
-                state.calculate_spot_price(),
-                open_vault_share_price.into(),
-            );
+            let acutal_base_amount =
+                state.calculate_open_short(short_amount, open_vault_share_price.into());
 
             match bob
                 .hyperdrive()
