@@ -37,7 +37,7 @@ enum Action {
     CloseShort(FixedPoint, FixedPoint),
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Wallet {
     base: FixedPoint,
     lp_shares: FixedPoint,
@@ -185,6 +185,10 @@ impl Agent<ChainClient<LocalWallet>, ChaCha8Rng> {
             rng: ChaCha8Rng::seed_from_u64(seed),
             seed,
         })
+    }
+
+    pub fn hyperdrive(&self) -> &IHyperdrive<ChainClient<LocalWallet>> {
+        &self.hyperdrive
     }
 
     /// Longs ///
@@ -886,8 +890,10 @@ impl Agent<ChainClient<LocalWallet>, ChaCha8Rng> {
         self.client.address()
     }
 
-    // TODO: It may be better to group these into a single getter that returns
-    // the agent's wallet.
+    pub fn wallet(&self) -> Wallet {
+        self.wallet.clone()
+    }
+
     pub fn base(&self) -> FixedPoint {
         self.wallet.base
     }
