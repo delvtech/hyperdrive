@@ -82,7 +82,7 @@ impl State {
             self.absolute_max_short(spot_price, checkpoint_exposure, maybe_max_iterations);
         let absolute_max_bond_amount = max_bond_amount;
         let absolute_max_deposit =
-            match self.calculate_open_short(max_bond_amount, spot_price, open_vault_share_price) {
+            match self.calculate_open_short(max_bond_amount, open_vault_share_price) {
                 Ok(d) => d,
                 Err(_) => return max_bond_amount,
             };
@@ -125,11 +125,7 @@ impl State {
         // where budget is less than this bias.
         let target_budget = budget - self.minimum_transaction_amount();
         for _ in 0..maybe_max_iterations.unwrap_or(7) {
-            let deposit = match self.calculate_open_short(
-                max_bond_amount,
-                spot_price,
-                open_vault_share_price,
-            ) {
+            let deposit = match self.calculate_open_short(max_bond_amount, open_vault_share_price) {
                 Ok(d) => d,
                 Err(_) => {
                     // The pool is insolvent for the guess at this point.
@@ -166,11 +162,7 @@ impl State {
         // Verify that the max short satisfies the budget.
         if budget
             < self
-                .calculate_open_short(
-                    best_valid_max_bond_amount,
-                    spot_price,
-                    open_vault_share_price,
-                )
+                .calculate_open_short(best_valid_max_bond_amount, open_vault_share_price)
                 .unwrap()
         {
             panic!("max short exceeded budget");
@@ -224,9 +216,7 @@ impl State {
                     + self.flat_fee()
                     + self.curve_fee() * (fixed!(1e18) - spot_price)
                     - conservative_price);
-            if let Ok(deposit) =
-                self.calculate_open_short(guess, spot_price, open_vault_share_price)
-            {
+            if let Ok(deposit) = self.calculate_open_short(guess, open_vault_share_price) {
                 if budget >= deposit {
                     return guess;
                 }
@@ -243,11 +233,10 @@ impl State {
         // subtract these components from the budget to get a better estimate of
         // the max bond amount. If subtracting these components results in a
         // negative number, we just 0 as our initial guess.
-        let worst_case_deposit =
-            match self.calculate_open_short(budget, spot_price, open_vault_share_price) {
-                Ok(d) => d,
-                Err(_) => return fixed!(0),
-            };
+        let worst_case_deposit = match self.calculate_open_short(budget, open_vault_share_price) {
+            Ok(d) => d,
+            Err(_) => return fixed!(0),
+        };
         if budget >= worst_case_deposit {
             budget - worst_case_deposit
         } else {
@@ -671,7 +660,6 @@ mod tests {
             let p1_result = std::panic::catch_unwind(|| {
                 state.calculate_open_short(
                     amount - empirical_derivative_epsilon,
-                    state.calculate_spot_price(),
                     state.vault_share_price(),
                 )
             });
@@ -689,7 +677,6 @@ mod tests {
             let p2_result = std::panic::catch_unwind(|| {
                 state.calculate_open_short(
                     amount + empirical_derivative_epsilon,
-                    state.calculate_spot_price(),
                     state.vault_share_price(),
                 )
             });

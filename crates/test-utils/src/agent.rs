@@ -966,11 +966,7 @@ impl Agent<ChainClient<LocalWallet>, ChaCha8Rng> {
             vault_share_price: open_vault_share_price,
             ..
         } = self.get_checkpoint(self.latest_checkpoint().await?).await?;
-        state.calculate_open_short(
-            short_amount,
-            state.calculate_spot_price(),
-            open_vault_share_price.into(),
-        )
+        state.calculate_open_short(short_amount, open_vault_share_price.into())
     }
 
     /// Calculates the max long that can be opened in the current checkpoint.

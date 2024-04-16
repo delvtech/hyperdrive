@@ -30,7 +30,6 @@ impl State {
     pub fn calculate_open_short(
         &self,
         short_amount: FixedPoint,
-        spot_price: FixedPoint,
         mut open_vault_share_price: FixedPoint,
     ) -> Result<FixedPoint> {
         if short_amount < self.config.minimum_transaction_amount.into() {
@@ -55,6 +54,7 @@ impl State {
         }
 
         // NOTE: The order of additions and subtractions is important to avoid underflows.
+        let spot_price = self.calculate_spot_price();
         Ok(
             short_amount.mul_div_down(self.vault_share_price(), open_vault_share_price)
                 + self.flat_fee() * short_amount
@@ -204,7 +204,6 @@ mod tests {
         let state = rng.gen::<State>();
         let result = state.calculate_open_short(
             (state.config.minimum_transaction_amount - 10).into(),
-            state.calculate_spot_price(),
             state.vault_share_price(),
         );
         assert!(result.is_err());
