@@ -126,7 +126,7 @@ contract MultiTokenTest is HyperdriveTest {
             r,
             s
         );
-        
+
         assertEq(hyperdrive.isApprovedForAll(owner, address(0xCAFE)), false);
     }
 
