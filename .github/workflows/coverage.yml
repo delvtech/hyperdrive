@@ -40,6 +40,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
+          cache: false
 
       - name: forge version
         run: forge --version
