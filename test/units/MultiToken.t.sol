@@ -89,7 +89,7 @@ contract MultiTokenTest is HyperdriveTest {
         assertEq(hyperdrive.nonces(owner), nonce + 1);
     }
 
-    function testPermitForAllBadOwner() public {
+    function testPermitForAllZeroOwner() public {
         uint256 privateKey = 0xBEEF;
         address owner = vm.addr(privateKey);
 
