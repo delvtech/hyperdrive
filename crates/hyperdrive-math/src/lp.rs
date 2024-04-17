@@ -172,15 +172,38 @@ impl State {
         idle_shares_in_base
     }
 
+    /// Function that takes in a scaled FixedPoint maturity time and calculates
+    /// normalized time remaining with higher precision.
+    fn calculate_scaled_normalized_time_remaining(
+        &self,
+        scaled_maturity_time: FixedPoint,
+        current_time: U256,
+    ) -> FixedPoint {
+        let scaled_latest_checkpoint =
+            FixedPoint::from(self.to_checkpoint(current_time)) * fixed!(1e36);
+        let scaled_position_duration = self.position_duration() * fixed!(1e36);
+        if scaled_maturity_time > scaled_latest_checkpoint {
+            // NOTE: Round down to underestimate the time remaining.
+            FixedPoint::from(scaled_maturity_time - scaled_latest_checkpoint)
+                .div_down(scaled_position_duration)
+        } else {
+            fixed!(0)
+        }
+    }
+
     /// Calculates the present value of LPs capital in the pool.
     pub fn calculate_present_value(&self, current_block_timestamp: U256) -> FixedPoint {
         // Calculate the average time remaining for the longs and shorts.
-        let long_average_time_remaining = self.calculate_normalized_time_remaining(
-            self.long_average_maturity_time().into(),
+
+        // To keep precision of long and short average maturity time (from contract call)
+        // we scale the block timestamp and position duration by 1e18 to calculate
+        // the normalized time remaining.
+        let long_average_time_remaining = self.calculate_scaled_normalized_time_remaining(
+            self.long_average_maturity_time(),
             current_block_timestamp,
         );
-        let short_average_time_remaining = self.calculate_normalized_time_remaining(
-            self.short_average_maturity_time().into(),
+        let short_average_time_remaining = self.calculate_scaled_normalized_time_remaining(
+            self.short_average_maturity_time(),
             current_block_timestamp,
         );
 
@@ -532,14 +555,14 @@ mod tests {
                     minimum_share_reserves: state.config.minimum_share_reserves,
                     minimum_transaction_amount: state.config.minimum_transaction_amount,
                     long_average_time_remaining: state
-                        .calculate_normalized_time_remaining(
-                            state.long_average_maturity_time().into(),
+                        .calculate_scaled_normalized_time_remaining(
+                            state.long_average_maturity_time(),
                             current_block_timestamp.into(),
                         )
                         .into(),
                     short_average_time_remaining: state
-                        .calculate_normalized_time_remaining(
-                            state.short_average_maturity_time().into(),
+                        .calculate_scaled_normalized_time_remaining(
+                            state.short_average_maturity_time(),
                             current_block_timestamp.into(),
                         )
                         .into(),

@@ -9,6 +9,7 @@ import { IHyperdriveFactory } from "contracts/src/interfaces/IHyperdriveFactory.
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ETH } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
+import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
@@ -564,18 +565,40 @@ abstract contract InstanceTest is HyperdriveTest {
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
 
-        // Bob opens a long by depositing the base token.
-        // We expect openLong to fail with an UnsupportedToken error
-        // if depositing with base is not supported or a NotPayable error
-        // if the base token is ETH.
+        // If base deposits aren't enabled, we verify that ETH can't be sent to
+        // `openLong` and that `openLong` can't be called with `asBase = true`.
         vm.startPrank(bob);
         if (!config.enableBaseDeposits) {
-            vm.expectRevert(
-                isBaseETH
-                    ? IHyperdrive.NotPayable.selector
-                    : IHyperdrive.UnsupportedToken.selector
+            // Check the `NotPayable` route.
+            vm.expectRevert(IHyperdrive.NotPayable.selector);
+            hyperdrive.openLong{ value: basePaid }(
+                basePaid,
+                0,
+                0,
+                IHyperdrive.Options({
+                    destination: bob,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
             );
+
+            // Check the `UnsupportedToken` route.
+            vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+            hyperdrive.openLong(
+                basePaid,
+                0,
+                0,
+                IHyperdrive.Options({
+                    destination: bob,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            );
+
+            return;
         }
+
+        // Bob opens a long by depositing the base token.
         (uint256 maturityTime, uint256 bondAmount) = hyperdrive.openLong{
             value: isBaseETH ? basePaid : 0
         }(
@@ -588,11 +611,6 @@ abstract contract InstanceTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
-
-        // Early termination if base deposits are not supported.
-        if (!config.enableBaseDeposits) {
-            return;
-        }
 
         // Ensure that Bob received the correct amount of bonds.
         assertEq(
@@ -719,18 +737,40 @@ abstract contract InstanceTest is HyperdriveTest {
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
 
-        // Bob opens a short by depositing base.
-        // We expect the openShort to fail with an UnsupportedToken error
-        // if depositing with base is not supported or a NotPayable error
-        // if the base token is ETH.
+        // If base deposits aren't enabled, we verify that ETH can't be sent to
+        // `openLong` and that `openLong` can't be called with `asBase = true`.
         vm.startPrank(bob);
         if (!config.enableBaseDeposits) {
-            vm.expectRevert(
-                isBaseETH
-                    ? IHyperdrive.NotPayable.selector
-                    : IHyperdrive.UnsupportedToken.selector
+            // Check the `NotPayable` route.
+            vm.expectRevert(IHyperdrive.NotPayable.selector);
+            hyperdrive.openShort{ value: shortAmount }(
+                shortAmount,
+                shortAmount,
+                0,
+                IHyperdrive.Options({
+                    destination: bob,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
             );
+
+            // Check the `UnsupportedToken` route.
+            vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+            hyperdrive.openShort(
+                shortAmount,
+                shortAmount,
+                0,
+                IHyperdrive.Options({
+                    destination: bob,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            );
+
+            return;
         }
+
+        // Bob opens a short with `asBase = true`.
         (uint256 maturityTime, uint256 basePaid) = hyperdrive.openShort{
             value: isBaseETH ? shortAmount : 0
         }(
@@ -743,11 +783,6 @@ abstract contract InstanceTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
-
-        // Early termination if base deposits is not supported.
-        if (!config.enableBaseDeposits) {
-            return;
-        }
 
         // Ensure that Bob received the correct amount of shorted bonds.
         assertEq(
@@ -783,6 +818,35 @@ abstract contract InstanceTest is HyperdriveTest {
             bobBalancesBefore,
             hyperdriveBalancesBefore
         );
+    }
+
+    /// Sweep ///
+
+    function test_sweep_failure_directSweep() external {
+        vm.startPrank(factory.sweepCollector());
+
+        // Fails to sweep the vault shares token.
+        address vaultSharesToken = hyperdrive.vaultSharesToken();
+        vm.expectRevert(IHyperdrive.SweepFailed.selector);
+        hyperdrive.sweep(IERC20(vaultSharesToken));
+    }
+
+    function test_sweep_success() external {
+        vm.startPrank(factory.sweepCollector());
+
+        // Create a sweepable ERC20Mintable and send some tokens to Hyperdrive.
+        ERC20Mintable sweepable = new ERC20Mintable(
+            "Sweepable",
+            "SWEEP",
+            18,
+            address(0),
+            false,
+            type(uint256).max
+        );
+        sweepable.mint(address(hyperdrive), 10e18);
+
+        // Successfully sweep a token that isn't the vault shares token.
+        hyperdrive.sweep(IERC20(address(sweepable)));
     }
 
     /// Utilities ///

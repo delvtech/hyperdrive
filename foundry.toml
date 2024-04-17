@@ -38,6 +38,10 @@ via_ir = false
 gas_reports = ["*"]
 evm_version = "paris"
 
+[profile.lite]
+optimizer = false
+via_ir = false
+
 [fuzz]
 runs = 1000
 
