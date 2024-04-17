@@ -155,4 +155,52 @@ contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {
         );
         assertEq(lpShares, hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice));
     }
+
+    function test_initialize_success_asShares() external {
+        // Deploy all of the target instances.
+        for (uint256 i = 0; i < 5; i++) {
+            coordinator.deployTarget(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                i,
+                SALT
+            );
+        }
+
+        // Deploy a Hyperdrive instance.
+        IHyperdrive hyperdrive = IHyperdrive(
+            coordinator.deploy(DEPLOYMENT_ID, config, new bytes(0), SALT)
+        );
+
+        // Initialization should succeed.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        uint256 contribution = 100_000e18;
+        baseToken.mint(contribution);
+        baseToken.approve(address(vault), contribution);
+        uint256 contributionShares = vault.deposit(contribution, alice);
+        vault.approve(address(coordinator), contributionShares);
+        vm.stopPrank();
+        vm.startPrank(factory);
+        uint256 lpShares = coordinator.initialize(
+            DEPLOYMENT_ID,
+            alice,
+            contributionShares,
+            0.05e18,
+            IHyperdrive.Options({
+                asBase: false,
+                destination: alice,
+                extraData: new bytes(0)
+            })
+        );
+
+        // Ensure the initializer received the correct amount of LP shares.
+        assertEq(
+            lpShares,
+            contributionShares -
+                2 *
+                hyperdrive.getPoolConfig().minimumShareReserves
+        );
+    }
 }
