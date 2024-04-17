@@ -5,18 +5,12 @@ import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { HyperdriveDeployerCoordinator } from "contracts/src/deployers/HyperdriveDeployerCoordinator.sol";
-import { ERC4626HyperdriveCoreDeployer } from "contracts/src/deployers/erc4626/ERC4626HyperdriveCoreDeployer.sol";
-import { ERC4626Target0Deployer } from "contracts/src/deployers/erc4626/ERC4626Target0Deployer.sol";
-import { ERC4626Target1Deployer } from "contracts/src/deployers/erc4626/ERC4626Target1Deployer.sol";
-import { ERC4626Target2Deployer } from "contracts/src/deployers/erc4626/ERC4626Target2Deployer.sol";
-import { ERC4626Target3Deployer } from "contracts/src/deployers/erc4626/ERC4626Target3Deployer.sol";
-import { ERC4626Target4Deployer } from "contracts/src/deployers/erc4626/ERC4626Target4Deployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { MockERC4626 } from "contracts/test/MockERC4626.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { MockERC4626 } from "contracts/test/MockERC4626.sol";
 import { Lib } from "test/utils/Lib.sol";
 
 contract MockHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
@@ -109,91 +103,8 @@ contract DeployerCoordinatorTest is HyperdriveTest {
     IHyperdrive.PoolDeployConfig internal config;
 
     address internal factory;
-    MockERC4626 internal vault;
+    MockERC4626 private vault;
     MockHyperdriveDeployerCoordinator internal coordinator;
-
-    function setUp() public override {
-        super.setUp();
-
-        // Deploy a base token and ERC4626 vault. Encode the vault into extra
-        // data.
-        vm.stopPrank();
-        vm.startPrank(alice);
-        baseToken = new ERC20Mintable(
-            "Base Token",
-            "BASE",
-            18,
-            address(0),
-            false,
-            type(uint256).max
-        );
-        vault = new MockERC4626(
-            baseToken,
-            "Vault",
-            "VAULT",
-            18,
-            address(0),
-            false,
-            type(uint256).max
-        );
-
-        // Create a deployment config.
-        config = testDeployConfig(0.05e18, 365 days);
-        config.baseToken = IERC20(address(baseToken));
-        config.vaultSharesToken = IERC20(address(vault));
-
-        // Deploy the factory.
-        factory = address(
-            new HyperdriveFactory(
-                HyperdriveFactory.FactoryConfig({
-                    governance: alice,
-                    hyperdriveGovernance: bob,
-                    feeCollector: feeCollector,
-                    sweepCollector: sweepCollector,
-                    defaultPausers: new address[](0),
-                    checkpointDurationResolution: 1 hours,
-                    minCheckpointDuration: 8 hours,
-                    maxCheckpointDuration: 1 days,
-                    minPositionDuration: 7 days,
-                    maxPositionDuration: 10 * 365 days,
-                    minFixedAPR: 0.001e18,
-                    maxFixedAPR: 0.5e18,
-                    minTimeStretchAPR: 0.005e18,
-                    maxTimeStretchAPR: 0.5e18,
-                    minFees: IHyperdrive.Fees({
-                        curve: 0.001e18,
-                        flat: 0.0001e18,
-                        governanceLP: 0.15e18,
-                        governanceZombie: 0.03e18
-                    }),
-                    maxFees: IHyperdrive.Fees({
-                        curve: 0.1e18,
-                        flat: 0.01e18,
-                        governanceLP: 0.15e18,
-                        governanceZombie: 0.03e18
-                    }),
-                    linkerFactory: address(0xdeadbeef),
-                    linkerCodeHash: bytes32(uint256(0xdeadbabe))
-                })
-            )
-        );
-
-        // Deploy the coordinator.
-        coordinator = new MockHyperdriveDeployerCoordinator(
-            factory,
-            address(new ERC4626HyperdriveCoreDeployer()),
-            address(new ERC4626Target0Deployer()),
-            address(new ERC4626Target1Deployer()),
-            address(new ERC4626Target2Deployer()),
-            address(new ERC4626Target3Deployer()),
-            address(new ERC4626Target4Deployer())
-        );
-
-        // Start a prank as the factory address. This is the default address
-        // that should be used for deploying Hyperdrive instances.
-        vm.stopPrank();
-        vm.startPrank(factory);
-    }
 
     function test_deployTarget_failure_invalidSender() external {
         // Attempt to deploy a target0 instance with an invalid sender. This

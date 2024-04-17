@@ -1,0 +1,102 @@
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity 0.8.20;
+
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
+import { HyperdriveDeployerCoordinator } from "contracts/src/deployers/HyperdriveDeployerCoordinator.sol";
+import { StETHHyperdriveCoreDeployer } from "contracts/src/deployers/steth/StETHHyperdriveCoreDeployer.sol";
+import { StETHTarget0Deployer } from "contracts/src/deployers/steth/StETHTarget0Deployer.sol";
+import { StETHTarget1Deployer } from "contracts/src/deployers/steth/StETHTarget1Deployer.sol";
+import { StETHTarget2Deployer } from "contracts/src/deployers/steth/StETHTarget2Deployer.sol";
+import { StETHTarget3Deployer } from "contracts/src/deployers/steth/StETHTarget3Deployer.sol";
+import { StETHTarget4Deployer } from "contracts/src/deployers/steth/StETHTarget4Deployer.sol";
+import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
+import { AssetId } from "contracts/src/libraries/AssetId.sol";
+import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
+import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
+import { MockLido } from "contracts/test/MockLido.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { DeployerCoordinatorTest, MockHyperdriveDeployerCoordinator } from "test/integrations/deployers/DeployerCoordinator.t.sol";
+import { Lib } from "test/utils/Lib.sol";
+
+contract StethDeployerCoordinatorTest is DeployerCoordinatorTest {
+    using FixedPointMath for *;
+    using Lib for *;
+
+    MockLido private vault;
+    function setUp() public override {
+        super.setUp();
+
+        // Deploy a base token and StETH vault. Encode the vault into extra
+        // data.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        baseToken = new ERC20Mintable(
+            "Base Token",
+            "BASE",
+            18,
+            address(0),
+            false,
+            type(uint256).max
+        );
+        vault = new MockLido(0.05e18, alice, true, type(uint256).max);
+
+        // Create a deployment config.
+        config = testDeployConfig(0.05e18, 365 days);
+        config.baseToken = IERC20(address(baseToken));
+        config.vaultSharesToken = IERC20(address(vault));
+
+        // Deploy the factory.
+        factory = address(
+            new HyperdriveFactory(
+                HyperdriveFactory.FactoryConfig({
+                    governance: alice,
+                    hyperdriveGovernance: bob,
+                    feeCollector: feeCollector,
+                    sweepCollector: sweepCollector,
+                    defaultPausers: new address[](0),
+                    checkpointDurationResolution: 1 hours,
+                    minCheckpointDuration: 8 hours,
+                    maxCheckpointDuration: 1 days,
+                    minPositionDuration: 7 days,
+                    maxPositionDuration: 10 * 365 days,
+                    minFixedAPR: 0.001e18,
+                    maxFixedAPR: 0.5e18,
+                    minTimeStretchAPR: 0.005e18,
+                    maxTimeStretchAPR: 0.5e18,
+                    minFees: IHyperdrive.Fees({
+                        curve: 0.001e18,
+                        flat: 0.0001e18,
+                        governanceLP: 0.15e18,
+                        governanceZombie: 0.03e18
+                    }),
+                    maxFees: IHyperdrive.Fees({
+                        curve: 0.1e18,
+                        flat: 0.01e18,
+                        governanceLP: 0.15e18,
+                        governanceZombie: 0.03e18
+                    }),
+                    linkerFactory: address(0xdeadbeef),
+                    linkerCodeHash: bytes32(uint256(0xdeadbabe))
+                })
+            )
+        );
+
+        // Deploy the coordinator.
+        coordinator = new MockHyperdriveDeployerCoordinator(
+            factory,
+            address(new StETHHyperdriveCoreDeployer()),
+            address(new StETHTarget0Deployer()),
+            address(new StETHTarget1Deployer()),
+            address(new StETHTarget2Deployer()),
+            address(new StETHTarget3Deployer()),
+            address(new StETHTarget4Deployer())
+        );
+
+        // Start a prank as the factory address. This is the default address
+        // that should be used for deploying Hyperdrive instances.
+        vm.stopPrank();
+        vm.startPrank(factory);
+    }
+}
