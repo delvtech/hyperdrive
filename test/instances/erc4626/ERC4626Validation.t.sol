@@ -324,6 +324,23 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         );
     }
 
+    function test_OpenLongWithUnderlying_failure() external {
+        vm.startPrank(alice);
+        uint256 baseAmount = 10e18;
+        underlyingToken.approve(address(hyperdrive), baseAmount);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
+        hyperdrive.openLong{ value: baseAmount }(
+            baseAmount,
+            0,
+            0,
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
     function test_OpenLongWithUnderlying(uint256 basePaid) external {
         // Establish baseline variables
         uint256 totalPooledAssetsBefore = token.totalAssets();
