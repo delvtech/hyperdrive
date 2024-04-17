@@ -318,13 +318,12 @@ library FixedPointMath {
             // min(_delta, _average) <= average <= max(_delta, _average)
             //
             // To ensure that this is always the case, we clamp the weighted
-            // average to this range.
+            // average to this range. We don't have to worry about the
+            // case where average > _delta.max(average) because rounding down when
+            // computing this average makes this case infeasible.
             uint256 minAverage = _delta.min(_average);
-            uint256 maxAverage = _delta.max(_average);
             if (average < minAverage) {
                 average = minAverage;
-            } else if (average > maxAverage) {
-                average = maxAverage;
             }
         }
         // If the delta weight should be subtracted from the total weight, we
