@@ -172,6 +172,28 @@ impl FixedPoint {
     }
 
     pub fn div_down(self, other: FixedPoint) -> FixedPoint {
+        let scale = uint256!(1e18);
+        let mut adjustment: u64 = 1;
+
+        // Dynamically adjust the scale to prevent overflow.
+        while let (_, true) = self.0.overflowing_mul(scale / adjustment) {
+            adjustment *= 10;
+        }
+
+        // let adjusted_value = self.mul_div_down(FixedPoint(scale / adjustment), other);
+        // FixedPoint(adjusted_value.0 * adjustment)
+
+        if adjustment > 1 {
+            let adjusted_value = self.mul_div_down(FixedPoint(scale / adjustment), other);
+            let less_precise_value = FixedPoint(adjusted_value.0 * adjustment);
+
+            println!(
+                "FixedPointMath: div_down precision adjustment needed to prevent overflow for {} / {}",
+                self, other
+            );
+            println!("\tLess precise value: {}", less_precise_value);
+        }
+
         self.mul_div_down(fixed!(1e18), other)
     }
 
