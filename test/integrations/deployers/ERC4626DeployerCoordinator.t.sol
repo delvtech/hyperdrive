@@ -25,6 +25,7 @@ contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {
     using Lib for *;
 
     MockERC4626 private vault;
+
     function setUp() public override {
         super.setUp();
 

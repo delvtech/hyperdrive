@@ -25,6 +25,7 @@ contract StethDeployerCoordinatorTest is DeployerCoordinatorTest {
     using Lib for *;
 
     MockLido private vault;
+
     function setUp() public override {
         super.setUp();
 
