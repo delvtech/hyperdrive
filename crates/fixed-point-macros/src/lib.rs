@@ -12,7 +12,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
-    parse_macro_input, LitFloat, LitInt, Result,
+    parse_macro_input, Expr, LitFloat, LitInt, Result,
 };
 
 struct Number {
@@ -132,4 +132,21 @@ pub fn fixed(input: TokenStream) -> TokenStream {
     let result = parse_macro_input!(input as Number);
     let result: [u8; 32] = result.to_u256().into();
     quote!(FixedPoint::from([ #(#result),* ])).into()
+}
+
+#[proc_macro]
+pub fn result(input: TokenStream) -> TokenStream {
+    let expr = parse_macro_input!(input as Expr);
+    quote!(
+    std::panic::catch_unwind(|| #expr).or_else(|panic_info| {
+        let panic_message = if let Some(s) = panic_info.downcast_ref::<String>() {
+            s.as_str()
+        } else if let Some(&s) = panic_info.downcast_ref::<&str>() {
+            s
+        } else {
+            "Operation failed with unknown panic"
+        };
+        Err(eyre::eyre!("Operation failed: {}", panic_message))
+    }))
+    .into()
 }

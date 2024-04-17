@@ -3,7 +3,7 @@ use std::panic;
 use ethers::types::I256;
 use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
-use fixed_point_macros::{fixed, int256};
+use fixed_point_macros::{fixed, int256, result};
 
 use crate::{State, YieldSpace};
 
@@ -359,22 +359,25 @@ impl State {
         bond_amount: FixedPoint,
         checkpoint_exposure: I256,
     ) -> Option<FixedPoint> {
-        let governance_fee = self.open_long_governance_fee(base_amount);
-        let share_reserves = self.share_reserves() + base_amount / self.vault_share_price()
-            - governance_fee / self.vault_share_price();
-        let exposure = self.long_exposure() + bond_amount;
-        let checkpoint_exposure = FixedPoint::from(-checkpoint_exposure.min(int256!(0)));
-        if share_reserves + checkpoint_exposure / self.vault_share_price()
-            >= exposure / self.vault_share_price() + self.minimum_share_reserves()
-        {
-            Some(
-                share_reserves + checkpoint_exposure / self.vault_share_price()
-                    - exposure / self.vault_share_price()
-                    - self.minimum_share_reserves(),
-            )
-        } else {
-            None
-        }
+        result!({
+            let governance_fee = self.open_long_governance_fee(base_amount);
+            let share_reserves = self.share_reserves() + base_amount / self.vault_share_price()
+                - governance_fee / self.vault_share_price();
+            let exposure = self.long_exposure() + bond_amount;
+            let checkpoint_exposure = FixedPoint::from(-checkpoint_exposure.min(int256!(0)));
+            if share_reserves + checkpoint_exposure / self.vault_share_price()
+                >= exposure / self.vault_share_price() + self.minimum_share_reserves()
+            {
+                Some(
+                    share_reserves + checkpoint_exposure / self.vault_share_price()
+                        - exposure / self.vault_share_price()
+                        - self.minimum_share_reserves(),
+                )
+            } else {
+                None
+            }
+        })
+        .unwrap_or(None)
     }
 
     /// Calculates the negation of the derivative of the pool's solvency with respect
