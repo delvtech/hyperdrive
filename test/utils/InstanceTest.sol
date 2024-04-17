@@ -819,6 +819,18 @@ abstract contract InstanceTest is HyperdriveTest {
         );
     }
 
+    /// Sweep ///
+
+    function test_sweep_failure_direct_sweeps() external {
+        vm.stopPrank();
+        vm.startPrank(celine);
+
+        // Trying to sweep the vault shares token should fail.
+        address vaultSharesToken = hyperdrive.vaultSharesToken();
+        vm.expectRevert(IHyperdrive.SweepFailed.selector);
+        hyperdrive.sweep(IERC20(vaultSharesToken));
+    }
+
     /// Utilities ///
 
     struct AccountBalances {
