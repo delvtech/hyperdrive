@@ -249,7 +249,7 @@ abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
     /// @return Address of the ERC20 forwarder contract.
     function _deriveForwarderAddress(
         uint256 tokenId
-    ) internal view virtual returns (address) {
+    ) internal view returns (address) {
         // Get the salt which is used by the deploying contract.
         bytes32 salt = keccak256(abi.encode(address(this), tokenId));
 

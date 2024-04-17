@@ -7,9 +7,23 @@ import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { MockAssetId } from "contracts/test/MockAssetId.sol";
+import { HyperdriveMultiToken } from "contracts/src/internal/HyperdriveMultiToken.sol";
+import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
 import { IMockHyperdrive, MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
+
+contract DummyHyperdriveMultiToken is HyperdriveMultiToken, MockHyperdrive {
+    constructor(
+        IHyperdrive.PoolConfig memory _config
+    ) MockHyperdrive(_config) {}
+
+    function callOnlyLinker(
+        uint256 tokenId
+    ) external view onlyLinker(tokenId) returns (address) {
+        return address(0);
+    }
+}
 
 contract MultiTokenTest is HyperdriveTest {
     using Lib for *;
@@ -44,6 +58,20 @@ contract MultiTokenTest is HyperdriveTest {
         // Test that the name and symbol are correct.
         assertEq(hyperdrive.name(id), expectedName);
         assertEq(hyperdrive.symbol(id), expectedSymbol);
+    }
+
+    function testOnlyLinkerInvalidERC20Bridge() public {
+        IHyperdrive.PoolConfig memory config = testConfig(
+            0.05e18,
+            POSITION_DURATION
+        );
+        config.baseToken = IERC20(address(baseToken));
+        config.minimumShareReserves = 1e15;
+        DummyHyperdriveMultiToken multitoken = new DummyHyperdriveMultiToken(
+            config
+        );
+        vm.expectRevert(IHyperdrive.InvalidERC20Bridge.selector);
+        multitoken.callOnlyLinker(1);
     }
 
     function testPermitForAll() public {

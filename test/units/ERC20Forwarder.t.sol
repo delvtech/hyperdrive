@@ -15,18 +15,6 @@ import { HyperdriveTarget0 } from "contracts/src/external/HyperdriveTarget0.sol"
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-contract DummyHyperdriveMultiToken is HyperdriveTarget0, MockHyperdriveBase {
-    constructor(
-        IHyperdrive.PoolConfig memory _config
-    ) HyperdriveTarget0(_config) {}
-
-    function _deriveForwarderAddress(
-        uint256 // unused
-    ) internal pure override returns (address) {
-        return address(0);
-    }
-}
-
 contract ERC20ForwarderFactoryTest is HyperdriveTest {
     using Lib for *;
 
@@ -62,26 +50,6 @@ contract ERC20ForwarderFactoryTest is HyperdriveTest {
 
         assertEq(forwarder.balanceOf(alice), 0);
         assertEq(forwarder.balanceOf(bob), AMOUNT);
-    }
-
-    function testTransferFromBridgeInvalidERC20Bridge(uint256 AMOUNT) public {
-        uint8 TOKEN_ID = 9;
-        IMockHyperdrive(address(hyperdrive)).mint(TOKEN_ID, alice, AMOUNT);
-
-        assertEq(forwarder.balanceOf(alice), AMOUNT);
-
-        IHyperdrive.PoolConfig memory config = testConfig(
-            0.05e18,
-            POSITION_DURATION
-        );
-        config.baseToken = IERC20(address(baseToken));
-        config.minimumShareReserves = 1e15;
-        DummyHyperdriveMultiToken forwarder_ = new DummyHyperdriveMultiToken(
-            config
-        );
-        vm.prank(alice);
-        vm.expectRevert(IHyperdrive.InvalidERC20Bridge.selector);
-        forwarder_.transferFromBridge(1, msg.sender, bob, AMOUNT, msg.sender);
     }
 
     // Test Forwarder contract
