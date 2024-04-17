@@ -140,6 +140,8 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         assertEq(hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID), 0);
         assertEq(hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw, 0);
         assertEq(hyperdrive.getPoolInfo().withdrawalSharesProceeds, 0);
+        assertEq(hyperdrive.getWithdrawPool().proceeds, 0);
+        assertEq(hyperdrive.getWithdrawPool().readyToWithdraw, 0);
 
         // Ensure that the base proceeds were transferred.
         assertEq(
