@@ -215,20 +215,10 @@ contract MultiTokenTest is HyperdriveTest {
 
     function testCannotTransferZeroAddrTransferFrom() public {
         vm.expectRevert();
-        hyperdrive.transferFrom(
-            0,
-            alice,
-            address(0),
-            10e18
-        );
+        hyperdrive.transferFrom(0, alice, address(0), 10e18);
 
         vm.expectRevert();
-        hyperdrive.transferFrom(
-            0,
-            address(0),
-            alice,
-            10e18
-        );
+        hyperdrive.transferFrom(0, address(0), alice, 10e18);
     }
 
     function testCannotTransferZeroAddrBatchTransferFrom() public {
