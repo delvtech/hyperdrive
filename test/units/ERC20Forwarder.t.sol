@@ -22,7 +22,7 @@ contract DummyHyperdriveMultiToken is HyperdriveTarget0, MockHyperdriveBase {
 
     function _deriveForwarderAddress(
         uint256 // unused
-    ) internal view override returns (address) {
+    ) internal pure override returns (address) {
         return address(0);
     }
 }
