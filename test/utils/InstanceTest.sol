@@ -583,7 +583,7 @@ abstract contract InstanceTest is HyperdriveTest {
 
             // Check the `UnsupportedToken` route.
             vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-            hyperdrive.openLong{ value: basePaid }(
+            hyperdrive.openLong(
                 basePaid,
                 0,
                 0,

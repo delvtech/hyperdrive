@@ -97,19 +97,19 @@ contract RETHHyperdriveTest is InstanceTest {
         address _factory
     ) internal override returns (address) {
         vm.startPrank(alice);
-        address coordinator = address(
-            new RETHHyperdriveDeployerCoordinator(
-                _factory,
-                address(new RETHHyperdriveCoreDeployer()),
-                address(new RETHTarget0Deployer()),
-                address(new RETHTarget1Deployer()),
-                address(new RETHTarget2Deployer()),
-                address(new RETHTarget3Deployer()),
-                address(new RETHTarget4Deployer()),
-                rocketTokenRETH
-            )
-        );
-        return coordinator;
+        return
+            address(
+                new RETHHyperdriveDeployerCoordinator(
+                    _factory,
+                    address(new RETHHyperdriveCoreDeployer()),
+                    address(new RETHTarget0Deployer()),
+                    address(new RETHTarget1Deployer()),
+                    address(new RETHTarget2Deployer()),
+                    address(new RETHTarget3Deployer()),
+                    address(new RETHTarget4Deployer()),
+                    rocketTokenRETH
+                )
+            );
     }
 
     /// @dev Fetches the total supply of the base and share tokens.
