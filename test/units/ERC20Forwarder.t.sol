@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC20Forwarder } from "contracts/src/interfaces/IERC20Forwarder.sol";
 import { IMultiToken } from "contracts/src/interfaces/IMultiToken.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -8,8 +9,23 @@ import { ERC20Forwarder } from "contracts/src/token/ERC20Forwarder.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { MockAssetId } from "contracts/test/MockAssetId.sol";
 import { IMockHyperdrive } from "contracts/test/MockHyperdrive.sol";
+import { MockHyperdriveBase } from "contracts/test/MockHyperdrive.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { HyperdriveTarget0 } from "contracts/src/external/HyperdriveTarget0.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
+
+contract DummyHyperdriveMultiToken is HyperdriveTarget0, MockHyperdriveBase {
+    constructor(
+        IHyperdrive.PoolConfig memory _config
+    ) HyperdriveTarget0(_config) {}
+
+    function _deriveForwarderAddress(
+        uint256 // unused
+    ) internal view override returns (address) {
+        return address(0);
+    }
+}
 
 contract ERC20ForwarderFactoryTest is HyperdriveTest {
     using Lib for *;
@@ -46,6 +62,26 @@ contract ERC20ForwarderFactoryTest is HyperdriveTest {
 
         assertEq(forwarder.balanceOf(alice), 0);
         assertEq(forwarder.balanceOf(bob), AMOUNT);
+    }
+
+    function testTransferFromBridgeInvalidERC20Bridge(uint256 AMOUNT) public {
+        uint8 TOKEN_ID = 9;
+        IMockHyperdrive(address(hyperdrive)).mint(TOKEN_ID, alice, AMOUNT);
+
+        assertEq(forwarder.balanceOf(alice), AMOUNT);
+
+        IHyperdrive.PoolConfig memory config = testConfig(
+            0.05e18,
+            POSITION_DURATION
+        );
+        config.baseToken = IERC20(address(baseToken));
+        config.minimumShareReserves = 1e15;
+        DummyHyperdriveMultiToken forwarder_ = new DummyHyperdriveMultiToken(
+            config
+        );
+        vm.prank(alice);
+        vm.expectRevert(IHyperdrive.InvalidERC20Bridge.selector);
+        forwarder_.transferFromBridge(1, msg.sender, bob, AMOUNT, msg.sender);
     }
 
     // Test Forwarder contract
