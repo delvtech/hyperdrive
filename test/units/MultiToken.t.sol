@@ -213,6 +213,56 @@ contract MultiTokenTest is HyperdriveTest {
         );
     }
 
+    function testCannotTransferZeroAddrTransferFrom() public {
+        vm.expectRevert();
+        hyperdrive.transferFrom(0, alice, address(0), 10e18);
+
+        vm.expectRevert();
+        hyperdrive.transferFrom(0, address(0), alice, 10e18);
+    }
+
+    function testTransferFrom() public {
+        uint256 privateKey = 0xBEEF;
+        address owner = vm.addr(privateKey);
+
+        uint256 deadline = block.timestamp + 1000;
+
+        uint256 nonce = hyperdrive.nonces(owner);
+
+        bytes32 structHash = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                hyperdrive.domainSeparator(),
+                keccak256(
+                    abi.encode(
+                        hyperdrive.PERMIT_TYPEHASH(),
+                        owner,
+                        address(0xCAFE),
+                        true,
+                        nonce,
+                        deadline
+                    )
+                )
+            )
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, structHash);
+
+        hyperdrive.permitForAll(
+            owner,
+            address(0xCAFE),
+            true,
+            deadline,
+            v,
+            r,
+            s
+        );
+        IMockHyperdrive(address(hyperdrive)).mint(1, owner, 100 ether);
+
+        vm.startPrank(address(0xCAFE));
+        hyperdrive.transferFrom(1, owner, bob, 100 ether);
+    }
+
     function testCannotTransferZeroAddrBatchTransferFrom() public {
         vm.expectRevert();
         hyperdrive.batchTransferFrom(
