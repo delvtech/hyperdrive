@@ -2,12 +2,28 @@
 pragma solidity 0.8.20;
 
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { MockAssetId } from "contracts/test/MockAssetId.sol";
-import { IMockHyperdrive } from "contracts/test/MockHyperdrive.sol";
+import { HyperdriveMultiToken } from "contracts/src/internal/HyperdriveMultiToken.sol";
+import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
+import { IMockHyperdrive, MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
+
+contract DummyHyperdriveMultiToken is HyperdriveMultiToken, MockHyperdrive {
+    constructor(
+        IHyperdrive.PoolConfig memory _config
+    ) MockHyperdrive(_config) {}
+
+    function callOnlyLinker(
+        uint256 tokenId
+    ) external view onlyLinker(tokenId) returns (address) {
+        return address(0);
+    }
+}
 
 contract MultiTokenTest is HyperdriveTest {
     using Lib for *;
@@ -42,6 +58,20 @@ contract MultiTokenTest is HyperdriveTest {
         // Test that the name and symbol are correct.
         assertEq(hyperdrive.name(id), expectedName);
         assertEq(hyperdrive.symbol(id), expectedSymbol);
+    }
+
+    function testOnlyLinkerInvalidERC20Bridge() public {
+        IHyperdrive.PoolConfig memory config = testConfig(
+            0.05e18,
+            POSITION_DURATION
+        );
+        config.baseToken = IERC20(address(baseToken));
+        config.minimumShareReserves = 1e15;
+        DummyHyperdriveMultiToken multitoken = new DummyHyperdriveMultiToken(
+            config
+        );
+        vm.expectRevert(IHyperdrive.InvalidERC20Bridge.selector);
+        multitoken.callOnlyLinker(1);
     }
 
     function testPermitForAll() public {
@@ -85,6 +115,47 @@ contract MultiTokenTest is HyperdriveTest {
 
         // Check that nonce increments
         assertEq(hyperdrive.nonces(owner), nonce + 1);
+    }
+
+    function testPermitForAllZeroOwner() public {
+        uint256 privateKey = 0xBEEF;
+        address owner = vm.addr(privateKey);
+
+        uint256 deadline = block.timestamp + 1000;
+
+        uint256 nonce = hyperdrive.nonces(owner);
+
+        bytes32 structHash = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                hyperdrive.domainSeparator(),
+                keccak256(
+                    abi.encode(
+                        hyperdrive.PERMIT_TYPEHASH(),
+                        owner,
+                        address(0xCAFE),
+                        true,
+                        nonce,
+                        deadline
+                    )
+                )
+            )
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, structHash);
+
+        vm.expectRevert();
+        hyperdrive.permitForAll(
+            address(0),
+            address(0xCAFE),
+            true,
+            deadline,
+            v,
+            r,
+            s
+        );
+
+        assertEq(hyperdrive.isApprovedForAll(owner, address(0xCAFE)), false);
     }
 
     function testNegativePermitBadNonce() public {
