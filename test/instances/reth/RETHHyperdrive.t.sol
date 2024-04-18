@@ -52,6 +52,7 @@ contract RETHHyperdriveTest is InstanceTest {
     // The configuration for the Instance testing suite.
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig(
+            "RETHHyperdrive",
             whaleAccounts,
             IERC20(ETH),
             IERC20(rocketTokenRETH),

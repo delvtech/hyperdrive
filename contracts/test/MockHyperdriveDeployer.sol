@@ -5,9 +5,14 @@ import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IHyperdriveTargetDeployer } from "contracts/src/interfaces/IHyperdriveTargetDeployer.sol";
+import { VERSION } from "contracts/src/libraries/Constants.sol";
 import { MockHyperdrive } from "./MockHyperdrive.sol";
 
 contract MockHyperdriveDeployer is IHyperdriveDeployerCoordinator {
+    string public constant name = "MockHyperdriveDeployer";
+
+    string public constant version = VERSION;
+
     mapping(address => mapping(bytes32 => address)) internal _deployments;
 
     function deploy(

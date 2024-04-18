@@ -19,6 +19,7 @@ import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
+import { VERSION } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
@@ -27,9 +28,11 @@ import { MockERC4626, ERC20 } from "contracts/test/MockERC4626.sol";
 import { MockERC4626Hyperdrive } from "contracts/test/MockERC4626Hyperdrive.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract ERC4626HyperdriveTest is HyperdriveTest {
     using FixedPointMath for *;
+    using Lib for *;
 
     HyperdriveFactory factory;
 
@@ -99,7 +102,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 }),
                 linkerFactory: address(forwarderFactory),
                 linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
-            })
+            }),
+            "HyperdriveFactory"
         );
         coreDeployer = address(new ERC4626HyperdriveCoreDeployer());
         target0Deployer = address(new ERC4626Target0Deployer());
@@ -171,6 +175,26 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
 
         // Start recording events.
         vm.recordLogs();
+    }
+
+    function test_erc4626_name() external view {
+        assert(
+            IHyperdrive(address(mockHyperdrive)).name().eq("ERC4626Hyperdrive")
+        );
+        assert(
+            IHyperdriveDeployerCoordinator(deployerCoordinator).name().eq(
+                "ERC4626HyperdriveDeployerCoordinator"
+            )
+        );
+    }
+
+    function test_erc4626_version() external view {
+        assert(IHyperdrive(address(mockHyperdrive)).version().eq(VERSION));
+        assert(
+            IHyperdriveDeployerCoordinator(deployerCoordinator).version().eq(
+                VERSION
+            )
+        );
     }
 
     function test_erc4626_deposit() external {

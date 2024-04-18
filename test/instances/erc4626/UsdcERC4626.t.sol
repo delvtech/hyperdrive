@@ -98,7 +98,8 @@ contract UsdcERC4626 is ERC4626ValidationTest {
                 }),
                 linkerFactory: address(0xdeadbeef),
                 linkerCodeHash: bytes32(uint256(0xdeadbabe))
-            })
+            }),
+            "HyperdriveFactory"
         );
         coreDeployer = address(new ERC4626HyperdriveCoreDeployer());
         target0Deployer = address(new ERC4626Target0Deployer());

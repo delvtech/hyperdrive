@@ -24,7 +24,7 @@ import { IHyperdriveFactory } from "contracts/src/interfaces/IHyperdriveFactory.
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { ETH } from "contracts/src/libraries/Constants.sol";
+import { ETH, VERSION } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
@@ -33,9 +33,13 @@ import { MockHyperdriveDeployer, MockHyperdriveTargetDeployer } from "contracts/
 import { MockLido } from "contracts/test/MockLido.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract HyperdriveFactoryTest is HyperdriveTest {
     using FixedPointMath for *;
+    using Lib for *;
+
+    string internal constant NAME = "HyperdriveFactory";
 
     HyperdriveFactory internal factory;
 
@@ -114,7 +118,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 linkerFactory: address(0xdeadbeef),
                 linkerCodeHash: bytes32(uint256(0xdeadbabe))
             });
-        factory = new HyperdriveFactory(config);
+        factory = new HyperdriveFactory(config, NAME);
     }
 
     function test_constructor() external {
@@ -146,7 +150,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, ONE),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
-            })
+            }),
+            NAME
         );
 
         // Ensure that the factory can't be constructed with a minimum
@@ -175,7 +180,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, ONE),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
-            })
+            }),
+            NAME
         );
 
         // Ensure that the factory can't be constructed with a maximum
@@ -204,7 +210,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, ONE),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
-            })
+            }),
+            NAME
         );
 
         // Ensure that the factory can't be constructed with a maximum
@@ -233,7 +240,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, ONE),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
-            })
+            }),
+            NAME
         );
 
         // Ensure that the factory can't be constructed with a minimum position
@@ -259,7 +267,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, ONE),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
-            })
+            }),
+            NAME
         );
 
         // Ensure that the factory can't be constructed with a minimum
@@ -286,7 +295,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, ONE),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
-            })
+            }),
+            NAME
         );
 
         // Ensure that the factory can't be constructed with a maximum
@@ -312,7 +322,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, ONE),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
-            })
+            }),
+            NAME
         );
 
         // Ensure that the factory can't be constructed with a maximum
@@ -339,7 +350,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, ONE),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
-            })
+            }),
+            NAME
         );
 
         // Ensure that the factory can't be constructed with a maximum
@@ -365,7 +377,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxFees: IHyperdrive.Fees(2 * ONE, ONE, ONE, ONE),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
-            })
+            }),
+            NAME
         );
 
         // Ensure that the factory can't be constructed with a maximum
@@ -391,7 +404,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxFees: IHyperdrive.Fees(ONE, 2 * ONE, ONE, ONE),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
-            })
+            }),
+            NAME
         );
 
         // Ensure that the factory can't be constructed with a maximum
@@ -417,7 +431,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxFees: IHyperdrive.Fees(ONE, ONE, 2 * ONE, ONE),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
-            })
+            }),
+            NAME
         );
 
         // Ensure that the factory can't be constructed with a maximum
@@ -443,7 +458,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, 2 * ONE),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
-            })
+            }),
+            NAME
         );
 
         // Ensure that the factory can't be constructed with a minimum
@@ -469,7 +485,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxFees: IHyperdrive.Fees(0, ONE, ONE, ONE),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
-            })
+            }),
+            NAME
         );
 
         // Ensure that the factory can't be constructed with a minimum
@@ -495,7 +512,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxFees: IHyperdrive.Fees(ONE, 0, ONE, ONE),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
-            })
+            }),
+            NAME
         );
 
         // Ensure that the factory can't be constructed with a minimum
@@ -521,7 +539,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxFees: IHyperdrive.Fees(ONE, ONE, 0, ONE),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
-            })
+            }),
+            NAME
         );
 
         // Ensure that the factory can't be constructed with a minimum
@@ -547,7 +566,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, 0),
                 linkerFactory: address(0),
                 linkerCodeHash: bytes32(0)
-            })
+            }),
+            NAME
         );
 
         // Ensure that the factory can be constructed with a valid configuration
@@ -573,7 +593,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 linkerFactory: address(0xdeadbeef),
                 linkerCodeHash: bytes32(uint256(0xdeadbabe))
             });
-        factory = new HyperdriveFactory(config);
+        factory = new HyperdriveFactory(config, NAME);
+        assert(factory.name().eq(NAME));
+        assert(factory.version().eq(VERSION));
         assertEq(factory.governance(), config.governance);
         assertEq(factory.hyperdriveGovernance(), config.hyperdriveGovernance);
         assertEq(factory.linkerFactory(), config.linkerFactory);
@@ -2464,6 +2486,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 contract HyperdriveFactoryBaseTest is HyperdriveTest {
     using FixedPointMath for *;
 
+    string internal constant NAME = "HyperdriveFactory";
+
     HyperdriveFactory factory;
 
     address deployerCoordinator;
@@ -2529,7 +2553,8 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
                 }),
                 linkerFactory: address(0xdeadbeef),
                 linkerCodeHash: bytes32(uint256(0xdeadbabe))
-            })
+            }),
+            NAME
         );
         coreDeployer = address(new ERC4626HyperdriveCoreDeployer());
         target0Deployer = address(new ERC4626Target0Deployer());
@@ -3127,6 +3152,8 @@ contract ERC4626InstanceGetterTest is HyperdriveFactoryBaseTest {
 }
 
 contract DeployerCoordinatorGetterTest is HyperdriveTest {
+    string internal constant NAME = "HyperdriveFactory";
+
     HyperdriveFactory factory;
 
     function setUp() public override {
@@ -3166,7 +3193,8 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
                 }),
                 linkerFactory: address(0xdeadbeef),
                 linkerCodeHash: bytes32(uint256(0xdeadbabe))
-            })
+            }),
+            NAME
         );
     }
 
@@ -3319,6 +3347,8 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
 }
 
 contract HyperdriveFactoryAddHyperdriveFactoryTest is HyperdriveTest {
+    string internal constant NAME = "HyperdriveFactory";
+
     HyperdriveFactory factory;
 
     address deployerCoordinator0 = makeAddr("deployerCoordinator0");
@@ -3361,7 +3391,8 @@ contract HyperdriveFactoryAddHyperdriveFactoryTest is HyperdriveTest {
                 }),
                 linkerFactory: address(0xdeadbeef),
                 linkerCodeHash: bytes32(uint256(0xdeadbabe))
-            })
+            }),
+            NAME
         );
     }
 
@@ -3425,6 +3456,8 @@ contract HyperdriveFactoryAddHyperdriveFactoryTest is HyperdriveTest {
 }
 
 contract HyperdriveFactoryRemoveInstanceTest is HyperdriveTest {
+    string internal constant NAME = "HyperdriveFactory";
+
     HyperdriveFactory factory;
 
     address deployerCoordinator0 = makeAddr("deployerCoordinator0");
@@ -3466,7 +3499,8 @@ contract HyperdriveFactoryRemoveInstanceTest is HyperdriveTest {
                 }),
                 linkerFactory: address(0xdeadbeef),
                 linkerCodeHash: bytes32(uint256(0xdeadbabe))
-            })
+            }),
+            NAME
         );
 
         vm.startPrank(alice);

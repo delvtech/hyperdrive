@@ -17,6 +17,9 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     using FixedPointMath for uint256;
 
+    /// @notice The deployer coordinator's name.
+    string public constant override name = "StETHHyperdriveDeployerCoordinator";
+
     /// @notice The Lido contract.
     ILido public immutable lido;
 

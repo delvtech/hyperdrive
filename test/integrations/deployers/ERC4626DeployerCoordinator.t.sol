@@ -88,7 +88,8 @@ contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {
                     }),
                     linkerFactory: address(0xdeadbeef),
                     linkerCodeHash: bytes32(uint256(0xdeadbabe))
-                })
+                }),
+                "HyperdriveFactory"
             )
         );
 

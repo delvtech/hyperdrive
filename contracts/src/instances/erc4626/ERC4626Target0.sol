@@ -14,9 +14,18 @@ import { ERC4626Base } from "./ERC4626Base.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ERC4626Target0 is HyperdriveTarget0, ERC4626Base {
+    /// @dev The instance's name.
+    string internal constant NAME = "ERC4626Hyperdrive";
+
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
     constructor(
         IHyperdrive.PoolConfig memory _config
     ) HyperdriveTarget0(_config) {}
+
+    /// @notice Returns the instance's name.
+    /// @return The instance's name.
+    function name() external pure override returns (string memory) {
+        _revert(abi.encode(NAME));
+    }
 }

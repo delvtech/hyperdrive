@@ -381,9 +381,10 @@ impl Chain {
         }
 
         // Deploy the HyperdriveRegistry contract to track familiar instances.
-        let hyperdrive_registry = HyperdriveRegistry::deploy(client.clone(), ())?
-            .send()
-            .await?;
+        let hyperdrive_registry =
+            HyperdriveRegistry::deploy(client.clone(), ("HyperdriveRegistry".to_string(),))?
+                .send()
+                .await?;
 
         // Deploy the mock Lido system. We fund Lido with 1 eth to start to
         // avoid reverts when we initialize the pool.
@@ -416,36 +417,39 @@ impl Chain {
         let factory = {
             HyperdriveFactory::deploy(
                 client.clone(),
-                ((
-                    address,            // governance
-                    config.admin,       // hyperdrive governance
-                    vec![config.admin], // default pausers
-                    config.admin,       // fee collector
-                    config.admin,       // sweep collector
-                    config.factory_checkpoint_duration_resolution,
-                    config.factory_min_checkpoint_duration,
-                    config.factory_max_checkpoint_duration,
-                    config.factory_min_position_duration,
-                    config.factory_max_position_duration,
-                    config.factory_min_fixed_apr,
-                    config.factory_max_fixed_apr,
-                    config.factory_min_time_stretch_apr,
-                    config.factory_max_time_stretch_apr,
+                (
                     (
-                        config.factory_min_curve_fee,
-                        config.factory_min_flat_fee,
-                        config.factory_min_governance_lp_fee,
-                        config.factory_min_governance_zombie_fee,
+                        address,            // governance
+                        config.admin,       // hyperdrive governance
+                        vec![config.admin], // default pausers
+                        config.admin,       // fee collector
+                        config.admin,       // sweep collector
+                        config.factory_checkpoint_duration_resolution,
+                        config.factory_min_checkpoint_duration,
+                        config.factory_max_checkpoint_duration,
+                        config.factory_min_position_duration,
+                        config.factory_max_position_duration,
+                        config.factory_min_fixed_apr,
+                        config.factory_max_fixed_apr,
+                        config.factory_min_time_stretch_apr,
+                        config.factory_max_time_stretch_apr,
+                        (
+                            config.factory_min_curve_fee,
+                            config.factory_min_flat_fee,
+                            config.factory_min_governance_lp_fee,
+                            config.factory_min_governance_zombie_fee,
+                        ),
+                        (
+                            config.factory_max_curve_fee,
+                            config.factory_max_flat_fee,
+                            config.factory_max_governance_lp_fee,
+                            config.factory_max_governance_zombie_fee,
+                        ),
+                        erc20_forwarder_factory.address(),
+                        erc20_forwarder_factory.erc20link_hash().await?,
                     ),
-                    (
-                        config.factory_max_curve_fee,
-                        config.factory_max_flat_fee,
-                        config.factory_max_governance_lp_fee,
-                        config.factory_max_governance_zombie_fee,
-                    ),
-                    erc20_forwarder_factory.address(),
-                    erc20_forwarder_factory.erc20link_hash().await?,
-                ),),
+                    "HyperdriveFactory".to_string(),
+                ),
             )?
             .send()
             .await?

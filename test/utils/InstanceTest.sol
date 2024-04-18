@@ -5,9 +5,10 @@ import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IHyperdriveFactory } from "contracts/src/interfaces/IHyperdriveFactory.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { ETH } from "contracts/src/libraries/Constants.sol";
+import { ETH, VERSION } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
@@ -28,6 +29,7 @@ abstract contract InstanceTest is HyperdriveTest {
 
     /// @dev Configuration for the Instance testing suite.
     struct InstanceTestConfig {
+        string name;
         address[] whaleAccounts;
         IERC20 baseToken;
         IERC20 vaultSharesToken;
@@ -247,7 +249,8 @@ abstract contract InstanceTest is HyperdriveTest {
                 }),
                 linkerFactory: address(forwarderFactory),
                 linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
-            })
+            }),
+            "HyperdriveFactory"
         );
 
         // Set the pool configuration that will be used for instance deployments.
@@ -334,6 +337,28 @@ abstract contract InstanceTest is HyperdriveTest {
         returns (uint256 totalSupplyBase, uint256 totalSupplyShares);
 
     /// Tests ///
+
+    /// @dev Tests that the names of the Hyperdrive instance and deployer
+    ///      coordinator are correct.
+    function test__name() external view {
+        assert(hyperdrive.name().eq(config.name));
+        assert(
+            IHyperdriveDeployerCoordinator(deployerCoordinator).name().eq(
+                string.concat(config.name, "DeployerCoordinator")
+            )
+        );
+    }
+
+    /// @dev Tests that the versions of the Hyperdrive instance and deployer
+    ///      coordinator are correct.
+    function test__version() external view {
+        assert(hyperdrive.version().eq(VERSION));
+        assert(
+            IHyperdriveDeployerCoordinator(deployerCoordinator).version().eq(
+                VERSION
+            )
+        );
+    }
 
     /// @dev Test to verify a market can be deployed and initialized funded by the
     ///      base token. Is expected to revert when base deposits are not supported.

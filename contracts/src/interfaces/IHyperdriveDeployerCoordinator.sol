@@ -90,6 +90,14 @@ interface IHyperdriveDeployerCoordinator {
 
     /// Functions ///
 
+    /// @notice Returns the deployer coordinator's name.
+    /// @return The deployer coordinator's name.
+    function name() external pure returns (string memory);
+
+    /// @notice Returns the deployer coordinator's version.
+    /// @return The deployer coordinator's version.
+    function version() external pure returns (string memory);
+
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param _deploymentId The ID of the deployment.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.

@@ -211,11 +211,19 @@ library Lib {
 
     function eq(bytes memory b1, bytes memory b2) public pure returns (bool) {
         return
+            b1.length == b2.length &&
             keccak256(abi.encodePacked(b1)) == keccak256(abi.encodePacked(b2));
     }
 
     function neq(bytes memory b1, bytes memory b2) public pure returns (bool) {
         return
+            b1.length != b2.length ||
             keccak256(abi.encodePacked(b1)) != keccak256(abi.encodePacked(b2));
+    }
+
+    function eq(string memory b1, string memory b2) public pure returns (bool) {
+        return
+            bytes(b1).length == bytes(b2).length &&
+            keccak256(abi.encodePacked(b1)) == keccak256(abi.encodePacked(b2));
     }
 }

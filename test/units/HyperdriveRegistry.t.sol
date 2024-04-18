@@ -1,17 +1,29 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.20;
 
 import "forge-std/Test.sol";
-
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-
 import { HyperdriveRegistry } from "contracts/src/factory/HyperdriveRegistry.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { VERSION } from "contracts/src/libraries/Constants.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract HyperdriveRegistryTests is Test {
+    using Lib for *;
+
+    string internal constant NAME = "HyperdriveRegistry";
+
     HyperdriveRegistry registry;
 
     function setUp() external {
-        registry = new HyperdriveRegistry();
+        registry = new HyperdriveRegistry(NAME);
+    }
+
+    function test_name() public view {
+        assert(registry.name().eq(NAME));
+    }
+
+    function test_version() public view {
+        assert(registry.version().eq(VERSION));
     }
 
     function test_updateGovernance_noAuth() public {

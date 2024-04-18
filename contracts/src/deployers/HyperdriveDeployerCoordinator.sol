@@ -5,6 +5,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveCoreDeployer } from "../interfaces/IHyperdriveCoreDeployer.sol";
 import { IHyperdriveDeployerCoordinator } from "../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IHyperdriveTargetDeployer } from "../interfaces/IHyperdriveTargetDeployer.sol";
+import { VERSION } from "../libraries/Constants.sol";
 import { ONE } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
@@ -101,6 +102,16 @@ abstract contract HyperdriveDeployerCoordinator is
             revert IHyperdriveDeployerCoordinator.SenderIsNotFactory();
         }
         _;
+    }
+
+    /// @notice Returns the deployer coordinator's name.
+    /// @notice The deployer coordinator's name.
+    function name() external pure virtual returns (string memory);
+
+    /// @notice Returns the deployer coordinator's version.
+    /// @notice The deployer coordinator's version.
+    function version() external pure returns (string memory) {
+        return VERSION;
     }
 
     /// @notice Deploys a Hyperdrive instance with the given parameters.
