@@ -382,7 +382,7 @@ impl Chain {
 
         // Deploy the HyperdriveRegistry contract to track familiar instances.
         let hyperdrive_registry =
-            HyperdriveRegistry::deploy(client.clone(), ("HyperdriveRegistry".to_string()))?
+            HyperdriveRegistry::deploy(client.clone(), ("HyperdriveRegistry".to_string(),))?
                 .send()
                 .await?;
 
@@ -448,7 +448,7 @@ impl Chain {
                         erc20_forwarder_factory.address(),
                         erc20_forwarder_factory.erc20link_hash().await?,
                     ),
-                    "HyperdriveFactory",
+                    "HyperdriveFactory".to_string(),
                 ),
             )?
             .send()
