@@ -180,10 +180,20 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         assert(
             IHyperdrive(address(mockHyperdrive)).name().eq("ERC4626Hyperdrive")
         );
+        assert(
+            IHyperdriveDeployerCoordinator(deployerCoordinator).name().eq(
+                "ERC4626HyperdriveDeployerCoordinator"
+            )
+        );
     }
 
     function test_erc4626_version() external view {
         assert(IHyperdrive(address(mockHyperdrive)).version().eq("v1.0.0"));
+        assert(
+            IHyperdriveDeployerCoordinator(deployerCoordinator).version().eq(
+                "v1.0.0"
+            )
+        );
     }
 
     function test_erc4626_deposit() external {

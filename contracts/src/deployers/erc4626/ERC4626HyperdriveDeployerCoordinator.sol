@@ -18,6 +18,13 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     using SafeERC20 for ERC20;
 
+    /// @notice The deployer coordinator's name.
+    string public constant override name =
+        "ERC4626HyperdriveDeployerCoordinator";
+
+    /// @notice The deployer coordinator's version.
+    string public constant override version = "v1.0.0";
+
     /// @notice Instantiates the deployer coordinator.
     /// @param _factory The factory that this deployer will be registered with.
     /// @param _coreDeployer The core deployer.

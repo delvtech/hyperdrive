@@ -20,6 +20,12 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     using SafeERC20 for ERC20;
     using FixedPointMath for uint256;
 
+    /// @notice The deployer coordinator's name.
+    string public constant override name = "RETHHyperdriveDeployerCoordinator";
+
+    /// @notice The deployer coordinator's version.
+    string public constant override version = "v1.0.0";
+
     /// @dev The Rocket Token RETH contract.
     IRocketTokenRETH internal immutable rocketTokenReth;
 

@@ -5,6 +5,7 @@ import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IHyperdriveFactory } from "contracts/src/interfaces/IHyperdriveFactory.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ETH } from "contracts/src/libraries/Constants.sol";
@@ -338,14 +339,26 @@ abstract contract InstanceTest is HyperdriveTest {
 
     /// Tests ///
 
-    /// @dev Tests that the name returns the correct value.
+    /// @dev Tests that the names of the Hyperdrive instance and deployer
+    ///      coordinator are correct.
     function test__name() external view {
         assert(hyperdrive.name().eq(config.name));
+        assert(
+            IHyperdriveDeployerCoordinator(deployerCoordinator).name().eq(
+                string.concat(config.name, "DeployerCoordinator")
+            )
+        );
     }
 
-    /// @dev Tests that the version returns the correct value.
+    /// @dev Tests that the versions of the Hyperdrive instance and deployer
+    ///      coordinator are correct.
     function test__version() external view {
         assert(hyperdrive.version().eq(config.version));
+        assert(
+            IHyperdriveDeployerCoordinator(deployerCoordinator).version().eq(
+                config.version
+            )
+        );
     }
 
     /// @dev Test to verify a market can be deployed and initialized funded by the

@@ -8,6 +8,10 @@ import { IHyperdriveTargetDeployer } from "contracts/src/interfaces/IHyperdriveT
 import { MockHyperdrive } from "./MockHyperdrive.sol";
 
 contract MockHyperdriveDeployer is IHyperdriveDeployerCoordinator {
+    string public constant name = "MockHyperdriveDeployer";
+
+    string public constant version = "v1.0.0";
+
     mapping(address => mapping(bytes32 => address)) internal _deployments;
 
     function deploy(

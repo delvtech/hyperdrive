@@ -103,6 +103,14 @@ abstract contract HyperdriveDeployerCoordinator is
         _;
     }
 
+    /// @notice Returns the deployer coordinator's name.
+    /// @notice The deployer coordinator's name.
+    function name() external pure virtual returns (string memory);
+
+    /// @notice Returns the deployer coordinator's version.
+    /// @notice The deployer coordinator's version.
+    function version() external pure virtual returns (string memory);
+
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @dev This can only be deployed by the associated factory.
     /// @param _deploymentId The ID of the deployment.
