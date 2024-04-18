@@ -249,7 +249,8 @@ abstract contract InstanceTest is HyperdriveTest {
                 }),
                 linkerFactory: address(forwarderFactory),
                 linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
-            })
+            }),
+            "HyperdriveFactory"
         );
 
         // Set the pool configuration that will be used for instance deployments.
@@ -338,19 +339,13 @@ abstract contract InstanceTest is HyperdriveTest {
     /// Tests ///
 
     /// @dev Tests that the name returns the correct value.
-    function test__name() external {
-        assertEq(
-            keccak256(abi.encode(hyperdrive.name())),
-            keccak256(abi.encode(config.name))
-        );
+    function test__name() external view {
+        assert(hyperdrive.name().eq(config.name));
     }
 
     /// @dev Tests that the version returns the correct value.
-    function test__version() external {
-        assertEq(
-            keccak256(abi.encode(hyperdrive.version())),
-            keccak256(abi.encode(config.version))
-        );
+    function test__version() external view {
+        assert(hyperdrive.version().eq(config.version));
     }
 
     /// @dev Test to verify a market can be deployed and initialized funded by the

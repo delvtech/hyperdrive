@@ -80,7 +80,8 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
                 }),
                 linkerFactory: address(forwarderFactory),
                 linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
-            })
+            }),
+            "HyperdriveFactory"
         );
         coreDeployer = address(new ERC4626HyperdriveCoreDeployer());
         target0Deployer = address(new ERC4626Target0Deployer());

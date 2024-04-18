@@ -17,6 +17,12 @@ import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 contract HyperdriveFactory is IHyperdriveFactory {
     using FixedPointMath for uint256;
 
+    /// @notice The factory's name.
+    string public name;
+
+    /// @notice The factory's version.
+    string public constant version = "v1.0.0";
+
     /// @dev Signifies an unlocked receive function, used by isReceiveLocked
     uint256 private constant RECEIVE_UNLOCKED = 1;
 
@@ -165,7 +171,11 @@ contract HyperdriveFactory is IHyperdriveFactory {
 
     /// @notice Initializes the factory.
     /// @param _factoryConfig Configuration of the Hyperdrive Factory.
-    constructor(FactoryConfig memory _factoryConfig) {
+    /// @param _name The factory's name.
+    constructor(FactoryConfig memory _factoryConfig, string memory _name) {
+        // Set the factory's name.
+        name = _name;
+
         // Ensure that the minimum checkpoint duration is greater than or equal
         // to the checkpoint duration resolution and is a multiple of the
         // checkpoint duration resolution.

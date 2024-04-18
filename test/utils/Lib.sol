@@ -218,4 +218,9 @@ library Lib {
         return
             keccak256(abi.encodePacked(b1)) != keccak256(abi.encodePacked(b2));
     }
+
+    function eq(string memory b1, string memory b2) public pure returns (bool) {
+        return
+            keccak256(abi.encodePacked(b1)) == keccak256(abi.encodePacked(b2));
+    }
 }

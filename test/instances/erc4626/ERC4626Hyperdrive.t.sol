@@ -27,9 +27,11 @@ import { MockERC4626, ERC20 } from "contracts/test/MockERC4626.sol";
 import { MockERC4626Hyperdrive } from "contracts/test/MockERC4626Hyperdrive.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract ERC4626HyperdriveTest is HyperdriveTest {
     using FixedPointMath for *;
+    using Lib for *;
 
     HyperdriveFactory factory;
 
@@ -99,7 +101,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 }),
                 linkerFactory: address(forwarderFactory),
                 linkerCodeHash: forwarderFactory.ERC20LINK_HASH()
-            })
+            }),
+            "HyperdriveFactory"
         );
         coreDeployer = address(new ERC4626HyperdriveCoreDeployer());
         target0Deployer = address(new ERC4626Target0Deployer());
@@ -173,20 +176,14 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         vm.recordLogs();
     }
 
-    function test_erc4626_name() external {
-        assertEq(
-            keccak256(abi.encode(IHyperdrive(address(mockHyperdrive)).name())),
-            keccak256(abi.encode("ERC4626Hyperdrive"))
+    function test_erc4626_name() external view {
+        assert(
+            IHyperdrive(address(mockHyperdrive)).name().eq("ERC4626Hyperdrive")
         );
     }
 
-    function test_erc4626_version() external {
-        assertEq(
-            keccak256(
-                abi.encode(IHyperdrive(address(mockHyperdrive)).version())
-            ),
-            keccak256(abi.encode("v1.0.0"))
-        );
+    function test_erc4626_version() external view {
+        assert(IHyperdrive(address(mockHyperdrive)).version().eq("v1.0.0"));
     }
 
     function test_erc4626_deposit() external {
