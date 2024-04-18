@@ -2,16 +2,27 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
-
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-
 import { HyperdriveRegistry } from "contracts/src/factory/HyperdriveRegistry.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract HyperdriveRegistryTests is Test {
+    using Lib for *;
+
+    string internal constant NAME = "HyperdriveRegistry";
+
     HyperdriveRegistry registry;
 
     function setUp() external {
-        registry = new HyperdriveRegistry();
+        registry = new HyperdriveRegistry(NAME);
+    }
+
+    function test_name() public view {
+        assert(registry.name().eq(NAME));
+    }
+
+    function test_version() public view {
+        assert(registry.version().eq("v1.0.0"));
     }
 
     function test_updateGovernance_noAuth() public {

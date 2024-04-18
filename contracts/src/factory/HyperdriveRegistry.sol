@@ -8,12 +8,24 @@ contract HyperdriveRegistry is
     IHyperdriveRegistry,
     IHyperdriveGovernedRegistry
 {
+    /// @notice The registry's name.
+    string public name;
+
+    /// @notice The registry's version.
+    string public constant version = "v1.0.0";
+
+    /// @notice The registry's governance address.
     address public governance;
 
+    /// @notice A mapping from hyperdrive instances to info associated with
+    ///         those instances.
     mapping(address hyperdrive => uint256 data) internal _hyperdriveInfo;
 
-    constructor() {
+    /// @notice Instantiates the hyperdrive registry.
+    /// @param _name The registry's name.
+    constructor(string memory _name) {
         governance = msg.sender;
+        name = _name;
     }
 
     modifier onlyGovernance() {

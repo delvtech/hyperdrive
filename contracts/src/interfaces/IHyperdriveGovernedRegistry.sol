@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-interface IHyperdriveGovernedRegistry {
+import { IHyperdriveRegistry } from "./IHyperdriveRegistry.sol";
+
+interface IHyperdriveGovernedRegistry is IHyperdriveRegistry {
     /// @notice Emitted when governance is transferred.
     event GovernanceUpdated(address indexed governance);
 
