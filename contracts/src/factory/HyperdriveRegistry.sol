@@ -3,6 +3,7 @@ pragma solidity 0.8.20;
 
 import { IHyperdriveGovernedRegistry } from "../interfaces/IHyperdriveGovernedRegistry.sol";
 import { IHyperdriveRegistry } from "../interfaces/IHyperdriveRegistry.sol";
+import { VERSION } from "../libraries/Constants.sol";
 
 contract HyperdriveRegistry is
     IHyperdriveRegistry,
@@ -12,7 +13,7 @@ contract HyperdriveRegistry is
     string public name;
 
     /// @notice The registry's version.
-    string public constant version = "v1.0.0";
+    string public constant version = VERSION;
 
     /// @notice The registry's governance address.
     address public governance;

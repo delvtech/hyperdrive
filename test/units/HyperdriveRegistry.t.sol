@@ -4,6 +4,7 @@ pragma solidity 0.8.20;
 import "forge-std/Test.sol";
 import { HyperdriveRegistry } from "contracts/src/factory/HyperdriveRegistry.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { VERSION } from "contracts/src/libraries/Constants.sol";
 import { Lib } from "test/utils/Lib.sol";
 
 contract HyperdriveRegistryTests is Test {
@@ -22,7 +23,7 @@ contract HyperdriveRegistryTests is Test {
     }
 
     function test_version() public view {
-        assert(registry.version().eq("v1.0.0"));
+        assert(registry.version().eq(VERSION));
     }
 
     function test_updateGovernance_noAuth() public {
