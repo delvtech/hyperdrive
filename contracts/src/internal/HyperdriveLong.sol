@@ -222,6 +222,13 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
                 nonNettedLongs
             );
 
+            // Closing longs decreases the share reserves. When the longs that
+            // are being closed are partially or fully netted out, it's possible
+            // that fully closing the long could make the system insolvent.
+            if (!_isSolvent(vaultSharePrice)) {
+                Errors.throwInsufficientLiquidityError();
+            }
+
             // Distribute the excess idle to the withdrawal pool. If the
             // distribute excess idle calculation fails, we revert to avoid
             // putting the system in an unhealthy state after the trade is
