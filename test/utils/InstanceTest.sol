@@ -28,6 +28,8 @@ abstract contract InstanceTest is HyperdriveTest {
 
     /// @dev Configuration for the Instance testing suite.
     struct InstanceTestConfig {
+        string name;
+        string version;
         address[] whaleAccounts;
         IERC20 baseToken;
         IERC20 vaultSharesToken;
@@ -334,6 +336,22 @@ abstract contract InstanceTest is HyperdriveTest {
         returns (uint256 totalSupplyBase, uint256 totalSupplyShares);
 
     /// Tests ///
+
+    /// @dev Tests that the name returns the correct value.
+    function test__name() external {
+        assertEq(
+            keccak256(abi.encode(hyperdrive.name())),
+            keccak256(abi.encode(config.name))
+        );
+    }
+
+    /// @dev Tests that the version returns the correct value.
+    function test__version() external {
+        assertEq(
+            keccak256(abi.encode(hyperdrive.version())),
+            keccak256(abi.encode(config.version))
+        );
+    }
 
     /// @dev Test to verify a market can be deployed and initialized funded by the
     ///      base token. Is expected to revert when base deposits are not supported.

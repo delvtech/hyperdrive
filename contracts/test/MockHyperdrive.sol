@@ -447,6 +447,10 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
 }
 
 contract MockHyperdriveTarget0 is HyperdriveTarget0, MockHyperdriveBase {
+    string public constant override name = "MockHyperdrive";
+
+    string public constant override version = "v1.0.0";
+
     constructor(
         IHyperdrive.PoolConfig memory _config
     ) HyperdriveTarget0(_config) {}

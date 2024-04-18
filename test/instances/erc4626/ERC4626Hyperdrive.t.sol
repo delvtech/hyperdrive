@@ -173,6 +173,22 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         vm.recordLogs();
     }
 
+    function test_erc4626_name() external {
+        assertEq(
+            keccak256(abi.encode(IHyperdrive(address(mockHyperdrive)).name())),
+            keccak256(abi.encode("ERC4626Hyperdrive"))
+        );
+    }
+
+    function test_erc4626_version() external {
+        assertEq(
+            keccak256(
+                abi.encode(IHyperdrive(address(mockHyperdrive)).version())
+            ),
+            keccak256(abi.encode("v1.0.0"))
+        );
+    }
+
     function test_erc4626_deposit() external {
         // First we add some interest
         vm.startPrank(alice);

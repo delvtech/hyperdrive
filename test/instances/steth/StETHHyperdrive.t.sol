@@ -43,6 +43,8 @@ contract StETHHyperdriveTest is InstanceTest {
     // The configuration for the Instance testing suite.
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig(
+            "StETHHyperdrive",
+            "v1.0.0",
             whaleAccounts,
             IERC20(ETH),
             IERC20(LIDO),

@@ -5,6 +5,14 @@ import { IHyperdrive } from "./IHyperdrive.sol";
 import { IMultiTokenRead } from "./IMultiTokenRead.sol";
 
 interface IHyperdriveRead is IMultiTokenRead {
+    /// @notice Gets the instance's name.
+    /// @return The instance's name.
+    function name() external pure returns (string memory);
+
+    /// @notice Gets the instance's version.
+    /// @return The instance's version.
+    function version() external pure returns (string memory);
+
     /// @notice Gets the Hyperdrive pool's base token.
     /// @return The base token.
     function baseToken() external view returns (address);

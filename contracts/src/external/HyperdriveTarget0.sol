@@ -229,6 +229,14 @@ abstract contract HyperdriveTarget0 is
 
     /// Getters ///
 
+    /// @notice Gets the instance's name.
+    /// @return The instance's name.
+    function name() external pure virtual returns (string memory);
+
+    /// @notice Gets the instance's version.
+    /// @return The instance's version.
+    function version() external pure virtual returns (string memory);
+
     /// @notice Gets the pauser status of an address.
     /// @param _account The account to check.
     /// @return The pauser status.
