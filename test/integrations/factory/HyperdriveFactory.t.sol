@@ -2720,7 +2720,7 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
     function test_deployTargetInvalidDeployerCoordinator(
         address deployer,
         address pool
-    ) external returns (IHyperdrive) {
+    ) external {
         deal(address(dai), deployer, CONTRIBUTION);
 
         vm.startPrank(deployer);
