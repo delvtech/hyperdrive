@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -66,8 +66,10 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         assertEq(poolInfo.shareReserves, expectedShareReserves);
     }
 
-    // This test was designed to show that a netted long and short can be closed at
-    // maturity even if all liquidity is removed. This test would fail before we added the logic:
+    // This test was designed to show that a netted long and short can be closed
+    // at maturity even if all liquidity is removed. This test would fail before
+    // we added the logic:
+    //
     // - to properly zero out exposure on checkpoint boundaries
     // - payout the withdrawal pool only when the idle capital is
     //   worth more than the active LP supply
@@ -210,6 +212,42 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
                 hyperdrive.getPoolInfo().vaultSharePrice
             ) + hyperdrive.getPoolConfig().minimumShareReserves;
         assertEq(poolInfo.shareReserves, expectedShareReserves);
+    }
+
+    // This test ensures that longs can't be closed when closing them would
+    // cause the system to become insolvent. Prior to adding the solvency guard
+    // to `closeLong`, this test would have failed.
+    function test_netting_longs_insolvency() external {
+        // initialize the market
+        uint256 apr = 0.05e18;
+        deploy(alice, apr, ONE, 0, 0, 0, 0);
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // fast forward time and accrue interest
+        advanceTime(POSITION_DURATION, 0);
+
+        // consume a lot of the pool's solvency
+        openLong(bob, hyperdrive.calculateMaxLong());
+
+        // fast forward a checkpoint
+        advanceTime(CHECKPOINT_DURATION, 0);
+
+        // open a large short
+        openShort(bob, hyperdrive.calculateMaxShort());
+
+        // open a long
+        (uint256 maturityTime, uint256 bondAmount) = openLong(
+            bob,
+            hyperdrive.calculateMaxLong().mulDown(0.5e18)
+        );
+
+        // open another short
+        openShort(bob, bondAmount);
+
+        // try to close the long. this should fail due to insufficient liquidity.
+        vm.expectRevert(IHyperdrive.InsufficientLiquidity.selector);
+        closeLong(bob, maturityTime, bondAmount);
     }
 
     function test_netting_longs_close_with_initial_vault_share_price_gt_1()
