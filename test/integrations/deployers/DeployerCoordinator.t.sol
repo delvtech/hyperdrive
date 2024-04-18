@@ -104,7 +104,7 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
 
     address internal factory;
     MockERC4626 private vault;
-    MockHyperdriveDeployerCoordinator internal coordinator;
+    MockHyperdriveDeployerCoordinator private coordinator;
 
     function test_deployTarget_failure_invalidSender() external {
         // Attempt to deploy a target0 instance with an invalid sender. This
@@ -626,4 +626,8 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
             })
         );
     }
+
+    function test_initialize_success_asBase() external virtual;
+
+    function test_initialize_success_asShares() external virtual;
 }

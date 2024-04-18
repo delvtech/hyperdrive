@@ -1,51 +1,57 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { ETH } from "contracts/src/libraries/Constants.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
-import { StETHHyperdriveDeployerCoordinator } from "contracts/src/deployers/steth/StETHHyperdriveDeployerCoordinator.sol";
 import { HyperdriveDeployerCoordinator } from "contracts/src/deployers/HyperdriveDeployerCoordinator.sol";
-import { StETHHyperdriveCoreDeployer } from "contracts/src/deployers/steth/StETHHyperdriveCoreDeployer.sol";
-import { StETHTarget0Deployer } from "contracts/src/deployers/steth/StETHTarget0Deployer.sol";
-import { StETHTarget1Deployer } from "contracts/src/deployers/steth/StETHTarget1Deployer.sol";
-import { StETHTarget2Deployer } from "contracts/src/deployers/steth/StETHTarget2Deployer.sol";
-import { StETHTarget3Deployer } from "contracts/src/deployers/steth/StETHTarget3Deployer.sol";
-import { StETHTarget4Deployer } from "contracts/src/deployers/steth/StETHTarget4Deployer.sol";
+import { RETHHyperdriveDeployerCoordinator } from "contracts/src/deployers/reth/RETHHyperdriveDeployerCoordinator.sol";
+import { RETHHyperdriveCoreDeployer } from "contracts/src/deployers/reth/RETHHyperdriveCoreDeployer.sol";
+import { RETHTarget0Deployer } from "contracts/src/deployers/reth/RETHTarget0Deployer.sol";
+import { RETHTarget1Deployer } from "contracts/src/deployers/reth/RETHTarget1Deployer.sol";
+import { RETHTarget2Deployer } from "contracts/src/deployers/reth/RETHTarget2Deployer.sol";
+import { RETHTarget3Deployer } from "contracts/src/deployers/reth/RETHTarget3Deployer.sol";
+import { RETHTarget4Deployer } from "contracts/src/deployers/reth/RETHTarget4Deployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { ILido } from "contracts/src/interfaces/ILido.sol";
-import { MockLido } from "contracts/test/MockLido.sol";
+import { MockRocketPool } from "contracts/test/MockRocketPool.sol";
+import { IRocketTokenRETH } from "contracts/src/interfaces/IRocketTokenRETH.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
-import { DeployerCoordinatorTest, HyperdriveDeployerCoordinator } from "test/integrations/deployers/DeployerCoordinator.t.sol";
+import { DeployerCoordinatorTest } from "test/integrations/deployers/DeployerCoordinator.t.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-contract StethDeployerCoordinatorTest is DeployerCoordinatorTest {
+contract RethDeployerCoordinatorTest is DeployerCoordinatorTest {
     using FixedPointMath for *;
     using Lib for *;
 
-    ILido private vault;
-    StETHHyperdriveDeployerCoordinator private coordinator;
+    IRocketTokenRETH private vault;
+    RETHHyperdriveDeployerCoordinator private coordinator;
 
     function setUp() public override {
         super.setUp();
 
-        // Deploy a base token and StETH vault. Encode the vault into extra
+        // Deploy a base token and RETH vault. Encode the vault into extra
         // data.
         vm.stopPrank();
         vm.startPrank(alice);
-        vault = ILido(
-            address(new MockLido(0.05e18, alice, true, type(uint256).max))
+        baseToken = new ERC20Mintable(
+            "Base Token",
+            "BASE",
+            18,
+            address(0),
+            false,
+            type(uint256).max
+        );
+        vault = IRocketTokenRETH(
+            address(new MockRocketPool(0.05e18, alice, true, type(uint256).max))
         );
 
         // Create a deployment config.
         config = testDeployConfig(0.05e18, 365 days);
-        config.baseToken = IERC20(address(ETH));
+        config.baseToken = IERC20(address(baseToken));
         config.vaultSharesToken = IERC20(address(vault));
-        config.minimumShareReserves = 1e15;
 
         // Deploy the factory.
         factory = address(
@@ -84,14 +90,14 @@ contract StethDeployerCoordinatorTest is DeployerCoordinatorTest {
         );
 
         // Deploy the coordinator.
-        coordinator = new StETHHyperdriveDeployerCoordinator(
+        coordinator = new RETHHyperdriveDeployerCoordinator(
             factory,
-            address(new StETHHyperdriveCoreDeployer()),
-            address(new StETHTarget0Deployer()),
-            address(new StETHTarget1Deployer()),
-            address(new StETHTarget2Deployer()),
-            address(new StETHTarget3Deployer()),
-            address(new StETHTarget4Deployer()),
+            address(new RETHHyperdriveCoreDeployer()),
+            address(new RETHTarget0Deployer()),
+            address(new RETHTarget1Deployer()),
+            address(new RETHTarget2Deployer()),
+            address(new RETHTarget3Deployer()),
+            address(new RETHTarget4Deployer()),
             vault
         );
 

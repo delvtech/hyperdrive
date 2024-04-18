@@ -5,6 +5,7 @@ import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { HyperdriveDeployerCoordinator } from "contracts/src/deployers/HyperdriveDeployerCoordinator.sol";
+import { ERC4626HyperdriveDeployerCoordinator } from "contracts/src/deployers/erc4626/ERC4626HyperdriveDeployerCoordinator.sol";
 import { ERC4626HyperdriveCoreDeployer } from "contracts/src/deployers/erc4626/ERC4626HyperdriveCoreDeployer.sol";
 import { ERC4626Target0Deployer } from "contracts/src/deployers/erc4626/ERC4626Target0Deployer.sol";
 import { ERC4626Target1Deployer } from "contracts/src/deployers/erc4626/ERC4626Target1Deployer.sol";
@@ -25,6 +26,7 @@ contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {
     using Lib for *;
 
     MockERC4626 private vault;
+    ERC4626HyperdriveDeployerCoordinator private coordinator;
 
     function setUp() public override {
         super.setUp();
@@ -93,7 +95,7 @@ contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {
         );
 
         // Deploy the coordinator.
-        coordinator = new MockHyperdriveDeployerCoordinator(
+        coordinator = new ERC4626HyperdriveDeployerCoordinator(
             factory,
             address(new ERC4626HyperdriveCoreDeployer()),
             address(new ERC4626Target0Deployer()),
@@ -109,7 +111,7 @@ contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {
         vm.startPrank(factory);
     }
 
-    function test_initialize_success_asBase() external {
+    function test_initialize_success_asBase() external override {
         // Deploy all of the target instances.
         for (uint256 i = 0; i < 5; i++) {
             coordinator.deployTarget(
@@ -156,7 +158,7 @@ contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {
         assertEq(lpShares, hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice));
     }
 
-    function test_initialize_success_asShares() external {
+    function test_initialize_success_asShares() external override {
         // Deploy all of the target instances.
         for (uint256 i = 0; i < 5; i++) {
             coordinator.deployTarget(
