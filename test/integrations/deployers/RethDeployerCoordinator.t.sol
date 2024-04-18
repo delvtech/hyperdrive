@@ -20,7 +20,7 @@ import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { DeployerCoordinatorTest, MockHyperdriveDeployerCoordinator } from "test/integrations/deployers/DeployerCoordinator.t.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-contract StethDeployerCoordinatorTest is DeployerCoordinatorTest {
+contract RethDeployerCoordinatorTest is DeployerCoordinatorTest {
     using FixedPointMath for *;
     using Lib for *;
 
