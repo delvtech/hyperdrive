@@ -8,7 +8,7 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IHyperdriveFactory } from "contracts/src/interfaces/IHyperdriveFactory.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { ETH } from "contracts/src/libraries/Constants.sol";
+import { ETH, VERSION } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
@@ -30,7 +30,6 @@ abstract contract InstanceTest is HyperdriveTest {
     /// @dev Configuration for the Instance testing suite.
     struct InstanceTestConfig {
         string name;
-        string version;
         address[] whaleAccounts;
         IERC20 baseToken;
         IERC20 vaultSharesToken;
@@ -353,10 +352,10 @@ abstract contract InstanceTest is HyperdriveTest {
     /// @dev Tests that the versions of the Hyperdrive instance and deployer
     ///      coordinator are correct.
     function test__version() external view {
-        assert(hyperdrive.version().eq(config.version));
+        assert(hyperdrive.version().eq(VERSION));
         assert(
             IHyperdriveDeployerCoordinator(deployerCoordinator).version().eq(
-                config.version
+                VERSION
             )
         );
     }

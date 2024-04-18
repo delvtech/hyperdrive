@@ -62,7 +62,6 @@ contract EzETHHyperdriveTest is InstanceTest {
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig(
             "EzETHHyperdrive",
-            "v1.0.0",
             whaleAccounts,
             IERC20(ETH),
             IERC20(EZETH),

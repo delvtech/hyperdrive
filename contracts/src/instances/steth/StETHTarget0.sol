@@ -17,9 +17,6 @@ contract StETHTarget0 is HyperdriveTarget0, StETHBase {
     /// @dev The instance's name.
     string internal constant NAME = "StETHHyperdrive";
 
-    /// @dev The instance's version.
-    string internal constant VERSION = "v1.0.0";
-
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
     constructor(
@@ -32,12 +29,6 @@ contract StETHTarget0 is HyperdriveTarget0, StETHBase {
     /// @return The instance's name.
     function name() external pure override returns (string memory) {
         _revert(abi.encode(NAME));
-    }
-
-    /// @notice Returns the instance's version.
-    /// @return The instance's version.
-    function version() external pure override returns (string memory) {
-        _revert(abi.encode(VERSION));
     }
 
     /// @notice Returns the MultiToken's decimals.

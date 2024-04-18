@@ -23,9 +23,6 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @notice The deployer coordinator's name.
     string public constant override name = "RETHHyperdriveDeployerCoordinator";
 
-    /// @notice The deployer coordinator's version.
-    string public constant override version = "v1.0.0";
-
     /// @dev The Rocket Token RETH contract.
     IRocketTokenRETH internal immutable rocketTokenReth;
 

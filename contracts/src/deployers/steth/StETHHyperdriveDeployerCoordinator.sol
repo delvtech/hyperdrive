@@ -20,9 +20,6 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @notice The deployer coordinator's name.
     string public constant override name = "StETHHyperdriveDeployerCoordinator";
 
-    /// @notice The deployer coordinator's version.
-    string public constant override version = "v1.0.0";
-
     /// @notice The Lido contract.
     ILido public immutable lido;
 

@@ -49,7 +49,6 @@ contract LsETHHyperdriveTest is InstanceTest {
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig(
             "LsETHHyperdrive",
-            "v1.0.0",
             whaleAccounts,
             IERC20(ETH),
             IERC20(RIVER),

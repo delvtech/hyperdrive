@@ -5,6 +5,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveFactory } from "../interfaces/IHyperdriveFactory.sol";
 import { IHyperdriveDeployerCoordinator } from "../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
+import { VERSION } from "../libraries/Constants.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 
 /// @author DELV
@@ -19,9 +20,6 @@ contract HyperdriveFactory is IHyperdriveFactory {
 
     /// @notice The factory's name.
     string public name;
-
-    /// @notice The factory's version.
-    string public constant version = "v1.0.0";
 
     /// @dev Signifies an unlocked receive function, used by isReceiveLocked
     uint256 private constant RECEIVE_UNLOCKED = 1;
@@ -302,6 +300,12 @@ contract HyperdriveFactory is IHyperdriveFactory {
         if (receiveLockState == RECEIVE_LOCKED) {
             revert IHyperdriveFactory.ReceiveLocked();
         }
+    }
+
+    /// @notice Gets the factory's version.
+    /// @return The factory's version.
+    function version() external pure returns (string memory) {
+        return VERSION;
     }
 
     /// @notice Allows governance to transfer the governance role.

@@ -5,6 +5,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveCoreDeployer } from "../interfaces/IHyperdriveCoreDeployer.sol";
 import { IHyperdriveDeployerCoordinator } from "../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IHyperdriveTargetDeployer } from "../interfaces/IHyperdriveTargetDeployer.sol";
+import { VERSION } from "../libraries/Constants.sol";
 import { ONE } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
@@ -109,7 +110,9 @@ abstract contract HyperdriveDeployerCoordinator is
 
     /// @notice Returns the deployer coordinator's version.
     /// @notice The deployer coordinator's version.
-    function version() external pure virtual returns (string memory);
+    function version() external pure returns (string memory) {
+        return VERSION;
+    }
 
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @dev This can only be deployed by the associated factory.

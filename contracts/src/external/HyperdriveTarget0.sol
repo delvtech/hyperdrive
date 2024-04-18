@@ -12,6 +12,7 @@ import { HyperdriveMultiToken } from "../internal/HyperdriveMultiToken.sol";
 import { HyperdriveShort } from "../internal/HyperdriveShort.sol";
 import { HyperdriveStorage } from "../internal/HyperdriveStorage.sol";
 import { AssetId } from "../libraries/AssetId.sol";
+import { VERSION } from "../libraries/Constants.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { LPMath } from "../libraries/LPMath.sol";
 
@@ -235,7 +236,9 @@ abstract contract HyperdriveTarget0 is
 
     /// @notice Gets the instance's version.
     /// @return The instance's version.
-    function version() external pure virtual returns (string memory);
+    function version() external pure returns (string memory) {
+        _revert(abi.encode(VERSION));
+    }
 
     /// @notice Gets the pauser status of an address.
     /// @param _account The account to check.

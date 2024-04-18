@@ -24,9 +24,6 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @notice The deployer coordinator's name.
     string public constant override name = "EzETHHyperdriveDeployerCoordinator";
 
-    /// @notice The deployer coordinator's version.
-    string public constant override version = "v1.0.0";
-
     /// @notice The Renzo contract.
     IRestakeManager public immutable restakeManager;
 

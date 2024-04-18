@@ -15,7 +15,6 @@ import { Lib } from "test/utils/Lib.sol";
 
 contract MockHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     string public constant override name = "MockHyperdriveDeployerCoordinator";
-    string public constant override version = "v1.0.0";
 
     bool internal _checkMessageValueStatus = true;
     bool internal _checkPoolConfigStatus = true;

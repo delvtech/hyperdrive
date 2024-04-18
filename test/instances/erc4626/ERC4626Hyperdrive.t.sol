@@ -19,6 +19,7 @@ import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
+import { VERSION } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
@@ -188,10 +189,10 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
     }
 
     function test_erc4626_version() external view {
-        assert(IHyperdrive(address(mockHyperdrive)).version().eq("v1.0.0"));
+        assert(IHyperdrive(address(mockHyperdrive)).version().eq(VERSION));
         assert(
             IHyperdriveDeployerCoordinator(deployerCoordinator).version().eq(
-                "v1.0.0"
+                VERSION
             )
         );
     }

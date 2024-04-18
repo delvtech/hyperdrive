@@ -24,7 +24,7 @@ import { IHyperdriveFactory } from "contracts/src/interfaces/IHyperdriveFactory.
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { ETH } from "contracts/src/libraries/Constants.sol";
+import { ETH, VERSION } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
@@ -595,7 +595,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             });
         factory = new HyperdriveFactory(config, NAME);
         assert(factory.name().eq(NAME));
-        assert(factory.version().eq("v1.0.0"));
+        assert(factory.version().eq(VERSION));
         assertEq(factory.governance(), config.governance);
         assertEq(factory.hyperdriveGovernance(), config.hyperdriveGovernance);
         assertEq(factory.linkerFactory(), config.linkerFactory);
