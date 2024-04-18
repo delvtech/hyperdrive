@@ -45,7 +45,7 @@ impl State {
 
         let share_reserves_delta_in_base = self
             .vault_share_price()
-            .mul_up(self.short_principal(bond_amount)?);
+            .mul_up(self.calculate_short_principal(bond_amount)?);
         // If the base proceeds of selling the bonds is greater than the bond
         // amount, then the trade occurred in the negative interest domain. We
         // revert in these pathological cases.
@@ -120,8 +120,33 @@ impl State {
     /// \implies \\
     /// P(x) = z - \tfrac{1}{\mu} \cdot (\tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s}))^{\tfrac{1}{1 - t_s}}
     /// $$
-    pub fn short_principal(&self, bond_amount: FixedPoint) -> Result<FixedPoint> {
+    pub fn calculate_short_principal(&self, bond_amount: FixedPoint) -> Result<FixedPoint> {
         self.calculate_shares_out_given_bonds_in_down_safe(bond_amount)
+    }
+
+    /// Calculates the derivative of the short principal $P(x)$ w.r.t. the amount of
+    /// bonds that are shorted $x$.
+    ///
+    /// The derivative is calculated as:
+    ///
+    /// $$
+    /// P'(x) = \tfrac{1}{c} \cdot (y + x)^{-t_s} \cdot \left(
+    ///             \tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s})
+    ///         \right)^{\tfrac{t_s}{1 - t_s}}
+    /// $$
+    pub fn calculate_short_principal_derivative(&self, bond_amount: FixedPoint) -> FixedPoint {
+        let lhs = fixed!(1e18)
+            / (self
+                .vault_share_price()
+                .mul_up((self.bond_reserves() + bond_amount).pow(self.time_stretch())));
+        let rhs = ((self.initial_vault_share_price() / self.vault_share_price())
+            * (self.k_down()
+                - (self.bond_reserves() + bond_amount).pow(fixed!(1e18) - self.time_stretch())))
+        .pow(
+            self.time_stretch()
+                .div_up(fixed!(1e18) - self.time_stretch()),
+        );
+        lhs * rhs
     }
 }
 
@@ -138,6 +163,94 @@ mod tests {
     };
 
     use super::*;
+
+    #[tokio::test]
+    async fn test_short_principal() -> Result<()> {
+        // This test is the same as the yield_space.rs `fuzz_calculate_max_buy_shares_in_safe`,
+        // but is worth having around in case we ever change how we compute short principal.
+        let chain = TestChain::new().await?;
+        let mut rng = thread_rng();
+        let state = rng.gen::<State>();
+        let bond_amount = rng.gen_range(fixed!(10e18)..=fixed!(10_000_000e18));
+        let actual = state.calculate_short_principal(bond_amount);
+        match chain
+            .mock_yield_space_math()
+            .calculate_shares_out_given_bonds_in_down_safe(
+                state.effective_share_reserves().into(),
+                state.bond_reserves().into(),
+                bond_amount.into(),
+                (fixed!(1e18) - state.time_stretch()).into(),
+                state.vault_share_price().into(),
+                state.initial_vault_share_price().into(),
+            )
+            .call()
+            .await
+        {
+            Ok((expected, expected_status)) => {
+                assert_eq!(actual.is_ok(), expected_status);
+                assert_eq!(actual.unwrap_or(fixed!(0)), expected.into());
+            }
+            Err(_) => assert!(actual.is_err()),
+        }
+        Ok(())
+    }
+
+    /// This test empirically tests `short_principal_derivative` by calling
+    /// `short_principal` at two points and comparing the empirical result
+    /// with the output of `short_principal_derivative`.
+    #[tokio::test]
+    async fn fuzz_short_principal_derivative() -> Result<()> {
+        let mut rng = thread_rng();
+        // We use a relatively large epsilon here due to the underlying fixed point pow
+        // function not being monotonically increasing.
+        let empirical_derivative_epsilon = fixed!(1e12);
+        // TODO pretty big comparison epsilon here
+        let test_comparison_epsilon = fixed!(1e16);
+
+        for _ in 0..*FAST_FUZZ_RUNS {
+            let state = rng.gen::<State>();
+            let amount = rng.gen_range(fixed!(10e18)..=fixed!(10_000_000e18));
+
+            let p1_result = state.calculate_short_principal(amount - empirical_derivative_epsilon);
+            let p1;
+            let p2;
+            match p1_result {
+                // If the amount results in the pool being insolvent, skip this iteration
+                Ok(p) => p1 = p,
+                Err(_) => continue,
+            }
+
+            let p2_result = state.calculate_short_principal(amount + empirical_derivative_epsilon);
+            match p2_result {
+                // If the amount results in the pool being insolvent, skip this iteration
+                Ok(p) => p2 = p,
+                Err(_) => continue,
+            }
+            // Sanity check
+            assert!(p2 > p1);
+
+            let empirical_derivative = (p2 - p1) / (fixed!(2e18) * empirical_derivative_epsilon);
+            let short_deposit_derivative = state.calculate_short_principal_derivative(amount);
+
+            let derivative_diff;
+            if short_deposit_derivative >= empirical_derivative {
+                derivative_diff = short_deposit_derivative - empirical_derivative;
+            } else {
+                derivative_diff = empirical_derivative - short_deposit_derivative;
+            }
+            assert!(
+                derivative_diff < test_comparison_epsilon,
+                "expected (derivative_diff={}) < (test_comparison_epsilon={}), \
+                calculated_derivative={}, emperical_derivative={}",
+                derivative_diff,
+                test_comparison_epsilon,
+                short_deposit_derivative,
+                empirical_derivative
+            );
+        }
+
+        Ok(())
+    }
 
     #[tokio::test]
     async fn fuzz_calculate_spot_price_after_short() -> Result<()> {
@@ -248,7 +361,6 @@ mod tests {
                     // calc_open_short must be incorrect for the additional amount to have to be so large.
                     let result = state.calculate_open_short(
                         (max_trade + fixed!(100_000_000e18)).into(),
-                        state.calculate_spot_price(),
                         state.vault_share_price(),
                     );
                     match result {

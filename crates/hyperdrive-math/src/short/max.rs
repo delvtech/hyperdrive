@@ -462,7 +462,7 @@ impl State {
         spot_price: FixedPoint,
         checkpoint_exposure: I256,
     ) -> Option<FixedPoint> {
-        let principal = if let Ok(p) = self.short_principal(bond_amount) {
+        let principal = if let Ok(p) = self.calculate_short_principal(bond_amount) {
             p
         } else {
             return None;
@@ -503,7 +503,7 @@ impl State {
         bond_amount: FixedPoint,
         spot_price: FixedPoint,
     ) -> Option<FixedPoint> {
-        let lhs = self.short_principal_derivative(bond_amount);
+        let lhs = self.calculate_short_principal_derivative(bond_amount);
         let rhs = self.curve_fee()
             * (fixed!(1e18) - spot_price)
             * (fixed!(1e18) - self.governance_lp_fee())
@@ -513,31 +513,6 @@ impl State {
         } else {
             None
         }
-    }
-
-    /// Calculates the derivative of the short principal $P(x)$ w.r.t. the amount of
-    /// bonds that are shorted $x$.
-    ///
-    /// The derivative is calculated as:
-    ///
-    /// $$
-    /// P'(x) = \tfrac{1}{c} \cdot (y + x)^{-t_s} \cdot \left(
-    ///             \tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s})
-    ///         \right)^{\tfrac{t_s}{1 - t_s}}
-    /// $$
-    fn short_principal_derivative(&self, bond_amount: FixedPoint) -> FixedPoint {
-        let lhs = fixed!(1e18)
-            / (self
-                .vault_share_price()
-                .mul_up((self.bond_reserves() + bond_amount).pow(self.time_stretch())));
-        let rhs = ((self.initial_vault_share_price() / self.vault_share_price())
-            * (self.k_down()
-                - (self.bond_reserves() + bond_amount).pow(fixed!(1e18) - self.time_stretch())))
-        .pow(
-            self.time_stretch()
-                .div_up(fixed!(1e18) - self.time_stretch()),
-        );
-        lhs * rhs
     }
 
     /// A helper function used in calculating the short deposit.
