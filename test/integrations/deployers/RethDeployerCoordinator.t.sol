@@ -5,7 +5,6 @@ import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { HyperdriveDeployerCoordinator } from "contracts/src/deployers/HyperdriveDeployerCoordinator.sol";
-import { RETHHyperdriveDeployerCoordinator } from "contracts/src/deployers/reth/RETHHyperdriveDeployerCoordinator.sol";
 import { RETHHyperdriveCoreDeployer } from "contracts/src/deployers/reth/RETHHyperdriveCoreDeployer.sol";
 import { RETHTarget0Deployer } from "contracts/src/deployers/reth/RETHTarget0Deployer.sol";
 import { RETHTarget1Deployer } from "contracts/src/deployers/reth/RETHTarget1Deployer.sol";
@@ -17,17 +16,15 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockRocketPool } from "contracts/test/MockRocketPool.sol";
-import { IRocketTokenRETH } from "contracts/src/interfaces/IRocketTokenRETH.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
-import { DeployerCoordinatorTest } from "test/integrations/deployers/DeployerCoordinator.t.sol";
+import { DeployerCoordinatorTest, MockHyperdriveDeployerCoordinator } from "test/integrations/deployers/DeployerCoordinator.t.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-contract RethDeployerCoordinatorTest is DeployerCoordinatorTest {
+contract StethDeployerCoordinatorTest is DeployerCoordinatorTest {
     using FixedPointMath for *;
     using Lib for *;
 
-    IRocketTokenRETH private vault;
-    RETHHyperdriveDeployerCoordinator private coordinator;
+    MockRocketPool private vault;
 
     function setUp() public override {
         super.setUp();
@@ -44,9 +41,7 @@ contract RethDeployerCoordinatorTest is DeployerCoordinatorTest {
             false,
             type(uint256).max
         );
-        vault = IRocketTokenRETH(
-            address(new MockRocketPool(0.05e18, alice, true, type(uint256).max))
-        );
+        vault = new MockRocketPool(0.05e18, alice, true, type(uint256).max);
 
         // Create a deployment config.
         config = testDeployConfig(0.05e18, 365 days);
@@ -90,15 +85,14 @@ contract RethDeployerCoordinatorTest is DeployerCoordinatorTest {
         );
 
         // Deploy the coordinator.
-        coordinator = new RETHHyperdriveDeployerCoordinator(
+        coordinator = new MockHyperdriveDeployerCoordinator(
             factory,
             address(new RETHHyperdriveCoreDeployer()),
             address(new RETHTarget0Deployer()),
             address(new RETHTarget1Deployer()),
             address(new RETHTarget2Deployer()),
             address(new RETHTarget3Deployer()),
-            address(new RETHTarget4Deployer()),
-            vault
+            address(new RETHTarget4Deployer())
         );
 
         // Start a prank as the factory address. This is the default address

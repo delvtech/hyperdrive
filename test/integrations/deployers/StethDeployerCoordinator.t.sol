@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { ETH } from "contracts/src/libraries/Constants.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
-import { StETHHyperdriveDeployerCoordinator } from "contracts/src/deployers/steth/StETHHyperdriveDeployerCoordinator.sol";
 import { HyperdriveDeployerCoordinator } from "contracts/src/deployers/HyperdriveDeployerCoordinator.sol";
 import { StETHHyperdriveCoreDeployer } from "contracts/src/deployers/steth/StETHHyperdriveCoreDeployer.sol";
 import { StETHTarget0Deployer } from "contracts/src/deployers/steth/StETHTarget0Deployer.sol";
@@ -17,18 +15,16 @@ import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { MockLido } from "contracts/test/MockLido.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
-import { DeployerCoordinatorTest, HyperdriveDeployerCoordinator } from "test/integrations/deployers/DeployerCoordinator.t.sol";
+import { DeployerCoordinatorTest, MockHyperdriveDeployerCoordinator } from "test/integrations/deployers/DeployerCoordinator.t.sol";
 import { Lib } from "test/utils/Lib.sol";
 
 contract StethDeployerCoordinatorTest is DeployerCoordinatorTest {
     using FixedPointMath for *;
     using Lib for *;
 
-    ILido private vault;
-    StETHHyperdriveDeployerCoordinator private coordinator;
+    MockLido private vault;
 
     function setUp() public override {
         super.setUp();
@@ -37,15 +33,20 @@ contract StethDeployerCoordinatorTest is DeployerCoordinatorTest {
         // data.
         vm.stopPrank();
         vm.startPrank(alice);
-        vault = ILido(
-            address(new MockLido(0.05e18, alice, true, type(uint256).max))
+        baseToken = new ERC20Mintable(
+            "Base Token",
+            "BASE",
+            18,
+            address(0),
+            false,
+            type(uint256).max
         );
+        vault = new MockLido(0.05e18, alice, true, type(uint256).max);
 
         // Create a deployment config.
         config = testDeployConfig(0.05e18, 365 days);
-        config.baseToken = IERC20(address(ETH));
+        config.baseToken = IERC20(address(baseToken));
         config.vaultSharesToken = IERC20(address(vault));
-        config.minimumShareReserves = 1e15;
 
         // Deploy the factory.
         factory = address(
@@ -84,15 +85,14 @@ contract StethDeployerCoordinatorTest is DeployerCoordinatorTest {
         );
 
         // Deploy the coordinator.
-        coordinator = new StETHHyperdriveDeployerCoordinator(
+        coordinator = new MockHyperdriveDeployerCoordinator(
             factory,
             address(new StETHHyperdriveCoreDeployer()),
             address(new StETHTarget0Deployer()),
             address(new StETHTarget1Deployer()),
             address(new StETHTarget2Deployer()),
             address(new StETHTarget3Deployer()),
-            address(new StETHTarget4Deployer()),
-            vault
+            address(new StETHTarget4Deployer())
         );
 
         // Start a prank as the factory address. This is the default address
