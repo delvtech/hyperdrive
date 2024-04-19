@@ -2716,6 +2716,29 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
 
         return hyperdrive;
     }
+
+    function test_deployTargetInvalidDeployerCoordinator() external {
+        address deployer = address(0);
+        address pool = address(0);
+        deal(address(dai), deployer, CONTRIBUTION);
+        vm.startPrank(deployer);
+        dai.approve(address(deployerCoordinator), CONTRIBUTION);
+
+        deploymentId = keccak256(abi.encode(deploymentId));
+        salt = keccak256(abi.encode(salt));
+        config.vaultSharesToken = IERC20(pool);
+        vm.expectRevert(IHyperdriveFactory.InvalidDeployerCoordinator.selector);
+        factory.deployTarget(
+            deploymentId,
+            address(0),
+            config,
+            new bytes(0),
+            APR,
+            APR,
+            0,
+            salt
+        );
+    }
 }
 
 contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {

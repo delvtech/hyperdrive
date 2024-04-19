@@ -111,6 +111,19 @@ contract YieldSpaceMathTest is Test {
         );
         uint256 pythonResult4 = 78866.87433323538e18;
         assertApproxEqAbs(result4, pythonResult4, 1e9);
+
+        // test y < dy
+        vm.expectRevert(
+            abi.encodeWithSelector(IHyperdrive.InsufficientLiquidity.selector)
+        );
+        yieldSpaceMath.calculateSharesInGivenBondsOutUp(
+            100000e18, // shareReserves
+            99e18, // bondReserves + s
+            100e18, // amountIn
+            1e18 - ONE.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
+            1e18, // c
+            1e18 // mu
+        );
     }
 
     // This test verifies that sane values won't result in the YieldSpace math
