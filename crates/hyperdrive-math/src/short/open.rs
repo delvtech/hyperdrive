@@ -131,11 +131,7 @@ impl State {
         open_vault_share_price: FixedPoint,
         variable_apy: FixedPoint,
     ) -> Result<I256> {
-        let base_paid = self.calculate_open_short(
-            bond_amount,
-            self.calculate_spot_price(),
-            open_vault_share_price,
-        )?;
+        let base_paid = self.calculate_open_short(bond_amount, open_vault_share_price)?;
         let base_proceeds = bond_amount * variable_apy;
         if base_proceeds > base_paid {
             Ok(I256::try_from((base_proceeds - base_paid) / base_paid)?)
