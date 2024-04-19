@@ -2717,14 +2717,11 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
         return hyperdrive;
     }
 
-    function test_deployTargetInvalidDeployerCoordinator(
-        address deployer,
-        address pool
-    ) external {
+    function test_deployTargetInvalidDeployerCoordinator() external {
+        address deployer = address(0);
+        address pool = address(0);
         deal(address(dai), deployer, CONTRIBUTION);
-
         vm.startPrank(deployer);
-
         dai.approve(address(deployerCoordinator), CONTRIBUTION);
 
         deploymentId = keccak256(abi.encode(deploymentId));
