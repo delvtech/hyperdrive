@@ -1,3 +1,4 @@
+use ethers::types::I256;
 use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
@@ -109,6 +110,40 @@ impl State {
         ))
     }
 
+    /// Calculate the implied rate of opening a short at a given size. This rate
+    /// is calculated as an APY.
+    ///
+    /// Given the effective fixed rate the short will pay $r_{effective}$ and
+    /// the variable rate the short will receive $r_{variable}$, the short's
+    /// implied APY, $r_{implied}$ will be:
+    ///
+    /// $$
+    /// r_{implied} = \frac{r_{variable} - r_{effective}}{r_{effective}}
+    /// $$
+    ///
+    /// We can short-cut this calculation using the amount of base the short
+    /// will pay and comparing this to the amount of base the short will receive
+    /// if the variable rate stays the same. The implied rate is just the ROI
+    /// if the variable rate stays the same.
+    pub fn calculate_implied_rate(
+        &self,
+        bond_amount: FixedPoint,
+        open_vault_share_price: FixedPoint,
+        variable_apy: FixedPoint,
+    ) -> Result<I256> {
+        let base_paid = self.calculate_open_short(
+            bond_amount,
+            self.calculate_spot_price(),
+            open_vault_share_price,
+        )?;
+        let base_proceeds = bond_amount * variable_apy;
+        if base_proceeds > base_paid {
+            Ok(I256::try_from((base_proceeds - base_paid) / base_paid)?)
+        } else {
+            Ok(-I256::try_from((base_paid - base_proceeds) / base_paid)?)
+        }
+    }
+
     /// Calculates the amount of short principal that the LPs need to pay to back a
     /// short before fees are taken into consideration, $P(x)$.
     ///
@@ -155,11 +190,12 @@ mod tests {
     use std::panic;
 
     use ethers::types::{I256, U256};
-    use fixed_point_macros::fixed;
+    use fixed_point_macros::{fixed, int256};
+    use hyperdrive_wrappers::wrappers::mock_erc4626::MockERC4626;
     use rand::{thread_rng, Rng};
     use test_utils::{
         chain::TestChain,
-        constants::{FAST_FUZZ_RUNS, FUZZ_RUNS},
+        constants::{BOB, FAST_FUZZ_RUNS, FUZZ_RUNS},
     };
 
     use super::*;
@@ -303,6 +339,79 @@ mod tests {
                 delta < tolerance,
                 "expected: delta = {} < {} = tolerance",
                 delta,
+                tolerance
+            );
+
+            // Revert to the snapshot and reset the agent's wallets.
+            chain.revert(id).await?;
+            alice.reset(Default::default());
+            bob.reset(Default::default());
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_calculate_implied_rate() -> Result<()> {
+        // Spwan a test chain with two agents.
+        let mut rng = thread_rng();
+        let chain = TestChain::new().await?;
+        let mut alice = chain.alice().await?;
+        let mut bob = chain.bob().await?;
+
+        for _ in 0..*FUZZ_RUNS {
+            // Snapshot the chain.
+            let id = chain.snapshot().await?;
+
+            // Fund Alice and Bob.
+            let fixed_rate = rng.gen_range(fixed!(0.01e18)..=fixed!(0.1e18));
+            let contribution = rng.gen_range(fixed!(100_000e18)..=fixed!(100_000_000e18));
+            let budget = fixed!(100_000_000e18);
+            alice.fund(contribution).await?;
+            bob.fund(budget).await?;
+
+            // Set a random variable rate.
+            let variable_rate = rng.gen_range(fixed!(0.01e18)..=fixed!(1e18));
+            let vault = MockERC4626::new(
+                bob.get_config().vault_shares_token,
+                chain.chain().client(BOB.clone()).await?,
+            );
+            vault.set_rate(variable_rate.into()).send().await?;
+
+            // Alice initializes the pool.
+            alice.initialize(fixed_rate, contribution, None).await?;
+
+            // Bob opens a short with a random bond amount. Before opening the
+            // short, we calculate the implied rate.
+            let bond_amount = rng.gen_range(fixed!(1e18)..=contribution);
+            let implied_rate = bob.get_state().await?.calculate_implied_rate(
+                bond_amount,
+                bob.get_state().await?.vault_share_price(),
+                variable_rate.into(),
+            )?;
+            let (maturity_time, base_paid) = bob.open_short(bond_amount, None, None).await?;
+
+            // The term passes and interest accrues.
+            chain
+                .increase_time(bob.get_config().position_duration.low_u128())
+                .await?;
+
+            // Bob closes his short.
+            let base_proceeds = bob.close_short(maturity_time, bond_amount, None).await?;
+
+            // Ensure that the implied rate matches the realized rate from
+            // holding the short to maturity.
+            let realized_rate = if base_proceeds > base_paid {
+                I256::try_from((base_proceeds - base_paid) / base_paid)?
+            } else {
+                -I256::try_from((base_paid - base_proceeds) / base_paid)?
+            };
+            let error = (implied_rate - realized_rate).abs();
+            let tolerance = int256!(1e14);
+            assert!(
+                error < tolerance,
+                "error {:?} exceeds tolerance of {}",
+                error,
                 tolerance
             );
 

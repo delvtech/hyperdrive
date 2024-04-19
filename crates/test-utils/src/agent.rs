@@ -328,7 +328,7 @@ impl Agent<ChainClient<LocalWallet>, ChaCha8Rng> {
         bond_amount: FixedPoint,
         maybe_slippage_tolerance: Option<FixedPoint>,
         maybe_tx_options: Option<TxOptions>,
-    ) -> Result<()> {
+    ) -> Result<(FixedPoint, FixedPoint)> {
         // Open the short and record the trade in the wallet.
         let log = {
             let max_deposit = {
@@ -374,7 +374,7 @@ impl Agent<ChainClient<LocalWallet>, ChaCha8Rng> {
         // Decrease the wallet's base balance.
         self.wallet.base -= log.base_amount.into();
 
-        Ok(())
+        Ok((log.maturity_time.into(), log.base_amount.into()))
     }
 
     #[instrument(skip(self))]
@@ -383,7 +383,7 @@ impl Agent<ChainClient<LocalWallet>, ChaCha8Rng> {
         maturity_time: FixedPoint,
         bond_amount: FixedPoint,
         maybe_tx_options: Option<TxOptions>,
-    ) -> Result<()> {
+    ) -> Result<FixedPoint> {
         // If the wallet has a sufficient balance of shorts, update the short
         // balance. Otherwise, return an error.
         let short_balance = self.wallet.shorts.entry(maturity_time).or_default();
@@ -433,7 +433,7 @@ impl Agent<ChainClient<LocalWallet>, ChaCha8Rng> {
         };
         self.wallet.base += log.base_amount.into();
 
-        Ok(())
+        Ok(log.base_amount.into())
     }
 
     /// LPs ///
@@ -762,9 +762,11 @@ impl Agent<ChainClient<LocalWallet>, ChaCha8Rng> {
             Action::CloseLong(maturity_time, bond_amount) => {
                 self.close_long(maturity_time, bond_amount, None).await?
             }
-            Action::OpenShort(bond_amount) => self.open_short(bond_amount, None, None).await?,
+            Action::OpenShort(bond_amount) => {
+                self.open_short(bond_amount, None, None).await?;
+            }
             Action::CloseShort(maturity_time, bond_amount) => {
-                self.close_short(maturity_time, bond_amount, None).await?
+                self.close_short(maturity_time, bond_amount, None).await?;
             }
         }
 
