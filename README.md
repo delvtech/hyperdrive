@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/delvtech/elf-contracts/blob/master/LICENSE)
 [![Static Badge](https://img.shields.io/badge/DELV-Terms%20Of%20Service-orange)](https://elementfi.s3.us-east-2.amazonaws.com/element-finance-terms-of-service.pdf)
 
-<img src="icons/hyperdrive.png" width="800" alt="hyperdrive"><br>
+<img src="icons/hyperdrive_winter.webp" width="800" alt="hyperdrive"><br>
 
 # Hyperdrive
 
