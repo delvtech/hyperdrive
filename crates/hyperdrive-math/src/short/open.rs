@@ -29,11 +29,10 @@ impl State {
     /// principal).
     pub fn calculate_open_short(
         &self,
-        short_amount: FixedPoint,
-        spot_price: FixedPoint,
+        bond_amount: FixedPoint,
         mut open_vault_share_price: FixedPoint,
     ) -> Result<FixedPoint> {
-        if short_amount < self.config.minimum_transaction_amount.into() {
+        if bond_amount < self.config.minimum_transaction_amount.into() {
             return Err(eyre!("MinimumTransactionAmount: Input amount too low",));
         }
 
@@ -46,19 +45,20 @@ impl State {
 
         let share_reserves_delta_in_base = self
             .vault_share_price()
-            .mul_up(self.short_principal(short_amount)?);
+            .mul_up(self.calculate_short_principal(bond_amount)?);
         // If the base proceeds of selling the bonds is greater than the bond
         // amount, then the trade occurred in the negative interest domain. We
         // revert in these pathological cases.
-        if share_reserves_delta_in_base > short_amount {
+        if share_reserves_delta_in_base > bond_amount {
             return Err(eyre!("InsufficientLiquidity: Negative Interest",));
         }
 
         // NOTE: The order of additions and subtractions is important to avoid underflows.
+        let spot_price = self.calculate_spot_price();
         Ok(
-            short_amount.mul_div_down(self.vault_share_price(), open_vault_share_price)
-                + self.flat_fee() * short_amount
-                + self.curve_fee() * (fixed!(1e18) - spot_price) * short_amount
+            bond_amount.mul_div_down(self.vault_share_price(), open_vault_share_price)
+                + self.flat_fee() * bond_amount
+                + self.curve_fee() * (fixed!(1e18) - spot_price) * bond_amount
                 - share_reserves_delta_in_base,
         )
     }
@@ -67,9 +67,9 @@ impl State {
     pub fn calculate_spot_price_after_short(
         &self,
         bond_amount: FixedPoint,
-        base_amount: Option<FixedPoint>,
+        maybe_base_amount: Option<FixedPoint>,
     ) -> Result<FixedPoint> {
-        let shares_amount = match base_amount {
+        let shares_amount = match maybe_base_amount {
             Some(base_amount) => base_amount / self.vault_share_price(),
             None => {
                 let spot_price = self.calculate_spot_price();
@@ -100,9 +100,9 @@ impl State {
     pub fn calculate_spot_rate_after_short(
         &self,
         bond_amount: FixedPoint,
-        base_amount: Option<FixedPoint>,
+        maybe_base_amount: Option<FixedPoint>,
     ) -> Result<FixedPoint> {
-        let price = self.calculate_spot_price_after_short(bond_amount, base_amount)?;
+        let price = self.calculate_spot_price_after_short(bond_amount, maybe_base_amount)?;
         Ok(calculate_rate_given_fixed_price(
             price,
             self.position_duration(),
@@ -120,18 +120,137 @@ impl State {
     /// \implies \\
     /// P(x) = z - \tfrac{1}{\mu} \cdot (\tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s}))^{\tfrac{1}{1 - t_s}}
     /// $$
-    pub fn short_principal(&self, short_amount: FixedPoint) -> Result<FixedPoint> {
-        self.calculate_shares_out_given_bonds_in_down_safe(short_amount)
+    pub fn calculate_short_principal(&self, bond_amount: FixedPoint) -> Result<FixedPoint> {
+        self.calculate_shares_out_given_bonds_in_down_safe(bond_amount)
+    }
+
+    /// Calculates the derivative of the short principal $P(x)$ w.r.t. the amount of
+    /// bonds that are shorted $x$.
+    ///
+    /// The derivative is calculated as:
+    ///
+    /// $$
+    /// P'(x) = \tfrac{1}{c} \cdot (y + x)^{-t_s} \cdot \left(
+    ///             \tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s})
+    ///         \right)^{\tfrac{t_s}{1 - t_s}}
+    /// $$
+    pub fn calculate_short_principal_derivative(&self, bond_amount: FixedPoint) -> FixedPoint {
+        let lhs = fixed!(1e18)
+            / (self
+                .vault_share_price()
+                .mul_up((self.bond_reserves() + bond_amount).pow(self.time_stretch())));
+        let rhs = ((self.initial_vault_share_price() / self.vault_share_price())
+            * (self.k_down()
+                - (self.bond_reserves() + bond_amount).pow(fixed!(1e18) - self.time_stretch())))
+        .pow(
+            self.time_stretch()
+                .div_up(fixed!(1e18) - self.time_stretch()),
+        );
+        lhs * rhs
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::panic;
+
+    use ethers::types::{I256, U256};
     use fixed_point_macros::fixed;
     use rand::{thread_rng, Rng};
-    use test_utils::{chain::TestChain, constants::FUZZ_RUNS};
+    use test_utils::{
+        chain::TestChain,
+        constants::{FAST_FUZZ_RUNS, FUZZ_RUNS},
+    };
 
     use super::*;
+
+    #[tokio::test]
+    async fn test_short_principal() -> Result<()> {
+        // This test is the same as the yield_space.rs `fuzz_calculate_max_buy_shares_in_safe`,
+        // but is worth having around in case we ever change how we compute short principal.
+        let chain = TestChain::new().await?;
+        let mut rng = thread_rng();
+        let state = rng.gen::<State>();
+        let bond_amount = rng.gen_range(fixed!(10e18)..=fixed!(10_000_000e18));
+        let actual = state.calculate_short_principal(bond_amount);
+        match chain
+            .mock_yield_space_math()
+            .calculate_shares_out_given_bonds_in_down_safe(
+                state.effective_share_reserves().into(),
+                state.bond_reserves().into(),
+                bond_amount.into(),
+                (fixed!(1e18) - state.time_stretch()).into(),
+                state.vault_share_price().into(),
+                state.initial_vault_share_price().into(),
+            )
+            .call()
+            .await
+        {
+            Ok((expected, expected_status)) => {
+                assert_eq!(actual.is_ok(), expected_status);
+                assert_eq!(actual.unwrap_or(fixed!(0)), expected.into());
+            }
+            Err(_) => assert!(actual.is_err()),
+        }
+        Ok(())
+    }
+
+    /// This test empirically tests `short_principal_derivative` by calling
+    /// `short_principal` at two points and comparing the empirical result
+    /// with the output of `short_principal_derivative`.
+    #[tokio::test]
+    async fn fuzz_short_principal_derivative() -> Result<()> {
+        let mut rng = thread_rng();
+        // We use a relatively large epsilon here due to the underlying fixed point pow
+        // function not being monotonically increasing.
+        let empirical_derivative_epsilon = fixed!(1e12);
+        // TODO pretty big comparison epsilon here
+        let test_comparison_epsilon = fixed!(1e16);
+
+        for _ in 0..*FAST_FUZZ_RUNS {
+            let state = rng.gen::<State>();
+            let amount = rng.gen_range(fixed!(10e18)..=fixed!(10_000_000e18));
+
+            let p1_result = state.calculate_short_principal(amount - empirical_derivative_epsilon);
+            let p1;
+            let p2;
+            match p1_result {
+                // If the amount results in the pool being insolvent, skip this iteration
+                Ok(p) => p1 = p,
+                Err(_) => continue,
+            }
+
+            let p2_result = state.calculate_short_principal(amount + empirical_derivative_epsilon);
+            match p2_result {
+                // If the amount results in the pool being insolvent, skip this iteration
+                Ok(p) => p2 = p,
+                Err(_) => continue,
+            }
+            // Sanity check
+            assert!(p2 > p1);
+
+            let empirical_derivative = (p2 - p1) / (fixed!(2e18) * empirical_derivative_epsilon);
+            let short_deposit_derivative = state.calculate_short_principal_derivative(amount);
+
+            let derivative_diff;
+            if short_deposit_derivative >= empirical_derivative {
+                derivative_diff = short_deposit_derivative - empirical_derivative;
+            } else {
+                derivative_diff = empirical_derivative - short_deposit_derivative;
+            }
+            assert!(
+                derivative_diff < test_comparison_epsilon,
+                "expected (derivative_diff={}) < (test_comparison_epsilon={}), \
+                calculated_derivative={}, emperical_derivative={}",
+                derivative_diff,
+                test_comparison_epsilon,
+                short_deposit_derivative,
+                empirical_derivative
+            );
+        }
+
+        Ok(())
+    }
 
     #[tokio::test]
     async fn fuzz_calculate_spot_price_after_short() -> Result<()> {
@@ -160,14 +279,13 @@ mod tests {
             alice.initialize(fixed_rate, contribution, None).await?;
 
             // Attempt to predict the spot price after opening a short.
-            let short_amount =
-                rng.gen_range(fixed!(0.01e18)..=bob.calculate_max_short(None).await?);
+            let bond_amount = rng.gen_range(fixed!(0.01e18)..=bob.calculate_max_short(None).await?);
             let current_state = bob.get_state().await?;
             let expected_spot_price =
-                current_state.calculate_spot_price_after_short(short_amount, None)?;
+                current_state.calculate_spot_price_after_short(bond_amount, None)?;
 
             // Open the short.
-            bob.open_short(short_amount, None, None).await?;
+            bob.open_short(bond_amount, None, None).await?;
 
             // Verify that the predicted spot price is equal to the ending spot
             // price. These won't be exactly equal because the vault share price
@@ -204,17 +322,58 @@ mod tests {
         let state = rng.gen::<State>();
         let result = state.calculate_open_short(
             (state.config.minimum_transaction_amount - 10).into(),
-            state.calculate_spot_price(),
             state.vault_share_price(),
         );
         assert!(result.is_err());
         Ok(())
     }
 
-    // TODO ideally we would test calculate open short with an amount larger than the maximum size.
-    // However, `calculate_max_short` requires a `checkpoint_exposure`` argument, which requires
-    // implementing checkpointing in the rust sdk.
-    // https://github.com/delvtech/hyperdrive/issues/862
+    // Tests open short with an amount larger than the maximum.
+    #[tokio::test]
+    async fn test_error_open_short_max_txn_amount() -> Result<()> {
+        let mut rng = thread_rng();
+        for _ in 0..*FAST_FUZZ_RUNS {
+            let state = rng.gen::<State>();
+            let checkpoint_exposure = {
+                let value = rng.gen_range(fixed!(0)..=fixed!(10_000_000e18));
+                if rng.gen() {
+                    -I256::try_from(value).unwrap()
+                } else {
+                    I256::try_from(value).unwrap()
+                }
+            };
+            let max_iterations = 7;
+            let open_vault_share_price = rng.gen_range(fixed!(0)..=state.vault_share_price());
+            let max_trade = panic::catch_unwind(|| {
+                state.calculate_max_short(
+                    U256::MAX,
+                    open_vault_share_price,
+                    checkpoint_exposure,
+                    None,
+                    Some(max_iterations),
+                )
+            });
+            // Since we're fuzzing it's possible that the max can fail.
+            // We're only going to use it in this test if it succeeded.
+            match max_trade {
+                Ok(max_trade) => {
+                    // TODO: You should be able to add a small amount (e.g. 1e18) to max to fail.
+                    // calc_open_short must be incorrect for the additional amount to have to be so large.
+                    let result = state.calculate_open_short(
+                        (max_trade + fixed!(100_000_000e18)).into(),
+                        state.vault_share_price(),
+                    );
+                    match result {
+                        Ok(_) => panic!("calculate_open_short should have failed but succeeded."),
+                        Err(_) => continue,
+                    }
+                }
+                Err(_) => continue,
+            }
+        }
+
+        Ok(())
+    }
 
     // TODO ideally we would add a solidity fuzz test that tests `calculate_open_short` against
     // opening longs in solidity, where we attempt to trade outside of expected values (so that

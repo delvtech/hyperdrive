@@ -44,9 +44,9 @@ async fn preamble(
 
         // Celine opens a short.
         let discount = rng.gen_range(fixed!(0.1e18)..=fixed!(0.5e18));
-        let short_amount =
+        let bond_amount =
             rng.gen_range(fixed!(1e12)..=celine.calculate_max_short(None).await? * discount);
-        celine.open_short(short_amount, None, None).await?;
+        celine.open_short(bond_amount, None, None).await?;
 
         // Advance the time and mint all of the intermediate checkpoints.
         let multiplier = rng.gen_range(fixed!(5e18)..=fixed!(50e18));

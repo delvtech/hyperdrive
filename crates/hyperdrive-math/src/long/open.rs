@@ -51,9 +51,9 @@ impl State {
     pub fn calculate_spot_price_after_long(
         &self,
         base_amount: FixedPoint,
-        bond_amount: Option<FixedPoint>,
+        maybe_bond_amount: Option<FixedPoint>,
     ) -> Result<FixedPoint> {
-        let bond_amount = match bond_amount {
+        let bond_amount = match maybe_bond_amount {
             Some(bond_amount) => bond_amount,
             None => self.calculate_open_long(base_amount)?,
         };
@@ -81,10 +81,10 @@ impl State {
     pub fn calculate_spot_rate_after_long(
         &self,
         base_amount: FixedPoint,
-        bond_amount: Option<FixedPoint>,
+        maybe_bond_amount: Option<FixedPoint>,
     ) -> Result<FixedPoint> {
         Ok(calculate_rate_given_fixed_price(
-            self.calculate_spot_price_after_long(base_amount, bond_amount)?,
+            self.calculate_spot_price_after_long(base_amount, maybe_bond_amount)?,
             self.position_duration(),
         ))
     }

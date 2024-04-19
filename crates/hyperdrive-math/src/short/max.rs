@@ -82,7 +82,7 @@ impl State {
             self.absolute_max_short(spot_price, checkpoint_exposure, maybe_max_iterations);
         let absolute_max_bond_amount = max_bond_amount;
         let absolute_max_deposit =
-            match self.calculate_open_short(max_bond_amount, spot_price, open_vault_share_price) {
+            match self.calculate_open_short(max_bond_amount, open_vault_share_price) {
                 Ok(d) => d,
                 Err(_) => return max_bond_amount,
             };
@@ -125,11 +125,7 @@ impl State {
         // where budget is less than this bias.
         let target_budget = budget - self.minimum_transaction_amount();
         for _ in 0..maybe_max_iterations.unwrap_or(7) {
-            let deposit = match self.calculate_open_short(
-                max_bond_amount,
-                spot_price,
-                open_vault_share_price,
-            ) {
+            let deposit = match self.calculate_open_short(max_bond_amount, open_vault_share_price) {
                 Ok(d) => d,
                 Err(_) => {
                     // The pool is insolvent for the guess at this point.
@@ -166,11 +162,7 @@ impl State {
         // Verify that the max short satisfies the budget.
         if budget
             < self
-                .calculate_open_short(
-                    best_valid_max_bond_amount,
-                    spot_price,
-                    open_vault_share_price,
-                )
+                .calculate_open_short(best_valid_max_bond_amount, open_vault_share_price)
                 .unwrap()
         {
             panic!("max short exceeded budget");
@@ -224,9 +216,7 @@ impl State {
                     + self.flat_fee()
                     + self.curve_fee() * (fixed!(1e18) - spot_price)
                     - conservative_price);
-            if let Ok(deposit) =
-                self.calculate_open_short(guess, spot_price, open_vault_share_price)
-            {
+            if let Ok(deposit) = self.calculate_open_short(guess, open_vault_share_price) {
                 if budget >= deposit {
                     return guess;
                 }
@@ -243,11 +233,10 @@ impl State {
         // subtract these components from the budget to get a better estimate of
         // the max bond amount. If subtracting these components results in a
         // negative number, we just 0 as our initial guess.
-        let worst_case_deposit =
-            match self.calculate_open_short(budget, spot_price, open_vault_share_price) {
-                Ok(d) => d,
-                Err(_) => return fixed!(0),
-            };
+        let worst_case_deposit = match self.calculate_open_short(budget, open_vault_share_price) {
+            Ok(d) => d,
+            Err(_) => return fixed!(0),
+        };
         if budget >= worst_case_deposit {
             budget - worst_case_deposit
         } else {
@@ -420,15 +409,15 @@ impl State {
     /// $$
     fn short_deposit_derivative(
         &self,
-        short_amount: FixedPoint,
+        bond_amount: FixedPoint,
         spot_price: FixedPoint,
         open_vault_share_price: FixedPoint,
     ) -> FixedPoint {
         // NOTE: The order of additions and subtractions is important to avoid underflows.
         let payment_factor = (fixed!(1e18)
-            / (self.bond_reserves() + short_amount).pow(self.time_stretch()))
+            / (self.bond_reserves() + bond_amount).pow(self.time_stretch()))
             * self
-                .theta(short_amount)
+                .theta(bond_amount)
                 .pow(self.time_stretch() / (fixed!(1e18) - self.time_stretch()));
         (self.vault_share_price() / open_vault_share_price)
             + self.flat_fee()
@@ -469,19 +458,19 @@ impl State {
     /// $$
     fn solvency_after_short(
         &self,
-        short_amount: FixedPoint,
+        bond_amount: FixedPoint,
         spot_price: FixedPoint,
         checkpoint_exposure: I256,
     ) -> Option<FixedPoint> {
-        let principal = if let Ok(p) = self.short_principal(short_amount) {
+        let principal = if let Ok(p) = self.calculate_short_principal(bond_amount) {
             p
         } else {
             return None;
         };
         let share_reserves = self.share_reserves()
             - (principal
-                - (self.open_short_curve_fee(short_amount, spot_price)
-                    - self.open_short_governance_fee(short_amount, spot_price))
+                - (self.open_short_curve_fee(bond_amount, spot_price)
+                    - self.open_short_governance_fee(bond_amount, spot_price))
                     / self.vault_share_price());
         let exposure = {
             let checkpoint_exposure: FixedPoint = checkpoint_exposure.max(I256::zero()).into();
@@ -511,10 +500,10 @@ impl State {
     /// doesn't support negative values.
     fn solvency_after_short_derivative(
         &self,
-        short_amount: FixedPoint,
+        bond_amount: FixedPoint,
         spot_price: FixedPoint,
     ) -> Option<FixedPoint> {
-        let lhs = self.short_principal_derivative(short_amount);
+        let lhs = self.calculate_short_principal_derivative(bond_amount);
         let rhs = self.curve_fee()
             * (fixed!(1e18) - spot_price)
             * (fixed!(1e18) - self.governance_lp_fee())
@@ -526,31 +515,6 @@ impl State {
         }
     }
 
-    /// Calculates the derivative of the short principal $P(x)$ w.r.t. the amount of
-    /// bonds that are shorted $x$.
-    ///
-    /// The derivative is calculated as:
-    ///
-    /// $$
-    /// P'(x) = \tfrac{1}{c} \cdot (y + x)^{-t_s} \cdot \left(
-    ///             \tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s})
-    ///         \right)^{\tfrac{t_s}{1 - t_s}}
-    /// $$
-    fn short_principal_derivative(&self, short_amount: FixedPoint) -> FixedPoint {
-        let lhs = fixed!(1e18)
-            / (self
-                .vault_share_price()
-                .mul_up((self.bond_reserves() + short_amount).pow(self.time_stretch())));
-        let rhs = ((self.initial_vault_share_price() / self.vault_share_price())
-            * (self.k_down()
-                - (self.bond_reserves() + short_amount).pow(fixed!(1e18) - self.time_stretch())))
-        .pow(
-            self.time_stretch()
-                .div_up(fixed!(1e18) - self.time_stretch()),
-        );
-        lhs * rhs
-    }
-
     /// A helper function used in calculating the short deposit.
     ///
     /// This calculates the inner component of the `short_principal` calculation,
@@ -560,10 +524,10 @@ impl State {
     /// $$
     /// \theta(x) = \tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s})
     /// $$
-    fn theta(&self, short_amount: FixedPoint) -> FixedPoint {
+    fn theta(&self, bond_amount: FixedPoint) -> FixedPoint {
         (self.initial_vault_share_price() / self.vault_share_price())
             * (self.k_down()
-                - (self.bond_reserves() + short_amount).pow(fixed!(1e18) - self.time_stretch()))
+                - (self.bond_reserves() + bond_amount).pow(fixed!(1e18) - self.time_stretch()))
     }
 }
 
@@ -609,10 +573,11 @@ mod tests {
                 }
             };
             let max_iterations = 7;
+            let open_vault_share_price = rng.gen_range(fixed!(0)..=state.vault_share_price());
             let actual = panic::catch_unwind(|| {
                 state.calculate_max_short(
                     U256::MAX,
-                    fixed!(0),
+                    open_vault_share_price,
                     checkpoint_exposure,
                     None,
                     Some(max_iterations),
@@ -656,7 +621,7 @@ mod tests {
     /// result with the output of `short_deposit_derivative`.
     #[traced_test]
     #[tokio::test]
-    async fn test_short_deposit_derivative() -> Result<()> {
+    async fn fuzz_short_deposit_derivative() -> Result<()> {
         let mut rng = thread_rng();
         // We use a relatively large epsilon here due to the underlying fixed point pow
         // function not being monotonically increasing.
@@ -671,7 +636,6 @@ mod tests {
             let p1_result = std::panic::catch_unwind(|| {
                 state.calculate_open_short(
                     amount - empirical_derivative_epsilon,
-                    state.calculate_spot_price(),
                     state.vault_share_price(),
                 )
             });
@@ -689,7 +653,6 @@ mod tests {
             let p2_result = std::panic::catch_unwind(|| {
                 state.calculate_open_short(
                     amount + empirical_derivative_epsilon,
-                    state.calculate_spot_price(),
                     state.vault_share_price(),
                 )
             });
@@ -734,7 +697,7 @@ mod tests {
     /// Tests that the absolute max short can be executed on chain.
     #[traced_test]
     #[tokio::test]
-    async fn test_calculate_absolute_max_short_execute() -> Result<()> {
+    async fn fuzz_calculate_absolute_max_short_execute() -> Result<()> {
         // Spawn a test chain and create two agents -- Alice and Bob. Alice
         // is funded with a large amount of capital so that she can initialize
         // the pool. Bob is funded with plenty of capital to ensure we can execute
@@ -807,7 +770,7 @@ mod tests {
 
     #[traced_test]
     #[tokio::test]
-    async fn test_calculate_max_short() -> Result<()> {
+    async fn fuzz_calculate_max_short() -> Result<()> {
         // Spawn a test chain and create two agents -- Alice and Bob. Alice
         // is funded with a large amount of capital so that she can initialize
         // the pool. Bob is funded with a small amount of capital so that we

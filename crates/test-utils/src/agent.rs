@@ -37,7 +37,7 @@ enum Action {
     CloseShort(FixedPoint, FixedPoint),
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Wallet {
     base: FixedPoint,
     lp_shares: FixedPoint,
@@ -185,6 +185,10 @@ impl Agent<ChainClient<LocalWallet>, ChaCha8Rng> {
             rng: ChaCha8Rng::seed_from_u64(seed),
             seed,
         })
+    }
+
+    pub fn hyperdrive(&self) -> &IHyperdrive<ChainClient<LocalWallet>> {
+        &self.hyperdrive
     }
 
     /// Longs ///
@@ -886,8 +890,10 @@ impl Agent<ChainClient<LocalWallet>, ChaCha8Rng> {
         self.client.address()
     }
 
-    // TODO: It may be better to group these into a single getter that returns
-    // the agent's wallet.
+    pub fn wallet(&self) -> Wallet {
+        self.wallet.clone()
+    }
+
     pub fn base(&self) -> FixedPoint {
         self.wallet.base
     }
@@ -960,17 +966,13 @@ impl Agent<ChainClient<LocalWallet>, ChaCha8Rng> {
 
     /// Calculates the deposit required to short a given amount of bonds with the
     /// current market state.
-    pub async fn calculate_open_short(&self, short_amount: FixedPoint) -> Result<FixedPoint> {
+    pub async fn calculate_open_short(&self, bond_amount: FixedPoint) -> Result<FixedPoint> {
         let state = self.get_state().await?;
         let Checkpoint {
             vault_share_price: open_vault_share_price,
             ..
         } = self.get_checkpoint(self.latest_checkpoint().await?).await?;
-        state.calculate_open_short(
-            short_amount,
-            state.calculate_spot_price(),
-            open_vault_share_price.into(),
-        )
+        state.calculate_open_short(bond_amount, open_vault_share_price.into())
     }
 
     /// Calculates the max long that can be opened in the current checkpoint.
