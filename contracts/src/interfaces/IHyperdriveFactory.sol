@@ -214,7 +214,7 @@ interface IHyperdriveFactory {
     /// @param _governance The new governance address.
     function updateGovernance(address _governance) external;
 
-    /// @notice Allows governance to change the hyperdrive governance address
+    /// @notice Allows governance to change the hyperdrive governance address.
     /// @param _hyperdriveGovernance The new hyperdrive governance address.
     function updateHyperdriveGovernance(address _hyperdriveGovernance) external;
 
