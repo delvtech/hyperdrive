@@ -207,4 +207,275 @@ interface IHyperdriveFactory {
     /// @notice Thrown when an unauthorized caller attempts to update one of the
     ///         governance administered parameters.
     error Unauthorized();
+
+    /// Functions ///
+
+    /// @notice Allows governance to transfer the governance role.
+    /// @param _governance The new governance address.
+    function updateGovernance(address _governance) external;
+
+    /// @notice Allows governance to change the hyperdrive governance address.
+    /// @param _hyperdriveGovernance The new hyperdrive governance address.
+    function updateHyperdriveGovernance(address _hyperdriveGovernance) external;
+
+    /// @notice Allows governance to change the linker factory.
+    /// @param _linkerFactory The new linker factory.
+    function updateLinkerFactory(address _linkerFactory) external;
+
+    /// @notice Allows governance to change the linker code hash. This allows
+    ///         governance to update the implementation of the ERC20Forwarder.
+    /// @param _linkerCodeHash The new linker code hash.
+    function updateLinkerCodeHash(bytes32 _linkerCodeHash) external;
+
+    /// @notice Allows governance to change the fee collector address.
+    /// @param _feeCollector The new fee collector address.
+    function updateFeeCollector(address _feeCollector) external;
+
+    /// @notice Allows governance to change the sweep collector address.
+    /// @param _sweepCollector The new sweep collector address.
+    function updateSweepCollector(address _sweepCollector) external;
+
+    /// @notice Allows governance to change the checkpoint duration resolution.
+    /// @param _checkpointDurationResolution The new checkpoint duration
+    ///        resolution.
+    function updateCheckpointDurationResolution(
+        uint256 _checkpointDurationResolution
+    ) external;
+
+    /// @notice Allows governance to update the maximum checkpoint duration.
+    /// @param _maxCheckpointDuration The new maximum checkpoint duration.
+    function updateMaxCheckpointDuration(
+        uint256 _maxCheckpointDuration
+    ) external;
+
+    /// @notice Allows governance to update the minimum checkpoint duration.
+    /// @param _minCheckpointDuration The new minimum checkpoint duration.
+    function updateMinCheckpointDuration(
+        uint256 _minCheckpointDuration
+    ) external;
+
+    /// @notice Allows governance to update the maximum position duration.
+    /// @param _maxPositionDuration The new maximum position duration.
+    function updateMaxPositionDuration(uint256 _maxPositionDuration) external;
+
+    /// @notice Allows governance to update the minimum position duration.
+    /// @param _minPositionDuration The new minimum position duration.
+    function updateMinPositionDuration(uint256 _minPositionDuration) external;
+
+    /// @notice Allows governance to update the maximum fixed APR.
+    /// @param _maxFixedAPR The new maximum fixed APR.
+    function updateMaxFixedAPR(uint256 _maxFixedAPR) external;
+
+    /// @notice Allows governance to update the minimum fixed APR.
+    /// @param _minFixedAPR The new minimum fixed APR.
+    function updateMinFixedAPR(uint256 _minFixedAPR) external;
+
+    /// @notice Allows governance to update the maximum time stretch APR.
+    /// @param _maxTimeStretchAPR The new maximum time stretch APR.
+    function updateMaxTimeStretchAPR(uint256 _maxTimeStretchAPR) external;
+
+    /// @notice Allows governance to update the minimum time stretch APR.
+    /// @param _minTimeStretchAPR The new minimum time stretch APR.
+    function updateMinTimeStretchAPR(uint256 _minTimeStretchAPR) external;
+
+    /// @notice Allows governance to update the maximum fee parameters.
+    /// @param __maxFees The new maximum fee parameters.
+    function updateMaxFees(IHyperdrive.Fees calldata __maxFees) external;
+
+    /// @notice Allows governance to update the minimum fee parameters.
+    /// @param __minFees The new minimum fee parameters.
+    function updateMinFees(IHyperdrive.Fees calldata __minFees) external;
+
+    /// @notice Allows governance to change the default pausers.
+    /// @param _defaultPausers_ The new list of default pausers.
+    function updateDefaultPausers(address[] calldata _defaultPausers_) external;
+
+    /// @notice Allows governance to add a new deployer coordinator.
+    /// @param _deployerCoordinator The new deployer coordinator.
+    function addDeployerCoordinator(address _deployerCoordinator) external;
+
+    /// @notice Allows governance to remove an existing deployer coordinator.
+    /// @param _deployerCoordinator The deployer coordinator to remove.
+    /// @param _index The index of the deployer coordinator to remove.
+    function removeDeployerCoordinator(
+        address _deployerCoordinator,
+        uint256 _index
+    ) external;
+
+    /// @notice Deploys a Hyperdrive instance with the factory's configuration.
+    /// @dev This function is declared as payable to allow payable overrides
+    ///      to accept ether on initialization, but payability is not supported
+    ///      by default.
+    /// @param _deploymentId The deployment ID to use when deploying the pool.
+    /// @param _deployerCoordinator The deployer coordinator to use in this
+    ///        deployment.
+    /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _extraData The extra data that contains data necessary for the
+    ///        specific deployer.
+    /// @param _contribution The contribution amount in base to the pool.
+    /// @param _fixedAPR The fixed APR used to initialize the pool.
+    /// @param _timeStretchAPR The time stretch APR used to initialize the pool.
+    /// @param _options The options for the `initialize` call.
+    /// @param _salt The create2 salt to use for the deployment.
+    /// @return The hyperdrive address deployed.
+    function deployAndInitialize(
+        bytes32 _deploymentId,
+        address _deployerCoordinator,
+        IHyperdrive.PoolDeployConfig memory _config,
+        bytes memory _extraData,
+        uint256 _contribution,
+        uint256 _fixedAPR,
+        uint256 _timeStretchAPR,
+        IHyperdrive.Options memory _options,
+        bytes32 _salt
+    ) external payable returns (IHyperdrive);
+
+    /// @notice Deploys a Hyperdrive target with the factory's configuration.
+    /// @param _deploymentId The deployment ID to use when deploying the pool.
+    /// @param _deployerCoordinator The deployer coordinator to use in this
+    ///        deployment.
+    /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _extraData The extra data that contains data necessary for the
+    ///        specific deployer.
+    /// @param _fixedAPR The fixed APR used to initialize the pool.
+    /// @param _timeStretchAPR The time stretch APR used to initialize the pool.
+    /// @param _targetIndex The index of the target to deploy.
+    /// @param _salt The create2 salt to use for the deployment.
+    /// @return The target address deployed.
+    function deployTarget(
+        bytes32 _deploymentId,
+        address _deployerCoordinator,
+        IHyperdrive.PoolDeployConfig memory _config,
+        bytes memory _extraData,
+        uint256 _fixedAPR,
+        uint256 _timeStretchAPR,
+        uint256 _targetIndex,
+        bytes32 _salt
+    ) external returns (address);
+
+    /// Getters ///
+
+    /// @notice Returns the governance address that updates the factory's
+    ///         configuration.
+    /// @return The factory's governance address.
+    function governance() external view returns (address);
+
+    /// @notice Returns the governance address used when new instances are
+    ///         deployed.
+    /// @return The factory's hyperdrive governance address.
+    function hyperdriveGovernance() external view returns (address);
+
+    /// @notice Returns the linker factory used when new instances are deployed.
+    /// @return The factory's linker factory.
+    function linkerFactory() external view returns (address);
+
+    /// @notice Returns the linker code hash used when new instances are
+    ///         deployed.
+    /// @return The factory's linker code hash.
+    function linkerCodeHash() external view returns (bytes32);
+
+    /// @notice Returns the fee collector used when new instances are deployed.
+    /// @return The factory's fee collector.
+    function feeCollector() external view returns (address);
+
+    /// @notice Returns the sweep collector used when new instances are deployed.
+    /// @return The factory's sweep collector.
+    function sweepCollector() external view returns (address);
+
+    /// @notice Returns the resolution for the checkpoint duration. Every
+    ///         checkpoint duration must be a multiple of this resolution.
+    /// @return The factory's checkpoint duration resolution.
+    function checkpointDurationResolution() external view returns (uint256);
+
+    /// @notice Returns the minimum checkpoint duration that can be used by new
+    ///         deployments.
+    /// @return The factory's minimum checkpoint duration.
+    function minCheckpointDuration() external view returns (uint256);
+
+    /// @notice Returns the maximum checkpoint duration that can be used by new
+    ///         deployments.
+    /// @return The factory's maximum checkpoint duration.
+    function maxCheckpointDuration() external view returns (uint256);
+
+    /// @notice Returns the minimum position duration that can be used by new
+    ///         deployments.
+    /// @return The factory's minimum position duration.
+    function minPositionDuration() external view returns (uint256);
+
+    /// @notice Returns the maximum position duration that can be used by new
+    ///         deployments.
+    /// @return The factory's maximum position duration.
+    function maxPositionDuration() external view returns (uint256);
+
+    /// @notice Returns the minimum fixed APR that can be used by new
+    ///         deployments.
+    /// @return The factory's minimum fixed APR.
+    function minFixedAPR() external view returns (uint256);
+
+    /// @notice Returns the maximum fixed APR that can be used by new
+    ///         deployments.
+    /// @return The factory's maximum fixed APR.
+    function maxFixedAPR() external view returns (uint256);
+
+    /// @notice Returns the minimum time stretch APR that can be used by new
+    ///         deployments.
+    /// @return The factory's minimum time stretch APR.
+    function minTimeStretchAPR() external view returns (uint256);
+
+    /// @notice Returns the maximum time stretch APR that can be used by new
+    ///         deployments.
+    /// @return The factory's maximum time stretch APR.
+    function maxTimeStretchAPR() external view returns (uint256);
+
+    /// @notice Gets the max fees.
+    /// @return The max fees.
+    function maxFees() external view returns (IHyperdrive.Fees memory);
+
+    /// @notice Gets the min fees.
+    /// @return The min fees.
+    function minFees() external view returns (IHyperdrive.Fees memory);
+
+    /// @notice Gets the default pausers.
+    /// @return The default pausers.
+    function defaultPausers() external view returns (address[] memory);
+
+    /// @notice Gets the number of instances deployed by this factory.
+    /// @return The number of instances deployed by this factory.
+    function getNumberOfInstances() external view returns (uint256);
+
+    /// @notice Gets the instance at the specified index.
+    /// @param index The index of the instance to get.
+    /// @return The instance at the specified index.
+    function getInstanceAtIndex(uint256 index) external view returns (address);
+
+    /// @notice Returns the _instances array according to specified indices.
+    /// @param startIndex The starting index of the instances to get.
+    /// @param endIndex The ending index of the instances to get.
+    /// @return range The resulting custom portion of the _instances array.
+    function getInstancesInRange(
+        uint256 startIndex,
+        uint256 endIndex
+    ) external view returns (address[] memory range);
+
+    /// @notice Gets the number of deployer coordinators registered in this
+    ///         factory.
+    /// @return The number of deployer coordinators deployed by this factory.
+    function getNumberOfDeployerCoordinators() external view returns (uint256);
+
+    /// @notice Gets the deployer coordinator at the specified index.
+    /// @param index The index of the deployer coordinator to get.
+    /// @return The deployer coordinator at the specified index.
+    function getDeployerCoordinatorAtIndex(
+        uint256 index
+    ) external view returns (address);
+
+    /// @notice Returns the deployer coordinators with an index between the
+    ///         starting and ending indexes (inclusive).
+    /// @param startIndex The starting index (inclusive).
+    /// @param endIndex The ending index (inclusive).
+    /// @return range The deployer coordinators within the specified range.
+    function getDeployerCoordinatorsInRange(
+        uint256 startIndex,
+        uint256 endIndex
+    ) external view returns (address[] memory range);
 }
