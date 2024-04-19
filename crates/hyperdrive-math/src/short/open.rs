@@ -19,13 +19,13 @@ impl State {
     /// function as:
     ///
     /// $$
-    /// D(x) = \Delta y - (c \cdot P(x) - \phi_{curve} \cdot (1 - p) \cdot \Delta y)
+    /// D(\Delta y) = \Delta y - (c \cdot P(x) - \phi_{curve} \cdot (1 - p) \cdot \Delta y)
     ///        + (c - c_0) \cdot \tfrac{\Delta y}{c_0} + \phi_{flat} \cdot \Delta y \\
-    ///      = \tfrac{c}{c_0} \cdot \Delta y - (c \cdot P(x) - \phi_{curve} \cdot (1 - p) \cdot \Delta y)
+    ///      = \tfrac{c}{c_0} \cdot \Delta y - (c \cdot P(\Delta y) - \phi_{curve} \cdot (1 - p) \cdot \Delta y)
     ///        + \phi_{flat} \cdot \Delta y
     /// $$
     ///
-    /// $x$ is the number of bonds being shorted and $P(x)$ is the amount of
+    /// $\Delta y$ is the number of bonds being shorted and $P(\Delta y)$ is the amount of
     /// shares the curve says the LPs need to pay the shorts (i.e. the LP
     /// principal).
     pub fn calculate_open_short(
@@ -232,22 +232,22 @@ impl State {
     /// solve for this in terms of $x$ using the YieldSpace invariant:
     ///
     /// $$
-    /// k = \tfrac{c}{\mu} \cdot (\mu \cdot (z - P(x)))^{1 - t_s} + (y + x)^{1 - t_s} \\
+    /// k = \tfrac{c}{\mu} \cdot (\mu \cdot (z - P(\Delta y)))^{1 - t_s} + (y + \Delta y)^{1 - t_s} \\
     /// \implies \\
-    /// P(x) = z - \tfrac{1}{\mu} \cdot (\tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s}))^{\tfrac{1}{1 - t_s}}
+    /// P(\Delta y) = z - \tfrac{1}{\mu} \cdot (\tfrac{\mu}{c} \cdot (k - (y + \Delta y)^{1 - t_s}))^{\tfrac{1}{1 - t_s}}
     /// $$
     pub fn calculate_short_principal(&self, bond_amount: FixedPoint) -> Result<FixedPoint> {
         self.calculate_shares_out_given_bonds_in_down_safe(bond_amount)
     }
 
-    /// Calculates the derivative of the short principal $P(x)$ w.r.t. the amount of
-    /// bonds that are shorted $x$.
+    /// Calculates the derivative of the short principal $P(\Delta y)$ w.r.t. the amount of
+    /// bonds that are shorted $\Delta y$.
     ///
     /// The derivative is calculated as:
     ///
     /// $$
-    /// P'(x) = \tfrac{1}{c} \cdot (y + x)^{-t_s} \cdot \left(
-    ///             \tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s})
+    /// P'(\Delta y) = \tfrac{1}{c} \cdot (y + \Delta y)^{-t_s} \cdot \left(
+    ///             \tfrac{\mu}{c} \cdot (k - (y + \Delta y)^{1 - t_s})
     ///         \right)^{\tfrac{t_s}{1 - t_s}}
     /// $$
     pub fn calculate_short_principal_derivative(&self, bond_amount: FixedPoint) -> FixedPoint {
