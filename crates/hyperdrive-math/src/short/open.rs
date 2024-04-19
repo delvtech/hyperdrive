@@ -149,6 +149,92 @@ impl State {
         }
     }
 
+    /// A helper function used in calculating the short deposit.
+    ///
+    /// This calculates the inner component of the `short_principal` calculation,
+    /// which makes the `short_principal` and `short_deposit_derivative` calculations
+    /// easier. $\theta(x)$ is defined as:
+    ///
+    /// $$
+    /// \theta(x) = \tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s})
+    /// $$
+    fn theta(&self, bond_amount: FixedPoint) -> FixedPoint {
+        (self.initial_vault_share_price() / self.vault_share_price())
+            * (self.k_down()
+                - (self.bond_reserves() + bond_amount).pow(fixed!(1e18) - self.time_stretch()))
+    }
+
+    /// Calculates the derivative of the short deposit function with respect to the
+    /// short amount. This allows us to use Newton's method to approximate the
+    /// maximum short that a trader can open.
+    ///
+    /// Using this, calculating $D'(x)$ is straightforward:
+    ///
+    /// $$
+    /// D'(x) = \tfrac{c}{c_0} - (c \cdot P'(x) - \phi_{curve} \cdot (1 - p)) + \phi_{flat}
+    /// $$
+    ///
+    /// $$
+    /// P'(x) = \tfrac{1}{c} \cdot (y + x)^{-t_s} \cdot \left(\tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s}) \right)^{\tfrac{t_s}{1 - t_s}}
+    /// $$
+    pub fn short_deposit_derivative(
+        &self,
+        bond_amount: FixedPoint,
+        spot_price: FixedPoint,
+        open_vault_share_price: FixedPoint,
+    ) -> FixedPoint {
+        // NOTE: The order of additions and subtractions is important to avoid underflows.
+        let payment_factor = (fixed!(1e18)
+            / (self.bond_reserves() + bond_amount).pow(self.time_stretch()))
+            * self
+                .theta(bond_amount)
+                .pow(self.time_stretch() / (fixed!(1e18) - self.time_stretch()));
+        (self.vault_share_price() / open_vault_share_price)
+            + self.flat_fee()
+            + self.curve_fee() * (fixed!(1e18) - spot_price)
+            - payment_factor
+    }
+
+    /// Calculates the amount of short principal that the LPs need to pay to back a
+    /// short before fees are taken into consideration, $P(x)$.
+    ///
+    /// Let the LP principal that backs $x$ shorts be given by $P(x)$. We can
+    /// solve for this in terms of $x$ using the YieldSpace invariant:
+    ///
+    /// $$
+    /// k = \tfrac{c}{\mu} \cdot (\mu \cdot (z - P(\Delta y)))^{1 - t_s} + (y + \Delta y)^{1 - t_s} \\
+    /// \implies \\
+    /// P(\Delta y) = z - \tfrac{1}{\mu} \cdot (\tfrac{\mu}{c} \cdot (k - (y + \Delta y)^{1 - t_s}))^{\tfrac{1}{1 - t_s}}
+    /// $$
+    pub fn calculate_short_principal(&self, bond_amount: FixedPoint) -> Result<FixedPoint> {
+        self.calculate_shares_out_given_bonds_in_down_safe(bond_amount)
+    }
+
+    /// Calculates the derivative of the short principal $P(\Delta y)$ w.r.t. the amount of
+    /// bonds that are shorted $\Delta y$.
+    ///
+    /// The derivative is calculated as:
+    ///
+    /// $$
+    /// P'(\Delta y) = \tfrac{1}{c} \cdot (y + \Delta y)^{-t_s} \cdot \left(
+    ///             \tfrac{\mu}{c} \cdot (k - (y + \Delta y)^{1 - t_s})
+    ///         \right)^{\tfrac{t_s}{1 - t_s}}
+    /// $$
+    pub fn calculate_short_principal_derivative(&self, bond_amount: FixedPoint) -> FixedPoint {
+        let lhs = fixed!(1e18)
+            / (self
+                .vault_share_price()
+                .mul_up((self.bond_reserves() + bond_amount).pow(self.time_stretch())));
+        let rhs = ((self.initial_vault_share_price() / self.vault_share_price())
+            * (self.k_down()
+                - (self.bond_reserves() + bond_amount).pow(fixed!(1e18) - self.time_stretch())))
+        .pow(
+            self.time_stretch()
+                .div_up(fixed!(1e18) - self.time_stretch()),
+        );
+        lhs * rhs
+    }
+
     /// Calculates the spot price after opening a Hyperdrive short.
     pub fn calculate_spot_price_after_short(
         &self,
@@ -223,46 +309,6 @@ impl State {
         } else {
             Ok(-I256::try_from((base_paid - base_proceeds) / base_paid)?)
         }
-    }
-
-    /// Calculates the amount of short principal that the LPs need to pay to back a
-    /// short before fees are taken into consideration, $P(x)$.
-    ///
-    /// Let the LP principal that backs $x$ shorts be given by $P(x)$. We can
-    /// solve for this in terms of $x$ using the YieldSpace invariant:
-    ///
-    /// $$
-    /// k = \tfrac{c}{\mu} \cdot (\mu \cdot (z - P(\Delta y)))^{1 - t_s} + (y + \Delta y)^{1 - t_s} \\
-    /// \implies \\
-    /// P(\Delta y) = z - \tfrac{1}{\mu} \cdot (\tfrac{\mu}{c} \cdot (k - (y + \Delta y)^{1 - t_s}))^{\tfrac{1}{1 - t_s}}
-    /// $$
-    pub fn calculate_short_principal(&self, bond_amount: FixedPoint) -> Result<FixedPoint> {
-        self.calculate_shares_out_given_bonds_in_down_safe(bond_amount)
-    }
-
-    /// Calculates the derivative of the short principal $P(\Delta y)$ w.r.t. the amount of
-    /// bonds that are shorted $\Delta y$.
-    ///
-    /// The derivative is calculated as:
-    ///
-    /// $$
-    /// P'(\Delta y) = \tfrac{1}{c} \cdot (y + \Delta y)^{-t_s} \cdot \left(
-    ///             \tfrac{\mu}{c} \cdot (k - (y + \Delta y)^{1 - t_s})
-    ///         \right)^{\tfrac{t_s}{1 - t_s}}
-    /// $$
-    pub fn calculate_short_principal_derivative(&self, bond_amount: FixedPoint) -> FixedPoint {
-        let lhs = fixed!(1e18)
-            / (self
-                .vault_share_price()
-                .mul_up((self.bond_reserves() + bond_amount).pow(self.time_stretch())));
-        let rhs = ((self.initial_vault_share_price() / self.vault_share_price())
-            * (self.k_down()
-                - (self.bond_reserves() + bond_amount).pow(fixed!(1e18) - self.time_stretch())))
-        .pow(
-            self.time_stretch()
-                .div_up(fixed!(1e18) - self.time_stretch()),
-        );
-        lhs * rhs
     }
 }
 
@@ -414,6 +460,84 @@ mod tests {
 
             let empirical_derivative = (p2 - p1) / (fixed!(2e18) * empirical_derivative_epsilon);
             let short_deposit_derivative = state.calculate_short_principal_derivative(amount);
+
+            let derivative_diff;
+            if short_deposit_derivative >= empirical_derivative {
+                derivative_diff = short_deposit_derivative - empirical_derivative;
+            } else {
+                derivative_diff = empirical_derivative - short_deposit_derivative;
+            }
+            assert!(
+                derivative_diff < test_comparison_epsilon,
+                "expected (derivative_diff={}) < (test_comparison_epsilon={}), \
+                calculated_derivative={}, emperical_derivative={}",
+                derivative_diff,
+                test_comparison_epsilon,
+                short_deposit_derivative,
+                empirical_derivative
+            );
+        }
+
+        Ok(())
+    }
+
+    /// This test empirically tests the derivative of `short_deposit_derivative`
+    /// by calling `calculate_open_short` at two points and comparing the empirical
+    /// result with the output of `short_deposit_derivative`.
+    #[traced_test]
+    #[tokio::test]
+    async fn fuzz_short_deposit_derivative() -> Result<()> {
+        let mut rng = thread_rng();
+        // We use a relatively large epsilon here due to the underlying fixed point pow
+        // function not being monotonically increasing.
+        let empirical_derivative_epsilon = fixed!(1e12);
+        // TODO pretty big comparison epsilon here
+        let test_comparison_epsilon = fixed!(1e15);
+
+        for _ in 0..*FAST_FUZZ_RUNS {
+            let state = rng.gen::<State>();
+            let amount = rng.gen_range(fixed!(10e18)..=fixed!(10_000_000e18));
+
+            let p1_result = std::panic::catch_unwind(|| {
+                state.calculate_open_short(
+                    amount - empirical_derivative_epsilon,
+                    state.vault_share_price(),
+                )
+            });
+            let p1;
+            let p2;
+            match p1_result {
+                // If the amount results in the pool being insolvent, skip this iteration
+                Ok(p) => match p {
+                    Ok(p) => p1 = p,
+                    Err(_) => continue,
+                },
+                Err(_) => continue,
+            }
+
+            let p2_result = std::panic::catch_unwind(|| {
+                state.calculate_open_short(
+                    amount + empirical_derivative_epsilon,
+                    state.vault_share_price(),
+                )
+            });
+            match p2_result {
+                // If the amount results in the pool being insolvent, skip this iteration
+                Ok(p) => match p {
+                    Ok(p) => p2 = p,
+                    Err(_) => continue,
+                },
+                Err(_) => continue,
+            }
+            // Sanity check
+            assert!(p2 > p1);
+
+            let empirical_derivative = (p2 - p1) / (fixed!(2e18) * empirical_derivative_epsilon);
+            let short_deposit_derivative = state.short_deposit_derivative(
+                amount,
+                state.calculate_spot_price(),
+                state.vault_share_price(),
+            );
 
             let derivative_diff;
             if short_deposit_derivative >= empirical_derivative {
