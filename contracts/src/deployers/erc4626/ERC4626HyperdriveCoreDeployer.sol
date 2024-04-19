@@ -31,14 +31,13 @@ contract ERC4626HyperdriveCoreDeployer is IHyperdriveCoreDeployer {
         address _target4,
         bytes32 _salt
     ) external returns (address) {
-        return (
-            address(
-                // NOTE: We hash the sender with the salt to prevent the
-                // front-running of deployments.
-                new ERC4626Hyperdrive{
-                    salt: keccak256(abi.encode(msg.sender, _salt))
-                }(_config, _target0, _target1, _target2, _target3, _target4)
-            )
+        address hyperdrive = address(
+            // NOTE: We hash the sender with the salt to prevent the
+            // front-running of deployments.
+            new ERC4626Hyperdrive{
+                salt: keccak256(abi.encode(msg.sender, _salt))
+            }(_config, _target0, _target1, _target2, _target3, _target4)
         );
+        return hyperdrive;
     }
 }
