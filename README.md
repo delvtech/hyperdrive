@@ -3,13 +3,71 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/delvtech/elf-contracts/blob/master/LICENSE)
 [![Static Badge](https://img.shields.io/badge/DELV-Terms%20Of%20Service-orange)](https://elementfi.s3.us-east-2.amazonaws.com/element-finance-terms-of-service.pdf)
 
+<img src="icons/hyperdrive.png" width="800" alt="hyperdrive"><br>
 
 # Hyperdrive
 
 Hyperdrive is an automated market maker that enables fixed-rate markets to be
-built on top of arbitrary yield sources.
+built on top of arbitrary yield sources. Hyperdrive provides several novel
+features for fixed-rate AMMs including:
 
-# Developing
+- Terms on Demand: Hyperdrive allows for minting to be a part of the
+AMM, where the AMM essentially underwrites a new term for the user
+whenever they open a position. The user is not constrained to purchasing,
+selling, or minting into preexisting terms that are partially matured.
+- Continuous Liquidity: Hyperdrive pools never expire and underwrite a
+variety of fixed and variable rate terms with differing maturity dates. LPs
+can provide liquidity once without needing to roll their liquidity over to
+new terms.
+- Single-Sided Liquidity: Hyperdrive liquidity providers are only required to
+provide base assets. The fact that LPs don't need to mint bonds to provide
+liquidity improves the capital efficiency and UX of providing liquidity to
+fixed-rate markets.
+
+# Resources
+
+The [Hyperdrive docs](https://docs-delv.gitbook.io/hyperdrive) include documentation
+on how to use Hyperdrive to source and provide liquidity, documentation for
+developers seeking to use Hyperdrive programatically, and documentation for
+developers that want to integrate Hyperdrive with a yield source.
+
+The [Hyperdrive Whitepaper](./docs/Hyperdrive_Whitepaper.pdf) describes the technical
+details underlying how Hyperdrive mints terms on demand, enables LPs to provide
+everlasting liquidity, and explains how the AMM's pricing model works.
+
+The [`audits/`](./audits) directory contains the reports for all of the audits that
+have been conducted for Hyperdrive to date.
+
+# Repository Layout
+
+The Hyperdrive interface can be found in [`IHyperdrive.sol`](./contracts/src/interfaces/IHyperdrive.sol).
+This interface includes all of the read and write functions available on each Hyperdrive
+instance as well as the events emitted by Hyperdrive and the custom errors used by Hyperdrive.
+
+The existing Hyperdrive instances can be found in [`contracts/src/instances/`](./contracts/src/instances/).
+These instances can serve as a reference for integrators that would like to integrate
+a yield source with Hyperdrive. The `ERC4626Hyperdrive` instance found in
+[`contracts/src/instances/erc4626/`](./contracts/src/instances/erc4626/) can be
+used to integrate `ERC4626` compliant yield sources. For yield sources that require
+direct integrations, the other instances can serve as a reference for how integrations
+are structured.
+
+Because of the code size limits imposed by [EIP-170](https://eips.ethereum.org/EIPS/eip-170),
+Hyperdrive's logic is sharded over several different contracts. The code that
+supports the proxy architecture can be found in [`contracts/src/external`](./contracts/src/external/).
+These contracts are abstract since several functions must be implemented on a case-by-case basis
+for different yield sources.
+
+The core logic used in the Hyperdrive AMM can be found in [`contracts/src/internal/`](./contracts/src/internal/).
+This logic relies on libraries that can be found in [`contracts/src/libraries/`](./contracts/src/libraries/).
+
+The `HyperdriveFactory` contract can be found in [`HyperdriveFactory.sol`](./contracts/src/factory/HyperdriveFactory.sol).
+This contract makes it easy to deploy and initialize new pools. The factory utilizes
+deployer coordinators that correspond to Hyperdrive instances. These deployer
+coordinators and the deployer contracts used by the coordinators can be found in
+[`contracts/src/deployers/`](./contracts/src/deployers/).
+
+# Gettings Started
 
 ## Pre-requisites
 
@@ -41,10 +99,6 @@ We have several linters. Solhint is a Solidity linter that checks for best
 practices and style, prettier is a Solidity formatter that checks for formatting
 and style, and cSpell is a spell checker. To run all three, run `make lint`.
 If you want to automatically format the code, run `make prettier`.
-
-## Yield Sources
-
-The current suggested way of integrating your yield source with hyperdrive is through the [ERC-4626 standard](https://eips.ethereum.org/EIPS/eip-4626) although accomodations can be made if this is not possible.
 
 # Disclaimer
 
