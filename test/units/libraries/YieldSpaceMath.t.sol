@@ -116,7 +116,7 @@ contract YieldSpaceMathTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(IHyperdrive.InsufficientLiquidity.selector)
         );
-        uint256 result5 = yieldSpaceMath.calculateSharesInGivenBondsOutUp(
+        yieldSpaceMath.calculateSharesInGivenBondsOutUp(
             100000e18, // shareReserves
             99e18, // bondReserves + s
             100e18, // amountIn
