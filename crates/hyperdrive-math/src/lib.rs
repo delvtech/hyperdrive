@@ -243,7 +243,7 @@ impl State {
 
     /// Info ///
 
-    fn vault_share_price(&self) -> FixedPoint {
+    pub fn vault_share_price(&self) -> FixedPoint {
         self.info.vault_share_price.into()
     }
 
