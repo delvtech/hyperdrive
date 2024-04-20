@@ -1,0 +1,1851 @@
+{
+  "address": "0x6149a59eaf298191ce4509867d094ebf4e9f8f89",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "governance",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "hyperdriveGovernance",
+              "type": "address"
+            },
+            {
+              "internalType": "address[]",
+              "name": "defaultPausers",
+              "type": "address[]"
+            },
+            {
+              "internalType": "address",
+              "name": "feeCollector",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "sweepCollector",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "checkpointDurationResolution",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minCheckpointDuration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "maxCheckpointDuration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minPositionDuration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "maxPositionDuration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minFixedAPR",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "maxFixedAPR",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minTimeStretchAPR",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "maxTimeStretchAPR",
+              "type": "uint256"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "curve",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "flat",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "governanceLP",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "governanceZombie",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct IHyperdrive.Fees",
+              "name": "minFees",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "curve",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "flat",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "governanceLP",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "governanceZombie",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct IHyperdrive.Fees",
+              "name": "maxFees",
+              "type": "tuple"
+            },
+            {
+              "internalType": "address",
+              "name": "linkerFactory",
+              "type": "address"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "linkerCodeHash",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct HyperdriveFactory.FactoryConfig",
+          "name": "_factoryConfig",
+          "type": "tuple"
+        },
+        {
+          "internalType": "string",
+          "name": "_name",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "DeployerCoordinatorAlreadyAdded",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "DeployerCoordinatorIndexMismatch",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "DeployerCoordinatorNotAdded",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "EndIndexTooLarge",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidCheckpointDuration",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidCheckpointDurationResolution",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidDeployConfig",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidDeployerCoordinator",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidFees",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidFixedAPR",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidIndexes",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidMaxCheckpointDuration",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidMaxFees",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidMaxFixedAPR",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidMaxPositionDuration",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidMaxTimeStretchAPR",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidMinCheckpointDuration",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidMinFees",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidMinFixedAPR",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidMinPositionDuration",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidMinTimeStretchAPR",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidPositionDuration",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidTimeStretchAPR",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "LnInvalidInput",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "ReceiveLocked",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "TransferFailed",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "Unauthorized",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "UnsafeCastToInt256",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "newCheckpointDurationResolution",
+          "type": "uint256"
+        }
+      ],
+      "name": "CheckpointDurationResolutionUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address[]",
+          "name": "newDefaultPausers",
+          "type": "address[]"
+        }
+      ],
+      "name": "DefaultPausersUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "deployerCoordinator",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "hyperdrive",
+          "type": "address"
+        },
+        {
+          "components": [
+            {
+              "internalType": "contract IERC20",
+              "name": "baseToken",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IERC20",
+              "name": "vaultSharesToken",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "linkerFactory",
+              "type": "address"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "linkerCodeHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minimumShareReserves",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minimumTransactionAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "positionDuration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "checkpointDuration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "timeStretch",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "governance",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "feeCollector",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "sweepCollector",
+              "type": "address"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "curve",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "flat",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "governanceLP",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "governanceZombie",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct IHyperdrive.Fees",
+              "name": "fees",
+              "type": "tuple"
+            }
+          ],
+          "indexed": false,
+          "internalType": "struct IHyperdrive.PoolDeployConfig",
+          "name": "config",
+          "type": "tuple"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes",
+          "name": "extraData",
+          "type": "bytes"
+        }
+      ],
+      "name": "Deployed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "deployerCoordinator",
+          "type": "address"
+        }
+      ],
+      "name": "DeployerCoordinatorAdded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "deployerCoordinator",
+          "type": "address"
+        }
+      ],
+      "name": "DeployerCoordinatorRemoved",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newFeeCollector",
+          "type": "address"
+        }
+      ],
+      "name": "FeeCollectorUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "governance",
+          "type": "address"
+        }
+      ],
+      "name": "GovernanceUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "hyperdriveGovernance",
+          "type": "address"
+        }
+      ],
+      "name": "HyperdriveGovernanceUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "newLinkerCodeHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "LinkerCodeHashUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newLinkerFactory",
+          "type": "address"
+        }
+      ],
+      "name": "LinkerFactoryUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "newMaxCheckpointDuration",
+          "type": "uint256"
+        }
+      ],
+      "name": "MaxCheckpointDurationUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "curve",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "flat",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "governanceLP",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "governanceZombie",
+              "type": "uint256"
+            }
+          ],
+          "indexed": false,
+          "internalType": "struct IHyperdrive.Fees",
+          "name": "newMaxFees",
+          "type": "tuple"
+        }
+      ],
+      "name": "MaxFeesUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "newMaxFixedAPR",
+          "type": "uint256"
+        }
+      ],
+      "name": "MaxFixedAPRUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "newMaxPositionDuration",
+          "type": "uint256"
+        }
+      ],
+      "name": "MaxPositionDurationUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "newMaxTimeStretchAPR",
+          "type": "uint256"
+        }
+      ],
+      "name": "MaxTimeStretchAPRUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "newMinCheckpointDuration",
+          "type": "uint256"
+        }
+      ],
+      "name": "MinCheckpointDurationUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "curve",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "flat",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "governanceLP",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "governanceZombie",
+              "type": "uint256"
+            }
+          ],
+          "indexed": false,
+          "internalType": "struct IHyperdrive.Fees",
+          "name": "newMinFees",
+          "type": "tuple"
+        }
+      ],
+      "name": "MinFeesUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "newMinFixedAPR",
+          "type": "uint256"
+        }
+      ],
+      "name": "MinFixedAPRUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "newMinPositionDuration",
+          "type": "uint256"
+        }
+      ],
+      "name": "MinPositionDurationUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "newMinTimeStretchAPR",
+          "type": "uint256"
+        }
+      ],
+      "name": "MinTimeStretchAPRUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newSweepCollector",
+          "type": "address"
+        }
+      ],
+      "name": "SweepCollectorUpdated",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_deployerCoordinator",
+          "type": "address"
+        }
+      ],
+      "name": "addDeployerCoordinator",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "checkpointDurationResolution",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "defaultPausers",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "_deploymentId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "_deployerCoordinator",
+          "type": "address"
+        },
+        {
+          "components": [
+            {
+              "internalType": "contract IERC20",
+              "name": "baseToken",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IERC20",
+              "name": "vaultSharesToken",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "linkerFactory",
+              "type": "address"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "linkerCodeHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minimumShareReserves",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minimumTransactionAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "positionDuration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "checkpointDuration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "timeStretch",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "governance",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "feeCollector",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "sweepCollector",
+              "type": "address"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "curve",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "flat",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "governanceLP",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "governanceZombie",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct IHyperdrive.Fees",
+              "name": "fees",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct IHyperdrive.PoolDeployConfig",
+          "name": "_config",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes",
+          "name": "_extraData",
+          "type": "bytes"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_contribution",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_fixedAPR",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_timeStretchAPR",
+          "type": "uint256"
+        },
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "destination",
+              "type": "address"
+            },
+            {
+              "internalType": "bool",
+              "name": "asBase",
+              "type": "bool"
+            },
+            {
+              "internalType": "bytes",
+              "name": "extraData",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct IHyperdrive.Options",
+          "name": "_options",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "_salt",
+          "type": "bytes32"
+        }
+      ],
+      "name": "deployAndInitialize",
+      "outputs": [
+        {
+          "internalType": "contract IHyperdrive",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "_deploymentId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "_deployerCoordinator",
+          "type": "address"
+        },
+        {
+          "components": [
+            {
+              "internalType": "contract IERC20",
+              "name": "baseToken",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IERC20",
+              "name": "vaultSharesToken",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "linkerFactory",
+              "type": "address"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "linkerCodeHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minimumShareReserves",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minimumTransactionAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "positionDuration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "checkpointDuration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "timeStretch",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "governance",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "feeCollector",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "sweepCollector",
+              "type": "address"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "curve",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "flat",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "governanceLP",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "governanceZombie",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct IHyperdrive.Fees",
+              "name": "fees",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct IHyperdrive.PoolDeployConfig",
+          "name": "_config",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes",
+          "name": "_extraData",
+          "type": "bytes"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_fixedAPR",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_timeStretchAPR",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_targetIndex",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "_salt",
+          "type": "bytes32"
+        }
+      ],
+      "name": "deployTarget",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "feeCollector",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        }
+      ],
+      "name": "getDeployerCoordinatorAtIndex",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "startIndex",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "endIndex",
+          "type": "uint256"
+        }
+      ],
+      "name": "getDeployerCoordinatorsInRange",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "range",
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        }
+      ],
+      "name": "getInstanceAtIndex",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "startIndex",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "endIndex",
+          "type": "uint256"
+        }
+      ],
+      "name": "getInstancesInRange",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "range",
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getNumberOfDeployerCoordinators",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getNumberOfInstances",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "governance",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "hyperdriveGovernance",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "instance",
+          "type": "address"
+        }
+      ],
+      "name": "instancesToDeployerCoordinators",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "deployCoordinator",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "isDeployerCoordinator",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "isInstance",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "linkerCodeHash",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "linkerFactory",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "maxCheckpointDuration",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "maxFees",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "curve",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "flat",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "governanceLP",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "governanceZombie",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IHyperdrive.Fees",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "maxFixedAPR",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "maxPositionDuration",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "maxTimeStretchAPR",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "minCheckpointDuration",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "minFees",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "curve",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "flat",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "governanceLP",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "governanceZombie",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IHyperdrive.Fees",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "minFixedAPR",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "minPositionDuration",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "minTimeStretchAPR",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "name",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_deployerCoordinator",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_index",
+          "type": "uint256"
+        }
+      ],
+      "name": "removeDeployerCoordinator",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "sweepCollector",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_checkpointDurationResolution",
+          "type": "uint256"
+        }
+      ],
+      "name": "updateCheckpointDurationResolution",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address[]",
+          "name": "_defaultPausers_",
+          "type": "address[]"
+        }
+      ],
+      "name": "updateDefaultPausers",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_feeCollector",
+          "type": "address"
+        }
+      ],
+      "name": "updateFeeCollector",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_governance",
+          "type": "address"
+        }
+      ],
+      "name": "updateGovernance",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_hyperdriveGovernance",
+          "type": "address"
+        }
+      ],
+      "name": "updateHyperdriveGovernance",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "_linkerCodeHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "updateLinkerCodeHash",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_linkerFactory",
+          "type": "address"
+        }
+      ],
+      "name": "updateLinkerFactory",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_maxCheckpointDuration",
+          "type": "uint256"
+        }
+      ],
+      "name": "updateMaxCheckpointDuration",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "curve",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "flat",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "governanceLP",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "governanceZombie",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IHyperdrive.Fees",
+          "name": "__maxFees",
+          "type": "tuple"
+        }
+      ],
+      "name": "updateMaxFees",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_maxFixedAPR",
+          "type": "uint256"
+        }
+      ],
+      "name": "updateMaxFixedAPR",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_maxPositionDuration",
+          "type": "uint256"
+        }
+      ],
+      "name": "updateMaxPositionDuration",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_maxTimeStretchAPR",
+          "type": "uint256"
+        }
+      ],
+      "name": "updateMaxTimeStretchAPR",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_minCheckpointDuration",
+          "type": "uint256"
+        }
+      ],
+      "name": "updateMinCheckpointDuration",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "curve",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "flat",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "governanceLP",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "governanceZombie",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IHyperdrive.Fees",
+          "name": "__minFees",
+          "type": "tuple"
+        }
+      ],
+      "name": "updateMinFees",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_minFixedAPR",
+          "type": "uint256"
+        }
+      ],
+      "name": "updateMinFixedAPR",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_minPositionDuration",
+          "type": "uint256"
+        }
+      ],
+      "name": "updateMinPositionDuration",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_minTimeStretchAPR",
+          "type": "uint256"
+        }
+      ],
+      "name": "updateMinTimeStretchAPR",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_sweepCollector",
+          "type": "address"
+        }
+      ],
+      "name": "updateSweepCollector",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "version",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "stateMutability": "payable",
+      "type": "receive"
+    }
+  ],
+  "args": [
+    {
+      "governance": "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
+      "hyperdriveGovernance": "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
+      "defaultPausers": [
+        "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8"
+      ],
+      "feeCollector": "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
+      "sweepCollector": "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
+      "checkpointDurationResolution": "28800",
+      "minCheckpointDuration": "86400",
+      "maxCheckpointDuration": "86400",
+      "minPositionDuration": "604800",
+      "maxPositionDuration": "2592000",
+      "minFixedAPR": "10000000000000000",
+      "maxFixedAPR": "600000000000000000",
+      "minTimeStretchAPR": "10000000000000000",
+      "maxTimeStretchAPR": "600000000000000000",
+      "minFees": {
+        "curve": "1000000000000000",
+        "flat": "100000000000000",
+        "governanceLP": "150000000000000000",
+        "governanceZombie": "30000000000000000"
+      },
+      "maxFees": {
+        "curve": "10000000000000000",
+        "flat": "1000000000000000",
+        "governanceLP": "150000000000000000",
+        "governanceZombie": "30000000000000000"
+      },
+      "linkerFactory": "0x044e79ce5d6b78633941a1e32ed0ff1c85eee376",
+      "linkerCodeHash": "0x9a69ff3b9a110deacb7d941d71222642f269891c0da9fcc15ec7c63fbd216b3f"
+    },
+    "factory_hardhat"
+  ],
+  "numDeployments": 1
+}

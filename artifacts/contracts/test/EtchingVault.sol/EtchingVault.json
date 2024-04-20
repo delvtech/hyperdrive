@@ -1,0 +1,59 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "EtchingVault",
+  "sourceName": "contracts/test/EtchingVault.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_baseToken_",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_vaultSharePrice_",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "asset",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "convertToAssets",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x60c060405234801561001057600080fd5b506040516101ad3803806101ad83398101604081905261002f91610045565b6001600160a01b0390911660805260a05261007f565b6000806040838503121561005857600080fd5b82516001600160a01b038116811461006f57600080fd5b6020939093015192949293505050565b60805160a05161010b6100a260003960006045015260006094015261010b6000f3fe6080604052348015600f57600080fd5b506004361060325760003560e01c806307a2d13a14603757806338d52e0f14607a575b600080fd5b6067604236600460bd565b507f000000000000000000000000000000000000000000000000000000000000000090565b6040519081526020015b60405180910390f35b60405173ffffffffffffffffffffffffffffffffffffffff7f00000000000000000000000000000000000000000000000000000000000000001681526020016071565b60006020828403121560ce57600080fd5b503591905056fea2646970667358221220ddf02b95e7f74aed69b4585373945386175aab67ea69e0f5014ef3e48e97be8064736f6c63430008140033",
+  "deployedBytecode": "0x6080604052348015600f57600080fd5b506004361060325760003560e01c806307a2d13a14603757806338d52e0f14607a575b600080fd5b6067604236600460bd565b507f000000000000000000000000000000000000000000000000000000000000000090565b6040519081526020015b60405180910390f35b60405173ffffffffffffffffffffffffffffffffffffffff7f00000000000000000000000000000000000000000000000000000000000000001681526020016071565b60006020828403121560ce57600080fd5b503591905056fea2646970667358221220ddf02b95e7f74aed69b4585373945386175aab67ea69e0f5014ef3e48e97be8064736f6c63430008140033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
