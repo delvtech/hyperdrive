@@ -19,6 +19,36 @@ contract HyperdriveMathTest is HyperdriveTest {
 
     uint256 internal constant PRECISION_THRESHOLD = 1e14;
 
+    function test__calculateEffectiveShareReserves() external {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+
+        // Test effective share reserves equal to zero.
+        assertEq(
+            hyperdriveMath.calculateEffectiveShareReserves(
+                1 ether, // shareReserves
+                1 ether // shareAdjustment
+            ),
+            0 ether
+        );
+
+        // Test effective share reserves greater than zero.
+        assertEq(
+            hyperdriveMath.calculateEffectiveShareReserves(
+                2 ether, // shareReserves
+                1 ether // shareAdjustment
+            ),
+            1 ether
+        );
+
+        // Test effective share reserves less than zero
+        vm.expectRevert(IHyperdrive.InsufficientLiquidity.selector);
+        hyperdriveMath.calculateEffectiveShareReserves(
+            1 ether, // shareReserves
+            2 ether // shareAdjustment
+        );
+    }
+
     function test__calcSpotPrice() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
