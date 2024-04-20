@@ -1,4 +1,5 @@
 use ethers::types::I256;
+use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
@@ -55,14 +56,14 @@ impl State {
         checkpoint_exposure: I,
         maybe_conservative_price: Option<FixedPoint>, // TODO: Is there a nice way of abstracting the inner type?
         maybe_max_iterations: Option<usize>,
-    ) -> FixedPoint {
+    ) -> Result<FixedPoint> {
         let budget = budget.into();
         let open_vault_share_price = open_vault_share_price.into();
         let checkpoint_exposure = checkpoint_exposure.into();
 
         // If the budget is zero, then we return early.
         if budget == fixed!(0) {
-            return fixed!(0);
+            return Ok(fixed!(0));
         }
 
         // Calculate the spot price and the open share price. If the open share price
@@ -84,10 +85,10 @@ impl State {
         let absolute_max_deposit =
             match self.calculate_open_short(max_bond_amount, open_vault_share_price) {
                 Ok(d) => d,
-                Err(_) => return max_bond_amount,
+                Err(_) => return Ok(max_bond_amount),
             };
         if absolute_max_deposit <= budget {
-            return max_bond_amount;
+            return Ok(max_bond_amount);
         }
 
         // Use Newton's method to iteratively approach a solution. We use the
@@ -143,8 +144,13 @@ impl State {
             }
 
             // Iteratively update max_bond_amount via newton's method.
-            let derivative =
-                self.short_deposit_derivative(max_bond_amount, spot_price, open_vault_share_price);
+            let derivative = self.short_deposit_derivative(
+                max_bond_amount,
+                spot_price,
+                open_vault_share_price,
+                self.vault_share_price().max(open_vault_share_price),
+                self.vault_share_price(),
+            )?;
             if deposit < target_budget {
                 max_bond_amount += (target_budget - deposit) / derivative;
             } else if deposit > target_budget {
@@ -160,20 +166,18 @@ impl State {
         }
 
         // Verify that the max short satisfies the budget.
-        if budget
-            < self
-                .calculate_open_short(best_valid_max_bond_amount, open_vault_share_price)
-                .unwrap()
-        {
-            panic!("max short exceeded budget");
+        if budget < self.calculate_open_short(best_valid_max_bond_amount, open_vault_share_price)? {
+            return Err(eyre!("max short exceeded budget"));
         }
 
         // Ensure that the max bond amount is within the absolute max bond amount.
         if best_valid_max_bond_amount > absolute_max_bond_amount {
-            panic!("max short bond amount exceeded absolute max bond amount");
+            return Err(eyre!(
+                "max short bond amount exceeded absolute max bond amount"
+            ));
         }
 
-        best_valid_max_bond_amount
+        Ok(best_valid_max_bond_amount)
     }
 
     /// Calculates an initial guess for the max short calculation.
@@ -487,10 +491,8 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use std::panic;
 
     use ethers::types::U256;
-    use eyre::Result;
     use fixed_point_macros::uint256;
     use hyperdrive_wrappers::wrappers::{
         ihyperdrive::Checkpoint, mock_hyperdrive_math::MaxTradeParams,
@@ -528,15 +530,13 @@ mod tests {
             };
             let max_iterations = 7;
             let open_vault_share_price = rng.gen_range(fixed!(0)..=state.vault_share_price());
-            let actual = panic::catch_unwind(|| {
-                state.calculate_max_short(
-                    U256::MAX,
-                    open_vault_share_price,
-                    checkpoint_exposure,
-                    None,
-                    Some(max_iterations),
-                )
-            });
+            let actual = state.calculate_max_short(
+                U256::MAX,
+                open_vault_share_price,
+                checkpoint_exposure,
+                None,
+                Some(max_iterations),
+            );
             match chain
                 .mock_hyperdrive_math()
                 .calculate_max_short(
@@ -628,7 +628,7 @@ mod tests {
                 checkpoint_exposure,
                 None,
                 None,
-            );
+            )?;
             // It's known that global max short is in units of bonds,
             // but we fund bob with this amount regardless, since the amount required
             // for deposit << the global max short number of bonds.
@@ -701,7 +701,7 @@ mod tests {
                 checkpoint_exposure,
                 None,
                 None,
-            );
+            )?;
 
             // Bob opens a max short position. We allow for a very small amount
             // of slippage to account for interest accrual between the time the

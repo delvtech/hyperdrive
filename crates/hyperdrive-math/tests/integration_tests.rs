@@ -116,7 +116,7 @@ pub async fn test_integration_calculate_max_short() -> Result<()> {
             checkpoint_exposure,
             None,
             None,
-        );
+        )?;
         let budget = bob.base();
         let slippage_tolerance = fixed!(0.001e18);
         let max_short = bob.calculate_max_short(Some(slippage_tolerance)).await?;

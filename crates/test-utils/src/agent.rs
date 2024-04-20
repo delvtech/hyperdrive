@@ -1058,7 +1058,7 @@ impl Agent<ChainClient<LocalWallet>, ChaCha8Rng> {
             checkpoint_exposure,
             Some(conservative_price),
             None,
-        ))
+        )?)
     }
 
     // TODO: We'll need to implement helpers that give us the maximum trade

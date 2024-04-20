@@ -9,25 +9,37 @@ impl State {
     /// Calculates the amount of base the trader will need to deposit for a short of
     /// a given size.
     ///
-    /// The short deposit is made up of several components:
-    /// - The long's fixed rate (without considering fees): $\Delta y - c \cdot \Delta
-    /// - The curve fee: $c \cdot (1 - p) \cdot \Delta y$
-    /// - The backpaid short interest: $(c - c_0) \cdot \Delta y$
-    /// - The flat fee: $f \cdot \Delta y$
+    /// For some number of bonds being shorted, $\Delta y$, the short deposit is made up of several components:
+    /// - The short principal: $P_{\text{lp}}(\Delta y)$
+    /// - The curve fee: $\Phi_{c}(\Delta y) = \phi_{c} \cdot ( 1 - p_{0} ) \cdot \Delta y
+    /// - The flat fee: $\Phi_{f}(\Delta y) = \tfrac{1}{c} ( \Delta y \cdot (1 - t) \cdot \phi_{f} )
+    /// - The total value in shares that underlies the bonds: $\tfrac{c_1}{c_0 \cdot c} \Delta y$
     ///
-    /// Putting these components together, we can write out the short deposit
-    /// function as:
+    /// The short principal is given by:
     ///
     /// $$
-    /// D(\Delta y) = \Delta y - (c \cdot P(x) - \phi_{curve} \cdot (1 - p) \cdot \Delta y)
-    ///        + (c - c_0) \cdot \tfrac{\Delta y}{c_0} + \phi_{flat} \cdot \Delta y \\
-    ///      = \tfrac{c}{c_0} \cdot \Delta y - (c \cdot P(\Delta y) - \phi_{curve} \cdot (1 - p) \cdot \Delta y)
-    ///        + \phi_{flat} \cdot \Delta y
+    /// P_{\text{lp}}(\Delta y) = z - \tfrac{1}{\mu}
+    ///   \cdot (\tfrac{\mu}{c} \cdot (k - (y + \Delta y)^{1 - t_s}))^{\tfrac{1}{1 - t_s}}
     /// $$
     ///
-    /// $\Delta y$ is the number of bonds being shorted and $P(\Delta y)$ is the amount of
-    /// shares the curve says the LPs need to pay the shorts (i.e. the LP
-    /// principal).
+    /// The short proceeds is given by
+    ///
+    /// $$
+    /// P_{\text{short}}(\Delta y) = \tfrac{\Delta y \cdot c_{1}}{c_{0} \cdot c}
+    ///   + \tfrac{\Delta y}{c} \cdot \Phi_{f}(\Delta y)
+    /// $$
+    ///
+    /// And finally the short deposit in base is:
+    ///
+    /// $$
+    ///     D(\Delta y)=
+    /// \begin{cases}
+    ///     c \cdot \left( P_{\text{short}}(\Delta y) - P_{\text{lp}}(\Delta y)
+    ///       + \Phi_{c}(\Delta y) \right),
+    ///       & \text{if } P_{\text{short}} > P_{\text{lp}}(\Delta y) - \Phi_{c}(\Delta y) \\
+    ///     0,              & \text{otherwise}
+    /// \end{cases}
+    /// $$
     pub fn calculate_open_short(
         &self,
         bond_amount: FixedPoint,
@@ -91,6 +103,65 @@ impl State {
         Ok(base_deposit)
     }
 
+    /// Calculates the derivative of the short deposit function with respect to the
+    /// short amount. This allows us to use Newton's method to approximate the
+    /// maximum short that a trader can open.
+    ///
+    /// Using this, calculating $D'(\Delta y)$ is straightforward:
+    ///
+    /// $$
+    /// D'(\Delta y) = c \cdot (
+    ///   P^{\prime}_{\text{short}}(\Delta y)
+    ///   - P^{\prime}_{\text{lp}}(\Delta y)
+    ///   + \Phi^{\prime}_{c}(\Delta y)
+    /// )
+    /// $$
+    pub fn short_deposit_derivative(
+        &self,
+        bond_amount: FixedPoint,
+        spot_price: FixedPoint,
+        open_vault_share_price: FixedPoint,
+        close_vault_share_price: FixedPoint,
+        vault_share_price: FixedPoint,
+    ) -> Result<FixedPoint> {
+        let flat_fee = self.close_short_flat_fee(
+            bond_amount,
+            self.position_duration().into(),
+            self.position_duration().into(),
+        );
+
+        // Short circuit the derivative if the forward function returns 0.
+        if self.calculate_short_proceeds_up(
+            bond_amount,
+            self.calculate_short_principal(bond_amount)?
+                - self.open_short_curve_fee(bond_amount, spot_price),
+            open_vault_share_price,
+            close_vault_share_price,
+            vault_share_price,
+            flat_fee,
+        ) == fixed!(0)
+        {
+            return Ok(fixed!(0));
+        }
+
+        // Flat fee derivative = (1 - t) * phi_f / c
+        // Since t=0 when closing at maturity we can use phi_f / c
+        let flat_fee_derivative = self.flat_fee() / vault_share_price;
+        let curve_fee_derivative = self.curve_fee() * (fixed!(1e18) - spot_price);
+        let short_principal_derivative = self.calculate_short_principal_derivative(bond_amount);
+        let short_proceeds_derivative = self.calculate_short_proceeds_derivative(
+            bond_amount,
+            open_vault_share_price,
+            close_vault_share_price,
+            vault_share_price,
+            flat_fee,
+            flat_fee_derivative,
+        );
+
+        Ok(vault_share_price
+            * (short_proceeds_derivative - short_principal_derivative + curve_fee_derivative))
+    }
+
     /// Calculates the proceeds in shares of closing a short position. This
     /// takes into account the trading profits, the interest that was
     /// earned by the short, the flat fee the short pays, and the amount of
@@ -98,13 +169,7 @@ impl State {
     /// short's proceeds in base is given by:
     ///
     /// $$
-    /// \begin{aligned}
-    /// proceeds & = (1 + \text{flat_fee}) \cdot \Delta y - c \cdot \Delta z
-    ///                 + (c1 - c_0) \cdot (\Delta y / c_0) \\
-    ///          & = (1 + \text{flat_fee}) \cdot \Delta y - c \cdot \Delta z
-    ///                 + (c1 / c_0) \cdot \Delta y - \Delta y \\
-    ///          & = (\frac{c1}{c_0} + \text{flat_fee}) \cdot \Delta y - c \cdot dz
-    /// \end{aligned}
+    /// proceeds = (\frac{c1}{c_0} + \text{flat_fee}) \cdot \frac{\Delta y}{c} - dz
     /// $$
     ///
     /// We convert the proceeds to shares by dividing by the current vault
@@ -149,50 +214,26 @@ impl State {
         }
     }
 
-    /// A helper function used in calculating the short deposit.
-    ///
-    /// This calculates the inner component of the `short_principal` calculation,
-    /// which makes the `short_principal` and `short_deposit_derivative` calculations
-    /// easier. $\theta(x)$ is defined as:
+    /// Returns the derivative of the short proceeds calculation, assuming that the interest is
+    /// less negative than the trading profits and margin released.
     ///
     /// $$
-    /// \theta(x) = \tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s})
+    /// P^{\prime}_{\text{short}}(\Delta y) = \tfrac{c_{1}}{c_{0} \cdot c}
+    /// + \tfrac{\Phi_{f}(\Delta y)}{c}
+    /// + \tfrac{\Delta y \cdot \Phi^{\prime}_{f}(\Delta y)}{c}
     /// $$
-    fn theta(&self, bond_amount: FixedPoint) -> FixedPoint {
-        (self.initial_vault_share_price() / self.vault_share_price())
-            * (self.k_down()
-                - (self.bond_reserves() + bond_amount).pow(fixed!(1e18) - self.time_stretch()))
-    }
-
-    /// Calculates the derivative of the short deposit function with respect to the
-    /// short amount. This allows us to use Newton's method to approximate the
-    /// maximum short that a trader can open.
-    ///
-    /// Using this, calculating $D'(x)$ is straightforward:
-    ///
-    /// $$
-    /// D'(x) = \tfrac{c}{c_0} - (c \cdot P'(x) - \phi_{curve} \cdot (1 - p)) + \phi_{flat}
-    /// $$
-    ///
-    /// $$
-    /// P'(x) = \tfrac{1}{c} \cdot (y + x)^{-t_s} \cdot \left(\tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s}) \right)^{\tfrac{t_s}{1 - t_s}}
-    /// $$
-    pub fn short_deposit_derivative(
+    pub fn calculate_short_proceeds_derivative(
         &self,
         bond_amount: FixedPoint,
-        spot_price: FixedPoint,
         open_vault_share_price: FixedPoint,
+        close_vault_share_price: FixedPoint,
+        vault_share_price: FixedPoint,
+        flat_fee: FixedPoint,
+        flat_fee_derivative: FixedPoint,
     ) -> FixedPoint {
-        // NOTE: The order of additions and subtractions is important to avoid underflows.
-        let payment_factor = (fixed!(1e18)
-            / (self.bond_reserves() + bond_amount).pow(self.time_stretch()))
-            * self
-                .theta(bond_amount)
-                .pow(self.time_stretch() / (fixed!(1e18) - self.time_stretch()));
-        (self.vault_share_price() / open_vault_share_price)
-            + self.flat_fee()
-            + self.curve_fee() * (fixed!(1e18) - spot_price)
-            - payment_factor
+        close_vault_share_price / (open_vault_share_price * vault_share_price)
+            + flat_fee / vault_share_price
+            + bond_amount * flat_fee_derivative / vault_share_price
     }
 
     /// Calculates the amount of short principal that the LPs need to pay to back a
@@ -204,21 +245,24 @@ impl State {
     /// $$
     /// k = \tfrac{c}{\mu} \cdot (\mu \cdot (z - P(\Delta y)))^{1 - t_s} + (y + \Delta y)^{1 - t_s} \\
     /// \implies \\
-    /// P(\Delta y) = z - \tfrac{1}{\mu} \cdot (\tfrac{\mu}{c} \cdot (k - (y + \Delta y)^{1 - t_s}))^{\tfrac{1}{1 - t_s}}
+    /// P_{\text{lp}}(\Delta y) = z - \tfrac{1}{\mu} \cdot (
+    ///   \tfrac{\mu}{c}
+    ///   \cdot (k - (y + \Delta y)^{1 - t_s})
+    /// )^{\tfrac{1}{1 - t_s}}
     /// $$
     pub fn calculate_short_principal(&self, bond_amount: FixedPoint) -> Result<FixedPoint> {
         self.calculate_shares_out_given_bonds_in_down_safe(bond_amount)
     }
 
-    /// Calculates the derivative of the short principal $P(\Delta y)$ w.r.t. the amount of
-    /// bonds that are shorted $\Delta y$.
+    /// Calculates the derivative of the short principal $P_{\text{lp}}(\Delta y)$
+    /// w.r.t. the amount of bonds that are shorted $\Delta y$.
     ///
     /// The derivative is calculated as:
     ///
     /// $$
-    /// P'(\Delta y) = \tfrac{1}{c} \cdot (y + \Delta y)^{-t_s} \cdot \left(
-    ///             \tfrac{\mu}{c} \cdot (k - (y + \Delta y)^{1 - t_s})
-    ///         \right)^{\tfrac{t_s}{1 - t_s}}
+    /// P^{\prime}_{\text{lp}}(\Delta y) = \tfrac{1}{c} \cdot (y + \Delta y)^{-t_s} \cdot \left(
+    ///     \tfrac{\mu}{c} \cdot (k - (y + \Delta y)^{1 - t_s})
+    ///   \right)^{\tfrac{t_s}{1 - t_s}}
     /// $$
     pub fn calculate_short_principal_derivative(&self, bond_amount: FixedPoint) -> FixedPoint {
         let lhs = fixed!(1e18)
@@ -235,7 +279,7 @@ impl State {
         lhs * rhs
     }
 
-    /// Calculates the spot price after opening a Hyperdrive short.
+    /// Calculates the spot price after opening a short.
     pub fn calculate_spot_price_after_short(
         &self,
         bond_amount: FixedPoint,
@@ -243,12 +287,7 @@ impl State {
     ) -> Result<FixedPoint> {
         let shares_amount = match maybe_base_amount {
             Some(base_amount) => base_amount / self.vault_share_price(),
-            None => {
-                let spot_price = self.calculate_spot_price();
-                self.calculate_shares_out_given_bonds_in_down(bond_amount)
-                    - self.open_short_curve_fee(bond_amount, spot_price)
-                    + self.open_short_governance_fee(bond_amount, spot_price)
-            }
+            None => self.calculate_open_short(bond_amount, self.vault_share_price())?,
         };
         let mut state: State = self.clone();
         state.info.bond_reserves += bond_amount.into();
@@ -316,10 +355,7 @@ impl State {
 mod tests {
     use std::panic;
 
-    use ethers::{
-        signers::LocalWallet,
-        types::{I256, U256},
-    };
+    use ethers::{signers::LocalWallet, types::U256};
     use fixed_point_macros::{fixed, int256, uint256};
     use hyperdrive_wrappers::wrappers::{
         ihyperdrive::{Checkpoint, Options},
@@ -332,6 +368,7 @@ mod tests {
         chain::{ChainClient, TestChain},
         constants::{BOB, FAST_FUZZ_RUNS, FUZZ_RUNS},
     };
+    use tracing_test::traced_test;
 
     use super::*;
 
@@ -481,9 +518,9 @@ mod tests {
         Ok(())
     }
 
-    /// This test empirically tests the derivative of `short_deposit_derivative`
-    /// by calling `calculate_open_short` at two points and comparing the empirical
-    /// result with the output of `short_deposit_derivative`.
+    /// This test empirically tests `short_deposit_derivative` by calling
+    /// `calculate_open_short` at two points and comparing the empirical result
+    /// with the output of `short_deposit_derivative`.
     #[traced_test]
     #[tokio::test]
     async fn fuzz_short_deposit_derivative() -> Result<()> {
@@ -498,46 +535,42 @@ mod tests {
             let state = rng.gen::<State>();
             let amount = rng.gen_range(fixed!(10e18)..=fixed!(10_000_000e18));
 
-            let p1_result = std::panic::catch_unwind(|| {
-                state.calculate_open_short(
-                    amount - empirical_derivative_epsilon,
-                    state.vault_share_price(),
-                )
-            });
+            let p1_result = state.calculate_open_short(
+                amount - empirical_derivative_epsilon,
+                state.vault_share_price(),
+            );
             let p1;
             let p2;
             match p1_result {
                 // If the amount results in the pool being insolvent, skip this iteration
-                Ok(p) => match p {
-                    Ok(p) => p1 = p,
-                    Err(_) => continue,
-                },
+                Ok(p) => p1 = p,
                 Err(_) => continue,
             }
 
-            let p2_result = std::panic::catch_unwind(|| {
-                state.calculate_open_short(
-                    amount + empirical_derivative_epsilon,
-                    state.vault_share_price(),
-                )
-            });
+            let p2_result = state.calculate_open_short(
+                amount + empirical_derivative_epsilon,
+                state.vault_share_price(),
+            );
             match p2_result {
                 // If the amount results in the pool being insolvent, skip this iteration
-                Ok(p) => match p {
-                    Ok(p) => p2 = p,
-                    Err(_) => continue,
-                },
+                Ok(p) => p2 = p,
                 Err(_) => continue,
             }
+
             // Sanity check
             assert!(p2 > p1);
 
+            // Compute the derivative.
             let empirical_derivative = (p2 - p1) / (fixed!(2e18) * empirical_derivative_epsilon);
+
+            // Setting open, close, and current vault share price to be equal assumes 0% variable yield.
             let short_deposit_derivative = state.short_deposit_derivative(
                 amount,
                 state.calculate_spot_price(),
                 state.vault_share_price(),
-            );
+                state.vault_share_price(),
+                state.vault_share_price(),
+            )?;
 
             let derivative_diff;
             if short_deposit_derivative >= empirical_derivative {
@@ -724,15 +757,13 @@ mod tests {
             };
             let max_iterations = 7;
             let open_vault_share_price = rng.gen_range(fixed!(0)..=state.vault_share_price());
-            let max_trade = panic::catch_unwind(|| {
-                state.calculate_max_short(
-                    U256::MAX,
-                    open_vault_share_price,
-                    checkpoint_exposure,
-                    None,
-                    Some(max_iterations),
-                )
-            });
+            let max_trade = state.calculate_max_short(
+                U256::MAX,
+                open_vault_share_price,
+                checkpoint_exposure,
+                None,
+                Some(max_iterations),
+            );
             // Since we're fuzzing it's possible that the max can fail.
             // We're only going to use it in this test if it succeeded.
             match max_trade {
