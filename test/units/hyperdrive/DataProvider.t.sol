@@ -4,7 +4,7 @@ pragma solidity 0.8.20;
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 
 contract HyperdriveDataProviderTest is HyperdriveTest {
-    function testLoadSlots() public {
+    function testLoadSlots() public view {
         uint256[] memory slots = new uint256[](1);
         slots[0] = 10;
         bytes32[] memory values = hyperdrive.load(slots);

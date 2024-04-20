@@ -25,37 +25,13 @@ contract FactoryDeploymentConfig is ParseUtils {
         FactoryTokens tokens;
     }
 
-    function loadFromTOML(
-        FactoryDeployment storage f,
-        string memory toml
-    ) internal {
-        f.rpcName = toml.readString("$.rpcName");
-        f.chainId = toml.readUint("$.chainId");
-        _parseFactoryAccessFromTOML(f, toml);
-        _parseFactoryBoundsFromTOML(f, toml);
-        _parseFactoryTokensFromTOML(f, toml);
-    }
-
-    /// @dev Priviledged account specification.
+    /// @dev Privileged account specification.
     struct FactoryAccess {
         address admin;
         address governance;
         address[] defaultPausers;
         address feeCollector;
         address sweepCollector;
-    }
-
-    function _parseFactoryAccessFromTOML(
-        FactoryDeployment storage f,
-        string memory toml
-    ) internal {
-        f.access = FactoryAccess({
-            admin: toml.readAddress("$.access.admin"),
-            governance: toml.readAddress("$.access.governance"),
-            defaultPausers: toml.readAddressArray("$.access.defaultPausers"),
-            feeCollector: toml.readAddress("$.access.feeCollector"),
-            sweepCollector: toml.readAddress("$.access.sweepCollector")
-        });
     }
 
     /// @dev Parameter ranges for the factory's pools.
@@ -73,10 +49,26 @@ contract FactoryDeploymentConfig is ParseUtils {
         IHyperdrive.Fees maxFees;
     }
 
-    function _parseFactoryBoundsFromTOML(
+    struct FactoryTokens {
+        address ezeth;
+        address lseth;
+        address reth;
+        address steth;
+    }
+
+    function loadFromTOML(
         FactoryDeployment storage f,
         string memory toml
     ) internal {
+        f.rpcName = toml.readString("$.rpcName");
+        f.chainId = toml.readUint("$.chainId");
+        f.access = FactoryAccess({
+            admin: toml.readAddress("$.access.admin"),
+            governance: toml.readAddress("$.access.governance"),
+            defaultPausers: toml.readAddressArray("$.access.defaultPausers"),
+            feeCollector: toml.readAddress("$.access.feeCollector"),
+            sweepCollector: toml.readAddress("$.access.sweepCollector")
+        });
         f.bounds = FactoryBounds({
             checkpointDurationResolution: parseUintWithUnits(
                 toml,
@@ -127,19 +119,6 @@ contract FactoryDeploymentConfig is ParseUtils {
                 )
             })
         });
-    }
-
-    struct FactoryTokens {
-        address ezeth;
-        address lseth;
-        address reth;
-        address steth;
-    }
-
-    function _parseFactoryTokensFromTOML(
-        FactoryDeployment storage f,
-        string memory toml
-    ) internal {
         f.tokens = FactoryTokens({
             ezeth: parseWithDefault(toml, "$.tokens.ezeth", address(0)),
             lseth: parseWithDefault(toml, "$.tokens.lseth", address(0)),

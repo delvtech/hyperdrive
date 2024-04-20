@@ -1461,7 +1461,7 @@ contract HyperdriveMathTest is HyperdriveTest {
 
     function test__calculateTimeRemainingScaledAndUnscaled(
         uint256 maturityTime
-    ) external {
+    ) external view {
         maturityTime = maturityTime.normalizeToRange(
             block.timestamp,
             block.timestamp * 1e6

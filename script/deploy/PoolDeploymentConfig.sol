@@ -28,25 +28,6 @@ contract PoolDeploymentConfig is ParseUtils {
         IHyperdrive.Options options;
     }
 
-    function loadFromTOML(
-        PoolDeployment storage p,
-        string memory toml
-    ) internal {
-        p.rpcName = toml.readString("$.rpcName");
-        p.chainId = toml.readUint("$.chainId");
-        string memory currentKey = "$";
-        _parsePoolInitializationFromTOML(p, toml, currentKey);
-        _parsePoolTokensFromTOML(p, toml, currentKey);
-        _parsePoolBoundsFromTOML(p, toml, currentKey);
-        _parsePoolAccessFromTOML(p, toml, currentKey);
-        _parsePoolFeesFromTOML(p, toml, currentKey);
-        _parsePoolOptionsFromTOML(p, toml, currentKey);
-        p.fees.flat = p.fees.flat.mulDivDown(
-            p.bounds.positionDuration,
-            365 days
-        );
-    }
-
     struct PoolInitialization {
         string name;
         address factory;
@@ -59,11 +40,33 @@ contract PoolDeploymentConfig is ParseUtils {
         uint256 timeStretchAPR;
     }
 
-    function _parsePoolInitializationFromTOML(
+    struct PoolTokens {
+        address base;
+        address shares;
+    }
+
+    struct PoolBounds {
+        uint256 minimumShareReserves;
+        uint256 minimumTransactionAmount;
+        uint256 positionDuration;
+        uint256 checkpointDuration;
+        uint256 timeStretch;
+    }
+
+    struct PoolAccess {
+        address admin;
+        address governance;
+        address feeCollector;
+        address sweepCollector;
+    }
+
+    function loadFromTOML(
         PoolDeployment storage p,
-        string memory toml,
-        string memory baseKey
+        string memory toml
     ) internal {
+        p.rpcName = toml.readString("$.rpcName");
+        p.chainId = toml.readUint("$.chainId");
+        string memory baseKey = "$";
         uint256 fixedAPR = parseUintWithUnits(
             toml,
             string.concat(baseKey, ".fixedAPR")
@@ -91,18 +94,6 @@ contract PoolDeploymentConfig is ParseUtils {
                 fixedAPR
             )
         });
-    }
-
-    struct PoolTokens {
-        address base;
-        address shares;
-    }
-
-    function _parsePoolTokensFromTOML(
-        PoolDeployment storage p,
-        string memory toml,
-        string memory baseKey
-    ) internal {
         if (vm.keyExistsToml(toml, string.concat(baseKey, ".tokens"))) {
             p.tokens = PoolTokens({
                 base: toml.readAddress(string.concat(baseKey, ".tokens.base")),
@@ -111,21 +102,6 @@ contract PoolDeploymentConfig is ParseUtils {
                 )
             });
         }
-    }
-
-    struct PoolBounds {
-        uint256 minimumShareReserves;
-        uint256 minimumTransactionAmount;
-        uint256 positionDuration;
-        uint256 checkpointDuration;
-        uint256 timeStretch;
-    }
-
-    function _parsePoolBoundsFromTOML(
-        PoolDeployment storage p,
-        string memory toml,
-        string memory baseKey
-    ) internal {
         p.bounds = PoolBounds({
             minimumShareReserves: parseUintWithUnits(
                 toml,
@@ -149,20 +125,6 @@ contract PoolDeploymentConfig is ParseUtils {
                 0
             )
         });
-    }
-
-    struct PoolAccess {
-        address admin;
-        address governance;
-        address feeCollector;
-        address sweepCollector;
-    }
-
-    function _parsePoolAccessFromTOML(
-        PoolDeployment storage p,
-        string memory toml,
-        string memory baseKey
-    ) internal {
         baseKey = string.concat(baseKey, ".access");
         p.access = PoolAccess({
             admin: toml.readAddress(string.concat(baseKey, ".admin")),
@@ -174,13 +136,6 @@ contract PoolDeploymentConfig is ParseUtils {
                 string.concat(baseKey, ".sweepCollector")
             )
         });
-    }
-
-    function _parsePoolFeesFromTOML(
-        PoolDeployment storage p,
-        string memory toml,
-        string memory baseKey
-    ) internal {
         p.fees = IHyperdrive.Fees({
             curve: parseUintWithUnits(
                 toml,
@@ -199,13 +154,10 @@ contract PoolDeploymentConfig is ParseUtils {
                 string.concat(baseKey, ".fees.governanceZombie")
             )
         });
-    }
-
-    function _parsePoolOptionsFromTOML(
-        PoolDeployment storage p,
-        string memory toml,
-        string memory baseKey
-    ) internal {
+        p.fees.flat = p.fees.flat.mulDivDown(
+            p.bounds.positionDuration,
+            365 days
+        );
         p.options = IHyperdrive.Options({
             destination: toml.readAddress(
                 string.concat(baseKey, ".options.destination")
