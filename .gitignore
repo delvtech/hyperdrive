@@ -49,3 +49,6 @@ crash_report.json
 # Environment files
 *.env
 !*sample.env
+
+# Hardhat Artifacts
+artifacts
