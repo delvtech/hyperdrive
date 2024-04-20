@@ -44,14 +44,9 @@
     "solhint": "^4.5.2",
     "solhint-plugin-prettier": "^0.1.0",
     "typescript-json-schema": "^0.63.0",
-    "viem": "^2.9.16"
+    "viem": "^2.7.6"
   },
   "dependencies": {
     "yarn": "^1.22.19"
-  },
-  "module": "index.ts",
-  "type": "module",
-  "peerDependencies": {
-    "typescript": "^5.0.0"
   }
 }

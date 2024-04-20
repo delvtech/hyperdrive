@@ -7,4 +7,3 @@ forge-cache/
 node_modules/
 out/
 coverage_report/
-*.toml
