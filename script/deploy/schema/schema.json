@@ -1,289 +1,282 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "definitions": {
-        "uint256": {
-            "anyOf": [
-                {
-                    "properties": {
-                        "unit": {
-                            "description": "Unit to scale the value by.",
-                            "enum": [
-                                "bips",
-                                "days",
-                                "ether",
-                                "gwei",
-                                "hours",
-                                "minutes",
-                                "weeks"
-                            ],
-                            "type": "string"
-                        },
-                        "value": {
-                            "description": "Value to be scaled by the unit.",
-                            "type": "number"
-                        }
-                    },
-                    "type": "object"
-                },
-                {
-                    "type": "number"
-                }
-            ],
-            "description": "Numbers can be represented by either a single key as a raw value,\nor by the keys 'value' and 'unit' to scale the input by the configured unit."
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "uint256": {
+      "anyOf": [
+        {
+          "properties": {
+            "unit": {
+              "description": "Unit to scale the value by.",
+              "enum": [
+                "bips",
+                "days",
+                "ether",
+                "gwei",
+                "hours",
+                "minutes",
+                "weeks"
+              ],
+              "type": "string"
+            },
+            "value": {
+              "description": "Value to be scaled by the unit.",
+              "type": "number"
+            }
+          },
+          "type": "object"
+        },
+        {
+          "type": "number"
         }
+      ],
+      "description": "Numbers can be represented by either a single key as a raw value,\nor by the keys 'value' and 'unit' to scale the input by the configured unit."
+    }
+  },
+  "properties": {
+    "admin": {
+      "pattern": "^0x.*$",
+      "type": "string"
     },
-    "properties": {
-        "admin": {
+    "chainId": {
+      "type": "number"
+    },
+    "checkpointDuration": {
+      "properties": {
+        "max": {
+          "$ref": "#/definitions/uint256"
+        },
+        "min": {
+          "$ref": "#/definitions/uint256"
+        },
+        "resolution": {
+          "$ref": "#/definitions/uint256"
+        }
+      },
+      "type": "object"
+    },
+    "defaultPausers": {
+      "items": {
+        "pattern": "^0x.*$",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "feeCollector": {
+      "pattern": "^0x.*$",
+      "type": "string"
+    },
+    "fees": {
+      "properties": {
+        "curve": {
+          "properties": {
+            "max": {
+              "$ref": "#/definitions/uint256"
+            },
+            "min": {
+              "$ref": "#/definitions/uint256"
+            }
+          },
+          "type": "object"
+        },
+        "flat": {
+          "properties": {
+            "max": {
+              "$ref": "#/definitions/uint256"
+            },
+            "min": {
+              "$ref": "#/definitions/uint256"
+            }
+          },
+          "type": "object"
+        },
+        "governanceLP": {
+          "properties": {
+            "max": {
+              "$ref": "#/definitions/uint256"
+            },
+            "min": {
+              "$ref": "#/definitions/uint256"
+            }
+          },
+          "type": "object"
+        },
+        "governanceZombie": {
+          "properties": {
+            "max": {
+              "$ref": "#/definitions/uint256"
+            },
+            "min": {
+              "$ref": "#/definitions/uint256"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "fixedAPR": {
+      "properties": {
+        "max": {
+          "$ref": "#/definitions/uint256"
+        },
+        "min": {
+          "$ref": "#/definitions/uint256"
+        }
+      },
+      "type": "object"
+    },
+    "hyperdriveGovernance": {
+      "pattern": "^0x.*$",
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "pools": {
+      "items": {
+        "properties": {
+          "contribution": {
+            "$ref": "#/definitions/uint256",
+            "description": "Initial contribution to the pool."
+          },
+          "deploymentId": {
+            "description": "ID for the deployment as a hex string.",
             "pattern": "^0x.*$",
             "type": "string"
-        },
-        "chainId": {
-            "type": "number"
-        },
-        "checkpointDuration": {
+          },
+          "durations": {
             "properties": {
-                "max": {
-                    "$ref": "#/definitions/uint256"
-                },
-                "min": {
-                    "$ref": "#/definitions/uint256"
-                },
-                "resolution": {
-                    "$ref": "#/definitions/uint256"
-                }
+              "checkpoint": {
+                "$ref": "#/definitions/uint256"
+              },
+              "position": {
+                "$ref": "#/definitions/uint256"
+              }
             },
             "type": "object"
-        },
-        "defaultPausers": {
-            "items": {
+          },
+          "fees": {
+            "properties": {
+              "curve": {
+                "$ref": "#/definitions/uint256"
+              },
+              "flat": {
+                "$ref": "#/definitions/uint256"
+              },
+              "governanceLP": {
+                "$ref": "#/definitions/uint256"
+              },
+              "governanceZombie": {
+                "$ref": "#/definitions/uint256"
+              }
+            },
+            "type": "object"
+          },
+          "fixedAPR": {
+            "$ref": "#/definitions/uint256",
+            "description": "Initial fixed rate for the pool."
+          },
+          "name": {
+            "description": "Name of the pool",
+            "type": "string"
+          },
+          "options": {
+            "properties": {
+              "asBase": {
+                "type": "boolean"
+              },
+              "destination": {
                 "pattern": "^0x.*$",
                 "type": "string"
+              },
+              "extraData": {
+                "pattern": "^0x.*$",
+                "type": "string"
+              }
             },
-            "type": "array"
-        },
-        "feeCollector": {
+            "type": "object"
+          },
+          "poolType": {
+            "description": "Type of pool that is being deployed.",
+            "enum": ["ERC4626", "EzETH", "LsETH", "RETH", "StETH"],
+            "type": "string"
+          },
+          "salt": {
+            "description": "Salt for the deployment as a hex string.",
             "pattern": "^0x.*$",
             "type": "string"
-        },
-        "fees": {
+          },
+          "shareReserves": {
             "properties": {
-                "curve": {
-                    "properties": {
-                        "max": {
-                            "$ref": "#/definitions/uint256"
-                        },
-                        "min": {
-                            "$ref": "#/definitions/uint256"
-                        }
-                    },
-                    "type": "object"
-                },
-                "flat": {
-                    "properties": {
-                        "max": {
-                            "$ref": "#/definitions/uint256"
-                        },
-                        "min": {
-                            "$ref": "#/definitions/uint256"
-                        }
-                    },
-                    "type": "object"
-                },
-                "governanceLP": {
-                    "properties": {
-                        "max": {
-                            "$ref": "#/definitions/uint256"
-                        },
-                        "min": {
-                            "$ref": "#/definitions/uint256"
-                        }
-                    },
-                    "type": "object"
-                },
-                "governanceZombie": {
-                    "properties": {
-                        "max": {
-                            "$ref": "#/definitions/uint256"
-                        },
-                        "min": {
-                            "$ref": "#/definitions/uint256"
-                        }
-                    },
-                    "type": "object"
-                }
+              "min": {
+                "$ref": "#/definitions/uint256"
+              }
             },
             "type": "object"
-        },
-        "fixedAPR": {
+          },
+          "timeStretch": {
+            "$ref": "#/definitions/uint256",
+            "description": "Usually set to 0 since this will be configured by the deployer."
+          },
+          "timeStretchAPR": {
+            "$ref": "#/definitions/uint256"
+          },
+          "tokens": {
+            "description": "Tokens used in the vault.",
             "properties": {
-                "max": {
-                    "$ref": "#/definitions/uint256"
-                },
-                "min": {
-                    "$ref": "#/definitions/uint256"
-                }
+              "base": {
+                "pattern": "^0x.*$",
+                "type": "string"
+              },
+              "shares": {
+                "pattern": "^0x.*$",
+                "type": "string"
+              }
             },
             "type": "object"
-        },
-        "hyperdriveGovernance": {
-            "pattern": "^0x.*$",
-            "type": "string"
-        },
-        "name": {
-            "type": "string"
-        },
-        "pools": {
-            "items": {
-                "properties": {
-                    "contribution": {
-                        "$ref": "#/definitions/uint256",
-                        "description": "Initial contribution to the pool."
-                    },
-                    "deploymentId": {
-                        "description": "ID for the deployment as a hex string.",
-                        "pattern": "^0x.*$",
-                        "type": "string"
-                    },
-                    "durations": {
-                        "properties": {
-                            "checkpoint": {
-                                "$ref": "#/definitions/uint256"
-                            },
-                            "position": {
-                                "$ref": "#/definitions/uint256"
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "fees": {
-                        "properties": {
-                            "curve": {
-                                "$ref": "#/definitions/uint256"
-                            },
-                            "flat": {
-                                "$ref": "#/definitions/uint256"
-                            },
-                            "governanceLP": {
-                                "$ref": "#/definitions/uint256"
-                            },
-                            "governanceZombie": {
-                                "$ref": "#/definitions/uint256"
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "fixedAPR": {
-                        "$ref": "#/definitions/uint256",
-                        "description": "Initial fixed rate for the pool."
-                    },
-                    "name": {
-                        "description": "Name of the pool",
-                        "type": "string"
-                    },
-                    "options": {
-                        "properties": {
-                            "asBase": {
-                                "type": "boolean"
-                            },
-                            "destination": {
-                                "pattern": "^0x.*$",
-                                "type": "string"
-                            },
-                            "extraData": {
-                                "pattern": "^0x.*$",
-                                "type": "string"
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "poolType": {
-                        "description": "Type of pool that is being deployed.",
-                        "enum": [
-                            "ERC4626",
-                            "EzETH",
-                            "LsETH",
-                            "RETH",
-                            "StETH"
-                        ],
-                        "type": "string"
-                    },
-                    "salt": {
-                        "description": "Salt for the deployment as a hex string.",
-                        "pattern": "^0x.*$",
-                        "type": "string"
-                    },
-                    "shareReserves": {
-                        "properties": {
-                            "min": {
-                                "$ref": "#/definitions/uint256"
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "timeStretch": {
-                        "$ref": "#/definitions/uint256",
-                        "description": "Usually set to 0 since this will be configured by the deployer."
-                    },
-                    "timeStretchAPR": {
-                        "$ref": "#/definitions/uint256"
-                    },
-                    "tokens": {
-                        "description": "Tokens used in the vault.",
-                        "properties": {
-                            "base": {
-                                "pattern": "^0x.*$",
-                                "type": "string"
-                            },
-                            "shares": {
-                                "pattern": "^0x.*$",
-                                "type": "string"
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "transactionAmounts": {
-                        "properties": {
-                            "min": {
-                                "$ref": "#/definitions/uint256"
-                            }
-                        },
-                        "type": "object"
-                    }
-                },
-                "type": "object"
-            },
-            "type": "array"
-        },
-        "positionDuration": {
+          },
+          "transactionAmounts": {
             "properties": {
-                "max": {
-                    "$ref": "#/definitions/uint256"
-                },
-                "min": {
-                    "$ref": "#/definitions/uint256"
-                }
+              "min": {
+                "$ref": "#/definitions/uint256"
+              }
             },
             "type": "object"
+          }
         },
-        "profile": {
-            "type": "string"
-        },
-        "sweepCollector": {
-            "pattern": "^0x.*$",
-            "type": "string"
-        },
-        "timeStretchAPR": {
-            "properties": {
-                "max": {
-                    "$ref": "#/definitions/uint256"
-                },
-                "min": {
-                    "$ref": "#/definitions/uint256"
-                }
-            },
-            "type": "object"
-        }
+        "type": "object"
+      },
+      "type": "array"
     },
-    "type": "object"
+    "positionDuration": {
+      "properties": {
+        "max": {
+          "$ref": "#/definitions/uint256"
+        },
+        "min": {
+          "$ref": "#/definitions/uint256"
+        }
+      },
+      "type": "object"
+    },
+    "profile": {
+      "type": "string"
+    },
+    "sweepCollector": {
+      "pattern": "^0x.*$",
+      "type": "string"
+    },
+    "timeStretchAPR": {
+      "properties": {
+        "max": {
+          "$ref": "#/definitions/uint256"
+        },
+        "min": {
+          "$ref": "#/definitions/uint256"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "type": "object"
 }
-

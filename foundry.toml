@@ -31,7 +31,7 @@
 
 [profile.production]
   # strict warnings
-  # deny_warnings=true
+  deny_warnings=true
   # optimizer settings
   optimizer     =true
   optimizer_runs=10000000 # 10 million runs
