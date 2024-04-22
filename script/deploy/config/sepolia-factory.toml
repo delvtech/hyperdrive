@@ -1,4 +1,4 @@
-#:schema ../schema/schema.json
+#:schema ../schema/factory-schema.json
 
 rpcName = "sepolia"
 chainId = 11155111

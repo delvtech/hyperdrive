@@ -127,7 +127,7 @@ contract Deployer is Script, PoolDeploymentConfig {
             deployment.init.coordinator
         ).name();
 
-        // Check whether the pool is an ERC4626
+        // If the pool is an ERC4626 make some instance-specific preparations.
         if (
             strEquals(
                 summary.coordinatorName,

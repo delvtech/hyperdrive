@@ -1,0 +1,198 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+        "uint256": {
+            "anyOf": [
+                {
+                    "properties": {
+                        "unit": {
+                            "description": "Unit to scale the value by.",
+                            "enum": [
+                                "bips",
+                                "days",
+                                "ether",
+                                "gwei",
+                                "hours",
+                                "minutes",
+                                "weeks"
+                            ],
+                            "type": "string"
+                        },
+                        "value": {
+                            "description": "Value to be scaled by the unit.",
+                            "type": "number"
+                        }
+                    },
+                    "type": "object"
+                },
+                {
+                    "type": "number"
+                }
+            ],
+            "description": "Numbers can be represented by either a single key as a raw value,\nor by the keys 'value' and 'unit' to scale the input by the configured unit."
+        }
+    },
+    "properties": {
+        "access": {
+            "properties": {
+                "admin": {
+                    "description": "Addresses should start with a '0x' prefix and submitted as a string.",
+                    "pattern": "^0x.*$",
+                    "type": "string"
+                },
+                "defaultPausers": {
+                    "items": {
+                        "pattern": "^0x.*$",
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "feeCollector": {
+                    "description": "Addresses should start with a '0x' prefix and submitted as a string.",
+                    "pattern": "^0x.*$",
+                    "type": "string"
+                },
+                "governance": {
+                    "description": "Addresses should start with a '0x' prefix and submitted as a string.",
+                    "pattern": "^0x.*$",
+                    "type": "string"
+                },
+                "sweepCollector": {
+                    "description": "Addresses should start with a '0x' prefix and submitted as a string.",
+                    "pattern": "^0x.*$",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "chainId": {
+            "type": "number"
+        },
+        "checkpointDuration": {
+            "properties": {
+                "max": {
+                    "$ref": "#/definitions/uint256"
+                },
+                "min": {
+                    "$ref": "#/definitions/uint256"
+                },
+                "resolution": {
+                    "$ref": "#/definitions/uint256"
+                }
+            },
+            "type": "object"
+        },
+        "fees": {
+            "properties": {
+                "curve": {
+                    "properties": {
+                        "max": {
+                            "$ref": "#/definitions/uint256"
+                        },
+                        "min": {
+                            "$ref": "#/definitions/uint256"
+                        }
+                    },
+                    "type": "object"
+                },
+                "flat": {
+                    "properties": {
+                        "max": {
+                            "$ref": "#/definitions/uint256"
+                        },
+                        "min": {
+                            "$ref": "#/definitions/uint256"
+                        }
+                    },
+                    "type": "object"
+                },
+                "governanceLP": {
+                    "properties": {
+                        "max": {
+                            "$ref": "#/definitions/uint256"
+                        },
+                        "min": {
+                            "$ref": "#/definitions/uint256"
+                        }
+                    },
+                    "type": "object"
+                },
+                "governanceZombie": {
+                    "properties": {
+                        "max": {
+                            "$ref": "#/definitions/uint256"
+                        },
+                        "min": {
+                            "$ref": "#/definitions/uint256"
+                        }
+                    },
+                    "type": "object"
+                }
+            },
+            "type": "object"
+        },
+        "fixedAPR": {
+            "properties": {
+                "max": {
+                    "$ref": "#/definitions/uint256"
+                },
+                "min": {
+                    "$ref": "#/definitions/uint256"
+                }
+            },
+            "type": "object"
+        },
+        "positionDuration": {
+            "properties": {
+                "max": {
+                    "$ref": "#/definitions/uint256"
+                },
+                "min": {
+                    "$ref": "#/definitions/uint256"
+                }
+            },
+            "type": "object"
+        },
+        "rpcName": {
+            "type": "string"
+        },
+        "timeStretchAPR": {
+            "properties": {
+                "max": {
+                    "$ref": "#/definitions/uint256"
+                },
+                "min": {
+                    "$ref": "#/definitions/uint256"
+                }
+            },
+            "type": "object"
+        },
+        "tokens": {
+            "properties": {
+                "ezeth": {
+                    "description": "Addresses should start with a '0x' prefix and submitted as a string.",
+                    "pattern": "^0x.*$",
+                    "type": "string"
+                },
+                "lseth": {
+                    "description": "Addresses should start with a '0x' prefix and submitted as a string.",
+                    "pattern": "^0x.*$",
+                    "type": "string"
+                },
+                "reth": {
+                    "description": "If a RETH address is not provided, a mock contract will be deployed for conveniece.",
+                    "pattern": "^0x.*$",
+                    "type": "string"
+                },
+                "steth": {
+                    "description": "If a StETH address is not provided, a mock contract will be deployed for conveniece.",
+                    "pattern": "^0x.*$",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        }
+    },
+    "type": "object"
+}
+

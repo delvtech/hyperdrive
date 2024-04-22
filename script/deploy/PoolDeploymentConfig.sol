@@ -136,6 +136,7 @@ contract PoolDeploymentConfig is ParseUtils {
                 string.concat(baseKey, ".sweepCollector")
             )
         });
+        baseKey = "$";
         p.fees = IHyperdrive.Fees({
             curve: parseUintWithUnits(
                 toml,

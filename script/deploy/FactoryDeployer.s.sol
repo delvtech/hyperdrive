@@ -51,6 +51,7 @@ import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockERC4626 } from "contracts/test/MockERC4626.sol";
 import { MockLido } from "contracts/test/MockLido.sol";
+import { MockRocketPool } from "contracts/test/MockRocketPool.sol";
 import { Lib } from "test/utils/Lib.sol";
 import { HyperdriveRegistry } from "contracts/src/factory/HyperdriveRegistry.sol";
 import { IRestakeManager } from "contracts/src/interfaces/IRenzo.sol";
@@ -195,9 +196,8 @@ contract Deployer is Script, FactoryDeploymentConfig {
 
         // Deploy a mock StETH token if an address was not provided.
         if (deployment.tokens.steth == address(0)) {
-            address lido = deployLido();
-            deployment.tokens.steth = lido;
-            summary.steth = lido;
+            deployment.tokens.steth = deployStETH();
+            summary.steth = deployment.tokens.steth;
         }
         // Deploy the StETHCoordinator.
         StETHHyperdriveDeployerCoordinator stethCoordinator = new StETHHyperdriveDeployerCoordinator(
@@ -211,54 +211,76 @@ contract Deployer is Script, FactoryDeploymentConfig {
                 ILido(deployment.tokens.steth)
             );
         summary.stethCoordinator = address(stethCoordinator);
-        summary.ezethCoordinator = address(
-            new EzETHHyperdriveDeployerCoordinator(
-                address(summary.factory),
-                address(
-                    new EzETHHyperdriveCoreDeployer(
-                        IRestakeManager(deployment.tokens.ezeth)
-                    )
-                ),
-                address(
-                    new EzETHTarget0Deployer(
-                        IRestakeManager(deployment.tokens.ezeth)
-                    )
-                ),
-                address(
-                    new EzETHTarget1Deployer(
-                        IRestakeManager(deployment.tokens.ezeth)
-                    )
-                ),
-                address(
-                    new EzETHTarget2Deployer(
-                        IRestakeManager(deployment.tokens.ezeth)
-                    )
-                ),
-                address(
-                    new EzETHTarget3Deployer(
-                        IRestakeManager(deployment.tokens.ezeth)
-                    )
-                ),
-                address(
-                    new EzETHTarget4Deployer(
-                        IRestakeManager(deployment.tokens.ezeth)
-                    )
-                ),
-                IRestakeManager(deployment.tokens.ezeth)
-            )
-        );
-        summary.lsethCoordinator = address(
-            new LsETHHyperdriveDeployerCoordinator(
-                address(summary.factory),
-                address(new LsETHHyperdriveCoreDeployer()),
-                address(new LsETHTarget0Deployer()),
-                address(new LsETHTarget1Deployer()),
-                address(new LsETHTarget2Deployer()),
-                address(new LsETHTarget3Deployer()),
-                address(new LsETHTarget4Deployer()),
-                IRiverV1(deployment.tokens.lseth)
-            )
-        );
+
+        // Deply the EzETHCoordinator if an address for EzETH was provided, otherwise skip.
+        if (deployment.tokens.ezeth != address(0)) {
+            summary.ezethCoordinator = address(
+                new EzETHHyperdriveDeployerCoordinator(
+                    address(summary.factory),
+                    address(
+                        new EzETHHyperdriveCoreDeployer(
+                            IRestakeManager(deployment.tokens.ezeth)
+                        )
+                    ),
+                    address(
+                        new EzETHTarget0Deployer(
+                            IRestakeManager(deployment.tokens.ezeth)
+                        )
+                    ),
+                    address(
+                        new EzETHTarget1Deployer(
+                            IRestakeManager(deployment.tokens.ezeth)
+                        )
+                    ),
+                    address(
+                        new EzETHTarget2Deployer(
+                            IRestakeManager(deployment.tokens.ezeth)
+                        )
+                    ),
+                    address(
+                        new EzETHTarget3Deployer(
+                            IRestakeManager(deployment.tokens.ezeth)
+                        )
+                    ),
+                    address(
+                        new EzETHTarget4Deployer(
+                            IRestakeManager(deployment.tokens.ezeth)
+                        )
+                    ),
+                    IRestakeManager(deployment.tokens.ezeth)
+                )
+            );
+        } else {
+            console.log(
+                "skipping deployment of EzETHCoordinator... no EzETH address provided."
+            );
+        }
+
+        // Deply the LsETHCoordinator if an address for LsETH was provided, otherwise skip.
+        if (deployment.tokens.lseth != address(0)) {
+            summary.lsethCoordinator = address(
+                new LsETHHyperdriveDeployerCoordinator(
+                    address(summary.factory),
+                    address(new LsETHHyperdriveCoreDeployer()),
+                    address(new LsETHTarget0Deployer()),
+                    address(new LsETHTarget1Deployer()),
+                    address(new LsETHTarget2Deployer()),
+                    address(new LsETHTarget3Deployer()),
+                    address(new LsETHTarget4Deployer()),
+                    IRiverV1(deployment.tokens.lseth)
+                )
+            );
+        } else {
+            console.log(
+                "skipping deployment of LsETHCoordinator... no LsETH address provided."
+            );
+        }
+
+        // Deploy a mock RETH token if an address was not provided.
+        if (deployment.tokens.reth == address(0)) {
+            deployment.tokens.reth = deployRETH();
+            summary.reth = deployment.tokens.reth;
+        }
         summary.rethCoordinator = address(
             new RETHHyperdriveDeployerCoordinator(
                 address(summary.factory),
@@ -273,7 +295,7 @@ contract Deployer is Script, FactoryDeploymentConfig {
         );
     }
 
-    function deployLido() internal returns (address) {
+    function deployStETH() internal returns (address) {
         MockLido steth = new MockLido(
             0.035e18,
             deployment.access.admin,
@@ -282,6 +304,16 @@ contract Deployer is Script, FactoryDeploymentConfig {
         );
         steth.setPublicCapability(bytes4(keccak256("mint(uint256)")), true);
         return address(steth);
+    }
+
+    function deployRETH() internal returns (address) {
+        MockRocketPool reth = new MockRocketPool(
+            0.035e18,
+            deployment.access.admin,
+            true,
+            500e18
+        );
+        return address(reth);
     }
 
     function writeSummary() internal {

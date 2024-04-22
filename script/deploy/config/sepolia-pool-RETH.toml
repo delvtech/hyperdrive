@@ -2,13 +2,13 @@
 
 rpcName        = "sepolia"
 chainId        = 11155111
-name           = "DAI-SDAI2"
-factory        = "0xb845545cA15f2e8bfC33cc97f2Eae25591c11257"
-coordinator    = "0x480b611cB632c7588Cbf780cc39E5B1411E3dD11"
-registry       = "0x0c291B717aD4097Af92Cf63Bf5730591cE387416"
-deploymentId   = "0xAbbabac"
+name           = "RETH"
+factory        = "0x82a336e8D545D23967322D0977a3CB5Ba4b22904"
+coordinator    = "0x29A073074cB871BEdb5e8E3c10571421fb1d9cF7"
+registry       = "0xf66EC2d4B5f85A0735EB1e391384a50f16CF9e56"
+deploymentId   = "0xbaff002"
 salt           = "0x69420"
-contribution   = { value = 100, unit = "ether" }
+contribution   = { value = 1000, unit = "bips" }
 fixedAPR       = { value = 5000, unit = "bips" }
 timeStretchAPR = { value = 5000, unit = "bips" }
 [access]
@@ -29,8 +29,8 @@ timeStretchAPR = { value = 5000, unit = "bips" }
   governanceZombie = { value = 300, unit = "bips" }
 [options]
   destination = "0x25a6592F1eaA22cD7BFc590A90d56FbB765b1Edc"
-  asBase      = true
+  asBase      = false
   extraData   = "0x00"
-  # [tokens]
-  #   base   = "0x552ceaDf3B47609897279F42D3B3309B604896f3"
-  #   shares = "0xECa45b0391E81c311F1b390808a3BA3214d35eAA"
+[tokens]
+  base   = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  shares = "0xB546892cA53D47E0ED8cFf2f9b443C748BB8F48e"

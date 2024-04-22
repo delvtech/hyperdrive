@@ -8,7 +8,10 @@
   "scripts": {
     "postinstall": "patch-package --patch-dir .patches",
     "configure-husky": "npx husky install && npx husky add .husky/pre-commit \"npx --no-install lint-staged\"",
-    "generate": "typescript-json-schema ./script/deploy/schema/schema.ts 'NetworkDeployment' --ref false --topRef false --aliasRef false -o ./script/deploy/schema/schema.json"
+    "generate:factory-schema": "typescript-json-schema ./script/deploy/schema/factory-schema.ts 'FactoryDeployment' --ref false --topRef false --aliasRef false noExtraProps -o ./script/deploy/schema/factory-schema.json",
+    "generate:pool-schema": "typescript-json-schema ./script/deploy/schema/pool-schema.ts 'PoolDeployment' --ref false --topRef false --aliasRef false noExtraProps -o ./script/deploy/schema/pool-schema.json",
+    "generate": "yarn run generate:factory-schema && yarn run generate:pool-schema",
+    "lint:deploy": "taplo lint ./script/**/*.toml"
   },
   "_moduleAliases": {
     "test": "./test"
@@ -32,6 +35,7 @@
   },
   "license": "Apache-2.0",
   "devDependencies": {
+    "@taplo/cli": "^0.7.0",
     "abitype": "^1.0.2",
     "coveralls": "^3.1.1",
     "cspell": "^6.1.1",

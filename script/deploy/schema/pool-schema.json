@@ -1,0 +1,187 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+        "uint256": {
+            "anyOf": [
+                {
+                    "properties": {
+                        "unit": {
+                            "description": "Unit to scale the value by.",
+                            "enum": [
+                                "bips",
+                                "days",
+                                "ether",
+                                "gwei",
+                                "hours",
+                                "minutes",
+                                "weeks"
+                            ],
+                            "type": "string"
+                        },
+                        "value": {
+                            "description": "Value to be scaled by the unit.",
+                            "type": "number"
+                        }
+                    },
+                    "type": "object"
+                },
+                {
+                    "type": "number"
+                }
+            ],
+            "description": "Numbers can be represented by either a single key as a raw value,\nor by the keys 'value' and 'unit' to scale the input by the configured unit."
+        }
+    },
+    "properties": {
+        "access": {
+            "properties": {
+                "admin": {
+                    "description": "Addresses should start with a '0x' prefix and submitted as a string.",
+                    "pattern": "^0x.*$",
+                    "type": "string"
+                },
+                "feeCollector": {
+                    "description": "Addresses should start with a '0x' prefix and submitted as a string.",
+                    "pattern": "^0x.*$",
+                    "type": "string"
+                },
+                "governance": {
+                    "description": "Addresses should start with a '0x' prefix and submitted as a string.",
+                    "pattern": "^0x.*$",
+                    "type": "string"
+                },
+                "sweepCollector": {
+                    "description": "Addresses should start with a '0x' prefix and submitted as a string.",
+                    "pattern": "^0x.*$",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "bounds": {
+            "properties": {
+                "checkpointDuration": {
+                    "$ref": "#/definitions/uint256"
+                },
+                "minimumShareReserves": {
+                    "$ref": "#/definitions/uint256"
+                },
+                "minimumTransactionAmount": {
+                    "$ref": "#/definitions/uint256"
+                },
+                "positionDuration": {
+                    "$ref": "#/definitions/uint256"
+                },
+                "timestretch": {
+                    "$ref": "#/definitions/uint256"
+                }
+            },
+            "type": "object"
+        },
+        "chainId": {
+            "type": "number"
+        },
+        "contribution": {
+            "$ref": "#/definitions/uint256",
+            "description": "Initial contribution to the pool."
+        },
+        "deploymentId": {
+            "description": "ID for the deployment as a `bytes32` hex string.",
+            "pattern": "^0x.*$",
+            "type": "string"
+        },
+        "factory": {
+            "description": "Address of the pool's factory contract.",
+            "pattern": "^0x.*$",
+            "type": "string"
+        },
+        "fees": {
+            "properties": {
+                "curve": {
+                    "$ref": "#/definitions/uint256"
+                },
+                "flat": {
+                    "$ref": "#/definitions/uint256",
+                    "description": "The value provided for the flat fee will be annualized (flat * (position_duration / 365_days))."
+                },
+                "governanceLP": {
+                    "$ref": "#/definitions/uint256"
+                },
+                "governanceZombie": {
+                    "$ref": "#/definitions/uint256"
+                }
+            },
+            "type": "object"
+        },
+        "fixedAPR": {
+            "$ref": "#/definitions/uint256",
+            "description": "Initial fixed rate for the pool."
+        },
+        "name": {
+            "description": "Name of the pool.",
+            "type": "string"
+        },
+        "options": {
+            "properties": {
+                "asBase": {
+                    "type": "boolean"
+                },
+                "destination": {
+                    "description": "Recipient of shares issued from the contribution.",
+                    "pattern": "^0x.*$",
+                    "type": "string"
+                },
+                "extraData": {
+                    "description": "Bytes32 should start with a '0x' prefix and submitted as a string.",
+                    "pattern": "^0x.*$",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "poolType": {
+            "description": "Type of pool that is being deployed.",
+            "enum": [
+                "ERC4626",
+                "EzETH",
+                "LsETH",
+                "RETH",
+                "StETH"
+            ],
+            "type": "string"
+        },
+        "rpcName": {
+            "type": "string"
+        },
+        "salt": {
+            "description": "Salt for the deployment as a `bytes32` hex string.",
+            "pattern": "^0x.*$",
+            "type": "string"
+        },
+        "timeStretch": {
+            "$ref": "#/definitions/uint256",
+            "description": "Usually set to 0 since this will be configured by the deployer."
+        },
+        "timeStretchAPR": {
+            "$ref": "#/definitions/uint256"
+        },
+        "tokens": {
+            "description": "Token addresses used in the vault.",
+            "properties": {
+                "base": {
+                    "description": "Addresses should start with a '0x' prefix and submitted as a string.",
+                    "pattern": "^0x.*$",
+                    "type": "string"
+                },
+                "shares": {
+                    "description": "Addresses should start with a '0x' prefix and submitted as a string.",
+                    "pattern": "^0x.*$",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        }
+    },
+    "type": "object"
+}
+
