@@ -9,9 +9,10 @@ import { LPMath } from "contracts/src/libraries/LPMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 
 library HyperdriveUtils {
-    using HyperdriveUtils for *;
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
+    using HyperdriveUtils for *;
+    using LPMath for LPMath.PresentValueParams;
 
     /// Time Utilities ///
 
@@ -1441,7 +1442,8 @@ library HyperdriveUtils {
                 netCurveTrade: netCurveTrade,
                 originalShareReserves: presentValueParams.shareReserves,
                 originalShareAdjustment: presentValueParams.shareAdjustment,
-                originalBondReserves: presentValueParams.bondReserves
+                originalBondReserves: presentValueParams.bondReserves,
+                spotPrice: presentValueParams.calculateSpotPrice()
             });
     }
 

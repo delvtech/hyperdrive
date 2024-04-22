@@ -49,7 +49,11 @@ contract UpdateLiquidityTest is HyperdriveTest {
         mockHyperdrive.setReserves(_shareReserves, _bondReserves);
 
         // Update the liquidity.
-        mockHyperdrive.updateLiquidity(0);
+        mockHyperdrive.updateLiquidity(
+            0,
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive.getPoolInfo().vaultSharePrice
+        );
 
         // Check that the reserves are unchanged.
         assertEq(hyperdrive.getPoolInfo().shareReserves, _shareReserves);
@@ -84,7 +88,11 @@ contract UpdateLiquidityTest is HyperdriveTest {
                 int256(1)
         );
         vm.expectRevert(IHyperdrive.UpdateLiquidityFailed.selector);
-        mockHyperdrive.updateLiquidity(_shareReservesDelta);
+        mockHyperdrive.updateLiquidity(
+            _shareReservesDelta,
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive.getPoolInfo().vaultSharePrice
+        );
     }
 
     function test__updateLiquidity__excessiveEndingShareReserves(
@@ -110,7 +118,11 @@ contract UpdateLiquidityTest is HyperdriveTest {
             type(int256).max - int256(_shareReserves)
         );
         vm.expectRevert();
-        mockHyperdrive.updateLiquidity(_shareReservesDelta);
+        mockHyperdrive.updateLiquidity(
+            _shareReservesDelta,
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive.getPoolInfo().vaultSharePrice
+        );
     }
 
     function test__updateLiquidity__excessiveEndingBondReserves(
@@ -139,7 +151,11 @@ contract UpdateLiquidityTest is HyperdriveTest {
             type(int128).max
         );
         vm.expectRevert();
-        mockHyperdrive.updateLiquidity(_shareReservesDelta);
+        mockHyperdrive.updateLiquidity(
+            _shareReservesDelta,
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive.getPoolInfo().vaultSharePrice
+        );
     }
 
     function test__updateLiquidity__success(
@@ -169,7 +185,11 @@ contract UpdateLiquidityTest is HyperdriveTest {
                 type(uint128).max.mulDivDown(_shareReserves, _bondReserves)
             ) / 2
         );
-        mockHyperdrive.updateLiquidity(_shareReservesDelta);
+        mockHyperdrive.updateLiquidity(
+            _shareReservesDelta,
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive.getPoolInfo().vaultSharePrice
+        );
 
         // Ensure that the ending spot price is approximately equal to the
         // starting spot price.

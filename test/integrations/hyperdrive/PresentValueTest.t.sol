@@ -935,7 +935,11 @@ contract PresentValueTest is HyperdriveTest {
                 1_000e18.mulDivDown(iterations - i, iterations) +
                     idle.mulDivDown(i, iterations)
             );
-            MockHyperdrive(address(hyperdrive)).updateLiquidity(delta);
+            MockHyperdrive(address(hyperdrive)).updateLiquidity(
+                delta,
+                hyperdrive.calculateSpotPrice(),
+                hyperdrive.getPoolInfo().vaultSharePrice
+            );
 
             // Ensure that the present value decreased.
             require(

@@ -396,8 +396,12 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
         return _latestCheckpoint();
     }
 
-    function updateLiquidity(int256 _shareReservesDelta) external {
-        _updateLiquidity(_shareReservesDelta);
+    function updateLiquidity(
+        int256 _shareReservesDelta,
+        uint256 _spotPrice,
+        uint256 _vaultSharePrice
+    ) external {
+        _updateLiquidity(_shareReservesDelta, _spotPrice, _vaultSharePrice);
     }
 
     function calculateIdleShareReserves(

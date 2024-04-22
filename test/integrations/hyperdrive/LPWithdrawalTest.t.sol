@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { stdError } from "forge-std/StdError.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -34,6 +37,69 @@ contract LPWithdrawalTest is HyperdriveTest {
             POSITION_DURATION
         );
         deploy(deployer, config);
+    }
+
+    // FIXME
+    function test_example() external {
+        IHyperdrive.PoolConfig memory config = testConfig(
+            0.05e18,
+            POSITION_DURATION
+        );
+        config.fees.curve = 0.001e18;
+        config.fees.flat = 0.0005e18;
+        deploy(alice, config);
+        uint256 apr = 0.05e18;
+        uint256 contribution = 50_000_000e18;
+        uint256 lpShares = initialize(alice, apr, contribution);
+
+        // Celine opens a large short.
+        uint256 shortAmount = hyperdrive.calculateMaxShort();
+        (, uint256 shortPaid) = openShort(celine, shortAmount);
+        console.log(
+            "spot rate = %s",
+            hyperdrive.calculateSpotAPR().toString(18)
+        );
+
+        // Celine adds liquidity.
+        uint256 celineLpShares = addLiquidity(celine, 100_000_000e18);
+
+        // Bob opens a large long.
+        uint256 basePaid = hyperdrive.calculateMaxLong();
+        (uint256 maturityTime, uint256 bondAmount) = openLong(
+            celine,
+            hyperdrive.calculateMaxLong()
+        );
+
+        // The term advances. Alice removes her liquidity.
+        advanceTime(POSITION_DURATION, 0.05e18);
+
+        // Remove liquidity.
+        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
+            alice,
+            lpShares
+        );
+        console.log("alice contribution     = %s", contribution.toString(18));
+        console.log("alice baseProceeds     = %s", baseProceeds.toString(18));
+        console.log(
+            "alice withdrawalShares = %s",
+            withdrawalShares.toString(18)
+        );
+
+        // Celine closes her long and removes liquidity.
+        uint256 shortProceeds = closeShort(celine, maturityTime, shortAmount);
+        uint256 longProceeds = closeLong(celine, maturityTime, bondAmount);
+        (baseProceeds, withdrawalShares) = removeLiquidity(
+            celine,
+            celineLpShares
+        );
+        console.log(
+            "celine paid           = %s",
+            (100_000_000e18 + basePaid + shortPaid).toString(18)
+        );
+        console.log(
+            "celine proceeds       = %s",
+            (baseProceeds + longProceeds + shortProceeds).toString(18)
+        );
     }
 
     // This test is designed to ensure that a single LP receives all of the

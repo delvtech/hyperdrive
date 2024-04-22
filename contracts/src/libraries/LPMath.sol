@@ -28,6 +28,52 @@ library LPMath {
     ///      succeed.
     uint256 internal constant SHARE_PROCEEDS_TOLERANCE = 1e14;
 
+    struct PresentValueParams {
+        uint256 shareReserves;
+        int256 shareAdjustment;
+        uint256 bondReserves;
+        uint256 vaultSharePrice;
+        uint256 initialVaultSharePrice;
+        uint256 minimumShareReserves;
+        uint256 minimumTransactionAmount;
+        uint256 timeStretch;
+        uint256 longsOutstanding;
+        uint256 longAverageTimeRemaining;
+        uint256 shortsOutstanding;
+        uint256 shortAverageTimeRemaining;
+    }
+
+    struct DistributeExcessIdleParams {
+        PresentValueParams presentValueParams;
+        uint256 startingPresentValue;
+        uint256 activeLpTotalSupply;
+        uint256 withdrawalSharesTotalSupply;
+        uint256 idle;
+        int256 netCurveTrade;
+        uint256 originalShareReserves;
+        int256 originalShareAdjustment;
+        uint256 originalBondReserves;
+        uint256 spotPrice;
+    }
+
+    /// @dev Gets the present value on a set of present value parameters.
+    /// @param _params The present value params.
+    /// @return The spot price of the pool specified by the present value params.
+    function calculateSpotPrice(
+        PresentValueParams memory _params
+    ) internal pure returns (uint256) {
+        return
+            HyperdriveMath.calculateSpotPrice(
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    _params.shareReserves,
+                    _params.shareAdjustment
+                ),
+                _params.bondReserves,
+                _params.initialVaultSharePrice,
+                _params.timeStretch
+            );
+    }
+
     /// @dev Calculates the new share reserves, share adjustment, and bond
     ///      reserves after liquidity is added or removed from the pool. This
     ///      update is made in such a way that the pool's spot price remains
@@ -46,7 +92,9 @@ library LPMath {
         int256 _shareAdjustment,
         uint256 _bondReserves,
         uint256 _minimumShareReserves,
-        int256 _shareReservesDelta
+        int256 _shareReservesDelta,
+        uint256 _spotPrice,
+        uint256 _sharePrice
     )
         internal
         pure
@@ -71,41 +119,7 @@ library LPMath {
         }
         shareReserves = uint256(shareReserves_);
 
-        // Update the share adjustment by holding the ratio of share reserves
-        // to share adjustment proportional. In general, our pricing model cannot
-        // support negative values for the z coordinate, so this is important as
-        // it ensures that if z - zeta starts as a positive value, it ends as a
-        // positive value. With this in mind, we update the share adjustment as:
-        //
-        // zeta_old / z_old = zeta_new / z_new
-        //                  =>
-        // zeta_new = zeta_old * (z_new / z_old)
-        if (_shareAdjustment >= 0) {
-            // NOTE: Rounding down to have a larger effective share reserves.
-            shareAdjustment = shareReserves
-                .mulDivDown(uint256(_shareAdjustment), _shareReserves)
-                .toInt256();
-        } else {
-            // NOTE: Rounding up to have a larger effective share reserves.
-            shareAdjustment = -shareReserves
-                .mulDivUp(uint256(-_shareAdjustment), _shareReserves)
-                .toInt256();
-        }
-
-        // NOTE: Rounding down to avoid introducing dust into the computation.
-        //
-        // The liquidity update should hold the spot price invariant. The spot
-        // price of base in terms of bonds is given by:
-        //
-        // p = (mu * (z - zeta) / y) ** tau
-        //
-        // This formula implies that holding the ratio of share reserves to bond
-        // reserves constant will hold the spot price constant. This allows us
-        // to calculate the updated bond reserves as:
-        //
-        // (z_old - zeta_old) / y_old = (z_new - zeta_new) / y_new
-        //                          =>
-        // y_new = (z_new - zeta_new) * (y_old / (z_old - zeta_old))
+        // Calculate the bond reserves and share reserves delta.
         (uint256 oldEffectiveShareReserves, bool success) = HyperdriveMath
             .calculateEffectiveShareReservesSafe(
                 _shareReserves,
@@ -114,36 +128,87 @@ library LPMath {
         if (!success) {
             return (0, 0, 0, false);
         }
-        uint256 effectiveShareReserves;
-        (effectiveShareReserves, success) = HyperdriveMath
-            .calculateEffectiveShareReservesSafe(
-                shareReserves,
-                shareAdjustment
+        int256 bondReservesDelta;
+        int256 shareAdjustmentDelta;
+        if (_shareReservesDelta > 0) {
+            bondReservesDelta = int256(
+                bondReserves.mulDivDown(
+                    _sharePrice.mulDown(uint256(_shareReservesDelta)),
+                    _sharePrice.mulDown(oldEffectiveShareReserves) +
+                        _spotPrice.mulDown(bondReserves)
+                )
             );
-        if (!success) {
-            return (0, 0, 0, false);
+            shareAdjustmentDelta = int256(
+                uint256(bondReservesDelta).mulDivDown(_spotPrice, _sharePrice)
+            );
+        } else {
+            bondReservesDelta = -int256(
+                bondReserves.mulDivDown(
+                    _sharePrice.mulDown(uint256(-_shareReservesDelta)),
+                    _sharePrice.mulDown(oldEffectiveShareReserves) +
+                        _spotPrice.mulDown(bondReserves)
+                )
+            );
+
+            shareAdjustmentDelta = -int256(
+                uint256(-bondReservesDelta).mulDivDown(_spotPrice, _sharePrice)
+            );
         }
-        bondReserves = _bondReserves.mulDivDown(
-            effectiveShareReserves,
-            oldEffectiveShareReserves
-        );
+        bondReserves = uint256(int256(_bondReserves) + bondReservesDelta);
+        shareAdjustment = _shareAdjustment + shareAdjustmentDelta;
+
+        // // FIXME: Calculate the share adjustment.
+
+        // // Update the share adjustment by holding the ratio of share reserves
+        // // to share adjustment proportional. In general, our pricing model cannot
+        // // support negative values for the z coordinate, so this is important as
+        // // it ensures that if z - zeta starts as a positive value, it ends as a
+        // // positive value. With this in mind, we update the share adjustment as:
+        // //
+        // // zeta_old / z_old = zeta_new / z_new
+        // //                  =>
+        // // zeta_new = zeta_old * (z_new / z_old)
+        // if (_shareAdjustment >= 0) {
+        //     // NOTE: Rounding down to have a larger effective share reserves.
+        //     shareAdjustment = shareReserves
+        //         .mulDivDown(uint256(_shareAdjustment), _shareReserves)
+        //         .toInt256();
+        // } else {
+        //     // NOTE: Rounding up to have a larger effective share reserves.
+        //     shareAdjustment = -shareReserves
+        //         .mulDivUp(uint256(-_shareAdjustment), _shareReserves)
+        //         .toInt256();
+        // }
+
+        // // NOTE: Rounding down to avoid introducing dust into the computation.
+        // //
+        // // The liquidity update should hold the spot price invariant. The spot
+        // // price of base in terms of bonds is given by:
+        // //
+        // // p = (mu * (z - zeta) / y) ** tau
+        // //
+        // // This formula implies that holding the ratio of share reserves to bond
+        // // reserves constant will hold the spot price constant. This allows us
+        // // to calculate the updated bond reserves as:
+        // //
+        // // (z_old - zeta_old) / y_old = (z_new - zeta_new) / y_new
+        // //                          =>
+        // // y_new = (z_new - zeta_new) * (y_old / (z_old - zeta_old))
+        // uint256 effectiveShareReserves;
+        // (effectiveShareReserves, success) = HyperdriveMath
+        //     .calculateEffectiveShareReservesSafe(
+        //         shareReserves,
+        //         shareAdjustment
+        //     );
+        // if (!success) {
+        //     return (0, 0, 0, false);
+        // }
+        // bondReserves = _bondReserves.mulDivDown(
+        //     effectiveShareReserves,
+        //     oldEffectiveShareReserves
+        // );
 
         return (shareReserves, shareAdjustment, bondReserves, true);
-    }
-
-    struct PresentValueParams {
-        uint256 shareReserves;
-        int256 shareAdjustment;
-        uint256 bondReserves;
-        uint256 vaultSharePrice;
-        uint256 initialVaultSharePrice;
-        uint256 minimumShareReserves;
-        uint256 minimumTransactionAmount;
-        uint256 timeStretch;
-        uint256 longsOutstanding;
-        uint256 longAverageTimeRemaining;
-        uint256 shortsOutstanding;
-        uint256 shortAverageTimeRemaining;
     }
 
     /// @dev Calculates the present value LPs capital in the pool and reverts
@@ -457,18 +522,6 @@ library LPMath {
             ).toInt256();
     }
 
-    struct DistributeExcessIdleParams {
-        PresentValueParams presentValueParams;
-        uint256 startingPresentValue;
-        uint256 activeLpTotalSupply;
-        uint256 withdrawalSharesTotalSupply;
-        uint256 idle;
-        int256 netCurveTrade;
-        uint256 originalShareReserves;
-        int256 originalShareAdjustment;
-        uint256 originalBondReserves;
-    }
-
     /// @dev Calculates the amount of withdrawal shares that can be redeemed and
     ///      the share proceeds the withdrawal pool should receive given the
     ///      pool's current idle liquidity. We use the following algorithm to
@@ -606,7 +659,9 @@ library LPMath {
             _params.originalShareAdjustment,
             _params.originalBondReserves,
             _params.presentValueParams.minimumShareReserves,
-            -_shareReservesDelta.toInt256()
+            -_shareReservesDelta.toInt256(),
+            _params.spotPrice,
+            _params.presentValueParams.vaultSharePrice
         );
         if (!success) {
             // NOTE: Return zero to indicate that the withdrawal shares redeemed
@@ -722,7 +777,9 @@ library LPMath {
                 params.originalShareAdjustment,
                 params.originalBondReserves,
                 params.presentValueParams.minimumShareReserves,
-                -shareProceeds.toInt256()
+                -shareProceeds.toInt256(),
+                params.spotPrice,
+                params.presentValueParams.vaultSharePrice
             );
             if (!success) {
                 // NOTE: If the updated reserves can't be calculated,  we can't
@@ -807,7 +864,9 @@ library LPMath {
                         params.originalShareAdjustment,
                         params.originalBondReserves,
                         params.presentValueParams.minimumShareReserves,
-                        -shareProceeds.toInt256()
+                        -shareProceeds.toInt256(),
+                        params.spotPrice,
+                        params.presentValueParams.vaultSharePrice
                     );
                     if (!success) {
                         // NOTE: Return 0 to indicate that the share proceeds
@@ -929,7 +988,9 @@ library LPMath {
             params.originalShareAdjustment,
             params.originalBondReserves,
             params.presentValueParams.minimumShareReserves,
-            -shareProceeds.toInt256()
+            -shareProceeds.toInt256(),
+            params.spotPrice,
+            params.presentValueParams.vaultSharePrice
         );
         if (!success_) {
             // NOTE: Return 0 to indicate that the share proceeds couldn't be
