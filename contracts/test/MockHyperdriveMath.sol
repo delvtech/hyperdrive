@@ -22,6 +22,17 @@ contract MockHyperdriveMath {
         return result;
     }
 
+    function calculateEffectiveShareReserves(
+        uint256 _shareReserves,
+        int256 _shareAdjustment
+    ) external pure returns (uint256) {
+        uint256 result = HyperdriveMath.calculateEffectiveShareReserves(
+            _shareReserves,
+            _shareAdjustment
+        );
+        return result;
+    }
+
     function calculateInitialBondReserves(
         uint256 _effectiveShareReserves,
         uint256 _initialVaultSharePrice,
