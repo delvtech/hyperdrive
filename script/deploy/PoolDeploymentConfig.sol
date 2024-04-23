@@ -96,9 +96,15 @@ contract PoolDeploymentConfig is ParseUtils {
         });
         if (vm.keyExistsToml(toml, string.concat(baseKey, ".tokens"))) {
             p.tokens = PoolTokens({
-                base: toml.readAddress(string.concat(baseKey, ".tokens.base")),
-                shares: toml.readAddress(
-                    string.concat(baseKey, ".tokens.shares")
+                base: parseWithDefault(
+                    toml,
+                    string.concat(baseKey, ".tokens.base"),
+                    address(0)
+                ),
+                shares: parseWithDefault(
+                    toml,
+                    string.concat(baseKey, ".tokens.shares"),
+                    address(0)
                 )
             });
         }

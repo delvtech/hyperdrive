@@ -49,6 +49,7 @@ import { ETH } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
+import { MockRocketPool } from "contracts/test/MockRocketPool.sol";
 import { MockERC4626 } from "contracts/test/MockERC4626.sol";
 import { MockLido } from "contracts/test/MockLido.sol";
 import { Lib } from "test/utils/Lib.sol";
@@ -175,6 +176,24 @@ contract Deployer is Script, PoolDeploymentConfig {
             }
             // Ensure the deployer has approved the deployer coordinator.
             ERC20Mintable(deployment.tokens.base).approve(
+                deployment.init.coordinator,
+                deployment.init.contribution
+            );
+        }
+
+        // If the pool is RETH make some instance-specific preparations.
+        if (
+            strEquals(
+                summary.coordinatorName,
+                "RETHHyperdriveDeployerCoordinator"
+            )
+        ) {
+            // Obtain sufficient shares for the contribution.
+            MockRocketPool(deployment.tokens.shares).submit{
+                value: deployment.init.contribution
+            }(summary.deployer);
+            // Approve the coordinator for the contribution.
+            MockRocketPool(deployment.tokens.shares).approve(
                 deployment.init.coordinator,
                 deployment.init.contribution
             );

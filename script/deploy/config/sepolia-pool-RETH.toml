@@ -3,19 +3,19 @@
 rpcName        = "sepolia"
 chainId        = 11155111
 name           = "RETH"
-factory        = "0x82a336e8D545D23967322D0977a3CB5Ba4b22904"
-coordinator    = "0x29A073074cB871BEdb5e8E3c10571421fb1d9cF7"
-registry       = "0xf66EC2d4B5f85A0735EB1e391384a50f16CF9e56"
-deploymentId   = "0xbaff002"
+factory        = "0x338D5634c391ef47FB797417542aa75F4f71A4a6"
+coordinator    = "0x4D12e758D43bDdF385CCa096cE60639DeeaD13e4"
+registry       = "0xba5156E697d39a03EDA824C19f375383F6b759EA"
+deploymentId   = "0x66660A7"
 salt           = "0x69420"
 contribution   = { value = 1000, unit = "bips" }
-fixedAPR       = { value = 5000, unit = "bips" }
-timeStretchAPR = { value = 5000, unit = "bips" }
+fixedAPR       = { value = 300, unit = "bips" }
+timeStretchAPR = { value = 300, unit = "bips" }
 [access]
-  admin          = "0x25a6592F1eaA22cD7BFc590A90d56FbB765b1Edc"
-  governance     = "0x25a6592F1eaA22cD7BFc590A90d56FbB765b1Edc"
-  feeCollector   = "0x25a6592F1eaA22cD7BFc590A90d56FbB765b1Edc"
-  sweepCollector = "0x25a6592F1eaA22cD7BFc590A90d56FbB765b1Edc"
+  admin          = "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b"
+  governance     = "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b"
+  feeCollector   = "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b"
+  sweepCollector = "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b"
 [bounds]
   minimumShareReserves     = { value = 10, unit = "bips" }
   minimumTransactionAmount = { value = 1000000, unit = "gwei" }
@@ -33,4 +33,4 @@ timeStretchAPR = { value = 5000, unit = "bips" }
   extraData   = "0x00"
 [tokens]
   base   = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-  shares = "0xB546892cA53D47E0ED8cFf2f9b443C748BB8F48e"
+  shares = "0x8F66811B35D1E249bD731b5eDF8d5A8703afAB27"
