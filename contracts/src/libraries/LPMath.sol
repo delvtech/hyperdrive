@@ -74,6 +74,112 @@ library LPMath {
             );
     }
 
+    // FIXME: Natspec
+    function calculateInitialReserves(
+        uint256 _shareAmount,
+        uint256 _vaultSharePrice,
+        uint256 _initialVaultSharePrice,
+        uint256 _targetApr,
+        uint256 _positionDuration,
+        uint256 _timeStretch
+    )
+        internal
+        pure
+        returns (
+            uint256 shareReserves,
+            int256 shareAdjustment,
+            uint256 bondReserves
+        )
+    {
+        // NOTE: Round down to underestimate the initial bond reserves.
+        //
+        // Normalize the time to maturity to fractions of a year since the
+        // provided rate is an APR.
+        uint256 t = _positionDuration.divDown(365 days);
+
+        // NOTE: Round up to underestimate the initial bond reserves.
+        //
+        // Calculate the target price implied by the target rate.
+        uint256 targetPrice = ONE.divUp(ONE + _targetApr.mulDown(t));
+
+        // The share reserves is just the share amount since we are initializing
+        // the pool.
+        shareReserves = _shareAmount;
+
+        // FIXME: Ascii math.
+        //
+        // NOTE: Round down to underestimate the initial bond reserves.
+        //
+        // Calculate the initial bond reserves.
+        bondReserves = _vaultSharePrice
+            .mulDown(_initialVaultSharePrice)
+            .mulDivDown(
+                shareReserves,
+                _vaultSharePrice.mulUp(
+                    targetPrice.pow(ONE.divDown(_timeStretch))
+                ) + _initialVaultSharePrice.mulUp(targetPrice)
+            );
+
+        // FIXME: Ascii math.
+        //
+        // NOTE: Round down to underestimate the initial share adjustment.
+        //
+        // Calculate the initial share adjustment.
+        shareAdjustment = int256(
+            bondReserves.mulDivDown(targetPrice, _vaultSharePrice)
+        );
+    }
+
+    /// @dev Calculates the initial bond reserves assuming that the initial LP
+    ///      receives LP shares amounting to c * z + y. Throughout the rest of
+    ///      the codebase, the bond reserves used include the LP share
+    ///      adjustment specified in YieldSpace. The bond reserves returned by
+    ///      this function are unadjusted which makes it easier to calculate the
+    ///      initial LP shares. This calculation underestimates the pool's
+    ///      initial bond reserves.
+    /// @param _effectiveShareReserves The pool's effective share reserves. The
+    ///        effective share reserves are a modified version of the share
+    ///        reserves used when pricing trades.
+    /// @param _initialVaultSharePrice The pool's initial vault share price.
+    /// @param _apr The pool's APR.
+    /// @param _positionDuration The amount of time until maturity in seconds.
+    /// @param _timeStretch The time stretch parameter.
+    /// @return bondReserves The bond reserves (without adjustment) that make
+    ///         the pool have a specified APR.
+    function calculateInitialBondReserves(
+        uint256 _effectiveShareReserves,
+        uint256 _initialVaultSharePrice,
+        uint256 _apr,
+        uint256 _positionDuration,
+        uint256 _timeStretch
+    ) internal pure returns (uint256 bondReserves) {
+        // NOTE: Round down to underestimate the initial bond reserves.
+        //
+        // Normalize the time to maturity to fractions of a year since the
+        // provided rate is an APR.
+        uint256 t = _positionDuration.divDown(365 days);
+
+        // NOTE: Round down to underestimate the initial bond reserves.
+        //
+        // inner = (1 + apr * t) ** (1 / t_s)
+        uint256 inner = ONE + _apr.mulDown(t);
+        if (inner >= ONE) {
+            // Rounding down the exponent results in a smaller result.
+            inner = inner.pow(ONE.divDown(_timeStretch));
+        } else {
+            // Rounding up the exponent results in a smaller result.
+            inner = inner.pow(ONE.divUp(_timeStretch));
+        }
+
+        // NOTE: Round down to underestimate the initial bond reserves.
+        //
+        // mu * (z - zeta) * (1 + apr * t) ** (1 / t_s)
+        return
+            _initialVaultSharePrice.mulDown(_effectiveShareReserves).mulDown(
+                inner
+            );
+    }
+
     /// @dev Calculates the new share reserves, share adjustment, and bond
     ///      reserves after liquidity is added or removed from the pool. This
     ///      update is made in such a way that the pool's spot price remains

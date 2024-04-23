@@ -510,6 +510,7 @@ contract OpenLongTest is HyperdriveTest {
             poolInfoBefore.longsOutstanding + bondAmount,
             10
         );
+        HyperdriveUtils.calculateSpotAPR(hyperdrive);
 
         // Ensure that the bond reserves were updated to have the correct APR.
         // Due to the way that the flat part of the trade is applied, the bond
@@ -519,7 +520,10 @@ contract OpenLongTest is HyperdriveTest {
         assertApproxEqAbs(
             HyperdriveUtils.calculateSpotAPR(hyperdrive),
             HyperdriveMath.calculateSpotAPR(
-                poolInfoAfter.shareReserves,
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    poolInfoAfter.shareReserves,
+                    poolInfoAfter.shareAdjustment
+                ),
                 poolInfoBefore.bondReserves - bondAmount,
                 INITIAL_SHARE_PRICE,
                 POSITION_DURATION,

@@ -4,6 +4,23 @@ pragma solidity 0.8.20;
 import { LPMath } from "contracts/src/libraries/LPMath.sol";
 
 contract MockLPMath {
+    function calculateInitialBondReserves(
+        uint256 _effectiveShareReserves,
+        uint256 _initialVaultSharePrice,
+        uint256 _apr,
+        uint256 _positionDuration,
+        uint256 _timeStretch
+    ) external pure returns (uint256) {
+        uint256 result = LPMath.calculateInitialBondReserves(
+            _effectiveShareReserves,
+            _initialVaultSharePrice,
+            _apr,
+            _positionDuration,
+            _timeStretch
+        );
+        return result;
+    }
+
     function calculateUpdateLiquidity(
         uint256 _shareReserves,
         int256 _shareAdjustment,

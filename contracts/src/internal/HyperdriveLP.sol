@@ -79,18 +79,37 @@ abstract contract HyperdriveLP is
         // Set the initialized state to true.
         _marketState.isInitialized = true;
 
-        // Update the reserves. The bond reserves are calculated so that the
-        // pool is initialized with the target APR.
-        _marketState.shareReserves = shareContribution.toUint128();
-        _marketState.bondReserves = HyperdriveMath
-            .calculateInitialBondReserves(
+        // Initialize the reserves.
+        (
+            uint256 shareReserves,
+            int256 shareAdjustment,
+            uint256 bondReserves
+        ) = LPMath.calculateInitialReserves(
                 shareContribution,
+                vaultSharePrice,
                 _initialVaultSharePrice,
                 _apr,
                 _positionDuration,
                 _timeStretch
-            )
-            .toUint128();
+            );
+        _marketState.shareReserves = shareReserves.toUint128();
+        _marketState.shareAdjustment = shareAdjustment.toInt128();
+        _marketState.bondReserves = bondReserves.toUint128();
+
+        // // FIXME
+        // //
+        // // Update the reserves. The bond reserves are calculated so that the
+        // // pool is initialized with the target APR.
+        // _marketState.shareReserves = shareContribution.toUint128();
+        // _marketState.bondReserves = LPMath
+        //     .calculateInitialBondReserves(
+        //         shareContribution,
+        //         _initialVaultSharePrice,
+        //         _apr,
+        //         _positionDuration,
+        //         _timeStretch
+        //     )
+        //     .toUint128();
 
         // Mint the minimum share reserves to the zero address as a buffer that
         // ensures that the total LP supply is always greater than or equal to

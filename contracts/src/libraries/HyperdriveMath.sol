@@ -172,56 +172,6 @@ library HyperdriveMath {
         return (uint256(effectiveShareReserves), true);
     }
 
-    /// @dev Calculates the initial bond reserves assuming that the initial LP
-    ///      receives LP shares amounting to c * z + y. Throughout the rest of
-    ///      the codebase, the bond reserves used include the LP share
-    ///      adjustment specified in YieldSpace. The bond reserves returned by
-    ///      this function are unadjusted which makes it easier to calculate the
-    ///      initial LP shares. This calculation underestimates the pool's
-    ///      initial bond reserves.
-    /// @param _effectiveShareReserves The pool's effective share reserves. The
-    ///        effective share reserves are a modified version of the share
-    ///        reserves used when pricing trades.
-    /// @param _initialVaultSharePrice The pool's initial vault share price.
-    /// @param _apr The pool's APR.
-    /// @param _positionDuration The amount of time until maturity in seconds.
-    /// @param _timeStretch The time stretch parameter.
-    /// @return bondReserves The bond reserves (without adjustment) that make
-    ///         the pool have a specified APR.
-    function calculateInitialBondReserves(
-        uint256 _effectiveShareReserves,
-        uint256 _initialVaultSharePrice,
-        uint256 _apr,
-        uint256 _positionDuration,
-        uint256 _timeStretch
-    ) internal pure returns (uint256 bondReserves) {
-        // NOTE: Round down to underestimate the initial bond reserves.
-        //
-        // Normalize the time to maturity to fractions of a year since the
-        // provided rate is an APR.
-        uint256 t = _positionDuration.divDown(365 days);
-
-        // NOTE: Round down to underestimate the initial bond reserves.
-        //
-        // inner = (1 + apr * t) ** (1 / t_s)
-        uint256 inner = ONE + _apr.mulDown(t);
-        if (inner >= ONE) {
-            // Rounding down the exponent results in a smaller result.
-            inner = inner.pow(ONE.divDown(_timeStretch));
-        } else {
-            // Rounding up the exponent results in a smaller result.
-            inner = inner.pow(ONE.divUp(_timeStretch));
-        }
-
-        // NOTE: Round down to underestimate the initial bond reserves.
-        //
-        // mu * (z - zeta) * (1 + apr * t) ** (1 / t_s)
-        return
-            _initialVaultSharePrice.mulDown(_effectiveShareReserves).mulDown(
-                inner
-            );
-    }
-
     /// @dev Calculates the proceeds in shares of closing a short position. This
     ///      takes into account the trading profits, the interest that was
     ///      earned by the short, the flat fee the short pays, and the amount of

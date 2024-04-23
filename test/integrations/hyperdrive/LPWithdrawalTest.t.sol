@@ -49,7 +49,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         config.fees.flat = 0.0005e18;
         deploy(alice, config);
         uint256 apr = 0.05e18;
-        uint256 contribution = 50_000_000e18;
+        uint256 contribution = 100_000_000e18;
         uint256 lpShares = initialize(alice, apr, contribution);
 
         // Celine opens a large short.
