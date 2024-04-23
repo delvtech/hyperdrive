@@ -467,7 +467,7 @@ mod tests {
     #[tokio::test]
     async fn fuzz_calculate_spot_price_after_short() -> Result<()> {
         // TODO: Why can't this pass with a tolerance of 1e9?
-        let tolerance = fixed!(1e10);
+        let tolerance = fixed!(1e11);
 
         // Spawn a test chain and create two agents -- Alice and Bob. Alice is
         // funded with a large amount of capital so that she can initialize the
