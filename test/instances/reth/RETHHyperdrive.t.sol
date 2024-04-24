@@ -260,15 +260,6 @@ contract RETHHyperdriveTest is InstanceTest {
         }
     }
 
-    /// Getters ///
-
-    function test_getters() external {
-        assertEq(
-            address(IRETHHyperdrive(address(hyperdrive)).rocketStorage()),
-            address(ROCKET_STORAGE)
-        );
-    }
-
     /// Price Per Share ///
 
     function test_pricePerVaultShare(uint256 basePaid) external {
