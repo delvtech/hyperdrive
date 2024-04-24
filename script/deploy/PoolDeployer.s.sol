@@ -120,7 +120,6 @@ contract Deployer is Script, PoolDeploymentConfig {
         console.log("Parsed configuration for network %s.", summary.name);
 
         // set the rpc url and begin broadcasting transactions
-        vm.createSelectFork(vm.rpcUrl(deployment.rpcName));
         vm.startBroadcast(deployerPrivateKey);
 
         // Retrieve the name of the coordinator and use it to identify which type of pool is being deployed.
@@ -306,21 +305,21 @@ contract Deployer is Script, PoolDeploymentConfig {
         summary.instanceSummary.hyperdrive = address(hyperdrive);
 
         // Update the registry with the freshly deployed pool if possible.
-        if (
-            HyperdriveRegistry(deployment.init.registry).governance() ==
-            summary.deployer
-        ) {
-            HyperdriveRegistry(deployment.init.registry).setHyperdriveInfo(
-                address(hyperdrive),
-                1
-            );
-            summary.registryUpdated = true;
-            console.log("Updated registry with the new hyperdrive instance.");
-        } else {
-            console.log(
-                "Unable to update registry with new hyperdrive instance."
-            );
-        }
+        // if (
+        //     HyperdriveRegistry(deployment.init.registry).governance() ==
+        //     summary.deployer
+        // ) {
+        //     HyperdriveRegistry(deployment.init.registry).setHyperdriveInfo(
+        //         address(hyperdrive),
+        //         1
+        //     );
+        //     summary.registryUpdated = true;
+        //     console.log("Updated registry with the new hyperdrive instance.");
+        // } else {
+        //     console.log(
+        //         "Unable to update registry with new hyperdrive instance."
+        //     );
+        // }
 
         // Compute the constructor args for the targets and the hyperdrive instance so they can be verified after deployment.
         summary.instanceSummary.targetConstructorArgs = abi.encode(

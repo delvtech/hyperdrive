@@ -313,6 +313,7 @@ contract Deployer is Script, FactoryDeploymentConfig {
             true,
             500e18
         );
+        reth.setPublicCapability(bytes4(keccak256("mint(uint256)")), true);
         return address(reth);
     }
 

@@ -6,8 +6,8 @@ name           = "RETH"
 factory        = "0x338D5634c391ef47FB797417542aa75F4f71A4a6"
 coordinator    = "0x4D12e758D43bDdF385CCa096cE60639DeeaD13e4"
 registry       = "0xba5156E697d39a03EDA824C19f375383F6b759EA"
-deploymentId   = "0x66660A7"
-salt           = "0x69420"
+deploymentId   = "0x1234"
+salt           = "0x5678"
 contribution   = { value = 1000, unit = "bips" }
 fixedAPR       = { value = 300, unit = "bips" }
 timeStretchAPR = { value = 300, unit = "bips" }
@@ -28,7 +28,7 @@ timeStretchAPR = { value = 300, unit = "bips" }
   governanceLP     = { value = 1500, unit = "bips" }
   governanceZombie = { value = 300, unit = "bips" }
 [options]
-  destination = "0x25a6592F1eaA22cD7BFc590A90d56FbB765b1Edc"
+  destination = "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8"
   asBase      = false
   extraData   = "0x00"
 [tokens]
