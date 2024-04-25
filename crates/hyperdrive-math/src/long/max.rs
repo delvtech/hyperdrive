@@ -81,6 +81,12 @@ impl State {
         // we converge to the solution.
         let mut max_base_amount =
             self.max_long_guess(absolute_max_base_amount, checkpoint_exposure);
+
+        // possible_max_base_amount might be less than minimum transaction amount.
+        // we clamp here if so
+        if max_base_amount < self.minimum_transaction_amount() {
+            max_base_amount = self.minimum_transaction_amount();
+        }
         let mut maybe_solvency = self.solvency_after_long(
             max_base_amount,
             self.calculate_open_long(max_base_amount).unwrap(),
