@@ -335,6 +335,8 @@ contract EzETHHyperdriveTest is InstanceTest {
 
     /// Long ///
 
+    /// @dev We override this test case from InstanceTest, because EzETH's
+    ///      accounting requires larger assertion constraints.
     function test_close_long_with_shares(
         uint256 basePaid,
         int256 variableRate
@@ -408,7 +410,7 @@ contract EzETHHyperdriveTest is InstanceTest {
         );
     }
 
-    // /// Short ///
+    /// Short ///
 
     function test_open_short_refunds() external {
         vm.startPrank(bob);
@@ -447,6 +449,8 @@ contract EzETHHyperdriveTest is InstanceTest {
         assertEq(address(bob).balance, ethBalanceBefore);
     }
 
+    /// @dev We override this test case from InstanceTest, because EzETH's
+    ///      accounting requires larger assertion constraints.
     function test_close_short_with_shares(
         uint256 shortAmount,
         int256 variableRate
