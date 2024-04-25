@@ -322,7 +322,7 @@ abstract contract InstanceTest is HyperdriveTest {
         AccountBalances memory hyperdriveBalancesBefore
     ) internal virtual;
 
-    /// @dev A virtual function that ensures the deposit accounting is correct
+    /// @dev A virtual function that ensures the withdrawal accounting is correct
     ///      when opening positions.
     /// @param trader The account opening the position.
     /// @param baseProceeds The amount the position was opened with in terms of base.
@@ -861,7 +861,7 @@ abstract contract InstanceTest is HyperdriveTest {
 
         // Bob opens a short by depositing base.
         // We expect the openShort to fail with an UnsupportedToken error
-        // if depositing with base are not supported or a NotPayable error
+        // if depositing with base is not supported or a NotPayable error
         // if the base token is ETH.
         vm.startPrank(bob);
         if (!config.enableBaseDeposits) {
