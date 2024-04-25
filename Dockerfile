@@ -1,11 +1,5 @@
 FROM ghcr.io/foundry-rs/foundry:master as builder
 
-# Install the Rust toolchain.
-RUN apk add clang lld curl build-base linux-headers git pkgconfig libressl-dev \
-    && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > rustup.sh \
-    && chmod +x ./rustup.sh \
-    && ./rustup.sh -y --default-toolchain nightly
-
 # Set the working directory to where the source code will live.
 WORKDIR /src
 
@@ -15,11 +9,8 @@ ENV FOUNDRY_PROFILE="production"
 # Copy the dependencies required to run the migration script.
 COPY ./.git/ ./.git/
 COPY ./contracts/ ./contracts/
-COPY ./crates/ ./crates/
 COPY ./lib/ ./lib/
 COPY ./test/ ./test/
-COPY ./Cargo.toml ./Cargo.toml
-COPY ./Cargo.lock ./Cargo.lock
 COPY ./foundry.toml ./foundry.toml
 
 # Install the dependencies and compile the contracts.

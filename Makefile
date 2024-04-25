@@ -1,11 +1,11 @@
-.PHONY: build build-sol build-rust test test-sol test-rust lint lint-rust \
+.PHONY: build build-sol test test-sol lint \
 	lint-sol code-size-check solhint style-check spell-check warnings-check \
 	prettier
 
 ### Build ###
 
 build: 
-	make build-sol && make build-rust
+	make build-sol
 
 build-sol: 
 	forge build
@@ -20,7 +20,7 @@ SOLIDITY_NETTING_TESTS = IntraCheckpointNettingTest
 SOLIDITY_ZOMBIE_TESTS = ZombieInterestTest
 
 test: 
-	make test-sol && make test-rust
+	make test-sol
 
 test-instances:
 	forge test -vv --match-path test/instances/*.t.sol
@@ -47,7 +47,7 @@ test-rust:
 ### Lint ###
 
 lint:
-	make lint-sol && make lint-rust
+	make lint-sol
 
 lint-sol:
 	make solhint && make style-check && make spell-check && make warnings-check && make code-size-check
