@@ -118,7 +118,15 @@ impl State {
             if maybe_derivative.is_none() {
                 break;
             }
-            let possible_max_base_amount = max_base_amount + solvency / maybe_derivative.unwrap();
+            let mut possible_max_base_amount =
+                max_base_amount + solvency / maybe_derivative.unwrap();
+
+            // possible_max_base_amount might be less than minimum transaction amount.
+            // we clamp here if so
+            if possible_max_base_amount < self.minimum_transaction_amount() {
+                possible_max_base_amount = self.minimum_transaction_amount();
+            }
+
             maybe_solvency = self.solvency_after_long(
                 possible_max_base_amount,
                 self.calculate_open_long(possible_max_base_amount).unwrap(),
