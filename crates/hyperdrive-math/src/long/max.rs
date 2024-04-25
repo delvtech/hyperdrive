@@ -146,6 +146,11 @@ impl State {
             }
         }
 
+        // If the max base amount is less than the minimum transaction amount, we return 0 as the max long.
+        if max_base_amount <= self.minimum_transaction_amount() {
+            return fixed!(0);
+        }
+
         // Ensure that the final result is less than the absolute max and clamp
         // to the budget.
         if max_base_amount >= absolute_max_base_amount {
