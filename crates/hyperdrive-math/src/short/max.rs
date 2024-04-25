@@ -318,12 +318,12 @@ impl State {
         let mut maybe_solvency =
             self.solvency_after_short(max_bond_amount, spot_price, checkpoint_exposure);
         if maybe_solvency.is_none() {
-            // If initial guess is insolvant, use the absolute max short
+            // If initial guess is insolvent, use the absolute max short
             // as the initial guess
             max_bond_amount = absolute_max_bond_amount;
             // We expect by definition for the pool to be solvent with the absolute max bond amount.
             maybe_solvency =
-                self.solvency_after_short(max_bond_amount, spot_price, checkpoint_exposure)
+                self.solvency_after_short(max_bond_amount, spot_price, checkpoint_exposure);
         }
         let mut solvency = maybe_solvency.unwrap();
         for _ in 0..maybe_max_iterations.unwrap_or(7) {
