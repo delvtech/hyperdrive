@@ -545,7 +545,7 @@ mod tests {
                 }
                 Err(_) => assert!(
                     // Check both panic and err
-                    actual.is_err() or actual.unwrap().is_err()
+                    actual.is_err() || actual.unwrap().is_err()
                 ),
             }
         }
