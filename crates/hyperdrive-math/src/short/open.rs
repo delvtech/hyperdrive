@@ -175,7 +175,7 @@ impl State {
         let base_paid = self.calculate_open_short(bond_amount, open_vault_share_price)?;
         let base_proceeds = bond_amount
             * (((fixed!(1e18) + variable_apy)
-            .pow(fixed!(1e18) / (fixed!(1e18) * compounding_frequency)))
+            .pow(fixed!(1e18) / compounding_frequency))
             .pow(self.annualized_position_duration() * compounding_frequency)
             - fixed!(1e18));
         if base_proceeds > base_paid {
