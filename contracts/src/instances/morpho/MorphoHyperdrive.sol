@@ -5,6 +5,7 @@ import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
+import { IMorpho, MarketParams } from "../../interfaces/IMorpho.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { MorphoBase } from "./MorphoBase.sol";
 
@@ -70,9 +71,12 @@ contract MorphoHyperdrive is Hyperdrive, MorphoBase {
         address _target1,
         address _target2,
         address _target3,
-        address _target4
+        address _target4,
+        IMorpho _morpho,
+        MarketParams memory _marketParams
     )
         Hyperdrive(_config, _target0, _target1, _target2, _target3, _target4)
+        MorphoBase(_morpho, _marketParams)
     {
         // Approve the base token with 1 wei. This ensures that all of the
         // subsequent approvals will be writing to a dirty storage slot.

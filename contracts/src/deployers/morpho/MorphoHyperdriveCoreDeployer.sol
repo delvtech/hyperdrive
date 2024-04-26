@@ -4,6 +4,7 @@ pragma solidity 0.8.20;
 import { IMorpho } from "../../interfaces/IMorpho.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveCoreDeployer } from "../../interfaces/IHyperdriveCoreDeployer.sol";
+import { IMorpho, MarketParams } from "../../interfaces/IMorpho.sol";
 import { MorphoHyperdrive } from "../../instances/morpho/MorphoHyperdrive.sol";
 
 /// @author DELV
@@ -13,6 +14,17 @@ import { MorphoHyperdrive } from "../../instances/morpho/MorphoHyperdrive.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract MorphoHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
+    IMorpho internal immutable _morpho;
+    MarketParams internal _marketParams;
+
+    /// @notice Instantiates the core deployer.
+    /// @param __morpho The Morpho contract.
+    /// @param __marketParams The Morpho market information.
+    constructor(IMorpho __morpho, MarketParams memory __marketParams) {
+        _morpho = __morpho;
+        _marketParams = __marketParams;
+    }
+
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _target0 The target0 address.
@@ -38,7 +50,16 @@ contract MorphoHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
                 // front-running of deployments.
                 new MorphoHyperdrive{
                     salt: keccak256(abi.encode(msg.sender, _salt))
-                }(_config, _target0, _target1, _target2, _target3, _target4)
+                }(
+                    _config,
+                    _target0,
+                    _target1,
+                    _target2,
+                    _target3,
+                    _target4,
+                    _morpho,
+                    _marketParams
+                )
             )
         );
     }

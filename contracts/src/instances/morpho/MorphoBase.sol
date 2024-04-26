@@ -4,7 +4,7 @@ pragma solidity 0.8.20;
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
-import { IMorpho } from "../../interfaces/IMorpho.sol";
+import { IMorpho, MarketParams } from "../../interfaces/IMorpho.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 
@@ -20,6 +20,17 @@ import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 abstract contract MorphoBase is HyperdriveBase {
     using SafeERC20 for ERC20;
 
+    IMorpho internal immutable _morpho;
+    MarketParams internal _marketParams;
+
+    /// @notice Instantiates the ezETH Hyperdrive base contract.
+    /// @param __morpho The Morpho contract.
+    /// @param __marketParams The Morpho market information.
+    constructor(IMorpho __morpho, MarketParams memory __marketParams) {
+        _morpho = __morpho;
+        _marketParams = __marketParams;
+    }
+
     /// Yield Source ///
 
     /// @dev Accepts a deposit from the user in base.
@@ -31,32 +42,9 @@ abstract contract MorphoBase is HyperdriveBase {
         uint256 _baseAmount,
         bytes calldata // unused
     ) internal override returns (uint256, uint256) {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC4626 example provided.
-        // Take custody of the deposit in base.
-        ERC20(address(_baseToken)).safeTransferFrom(
-            msg.sender,
-            address(this),
-            _baseAmount
-        );
+        // (, uint256 shares) = _morpho.supply();
 
-        // Deposit the base into the yield source.
-        //
-        // NOTE: We increase the required approval amount by 1 wei so that
-        // the vault ends with an approval of 1 wei. This makes future
-        // approvals cheaper by keeping the storage slot warm.
-        ERC20(address(_baseToken)).forceApprove(
-            address(_vaultSharesToken),
-            _baseAmount + 1
-        );
-        uint256 sharesMinted = IERC4626(address(_vaultSharesToken)).deposit(
-            _baseAmount,
-            address(this)
-        );
-
-        return (sharesMinted, 0);
-        // ****************************************************************
-
+        return (0, 0);
     }
 
     /// @dev Process a deposit in vault shares.
@@ -99,7 +87,6 @@ abstract contract MorphoBase is HyperdriveBase {
 
         return amountWithdrawn;
         // ****************************************************************
-
     }
 
     /// @dev Process a withdrawal in vault shares and send the proceeds to the
@@ -114,7 +101,10 @@ abstract contract MorphoBase is HyperdriveBase {
         // ****************************************************************
         // FIXME: Implement this for new instances. ERC20 example provided.
         // Transfer vault shares to the destination.
-        ERC20(address(_vaultSharesToken)).safeTransfer(_destination, _shareAmount);
+        ERC20(address(_vaultSharesToken)).safeTransfer(
+            _destination,
+            _shareAmount
+        );
         // ****************************************************************
     }
 
@@ -155,7 +145,6 @@ abstract contract MorphoBase is HyperdriveBase {
     {
         return _vaultSharesToken.balanceOf(address(this));
     }
-
 
     /// @dev We override the message value check since this integration is
     ///      not payable.

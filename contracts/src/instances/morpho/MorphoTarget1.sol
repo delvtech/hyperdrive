@@ -3,6 +3,7 @@ pragma solidity 0.8.20;
 
 import { HyperdriveTarget1 } from "../../external/HyperdriveTarget1.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IMorpho, MarketParams } from "../../interfaces/IMorpho.sol";
 import { MorphoBase } from "./MorphoBase.sol";
 
 /// @author DELV
@@ -16,7 +17,11 @@ import { MorphoBase } from "./MorphoBase.sol";
 contract MorphoTarget1 is HyperdriveTarget1, MorphoBase {
     /// @notice Initializes the target1 contract.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _morpho The Morpho contract.
+    /// @param _marketParams The Morpho market information.
     constructor(
-        IHyperdrive.PoolConfig memory _config
-    ) HyperdriveTarget1(_config) {}
+        IHyperdrive.PoolConfig memory _config,
+        IMorpho _morpho,
+        MarketParams memory _marketParams
+    ) HyperdriveTarget1(_config) MorphoBase(_morpho, _marketParams) {}
 }

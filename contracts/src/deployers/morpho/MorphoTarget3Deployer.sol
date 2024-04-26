@@ -5,6 +5,7 @@ import { MorphoTarget3 } from "../../instances/morpho/MorphoTarget3.sol";
 import { IMorpho } from "../../interfaces/IMorpho.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDeployer.sol";
+import { IMorpho, MarketParams } from "../../interfaces/IMorpho.sol";
 
 /// @author DELV
 /// @title MorphoTarget3Deployer
@@ -13,6 +14,17 @@ import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDep
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract MorphoTarget3Deployer is IHyperdriveTargetDeployer {
+    IMorpho internal immutable _morpho;
+    MarketParams internal _marketParams;
+
+    /// @notice Instantiates the core deployer.
+    /// @param __morpho The Morpho contract.
+    /// @param __marketParams The Morpho market information.
+    constructor(IMorpho __morpho, MarketParams memory __marketParams) {
+        _morpho = __morpho;
+        _marketParams = __marketParams;
+    }
+
     /// @notice Deploys a target3 instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _salt The create2 salt used in the deployment.
@@ -28,7 +40,7 @@ contract MorphoTarget3Deployer is IHyperdriveTargetDeployer {
                 // front-running of deployments.
                 new MorphoTarget3{
                     salt: keccak256(abi.encode(msg.sender, _salt))
-                }(_config)
+                }(_config, _morpho, _marketParams)
             );
     }
 }
