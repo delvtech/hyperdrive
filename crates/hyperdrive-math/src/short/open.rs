@@ -159,8 +159,8 @@ impl State {
     /// if the variable rate stays the same.
     /// 
     /// To do this, we must adjust the variable rate $r_{adjusted}$ according to
-    /// the position duration and the variable yield source's compounding
-    /// intervals. The adjusted rate will be:
+    /// the position duration $t$ and the variable yield source's compounding
+    /// frequency $f$. The adjusted rate will be:
     /// 
     /// $$
     /// r_{adjusted} = ((1 + r_{variable})^{1/f})^{t*f}-1
