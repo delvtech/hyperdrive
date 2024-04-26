@@ -152,19 +152,32 @@ impl State {
     /// $$
     /// r_{implied} = \frac{r_{variable} - r_{effective}}{r_{effective}}
     /// $$
-    ///
+    /// 
     /// We can short-cut this calculation using the amount of base the short
     /// will pay and comparing this to the amount of base the short will receive
     /// if the variable rate stays the same. The implied rate is just the ROI
     /// if the variable rate stays the same.
+    /// 
+    /// To do this, we must adjust the variable rate $r_{adjusted}$ according to
+    /// the position duration and the variable yield source's compounding
+    /// intervals. The adjusted rate will be:
+    /// 
+    /// $$
+    /// r_{adjusted} = ((1 + r_{variable})^{1/f})^{t*f}-1
+    /// $$
     pub fn calculate_implied_rate(
         &self,
         bond_amount: FixedPoint,
         open_vault_share_price: FixedPoint,
         variable_apy: FixedPoint,
+        compounding_frequency: FixedPoint,
     ) -> Result<I256> {
         let base_paid = self.calculate_open_short(bond_amount, open_vault_share_price)?;
-        let base_proceeds = bond_amount * variable_apy;
+        let base_proceeds = bond_amount
+            * (((fixed!(1e18) + variable_apy)
+            .pow(fixed!(1e18) / (fixed!(1e18) * compounding_frequency)))
+            .pow(self.annualized_position_duration() * compounding_frequency)
+            - fixed!(1e18));
         if base_proceeds > base_paid {
             Ok(I256::try_from((base_proceeds - base_paid) / base_paid)?)
         } else {
@@ -532,7 +545,7 @@ mod tests {
     async fn test_calculate_implied_rate() -> Result<()> {
         let tolerance = int256!(1e14);
 
-        // Spwan a test chain with two agents.
+        // Spawn a test chain with two agents.
         let mut rng = thread_rng();
         let chain = TestChain::new().await?;
         let mut alice = chain.alice().await?;
@@ -567,6 +580,7 @@ mod tests {
                 bond_amount,
                 bob.get_state().await?.vault_share_price(),
                 variable_rate.into(),
+                fixed!(365e18),
             )?;
             let (maturity_time, base_paid) = bob.open_short(bond_amount, None, None).await?;
 
