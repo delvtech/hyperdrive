@@ -376,7 +376,8 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
-            uint256 totalGovernanceFee
+            uint256 totalGovernanceFee,
+            uint256 spotPrice
         )
     {
         return _calculateOpenLong(_shareAmount, _vaultSharePrice);
