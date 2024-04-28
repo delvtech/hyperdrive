@@ -123,6 +123,10 @@ interface IHyperdrive is
         /// @dev The minimum amount of tokens that a position can be opened or
         ///      closed with.
         uint256 minimumTransactionAmount;
+        /// @dev The maximum delta between the last checkpoint's weighted spot
+        ///      APR and the current spot APR for an LP to add liquidity. This
+        ///      protects LPs from sandwich attacks.
+        uint256 maximumAddLiquidityAPRDelta;
         /// @dev The duration of a position prior to maturity.
         uint256 positionDuration;
         /// @dev The duration of a checkpoint.

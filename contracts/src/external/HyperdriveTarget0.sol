@@ -298,6 +298,7 @@ abstract contract HyperdriveTarget0 is
                     initialVaultSharePrice: _initialVaultSharePrice,
                     minimumShareReserves: _minimumShareReserves,
                     minimumTransactionAmount: _minimumTransactionAmount,
+                    maximumAddLiquidityAPRDelta: _maximumAddLiquidityAPRDelta,
                     positionDuration: _positionDuration,
                     checkpointDuration: _checkpointDuration,
                     timeStretch: _timeStretch,

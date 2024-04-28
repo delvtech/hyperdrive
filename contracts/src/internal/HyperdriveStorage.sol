@@ -63,6 +63,11 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
     ///      closed with.
     uint256 internal immutable _minimumTransactionAmount;
 
+    /// @dev The maximum delta between the last checkpoint's weighted spot APR
+    ///      and the current spot APR for an LP to add liquidity. This protects
+    ///      LPs from sandwich attacks.
+    uint256 internal immutable _maximumAddLiquidityAPRDelta;
+
     /// @dev The state of the market. This includes the reserves, buffers, and
     ///      other data used to price trades and maintain solvency.
     IHyperdrive.MarketState internal _marketState;
@@ -148,6 +153,13 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
         // prevents weird rounding issues that can occur with very small
         // amounts.
         _minimumTransactionAmount = _config.minimumTransactionAmount;
+
+        // Initialize the maximum add liquidity APR delta. The maximum add
+        // liquidity APR delta defines the maximum delta between the current
+        // spot APR and the weighted spot APR from the last checkpoint for an
+        // LP to add liquidity. This mitigates the possibility of LP sandwich
+        // attacks by making them economically infeasible to pull off.
+        _maximumAddLiquidityAPRDelta = _config.maximumAddLiquidityAPRDelta;
 
         // Initialize the time configurations. There must be at least one
         // checkpoint per term to avoid having a position duration of zero.
