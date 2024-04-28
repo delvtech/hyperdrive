@@ -450,6 +450,57 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         }
     }
 
+    /// @dev Update the weighted spot price from a specified checkpoint. The
+    ///      weighted spot price is a time weighted average of the spot prices
+    ///      in the checkpoint.
+    /// @param _checkpointTime The checkpoint time of the checkpoint to update.
+    /// @param _updateTime The time at which the update is being processed. Most
+    ///        of the time, this is the latest block time, but when updating
+    ///        past checkpoints, this may be the time at the end of the
+    ///        checkpoint.
+    /// @param _spotPrice The spot price to accumulate into the time weighted
+    ///        average.
+    function _updateWeightedSpotPrice(
+        uint256 _checkpointTime,
+        uint256 _updateTime,
+        uint256 _spotPrice
+    ) internal {
+        // If the update time is equal to the last update time, the time delta
+        // is zero, so we don't need to update the time weighted average.
+        uint256 lastWeightedSpotPriceUpdateTime = _checkpoints[_checkpointTime]
+            .lastWeightedSpotPriceUpdateTime;
+        if (_updateTime == lastWeightedSpotPriceUpdateTime) {
+            return;
+        }
+
+        // If the previous weighted spot price is zero, then the weighted spot
+        // price is set to the spot price that is being accumulated.
+        uint256 previousWeightedSpotPrice = _checkpoints[_checkpointTime]
+            .weightedSpotPrice;
+        if (previousWeightedSpotPrice == 0) {
+            _checkpoints[_checkpointTime].weightedSpotPrice = _spotPrice
+                .toUint128();
+        }
+        // Otherwise the previous weighted spot price is non-zero and the update
+        // time is greater than the latest update time, the we accumulate the
+        // spot price into the weighted spot price.
+        else {
+            _checkpoints[_checkpointTime]
+                .weightedSpotPrice = previousWeightedSpotPrice
+                .updateWeightedAverage(
+                    (lastWeightedSpotPriceUpdateTime - _checkpointTime) * ONE,
+                    _spotPrice,
+                    (_updateTime - lastWeightedSpotPriceUpdateTime) * ONE,
+                    true
+                )
+                .toUint128();
+        }
+
+        // Record the update time as the last update time.
+        _checkpoints[_checkpointTime]
+            .lastWeightedSpotPriceUpdateTime = _updateTime.toUint128();
+    }
+
     /// @dev Apply the updates to the market state as a result of closing a
     ///      position after maturity. This function also adjusts the proceeds
     ///      to account for any negative interest that has accrued in the

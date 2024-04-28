@@ -78,20 +78,23 @@ abstract contract HyperdriveCheckpoint is
         uint256 _maxIterations
     ) internal override returns (uint256) {
         // Return early if the checkpoint has already been updated.
-        IHyperdrive.Checkpoint storage checkpoint_ = _checkpoints[
+        IHyperdrive.Checkpoint storage checkpoint = _checkpoints[
             _checkpointTime
         ];
         if (
-            checkpoint_.vaultSharePrice != 0 ||
-            _checkpointTime > block.timestamp
+            checkpoint.vaultSharePrice != 0 || _checkpointTime > block.timestamp
         ) {
-            return checkpoint_.vaultSharePrice;
+            return checkpoint.vaultSharePrice;
         }
 
         // If the checkpoint time is the latest checkpoint, we use the current
-        // vault share price. Otherwise, we use a linear search to find the
-        // closest vault share price and use that to perform the checkpoint.
+        // vault share price and spot price. Otherwise, we use a linear search
+        // to find the closest non-zero vault share price and use that to
+        // perform the checkpoint. We use the weighted spot price from the
+        // checkpoint with the closest vault share price to populate the
+        // weighted spot price.
         uint256 checkpointVaultSharePrice;
+        uint256 checkpointWeightedSpotPrice;
         uint256 latestCheckpoint = _latestCheckpoint();
         if (_checkpointTime == latestCheckpoint) {
             checkpointVaultSharePrice = _vaultSharePrice;
@@ -101,20 +104,54 @@ abstract contract HyperdriveCheckpoint is
                 ;
                 time += _checkpointDuration
             ) {
-                checkpointVaultSharePrice = _checkpoints[time].vaultSharePrice;
-                if (
-                    time == latestCheckpoint && checkpointVaultSharePrice == 0
-                ) {
+                // If the time is the latest checkpoint, we use the vault share
+                // price and the current spot price.
+                if (time == latestCheckpoint) {
                     checkpointVaultSharePrice = _vaultSharePrice;
+                    checkpointWeightedSpotPrice = HyperdriveMath
+                        .calculateSpotPrice(
+                            _effectiveShareReserves(),
+                            _marketState.bondReserves,
+                            _initialVaultSharePrice,
+                            _timeStretch
+                        );
                 }
+
+                // If the time isn't the latest checkpoint, we check to see if
+                // the checkpoint's vault share price is non-zero. If it is,
+                // that is the vault share price that we'll use to create the
+                // new checkpoint. We'll use the corresponding weighted spot
+                // price to instantiate the weighted spot price for the new
+                // checkpoint.
+                checkpointVaultSharePrice = _checkpoints[time].vaultSharePrice;
                 if (checkpointVaultSharePrice != 0) {
+                    // If the checkpoint vault share price
+                    checkpointWeightedSpotPrice = _checkpoints[time]
+                        .weightedSpotPrice;
                     break;
                 }
             }
         }
 
         // Create the vault share price checkpoint.
-        checkpoint_.vaultSharePrice = checkpointVaultSharePrice.toUint128();
+        checkpoint.vaultSharePrice = checkpointVaultSharePrice.toUint128();
+
+        // Update the weighted spot price for the previous checkpoint.
+        _updateWeightedSpotPrice(
+            _checkpointTime - _checkpointDuration,
+            _checkpointTime,
+            checkpointWeightedSpotPrice
+        );
+
+        // Update the weighted spot price for the current checkpoint.
+        _updateWeightedSpotPrice(
+            _checkpointTime,
+            // NOTE: We use the block time as the update time for the
+            // latest checkpoint. For past checkpoints, we use the end time of
+            // the checkpoint.
+            block.timestamp.min(_checkpointTime + _checkpointDuration),
+            checkpointWeightedSpotPrice
+        );
 
         // Collect the interest that has accrued since the last checkpoint.
         _collectZombieInterest(_vaultSharePrice);
@@ -254,7 +291,7 @@ abstract contract HyperdriveCheckpoint is
             // distribute excess idle calculation fails, we proceed with the
             // calculation since checkpoints should be minted regardless of
             // whether idle could be distributed.
-            _distributeExcessIdleSafe(_vaultSharePrice, _maxIterations);
+            _distributeExcessIdleSafe(vaultSharePrice, _maxIterations);
         }
 
         // Emit an event about the checkpoint creation that includes the LP
@@ -262,9 +299,9 @@ abstract contract HyperdriveCheckpoint is
         // minting the checkpoint and just emit the LP share price as zero. This
         // ensures that the system's liveness isn't impacted by temporarily
         // being unable to calculate the present value.
-        (uint256 lpSharePrice, ) = _calculateLPSharePriceSafe(_vaultSharePrice);
+        (uint256 lpSharePrice, ) = _calculateLPSharePriceSafe(vaultSharePrice);
         emit CreateCheckpoint(
-            _checkpointTime,
+            checkpointTime,
             checkpointVaultSharePrice,
             vaultSharePrice,
             maturedShortsAmount,

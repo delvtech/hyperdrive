@@ -44,10 +44,29 @@ interface IHyperdrive is
     }
 
     struct Checkpoint {
+        // FIXME: This should be updated whenever an action is made that will
+        //        change the pool's spot price.
+        //
+        //        This includes:
+        //
+        //           - `openLong`
+        //           - `openShort`
+        //           - `closeLong` (before maturity)
+        //           - `closeShort` (before maturity)
+        //
+        //        We will also update this when applying checkpoints since we'll
+        //        want to "close out" the weighted spot price
+        //
+        /// @dev The time-weighted average spot price of the checkpoint. This is
+        ///      used to implement circuit-breakers that prevents liquidity from
+        ///      being added when the pool's rate moves too quickly.
+        uint128 weightedSpotPrice;
+        /// @dev The last time the weighted spot price was updated.
+        uint128 lastWeightedSpotPriceUpdateTime;
         /// @dev The vault share price during the first transaction in the
         ///      checkpoint. This is used to track the amount of interest
         ///      accrued by shorts as well as the vault share price at closing
-        //       of matured longs and shorts.
+        ///      of matured longs and shorts.
         uint128 vaultSharePrice;
     }
 
