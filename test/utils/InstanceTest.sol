@@ -261,6 +261,7 @@ abstract contract InstanceTest is HyperdriveTest {
             linkerCodeHash: factory.linkerCodeHash(),
             minimumShareReserves: 1e15,
             minimumTransactionAmount: config.minTransactionAmount,
+            maximumAddLiquidityAPRDelta: 2e18,
             positionDuration: config.positionDuration,
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: 0,

@@ -146,6 +146,8 @@ abstract contract HyperdriveLP is
         return lpShares;
     }
 
+    // FIXME: Add circuit breakers.
+    //
     /// @dev Allows LPs to supply liquidity for LP shares.
     /// @param _contribution The amount of capital to supply. The units of this
     ///        quantity are either base or vault shares, depending on the value
@@ -179,16 +181,33 @@ abstract contract HyperdriveLP is
             revert IHyperdrive.MinimumTransactionAmount();
         }
 
-        // Enforce the slippage guard.
-        uint256 apr = HyperdriveMath.calculateSpotAPR(
-            _effectiveShareReserves(),
-            _marketState.bondReserves,
-            _initialVaultSharePrice,
-            _positionDuration,
-            _timeStretch
-        );
-        if (apr < _minApr || apr > _maxApr) {
-            revert IHyperdrive.InvalidApr();
+        uint256 latestCheckpoint = _latestCheckpoint();
+        {
+            // Enforce the slippage guard.
+            uint256 apr = HyperdriveMath.calculateSpotAPR(
+                _effectiveShareReserves(),
+                _marketState.bondReserves,
+                _initialVaultSharePrice,
+                _positionDuration,
+                _timeStretch
+            );
+            if (apr < _minApr || apr > _maxApr) {
+                revert IHyperdrive.InvalidApr();
+            }
+
+            // Ensure that the spot APR is close enough to the previous weighted
+            // spot price to fall within the tolerance.
+            uint256 weightedSpotAPR = HyperdriveMath.calculateAPRFromPrice(
+                _checkpoints[latestCheckpoint].weightedSpotPrice,
+                _positionDuration
+            );
+            if (
+                apr > weightedSpotAPR + _maximumAddLiquidityAPRDelta ||
+                (weightedSpotAPR > _maximumAddLiquidityAPRDelta &&
+                    apr < weightedSpotAPR - _maximumAddLiquidityAPRDelta)
+            ) {
+                revert IHyperdrive.CircuitBreakerTriggered();
+            }
         }
 
         // Deposit for the user, this call also transfers from them
@@ -199,7 +218,7 @@ abstract contract HyperdriveLP is
 
         // Perform a checkpoint.
         _applyCheckpoint(
-            _latestCheckpoint(),
+            latestCheckpoint,
             vaultSharePrice,
             LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
         );

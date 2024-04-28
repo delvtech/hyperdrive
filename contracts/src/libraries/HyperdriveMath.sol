@@ -65,6 +65,22 @@ library HyperdriveMath {
             ).mulDown(timeStretch);
     }
 
+    /// @dev Calculates the APR implied by a price.
+    /// @param _price The price to convert to an APR.
+    /// @param _duration The term duration.
+    /// @return The APR implied by the price.
+    function calculateAPRFromPrice(
+        uint256 _price,
+        uint256 _duration
+    ) internal pure returns (uint256) {
+        // NOTE: Round down to underestimate the spot APR.
+        return
+            (ONE - _price).divDown(
+                // NOTE: Round up since this is in the denominator.
+                _price.mulDivUp(_duration, 365 days)
+            );
+    }
+
     /// @dev Calculates the spot price of bonds in terms of base. This
     ///      calculation underestimates the pool's spot price.
     /// @param _effectiveShareReserves The pool's effective share reserves. The
@@ -120,11 +136,7 @@ library HyperdriveMath {
             _initialVaultSharePrice,
             _timeStretch
         );
-        return
-            (ONE - spotPrice).divDown(
-                // NOTE: Round up since this is in the denominator.
-                spotPrice.mulDivUp(_positionDuration, 365 days)
-            );
+        return calculateAPRFromPrice(spotPrice, _positionDuration);
     }
 
     /// @dev Calculates the effective share reserves. The effective share

@@ -31,6 +31,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
     uint256 internal constant INITIAL_SHARE_PRICE = ONE;
     uint256 internal constant MINIMUM_SHARE_RESERVES = ONE;
     uint256 internal constant MINIMUM_TRANSACTION_AMOUNT = 0.001e18;
+    uint256 internal constant MAXIMUM_ADD_LIQUIDITY_APR_DELTA = 2e18;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
     uint256 internal constant POSITION_DURATION = 365 days;
 
@@ -134,6 +135,8 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         _config.minimumShareReserves = _deployConfig.minimumShareReserves;
         _config.minimumTransactionAmount = _deployConfig
             .minimumTransactionAmount;
+        _config.maximumAddLiquidityAPRDelta = _deployConfig
+            .maximumAddLiquidityAPRDelta;
         _config.positionDuration = _deployConfig.positionDuration;
         _config.checkpointDuration = _deployConfig.checkpointDuration;
         _config.timeStretch = _deployConfig.timeStretch;
@@ -162,6 +165,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 linkerCodeHash: forwarderFactory.ERC20LINK_HASH(),
                 minimumShareReserves: MINIMUM_SHARE_RESERVES,
                 minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
+                maximumAddLiquidityAPRDelta: MAXIMUM_ADD_LIQUIDITY_APR_DELTA,
                 positionDuration: positionDuration,
                 checkpointDuration: CHECKPOINT_DURATION,
                 timeStretch: HyperdriveMath.calculateTimeStretch(

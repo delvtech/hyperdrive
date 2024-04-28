@@ -58,6 +58,7 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
             initialVaultSharePrice: ONE,
             minimumShareReserves: ONE,
             minimumTransactionAmount: 0.001e18,
+            maximumAddLiquidityAPRDelta: 1e18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: HyperdriveMath.calculateTimeStretch(0.01e18, 365 days),

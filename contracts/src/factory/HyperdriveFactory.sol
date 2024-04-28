@@ -8,6 +8,9 @@ import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 import { VERSION } from "../libraries/Constants.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 
+// FIXME: Add the maximumAddLiquidityAPRDelta to `deployAndInitialize`. We need
+//        min and max parameters for this delta.
+//
 /// @author DELV
 /// @title HyperdriveFactory
 /// @notice Deploys hyperdrive instances and initializes them. It also holds a
