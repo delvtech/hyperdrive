@@ -609,7 +609,7 @@ contract ExtremeInputs is HyperdriveTest {
             assertGt(bondAmount, 0);
 
             // Most of the term passes.
-            advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
+            advanceTimeWithCheckpoints2(POSITION_DURATION.mulDown(0.99e18), 0);
 
             // Celine opens a max long.
             {
