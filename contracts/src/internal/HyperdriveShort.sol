@@ -73,18 +73,32 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // backdate the bonds sold to the beginning of the checkpoint.
         // Note: All state deltas are derived from the external function input.
         uint256 maturityTime = latestCheckpoint + _positionDuration;
-        (
-            uint256 baseDeposit,
-            uint256 shareReservesDelta,
-            uint256 totalGovernanceFee
-        ) = _calculateOpenShort(
+        uint256 baseDeposit;
+        uint256 shareReservesDelta;
+        uint256 totalGovernanceFee;
+        {
+            uint256 spotPrice;
+            (
+                baseDeposit,
+                shareReservesDelta,
+                totalGovernanceFee,
+                spotPrice
+            ) = _calculateOpenShort(
                 _bondAmount,
                 vaultSharePrice,
                 openVaultSharePrice
             );
 
-        // Attribute the governance fees.
-        _governanceFeesAccrued += totalGovernanceFee;
+            // Attribute the governance fees.
+            _governanceFeesAccrued += totalGovernanceFee;
+
+            // Update the weighted spot price.
+            _updateWeightedSpotPrice(
+                latestCheckpoint,
+                block.timestamp,
+                spotPrice
+            );
+        }
 
         // Take custody of the trader's deposit and ensure that the trader
         // doesn't pay more than their max deposit. The trader's deposit is
@@ -109,8 +123,9 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // Note: Updating the state using the result using the
         // deltas calculated from function inputs is consistent with
         // openLong.
+        uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
         _applyOpenShort(
-            _bondAmount,
+            bondAmount,
             shareReservesDelta,
             vaultSharePrice,
             maturityTime
@@ -121,13 +136,13 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             AssetId.AssetIdPrefix.Short,
             maturityTime
         );
-        uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
-        _mint(assetId, _options.destination, bondAmount);
+        IHyperdrive.Options calldata options = _options; // Avoid stack too deep error.
+        _mint(assetId, options.destination, bondAmount);
 
         // Emit an OpenShort event.
         uint256 shareReservesDelta_ = shareReservesDelta; // Avoid stack too deep error.
         uint256 vaultSharePrice_ = vaultSharePrice; // Avoid stack too deep error.
-        IHyperdrive.Options calldata options = _options;
+        uint256 totalGovernanceFee_ = totalGovernanceFee; // Avoid stack too deep error.
         emit OpenShort(
             options.destination,
             assetId,
@@ -138,7 +153,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             // NOTE: We subtract out the governance fee from the share reserves
             // delta since the user is responsible for paying the governance
             // fee.
-            (shareReservesDelta_ - totalGovernanceFee).mulDown(
+            (shareReservesDelta_ - totalGovernanceFee_).mulDown(
                 vaultSharePrice_
             ),
             bondAmount
@@ -207,15 +222,24 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             uint256 shareProceeds,
             uint256 shareReservesDelta,
             int256 shareAdjustmentDelta,
-            uint256 totalGovernanceFee
+            uint256 totalGovernanceFee,
+            uint256 spotPrice
         ) = _calculateCloseShort(_bondAmount, vaultSharePrice, _maturityTime);
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
         // withdrawal pool if necessary.
+        uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
         if (block.timestamp < _maturityTime) {
             // Attribute the governance fees.
             _governanceFeesAccrued += totalGovernanceFee;
+
+            // Update the weighted spot price.
+            _updateWeightedSpotPrice(
+                _latestCheckpoint(),
+                block.timestamp,
+                spotPrice
+            );
 
             // Update the pool's state to account for the short being closed.
             _applyCloseShort(
@@ -223,7 +247,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
                 bondReservesDelta,
                 shareReservesDelta,
                 shareAdjustmentDelta,
-                _maturityTime
+                maturityTime
             );
 
             // Update the global long exposure. Since we're closing a short, the
@@ -278,7 +302,6 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
 
         // Emit a CloseShort event.
         uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
-        uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
         uint256 shareReservesDelta_ = shareReservesDelta; // Avoid stack too deep error.
         uint256 totalGovernanceFee_ = totalGovernanceFee; // Avoid stack too deep error.
         uint256 vaultSharePrice_ = vaultSharePrice; // Avoid stack too deep error.
@@ -447,7 +470,8 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         returns (
             uint256 baseDeposit,
             uint256 shareReservesDelta,
-            uint256 totalGovernanceFee
+            uint256 totalGovernanceFee,
+            uint256 spotPrice
         )
     {
         // Calculate the effect that opening the short should have on the pool's
@@ -474,7 +498,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // Calculate the current spot price.
         uint256 curveFee;
         uint256 governanceCurveFee;
-        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+        spotPrice = HyperdriveMath.calculateSpotPrice(
             _effectiveShareReserves(),
             _marketState.bondReserves,
             _initialVaultSharePrice,
@@ -527,7 +551,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             )
             .mulUp(_vaultSharePrice);
 
-        return (baseDeposit, shareReservesDelta, governanceCurveFee);
+        return (baseDeposit, shareReservesDelta, governanceCurveFee, spotPrice);
     }
 
     /// @dev Calculate the pool reserve and trader deltas that result from
@@ -553,7 +577,8 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             uint256 shareProceeds,
             uint256 shareReservesDelta,
             int256 shareAdjustmentDelta,
-            uint256 totalGovernanceFee
+            uint256 totalGovernanceFee,
+            uint256 spotPrice
         )
     {
         // Calculate the effect that closing the short should have on the pool's
@@ -585,7 +610,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
 
             // Ensure that the trader didn't purchase bonds at a negative interest
             // rate after accounting for fees.
-            uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+            spotPrice = HyperdriveMath.calculateSpotPrice(
                 _effectiveShareReserves(),
                 _marketState.bondReserves,
                 _initialVaultSharePrice,
@@ -707,5 +732,14 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
                 false
             );
         }
+
+        return (
+            bondReservesDelta,
+            shareProceeds,
+            shareReservesDelta,
+            shareAdjustmentDelta,
+            totalGovernanceFee,
+            spotPrice
+        );
     }
 }
