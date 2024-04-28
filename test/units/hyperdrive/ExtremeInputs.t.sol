@@ -341,6 +341,7 @@ contract ExtremeInputs is HyperdriveTest {
         }
     }
 
+    /// forge-config: default.fuzz.runs = 100
     function test__updateLiquidity__extremeValues__fuzz(
         uint256 _contribution,
         uint256 _longAmount,
@@ -639,7 +640,7 @@ contract ExtremeInputs is HyperdriveTest {
             }
 
             // The rest of the term passes.
-            advanceTime(POSITION_DURATION.mulDown(0.1e18), 0);
+            advanceTimeWithCheckpoints2(POSITION_DURATION.mulDown(0.1e18), 0);
 
             // Verify that the ending bond reserves are greater than zero and
             // that the ending spot rate is the same as it was before the trade
@@ -679,7 +680,7 @@ contract ExtremeInputs is HyperdriveTest {
             assertGt(baseAmount, 0);
 
             // Most of the term passes.
-            advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
+            advanceTimeWithCheckpoints2(POSITION_DURATION.mulDown(0.99e18), 0);
 
             // Celine opens a max long.
             {
@@ -710,7 +711,7 @@ contract ExtremeInputs is HyperdriveTest {
             }
 
             // The rest of the term passes.
-            advanceTime(POSITION_DURATION.mulDown(0.1e18), 0);
+            advanceTimeWithCheckpoints2(POSITION_DURATION.mulDown(0.1e18), 0);
 
             // Verify that the ending bond reserves are greater than zero and
             // that the ending spot rate is the same as it was before the trade
@@ -820,7 +821,7 @@ contract ExtremeInputs is HyperdriveTest {
             assertGt(bondAmount, 0);
 
             // Most of the term passes.
-            advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
+            advanceTimeWithCheckpoints2(POSITION_DURATION.mulDown(0.99e18), 0);
 
             // Celine opens a max short.
             {
@@ -851,7 +852,7 @@ contract ExtremeInputs is HyperdriveTest {
             }
 
             // The rest of the term passes.
-            advanceTime(POSITION_DURATION.mulDown(0.1e18), 0);
+            advanceTimeWithCheckpoints2(POSITION_DURATION.mulDown(0.1e18), 0);
 
             // Verify that the ending bond reserves are greater than zero and
             // that the ending spot rate is the same as it was before the trade
@@ -891,7 +892,7 @@ contract ExtremeInputs is HyperdriveTest {
             assertGt(baseAmount, 0);
 
             // Most of the term passes.
-            advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
+            advanceTimeWithCheckpoints2(POSITION_DURATION.mulDown(0.99e18), 0);
 
             // Celine opens a max short.
             {
@@ -922,7 +923,7 @@ contract ExtremeInputs is HyperdriveTest {
             }
 
             // The rest of the term passes.
-            advanceTime(POSITION_DURATION.mulDown(0.1e18), 0);
+            advanceTimeWithCheckpoints2(POSITION_DURATION.mulDown(0.1e18), 0);
 
             // Verify that the ending bond reserves are greater than zero and
             // that the ending spot rate is the same as it was before the trade
