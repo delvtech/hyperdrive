@@ -161,7 +161,7 @@ contract CloseLongTest is HyperdriveTest {
         uint256 minimumShareReserves = hyperdrive
             .getPoolConfig()
             .minimumShareReserves;
-        uint256 contribution = 2 * minimumShareReserves;
+        uint256 contribution = 10 * minimumShareReserves;
         initialize(alice, apr, contribution);
 
         // Open a long position.
@@ -200,7 +200,7 @@ contract CloseLongTest is HyperdriveTest {
         uint256 minimumShareReserves = hyperdrive
             .getPoolConfig()
             .minimumShareReserves;
-        uint256 contribution = 2 * minimumShareReserves;
+        uint256 contribution = 10 * minimumShareReserves;
         initialize(alice, apr, contribution);
 
         // Alice opens a max short position.
@@ -538,7 +538,10 @@ contract CloseLongTest is HyperdriveTest {
             uint256 immatureBonds = bondAmount - matureBonds;
             bondsValue += YieldSpaceMath
                 .calculateSharesOutGivenBondsInDown(
-                    poolInfoBefore.shareReserves,
+                    HyperdriveMath.calculateEffectiveShareReserves(
+                        poolInfoBefore.shareReserves,
+                        poolInfoBefore.shareAdjustment
+                    ),
                     poolInfoBefore.bondReserves,
                     immatureBonds,
                     ONE - hyperdrive.getPoolConfig().timeStretch,
