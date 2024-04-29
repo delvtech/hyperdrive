@@ -69,6 +69,10 @@ contract LPWithdrawalTest is HyperdriveTest {
             celine,
             hyperdrive.calculateMaxLong()
         );
+        console.log(
+            "spot rate = %s",
+            hyperdrive.calculateSpotAPR().toString(18)
+        );
 
         // The term advances. Alice removes her liquidity.
         advanceTime(POSITION_DURATION, 0.05e18);
