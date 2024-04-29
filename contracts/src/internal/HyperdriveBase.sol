@@ -366,16 +366,7 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
             netCurveTrade: netCurveTrade,
             originalShareReserves: presentValueParams.shareReserves,
             originalShareAdjustment: presentValueParams.shareAdjustment,
-            originalBondReserves: presentValueParams.bondReserves,
-            spotPrice: HyperdriveMath.calculateSpotPrice(
-                HyperdriveMath.calculateEffectiveShareReserves(
-                    presentValueParams.shareReserves,
-                    presentValueParams.shareAdjustment
-                ),
-                presentValueParams.bondReserves,
-                presentValueParams.initialVaultSharePrice,
-                presentValueParams.timeStretch
-            )
+            originalBondReserves: presentValueParams.bondReserves
         });
         success = true;
     }

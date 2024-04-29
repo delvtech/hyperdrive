@@ -26,9 +26,7 @@ contract MockLPMath {
         int256 _shareAdjustment,
         uint256 _bondReserves,
         uint256 _minimumShareReserves,
-        int256 _shareReservesDelta,
-        uint256 _spotPrice,
-        uint256 _vaultSharePrice
+        int256 _shareReservesDelta
     )
         external
         pure
@@ -45,9 +43,7 @@ contract MockLPMath {
                 _shareAdjustment,
                 _bondReserves,
                 _minimumShareReserves,
-                _shareReservesDelta,
-                _spotPrice,
-                _vaultSharePrice
+                _shareReservesDelta
             );
         require(success, "MockLPMath: calculateUpdateLiquiditySafe failed");
     }

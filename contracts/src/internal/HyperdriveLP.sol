@@ -228,11 +228,7 @@ abstract contract HyperdriveLP is
 
             // Add the liquidity to the pool's reserves and calculate the new
             // present value.
-            _updateLiquidity(
-                shareContribution.toInt256(),
-                params.calculateSpotPrice(),
-                params.vaultSharePrice
-            );
+            _updateLiquidity(shareContribution.toInt256());
             params.shareReserves = _marketState.shareReserves;
             params.shareAdjustment = _marketState.shareAdjustment;
             params.bondReserves = _marketState.bondReserves;
@@ -584,11 +580,7 @@ abstract contract HyperdriveLP is
             .calculateDistributeExcessIdle(params, _maxIterations);
 
         // Remove the withdrawal pool proceeds from the reserves.
-        success = _updateLiquiditySafe(
-            -shareProceeds.toInt256(),
-            params.spotPrice,
-            params.presentValueParams.vaultSharePrice
-        );
+        success = _updateLiquiditySafe(-shareProceeds.toInt256());
         if (!success) {
             return false;
         }
@@ -604,21 +596,9 @@ abstract contract HyperdriveLP is
     ///      constant.
     /// @param _shareReservesDelta The delta that should be applied to share
     ///        reserves.
-    /// @param _spotPrice The pool's spot price.
-    /// @param _vaultSharePrice The pool's vault share price.
-    function _updateLiquidity(
-        int256 _shareReservesDelta,
-        uint256 _spotPrice,
-        uint256 _vaultSharePrice
-    ) internal {
+    function _updateLiquidity(int256 _shareReservesDelta) internal {
         // Attempt updating the pool's liquidity and revert if the update fails.
-        if (
-            !_updateLiquiditySafe(
-                _shareReservesDelta,
-                _spotPrice,
-                _vaultSharePrice
-            )
-        ) {
+        if (!_updateLiquiditySafe(_shareReservesDelta)) {
             revert IHyperdrive.UpdateLiquidityFailed();
         }
     }
@@ -627,13 +607,9 @@ abstract contract HyperdriveLP is
     ///      constant.
     /// @param _shareReservesDelta The delta that should be applied to share
     ///        reserves.
-    /// @param _spotPrice The pool's spot price.
-    /// @param _vaultSharePrice The pool's vault share price.
     /// @return A flag indicating if the update succeeded.
     function _updateLiquiditySafe(
-        int256 _shareReservesDelta,
-        uint256 _spotPrice,
-        uint256 _vaultSharePrice
+        int256 _shareReservesDelta
     ) internal returns (bool) {
         // Calculate the updated reserves and return false if the calculation fails.
         uint256 shareReserves_ = _marketState.shareReserves;
@@ -649,9 +625,7 @@ abstract contract HyperdriveLP is
                 shareAdjustment_,
                 bondReserves_,
                 _minimumShareReserves,
-                _shareReservesDelta,
-                _spotPrice,
-                _vaultSharePrice
+                _shareReservesDelta
             );
         if (!success) {
             return false;

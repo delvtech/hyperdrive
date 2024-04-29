@@ -1442,8 +1442,7 @@ library HyperdriveUtils {
                 netCurveTrade: netCurveTrade,
                 originalShareReserves: presentValueParams.shareReserves,
                 originalShareAdjustment: presentValueParams.shareAdjustment,
-                originalBondReserves: presentValueParams.bondReserves,
-                spotPrice: presentValueParams.calculateSpotPrice()
+                originalBondReserves: presentValueParams.bondReserves
             });
     }
 

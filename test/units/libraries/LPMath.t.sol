@@ -853,8 +853,7 @@ contract LPMathTest is HyperdriveTest {
                         ),
                     originalShareReserves: shareReserves,
                     originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
-                    spotPrice: presentValueParams.calculateSpotPrice()
+                    originalBondReserves: bondReserves
                 });
             (uint256 maxShareReservesDelta, bool success) = lpMath
                 .calculateMaxShareReservesDeltaSafe(
@@ -920,8 +919,7 @@ contract LPMathTest is HyperdriveTest {
                         ),
                     originalShareReserves: shareReserves,
                     originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
-                    spotPrice: presentValueParams.calculateSpotPrice()
+                    originalBondReserves: bondReserves
                 });
             (uint256 maxShareReservesDelta, bool success) = lpMath
                 .calculateMaxShareReservesDeltaSafe(
@@ -987,8 +985,7 @@ contract LPMathTest is HyperdriveTest {
                         ),
                     originalShareReserves: shareReserves,
                     originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
-                    spotPrice: presentValueParams.calculateSpotPrice()
+                    originalBondReserves: bondReserves
                 });
             (uint256 maxShareReservesDelta, bool success) = lpMath
                 .calculateMaxShareReservesDeltaSafe(
@@ -1055,8 +1052,7 @@ contract LPMathTest is HyperdriveTest {
                         ),
                     originalShareReserves: shareReserves,
                     originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
-                    spotPrice: presentValueParams.calculateSpotPrice()
+                    originalBondReserves: bondReserves
                 });
             (uint256 maxShareReservesDelta, bool success) = lpMath
                 .calculateMaxShareReservesDeltaSafe(
@@ -1123,8 +1119,7 @@ contract LPMathTest is HyperdriveTest {
                         ),
                     originalShareReserves: shareReserves,
                     originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
-                    spotPrice: presentValueParams.calculateSpotPrice()
+                    originalBondReserves: bondReserves
                 });
             (uint256 maxShareReservesDelta, bool success) = lpMath
                 .calculateMaxShareReservesDeltaSafe(
@@ -1148,9 +1143,7 @@ contract LPMathTest is HyperdriveTest {
                 params.originalShareAdjustment,
                 params.originalBondReserves,
                 params.presentValueParams.minimumShareReserves,
-                -int256(maxShareReservesDelta),
-                params.spotPrice,
-                params.presentValueParams.vaultSharePrice
+                -int256(maxShareReservesDelta)
             );
             assertEq(success, true);
             uint256 maxBondAmount;
@@ -1236,8 +1229,7 @@ contract LPMathTest is HyperdriveTest {
                         ),
                     originalShareReserves: shareReserves,
                     originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
-                    spotPrice: presentValueParams.calculateSpotPrice()
+                    originalBondReserves: bondReserves
                 });
 
             // Calculate the starting LP share price.
@@ -1282,9 +1274,7 @@ contract LPMathTest is HyperdriveTest {
                     params.originalShareAdjustment,
                     params.originalBondReserves,
                     params.presentValueParams.minimumShareReserves,
-                    -int256(shareProceeds),
-                    params.spotPrice,
-                    params.presentValueParams.vaultSharePrice
+                    -int256(shareProceeds)
                 );
                 endingLPSharePrice = LPMath
                     .calculatePresentValue(params.presentValueParams)
@@ -1346,8 +1336,7 @@ contract LPMathTest is HyperdriveTest {
                         ),
                     originalShareReserves: shareReserves,
                     originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
-                    spotPrice: presentValueParams.calculateSpotPrice()
+                    originalBondReserves: bondReserves
                 });
 
             // Calculate the starting LP share price.
@@ -1392,9 +1381,7 @@ contract LPMathTest is HyperdriveTest {
                     params.originalShareAdjustment,
                     params.originalBondReserves,
                     params.presentValueParams.minimumShareReserves,
-                    -int256(shareProceeds),
-                    params.spotPrice,
-                    params.presentValueParams.vaultSharePrice
+                    -int256(shareProceeds)
                 );
                 endingLPSharePrice = LPMath
                     .calculatePresentValue(params.presentValueParams)
@@ -1456,8 +1443,7 @@ contract LPMathTest is HyperdriveTest {
                         ),
                     originalShareReserves: shareReserves,
                     originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
-                    spotPrice: presentValueParams.calculateSpotPrice()
+                    originalBondReserves: bondReserves
                 });
 
             // Calculate the starting LP share price.
@@ -1502,9 +1488,7 @@ contract LPMathTest is HyperdriveTest {
                     params.originalShareAdjustment,
                     params.originalBondReserves,
                     params.presentValueParams.minimumShareReserves,
-                    -int256(shareProceeds),
-                    params.spotPrice,
-                    params.presentValueParams.vaultSharePrice
+                    -int256(shareProceeds)
                 );
                 endingLPSharePrice = LPMath
                     .calculatePresentValue(params.presentValueParams)
@@ -1581,8 +1565,7 @@ contract LPMathTest is HyperdriveTest {
                         ),
                     originalShareReserves: shareReserves,
                     originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
-                    spotPrice: presentValueParams.calculateSpotPrice()
+                    originalBondReserves: bondReserves
                 });
 
             // Calculate the starting LP share price.
@@ -1612,9 +1595,7 @@ contract LPMathTest is HyperdriveTest {
                     params.originalShareAdjustment,
                     params.originalBondReserves,
                     params.presentValueParams.minimumShareReserves,
-                    -int256(params.idle),
-                    params.spotPrice,
-                    params.presentValueParams.vaultSharePrice
+                    -int256(params.idle)
                 );
                 endingLPSharePrice = LPMath
                     .calculatePresentValue(params.presentValueParams)
@@ -1680,8 +1661,7 @@ contract LPMathTest is HyperdriveTest {
                         ),
                     originalShareReserves: shareReserves,
                     originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
-                    spotPrice: presentValueParams.calculateSpotPrice()
+                    originalBondReserves: bondReserves
                 });
 
             // Calculate the starting LP share price.
@@ -1711,9 +1691,7 @@ contract LPMathTest is HyperdriveTest {
                     params.originalShareAdjustment,
                     params.originalBondReserves,
                     params.presentValueParams.minimumShareReserves,
-                    -int256(params.idle),
-                    params.spotPrice,
-                    params.presentValueParams.vaultSharePrice
+                    -int256(params.idle)
                 );
                 endingLPSharePrice = LPMath
                     .calculatePresentValue(params.presentValueParams)
@@ -1779,8 +1757,7 @@ contract LPMathTest is HyperdriveTest {
                         ),
                     originalShareReserves: shareReserves,
                     originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
-                    spotPrice: presentValueParams.calculateSpotPrice()
+                    originalBondReserves: bondReserves
                 });
 
             // Calculate the starting LP share price.
@@ -1810,9 +1787,7 @@ contract LPMathTest is HyperdriveTest {
                     params.originalShareAdjustment,
                     params.originalBondReserves,
                     params.presentValueParams.minimumShareReserves,
-                    -int256(params.idle),
-                    params.spotPrice,
-                    params.presentValueParams.vaultSharePrice
+                    -int256(params.idle)
                 );
                 endingLPSharePrice = LPMath
                     .calculatePresentValue(params.presentValueParams)
@@ -1893,8 +1868,7 @@ contract LPMathTest is HyperdriveTest {
                         ),
                     originalShareReserves: shareReserves,
                     originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
-                    spotPrice: presentValueParams.calculateSpotPrice()
+                    originalBondReserves: bondReserves
                 });
 
             (uint256 shareProceeds, bool success) = lpMath
@@ -1953,8 +1927,7 @@ contract LPMathTest is HyperdriveTest {
                         ),
                     originalShareReserves: 0,
                     originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
-                    spotPrice: presentValueParams.calculateSpotPrice()
+                    originalBondReserves: bondReserves
                 });
 
             (uint256 shareProceeds, bool success) = lpMath
@@ -2013,8 +1986,7 @@ contract LPMathTest is HyperdriveTest {
                         ),
                     originalShareReserves: shareReserves,
                     originalShareAdjustment: shareAdjustment,
-                    originalBondReserves: bondReserves,
-                    spotPrice: presentValueParams.calculateSpotPrice()
+                    originalBondReserves: bondReserves
                 });
 
             (uint256 shareProceeds, bool success) = lpMath

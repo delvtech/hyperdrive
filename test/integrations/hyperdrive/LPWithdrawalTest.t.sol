@@ -42,14 +42,14 @@ contract LPWithdrawalTest is HyperdriveTest {
     // FIXME
     function test_example() external {
         IHyperdrive.PoolConfig memory config = testConfig(
-            0.05e18,
+            0.2e18,
             POSITION_DURATION
         );
         config.fees.curve = 0.001e18;
         config.fees.flat = 0.0005e18;
         deploy(alice, config);
         uint256 apr = 0.05e18;
-        uint256 contribution = 100_000_000e18;
+        uint256 contribution = 100e18;
         uint256 lpShares = initialize(alice, apr, contribution);
 
         // Celine opens a large short.
