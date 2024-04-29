@@ -854,7 +854,10 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
         (, , uint256 shareProceeds) = HyperdriveMath.calculateCloseLong(
-            poolInfo.shareReserves,
+            HyperdriveMath.calculateEffectiveShareReserves(
+                poolInfo.shareReserves,
+                poolInfo.shareAdjustment
+            ),
             poolInfo.bondReserves,
             bondAmount,
             normalizedTimeRemaining,
@@ -881,7 +884,10 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
 
         (, , uint256 expectedSharePayment) = HyperdriveMath.calculateCloseShort(
-            poolInfo.shareReserves,
+            HyperdriveMath.calculateEffectiveShareReserves(
+                poolInfo.shareReserves,
+                poolInfo.shareAdjustment
+            ),
             poolInfo.bondReserves,
             shortAmount,
             normalizedTimeRemaining,
