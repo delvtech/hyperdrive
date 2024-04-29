@@ -61,7 +61,15 @@ contract LPWithdrawalTest is HyperdriveTest {
         );
 
         // Celine adds liquidity.
+        console.log(
+            "spot rate = %s",
+            hyperdrive.calculateSpotAPR().toString(18)
+        );
         uint256 celineLpShares = addLiquidity(celine, 100_000_000e18);
+        console.log(
+            "spot rate = %s",
+            hyperdrive.calculateSpotAPR().toString(18)
+        );
 
         // Bob opens a large long.
         uint256 basePaid = hyperdrive.calculateMaxLong();

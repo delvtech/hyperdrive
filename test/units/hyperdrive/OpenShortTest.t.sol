@@ -526,7 +526,10 @@ contract OpenShortTest is HyperdriveTest {
         assertApproxEqAbs(
             HyperdriveUtils.calculateSpotAPR(hyperdrive),
             HyperdriveMath.calculateSpotAPR(
-                poolInfoAfter.shareReserves,
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    poolInfoAfter.shareReserves,
+                    poolInfoAfter.shareAdjustment
+                ),
                 poolInfoBefore.bondReserves + shortAmount,
                 INITIAL_SHARE_PRICE,
                 POSITION_DURATION,
