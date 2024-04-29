@@ -181,22 +181,35 @@ abstract contract HyperdriveLP is
             revert IHyperdrive.MinimumTransactionAmount();
         }
 
-        uint256 latestCheckpoint = _latestCheckpoint();
-        {
-            // Enforce the slippage guard.
-            uint256 apr = HyperdriveMath.calculateSpotAPR(
-                _effectiveShareReserves(),
-                _marketState.bondReserves,
-                _initialVaultSharePrice,
-                _positionDuration,
-                _timeStretch
-            );
-            if (apr < _minApr || apr > _maxApr) {
-                revert IHyperdrive.InvalidApr();
-            }
+        // Enforce the slippage guard.
+        uint256 apr = HyperdriveMath.calculateSpotAPR(
+            _effectiveShareReserves(),
+            _marketState.bondReserves,
+            _initialVaultSharePrice,
+            _positionDuration,
+            _timeStretch
+        );
+        if (apr < _minApr || apr > _maxApr) {
+            revert IHyperdrive.InvalidApr();
+        }
 
-            // Ensure that the spot APR is close enough to the previous weighted
-            // spot price to fall within the tolerance.
+        // Deposit for the user, this call also transfers from them
+        (uint256 shareContribution, uint256 vaultSharePrice) = _deposit(
+            _contribution,
+            _options
+        );
+
+        // Perform a checkpoint.
+        uint256 latestCheckpoint = _latestCheckpoint();
+        _applyCheckpoint(
+            latestCheckpoint,
+            vaultSharePrice,
+            LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
+        );
+
+        // Ensure that the spot APR is close enough to the previous weighted
+        // spot price to fall within the tolerance.
+        {
             uint256 weightedSpotAPR = HyperdriveMath.calculateAPRFromPrice(
                 _checkpoints[latestCheckpoint].weightedSpotPrice,
                 _positionDuration
@@ -209,19 +222,6 @@ abstract contract HyperdriveLP is
                 revert IHyperdrive.CircuitBreakerTriggered();
             }
         }
-
-        // Deposit for the user, this call also transfers from them
-        (uint256 shareContribution, uint256 vaultSharePrice) = _deposit(
-            _contribution,
-            _options
-        );
-
-        // Perform a checkpoint.
-        _applyCheckpoint(
-            latestCheckpoint,
-            vaultSharePrice,
-            LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
-        );
 
         // Get the initial value for the total LP supply and the total supply
         // of withdrawal shares before the liquidity is added. The total LP
@@ -280,7 +280,8 @@ abstract contract HyperdriveLP is
         // NOTE: Round down to make the check more conservative.
         //
         // Enforce the minimum LP share price slippage guard.
-        if (_contribution.divDown(lpShares) < _minLpSharePrice) {
+        uint256 contribution = _contribution; // avoid stack-too-deep
+        if (contribution.divDown(lpShares) < _minLpSharePrice) {
             revert IHyperdrive.OutputLimit();
         }
 
@@ -300,13 +301,12 @@ abstract contract HyperdriveLP is
         uint256 lpSharePrice = lpTotalSupply == 0
             ? 0 // NOTE: We always round the LP share price down for consistency.
             : startingPresentValue.divDown(lpTotalSupply);
-        uint256 contribution = _contribution; // avoid stack-too-deep
+        IHyperdrive.Options calldata options = _options; // avoid stack-too-deep
         uint256 baseContribution = _convertToBaseFromOption(
             contribution,
             vaultSharePrice,
-            _options
+            options
         );
-        IHyperdrive.Options calldata options = _options; // avoid stack-too-deep
         emit AddLiquidity(
             options.destination,
             lpShares,

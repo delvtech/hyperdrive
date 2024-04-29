@@ -98,6 +98,12 @@ abstract contract HyperdriveCheckpoint is
         uint256 latestCheckpoint = _latestCheckpoint();
         if (_checkpointTime == latestCheckpoint) {
             checkpointVaultSharePrice = _vaultSharePrice;
+            checkpointWeightedSpotPrice = HyperdriveMath.calculateSpotPrice(
+                _effectiveShareReserves(),
+                _marketState.bondReserves,
+                _initialVaultSharePrice,
+                _timeStretch
+            );
         } else {
             for (
                 uint256 time = _checkpointTime + _checkpointDuration;
@@ -125,7 +131,6 @@ abstract contract HyperdriveCheckpoint is
                 // checkpoint.
                 checkpointVaultSharePrice = _checkpoints[time].vaultSharePrice;
                 if (checkpointVaultSharePrice != 0) {
-                    // If the checkpoint vault share price
                     checkpointWeightedSpotPrice = _checkpoints[time]
                         .weightedSpotPrice;
                     break;
