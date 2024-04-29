@@ -70,6 +70,11 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         // The term passes and no interest accrues.
         advanceTime(POSITION_DURATION, 0);
 
+        // The expected output per share is the idle prior to closing the short
+        // plus the short amount.
+        uint256 expectedOutputPerShare = (hyperdrive.idle() + shortAmount)
+            .divDown(withdrawalShares);
+
         // Bob closes his short.
         closeShort(bob, maturityTime, shortAmount);
 
@@ -77,7 +82,6 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(alice);
         vm.expectRevert(IHyperdrive.OutputLimit.selector);
-        uint256 expectedOutputPerShare = shortAmount.divDown(withdrawalShares);
         hyperdrive.redeemWithdrawalShares(
             withdrawalShares,
             2 * expectedOutputPerShare,
@@ -103,15 +107,20 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         // The term passes and no interest accrues.
         advanceTime(POSITION_DURATION, 0);
 
+        // Alice redeems her withdrawal shares. The proceeds of the trade are
+        // used to pay out the withdrawal pool, so we can approximate Alice's
+        // proceeds by splitting the idle prior to closing the short and the
+        // short proceeds in proportion to LP shares.
+        uint256 expectedProceeds = (hyperdrive.idle() + shortAmount).mulDivDown(
+            withdrawalShares,
+            withdrawalShares + hyperdrive.getPoolConfig().minimumShareReserves
+        );
+
         // Bob closes his short.
         closeShort(bob, maturityTime, shortAmount);
 
-        // Alice redeems her withdrawal shares. The proceeds of the trade are
-        // used to pay out the withdrawal pool, so we can approximate Alice's
-        // proceeds by splitting the short proceeds in proportion to LP shares.
-        // Her actual proceeds will be slightly higher to compensate her for the
-        // proportional increase in the present value as her shares are removed
-        // from the share reserves.
+        // Ensure that Alice receives the correct amount of base when redeeming
+        // her withdrawal shares.
         uint256 aliceBaseBalanceBefore = baseToken.balanceOf(alice);
         uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
             address(hyperdrive)
@@ -120,12 +129,7 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
             alice,
             withdrawalShares
         );
-        uint256 expectedProceeds = shortAmount.mulDivDown(
-            withdrawalShares,
-            withdrawalShares + hyperdrive.getPoolConfig().minimumShareReserves
-        );
         assertApproxEqAbs(baseProceeds, expectedProceeds, 1e14);
-        assertGt(baseProceeds, expectedProceeds);
         assertEq(sharesRedeemed, withdrawalShares);
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.
@@ -168,18 +172,16 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         // The term passes and no interest accrues.
         advanceTime(POSITION_DURATION, 0);
 
-        // Bob closes his short.
-        closeShort(bob, maturityTime, shortAmount);
-
         // The proceeds of the trade are used to pay out the withdrawal pool.
-        // We can approximate Alice's proceeds by splitting the short proceeds
-        // in proportion to LP shares. Her actual proceeds will be slightly
-        // higher to compensate her for the proportional increase in the present
-        // value as her shares are removed from the share reserves.
-        uint256 aliceProceeds = shortAmount.mulDivDown(
+        // We can approximate Alice's proceeds by splitting the idle prior to
+        // closing the short and the short amount in proportion to LP shares.
+        uint256 aliceProceeds = (hyperdrive.idle() + shortAmount).mulDivDown(
             withdrawalShares,
             withdrawalShares + hyperdrive.getPoolConfig().minimumShareReserves
         );
+
+        // Bob closes his short.
+        closeShort(bob, maturityTime, shortAmount);
 
         // Alice redeems half of her withdrawal shares.
         uint256 aliceBaseBalanceBefore = baseToken.balanceOf(alice);
@@ -191,7 +193,6 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
             withdrawalShares / 2
         );
         assertApproxEqAbs(baseProceeds, aliceProceeds / 2, 1e14);
-        assertGt(baseProceeds, aliceProceeds / 2);
         assertApproxEqAbs(sharesRedeemed, withdrawalShares / 2, 1);
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.
@@ -220,7 +221,6 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
             withdrawalShares
         );
         assertApproxEqAbs(baseProceeds, aliceProceeds / 2, 1e14);
-        assertGt(baseProceeds, aliceProceeds / 2);
         assertApproxEqAbs(sharesRedeemed, withdrawalShares / 2, 1);
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.
@@ -254,12 +254,20 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
         uint256 fixedRate = 0.02e18;
         uint256 lpShares = initialize(alice, fixedRate, contribution);
+
+        // Celine adds some liquidity. This is needed to ensure that the long
+        // can be closed halfway through the term.
+        addLiquidity(celine, 100_000_000e18);
+
         // Bob opens a large long.
-        uint256 basePaidLong = HyperdriveUtils.calculateMaxLong(hyperdrive);
+        uint256 basePaidLong = HyperdriveUtils
+            .calculateMaxLong(hyperdrive)
+            .mulDown(0.25e18);
         (uint256 maturityTime, uint256 longAmount) = openLong(
             bob,
             basePaidLong
         );
+
         // Alice removes her liquidity.
         (uint256 lpProceeds, uint256 withdrawalShares) = removeLiquidity(
             alice,
@@ -285,7 +293,8 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
             uint256 sharesRedeemed
         ) = redeemWithdrawalShares(alice, withdrawalShares);
 
-        // Ensure that lps total proceeds are greater than the amount they contributed.
+        // Ensure that lps total proceeds are greater than the amount they
+        // contributed.
         assertGt(withdrawalSharesProceeds + lpProceeds, contribution);
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.
@@ -321,20 +330,23 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         // The term passes and no interest accrues.
         advanceTime(POSITION_DURATION, 0);
 
+        // We can approximate Alice's proceeds by splitting the idle prior to
+        // closing the short and the short proceeds in proportion to LP shares.
+        uint256 expectedProceeds = (hyperdrive.idle() + shortAmount).mulDivDown(
+            withdrawalShares,
+            withdrawalShares + hyperdrive.getPoolConfig().minimumShareReserves
+        );
+        uint256 expectedSharePrice = (hyperdrive.idle() + shortAmount).divDown(
+            withdrawalShares + hyperdrive.getPoolConfig().minimumShareReserves
+        );
+
         // Bob closes his short.
         closeShort(bob, maturityTime, shortAmount);
 
-        // Alice redeems her withdrawal shares. We can approximate Alice's
-        // proceeds by splitting the short proceeds in proportion to LP shares.
-        // Her actual proceeds will be slightly higher to compensate her for the
-        // proportional increase in the present value as her shares are removed
-        // from the share reserves.
+        // Alice redeems her withdrawal shares.
         uint256 aliceBaseBalanceBefore = baseToken.balanceOf(alice);
         uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
             address(hyperdrive)
-        );
-        uint256 expectedSharePrice = shortAmount.divDown(
-            withdrawalShares + hyperdrive.getPoolConfig().minimumShareReserves
         );
         (uint256 baseProceeds, uint256 sharesRedeemed) = redeemWithdrawalShares(
             alice,
@@ -346,12 +358,7 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
-        uint256 expectedProceeds = shortAmount.mulDivDown(
-            withdrawalShares,
-            withdrawalShares + hyperdrive.getPoolConfig().minimumShareReserves
-        );
         assertApproxEqAbs(baseProceeds, expectedProceeds, 1e14);
-        assertGt(baseProceeds, expectedProceeds);
         assertEq(sharesRedeemed, withdrawalShares);
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.
@@ -387,7 +394,11 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         (uint256 maturityTime, ) = openShort(bob, shortAmount);
 
         // Alice removes her liquidity.
-        (, uint256 withdrawalShares) = removeLiquidity(alice, lpShares);
+        (uint256 removeProceeds, uint256 withdrawalShares) = removeLiquidity(
+            alice,
+            lpShares
+        );
+        assertGt(withdrawalShares, 0);
 
         // The term passes and no interest accrues.
         advanceTime(POSITION_DURATION, 0);
@@ -396,29 +407,33 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         closeShort(bob, maturityTime, shortAmount);
 
         // Alice redeems her withdrawal shares and sends the proceeds to Celine.
-        (uint256 baseProceeds, uint256 sharesRedeemed) = redeemWithdrawalShares(
-            alice,
-            withdrawalShares,
-            WithdrawalOverrides({
-                asBase: true,
-                destination: celine,
-                minSlippage: 0,
-                extraData: new bytes(0)
-            })
-        );
-        assertGt(baseProceeds, 0);
+        (
+            uint256 redeemProceeds,
+            uint256 sharesRedeemed
+        ) = redeemWithdrawalShares(
+                alice,
+                withdrawalShares,
+                WithdrawalOverrides({
+                    asBase: true,
+                    destination: celine,
+                    minSlippage: 0,
+                    extraData: new bytes(0)
+                })
+            );
+        assertEq(sharesRedeemed, withdrawalShares);
+        assertGt(redeemProceeds, 0);
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.
         verifyRedeemWithdrawalSharesEvent(
             alice,
             celine,
             sharesRedeemed,
-            baseProceeds
+            redeemProceeds
         );
 
         // Ensure that Celine received the base proceeds.
-        assertEq(baseToken.balanceOf(alice), 0);
-        assertEq(baseToken.balanceOf(celine), baseProceeds);
+        assertEq(baseToken.balanceOf(alice), removeProceeds);
+        assertEq(baseToken.balanceOf(celine), redeemProceeds);
     }
 
     function verifyRedeemWithdrawalSharesEvent(

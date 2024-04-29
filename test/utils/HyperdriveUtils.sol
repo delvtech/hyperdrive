@@ -1088,7 +1088,7 @@ library HyperdriveUtils {
             _params.initialVaultSharePrice
         );
         uint256 optimalBondReserves = k_ -
-            _params.vaultSharePrice.divUp(_params.initialVaultSharePrice).mulUp(
+            _params.vaultSharePrice.mulDivUp(
                 _params
                     .initialVaultSharePrice
                     .mulUp(
@@ -1097,7 +1097,8 @@ library HyperdriveUtils {
                             _params.shareAdjustment
                         )
                     )
-                    .pow(ONE - _params.timeStretch)
+                    .pow(ONE - _params.timeStretch),
+                _params.initialVaultSharePrice
             );
         if (optimalBondReserves >= ONE) {
             // Rounding the exponent down results in a smaller outcome.

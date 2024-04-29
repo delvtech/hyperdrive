@@ -960,7 +960,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         uint256 finalShortAmount
     ) external {
         // Initialize the Hyperdrive pool.
-        contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
+        contribution = contribution.normalizeToRange(10_000e18, 500_000_000e18);
         fixedRate = fixedRate.normalizeToRange(0.0001e18, 0.5e18);
         initialize(alice, fixedRate, contribution);
 
@@ -990,7 +990,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         uint256 finalShortAmount
     ) external {
         // Initialize the Hyperdrive pool.
-        contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
+        contribution = contribution.normalizeToRange(10_000e18, 500_000_000e18);
         fixedRate = fixedRate.normalizeToRange(0.0001e18, 0.5e18);
         initialize(alice, fixedRate, contribution);
 
@@ -1019,7 +1019,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         uint256 finalShortAmount
     ) external {
         // Initialize the Hyperdrive pool.
-        contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
+        contribution = contribution.normalizeToRange(10_000e18, 500_000_000e18);
         fixedRate = fixedRate.normalizeToRange(0.0001e18, 0.5e18);
         initialize(alice, fixedRate, contribution);
 
