@@ -21,13 +21,20 @@ export type StETHCoordinatorDeployConfig = z.infer<
 
 export type DeployCoordinatorsStethParams = {
   admin?: string;
+  overwrite?: boolean;
 };
 
 task("deploy:coordinators:steth", "deploys the STETH deployment coordinator")
   .addOptionalParam("admin", "admin address", undefined, types.string)
+  .addOptionalParam(
+    "overwrite",
+    "overwrite deployment artifacts if they exist",
+    false,
+    types.boolean,
+  )
   .setAction(
     async (
-      { admin }: DeployCoordinatorsStethParams,
+      { admin, overwrite }: DeployCoordinatorsStethParams,
       {
         deployments,
         run,
@@ -37,6 +44,11 @@ task("deploy:coordinators:steth", "deploys the STETH deployment coordinator")
         config: hardhatConfig,
       },
     ) => {
+      let artifacts = await deployments.all();
+      if (!overwrite && artifacts["StETHHyperdriveCoreDeployer"]) {
+        console.log(`StETHHyperdriveCoreDeployer already deployed`);
+        return;
+      }
       // Retrieve the HyperdriveFactory deployment artifact for the current network
       let factory = await deployments.get("HyperdriveFactory");
       let factoryAddress = factory.address as `0x${string}`;
@@ -80,7 +92,7 @@ task("deploy:coordinators:steth", "deploys the STETH deployment coordinator")
         lido = mockLido.address;
       }
 
-      // Deploy the core deployer and all targets
+      // Deploy the core deployer and all target deployers.
       await run("deploy:coordinators:shared", {
         prefix: "steth",
       } as DeployCoordinatorsBaseParams);

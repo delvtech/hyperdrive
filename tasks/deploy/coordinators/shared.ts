@@ -25,7 +25,7 @@ subtask(
   .setAction(
     async (
       { prefix }: DeployCoordinatorsBaseParams,
-      { deployments, run, network, viem, getNamedAccounts },
+      { deployments, run, viem },
     ) => {
       let prefixValue = validHyperdrivePrefixes[prefix];
       // Deploy the core deployer

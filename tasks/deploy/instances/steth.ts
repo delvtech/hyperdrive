@@ -42,9 +42,15 @@ export type StETHInstanceDeployConfig = z.infer<
 task("deploy:instances:steth", "deploys the StETH deployment coordinator")
   .addParam("name", "name of the instance to deploy", undefined, types.string)
   .addOptionalParam("admin", "admin address", undefined, types.string)
+  .addOptionalParam(
+    "overwrite",
+    "overwrite deployment artifacts if they exist",
+    false,
+    types.boolean,
+  )
   .setAction(
     async (
-      { name, admin }: DeployInstanceParams,
+      { name, admin, overwrite }: DeployInstanceParams,
       {
         deployments,
         run,
@@ -54,6 +60,11 @@ task("deploy:instances:steth", "deploys the StETH deployment coordinator")
         config: hardhatConfig,
       },
     ) => {
+      let artifacts = await deployments.all();
+      if (!overwrite && artifacts[`${name}_StETHTarget0`]) {
+        console.log(`${name}_StETHTarget0 already deployed`);
+        return;
+      }
       console.log(`starting hyperdrive deployment ${name}`);
       let deployer = (await getNamedAccounts())["deployer"] as `0x${string}`;
       // Read and parse the provided configuration file

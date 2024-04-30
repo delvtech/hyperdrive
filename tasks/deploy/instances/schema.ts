@@ -81,4 +81,5 @@ export type PoolConfig = Prettify<
 export type DeployInstanceParams = {
   name: string;
   admin?: string;
+  overwrite?: string;
 };

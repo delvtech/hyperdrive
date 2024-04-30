@@ -1,4 +1,5 @@
 import { task, types } from "hardhat/config";
+import { zeroAddress } from "viem";
 
 /**
  * Verify contracts using information from the deployment artifacts.
@@ -17,17 +18,18 @@ task(
   )
   .setAction(
     async ({ name }: { name: string }, { deployments, run, network }) => {
+      const artifact = await deployments.get(name);
+      // Skip verifying contracts on test chains.
       if (!network.live) {
         console.log(`skipping verification on non-live network for ${name}`);
         return;
       }
       // Verify a single deployment if name is specified.
       if (name) {
-        const dep = await deployments.get(name);
         try {
           await run("verify:verify", {
-            address: dep.address,
-            constructorArguments: dep.args,
+            address: artifact.address,
+            constructorArguments: artifact.args,
             network: network.name,
           });
         } catch (e) {

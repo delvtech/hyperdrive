@@ -48,42 +48,57 @@ export type HyperdriveFactoryConfig = Prettify<
   }
 >;
 
-export type DeployFactoryParams = {};
+export type DeployFactoryParams = {
+  overwrite?: boolean;
+};
 
-task(
-  "deploy:factory",
-  "deploys the hyperdrive factory to the configured chain",
-).setAction(
-  async (
-    {}: DeployFactoryParams,
-    { deployments, run, network, viem, config: hardhatConfig },
-  ) => {
-    // Read and parse the provided configuration file
-    let config = hardhatConfig.networks[network.name].factory;
+task("deploy:factory", "deploys the hyperdrive factory to the configured chain")
+  .addOptionalParam(
+    "overwrite",
+    "overwrite deployment artifacts if they exist",
+    false,
+    types.boolean,
+  )
+  .setAction(
+    async (
+      { overwrite }: DeployFactoryParams,
+      { deployments, run, network, viem, config: hardhatConfig },
+    ) => {
+      const contractName = "HyperdriveFactory";
+      // Skip if deployed and overwrite=false.
+      let artifacts = await deployments.all();
+      if (!overwrite && artifacts[contractName]) {
+        console.log(`${contractName} already deployed`);
+        return;
+      }
+      // Read and parse the provided configuration file
+      let config = hardhatConfig.networks[network.name].factory;
 
-    // Get the address and codehash for the forwarder factory
-    let forwarderAddress = (await deployments.get("ERC20ForwarderFactory"))
-      .address;
-    let forwarder = await viem.getContractAt(
-      "ERC20ForwarderFactory",
-      forwarderAddress as `0x${string}`,
-    );
+      // Get the address and codehash for the forwarder factory
+      let forwarderAddress = (await deployments.get("ERC20ForwarderFactory"))
+        .address;
+      let forwarder = await viem.getContractAt(
+        "ERC20ForwarderFactory",
+        forwarderAddress as `0x${string}`,
+      );
 
-    // Construct the factory configuration object and deploy the HyperdriveFactory
-    console.log("deploying HyperdriveFactory...");
-    let factoryConfig = {
-      ...config,
-      linkerFactory: forwarder.address,
-      linkerCodeHash: await forwarder.read.ERC20LINK_HASH(),
-    };
-    let hyperdriveFactory = await viem.deployContract("HyperdriveFactory", [
-      factoryConfig,
-      `factory_${network.name}`,
-    ]);
-    await deployments.save("HyperdriveFactory", {
-      ...hyperdriveFactory,
-      args: [factoryConfig, `factory_${network.name}`],
-    });
-    await run("deploy:verify", { name: "HyperdriveFactory" });
-  },
-);
+      // Construct the factory configuration object
+      console.log("deploying HyperdriveFactory...");
+      let factoryConfig = {
+        ...config,
+        linkerFactory: forwarder.address,
+        linkerCodeHash: await forwarder.read.ERC20LINK_HASH(),
+      };
+
+      // Deploy the contract, save the artifact, and verify.
+      let hyperdriveFactory = await viem.deployContract(contractName, [
+        factoryConfig,
+        `factory_${network.name}`,
+      ]);
+      await deployments.save(contractName, {
+        ...hyperdriveFactory,
+        args: [factoryConfig, `factory_${network.name}`],
+      });
+      await run("deploy:verify", { name: contractName });
+    },
+  );

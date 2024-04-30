@@ -26,7 +26,7 @@ subtask(
   .setAction(
     async (
       { prefix, name }: DeployInstancesTargetsParams,
-      { deployments, run, network, viem, getNamedAccounts },
+      { deployments, run, network, viem, getNamedAccounts, artifacts },
     ) => {
       let prefixValue = validHyperdrivePrefixes[prefix];
       let deployer = (await getNamedAccounts())["deployer"] as `0x${string}`;
@@ -40,14 +40,14 @@ subtask(
           `unable to find config for prefix '${prefix}' with name '${name}'`,
         );
 
-      // Obtain data for the factory and connect to it.
+      // Obtain data for the factory and connect a contract instance.
       let factoryDeployment = await deployments.get(`HyperdriveFactory`);
       let factory = await viem.getContractAt(
         "HyperdriveFactory",
         factoryDeployment.address as `0x${string}`,
       );
 
-      // Obtain data for the coordinator and connect to it.
+      // Obtain data for the coordinator and connect a contract instance.
       let coordinatorDeployment = await deployments.get(
         `${prefixValue}HyperdriveDeployerCoordinator`,
       );
@@ -65,78 +65,90 @@ subtask(
 
       // Deploy the targets (saving and verification will be performed later)
       let pc = await viem.getPublicClient();
+      let initialVaultSharePrice = 0n;
+      let targets: `0x${string}`[] = [];
       for (let i = 0; i < 5; i++) {
         console.log(`deploying ${name}_${prefixValue}Target${i}`);
-        let tx = await factory.write.deployTarget(
-          [
-            config.deploymentId,
-            coordinator.address,
-            poolDeployConfig,
-            config.options.extraData,
-            config.fixedAPR,
-            config.timestretchAPR,
-            BigInt(i),
-            config.salt,
-          ],
-          { gas: 10_000_000n },
-        );
-        await pc.waitForTransactionReceipt({ hash: tx });
-      }
-
-      // Deploy hyperdrive (saving and verification will be performed later)
-      console.log(`deploying ${name}_${prefixValue}Hyperdrive`);
-      let tx = await factory.write.deployAndInitialize(
-        [
+        let args = [
           config.deploymentId,
           coordinator.address,
           poolDeployConfig,
           config.options.extraData,
-          config.contribution,
           config.fixedAPR,
           config.timestretchAPR,
-          {
-            ...config.options,
-            destination: config.options.destination ?? deployer,
-          },
+          BigInt(i),
           config.salt,
-        ],
-        { gas: 10_000_000n },
-      );
-      await pc.waitForTransactionReceipt({ hash: tx });
-
-      // Obtain data for verification from the coordinator
-      let {
-        target0,
-        target1,
-        target2,
-        target3,
-        target4,
-        initialSharePrice,
-        hyperdrive,
-      } = await coordinator.read.deployments([config.deploymentId]);
-      let targets = [target0, target1, target2, target3, target4];
-      let poolConfig = {
-        ...poolDeployConfig,
-        initialVaultSharePrice: initialSharePrice,
-      };
-
-      // Verify and save the target deployments.
-      for (let i = 0; i < 5; i++) {
+        ];
+        let { result: address } = await factory.simulate.deployTarget(
+          args as any,
+          {
+            gas: 10_000_000n,
+          },
+        );
+        targets.push(address);
+        await pc.waitForTransactionReceipt({
+          hash: await factory.write.deployTarget(args as any, {
+            gas: 10_000_000n,
+          }),
+        });
+        let { abi, bytecode } = artifacts.readArtifactSync(
+          `${prefixValue}Target${i}`,
+        );
+        if (i == 0)
+          initialVaultSharePrice = (
+            await coordinator.read.deployments([config.deploymentId])
+          ).initialSharePrice;
         await deployments.save(`${name}_${prefixValue}Target${i}`, {
-          address: targets[i],
-          ...(await deployments.getArtifact(`${prefixValue}Target${i}`)),
-          args: [poolConfig],
+          abi,
+          bytecode,
+          address,
+          args: [{ ...poolDeployConfig, initialVaultSharePrice }],
         });
         await run("deploy:verify", {
           name: `${name}_${prefixValue}Target${i}`,
         });
       }
 
+      // Deploy hyperdrive (saving and verification will be performed later)
+      console.log(`deploying ${name}_${prefixValue}Hyperdrive`);
+      let args = [
+        config.deploymentId,
+        coordinator.address,
+        poolDeployConfig,
+        config.options.extraData,
+        config.contribution,
+        config.fixedAPR,
+        config.timestretchAPR,
+        {
+          ...config.options,
+          destination: config.options.destination ?? deployer,
+        },
+        config.salt,
+      ];
+      let { result: hyperdriveAddress, request } =
+        await factory.simulate.deployAndInitialize(args as any, {
+          gas: 10_000_000n,
+        });
+      let hyperdriveTX = await factory.write.deployAndInitialize(args as any, {
+        gas: 10_000_000n,
+      });
+      await pc.waitForTransactionReceipt({ hash: hyperdriveTX });
+
       // Verify and save the hyperdrive deployment.
+      let { abi, bytecode } = artifacts.readArtifactSync(
+        `${prefixValue}Hyperdrive`,
+      );
       await deployments.save(`${name}_${prefixValue}Hyperdrive`, {
-        address: hyperdrive,
-        ...(await deployments.getArtifact(`${prefixValue}Hyperdrive`)),
-        args: [poolConfig, ...targets],
+        abi,
+        bytecode,
+        address: hyperdriveAddress,
+        args: [
+          {
+            ...poolDeployConfig,
+            initialVaultSharePrice,
+          },
+          ...targets,
+        ],
       });
       await run("deploy:verify", { name: `${name}_${prefixValue}Hyperdrive` });
     },

@@ -78,6 +78,7 @@ declare module "hardhat/types/config" {
   }
 }
 
+// Parsing logic for the various configuration fields.
 extendConfig(
   (config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) => {
     Object.entries(

@@ -2,7 +2,6 @@ import duration, { DurationUnitType } from "dayjs/plugin/duration";
 import dayjs from "dayjs";
 import { z } from "zod";
 import { parseEther, pad } from "viem";
-import hre from "hardhat";
 
 dayjs.extend(duration);
 

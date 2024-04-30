@@ -13,14 +13,7 @@ task("deploy:instances:all", "deploys all hyperdrive instances")
   .setAction(
     async (
       { admin }: DeployInstancesAllParams,
-      {
-        deployments,
-        run,
-        network,
-        viem,
-        getNamedAccounts,
-        config: hardhatConfig,
-      },
+      { run, network, config: hardhatConfig },
     ) => {
       // Read the instance configurations from hardhat config
       const instances = hardhatConfig.networks[network.name].instances;
@@ -28,7 +21,7 @@ task("deploy:instances:all", "deploys all hyperdrive instances")
         console.error("no instances to deploy");
         return;
       }
-      const { erc4626, steth } = instances;
+      const { erc4626, steth, reth } = instances;
 
       if (erc4626) {
         for (let { name } of erc4626) {
@@ -41,6 +34,13 @@ task("deploy:instances:all", "deploys all hyperdrive instances")
         for (let { name } of steth) {
           console.log(`deploying steth instance ${name}`);
           await run("deploy:instances:steth", { name, admin });
+        }
+      }
+
+      if (reth) {
+        for (let { name } of reth) {
+          console.log(`deploying reth instance ${name}`);
+          await run("deploy:instances:reth", { name, admin });
         }
       }
     },

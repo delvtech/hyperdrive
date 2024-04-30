@@ -2,7 +2,7 @@ import { task, types } from "hardhat/config";
 
 export type RegistryAddParams = {
   address: string;
-  value?: string | number | bigint;
+  value: string | number | bigint;
 };
 
 task("registry:add", "adds the specified hyperdrive instance to the registry")
@@ -12,7 +12,7 @@ task("registry:add", "adds the specified hyperdrive instance to the registry")
     undefined,
     types.string,
   )
-  .addOptionalParam(
+  .addParam(
     "value",
     "value to be set in the registry for the instance",
     1,

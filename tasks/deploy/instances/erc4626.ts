@@ -3,170 +3,9 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { z } from "zod";
 import { parseEther, toFunctionSelector } from "viem";
-import util from "util";
-import {
-  DeployInstanceParams,
-  PoolConfig,
-  PoolDeployConfig,
-  zInstanceDeployConfig,
-} from "./schema";
-import { buildModule } from "@nomicfoundation/ignition-core";
-import { zEther, zDuration } from "../utils";
+import { DeployInstanceParams, zInstanceDeployConfig } from "./schema";
 
 dayjs.extend(duration);
-
-// const alt = z
-//   .object({
-//     baseToken: z.string(),
-//     vaultSharesToken: z.string(),
-//     minimumShareReserves: z.bigint(),
-//     minimumTransactionAmount: z.bigint(),
-//     positionDuration: z.bigint(),
-//     checkpointDuration: z.bigint(),
-//     timeStretch: z.bigint(),
-//     governance: z.string(),
-//     feeCollector: z.string(),
-//     sweepCollector: z.string(),
-//     fees: z.object({
-//       curve: z.bigint(),
-//       flat: z.bigint(),
-//       governanceLP: z.bigint(),
-//       governanceZombie: z.bigint(),
-//     }),
-//   })
-//   .transform((v) => ({
-//     ...v,
-//     fees: {
-//       ...v.fees,
-//       // flat fee needs to be adjusted to a yearly basis
-//       flat:
-//         v.fees.flat /
-//         (BigInt(dayjs.duration(365, "days").asSeconds()) / v.positionDuration),
-//     },
-//   }));
-
-// let Targets = buildModule("ERC4626Targets", (m) => {
-//   const factory = m.contractAt("HyperdriveFactory", m.getParameter("factory"));
-//   m.call(
-//     factory,
-//     "deployTarget",
-//     [
-//       m.getParameter("deploymentId"),
-//       m.getParameter("coordinator"),
-//       m.getParameter("poolDeployConfig"),
-//       "0x",
-//       m.getParameter("fixedAPR"),
-//       m.getParameter("timestretchAPR"),
-//       0n,
-//       m.getParameter("salt"),
-//     ],
-//     { id: "t0" },
-//   );
-//   m.call(
-//     factory,
-//     "deployTarget",
-//     [
-//       m.getParameter("deploymentId"),
-//       m.getParameter("coordinator"),
-//       m.getParameter("poolDeployConfig"),
-//       "0x",
-//       m.getParameter("fixedAPR"),
-//       m.getParameter("timestretchAPR"),
-//       1n,
-//       m.getParameter("salt"),
-//     ],
-//     { id: "t1" },
-//   );
-//   m.call(
-//     factory,
-//     "deployTarget",
-//     [
-//       m.getParameter("deploymentId"),
-//       m.getParameter("coordinator"),
-//       m.getParameter("poolDeployConfig"),
-//       "0x",
-//       m.getParameter("fixedAPR"),
-//       m.getParameter("timestretchAPR"),
-//       2n,
-//       m.getParameter("salt"),
-//     ],
-//     { id: "t2" },
-//   );
-//   m.call(
-//     factory,
-//     "deployTarget",
-//     [
-//       m.getParameter("deploymentId"),
-//       m.getParameter("coordinator"),
-//       m.getParameter("poolDeployConfig"),
-//       "0x",
-//       m.getParameter("fixedAPR"),
-//       m.getParameter("timestretchAPR"),
-//       3n,
-//       m.getParameter("salt"),
-//     ],
-//     { id: "t3" },
-//   );
-//   m.call(
-//     factory,
-//     "deployTarget",
-//     [
-//       m.getParameter("deploymentId"),
-//       m.getParameter("coordinator"),
-//       m.getParameter("poolDeployConfig"),
-//       "0x",
-//       m.getParameter("fixedAPR"),
-//       m.getParameter("timestretchAPR"),
-//       4n,
-//       m.getParameter("salt"),
-//     ],
-//     { id: "t4" },
-//   );
-//   const coordinator = m.contractAt(
-//     "HyperdriveDeployerCoordinator",
-//     m.getParameter("coordinator"),
-//   );
-//   const r = m.staticCall(coordinator, "deployments", [
-//     m.getParameter("deploymentId"),
-//   ]);
-//   // const target1 = m.staticCall(
-//   //   coordinator,
-//   //   "deployments",
-//   //   [m.getParameter("deploymentId")],
-//   //   5,
-//   //   { id: "c1" },
-//   // );
-//   // const target2 = m.staticCall(
-//   //   coordinator,
-//   //   "deployments",
-//   //   [m.getParameter("deploymentId")],
-//   //   6,
-//   //   { id: "c2" },
-//   // );
-//   // const target3 = m.staticCall(
-//   //   coordinator,
-//   //   "deployments",
-//   //   [m.getParameter("deploymentId")],
-//   //   7,
-//   //   { id: "c3" },
-//   // );
-//   // const target4 = m.staticCall(
-//   //   coordinator,
-//   //   "deployments",
-//   //   [m.getParameter("deploymentId")],
-//   //   8,
-//   //   { id: "c4" },
-//   // );
-
-//   return {
-//     r,
-//     // target0: m.contractAt("ERC4626Target0", target0),
-//     // target1: m.contractAt("ERC4626Target1", target1),
-//     // target2: m.contractAt("ERC4626Target2", target2),
-//     // target3: m.contractAt("ERC4626Target3", target3),
-//     // target4: m.contractAt("ERC4626Target4", target4),
-//   };
-// });
 
 export let zERC4626InstanceDeployConfig = zInstanceDeployConfig.superRefine(
   (v, c) => {
@@ -219,9 +58,15 @@ export type ERC4626InstanceDeployConfig = z.infer<
 task("deploy:instances:erc4626", "deploys the ERC4626 deployment coordinator")
   .addParam("name", "name of the instance to deploy", undefined, types.string)
   .addOptionalParam("admin", "admin address", undefined, types.string)
+  .addOptionalParam(
+    "overwrite",
+    "overwrite deployment artifacts if they exist",
+    false,
+    types.boolean,
+  )
   .setAction(
     async (
-      { name, admin }: DeployInstanceParams,
+      { name, admin, overwrite }: DeployInstanceParams,
       {
         deployments,
         run,
@@ -231,6 +76,11 @@ task("deploy:instances:erc4626", "deploys the ERC4626 deployment coordinator")
         config: hardhatConfig,
       },
     ) => {
+      let artifacts = await deployments.all();
+      if (!overwrite && artifacts[`${name}_ERC4626Target0`]) {
+        console.log(`${name}_ERC4626Target0 already deployed`);
+        return;
+      }
       console.log(`starting hyperdrive deployment ${name}`);
       let deployer = (await getNamedAccounts())["deployer"] as `0x${string}`;
       // Read and parse the provided configuration file
@@ -249,10 +99,6 @@ task("deploy:instances:erc4626", "deploys the ERC4626 deployment coordinator")
       let coordinatorAddress = (
         await deployments.get("ERC4626HyperdriveDeployerCoordinator")
       ).address as `0x${string}`;
-      let coordinator = await viem.getContractAt(
-        "ERC4626HyperdriveDeployerCoordinator",
-        coordinatorAddress,
-      );
 
       // Deploy mock assets if baseToken and vaultSharesToken are left unspecified
       if (

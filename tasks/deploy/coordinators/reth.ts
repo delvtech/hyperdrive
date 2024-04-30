@@ -21,13 +21,20 @@ export type RETHCoordinatorDeployConfig = z.infer<
 
 export type DeployCoordinatorsRethParams = {
   admin?: string;
+  overwrite?: boolean;
 };
 
 task("deploy:coordinators:reth", "deploys the RETH deployment coordinator")
   .addOptionalParam("admin", "admin address", undefined, types.string)
+  .addOptionalParam(
+    "overwrite",
+    "overwrite deployment artifacts if they exist",
+    false,
+    types.boolean,
+  )
   .setAction(
     async (
-      { admin }: DeployCoordinatorsRethParams,
+      { admin, overwrite }: DeployCoordinatorsRethParams,
       {
         deployments,
         run,
@@ -37,6 +44,11 @@ task("deploy:coordinators:reth", "deploys the RETH deployment coordinator")
         config: hardhatConfig,
       },
     ) => {
+      let artifacts = await deployments.all();
+      if (!overwrite && artifacts["HyperdriveFactory"]) {
+        console.log(`HyperdriveFactory already deployed`);
+        return;
+      }
       // Retrieve the HyperdriveFactory deployment artifact for the current network
       let factory = await deployments.get("HyperdriveFactory");
       let factoryAddress = factory.address as `0x${string}`;
@@ -115,6 +127,7 @@ task("deploy:coordinators:reth", "deploys the RETH deployment coordinator")
       let factoryGovernanceAddress = await factoryContract.read.governance();
       let deployer = (await getNamedAccounts())["deployer"];
       if (deployer === factoryGovernanceAddress) {
+        console.log("adding RETHHyperdriveDeployerCoordinator to factory");
         await factoryContract.write.addDeployerCoordinator([
           rethCoordinator.address,
         ]);
