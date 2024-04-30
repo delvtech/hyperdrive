@@ -103,6 +103,8 @@ library LPMath {
 
         // FIXME: Ascii math.
         //
+        // FIXME: Explain this since this is a simplified version of the HackMD.
+        //
         // NOTE: Round down to underestimate the initial share adjustment.
         //
         // Calculate the initial share adjustment.

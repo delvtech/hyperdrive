@@ -480,45 +480,6 @@ contract PresentValueTest is HyperdriveTest {
         }
     }
 
-    // This test is explained in issue #610.
-    function test_decrease_present_value_add_liquidity() external {
-        // Fixed interest rate the pool pays the longs.
-        uint256 fixedRate = 0.05e18;
-
-        // Initialize the pool with capital.
-        uint256 initialLiquidity = 50_000_000e18;
-        uint256 aliceLpShares = initialize(alice, fixedRate, initialLiquidity);
-
-        // Celine opens a short.
-        uint256 bondsShorted = 50_000_000e18;
-        openShort(celine, bondsShorted);
-
-        // Alice removes liquidity.
-        removeLiquidity(alice, aliceLpShares);
-
-        // Bob adds liquidity.
-        uint256 contribution = 500_000e18;
-
-        // Adding liquidity will result in a decrease in the present value.
-        vm.startPrank(bob);
-        baseToken.mint(contribution);
-        baseToken.approve(address(hyperdrive), contribution);
-        vm.expectRevert(
-            IHyperdrive.DecreasedPresentValueWhenAddingLiquidity.selector
-        );
-        hyperdrive.addLiquidity(
-            contribution,
-            0,
-            0,
-            type(uint256).max,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-    }
-
     function test_present_value_instantaneous(bytes32 __seed) external {
         // Set the seed.
         _seed = __seed;

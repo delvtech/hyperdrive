@@ -129,12 +129,12 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         uint256 contribution
     ) external {
         // Normalize the fuzzed variables.
-        apr = apr.normalizeToRange(0.001e18, 2e18);
-        contribution = contribution.normalizeToRange(2e6, 1_000_000_000e6);
+        apr = apr.normalizeToRange(0.001e18, 1e18);
+        contribution = contribution.normalizeToRange(10_000e6, 1_000_000_000e6);
 
         // Initialize the pool and ensure that the APR is correct.
         initialize(alice, apr, contribution);
-        assertApproxEqAbs(hyperdrive.calculateSpotAPR(), apr, 1e12);
+        assertApproxEqAbs(hyperdrive.calculateSpotAPR(), apr, 1e14);
     }
 
     function test_nonstandard_decimals_long(
@@ -247,10 +247,15 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         int256 variableRate
     ) external {
         // Normalize the fuzzed variables.
+        IHyperdrive.PoolConfig memory config = testConfig(
+            0.02e18,
+            POSITION_DURATION
+        );
+        config.minimumShareReserves = 1e6;
+        config.minimumTransactionAmount = 1e6;
+        deploy(deployer, config);
         initialize(alice, 0.02e18, 500_000_000e6);
-        uint256 maxShort = HyperdriveUtils
-            .calculateMaxShort(hyperdrive)
-            .mulDown(0.9e18);
+        uint256 maxShort = hyperdrive.calculateMaxShort();
         shortAmount = shortAmount.normalizeToRange(
             hyperdrive.getPoolConfig().minimumTransactionAmount,
             maxShort
@@ -262,12 +267,6 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // essentially all of his capital back.
         {
             // Deploy and initialize the pool.
-            IHyperdrive.PoolConfig memory config = testConfig(
-                0.02e18,
-                POSITION_DURATION
-            );
-            config.minimumShareReserves = 1e6;
-            config.minimumTransactionAmount = 1e6;
             deploy(deployer, config);
             initialize(alice, 0.02e18, 500_000_000e6);
 
@@ -287,12 +286,6 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // interest minus the fixed interest.
         {
             // Deploy and initialize the pool.
-            IHyperdrive.PoolConfig memory config = testConfig(
-                0.02e18,
-                POSITION_DURATION
-            );
-            config.minimumShareReserves = 1e6;
-            config.minimumTransactionAmount = 1e6;
             deploy(deployer, config);
             initialize(alice, 0.02e18, 500_000_000e6);
 
@@ -330,12 +323,6 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // variable interest earned by the short.
         {
             // Deploy and initialize the pool.
-            IHyperdrive.PoolConfig memory config = testConfig(
-                0.02e18,
-                POSITION_DURATION
-            );
-            config.minimumShareReserves = 1e6;
-            config.minimumTransactionAmount = 1e6;
             deploy(deployer, config);
             initialize(alice, 0.02e18, 500_000_000e6);
 

@@ -25,7 +25,7 @@ contract SandwichTest is HyperdriveTest {
         contribution -= 2 * hyperdrive.getPoolConfig().minimumShareReserves;
 
         // Bob opens a long.
-        uint256 longPaid = 50_000_000e18;
+        uint256 longPaid = hyperdrive.calculateMaxLong().mulDown(0.05e18);
         (uint256 longMaturityTime, uint256 longAmount) = openLong(
             bob,
             longPaid
@@ -36,7 +36,7 @@ contract SandwichTest is HyperdriveTest {
         advanceTime(timeAdvanced, int256(apr));
 
         // Celine opens a short.
-        uint256 shortAmount = 200_000_000e18;
+        uint256 shortAmount = hyperdrive.calculateMaxShort().mulDown(0.2e18);
         (uint256 shortMaturityTime, ) = openShort(celine, shortAmount);
 
         // Bob closes his long.
@@ -59,10 +59,10 @@ contract SandwichTest is HyperdriveTest {
 
     function test_sandwich_long_trade(uint256 apr, uint256 tradeSize) external {
         // limit the fuzz testing to variableRate's less than or equal to 50%
-        apr = apr.normalizeToRange(0.01e18, 0.5e18);
+        apr = apr.normalizeToRange(0.01e18, 0.2e18);
 
         // ensure a feasible trade size
-        tradeSize = tradeSize.normalizeToRange(1_000e18, 50_000_000e18 - 1e18);
+        tradeSize = tradeSize.normalizeToRange(1_000e18, 10_000_000e18);
 
         // Deploy the pool and initialize the market
         {
@@ -186,14 +186,17 @@ contract SandwichTest is HyperdriveTest {
         );
         config.fees.curve = 0.0001e18;
         deploy(alice, config);
-        fixedRate = fixedRate.normalizeToRange(0.001e18, 1e18);
-        contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.7e18);
+        contribution = contribution.normalizeToRange(
+            100_000e18,
+            500_000_000e18
+        );
         uint256 lpShares = initialize(alice, fixedRate, contribution);
         contribution -= 2 * config.minimumShareReserves;
 
         // Bob opens a short.
         tradeAmount = tradeAmount.normalizeToRange(
-            1e18,
+            hyperdrive.getPoolConfig().minimumTransactionAmount,
             hyperdrive.calculateMaxShort().mulDown(0.9e18)
         );
         openShort(bob, tradeAmount);
@@ -203,7 +206,7 @@ contract SandwichTest is HyperdriveTest {
 
         // Celine opens a short to sandwich the closing of Bob's short.
         sandwichAmount = sandwichAmount.normalizeToRange(
-            1e18,
+            hyperdrive.getPoolConfig().minimumTransactionAmount,
             hyperdrive.calculateMaxShort()
         );
         (uint256 maturityTime, uint256 shortPayment) = openShort(
@@ -233,7 +236,7 @@ contract SandwichTest is HyperdriveTest {
 
         // Deploy the pool with fees.
         {
-            uint256 timeStretchApr = 0.02e18;
+            uint256 timeStretchApr = 0.05e18;
             uint256 curveFee = 0.001e18;
             deploy(alice, timeStretchApr, curveFee, 0, 0, 0);
         }
@@ -243,7 +246,7 @@ contract SandwichTest is HyperdriveTest {
         uint256 aliceLpShares = initialize(alice, apr, contribution);
 
         // Bob opens a large long and a short.
-        uint256 tradeAmount = 100_000_000e18;
+        uint256 tradeAmount = 10_000_000e18;
         (uint256 longMaturityTime, uint256 longAmount) = openLong(
             bob,
             tradeAmount

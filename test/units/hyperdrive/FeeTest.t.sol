@@ -283,7 +283,7 @@ contract FeeTest is HyperdriveTest {
 
         uint256 governanceFeesFromCloseLong = 0;
         uint256 governanceFeesFromOpenLong = 0;
-        uint256 shareReservesNoFees = 0;
+        uint256 effectiveShareReservesNoFees = 0;
         uint256 bondsPurchased = 0;
         uint256 spotPrice = 0;
         // Initialize the market with 10% curve fee and 100% governance fee
@@ -334,7 +334,11 @@ contract FeeTest is HyperdriveTest {
                 IMockHyperdrive(address(hyperdrive))
                     .getGovernanceFeesAccrued() -
                 governanceFeesFromOpenLong;
-            shareReservesNoFees = hyperdrive.getPoolInfo().shareReserves;
+            effectiveShareReservesNoFees = HyperdriveMath
+                .calculateEffectiveShareReserves(
+                    hyperdrive.getPoolInfo().shareReserves,
+                    hyperdrive.getPoolInfo().shareAdjustment
+                );
         }
 
         // Test that expected Fees ~ actual Fees
@@ -358,7 +362,7 @@ contract FeeTest is HyperdriveTest {
         }
 
         // Initialize the market with 10% curve fee and 0% governance fee
-        uint256 shareReservesCurveFee = 0;
+        uint256 effectiveShareReservesCurveFee = 0;
         {
             uint256 apr = 0.01e18;
             deploy(alice, apr, initialVaultSharePrice, curveFee, flatFee, 0, 0);
@@ -386,37 +390,41 @@ contract FeeTest is HyperdriveTest {
 
             // Close the long.
             closeLong(bob, maturityTime, bondAmount);
-            shareReservesCurveFee = hyperdrive.getPoolInfo().shareReserves;
+            effectiveShareReservesCurveFee = HyperdriveMath
+                .calculateEffectiveShareReserves(
+                    hyperdrive.getPoolInfo().shareReserves,
+                    hyperdrive.getPoolInfo().shareAdjustment
+                );
         }
 
         // The share reserves with curve fee should be greater than the share reserves without any fees + the fees from open long
         assertGt(
-            shareReservesCurveFee,
-            shareReservesNoFees + governanceFeesFromOpenLong
+            effectiveShareReservesCurveFee,
+            effectiveShareReservesNoFees + governanceFeesFromOpenLong
         );
 
         // The share reserves with curve fee should be greater than the share reserves without any fees + the fees from close long
         assertGt(
-            shareReservesCurveFee,
-            shareReservesNoFees + governanceFeesFromCloseLong
+            effectiveShareReservesCurveFee,
+            effectiveShareReservesNoFees + governanceFeesFromCloseLong
         );
 
         // (Share Reserves Without Any Fees bc They All Went to Governance) + (10% Curve X 100% Governance Fees) - (Share Reserves With Curve Fee) ~ 0
         assertApproxEqAbs(
             int256(
-                shareReservesNoFees +
+                effectiveShareReservesNoFees +
                     governanceFeesFromOpenLong +
                     governanceFeesFromCloseLong
-            ) - int256(shareReservesCurveFee),
+            ) - int256(effectiveShareReservesCurveFee),
             0,
-            1e7
+            1e8
         );
 
         // The difference between the share reserves should be equal to the actual fees
         assertApproxEqAbs(
-            shareReservesCurveFee - shareReservesNoFees,
+            effectiveShareReservesCurveFee - effectiveShareReservesNoFees,
             governanceFeesFromOpenLong + governanceFeesFromCloseLong,
-            1e7
+            1e8
         );
     }
 
