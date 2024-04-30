@@ -261,4 +261,68 @@ contract CircuitBreakerTest is HyperdriveTest {
         // spot price.
         assertEq(weightedSpotPriceMinted, currentSpotPrice);
     }
+
+    function test_weighted_average_netted_positions(
+        uint256 initialVaultSharePrice,
+        int256 variableInterest,
+        uint256 tradeSize,
+        uint256 numTrades
+    ) external {
+        // Normalize the fuzz params.
+        initialVaultSharePrice = initialVaultSharePrice.normalizeToRange(
+            0.5e18,
+            5e18
+        );
+        variableInterest = variableInterest.normalizeToRange(0e18, .5e18);
+        numTrades = tradeSize.normalizeToRange(1, 5);
+        tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18 / numTrades);
+
+        // Initialize the market.
+        uint256 apr = 0.05e18;
+        deploy(alice, apr, initialVaultSharePrice, 0, 0, 0, 0);
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Fast forward time and accrue interest.
+        advanceTime(POSITION_DURATION, variableInterest);
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
+
+        // Open a variety of netted positions.
+        uint256[] memory longMaturityTimes = new uint256[](numTrades);
+        uint256[] memory shortMaturityTimes = new uint256[](numTrades);
+        uint256[] memory bondAmounts = new uint256[](numTrades);
+        for (uint256 i = 0; i < numTrades; i++) {
+            uint256 basePaidLong = tradeSize;
+            (uint256 maturityTimeLong, uint256 bondAmount) = openLong(
+                bob,
+                basePaidLong
+            );
+            longMaturityTimes[i] = maturityTimeLong;
+            bondAmounts[i] = bondAmount;
+            (uint256 maturityTimeShort, ) = openShort(bob, bondAmount);
+            shortMaturityTimes[i] = maturityTimeShort;
+        }
+
+        // Fast forward time, create checkpoints and accrue interest.
+        advanceTimeWithCheckpoints2(POSITION_DURATION, 0);
+
+        // Close out all positions.
+        for (uint256 i = 0; i < numTrades; i++) {
+            closeShort(bob, shortMaturityTimes[i], bondAmounts[i]);
+            closeLong(bob, longMaturityTimes[i], bondAmounts[i]);
+        }
+        uint256 weightedSpotPriceAfter = hyperdrive.getCheckpoint(
+            HyperdriveUtils.latestCheckpoint(hyperdrive)
+        ).weightedSpotPrice;
+        uint256 spotPrice =  HyperdriveUtils.calculateSpotPrice(
+            hyperdrive
+        );
+
+        // The weighted spot price should equal the existing spot price since
+        // all the trades netted out
+        assertEq(
+            weightedSpotPriceAfter,
+            spotPrice
+        );
+    }
 }
