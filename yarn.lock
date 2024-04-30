@@ -5854,3 +5854,8 @@ zksync-ethers@^5.0.0:
   integrity sha512-X99c5APICTlRzyXXjfwkEjRzOPp3Jwo62+z2DVGaZbe+b9Apbizcd2UGV4NGomoAR2GXPbeiSqi1cf3Hbo3cQw==
   dependencies:
     ethers "~5.7.0"
+
+zod@^3.23.4:
+  version "3.23.4"
+  resolved "https://registry.yarnpkg.com/zod/-/zod-3.23.4.tgz#c63805b2f39e10d4ab3d55eb3c8cdb472c79dfb1"
+  integrity sha512-/AtWOKbBgjzEYYQRNfoGKHObgfAZag6qUJX1VbHo2PRBgS+wfWagEY2mizjfyAPcGesrJOcx/wcl0L9WnVrHFw==

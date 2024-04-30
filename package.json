@@ -68,7 +68,8 @@
     "solidity-coverage": "^0.8.1",
     "ts-node": "^10.9.2",
     "typescript-json-schema": "^0.63.0",
-    "viem": "^2.7.6"
+    "viem": "^2.7.6",
+    "zod": "^3.23.4"
   },
   "dependencies": {
     "yarn": "^1.22.19"
