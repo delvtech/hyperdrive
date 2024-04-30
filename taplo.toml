@@ -1,7 +1,0 @@
-include = ["Cargo.toml", "script/**/*.toml"]
-
-[formatting]
-  indent_entries = true
-  align_entries  = true
-  indent_tables  = true
-
