@@ -11,35 +11,21 @@ export type DeployCoordinatorsAllParams = DeployCoordinatorsERC4626Params &
   DeployCoordinatorsStethParams;
 
 task("deploy:coordinators:all", "deploys all deployment coordinators")
-  .addOptionalParam(
-    "lido",
-    "address of the lido contract",
-    undefined,
-    types.string,
-  )
-  .addOptionalParam(
-    "reth",
-    "address of the reth contract",
-    undefined,
-    types.string,
-  )
   .addOptionalParam("admin", "admin address", undefined, types.string)
-  .setAction(
-    async (
-      { admin }: DeployCoordinatorsAllParams,
-      { run, config: hhConfig, network },
-    ) => {
-      const config = hhConfig.networks[network.name].coordinators;
-      console.log("coordinator config", config);
-      // deploy the erc4626 coordinator
-      await run("deploy:coordinators:erc4626");
-      // deploy the reth coordinator
-      await run("deploy:coordinators:reth", {
-        admin,
-      } as DeployCoordinatorsRethParams);
-      // deploy the steth coordinator
-      await run("deploy:coordinators:steth", {
-        admin,
-      } as DeployCoordinatorsStethParams);
-    },
-  );
+  .setAction(async ({ admin }: DeployCoordinatorsAllParams, { run }) => {
+    // deploy the erc4626 coordinator
+    console.log("deploying erc4626 deployer coordinator");
+    await run("deploy:coordinators:erc4626");
+
+    // deploy the reth coordinator
+    console.log("deploying reth deployer coordinator");
+    await run("deploy:coordinators:reth", {
+      admin,
+    } as DeployCoordinatorsRethParams);
+
+    // deploy the steth coordinator
+    console.log("deploying steth deployer coordinator");
+    await run("deploy:coordinators:steth", {
+      admin,
+    } as DeployCoordinatorsStethParams);
+  });

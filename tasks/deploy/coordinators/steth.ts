@@ -2,7 +2,22 @@ import { task, types } from "hardhat/config";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 dayjs.extend(duration);
-import { parseEther, toFunctionSelector } from "viem";
+import { parseEther, toFunctionSelector, zeroAddress } from "viem";
+import { zAddress } from "../utils";
+import { z } from "zod";
+import { DeployCoordinatorsBaseParams } from "./shared";
+
+export let zStETHCoordinatorDeployConfig = z.object({
+  lido: zAddress.optional(),
+});
+
+export type StETHCoordinatorDeployConfigInput = z.input<
+  typeof zStETHCoordinatorDeployConfig
+>;
+
+export type StETHCoordinatorDeployConfig = z.infer<
+  typeof zStETHCoordinatorDeployConfig
+>;
 
 export type DeployCoordinatorsStethParams = {
   admin?: string;
@@ -23,9 +38,8 @@ task("deploy:coordinators:steth", "deploys the STETH deployment coordinator")
       },
     ) => {
       // Retrieve the HyperdriveFactory deployment artifact for the current network
-      console.log("retrieving factory deployment artifact...");
-      const factory = await deployments.get("HyperdriveFactory");
-      const factoryAddress = factory.address as `0x${string}`;
+      let factory = await deployments.get("HyperdriveFactory");
+      let factoryAddress = factory.address as `0x${string}`;
 
       // Set the admin address to the deployer address if one was not provided
       if (!admin?.length) admin = (await getNamedAccounts())["deployer"];
@@ -33,24 +47,24 @@ task("deploy:coordinators:steth", "deploys the STETH deployment coordinator")
       // Deploy a mock Lido contract if no adress was provided
       let lido = hardhatConfig.networks[network.name].coordinators?.lido;
       if (!lido?.length) {
-        const mockLido = await viem.deployContract("MockLido", [
+        let mockLido = await viem.deployContract("MockLido", [
           parseEther("0.035"),
           admin as `0x${string}`,
           true,
           parseEther("500"),
         ]);
-        await deployments.save("MockLido", mockLido);
-        if (network.name != "hardhat")
-          await run("verify:verify", {
-            address: mockLido.address,
-            constructorArguments: [
-              parseEther("0.035"),
-              admin as `0x${string}`,
-              true,
-              parseEther("500"),
-            ],
-            network: network.name,
-          });
+        await deployments.save("MockLido", {
+          ...mockLido,
+          args: [
+            parseEther("0.035"),
+            admin as `0x${string}`,
+            true,
+            parseEther("500"),
+          ],
+        });
+        await run("deploy:verify", {
+          name: "MockLido",
+        });
         // allow minting by the general public
         await mockLido.write.setPublicCapability([
           toFunctionSelector("mint(uint256)"),
@@ -60,123 +74,56 @@ task("deploy:coordinators:steth", "deploys the STETH deployment coordinator")
           toFunctionSelector("mint(address,uint256)"),
           true,
         ]);
+        await mockLido.write.submit([zeroAddress], {
+          value: parseEther("0.001"),
+        });
         lido = mockLido.address;
       }
 
-      console.log("deploying steth core deployer...");
-      const stethCore = await viem.deployContract(
-        "StETHHyperdriveCoreDeployer",
-      );
-      await deployments.save("StETHHyperdriveCoreDeployer", stethCore);
-      if (network.name != "hardhat")
-        await run("verify:verify", {
-          address: stethCore.address,
-          constructorArguments: [],
-          network: network.name,
-        });
+      // Deploy the core deployer and all targets
+      await run("deploy:coordinators:shared", {
+        prefix: "steth",
+      } as DeployCoordinatorsBaseParams);
 
-      console.log("deploying steth target0 deployer...");
-      const stethTarget0Deployer = await viem.deployContract(
-        "StETHTarget0Deployer",
-      );
-      await deployments.save("StETHTarget0Deployer", stethTarget0Deployer);
-      if (network.name != "hardhat")
-        await run("verify:verify", {
-          address: stethTarget0Deployer.address,
-          constructorArguments: [],
-          network: network.name,
-        });
-
-      console.log("deploying steth target1 deployer...");
-      const stethTarget1Deployer = await viem.deployContract(
-        "StETHTarget1Deployer",
-      );
-      await deployments.save("StETHTarget1Deployer", stethTarget1Deployer);
-      if (network.name != "hardhat")
-        await run("verify:verify", {
-          address: stethTarget1Deployer.address,
-          constructorArguments: [],
-          network: network.name,
-        });
-
-      console.log("deploying steth target2 deployer...");
-      const stethTarget2Deployer = await viem.deployContract(
-        "StETHTarget2Deployer",
-      );
-      await deployments.save("StETHTarget2Deployer", stethTarget2Deployer);
-      if (network.name != "hardhat")
-        await run("verify:verify", {
-          address: stethTarget2Deployer.address,
-          constructorArguments: [],
-          network: network.name,
-        });
-
-      console.log("deploying steth target3 deployer...");
-      const stethTarget3Deployer = await viem.deployContract(
-        "StETHTarget3Deployer",
-      );
-      await deployments.save("StETHTarget3Deployer", stethTarget3Deployer);
-      if (network.name != "hardhat")
-        await run("verify:verify", {
-          address: stethTarget3Deployer.address,
-          constructorArguments: [],
-          network: network.name,
-        });
-
-      console.log("deploying steth target4 deployer...");
-      const stethTarget4Deployer = await viem.deployContract(
-        "StETHTarget4Deployer",
-      );
-      await deployments.save("StETHTarget4Deployer", stethTarget4Deployer);
-      if (network.name != "hardhat")
-        await run("verify:verify", {
-          address: stethTarget4Deployer.address,
-          constructorArguments: [],
-          network: network.name,
-        });
-
-      console.log("deploying steth deployer coordinator...");
-      const stethCoordinator = await viem.deployContract(
+      // Deploy the coordinator
+      console.log("deploying StETHHyperdriveDeployerCoordinator...");
+      let args = [
+        factoryAddress,
+        (await deployments.get("StETHHyperdriveCoreDeployer"))
+          .address as `0x${string}`,
+        (await deployments.get("StETHTarget0Deployer"))
+          .address as `0x${string}`,
+        (await deployments.get("StETHTarget1Deployer"))
+          .address as `0x${string}`,
+        (await deployments.get("StETHTarget2Deployer"))
+          .address as `0x${string}`,
+        (await deployments.get("StETHTarget3Deployer"))
+          .address as `0x${string}`,
+        (await deployments.get("StETHTarget4Deployer"))
+          .address as `0x${string}`,
+        lido,
+      ];
+      let stethCoordinator = await viem.deployContract(
         "StETHHyperdriveDeployerCoordinator",
-        [
-          factoryAddress,
-          stethCore.address,
-          stethTarget0Deployer.address,
-          stethTarget1Deployer.address,
-          stethTarget2Deployer.address,
-          stethTarget3Deployer.address,
-          stethTarget4Deployer.address,
-          lido as `0x${string}`,
-        ],
+        args as any,
       );
-      await deployments.save(
-        "StETHHyperdriveDeployerCoordinator",
-        stethCoordinator,
-      );
-      if (network.name != "hardhat")
-        await run("verify:verify", {
-          address: stethCoordinator.address,
-          constructorArguments: [
-            factoryAddress,
-            stethCore.address,
-            stethTarget0Deployer.address,
-            stethTarget1Deployer.address,
-            stethTarget2Deployer.address,
-            stethTarget3Deployer.address,
-            stethTarget4Deployer.address,
-            lido as `0x${string}`,
-          ],
-          network: network.name,
-        });
+      await deployments.save("StETHHyperdriveDeployerCoordinator", {
+        ...stethCoordinator,
+        args,
+      });
+      await run("deploy:verify", {
+        name: "StETHHyperdriveDeployerCoordinator",
+      });
 
       // Register the coordinator with governance if the factory's governance address is the deployer's address
-      const factoryContract = await viem.getContractAt(
+      let factoryContract = await viem.getContractAt(
         "HyperdriveFactory",
         factoryAddress,
       );
-      const factoryGovernanceAddress = await factoryContract.read.governance();
-      const deployer = (await getNamedAccounts())["deployer"];
+      let factoryGovernanceAddress = await factoryContract.read.governance();
+      let deployer = (await getNamedAccounts())["deployer"];
       if (deployer === factoryGovernanceAddress) {
+        console.log("adding StETHHyperdriveDeployerCoordinator to factory");
         await factoryContract.write.addDeployerCoordinator([
           stethCoordinator.address,
         ]);

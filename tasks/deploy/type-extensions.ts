@@ -8,11 +8,6 @@ import {
   FactoryDeployConfigInput,
   zFactoryDeployConfig,
 } from "./factory";
-import {
-  InstanceDeployConfig,
-  InstanceDeployConfigInput,
-  zInstanceDeployConfig,
-} from "./instance";
 import { extendConfig } from "hardhat/config";
 import {
   HardhatConfig,
@@ -26,25 +21,39 @@ import {
 } from "./instances";
 import {
   CoordinatorDeployConfig,
-  CoordinatorDeployConfigInput,
+  StETHCoordinatorDeployConfigInput,
   zCoordinatorDeployConfig,
 } from "./coordinators";
+import {
+  StETHInstanceDeployConfig,
+  StETHInstanceDeployConfigInput,
+  zStETHInstanceDeployConfig,
+} from "./instances/steth";
+import {
+  RETHInstanceDeployConfig,
+  RETHInstanceDeployConfigInput,
+  zRETHInstanceDeployConfig,
+} from "./instances/reth";
 
 declare module "hardhat/types/config" {
   // We extend the user's HardhatNetworkUserConfig with our factory and instance configuration inputs.
   // These will be parsed, validated, and written to the global configuration.
   export interface HttpNetworkUserConfig {
     factory?: FactoryDeployConfigInput;
-    coordinators?: CoordinatorDeployConfigInput;
+    coordinators?: StETHCoordinatorDeployConfigInput;
     instances?: {
       erc4626?: ERC4626InstanceDeployConfigInput[];
+      steth?: StETHInstanceDeployConfigInput[];
+      reth?: RETHInstanceDeployConfigInput[];
     };
   }
   export interface HardhatNetworkUserConfig {
     factory?: FactoryDeployConfigInput;
-    coordinators?: CoordinatorDeployConfigInput;
+    coordinators?: StETHCoordinatorDeployConfigInput;
     instances?: {
       erc4626?: ERC4626InstanceDeployConfigInput[];
+      steth?: StETHInstanceDeployConfigInput[];
+      reth?: RETHInstanceDeployConfigInput[];
     };
   }
 
@@ -54,6 +63,8 @@ declare module "hardhat/types/config" {
     coordinators?: CoordinatorDeployConfig;
     instances?: {
       erc4626?: ERC4626InstanceDeployConfig[];
+      steth?: StETHInstanceDeployConfig[];
+      reth?: RETHInstanceDeployConfig[];
     };
   }
   export interface HardhatNetworkConfig {
@@ -61,6 +72,8 @@ declare module "hardhat/types/config" {
     coordinators?: CoordinatorDeployConfig;
     instances?: {
       erc4626?: ERC4626InstanceDeployConfig[];
+      steth?: StETHInstanceDeployConfig[];
+      reth?: RETHInstanceDeployConfig[];
     };
   }
 }
@@ -80,6 +93,10 @@ extendConfig(
         erc4626: v.instances?.erc4626?.map((i) =>
           zERC4626InstanceDeployConfig.parse(i),
         ),
+        steth: v.instances?.steth?.map((i) =>
+          zStETHInstanceDeployConfig.parse(i),
+        ),
+        reth: v.instances?.reth?.map((i) => zRETHInstanceDeployConfig.parse(i)),
       };
     });
   },

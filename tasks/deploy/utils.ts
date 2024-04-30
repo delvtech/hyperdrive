@@ -1,7 +1,9 @@
 import duration, { DurationUnitType } from "dayjs/plugin/duration";
 import dayjs from "dayjs";
 import { z } from "zod";
-import { parseEther, toBytes, toHex } from "viem";
+import { parseEther, pad } from "viem";
+import hre from "hardhat";
+
 dayjs.extend(duration);
 
 /**
@@ -23,7 +25,7 @@ export const zHex = z.custom<`0x${string}`>(
  */
 export const zBytes32 = z
   .custom<`0x${string}`>((v) => typeof v === "string" && /^0x[\da-fA-f]*$/g.test(v))
-  .transform((v) => toHex(v, { size: 32 }));
+  .transform((v) => pad(v, { size: 32 }));
 
 const durationUnits = [
   "minute",
@@ -88,3 +90,9 @@ export type Ether = z.infer<typeof zEther>;
 export type Prettify<T> = {
   [K in keyof T]: T[K];
 } & {};
+
+export const validHyperdrivePrefixes = {
+  erc4626: "ERC4626",
+  steth: "StETH",
+  reth: "RETH",
+} as const;

@@ -10,7 +10,7 @@ export type DeployAllParams = {} & DeployCoordinatorsAllParams;
 
 task(
   "deploy:all",
-  "deploys the HyperdriveFactory and all deployer coordinators",
+  "deploys the HyperdriveFactory, all deployer coordinators, and all hyperdrive instances",
 )
   .addOptionalParam(
     "lido",
@@ -32,6 +32,9 @@ task(
 
       // deploy the factory
       await run("deploy:factory");
+
+      // deploy the registry
+      await run("deploy:registry");
 
       // deploy all deployer coordinators
       await run("deploy:coordinators:all", {

@@ -22,11 +22,25 @@ task("deploy:instances:all", "deploys all hyperdrive instances")
         config: hardhatConfig,
       },
     ) => {
-      const erc4626 = hardhatConfig.networks[network.name].instances?.erc4626;
-      console.log("erc4626 instances", erc4626);
+      // Read the instance configurations from hardhat config
+      const instances = hardhatConfig.networks[network.name].instances;
+      if (!instances) {
+        console.error("no instances to deploy");
+        return;
+      }
+      const { erc4626, steth } = instances;
+
       if (erc4626) {
         for (let { name } of erc4626) {
+          console.log(`deploying erc4626 instance ${name}`);
           await run("deploy:instances:erc4626", { name, admin });
+        }
+      }
+
+      if (steth) {
+        for (let { name } of steth) {
+          console.log(`deploying steth instance ${name}`);
+          await run("deploy:instances:steth", { name, admin });
         }
       }
     },

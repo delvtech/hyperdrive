@@ -4,7 +4,6 @@ pragma solidity 0.8.20;
 import { MultiRolesAuthority } from "solmate/auth/authorities/MultiRolesAuthority.sol";
 import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "./ERC20Mintable.sol";
-import { IRocketTokenRETH } from "../src/interfaces/IRocketTokenRETH.sol";
 
 /// @author DELV
 /// @title MockRocketPool
@@ -114,23 +113,6 @@ contract MockRocketPool is MultiRolesAuthority, ERC20Mintable {
         return tokenAmount;
     }
 
-    function getSharesByPooledEth(
-        uint256 _ethAmount
-    ) public view returns (uint256) {
-        return _ethAmount.mulDivDown(getTotalShares(), getTotalPooledEther());
-    }
-
-    function getPooledEthByShares(
-        uint256 _sharesAmount
-    ) public view returns (uint256) {
-        return
-            _sharesAmount.mulDivDown(getTotalPooledEther(), getTotalShares());
-    }
-
-    function getBufferedEther() external pure returns (uint256) {
-        return 0;
-    }
-
     function getTotalPooledEther() public view returns (uint256) {
         return totalPooledEther + _getAccruedInterest();
     }
@@ -139,19 +121,14 @@ contract MockRocketPool is MultiRolesAuthority, ERC20Mintable {
         return totalShares;
     }
 
-    function sharesOf(address _account) external view returns (uint256) {
-        uint256 tokenBalance = balanceOf[_account];
-        return tokenBalance.mulDivDown(getTotalShares(), getTotalPooledEther());
-    }
-
     /// IRocketTokenRETH ///
 
     function getEthValue(uint256 _rethAmount) external view returns (uint256) {
-        return getPooledEthByShares(_rethAmount);
+        return _rethAmount.mulDivDown(getTotalPooledEther(), getTotalShares());
     }
 
     function getRethValue(uint256 _ethAmount) external view returns (uint256) {
-        return getSharesByPooledEth(_ethAmount);
+        return _ethAmount.mulDivDown(getTotalShares(), getTotalPooledEther());
     }
 
     /// Mock ///

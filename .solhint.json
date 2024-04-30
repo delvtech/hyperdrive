@@ -9,7 +9,7 @@
     "reason-string": "off",
     "private-vars-leading-underscore": "off",
     "compiler-version": ["off"],
-    "func-visibility": ["warn", { "ignoreConstructors": true }],
+    "func-visibility": ["warn",{"ignoreConstructors":true}],
     "not-rely-on-time": "off",
     "no-inline-assembly": "off",
     "no-empty-blocks": "off",

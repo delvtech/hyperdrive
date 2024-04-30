@@ -8,17 +8,10 @@ task(
 ).setAction(
   async ({}: DeployForwarderParams, { deployments, run, network, viem }) => {
     // Deploy the ERC20ForwarderFactory
-    console.log("deploying ERC20ForwarderFactory...");
-    const linkerFactory = await viem.deployContract(
-      "ERC20ForwarderFactory",
-      [],
-    );
-    await deployments.save("ERC20ForwarderFactory", linkerFactory);
-    if (network.name != "hardhat")
-      await run("verify:verify", {
-        address: linkerFactory.address,
-        constructorArguments: [],
-        network: network.name,
-      });
+    const name = "ERC20ForwarderFactory";
+    console.log(`deploying ${name}...`);
+    const linkerFactory = await viem.deployContract(name, []);
+    await deployments.save(name, { ...linkerFactory, args: [] });
+    await run("deploy:verify", { name: "ERC20ForwarderFactory" });
   },
 );

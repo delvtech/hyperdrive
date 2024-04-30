@@ -4,6 +4,6 @@ export * from "./factory";
 export * from "./forwarder";
 export * from "./instances";
 export * from "./registry";
+export * from "./type-extensions";
 export * from "./utils";
-
-import "./type-extensions";
+export * from "./verify";

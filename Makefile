@@ -82,8 +82,3 @@ lint-rust:
 
 prettier:
 	npx prettier --write .
-
-### Deploy ###
-
-deploy:
-	forge script ./script/deploy/Deploy.s.sol --broadcast --slow --verify --resume --multi --isolate --legacy
