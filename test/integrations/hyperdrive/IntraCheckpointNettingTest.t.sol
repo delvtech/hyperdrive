@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -90,6 +93,10 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             // fast forward time and accrue interest
             advanceTime(POSITION_DURATION, 0);
         }
+
+        // Celine adds liquidity. This is needed to allow the positions to be
+        // closed out.
+        addLiquidity(celine, 500_000_000e18);
 
         // open a long
         uint256 basePaidLong = tradeSize;
@@ -484,6 +491,10 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
         uint256 aliceLpShares = initialize(alice, apr, contribution);
 
+        // Celine adds liquidity. This is needed to allow the positions to be
+        // closed out.
+        addLiquidity(celine, 500_000_000e18);
+
         // fast forward time and accrue interest
         advanceTime(POSITION_DURATION, variableInterest);
 
@@ -620,6 +631,10 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         deploy(alice, apr, initialVaultSharePrice, 0, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
+
+        // Celine adds liquidity. This is needed to allow the positions to be
+        // closed out.
+        addLiquidity(celine, 500_000_000e18);
 
         // fast forward time and accrue interest
         advanceTime(POSITION_DURATION, variableInterest);
@@ -981,17 +996,26 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         assertEq(poolInfo.shareReserves, expectedShareReserves);
     }
 
+    // FIXME
     function test_close_short_solvency_edge_fuzz(
         uint256 apr,
         uint256 timeStretchAPR,
         uint256 timeToMaturity,
         uint256 contribution
     ) external {
+        // FIXME: This is failing when trying to open a short to net out the
+        // long. This warrants some real investigation.
+        apr = 160528687439872153926151455500200869826346498215958436184775;
+        timeStretchAPR = 0;
+        timeToMaturity = 0;
+        contribution = 0;
+
         // Normalize the test parameters.
         apr = apr.normalizeToRange(0.01e18, 0.2e18);
         timeStretchAPR = timeStretchAPR.normalizeToRange(0.01e18, 0.1e18);
         timeToMaturity = timeToMaturity.normalizeToRange(0.1e18, 0.9e18);
         contribution = contribution.normalizeToRange(500e18, 100_000_000e18);
+        console.log("contribution = %s", contribution.toString(18));
 
         // Run the test.
         _test_close_short_solvency(
@@ -1023,9 +1047,11 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256 contribution
     ) internal {
         // Deploy the pool and initialize the market
+        console.log("test: 1");
         deploy(alice, timeStretchAPR, 0, 0, 0, 0);
         initialize(alice, apr, contribution);
         contribution -= 2 * hyperdrive.getPoolConfig().minimumShareReserves;
+        console.log("test: 2");
 
         // Open long and short positions that net out.
         uint256 longBase = hyperdrive.calculateMaxLong();
@@ -1033,6 +1059,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             celine,
             longBase
         );
+        console.log("test: 3");
         openShort(celine, nettedBondAmount);
         assertEq(
             hyperdrive.balanceOf(
@@ -1047,26 +1074,32 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
                 celine
             )
         );
+        console.log("test: 4");
 
         // Open a max long that eats up any remaining liquidity that could be
         // used to close the short.
         longBase = hyperdrive.calculateMaxLong();
         openLong(celine, longBase);
+        console.log("test: 5");
 
         // Time passes without interest accruing.
         uint256 timeAdvanced = POSITION_DURATION.mulDown(timeToMaturity);
         advanceTime(timeAdvanced, int256(0));
+        console.log("test: 6");
 
         // Celine closes her short. This should fail since the pool becomes
         // insolvent if the short can be closed.
         vm.expectRevert();
         closeShort(celine, maturityTime, nettedBondAmount);
+        console.log("test: 7");
 
         // The term passes without interest accruing.
         advanceTime(POSITION_DURATION - timeAdvanced, int256(0));
+        console.log("test: 8");
 
         // A checkpoint is minted which should succeed. This indicates that
         // all of the longs and shorts could be closed.
         hyperdrive.checkpoint(maturityTime, 0);
+        console.log("test: 9");
     }
 }
