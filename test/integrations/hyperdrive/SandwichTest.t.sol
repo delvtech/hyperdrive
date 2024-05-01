@@ -17,7 +17,7 @@ contract SandwichTest is HyperdriveTest {
 
         // Deploy the pool and initialize the market
         {
-            uint256 timeStretchApr = 0.02e18;
+            uint256 timeStretchApr = 0.05e18;
             deploy(alice, timeStretchApr, 0, 0, 0, 0);
         }
         uint256 contribution = 500_000_000e18;
