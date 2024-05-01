@@ -10,6 +10,8 @@ import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest, HyperdriveUtils } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
 
+import "forge-std/console2.sol";
+
 contract CircuitBreakerTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for *;
@@ -260,7 +262,19 @@ contract CircuitBreakerTest is HyperdriveTest {
         assertEq(weightedSpotPriceMinted, currentSpotPrice);
     }
 
-    function test_weighted_average_netted_positions(
+    function test_weighted_average_netted_positions() external {
+        // Normalize the fuzz params.
+        uint256 initialVaultSharePrice = 1e18;
+        int256 variableInterest = 0.05e18;
+        uint256 numTrades = 5;
+        uint256 tradeSize = 1_000_000e18;
+        _test_weighted_average_netted_positions(initialVaultSharePrice,
+                variableInterest,
+                tradeSize,
+                numTrades);
+    }
+
+    function test_weighted_average_netted_positions_fuzz(
         uint256 initialVaultSharePrice,
         int256 variableInterest,
         uint256 tradeSize,
@@ -274,7 +288,18 @@ contract CircuitBreakerTest is HyperdriveTest {
         variableInterest = variableInterest.normalizeToRange(0e18, .5e18);
         numTrades = tradeSize.normalizeToRange(1, 5);
         tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18 / numTrades);
+        _test_weighted_average_netted_positions(initialVaultSharePrice,
+                variableInterest,
+                tradeSize,
+                numTrades);
+    }
 
+    function _test_weighted_average_netted_positions(
+        uint256 initialVaultSharePrice,
+        int256 variableInterest,
+        uint256 tradeSize,
+        uint256 numTrades
+    ) internal {
         // Initialize the market.
         uint256 apr = 0.05e18;
         deploy(alice, apr, initialVaultSharePrice, 0, 0, 0, 0);
@@ -289,7 +314,12 @@ contract CircuitBreakerTest is HyperdriveTest {
         uint256[] memory longMaturityTimes = new uint256[](numTrades);
         uint256[] memory shortMaturityTimes = new uint256[](numTrades);
         uint256[] memory bondAmounts = new uint256[](numTrades);
+        uint256 lowestPrice = HyperdriveUtils.calculateSpotPrice(
+            hyperdrive
+        );
+        uint256 highestPrice = lowestPrice;
         for (uint256 i = 0; i < numTrades; i++) {
+            // Open long position.
             uint256 basePaidLong = tradeSize;
             (uint256 maturityTimeLong, uint256 bondAmount) = openLong(
                 bob,
@@ -297,8 +327,18 @@ contract CircuitBreakerTest is HyperdriveTest {
             );
             longMaturityTimes[i] = maturityTimeLong;
             bondAmounts[i] = bondAmount;
+            if(HyperdriveUtils.calculateSpotPrice(hyperdrive) < lowestPrice)
+            {
+                lowestPrice = HyperdriveUtils.calculateSpotPrice(hyperdrive);
+            }
+
+            // Open short position.
             (uint256 maturityTimeShort, ) = openShort(bob, bondAmount);
             shortMaturityTimes[i] = maturityTimeShort;
+            if(HyperdriveUtils.calculateSpotPrice(hyperdrive) > highestPrice)
+            {
+                highestPrice = HyperdriveUtils.calculateSpotPrice(hyperdrive);
+            }
         }
 
         // Fast forward time, create checkpoints and accrue interest.
@@ -322,5 +362,13 @@ contract CircuitBreakerTest is HyperdriveTest {
             weightedSpotPriceAfter,
             spotPrice
         );
+
+        // The weighted spot price should be greater than or equal to the 
+        // existing spot price.
+        assertGe(highestPrice, weightedSpotPriceAfter);
+
+        // The weighted spot price should be less than the  or equal to the
+        // existing spot price.
+        assertLe(lowestPrice, weightedSpotPriceAfter);
     }
 }
