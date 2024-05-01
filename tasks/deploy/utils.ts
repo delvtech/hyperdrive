@@ -94,4 +94,5 @@ export const validHyperdrivePrefixes = {
   erc4626: "ERC4626",
   steth: "StETH",
   reth: "RETH",
+  ezeth: "EZETH",
 } as const;

@@ -26,6 +26,7 @@ The complete list of tasks can be seen by running `npx hardhat --help` in your t
   deploy:coordinators:erc4626	deploys the ERC4626 deployment coordinator
   deploy:coordinators:reth   	deploys the RETH deployment coordinator
   deploy:coordinators:steth  	deploys the STETH deployment coordinator
+  deploy:coordinators:ezeth   deploys the EzETH deployment coordinator
   deploy:factory             	deploys the hyperdrive factory to the configured chain
   deploy:forwarder           	deploys the ERC20ForwarderFactory to the configured chain
   deploy:instances:all       	deploys the ERC4626 deployment coordinator

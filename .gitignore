@@ -6,6 +6,9 @@ broadcast
 node_modules/
 yarn-error.log
 
+# Hardhat
+artifacts/
+
 # random files on MacOs
 .DS_Store
 

@@ -34,6 +34,11 @@ import {
   RETHInstanceDeployConfigInput,
   zRETHInstanceDeployConfig,
 } from "./instances/reth";
+import {
+  EzETHInstanceDeployConfig,
+  EzETHInstanceDeployConfigInput,
+  zEzETHInstanceDeployConfig,
+} from "./instances/ezeth";
 
 declare module "hardhat/types/config" {
   // We extend the user's HardhatNetworkUserConfig with our factory and instance configuration inputs.
@@ -54,6 +59,7 @@ declare module "hardhat/types/config" {
       erc4626?: ERC4626InstanceDeployConfigInput[];
       steth?: StETHInstanceDeployConfigInput[];
       reth?: RETHInstanceDeployConfigInput[];
+      ezeth?: EzETHInstanceDeployConfigInput[];
     };
   }
 
@@ -65,6 +71,7 @@ declare module "hardhat/types/config" {
       erc4626?: ERC4626InstanceDeployConfig[];
       steth?: StETHInstanceDeployConfig[];
       reth?: RETHInstanceDeployConfig[];
+      ezeth?: EzETHInstanceDeployConfig[];
     };
   }
   export interface HardhatNetworkConfig {
@@ -74,6 +81,7 @@ declare module "hardhat/types/config" {
       erc4626?: ERC4626InstanceDeployConfig[];
       steth?: StETHInstanceDeployConfig[];
       reth?: RETHInstanceDeployConfig[];
+      ezeth?: EzETHInstanceDeployConfig[];
     };
   }
 }
@@ -96,6 +104,9 @@ extendConfig(
         ),
         steth: v.instances?.steth?.map((i) =>
           zStETHInstanceDeployConfig.parse(i),
+        ),
+        ezeth: v.instances?.steth?.map((i) =>
+          zEzETHInstanceDeployConfig.parse(i),
         ),
         reth: v.instances?.reth?.map((i) => zRETHInstanceDeployConfig.parse(i)),
       };
