@@ -81,10 +81,10 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
 
         // Initialize Hyperdrive. This ensures that Hyperdrive has vault tokens
         // to sweep.
-        leakyBase.mint(alice, 100e18);
-        leakyBase.approve(address(hyperdrive), 100e18);
+        leakyBase.mint(alice, 1_000e18);
+        leakyBase.approve(address(hyperdrive), 1_000e18);
         hyperdrive.initialize(
-            100e18,
+            1_000e18,
             0.05e18,
             IHyperdrive.Options({
                 destination: alice,

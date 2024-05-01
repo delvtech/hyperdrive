@@ -215,6 +215,10 @@ interface IHyperdrive is
     ///         checkpoint duration.
     error InvalidCheckpointTime();
 
+    /// @notice Thrown when the effective share reserves don't exceed the
+    ///         minimum share reserves when the pool is initialized.
+    error InvalidEffectiveShareReserves();
+
     /// @notice Thrown when the caller of one of MultiToken's bridge-only
     ///         functions is not the corresponding bridge.
     error InvalidERC20Bridge();

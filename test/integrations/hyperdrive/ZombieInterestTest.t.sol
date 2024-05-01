@@ -83,10 +83,11 @@ contract ZombieInterestTest is HyperdriveTest {
         bool removeLiquidityBeforeMaturityParam,
         bool closeLongFirstParam
     ) internal {
-        // Initialize the pool with capital.
+        // Initialize the pool with enough capital so that the effective share
+        // reserves exceed the minimum share reserves.
         uint256 fixedRate = 0.035e18;
         deploy(bob, fixedRate, 1e18, 0, 0, 0, 0);
-        initialize(bob, fixedRate, 2 * MINIMUM_SHARE_RESERVES);
+        initialize(bob, fixedRate, 5 * MINIMUM_SHARE_RESERVES);
 
         // Alice adds liquidity.
         uint256 initialLiquidity = 500_000_000e18;
@@ -314,10 +315,11 @@ contract ZombieInterestTest is HyperdriveTest {
         bool removeLiquidityBeforeMaturityParam,
         bool closeShortFirstParam
     ) internal {
-        // Initialize the pool with capital.
+        // Initialize the pool with enough capital so that the effective share
+        // reserves exceed the minimum share reserves.
         uint256 fixedRate = 0.035e18;
         deploy(bob, fixedRate, 1e18, 0, 0, 0, 0);
-        initialize(bob, fixedRate, 2 * MINIMUM_SHARE_RESERVES);
+        initialize(bob, fixedRate, 5 * MINIMUM_SHARE_RESERVES);
 
         // Alice adds liquidity.
         uint256 initialLiquidity = 500_000_000e18;
@@ -446,9 +448,10 @@ contract ZombieInterestTest is HyperdriveTest {
         uint256 zombieShareReserves1;
         uint256 shareReserves1;
         {
-            // Initialize the pool with capital.
+            // Initialize the pool with enough capital so that the effective
+            // share reserves exceed the minimum share reserves.
             deploy(bob, fixedRate, 1e18, 0, 0, 0, 0);
-            initialize(bob, fixedRate, 2 * MINIMUM_SHARE_RESERVES);
+            initialize(bob, fixedRate, 5 * MINIMUM_SHARE_RESERVES);
 
             // Alice adds liquidity.
             addLiquidity(alice, initialLiquidity);
@@ -490,10 +493,11 @@ contract ZombieInterestTest is HyperdriveTest {
         uint256 zombieShareReserves2;
         uint256 shareReserves2;
         {
-            // Initialize the pool with capital.
+            // Initialize the pool with enough capital so that the effective
+            // share reserves exceed the minimum share reserves.
             deploy(bob, fixedRate, 1e18, 0, 0, 0, 0);
             assertEq(baseToken.balanceOf(address(hyperdrive)), 0);
-            initialize(bob, fixedRate, 2 * MINIMUM_SHARE_RESERVES);
+            initialize(bob, fixedRate, 5 * MINIMUM_SHARE_RESERVES);
 
             // Alice adds liquidity.
             addLiquidity(alice, initialLiquidity);
@@ -546,7 +550,8 @@ contract ZombieInterestTest is HyperdriveTest {
     }
 
     function _test_zombie_long_short(uint256 zombieTime, bool fees) internal {
-        // Initialize the pool with capital.
+        // Initialize the pool with enough capital so that the effective share
+        // reserves exceed the minimum share reserves.
         uint256 fixedRate = 0.05e18;
         if (fees) {
             deploy(bob, fixedRate, 1e18, 0.01e18, 0.0005e18, 0.15e18, 0.03e18);
@@ -554,7 +559,7 @@ contract ZombieInterestTest is HyperdriveTest {
             deploy(bob, fixedRate, 1e18, 0, 0, 0, 0);
         }
         deploy(bob, fixedRate, 1e18, 0.01e18, 0.0005e18, 0.15e18, 0.03e18);
-        initialize(bob, fixedRate, 2 * MINIMUM_SHARE_RESERVES);
+        initialize(bob, fixedRate, 5 * MINIMUM_SHARE_RESERVES);
 
         // Alice adds liquidity.
         uint256 initialLiquidity = 500_000_000e18;
@@ -637,7 +642,8 @@ contract ZombieInterestTest is HyperdriveTest {
 
     /// forge-config: default.fuzz.runs = 1000
     function test_zombie_long(uint256 zombieTime, bool fees) external {
-        // Initialize the pool with capital.
+        // Initialize the pool with enough capital so that the effective share
+        // reserves exceed the minimum share reserves.
         uint256 fixedRate = 0.05e18;
         int256 variableRate = 0.05e18;
         if (fees) {
@@ -645,7 +651,7 @@ contract ZombieInterestTest is HyperdriveTest {
         } else {
             deploy(bob, fixedRate, 1e18, 0, 0, 0, 0);
         }
-        initialize(bob, fixedRate, 2 * MINIMUM_SHARE_RESERVES);
+        initialize(bob, fixedRate, 5 * MINIMUM_SHARE_RESERVES);
 
         // Alice adds liquidity.
         uint256 initialLiquidity = 100_000_000e18;
@@ -715,7 +721,8 @@ contract ZombieInterestTest is HyperdriveTest {
 
     /// forge-config: default.fuzz.runs = 1000
     function test_zombie_short(uint256 zombieTime, bool fees) external {
-        // Initialize the pool with capital.
+        // Initialize the pool with enough capital so that the effective share
+        // reserves exceed the minimum share reserves.
         uint256 fixedRate = 0.05e18;
         int256 variableRate = 0.05e18;
         if (fees) {
@@ -723,7 +730,7 @@ contract ZombieInterestTest is HyperdriveTest {
         } else {
             deploy(bob, fixedRate, 1e18, 0, 0, 0, 0);
         }
-        initialize(bob, fixedRate, 2 * MINIMUM_SHARE_RESERVES);
+        initialize(bob, fixedRate, 5 * MINIMUM_SHARE_RESERVES);
 
         // Alice adds liquidity.
         uint256 initialLiquidity = 100_000_000e18;

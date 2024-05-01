@@ -126,7 +126,7 @@ contract AddLiquidityTest is HyperdriveTest {
         uint256 apr = 0.05e18;
 
         // Initialize the pool
-        uint256 contribution = 2e18;
+        uint256 contribution = 5e18;
         initialize(alice, apr, contribution);
 
         // Donate funds to pool to ensure that

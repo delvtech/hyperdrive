@@ -133,8 +133,31 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         contribution = contribution.normalizeToRange(10_000e6, 1_000_000_000e6);
 
         // Initialize the pool and ensure that the APR is correct.
-        initialize(alice, apr, contribution);
-        assertApproxEqAbs(hyperdrive.calculateSpotAPR(), apr, 1e14);
+        vm.stopPrank();
+        vm.startPrank(alice);
+        baseToken.mint(contribution);
+        baseToken.approve(address(hyperdrive), contribution);
+        try
+            hyperdrive.initialize(
+                contribution,
+                apr,
+                IHyperdrive.Options({
+                    destination: alice,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            )
+        {
+            assertApproxEqAbs(hyperdrive.calculateSpotAPR(), apr, 1e14);
+        } catch (bytes memory error) {
+            assertTrue(
+                error.eq(
+                    abi.encodeWithSelector(
+                        IHyperdrive.InvalidEffectiveShareReserves.selector
+                    )
+                )
+            );
+        }
     }
 
     function test_nonstandard_decimals_long(

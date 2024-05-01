@@ -778,9 +778,10 @@ contract CloseShortTest is HyperdriveTest {
         uint256 shortTradeSize = 1_000_000e18;
         uint256 shortProceeds1;
         {
-            // Initialize the pool with capital.
+            // Initialize the pool with enough capital for the effective share
+            // reserves to exceed the minimum share reserves.
             deploy(bob, 0.035e18, 1e18, 0, 0, 0, 0);
-            initialize(bob, 0.035e18, 2 * MINIMUM_SHARE_RESERVES);
+            initialize(bob, 0.035e18, 5 * MINIMUM_SHARE_RESERVES);
 
             // Alice adds liquidity.
             uint256 initialLiquidity = 500_000_000e18;
@@ -798,9 +799,10 @@ contract CloseShortTest is HyperdriveTest {
 
         uint256 shortProceeds2;
         {
-            // Initialize the pool with capital.
+            // Initialize the pool with enough capital for the effective share
+            // reserves to exceed the minimum share reserves.
             deploy(bob, 0.035e18, 1e18, 0, 0, 0, 0);
-            initialize(bob, 0.035e18, 2 * MINIMUM_SHARE_RESERVES);
+            initialize(bob, 0.035e18, 5 * MINIMUM_SHARE_RESERVES);
 
             // Alice adds liquidity.
             uint256 initialLiquidity = 500_000_000e18;
@@ -821,9 +823,10 @@ contract CloseShortTest is HyperdriveTest {
 
         uint256 shortProceeds3;
         {
-            // Initialize the pool with capital.
+            // Initialize the pool with enough capital for the effective share
+            // reserves to exceed the minimum share reserves.
             deploy(bob, 0.035e18, 1e18, 0, 0, 0, 0);
-            initialize(bob, 0.035e18, 2 * MINIMUM_SHARE_RESERVES);
+            initialize(bob, 0.035e18, 5 * MINIMUM_SHARE_RESERVES);
 
             // Alice adds liquidity.
             uint256 initialLiquidity = 500_000_000e18;
@@ -844,9 +847,10 @@ contract CloseShortTest is HyperdriveTest {
 
         uint256 shortProceeds4;
         {
-            // Initialize the pool with capital.
+            // Initialize the pool with enough capital for the effective share
+            // reserves to exceed the minimum share reserves.
             deploy(bob, 0.035e18, 1e18, 0, 0, 0, 0);
-            initialize(bob, 0.035e18, 2 * MINIMUM_SHARE_RESERVES);
+            initialize(bob, 0.035e18, 5 * MINIMUM_SHARE_RESERVES);
 
             // Alice adds liquidity.
             uint256 initialLiquidity = 500_000_000e18;
