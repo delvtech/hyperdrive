@@ -10,8 +10,6 @@ import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest, HyperdriveUtils } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-import "forge-std/console2.sol";
-
 contract CircuitBreakerTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for *;
@@ -232,7 +230,7 @@ contract CircuitBreakerTest is HyperdriveTest {
             0
         );
 
-        // A checkpoints is missed.
+        // A checkpoint is missed.
         advanceTime(CHECKPOINT_DURATION, 0);
         uint256 missedCheckpointTime = block.timestamp;
         uint256 weightedSpotPriceMissed = hyperdrive.getCheckpoint(
