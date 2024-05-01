@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-
 import { VmSafe } from "forge-std/Vm.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -41,6 +38,29 @@ contract InitializeTest is HyperdriveTest {
         baseToken.mint(contribution);
         baseToken.approve(address(hyperdrive), contribution);
         vm.expectRevert(IHyperdrive.PoolAlreadyInitialized.selector);
+        hyperdrive.initialize(
+            contribution,
+            fixedRate,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
+    function test_initialize_failure_invalid_effective_share_reserves()
+        external
+    {
+        uint256 fixedRate = 0.5e18;
+        uint256 contribution = 1000.0e18;
+
+        // Attempt to initialize the pool. This should fail.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        baseToken.mint(contribution);
+        baseToken.approve(address(hyperdrive), contribution);
+        vm.expectRevert(IHyperdrive.InvalidEffectiveShareReserves.selector);
         hyperdrive.initialize(
             contribution,
             fixedRate,

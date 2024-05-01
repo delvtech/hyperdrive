@@ -16,126 +16,156 @@ contract LPMathTest is HyperdriveTest {
     using Lib for *;
     using LPMath for *;
 
-    function test__calculateInitialBondReserves() external {
+    function test__calculateInitialReserves() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockLPMath lpMath = new MockLPMath();
 
         // Test .1% APR
-        uint256 shareReserves = 500_000_000 ether;
-        uint256 initialVaultSharePrice = 1 ether;
-        uint256 apr = 0.001 ether;
+        uint256 shareReserves = 500_000_000e18;
+        uint256 initialVaultSharePrice = 0.5e18;
+        uint256 vaultSharePrice = 2.5e18;
+        uint256 apr = 0.001e18;
         uint256 positionDuration = 365 days;
         uint256 timeStretch = ONE.divDown(1109.3438508425959e18);
-        uint256 bondReserves = lpMath.calculateInitialBondReserves(
-            shareReserves,
-            initialVaultSharePrice,
-            apr,
-            positionDuration,
-            timeStretch
-        );
+        (, int256 shareAdjustment, uint256 bondReserves) = lpMath
+            .calculateInitialReserves(
+                shareReserves,
+                vaultSharePrice,
+                initialVaultSharePrice,
+                apr,
+                positionDuration,
+                timeStretch
+            );
+        uint256 effectiveShareReserves = HyperdriveMath
+            .calculateEffectiveShareReserves(shareReserves, shareAdjustment);
         uint256 result = HyperdriveMath.calculateSpotAPR(
-            shareReserves,
+            effectiveShareReserves,
             bondReserves,
             initialVaultSharePrice,
             positionDuration,
             timeStretch
         );
-        assertApproxEqAbs(result, apr, 20 wei);
+        assertApproxEqAbs(result, apr, 20);
 
         // Test 1% APR
-        apr = 0.01 ether;
+        apr = 0.01e18;
         timeStretch = ONE.divDown(110.93438508425959e18);
-        bondReserves = lpMath.calculateInitialBondReserves(
+        (, shareAdjustment, bondReserves) = lpMath.calculateInitialReserves(
             shareReserves,
+            vaultSharePrice,
             initialVaultSharePrice,
             apr,
             positionDuration,
             timeStretch
         );
-        result = HyperdriveMath.calculateSpotAPR(
+        effectiveShareReserves = HyperdriveMath.calculateEffectiveShareReserves(
             shareReserves,
+            shareAdjustment
+        );
+        result = HyperdriveMath.calculateSpotAPR(
+            effectiveShareReserves,
             bondReserves,
             initialVaultSharePrice,
             positionDuration,
             timeStretch
         );
-        assertApproxEqAbs(result, apr, 1 wei);
+        assertApproxEqAbs(result, apr, 1);
 
         // Test 5% APR
-        apr = 0.05 ether;
+        apr = 0.05e18;
         timeStretch = ONE.divDown(22.186877016851916266e18);
-        bondReserves = lpMath.calculateInitialBondReserves(
+        (, shareAdjustment, bondReserves) = lpMath.calculateInitialReserves(
             shareReserves,
+            vaultSharePrice,
             initialVaultSharePrice,
             apr,
             positionDuration,
             timeStretch
         );
-        result = HyperdriveMath.calculateSpotAPR(
+        effectiveShareReserves = HyperdriveMath.calculateEffectiveShareReserves(
             shareReserves,
+            shareAdjustment
+        );
+        result = HyperdriveMath.calculateSpotAPR(
+            effectiveShareReserves,
             bondReserves,
             initialVaultSharePrice,
             positionDuration,
             timeStretch
         );
-        assertApproxEqAbs(result, apr, 1 wei);
+        assertApproxEqAbs(result, apr, 1);
 
         // Test 25% APR
-        apr = 0.25 ether;
+        apr = 0.25e18;
         timeStretch = ONE.divDown(4.437375403370384e18);
-        bondReserves = lpMath.calculateInitialBondReserves(
+        (, shareAdjustment, bondReserves) = lpMath.calculateInitialReserves(
             shareReserves,
+            vaultSharePrice,
             initialVaultSharePrice,
             apr,
             positionDuration,
             timeStretch
         );
-        result = HyperdriveMath.calculateSpotAPR(
+        effectiveShareReserves = HyperdriveMath.calculateEffectiveShareReserves(
             shareReserves,
+            shareAdjustment
+        );
+        result = HyperdriveMath.calculateSpotAPR(
+            effectiveShareReserves,
             bondReserves,
             initialVaultSharePrice,
             positionDuration,
             timeStretch
         );
-        assertApproxEqAbs(result, apr, 0 wei);
+        assertApproxEqAbs(result, apr, 1);
 
         // Test 50% APR
-        apr = 0.50 ether;
+        apr = 0.50e18;
         timeStretch = ONE.divDown(2.218687701685192e18);
-        bondReserves = lpMath.calculateInitialBondReserves(
+        (, shareAdjustment, bondReserves) = lpMath.calculateInitialReserves(
             shareReserves,
+            vaultSharePrice,
             initialVaultSharePrice,
             apr,
             positionDuration,
             timeStretch
         );
-        result = HyperdriveMath.calculateSpotAPR(
+        effectiveShareReserves = HyperdriveMath.calculateEffectiveShareReserves(
             shareReserves,
+            shareAdjustment
+        );
+        result = HyperdriveMath.calculateSpotAPR(
+            effectiveShareReserves,
             bondReserves,
             initialVaultSharePrice,
             positionDuration,
             timeStretch
         );
-        assertApproxEqAbs(result, apr, 1 wei);
+        assertApproxEqAbs(result, apr, 1);
 
         // Test 100% APR
-        apr = 1 ether;
+        apr = 1e18;
         timeStretch = ONE.divDown(1.109343850842596e18);
-        bondReserves = lpMath.calculateInitialBondReserves(
+        (, shareAdjustment, bondReserves) = lpMath.calculateInitialReserves(
             shareReserves,
+            vaultSharePrice,
             initialVaultSharePrice,
             apr,
             positionDuration,
             timeStretch
         );
-        result = HyperdriveMath.calculateSpotAPR(
+        effectiveShareReserves = HyperdriveMath.calculateEffectiveShareReserves(
             shareReserves,
+            shareAdjustment
+        );
+        result = HyperdriveMath.calculateSpotAPR(
+            effectiveShareReserves,
             bondReserves,
             initialVaultSharePrice,
             positionDuration,
             timeStretch
         );
-        assertApproxEqAbs(result, apr, 4 wei);
+        assertApproxEqAbs(result, apr, 4);
     }
 
     function test__calculatePresentValue() external {

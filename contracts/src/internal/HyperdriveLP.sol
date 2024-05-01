@@ -94,7 +94,6 @@ abstract contract HyperdriveLP is
                 _positionDuration,
                 _timeStretch
             );
-        // FIXME: Write a test case for this.
         if (
             HyperdriveMath.calculateEffectiveShareReserves(
                 shareReserves,

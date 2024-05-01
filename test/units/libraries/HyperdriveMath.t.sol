@@ -355,55 +355,64 @@ contract HyperdriveMathTest is HyperdriveTest {
             POSITION_DURATION
         );
         uint256 normalizedTimeRemaining = 1e18;
-        uint256 initialBondReserves = LPMath.calculateInitialBondReserves(
-            initialShareReserves,
-            initialVaultSharePrice,
-            fixedRate,
-            POSITION_DURATION,
-            timeStretch
-        );
-
-        uint256 shareReserves = initialShareReserves;
+        (, int256 initialShareAdjustment, uint256 initialBondReserves) = LPMath
+            .calculateInitialReserves(
+                initialShareReserves,
+                initialVaultSharePrice,
+                initialVaultSharePrice,
+                fixedRate,
+                POSITION_DURATION,
+                timeStretch
+            );
+        uint256 initialEffectiveShareReserves = HyperdriveMath
+            .calculateEffectiveShareReserves(
+                initialShareReserves,
+                initialShareAdjustment
+            );
+        uint256 effectiveShareReserves = initialEffectiveShareReserves;
         uint256 bondReserves = initialBondReserves;
         uint256 baseAmountIn = amountIn.normalizeToRange(
             MINIMUM_TRANSACTION_AMOUNT,
             initialShareReserves / 2
         );
         uint256 bondAmountIn;
+        uint256 _initialVaultSharePrice = initialVaultSharePrice; // Avoid stack too deep error
         {
             uint256 bondReservesDelta = hyperdriveMath.calculateOpenLong(
-                shareReserves,
+                effectiveShareReserves,
                 bondReserves,
                 baseAmountIn,
                 timeStretch,
-                initialVaultSharePrice, // vaultSharePrice
-                initialVaultSharePrice
+                _initialVaultSharePrice, // vaultSharePrice
+                _initialVaultSharePrice
             );
             bondReserves -= bondReservesDelta;
-            shareReserves += baseAmountIn;
+            effectiveShareReserves += baseAmountIn;
             bondAmountIn = bondReservesDelta;
         }
 
         {
-            uint256 _initialVaultSharePrice = initialVaultSharePrice; // Avoid stack too deep error
+            uint256 _timeStretch = timeStretch; // Avoid stack too deep error
+            uint256 _normalizedTimeRemaining = normalizedTimeRemaining; // Avoid stack too deep error
+            MockHyperdriveMath _hyperdriveMath = hyperdriveMath; // Avoid stack too deep error
             (
                 uint256 shareReservesDelta,
                 uint256 bondReservesDelta,
 
-            ) = hyperdriveMath.calculateCloseLong(
-                    shareReserves,
+            ) = _hyperdriveMath.calculateCloseLong(
+                    effectiveShareReserves,
                     bondReserves,
                     bondAmountIn,
-                    normalizedTimeRemaining,
-                    timeStretch,
+                    _normalizedTimeRemaining,
+                    _timeStretch,
                     _initialVaultSharePrice, // vaultSharePrice
                     _initialVaultSharePrice
                 );
             bondReserves += bondReservesDelta;
-            shareReserves -= shareReservesDelta;
+            effectiveShareReserves -= shareReservesDelta;
             assertApproxEqAbs(
-                shareReserves,
-                initialShareReserves,
+                effectiveShareReserves,
+                initialEffectiveShareReserves,
                 PRECISION_THRESHOLD
             );
             assertEq(bondReserves, initialBondReserves);
@@ -424,39 +433,45 @@ contract HyperdriveMathTest is HyperdriveTest {
             fixedRate,
             POSITION_DURATION
         );
-        uint256 initialBondReserves = LPMath.calculateInitialBondReserves(
-            initialShareReserves,
-            initialVaultSharePrice,
-            fixedRate,
-            POSITION_DURATION,
-            timeStretch
-        );
-
-        uint256 shareReserves = initialShareReserves;
+        (, int256 initialShareAdjustment, uint256 initialBondReserves) = LPMath
+            .calculateInitialReserves(
+                initialShareReserves,
+                initialShareReserves,
+                initialVaultSharePrice,
+                fixedRate,
+                POSITION_DURATION,
+                timeStretch
+            );
+        uint256 initialEffectiveShareReserves = HyperdriveMath
+            .calculateEffectiveShareReserves(
+                initialShareReserves,
+                initialShareAdjustment
+            );
+        uint256 effectiveShareReserves = initialEffectiveShareReserves;
         uint256 bondReserves = initialBondReserves;
         uint256 baseAmountIn = amountIn.normalizeToRange(
             MINIMUM_TRANSACTION_AMOUNT,
             initialShareReserves / 2
         );
         uint256 bondAmountIn;
+        uint256 _initialVaultSharePrice = initialVaultSharePrice; // Avoid stack too deep error
         {
             uint256 bondReservesDelta = hyperdriveMath.calculateOpenLong(
-                shareReserves,
+                effectiveShareReserves,
                 bondReserves,
                 baseAmountIn,
                 timeStretch,
-                initialVaultSharePrice, // vaultSharePrice
-                initialVaultSharePrice
+                _initialVaultSharePrice, // vaultSharePrice
+                _initialVaultSharePrice
             );
             bondReserves -= bondReservesDelta;
-            shareReserves += baseAmountIn;
+            effectiveShareReserves += baseAmountIn;
             bondAmountIn = bondReservesDelta;
         }
 
         {
-            uint256 _initialVaultSharePrice = initialVaultSharePrice; // Avoid stack too deep error
             uint256 shareReservesDelta = hyperdriveMath.calculateOpenShort(
-                shareReserves,
+                effectiveShareReserves,
                 bondReserves,
                 bondAmountIn,
                 timeStretch,
@@ -464,10 +479,10 @@ contract HyperdriveMathTest is HyperdriveTest {
                 _initialVaultSharePrice
             );
             bondReserves += bondAmountIn;
-            shareReserves -= shareReservesDelta;
+            effectiveShareReserves -= shareReservesDelta;
             assertApproxEqAbs(
-                shareReserves,
-                initialShareReserves,
+                effectiveShareReserves,
+                initialEffectiveShareReserves,
                 PRECISION_THRESHOLD
             );
             assertEq(bondReserves, initialBondReserves);
