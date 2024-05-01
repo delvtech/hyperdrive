@@ -52,4 +52,4 @@ crash_report.json
 
 # Hardhat Artifacts
 artifacts
-deployments/hardhat
+deployments
