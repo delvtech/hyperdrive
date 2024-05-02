@@ -49,6 +49,30 @@ contract InitializeTest is HyperdriveTest {
         );
     }
 
+    function test_initialize_failure_below_minimum_contribution() external {
+        uint256 fixedRate = 0.5e18;
+        uint256 contribution = 2 *
+            hyperdrive.getPoolConfig().minimumShareReserves -
+            1;
+
+        // Alice attempts to initialize the pool with a contribution that is too
+        // low.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        baseToken.mint(contribution);
+        baseToken.approve(address(hyperdrive), contribution);
+        vm.expectRevert(IHyperdrive.BelowMinimumContribution.selector);
+        hyperdrive.initialize(
+            contribution,
+            fixedRate,
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
     function test_initialize_failure_invalid_effective_share_reserves()
         external
     {
