@@ -126,7 +126,7 @@ contract AddLiquidityTest is HyperdriveTest {
         uint256 apr = 0.05e18;
 
         // Initialize the pool
-        uint256 contribution = 2e18;
+        uint256 contribution = 5e18;
         initialize(alice, apr, contribution);
 
         // Donate funds to pool to ensure that
@@ -210,41 +210,6 @@ contract AddLiquidityTest is HyperdriveTest {
         );
     }
 
-    function test_add_liquidity_failure_zero_lp_total_supply() external {
-        uint256 apr = 0.05e18;
-
-        // Initialize the pool with a large amount of capital.
-        uint256 contribution = 500_000_000e18;
-        uint256 lpShares = initialize(alice, apr, contribution);
-
-        // Bob opens a long.
-        (uint256 maturityTime, uint256 longAmount) = openLong(bob, 10e18);
-
-        // Alice removes her liquidity.
-        removeLiquidity(alice, lpShares);
-
-        // Bob closes his long.
-        closeLong(bob, maturityTime, longAmount);
-
-        // Attempt to add liquidity when the LP total supply is zero.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        baseToken.mint(contribution);
-        baseToken.approve(address(hyperdrive), contribution);
-        vm.expectRevert();
-        hyperdrive.addLiquidity(
-            contribution,
-            0,
-            0,
-            0.04e18,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-    }
-
     function test_add_liquidity_failure_zero_present_value() external {
         uint256 apr = 0.05e18;
 
@@ -271,7 +236,7 @@ contract AddLiquidityTest is HyperdriveTest {
             contribution,
             0,
             0,
-            0.04e18,
+            type(uint256).max,
             IHyperdrive.Options({
                 destination: bob,
                 asBase: true,

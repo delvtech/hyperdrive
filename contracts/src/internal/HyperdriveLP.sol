@@ -23,6 +23,7 @@ abstract contract HyperdriveLP is
     HyperdriveMultiToken
 {
     using FixedPointMath for uint256;
+    using LPMath for LPMath.PresentValueParams;
     using SafeCast for int256;
     using SafeCast for uint256;
 
@@ -78,18 +79,34 @@ abstract contract HyperdriveLP is
         // Set the initialized state to true.
         _marketState.isInitialized = true;
 
-        // Update the reserves. The bond reserves are calculated so that the
-        // pool is initialized with the target APR.
-        _marketState.shareReserves = shareContribution.toUint128();
-        _marketState.bondReserves = HyperdriveMath
-            .calculateInitialBondReserves(
+        // Calculate the initial reserves. We ensure that the effective share
+        // reserves is larger than the minimum share reserves. This ensures that
+        // round-trip properties hold after the pool is initialized.
+        (
+            uint256 shareReserves,
+            int256 shareAdjustment,
+            uint256 bondReserves
+        ) = LPMath.calculateInitialReserves(
                 shareContribution,
+                vaultSharePrice,
                 _initialVaultSharePrice,
                 _apr,
                 _positionDuration,
                 _timeStretch
-            )
-            .toUint128();
+            );
+        if (
+            HyperdriveMath.calculateEffectiveShareReserves(
+                shareReserves,
+                shareAdjustment
+            ) < _minimumShareReserves
+        ) {
+            revert IHyperdrive.InvalidEffectiveShareReserves();
+        }
+
+        // Initialize the reserves.
+        _marketState.shareReserves = shareReserves.toUint128();
+        _marketState.shareAdjustment = shareAdjustment.toInt128();
+        _marketState.bondReserves = bondReserves.toUint128();
 
         // Mint the minimum share reserves to the zero address as a buffer that
         // ensures that the total LP supply is always greater than or equal to
@@ -572,8 +589,10 @@ abstract contract HyperdriveLP is
         return true;
     }
 
-    /// @dev Updates the pool's liquidity and holds the pool's spot price constant.
-    /// @param _shareReservesDelta The delta that should be applied to share reserves.
+    /// @dev Updates the pool's liquidity and holds the pool's spot price
+    ///      constant.
+    /// @param _shareReservesDelta The delta that should be applied to share
+    ///        reserves.
     function _updateLiquidity(int256 _shareReservesDelta) internal {
         // Attempt updating the pool's liquidity and revert if the update fails.
         if (!_updateLiquiditySafe(_shareReservesDelta)) {
@@ -581,8 +600,10 @@ abstract contract HyperdriveLP is
         }
     }
 
-    /// @dev Updates the pool's liquidity and holds the pool's spot price constant.
-    /// @param _shareReservesDelta The delta that should be applied to share reserves.
+    /// @dev Updates the pool's liquidity and holds the pool's spot price
+    ///      constant.
+    /// @param _shareReservesDelta The delta that should be applied to share
+    ///        reserves.
     /// @return A flag indicating if the update succeeded.
     function _updateLiquiditySafe(
         int256 _shareReservesDelta

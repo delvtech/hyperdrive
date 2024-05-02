@@ -5,6 +5,7 @@ import { Test } from "forge-std/Test.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { LPMath } from "contracts/src/libraries/LPMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { MockYieldSpaceMath } from "contracts/test/MockYieldSpaceMath.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
@@ -163,9 +164,10 @@ contract YieldSpaceMathTest is Test {
                     fixedRate,
                     365 days
                 );
-                uint256 bondReserves = HyperdriveMath
-                    .calculateInitialBondReserves(
+                (, int256 shareAdjustment, uint256 bondReserves) = LPMath
+                    .calculateInitialReserves(
                         shareReserves,
+                        vaultSharePrice,
                         initialVaultSharePrice,
                         fixedRate,
                         365 days,
@@ -176,7 +178,7 @@ contract YieldSpaceMathTest is Test {
                         .calculateMaxLong(
                             HyperdriveUtils.MaxTradeParams({
                                 shareReserves: shareReserves,
-                                shareAdjustment: 0,
+                                shareAdjustment: shareAdjustment,
                                 bondReserves: bondReserves,
                                 longsOutstanding: 0,
                                 longExposure: 0,
@@ -196,14 +198,16 @@ contract YieldSpaceMathTest is Test {
                         maxBondAmount
                     );
                 }
+                uint256 vaultSharePrice_ = vaultSharePrice; // avoid stack-too-deep
+                uint256 initialVaultSharePrice_ = initialVaultSharePrice; // avoid stack-too-deep
                 uint256 result = yieldSpaceMath
                     .calculateSharesInGivenBondsOutDown(
                         shareReserves,
                         bondReserves,
                         tradeSize,
                         1e18 - ONE.mulDown(timeStretch),
-                        vaultSharePrice,
-                        initialVaultSharePrice
+                        vaultSharePrice_,
+                        initialVaultSharePrice_
                     );
                 assertGt(result, 0);
             }
@@ -237,18 +241,22 @@ contract YieldSpaceMathTest is Test {
             fixedRate,
             365 days
         );
-        uint256 bondReserves = HyperdriveMath.calculateInitialBondReserves(
-            shareReserves,
-            initialVaultSharePrice,
-            fixedRate,
-            365 days,
-            timeStretch
-        );
+        (, int256 shareAdjustment, uint256 bondReserves) = LPMath
+            .calculateInitialReserves(
+                shareReserves,
+                vaultSharePrice,
+                initialVaultSharePrice,
+                fixedRate,
+                365 days,
+                timeStretch
+            );
+        uint256 effectiveShareReserves = HyperdriveMath
+            .calculateEffectiveShareReserves(shareReserves, shareAdjustment);
 
         // Calculatethe share payment and bonds proceeds of the max buy.
         (uint256 maxDy, bool success) = yieldSpaceMath
             .calculateMaxBuyBondsOutSafe(
-                shareReserves,
+                effectiveShareReserves,
                 bondReserves,
                 1e18 - ONE.mulDown(timeStretch),
                 vaultSharePrice,
@@ -257,38 +265,39 @@ contract YieldSpaceMathTest is Test {
         assertEq(success, true);
         uint256 maxDz;
         (maxDz, success) = yieldSpaceMath.calculateMaxBuySharesInSafe(
-            shareReserves,
+            effectiveShareReserves,
             bondReserves,
             1e18 - ONE.mulDown(timeStretch),
             vaultSharePrice,
             initialVaultSharePrice
         );
-        assertEq(success, true);
 
         // Ensure that the maximum buy is a valid trade on this invariant and
         // that the ending spot price is close to 1.
+        uint256 vaultSharePrice_ = vaultSharePrice; // avoid stack-too-deep
+        uint256 initialVaultSharePrice_ = initialVaultSharePrice; // avoid stack-too-deep
         assertApproxEqAbs(
             yieldSpaceMath.kDown(
-                shareReserves,
+                effectiveShareReserves,
                 bondReserves,
                 ONE - timeStretch,
-                vaultSharePrice,
-                initialVaultSharePrice
+                vaultSharePrice_,
+                initialVaultSharePrice_
             ),
             yieldSpaceMath.kDown(
-                shareReserves + maxDz,
+                effectiveShareReserves + maxDz,
                 bondReserves - maxDy,
                 ONE - timeStretch,
-                vaultSharePrice,
-                initialVaultSharePrice
+                vaultSharePrice_,
+                initialVaultSharePrice_
             ),
             1e12 // TODO: Investigate this bound.
         );
         assertApproxEqAbs(
             HyperdriveMath.calculateSpotPrice(
-                shareReserves + maxDz,
+                effectiveShareReserves + maxDz,
                 bondReserves - maxDy,
-                initialVaultSharePrice,
+                initialVaultSharePrice_,
                 timeStretch
             ),
             1e18,

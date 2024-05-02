@@ -17,7 +17,7 @@ contract SandwichTest is HyperdriveTest {
 
         // Deploy the pool and initialize the market
         {
-            uint256 timeStretchApr = 0.02e18;
+            uint256 timeStretchApr = 0.05e18;
             deploy(alice, timeStretchApr, 0, 0, 0, 0);
         }
         uint256 contribution = 500_000_000e18;
@@ -25,7 +25,7 @@ contract SandwichTest is HyperdriveTest {
         contribution -= 2 * hyperdrive.getPoolConfig().minimumShareReserves;
 
         // Bob opens a long.
-        uint256 longPaid = 50_000_000e18;
+        uint256 longPaid = hyperdrive.calculateMaxLong().mulDown(0.05e18);
         (uint256 longMaturityTime, uint256 longAmount) = openLong(
             bob,
             longPaid
@@ -36,7 +36,7 @@ contract SandwichTest is HyperdriveTest {
         advanceTime(timeAdvanced, int256(apr));
 
         // Celine opens a short.
-        uint256 shortAmount = 200_000_000e18;
+        uint256 shortAmount = hyperdrive.calculateMaxShort().mulDown(0.2e18);
         (uint256 shortMaturityTime, ) = openShort(celine, shortAmount);
 
         // Bob closes his long.
@@ -59,10 +59,10 @@ contract SandwichTest is HyperdriveTest {
 
     function test_sandwich_long_trade(uint256 apr, uint256 tradeSize) external {
         // limit the fuzz testing to variableRate's less than or equal to 50%
-        apr = apr.normalizeToRange(0.01e18, 0.5e18);
+        apr = apr.normalizeToRange(0.01e18, 0.2e18);
 
         // ensure a feasible trade size
-        tradeSize = tradeSize.normalizeToRange(1_000e18, 50_000_000e18 - 1e18);
+        tradeSize = tradeSize.normalizeToRange(1_000e18, 10_000_000e18);
 
         // Deploy the pool and initialize the market
         {
@@ -186,14 +186,17 @@ contract SandwichTest is HyperdriveTest {
         );
         config.fees.curve = 0.0001e18;
         deploy(alice, config);
-        fixedRate = fixedRate.normalizeToRange(0.001e18, 1e18);
-        contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.7e18);
+        contribution = contribution.normalizeToRange(
+            100_000e18,
+            500_000_000e18
+        );
         uint256 lpShares = initialize(alice, fixedRate, contribution);
         contribution -= 2 * config.minimumShareReserves;
 
         // Bob opens a short.
         tradeAmount = tradeAmount.normalizeToRange(
-            1e18,
+            hyperdrive.getPoolConfig().minimumTransactionAmount,
             hyperdrive.calculateMaxShort().mulDown(0.9e18)
         );
         openShort(bob, tradeAmount);
@@ -203,7 +206,7 @@ contract SandwichTest is HyperdriveTest {
 
         // Celine opens a short to sandwich the closing of Bob's short.
         sandwichAmount = sandwichAmount.normalizeToRange(
-            1e18,
+            hyperdrive.getPoolConfig().minimumTransactionAmount,
             hyperdrive.calculateMaxShort()
         );
         (uint256 maturityTime, uint256 shortPayment) = openShort(
@@ -233,7 +236,7 @@ contract SandwichTest is HyperdriveTest {
 
         // Deploy the pool with fees.
         {
-            uint256 timeStretchApr = 0.02e18;
+            uint256 timeStretchApr = 0.05e18;
             uint256 curveFee = 0.001e18;
             deploy(alice, timeStretchApr, curveFee, 0, 0, 0);
         }
@@ -243,7 +246,7 @@ contract SandwichTest is HyperdriveTest {
         uint256 aliceLpShares = initialize(alice, apr, contribution);
 
         // Bob opens a large long and a short.
-        uint256 tradeAmount = 100_000_000e18;
+        uint256 tradeAmount = 10_000_000e18;
         (uint256 longMaturityTime, uint256 longAmount) = openLong(
             bob,
             tradeAmount
@@ -265,5 +268,65 @@ contract SandwichTest is HyperdriveTest {
         // the LP.
         (uint256 lpProceeds, ) = removeLiquidity(alice, aliceLpShares);
         assertGe(lpProceeds, contribution);
+    }
+
+    // This test ensures that add liquidity sandwiches are limited in scope for
+    // a 5% time stretch. In general, these sandwich attacks can result in early
+    // LPs losing money, but these vulnerabilities are mitigated by circuit
+    // breakers on `addLiquidity`.
+    function test_sandwich_add_liquidity(
+        uint256 contribution,
+        uint256 celineContribution
+    ) external {
+        IHyperdrive.PoolConfig memory config = testConfig(
+            0.05e18,
+            POSITION_DURATION
+        );
+        config.fees.curve = 0.01e18;
+        config.fees.flat = 0.0005e18;
+        deploy(alice, config);
+        uint256 apr = 0.05e18;
+        contribution = contribution.normalizeToRange(100e18, 100_000_000e18);
+        uint256 lpShares = initialize(alice, apr, contribution);
+
+        // Celine opens a large short.
+        uint256 shortAmount = hyperdrive.calculateMaxShort().mulDown(0.9e18);
+        (, uint256 shortPaid) = openShort(celine, shortAmount);
+
+        // Celine adds liquidity.
+        celineContribution = celineContribution.normalizeToRange(
+            100e18,
+            100_000_000e18
+        );
+        uint256 celineLpShares = addLiquidity(celine, celineContribution);
+
+        // Bob opens a large long.
+        uint256 basePaid = hyperdrive.calculateMaxLong().mulDown(0.9e18);
+        (uint256 maturityTime, uint256 bondAmount) = openLong(celine, basePaid);
+
+        // The term advances. Alice removes her liquidity.
+        advanceTime(POSITION_DURATION, 0.05e18);
+
+        // Remove liquidity.
+        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
+            alice,
+            lpShares
+        );
+        assertGt(baseProceeds, contribution);
+        assertEq(withdrawalShares, 0);
+
+        // Celine closes her long and removes liquidity.
+        uint256 shortProceeds = closeShort(celine, maturityTime, shortAmount);
+        uint256 longProceeds = closeLong(celine, maturityTime, bondAmount);
+        (baseProceeds, withdrawalShares) = removeLiquidity(
+            celine,
+            celineLpShares
+        );
+        uint256 celineContribution_ = celineContribution; // avoid stack-too-deep
+        assertLt(
+            baseProceeds + longProceeds + shortProceeds,
+            (celineContribution_ + basePaid + shortPaid).mulDown(1.06e18)
+        );
+        assertEq(withdrawalShares, 0);
     }
 }

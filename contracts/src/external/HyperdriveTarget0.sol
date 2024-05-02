@@ -323,11 +323,13 @@ abstract contract HyperdriveTarget0 is
         uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
             _totalSupply[AssetId._WITHDRAWAL_SHARE_ASSET_ID] -
             _withdrawPool.readyToWithdraw;
-        uint256 presentValue = vaultSharePrice > 0
-            ? LPMath
-                .calculatePresentValue(_getPresentValueParams(vaultSharePrice))
-                .mulDown(vaultSharePrice)
-            : 0;
+        uint256 presentValue;
+        if (vaultSharePrice > 0) {
+            (presentValue, ) = LPMath.calculatePresentValueSafe(
+                _getPresentValueParams(vaultSharePrice)
+            );
+            presentValue = presentValue.mulDown(vaultSharePrice);
+        }
         IHyperdrive.PoolInfo memory poolInfo = IHyperdrive.PoolInfo({
             shareReserves: _marketState.shareReserves,
             shareAdjustment: _marketState.shareAdjustment,

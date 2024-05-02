@@ -63,11 +63,14 @@ contract LPWithdrawalTest is HyperdriveTest {
         );
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
 
-        // Alice removes all of her LP shares. The LP share price should be
+        // NOTE: If she removes all of her LP, Bob wouldn't be able to fully
+        // close his long.
+        //
+        // Alice removes most of her LP shares. The LP share price should be
         // approximately equal before and after the transaction.
         (, uint256 withdrawalShares) = removeLiquidityWithChecks(
             alice,
-            lpShares
+            lpShares.mulDown(0.6e18)
         );
 
         // Bob closes his long. He will pay quite a bit of slippage on account
@@ -85,6 +88,14 @@ contract LPWithdrawalTest is HyperdriveTest {
             hyperdrive.lpSharePrice() +
                 DISTRIBUTE_EXCESS_IDLE_DECREASE_TOLERANCE
         );
+
+        // Alice removes her remaining LP shares. The LP share price should be
+        // approximately equal before and after the transaction.
+        (, uint256 withdrawalShares_) = removeLiquidityWithChecks(
+            alice,
+            lpShares - lpShares.mulDown(0.6e18)
+        );
+        withdrawalShares += withdrawalShares_;
 
         // Alice redeems her withdrawal shares. She gets back the capital that
         // was underlying to Bob's long position plus the profits that Bob paid in
@@ -216,7 +227,7 @@ contract LPWithdrawalTest is HyperdriveTest {
             // (with a fudge factor) to the amount predicted by the LP share
             // price.
             assertGe(
-                withdrawalProceeds + 1e9,
+                withdrawalProceeds + 1e10,
                 withdrawalShares.mulDown(lpSharePrice)
             );
         }
@@ -579,8 +590,9 @@ contract LPWithdrawalTest is HyperdriveTest {
             hyperdrive.lpSharePrice() +
                 DISTRIBUTE_EXCESS_IDLE_DECREASE_TOLERANCE
         );
-        uint256 celineSlippagePayment = testParams.contribution -
-            celineLpShares.mulDown(lpSharePrice);
+        int256 celineSlippagePayment = int256(testParams.contribution) -
+            int256(celineLpShares.mulDown(lpSharePrice));
+        assertGt(celineSlippagePayment, -1e10);
 
         // Bob opens a short.
         testParams.shortAmount = shortAmount.normalizeToRange(
@@ -736,7 +748,8 @@ contract LPWithdrawalTest is HyperdriveTest {
                 celineWithdrawalShares.mulDown(hyperdrive.lpSharePrice()) +
                 1e10,
             uint256(
-                int256(testParams.contribution - celineSlippagePayment) +
+                int256(testParams.contribution) -
+                    celineSlippagePayment +
                     fixedInterest.min(0)
             )
         );

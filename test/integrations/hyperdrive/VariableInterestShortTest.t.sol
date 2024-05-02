@@ -67,7 +67,7 @@ contract VariableInterestShortTest is HyperdriveTest {
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
 
         // Celine opens a large short.
-        uint256 longAmount = 300_000_000e18;
+        uint256 longAmount = 100_000_000e18;
         openShort(celine, longAmount);
 
         // A small amount of negative interest accrues over the term.

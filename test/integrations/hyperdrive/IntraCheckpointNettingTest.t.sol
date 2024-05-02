@@ -91,6 +91,10 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             advanceTime(POSITION_DURATION, 0);
         }
 
+        // Celine adds liquidity. This is needed to allow the positions to be
+        // closed out.
+        addLiquidity(celine, 500_000_000e18);
+
         // open a long
         uint256 basePaidLong = tradeSize;
         (uint256 maturityTimeLong, uint256 bondAmountLong) = openLong(
@@ -484,6 +488,10 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
         uint256 aliceLpShares = initialize(alice, apr, contribution);
 
+        // Celine adds liquidity. This is needed to allow the positions to be
+        // closed out.
+        addLiquidity(celine, 500_000_000e18);
+
         // fast forward time and accrue interest
         advanceTime(POSITION_DURATION, variableInterest);
 
@@ -620,6 +628,10 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         deploy(alice, apr, initialVaultSharePrice, 0, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
+
+        // Celine adds liquidity. This is needed to allow the positions to be
+        // closed out.
+        addLiquidity(celine, 500_000_000e18);
 
         // fast forward time and accrue interest
         advanceTime(POSITION_DURATION, variableInterest);
@@ -989,9 +1001,12 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
     ) external {
         // Normalize the test parameters.
         apr = apr.normalizeToRange(0.01e18, 0.2e18);
-        timeStretchAPR = timeStretchAPR.normalizeToRange(0.01e18, 0.1e18);
+        timeStretchAPR = timeStretchAPR.normalizeToRange(0.02e18, 0.1e18);
         timeToMaturity = timeToMaturity.normalizeToRange(0.1e18, 0.9e18);
-        contribution = contribution.normalizeToRange(500e18, 100_000_000e18);
+        contribution = contribution.normalizeToRange(
+            100_000e18,
+            100_000_000_000e18
+        );
 
         // Run the test.
         _test_close_short_solvency(

@@ -28,6 +28,103 @@ library LPMath {
     ///      succeed.
     uint256 internal constant SHARE_PROCEEDS_TOLERANCE = 1e14;
 
+    struct PresentValueParams {
+        uint256 shareReserves;
+        int256 shareAdjustment;
+        uint256 bondReserves;
+        uint256 vaultSharePrice;
+        uint256 initialVaultSharePrice;
+        uint256 minimumShareReserves;
+        uint256 minimumTransactionAmount;
+        uint256 timeStretch;
+        uint256 longsOutstanding;
+        uint256 longAverageTimeRemaining;
+        uint256 shortsOutstanding;
+        uint256 shortAverageTimeRemaining;
+    }
+
+    struct DistributeExcessIdleParams {
+        PresentValueParams presentValueParams;
+        uint256 startingPresentValue;
+        uint256 activeLpTotalSupply;
+        uint256 withdrawalSharesTotalSupply;
+        uint256 idle;
+        int256 netCurveTrade;
+        uint256 originalShareReserves;
+        int256 originalShareAdjustment;
+        uint256 originalBondReserves;
+    }
+
+    /// @dev Calculates the initial reserves. We solve for the initial reserves
+    ///      by solving the following equations simultaneously:
+    ///
+    ///      (1) c * z = c * z_e + p_target * y
+    ///
+    ///      (2) p_target = ((mu * z_e) / y) ** t_s
+    ///
+    ///      where p_target is the target spot price implied by the target spot
+    ///      rate.
+    /// @param _shareAmount The amount of shares used to initialize the pool.
+    /// @param _vaultSharePrice The vault share price.
+    /// @param _initialVaultSharePrice The initial vault share price.
+    /// @param _targetApr The target rate.
+    /// @param _positionDuration The position duration.
+    /// @param _timeStretch The time stretch.
+    /// @return shareReserves The initial share reserves.
+    /// @return shareAdjustment The initial share adjustment.
+    /// @return bondReserves The initial bond reserves.
+    function calculateInitialReserves(
+        uint256 _shareAmount,
+        uint256 _vaultSharePrice,
+        uint256 _initialVaultSharePrice,
+        uint256 _targetApr,
+        uint256 _positionDuration,
+        uint256 _timeStretch
+    )
+        internal
+        pure
+        returns (
+            uint256 shareReserves,
+            int256 shareAdjustment,
+            uint256 bondReserves
+        )
+    {
+        // NOTE: Round down to underestimate the initial bond reserves.
+        //
+        // Normalize the time to maturity to fractions of a year since the
+        // provided rate is an APR.
+        uint256 t = _positionDuration.divDown(365 days);
+
+        // NOTE: Round up to underestimate the initial bond reserves.
+        //
+        // Calculate the target price implied by the target rate.
+        uint256 targetPrice = ONE.divUp(ONE + _targetApr.mulDown(t));
+
+        // The share reserves is just the share amount since we are initializing
+        // the pool.
+        shareReserves = _shareAmount;
+
+        // NOTE: Round down to underestimate the initial bond reserves.
+        //
+        // Calculate the initial bond reserves. This is given by:
+        //
+        // y = (mu * c * z) / (c * p_target ** (1 / t_s) + mu * p_target)
+        bondReserves = _initialVaultSharePrice.mulDivDown(
+            _vaultSharePrice.mulDown(shareReserves),
+            _vaultSharePrice.mulUp(targetPrice.pow(ONE.divDown(_timeStretch))) +
+                _initialVaultSharePrice.mulUp(targetPrice)
+        );
+
+        // NOTE: Round down to underestimate the initial share adjustment.
+        //
+        // Calculate the initial share adjustment. This is given by:
+        //
+        // zeta = (p_target * y) / c
+        shareAdjustment = int256(
+            bondReserves.mulDivDown(targetPrice, _vaultSharePrice)
+        );
+    }
+
     /// @dev Calculates the new share reserves, share adjustment, and bond
     ///      reserves after liquidity is added or removed from the pool. This
     ///      update is made in such a way that the pool's spot price remains
@@ -129,21 +226,6 @@ library LPMath {
         );
 
         return (shareReserves, shareAdjustment, bondReserves, true);
-    }
-
-    struct PresentValueParams {
-        uint256 shareReserves;
-        int256 shareAdjustment;
-        uint256 bondReserves;
-        uint256 vaultSharePrice;
-        uint256 initialVaultSharePrice;
-        uint256 minimumShareReserves;
-        uint256 minimumTransactionAmount;
-        uint256 timeStretch;
-        uint256 longsOutstanding;
-        uint256 longAverageTimeRemaining;
-        uint256 shortsOutstanding;
-        uint256 shortAverageTimeRemaining;
     }
 
     /// @dev Calculates the present value LPs capital in the pool and reverts
@@ -455,18 +537,6 @@ library LPMath {
                     _params.vaultSharePrice
                 )
             ).toInt256();
-    }
-
-    struct DistributeExcessIdleParams {
-        PresentValueParams presentValueParams;
-        uint256 startingPresentValue;
-        uint256 activeLpTotalSupply;
-        uint256 withdrawalSharesTotalSupply;
-        uint256 idle;
-        int256 netCurveTrade;
-        uint256 originalShareReserves;
-        int256 originalShareAdjustment;
-        uint256 originalBondReserves;
     }
 
     /// @dev Calculates the amount of withdrawal shares that can be redeemed and

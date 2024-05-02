@@ -3,6 +3,7 @@ pragma solidity 0.8.20;
 
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
@@ -34,6 +35,9 @@ contract HyperdriveUtilsTest is HyperdriveTest {
         deploy(alice, config);
         initialize(alice, apr, 100_000_000e18);
         uint256 expectedShareReserves = hyperdrive.getPoolInfo().shareReserves;
+        int256 expectedShareAdjustment = hyperdrive
+            .getPoolInfo()
+            .shareAdjustment;
         uint256 expectedBondReserves = hyperdrive.getPoolInfo().bondReserves;
 
         // Deploy and initialize a pool with the target APR and the target
@@ -46,10 +50,18 @@ contract HyperdriveUtilsTest is HyperdriveTest {
         // Ensure that the ratio of reserves is approximately equal across the
         // two pools.
         assertApproxEqAbs(
-            hyperdrive.getPoolInfo().shareReserves.divDown(
-                hyperdrive.getPoolInfo().bondReserves
-            ),
-            expectedShareReserves.divDown(expectedBondReserves),
+            HyperdriveMath
+                .calculateEffectiveShareReserves(
+                    hyperdrive.getPoolInfo().shareReserves,
+                    hyperdrive.getPoolInfo().shareAdjustment
+                )
+                .divDown(hyperdrive.getPoolInfo().bondReserves),
+            HyperdriveMath
+                .calculateEffectiveShareReserves(
+                    expectedShareReserves,
+                    expectedShareAdjustment
+                )
+                .divDown(expectedBondReserves),
             1e6
         );
     }

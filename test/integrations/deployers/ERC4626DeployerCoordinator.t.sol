@@ -11,6 +11,7 @@ import { ERC4626Target1Deployer } from "contracts/src/deployers/erc4626/ERC4626T
 import { ERC4626Target2Deployer } from "contracts/src/deployers/erc4626/ERC4626Target2Deployer.sol";
 import { ERC4626Target3Deployer } from "contracts/src/deployers/erc4626/ERC4626Target3Deployer.sol";
 import { ERC4626Target4Deployer } from "contracts/src/deployers/erc4626/ERC4626Target4Deployer.sol";
+import { ERC4626Target5Deployer } from "contracts/src/deployers/erc4626/ERC4626Target5Deployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
@@ -101,7 +102,8 @@ contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {
             address(new ERC4626Target1Deployer()),
             address(new ERC4626Target2Deployer()),
             address(new ERC4626Target3Deployer()),
-            address(new ERC4626Target4Deployer())
+            address(new ERC4626Target4Deployer()),
+            address(new ERC4626Target5Deployer())
         );
 
         // Start a prank as the factory address. This is the default address
@@ -112,7 +114,7 @@ contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {
 
     function test_initialize_success_asBase() external override {
         // Deploy all of the target instances.
-        for (uint256 i = 0; i < 5; i++) {
+        for (uint256 i = 0; i < 6; i++) {
             coordinator.deployTarget(
                 DEPLOYMENT_ID,
                 config,
@@ -159,7 +161,7 @@ contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {
 
     function test_initialize_success_asShares() external override {
         // Deploy all of the target instances.
-        for (uint256 i = 0; i < 5; i++) {
+        for (uint256 i = 0; i < 6; i++) {
             coordinator.deployTarget(
                 DEPLOYMENT_ID,
                 config,

@@ -30,23 +30,6 @@ abstract contract HyperdriveTarget3 is
         IHyperdrive.PoolConfig memory _config
     ) HyperdriveStorage(_config) {}
 
-    /// LPs ///
-
-    /// @notice Allows the first LP to initialize the market with a target APR.
-    /// @param _contribution The amount of capital to supply. The units of this
-    ///        quantity are either base or vault shares, depending on the value
-    ///        of `_options.asBase`.
-    /// @param _apr The target APR.
-    /// @param _options The options that configure how the operation is settled.
-    /// @return The initial number of LP shares created.
-    function initialize(
-        uint256 _contribution,
-        uint256 _apr,
-        IHyperdrive.Options calldata _options
-    ) external payable returns (uint256) {
-        return _initialize(_contribution, _apr, _options);
-    }
-
     /// Longs ///
 
     /// @notice Opens a long position.
@@ -68,20 +51,5 @@ abstract contract HyperdriveTarget3 is
         IHyperdrive.Options calldata _options
     ) external payable returns (uint256, uint256) {
         return _openLong(_amount, _minOutput, _minVaultSharePrice, _options);
-    }
-
-    /// Checkpoints ///
-
-    /// @notice Allows anyone to mint a new checkpoint.
-    /// @param _checkpointTime The time of the checkpoint to create.
-    /// @param _maxIterations The number of iterations to use in the Newton's
-    ///        method component of `_distributeExcessIdleSafe`. This defaults to
-    ///        `LPMath.SHARE_PROCEEDS_MAX_ITERATIONS` if the specified value is
-    ///        smaller than the constant.
-    function checkpoint(
-        uint256 _checkpointTime,
-        uint256 _maxIterations
-    ) external {
-        _checkpoint(_checkpointTime, _maxIterations);
     }
 }

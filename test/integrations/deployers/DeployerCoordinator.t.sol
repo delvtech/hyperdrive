@@ -26,7 +26,8 @@ contract MockHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _target1Deployer,
         address _target2Deployer,
         address _target3Deployer,
-        address _target4Deployer
+        address _target4Deployer,
+        address _target5Deployer
     )
         HyperdriveDeployerCoordinator(
             _factory,
@@ -35,7 +36,8 @@ contract MockHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _target1Deployer,
             _target2Deployer,
             _target3Deployer,
-            _target4Deployer
+            _target4Deployer,
+            _target5Deployer
         )
     {}
 
@@ -79,12 +81,13 @@ contract MockHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     }
 
     function _checkPoolConfig(
-        IHyperdrive.PoolDeployConfig memory
+        IHyperdrive.PoolDeployConfig memory _config
     ) internal view override {
         require(
             _checkPoolConfigStatus,
             "MockDeployerCoordinator: invalid config"
         );
+        super._checkPoolConfig(_config);
     }
 
     function _getInitialVaultSharePrice(
@@ -174,6 +177,155 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
         coordinator.setCheckPoolConfigStatus(false);
         vm.expectRevert("MockDeployerCoordinator: invalid config");
         coordinator.deployTarget(DEPLOYMENT_ID, config, new bytes(0), 0, SALT);
+        coordinator.setCheckPoolConfigStatus(true);
+
+        // Attempt to deploy a target0 instance with a minimum share reserves
+        // that is too low.
+        {
+            uint256 oldMinimumShareReserves = config.minimumShareReserves;
+            config.minimumShareReserves = 1e2;
+            vm.expectRevert(
+                IHyperdriveDeployerCoordinator
+                    .InvalidMinimumShareReserves
+                    .selector
+            );
+            coordinator.deployTarget(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                0,
+                SALT
+            );
+            config.minimumShareReserves = oldMinimumShareReserves;
+        }
+
+        // Attempt to deploy a target0 instance with a checkpoint duration
+        // equal to zero.
+        {
+            uint256 oldCheckpointDuration = config.checkpointDuration;
+            config.checkpointDuration = 0;
+            vm.expectRevert(
+                IHyperdriveDeployerCoordinator
+                    .InvalidCheckpointDuration
+                    .selector
+            );
+            coordinator.deployTarget(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                0,
+                SALT
+            );
+            config.checkpointDuration = oldCheckpointDuration;
+        }
+
+        // Attempt to deploy a target0 instance with a position duration
+        // less than the checkpoint duration.
+        {
+            uint256 oldPositionDuration = config.positionDuration;
+            config.positionDuration = config.checkpointDuration - 1;
+            vm.expectRevert(
+                IHyperdriveDeployerCoordinator.InvalidPositionDuration.selector
+            );
+            coordinator.deployTarget(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                0,
+                SALT
+            );
+            config.positionDuration = oldPositionDuration;
+        }
+
+        // Attempt to deploy a target0 instance with a position duration
+        // that isn't a multiple of the checkpoint duration.
+        {
+            uint256 oldPositionDuration = config.positionDuration;
+            config.positionDuration = config.checkpointDuration + 1;
+            vm.expectRevert(
+                IHyperdriveDeployerCoordinator.InvalidPositionDuration.selector
+            );
+            coordinator.deployTarget(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                0,
+                SALT
+            );
+            config.positionDuration = oldPositionDuration;
+        }
+
+        // Attempt to deploy a target0 instance with a curve fee greater than
+        // one.
+        {
+            uint256 oldCurveFee = config.fees.curve;
+            config.fees.curve = ONE + 1;
+            vm.expectRevert(
+                IHyperdriveDeployerCoordinator.InvalidFeeAmounts.selector
+            );
+            coordinator.deployTarget(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                0,
+                SALT
+            );
+            config.fees.curve = oldCurveFee;
+        }
+
+        // Attempt to deploy a target0 instance with a flat fee greater than
+        // one.
+        {
+            uint256 oldFlatFee = config.fees.flat;
+            config.fees.flat = ONE + 1;
+            vm.expectRevert(
+                IHyperdriveDeployerCoordinator.InvalidFeeAmounts.selector
+            );
+            coordinator.deployTarget(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                0,
+                SALT
+            );
+            config.fees.flat = oldFlatFee;
+        }
+
+        // Attempt to deploy a target0 instance with a governance LP fee greater
+        // than one.
+        {
+            uint256 oldGovernanceLPFee = config.fees.governanceLP;
+            config.fees.governanceLP = ONE + 1;
+            vm.expectRevert(
+                IHyperdriveDeployerCoordinator.InvalidFeeAmounts.selector
+            );
+            coordinator.deployTarget(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                0,
+                SALT
+            );
+            config.fees.governanceLP = oldGovernanceLPFee;
+        }
+
+        // Attempt to deploy a target0 instance with a governance zombie fee
+        // greater than one.
+        {
+            uint256 oldGovernanceZombieFee = config.fees.governanceZombie;
+            config.fees.governanceZombie = ONE + 1;
+            vm.expectRevert(
+                IHyperdriveDeployerCoordinator.InvalidFeeAmounts.selector
+            );
+            coordinator.deployTarget(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                0,
+                SALT
+            );
+            config.fees.governanceZombie = oldGovernanceZombieFee;
+        }
     }
 
     function test_deployTarget_failure_invalidCheckPoolConfigTarget1()
@@ -244,15 +396,29 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
         coordinator.deployTarget(DEPLOYMENT_ID, config, new bytes(0), 4, SALT);
     }
 
+    function test_deployTarget_failure_target5AlreadyDeployed() external {
+        // Deploy a target0 instance.
+        coordinator.deployTarget(DEPLOYMENT_ID, config, new bytes(0), 0, SALT);
+
+        // Deploy a target5 instance.
+        coordinator.deployTarget(DEPLOYMENT_ID, config, new bytes(0), 5, SALT);
+
+        // Attempt to deploy target5 again.
+        vm.expectRevert(
+            IHyperdriveDeployerCoordinator.TargetAlreadyDeployed.selector
+        );
+        coordinator.deployTarget(DEPLOYMENT_ID, config, new bytes(0), 5, SALT);
+    }
+
     function test_deployTarget_failure_invalidTargetIndex() external {
         // Deploy a target0 instance.
         coordinator.deployTarget(DEPLOYMENT_ID, config, new bytes(0), 0, SALT);
 
-        // Attempt to deploy a 5th target instance.
+        // Attempt to deploy a 6th target instance.
         vm.expectRevert(
             IHyperdriveDeployerCoordinator.InvalidTargetIndex.selector
         );
-        coordinator.deployTarget(DEPLOYMENT_ID, config, new bytes(0), 5, SALT);
+        coordinator.deployTarget(DEPLOYMENT_ID, config, new bytes(0), 6, SALT);
     }
 
     function test_deployTarget_success() external {
@@ -274,8 +440,8 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
         assertEq(deployment.target0, address(target0));
 
         // Deploy the other target instances.
-        address[] memory targets = new address[](4);
-        for (uint256 i = 1; i < 5; i++) {
+        address[] memory targets = new address[](5);
+        for (uint256 i = 1; i < 6; i++) {
             targets[i - 1] = coordinator.deployTarget(
                 DEPLOYMENT_ID,
                 config,
@@ -291,11 +457,12 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
         assertEq(deployment.target2, targets[1]);
         assertEq(deployment.target3, targets[2]);
         assertEq(deployment.target4, targets[3]);
+        assertEq(deployment.target5, targets[4]);
     }
 
     function test_deploy_failure_invalidSender() external {
         // Deploy the target instances and a Hyperdrive instance.
-        for (uint256 i = 0; i < 5; i++) {
+        for (uint256 i = 0; i < 6; i++) {
             coordinator.deployTarget(
                 DEPLOYMENT_ID,
                 config,
@@ -317,7 +484,7 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
 
     function test_deploy_failure_hyperdriveAlreadyDeployed() external {
         // Deploy the target instances and a Hyperdrive instance.
-        for (uint256 i = 0; i < 5; i++) {
+        for (uint256 i = 0; i < 6; i++) {
             coordinator.deployTarget(
                 DEPLOYMENT_ID,
                 config,
@@ -346,7 +513,7 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
 
     function test_deploy_failure_incompleteDeploymentTarget1() external {
         // Deploy all of the target instances except for target1.
-        for (uint256 i = 0; i < 5; i++) {
+        for (uint256 i = 0; i < 6; i++) {
             if (i == 1) {
                 continue;
             }
@@ -368,7 +535,7 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
 
     function test_deploy_failure_incompleteDeploymentTarget2() external {
         // Deploy all of the target instances except for target2.
-        for (uint256 i = 0; i < 5; i++) {
+        for (uint256 i = 0; i < 6; i++) {
             if (i == 2) {
                 continue;
             }
@@ -390,7 +557,7 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
 
     function test_deploy_failure_incompleteDeploymentTarget3() external {
         // Deploy all of the target instances except for target3.
-        for (uint256 i = 0; i < 5; i++) {
+        for (uint256 i = 0; i < 6; i++) {
             if (i == 3) {
                 continue;
             }
@@ -412,8 +579,30 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
 
     function test_deploy_failure_incompleteDeploymentTarget4() external {
         // Deploy all of the target instances except for target4.
-        for (uint256 i = 0; i < 5; i++) {
+        for (uint256 i = 0; i < 6; i++) {
             if (i == 4) {
+                continue;
+            }
+            coordinator.deployTarget(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                i,
+                SALT
+            );
+        }
+
+        // Attempt to deploy a Hyperdrive instance.
+        vm.expectRevert(
+            IHyperdriveDeployerCoordinator.IncompleteDeployment.selector
+        );
+        coordinator.deploy(DEPLOYMENT_ID, config, new bytes(0), SALT);
+    }
+
+    function test_deploy_failure_incompleteDeploymentTarget5() external {
+        // Deploy all of the target instances except for target4.
+        for (uint256 i = 0; i < 6; i++) {
+            if (i == 5) {
                 continue;
             }
             coordinator.deployTarget(
@@ -434,7 +623,7 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
 
     function test_deploy_failure_mismatchedConfig() external {
         // Deploy all of the target instances.
-        for (uint256 i = 0; i < 5; i++) {
+        for (uint256 i = 0; i < 6; i++) {
             coordinator.deployTarget(
                 DEPLOYMENT_ID,
                 config,
@@ -454,7 +643,7 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
 
     function test_deploy_failure_mismatchedExtraData() external {
         // Deploy all of the target instances.
-        for (uint256 i = 0; i < 5; i++) {
+        for (uint256 i = 0; i < 6; i++) {
             coordinator.deployTarget(
                 DEPLOYMENT_ID,
                 config,
@@ -474,7 +663,7 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
 
     function test_deploy_failure_invalidCheckPoolConfig() external {
         // Deploy all of the target instances.
-        for (uint256 i = 0; i < 5; i++) {
+        for (uint256 i = 0; i < 6; i++) {
             coordinator.deployTarget(
                 DEPLOYMENT_ID,
                 config,
@@ -492,8 +681,8 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
 
     function test_deploy_success() external {
         // Deploy all of the target instances.
-        address[] memory targets = new address[](5);
-        for (uint256 i = 0; i < 5; i++) {
+        address[] memory targets = new address[](6);
+        for (uint256 i = 0; i < 6; i++) {
             targets[i] = coordinator.deployTarget(
                 DEPLOYMENT_ID,
                 config,
@@ -522,12 +711,13 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
         assertEq(deployment.target2, targets[2]);
         assertEq(deployment.target3, targets[3]);
         assertEq(deployment.target4, targets[4]);
+        assertEq(deployment.target5, targets[5]);
         assertEq(deployment.hyperdrive, hyperdrive);
     }
 
     function test_initialize_failure_invalidSender() external {
         // Deploy all of the target instances and the hyperdrive instance.
-        for (uint256 i = 0; i < 5; i++) {
+        for (uint256 i = 0; i < 6; i++) {
             coordinator.deployTarget(
                 DEPLOYMENT_ID,
                 config,
@@ -561,7 +751,7 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
 
     function test_initialize_failure_hyperdriveIsNotDeployed() external {
         // Deploy all of the target instances.
-        for (uint256 i = 0; i < 5; i++) {
+        for (uint256 i = 0; i < 6; i++) {
             coordinator.deployTarget(
                 DEPLOYMENT_ID,
                 config,
@@ -592,7 +782,7 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
 
     function test_initialize_failure_checkMessageValue() external {
         // Deploy all of the target instances.
-        for (uint256 i = 0; i < 5; i++) {
+        for (uint256 i = 0; i < 6; i++) {
             coordinator.deployTarget(
                 DEPLOYMENT_ID,
                 config,

@@ -215,6 +215,10 @@ interface IHyperdrive is
     ///         checkpoint duration.
     error InvalidCheckpointTime();
 
+    /// @notice Thrown when the effective share reserves don't exceed the
+    ///         minimum share reserves when the pool is initialized.
+    error InvalidEffectiveShareReserves();
+
     /// @notice Thrown when the caller of one of MultiToken's bridge-only
     ///         functions is not the corresponding bridge.
     error InvalidERC20Bridge();
@@ -356,4 +360,8 @@ interface IHyperdrive is
     /// @notice Gets the target4 address.
     /// @return The target4 address.
     function target4() external view returns (address);
+
+    /// @notice Gets the target5 address.
+    /// @return The target5 address.
+    function target5() external view returns (address);
 }

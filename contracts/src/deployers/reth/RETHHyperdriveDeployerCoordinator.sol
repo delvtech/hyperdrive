@@ -34,6 +34,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
     /// @param _target4Deployer The target4 deployer.
+    /// @param _target5Deployer The target5 deployer.
     /// @param _rocketTokenReth The rETH token contract.
     constructor(
         address _factory,
@@ -43,6 +44,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _target2Deployer,
         address _target3Deployer,
         address _target4Deployer,
+        address _target5Deployer,
         IRocketTokenRETH _rocketTokenReth
     )
         HyperdriveDeployerCoordinator(
@@ -52,7 +54,8 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _target1Deployer,
             _target2Deployer,
             _target3Deployer,
-            _target4Deployer
+            _target4Deployer,
+            _target5Deployer
         )
     {
         rocketTokenReth = _rocketTokenReth;

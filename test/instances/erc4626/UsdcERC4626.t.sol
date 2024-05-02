@@ -8,6 +8,7 @@ import { ERC4626Target1Deployer } from "contracts/src/deployers/erc4626/ERC4626T
 import { ERC4626Target2Deployer } from "contracts/src/deployers/erc4626/ERC4626Target2Deployer.sol";
 import { ERC4626Target3Deployer } from "contracts/src/deployers/erc4626/ERC4626Target3Deployer.sol";
 import { ERC4626Target4Deployer } from "contracts/src/deployers/erc4626/ERC4626Target4Deployer.sol";
+import { ERC4626Target5Deployer } from "contracts/src/deployers/erc4626/ERC4626Target5Deployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
@@ -107,6 +108,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         target2Deployer = address(new ERC4626Target2Deployer());
         target3Deployer = address(new ERC4626Target3Deployer());
         target4Deployer = address(new ERC4626Target4Deployer());
+        target5Deployer = address(new ERC4626Target5Deployer());
         deployerCoordinator = address(
             new ERC4626HyperdriveDeployerCoordinator(
                 address(factory),
@@ -115,7 +117,8 @@ contract UsdcERC4626 is ERC4626ValidationTest {
                 target1Deployer,
                 target2Deployer,
                 target3Deployer,
-                target4Deployer
+                target4Deployer,
+                target5Deployer
             )
         );
 
@@ -146,56 +149,18 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         );
 
         // Deploy and set hyperdrive instance.
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            0,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            1,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            2,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            3,
-            bytes32(uint256(0xdeadfade))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xbeefbabe)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            FIXED_RATE,
-            FIXED_RATE,
-            4,
-            bytes32(uint256(0xdeadfade))
-        );
+        for (uint256 i = 0; i < 6; i++) {
+            factory.deployTarget(
+                bytes32(uint256(0xbeefbabe)),
+                deployerCoordinator,
+                config,
+                new bytes(0),
+                FIXED_RATE,
+                FIXED_RATE,
+                i,
+                bytes32(uint256(0xdeadfade))
+            );
+        }
         hyperdrive = factory.deployAndInitialize(
             bytes32(uint256(0xbeefbabe)),
             deployerCoordinator,

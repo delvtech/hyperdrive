@@ -148,7 +148,7 @@ abstract contract InstanceTest is HyperdriveTest {
         vm.startPrank(alice);
 
         // Deploy Hyperdrive target contracts.
-        for (uint256 i = 0; i < 5; i++) {
+        for (uint256 i = 0; i < 6; i++) {
             factory.deployTarget(
                 deploymentId,
                 deployerCoordinator,

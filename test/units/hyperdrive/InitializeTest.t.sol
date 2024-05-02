@@ -23,7 +23,7 @@ contract InitializeTest is HyperdriveTest {
 
     function test_initialize_failure() external {
         uint256 fixedRate = 0.5e18;
-        uint256 contribution = 1000.0e18;
+        uint256 contribution = 10_000e18;
 
         // Initialize the pool with Alice.
         uint256 lpShares = initialize(alice, fixedRate, contribution);
@@ -38,6 +38,53 @@ contract InitializeTest is HyperdriveTest {
         baseToken.mint(contribution);
         baseToken.approve(address(hyperdrive), contribution);
         vm.expectRevert(IHyperdrive.PoolAlreadyInitialized.selector);
+        hyperdrive.initialize(
+            contribution,
+            fixedRate,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
+    function test_initialize_failure_below_minimum_contribution() external {
+        uint256 fixedRate = 0.5e18;
+        uint256 contribution = 2 *
+            hyperdrive.getPoolConfig().minimumShareReserves -
+            1;
+
+        // Alice attempts to initialize the pool with a contribution that is too
+        // low.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        baseToken.mint(contribution);
+        baseToken.approve(address(hyperdrive), contribution);
+        vm.expectRevert(IHyperdrive.BelowMinimumContribution.selector);
+        hyperdrive.initialize(
+            contribution,
+            fixedRate,
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
+    function test_initialize_failure_invalid_effective_share_reserves()
+        external
+    {
+        uint256 fixedRate = 0.5e18;
+        uint256 contribution = 1000.0e18;
+
+        // Attempt to initialize the pool. This should fail.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        baseToken.mint(contribution);
+        baseToken.approve(address(hyperdrive), contribution);
+        vm.expectRevert(IHyperdrive.InvalidEffectiveShareReserves.selector);
         hyperdrive.initialize(
             contribution,
             fixedRate,
@@ -92,7 +139,7 @@ contract InitializeTest is HyperdriveTest {
         );
     }
 
-    function test_initialize(
+    function test_initialize_small_position_durations(
         uint256 initialVaultSharePrice,
         uint256 checkpointDuration,
         uint256 checkpointsPerTerm,
@@ -106,9 +153,50 @@ contract InitializeTest is HyperdriveTest {
         checkpointDuration = checkpointDuration.normalizeToRange(1, 24);
         checkpointDuration *= 1 hours;
         checkpointsPerTerm = checkpointsPerTerm.normalizeToRange(7, 2 * 365);
-        targetRate = targetRate.normalizeToRange(0.01e18, 1e18);
+        targetRate = targetRate.normalizeToRange(0.01e18, 0.2e18);
         contribution = contribution.normalizeToRange(1_000e18, 100_000_000e18);
+        _test_initialize(
+            initialVaultSharePrice,
+            checkpointDuration,
+            checkpointsPerTerm,
+            targetRate,
+            contribution
+        );
+    }
 
+    function test_initialize_normal_position_durations(
+        uint256 initialVaultSharePrice,
+        uint256 checkpointsPerTerm,
+        uint256 targetRate,
+        uint256 contribution
+    ) external {
+        initialVaultSharePrice = initialVaultSharePrice.normalizeToRange(
+            0.5e18,
+            5e18
+        );
+        uint256 checkpointDuration = 24 hours;
+        checkpointsPerTerm = checkpointsPerTerm.normalizeToRange(90, 2 * 365);
+        targetRate = targetRate.normalizeToRange(0.01e18, 1e18);
+        contribution = contribution.normalizeToRange(
+            10_000e18,
+            1_000_000_000e18
+        );
+        _test_initialize(
+            initialVaultSharePrice,
+            checkpointDuration,
+            checkpointsPerTerm,
+            targetRate,
+            contribution
+        );
+    }
+
+    function _test_initialize(
+        uint256 initialVaultSharePrice,
+        uint256 checkpointDuration,
+        uint256 checkpointsPerTerm,
+        uint256 targetRate,
+        uint256 contribution
+    ) internal {
         // Deploy a Hyperdrive pool with the given parameters.
         IHyperdrive.PoolConfig memory config = testConfig(
             0.05e18,
@@ -119,31 +207,59 @@ contract InitializeTest is HyperdriveTest {
         deploy(alice, config);
 
         // Initialize the pool with Alice.
-        uint256 lpShares = initialize(alice, targetRate, contribution);
-        verifyInitializeEvent(alice, lpShares, contribution, targetRate);
+        vm.stopPrank();
+        vm.startPrank(alice);
+        baseToken.mint(contribution);
+        baseToken.approve(address(hyperdrive), contribution);
+        try
+            hyperdrive.initialize(
+                contribution,
+                targetRate,
+                IHyperdrive.Options({
+                    destination: alice,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            )
+        returns (uint256 lpShares) {
+            verifyInitializeEvent(alice, lpShares, contribution, targetRate);
 
-        // Ensure that the pool's spot rate is approximately equal to the target
-        // spot rate.
-        uint256 spotRate = hyperdrive.calculateSpotAPR();
-        assertApproxEqAbs(spotRate, targetRate, 1e10); // 8 decimals of precision
+            // Ensure that the pool's spot rate is approximately equal to the target
+            // spot rate.
+            uint256 spotRate = hyperdrive.calculateSpotAPR();
+            assertApproxEqAbs(spotRate, targetRate, 1e10); // 8 decimals of precision
 
-        // Ensure that Alice's base balance has been depleted and that Alice
-        // received the correct amount of LP shares.
-        assertEq(baseToken.balanceOf(alice), 0);
-        assertEq(baseToken.balanceOf(address(hyperdrive)), contribution);
-        assertEq(
-            lpShares,
-            hyperdrive.getPoolInfo().shareReserves - 2 * MINIMUM_SHARE_RESERVES
-        );
+            // Ensure that Alice's base balance has been depleted and that Alice
+            // received the correct amount of LP shares.
+            assertEq(baseToken.balanceOf(alice), 0);
+            assertEq(baseToken.balanceOf(address(hyperdrive)), contribution);
+            assertEq(
+                lpShares,
+                hyperdrive.getPoolInfo().shareReserves -
+                    2 *
+                    MINIMUM_SHARE_RESERVES
+            );
 
-        // Ensure that the total supply of LP shares and Alice's balance of LP
-        // shares are correct.
-        assertEq(
-            lpShares,
-            hyperdrive.totalSupply(AssetId._LP_ASSET_ID) -
-                MINIMUM_SHARE_RESERVES
-        );
-        assertEq(lpShares, hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice));
+            // Ensure that the total supply of LP shares and Alice's balance of LP
+            // shares are correct.
+            assertEq(
+                lpShares,
+                hyperdrive.totalSupply(AssetId._LP_ASSET_ID) -
+                    MINIMUM_SHARE_RESERVES
+            );
+            assertEq(
+                lpShares,
+                hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice)
+            );
+        } catch (bytes memory error) {
+            assertTrue(
+                error.eq(
+                    abi.encodeWithSelector(
+                        IHyperdrive.InvalidEffectiveShareReserves.selector
+                    )
+                )
+            );
+        }
     }
 
     function test_initialize_destination() external {

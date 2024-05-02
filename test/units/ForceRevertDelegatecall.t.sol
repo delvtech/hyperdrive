@@ -56,6 +56,7 @@ contract DummyHyperdrive is Hyperdrive, MockHyperdriveBase {
             address(0),
             address(0),
             address(0),
+            address(0),
             address(0)
         )
     {}

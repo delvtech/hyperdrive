@@ -14,6 +14,7 @@ import { StETHTarget1 } from "contracts/src/instances/steth/StETHTarget1.sol";
 import { StETHTarget2 } from "contracts/src/instances/steth/StETHTarget2.sol";
 import { StETHTarget3 } from "contracts/src/instances/steth/StETHTarget3.sol";
 import { StETHTarget4 } from "contracts/src/instances/steth/StETHTarget4.sol";
+import { StETHTarget5 } from "contracts/src/instances/steth/StETHTarget5.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { EtchingVault } from "contracts/test/EtchingVault.sol";
@@ -103,7 +104,8 @@ contract EtchingUtils is Test {
                 hyperdrive.target1(),
                 hyperdrive.target2(),
                 hyperdrive.target3(),
-                hyperdrive.target4()
+                hyperdrive.target4(),
+                hyperdrive.target5()
             );
             vm.etch(address(hyperdrive), address(template).code);
         }
@@ -166,6 +168,14 @@ contract EtchingUtils is Test {
             vm.etch(hyperdrive.target4(), address(template).code);
         }
 
+        // Etch the target5 contract.
+        {
+            StETHTarget5 template = new StETHTarget5(
+                hyperdrive.getPoolConfig()
+            );
+            vm.etch(hyperdrive.target5(), address(template).code);
+        }
+
         // Etch the hyperdrive contract.
         {
             StETHHyperdrive template = new StETHHyperdrive(
@@ -174,7 +184,8 @@ contract EtchingUtils is Test {
                 hyperdrive.target1(),
                 hyperdrive.target2(),
                 hyperdrive.target3(),
-                hyperdrive.target4()
+                hyperdrive.target4(),
+                hyperdrive.target5()
             );
             vm.etch(address(hyperdrive), address(template).code);
         }

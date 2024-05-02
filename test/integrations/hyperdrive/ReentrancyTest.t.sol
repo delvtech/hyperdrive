@@ -373,14 +373,12 @@ contract ReentrancyTest is HyperdriveTest {
         // Initialize the pool.
         uint256 lpShares = initialize(_trader, FIXED_RATE, CONTRIBUTION);
 
-        // Bob opens a long.
-        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, BASE_PAID);
+        // Bob opens a short.
+        openShort(bob, BOND_AMOUNT);
 
         // The trader removes their liquidity.
         (, uint256 withdrawalShares) = removeLiquidity(_trader, lpShares);
-
-        // Bob closes his long.
-        closeLong(bob, maturityTime, bondAmount);
+        assertGt(withdrawalShares, 0);
 
         // Set up the reentrant call.
         tester.setTarget(address(hyperdrive));

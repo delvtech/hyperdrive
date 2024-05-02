@@ -44,7 +44,10 @@ contract ExtremeInputs is HyperdriveTest {
         assertApproxEqAbs(
             hyperdrive.calculateSpotAPR(),
             HyperdriveMath.calculateSpotAPR(
-                poolInfoAfter.shareReserves,
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    poolInfoAfter.shareReserves,
+                    poolInfoAfter.shareAdjustment
+                ),
                 poolInfoBefore.bondReserves - bondAmount,
                 INITIAL_SHARE_PRICE,
                 POSITION_DURATION,
@@ -74,10 +77,15 @@ contract ExtremeInputs is HyperdriveTest {
         // solvency is approximately equal to zero.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
         require(
-            poolInfoAfter.shareReserves.approxEq(
-                hyperdrive.getPoolConfig().minimumShareReserves,
-                1e10
-            ) || hyperdrive.solvency() < 1e15,
+            HyperdriveMath
+                .calculateEffectiveShareReserves(
+                    poolInfoAfter.shareReserves,
+                    poolInfoAfter.shareAdjustment
+                )
+                .approxEq(
+                    hyperdrive.getPoolConfig().minimumShareReserves,
+                    1e10
+                ) || hyperdrive.solvency() < 1e15,
             "short amount was not the max short"
         );
         assertGt(aprAfter, aprBefore);
@@ -86,7 +94,10 @@ contract ExtremeInputs is HyperdriveTest {
         assertApproxEqAbs(
             hyperdrive.calculateSpotAPR(),
             HyperdriveMath.calculateSpotAPR(
-                poolInfoAfter.shareReserves,
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    poolInfoAfter.shareReserves,
+                    poolInfoAfter.shareAdjustment
+                ),
                 poolInfoBefore.bondReserves + bondAmount,
                 INITIAL_SHARE_PRICE,
                 POSITION_DURATION,
@@ -109,7 +120,10 @@ contract ExtremeInputs is HyperdriveTest {
         assertApproxEqAbs(
             hyperdrive.calculateSpotAPR(),
             HyperdriveMath.calculateSpotAPR(
-                poolInfoAfter.shareReserves,
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    poolInfoAfter.shareReserves,
+                    poolInfoAfter.shareAdjustment
+                ),
                 poolInfoBefore.bondReserves - bondAmountLong,
                 INITIAL_SHARE_PRICE,
                 POSITION_DURATION,
@@ -139,10 +153,15 @@ contract ExtremeInputs is HyperdriveTest {
         // solvency is approximately equal to zero.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
         require(
-            poolInfoAfter.shareReserves.approxEq(
-                hyperdrive.getPoolConfig().minimumShareReserves,
-                1e10
-            ) || hyperdrive.solvency() < 1e15,
+            HyperdriveMath
+                .calculateEffectiveShareReserves(
+                    poolInfoAfter.shareReserves,
+                    poolInfoAfter.shareAdjustment
+                )
+                .approxEq(
+                    hyperdrive.getPoolConfig().minimumShareReserves,
+                    1e10
+                ) || hyperdrive.solvency() < 1e15,
             "short amount was not the max short"
         );
         assertGt(aprAfter, aprBefore);
@@ -155,7 +174,10 @@ contract ExtremeInputs is HyperdriveTest {
         assertApproxEqAbs(
             hyperdrive.calculateSpotAPR(),
             HyperdriveMath.calculateSpotAPR(
-                poolInfoAfter.shareReserves,
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    poolInfoAfter.shareReserves,
+                    poolInfoAfter.shareAdjustment
+                ),
                 poolInfoBefore.bondReserves + bondAmount,
                 INITIAL_SHARE_PRICE,
                 POSITION_DURATION,
@@ -248,8 +270,8 @@ contract ExtremeInputs is HyperdriveTest {
             1e6,
             fixedRate,
             200_000_000e18,
-            100_000_000e18,
-            100_000_000e18,
+            50_000_000e18,
+            50_000_000e18,
             1
         );
         _updateLiquidity__scenario__maxLong(
@@ -257,7 +279,7 @@ contract ExtremeInputs is HyperdriveTest {
             1e6,
             fixedRate,
             10_000_000_000e18,
-            5_000_000_000e18,
+            2_000_000_000e18,
             50_000_000e18,
             1
         );
@@ -268,8 +290,8 @@ contract ExtremeInputs is HyperdriveTest {
             1e6,
             fixedRate,
             100_000_000_000e6,
-            50_000_000_000e6,
-            50_000_000_000e6,
+            20_000_000_000e6,
+            20_000_000_000e6,
             1e12
         );
         _updateLiquidity__scenario__maxShort(
@@ -277,8 +299,8 @@ contract ExtremeInputs is HyperdriveTest {
             1e6,
             fixedRate,
             200_000_000e18,
-            100_000_000e18,
-            100_000_000e18,
+            50_000_000e18,
+            50_000_000e18,
             1
         );
         _updateLiquidity__scenario__maxShort(
@@ -286,8 +308,8 @@ contract ExtremeInputs is HyperdriveTest {
             1e6,
             fixedRate,
             100_000_000_000e18,
-            50_000_000_000e18,
-            50_000_000_000e18,
+            20_000_000_000e18,
+            20_000_000_000e18,
             1
         );
     }

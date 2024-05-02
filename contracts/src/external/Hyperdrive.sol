@@ -88,6 +88,10 @@ abstract contract Hyperdrive is
     ///         stateful functions.
     address public immutable target4;
 
+    /// @notice The target5 address. This is a logic contract that contains
+    ///         stateful functions.
+    address public immutable target5;
+
     /// @notice The typehash used to calculate the EIP712 hash for `permitForAll`.
     bytes32 public constant PERMIT_TYPEHASH =
         keccak256(
@@ -101,13 +105,15 @@ abstract contract Hyperdrive is
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
     /// @param _target4 The target4 address.
+    /// @param _target5 The target5 address.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         address _target0,
         address _target1,
         address _target2,
         address _target3,
-        address _target4
+        address _target4,
+        address _target5
     ) HyperdriveStorage(_config) {
         // Initialize the target contracts.
         target0 = _target0;
@@ -115,6 +121,7 @@ abstract contract Hyperdrive is
         target2 = _target2;
         target3 = _target3;
         target4 = _target4;
+        target5 = _target5;
     }
 
     /// @notice If we get to the fallback function, we make a read-only
@@ -199,7 +206,7 @@ abstract contract Hyperdrive is
         uint256,
         IHyperdrive.Options calldata
     ) external payable returns (uint256) {
-        _delegate(target3);
+        _delegate(target5);
     }
 
     /// @inheritdoc IHyperdriveCore
@@ -235,7 +242,7 @@ abstract contract Hyperdrive is
 
     /// @inheritdoc IHyperdriveCore
     function checkpoint(uint256, uint256) external {
-        _delegate(target3);
+        _delegate(target5);
     }
 
     /// Admin ///
