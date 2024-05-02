@@ -6,7 +6,7 @@ import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDeployer.sol";
 
 /// @author DELV
-/// @title ERC4626Target4Deployer
+/// @title ERC4626Target5Deployer
 /// @notice The target5 deployer for the ERC4626Hyperdrive implementation.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
