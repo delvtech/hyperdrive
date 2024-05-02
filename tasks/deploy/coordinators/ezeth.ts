@@ -1,11 +1,11 @@
-import { task, types } from "hardhat/config";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-dayjs.extend(duration);
+import { task, types } from "hardhat/config";
 import { parseEther, toFunctionSelector, zeroAddress } from "viem";
-import { zAddress } from "../utils";
 import { z } from "zod";
+import { zAddress } from "../types";
 import { DeployCoordinatorsBaseParams } from "./shared";
+dayjs.extend(duration);
 
 export let zEzETHCoordinatorDeployConfig = z.object({
   ezeth: zAddress.optional(),
