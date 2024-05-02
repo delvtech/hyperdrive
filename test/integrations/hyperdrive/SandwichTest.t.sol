@@ -269,4 +269,64 @@ contract SandwichTest is HyperdriveTest {
         (uint256 lpProceeds, ) = removeLiquidity(alice, aliceLpShares);
         assertGe(lpProceeds, contribution);
     }
+
+    // This test ensures that add liquidity sandwiches are limited in scope for
+    // a 5% time stretch. In general, these sandwich attacks can result in early
+    // LPs losing money, but these vulnerabilities are mitigated by circuit
+    // breakers on `addLiquidity`.
+    function test_sandwich_add_liquidity(
+        uint256 contribution,
+        uint256 celineContribution
+    ) external {
+        IHyperdrive.PoolConfig memory config = testConfig(
+            0.05e18,
+            POSITION_DURATION
+        );
+        config.fees.curve = 0.01e18;
+        config.fees.flat = 0.0005e18;
+        deploy(alice, config);
+        uint256 apr = 0.05e18;
+        contribution = contribution.normalizeToRange(100e18, 100_000_000e18);
+        uint256 lpShares = initialize(alice, apr, contribution);
+
+        // Celine opens a large short.
+        uint256 shortAmount = hyperdrive.calculateMaxShort().mulDown(0.9e18);
+        (, uint256 shortPaid) = openShort(celine, shortAmount);
+
+        // Celine adds liquidity.
+        celineContribution = celineContribution.normalizeToRange(
+            100e18,
+            100_000_000e18
+        );
+        uint256 celineLpShares = addLiquidity(celine, celineContribution);
+
+        // Bob opens a large long.
+        uint256 basePaid = hyperdrive.calculateMaxLong().mulDown(0.9e18);
+        (uint256 maturityTime, uint256 bondAmount) = openLong(celine, basePaid);
+
+        // The term advances. Alice removes her liquidity.
+        advanceTime(POSITION_DURATION, 0.05e18);
+
+        // Remove liquidity.
+        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
+            alice,
+            lpShares
+        );
+        assertGt(baseProceeds, contribution);
+        assertEq(withdrawalShares, 0);
+
+        // Celine closes her long and removes liquidity.
+        uint256 shortProceeds = closeShort(celine, maturityTime, shortAmount);
+        uint256 longProceeds = closeLong(celine, maturityTime, bondAmount);
+        (baseProceeds, withdrawalShares) = removeLiquidity(
+            celine,
+            celineLpShares
+        );
+        uint256 celineContribution_ = celineContribution; // avoid stack-too-deep
+        assertLt(
+            baseProceeds + longProceeds + shortProceeds,
+            (celineContribution_ + basePaid + shortPaid).mulDown(1.06e18)
+        );
+        assertEq(withdrawalShares, 0);
+    }
 }
