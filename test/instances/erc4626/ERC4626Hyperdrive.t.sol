@@ -145,7 +145,9 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             initialVaultSharePrice: ONE,
             minimumShareReserves: ONE,
             minimumTransactionAmount: 0.001e18,
-            circuitBreakerDelta: 1e18,
+            // NOTE: This is a high max circuit breaker delta to ensure that
+            // trading during tests isn't impeded by the circuit breaker.
+            circuitBreakerDelta: 2e18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: ONE.divDown(22.186877016851916266e18),
@@ -329,6 +331,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 linkerCodeHash: factory.linkerCodeHash(),
                 minimumShareReserves: ONE,
                 minimumTransactionAmount: 0.001e18,
+                // NOTE: This is a high max circuit breaker delta to ensure that
+                // trading during tests isn't impeded by the circuit breaker.
                 circuitBreakerDelta: 2e18,
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
@@ -451,6 +455,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 linkerCodeHash: factory.linkerCodeHash(),
                 minimumShareReserves: ONE,
                 minimumTransactionAmount: 0.001e18,
+                // NOTE: This is a high max circuit breaker delta to ensure that
+                // trading during tests isn't impeded by the circuit breaker.
                 circuitBreakerDelta: 2e18,
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
