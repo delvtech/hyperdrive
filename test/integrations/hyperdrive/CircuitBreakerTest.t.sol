@@ -37,13 +37,13 @@ contract CircuitBreakerTest is HyperdriveTest {
             // Open a max short position.
             uint256 shortSize = hyperdrive.calculateMaxShort();
             openShort(bob, shortSize);
-            
+
             // Add liquidity should revert because the spot apr is
             // greater than the weighted average spot apr plus the delta.
             baseToken.mint(contribution);
             baseToken.approve(address(hyperdrive), contribution);
             vm.expectRevert(IHyperdrive.CircuitBreakerTriggered.selector);
-            hyperdrive.addLiquidity(                
+            hyperdrive.addLiquidity(
                 contribution,
                 0, // min lp share price of 0
                 0, // min spot rate of 0
@@ -84,14 +84,14 @@ contract CircuitBreakerTest is HyperdriveTest {
             // Open a max long position.
             uint256 longSize = hyperdrive.calculateMaxLong();
             openLong(bob, longSize);
-            
+
             // Add liquidity should revert because the weighted spot apr
             // is greater than the delta and the spot apr is less than
             // the weighted minus the spot apr
             baseToken.mint(contribution);
             baseToken.approve(address(hyperdrive), contribution);
             vm.expectRevert(IHyperdrive.CircuitBreakerTriggered.selector);
-            hyperdrive.addLiquidity(                
+            hyperdrive.addLiquidity(
                 contribution,
                 0, // min lp share price of 0
                 0, // min spot rate of 0
@@ -124,14 +124,14 @@ contract CircuitBreakerTest is HyperdriveTest {
 
         // Advance time through most of a checkpoint.
         advanceTime(CHECKPOINT_DURATION - 1 hours, 0);
-        uint256 weightedSpotPriceBefore = hyperdrive.getCheckpoint(
-            HyperdriveUtils.latestCheckpoint(hyperdrive)
-        ).weightedSpotPrice;
+        uint256 weightedSpotPriceBefore = hyperdrive
+            .getCheckpoint(HyperdriveUtils.latestCheckpoint(hyperdrive))
+            .weightedSpotPrice;
 
         // Open a max short position.
         uint256 shortSize = hyperdrive.calculateMaxShort();
         openShort(bob, shortSize);
-        uint256 actualSpotPrice =  HyperdriveUtils.calculateSpotPrice(
+        uint256 actualSpotPrice = HyperdriveUtils.calculateSpotPrice(
             hyperdrive
         );
 
@@ -139,19 +139,22 @@ contract CircuitBreakerTest is HyperdriveTest {
         advanceTime(1 hours, 0);
         hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
 
-        uint256 weightedSpotPriceAfter = hyperdrive.getCheckpoint(
-            HyperdriveUtils.latestCheckpoint(hyperdrive) - CHECKPOINT_DURATION
-        ).weightedSpotPrice;
+        uint256 weightedSpotPriceAfter = hyperdrive
+            .getCheckpoint(
+                HyperdriveUtils.latestCheckpoint(hyperdrive) -
+                    CHECKPOINT_DURATION
+            )
+            .weightedSpotPrice;
 
         // Check that the new checkpoint's weighted spot price is less than
         // the old checkpoint's weighted spot price.
         assertLt(weightedSpotPriceAfter, weightedSpotPriceBefore);
 
-        // Check that the checkpoint's weighted spot price is greater than the 
+        // Check that the checkpoint's weighted spot price is greater than the
         // actual spot price.
         assertGt(weightedSpotPriceAfter, actualSpotPrice);
 
-        // Check that the actual spot price is not equal to the previous 
+        // Check that the actual spot price is not equal to the previous
         // checkpoint's weighted spot price.
         assertFalse(actualSpotPrice == weightedSpotPriceBefore);
     }
@@ -175,14 +178,14 @@ contract CircuitBreakerTest is HyperdriveTest {
 
         // Advance time through most of a checkpoint.
         advanceTime(CHECKPOINT_DURATION - 1 hours, 0);
-        uint256 weightedSpotPriceBefore = hyperdrive.getCheckpoint(
-            HyperdriveUtils.latestCheckpoint(hyperdrive)
-        ).weightedSpotPrice;
+        uint256 weightedSpotPriceBefore = hyperdrive
+            .getCheckpoint(HyperdriveUtils.latestCheckpoint(hyperdrive))
+            .weightedSpotPrice;
 
         // Open a max long position.
         uint256 longSize = hyperdrive.calculateMaxLong();
         openLong(bob, longSize);
-        uint256 actualSpotPrice =  HyperdriveUtils.calculateSpotPrice(
+        uint256 actualSpotPrice = HyperdriveUtils.calculateSpotPrice(
             hyperdrive
         );
 
@@ -190,24 +193,27 @@ contract CircuitBreakerTest is HyperdriveTest {
         advanceTime(1 hours, 0);
         hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
 
-        uint256 weightedSpotPriceAfter = hyperdrive.getCheckpoint(
-            HyperdriveUtils.latestCheckpoint(hyperdrive) - CHECKPOINT_DURATION
-        ).weightedSpotPrice;
+        uint256 weightedSpotPriceAfter = hyperdrive
+            .getCheckpoint(
+                HyperdriveUtils.latestCheckpoint(hyperdrive) -
+                    CHECKPOINT_DURATION
+            )
+            .weightedSpotPrice;
 
         // Check that the new checkpoint's weighted spot price is greater than
         // the old checkpoint's weighted spot price.
         assertGt(weightedSpotPriceAfter, weightedSpotPriceBefore);
 
-        // Check that the checkpoint's weighted spot price is less than the 
+        // Check that the checkpoint's weighted spot price is less than the
         // actual spot price.
         assertLt(weightedSpotPriceAfter, actualSpotPrice);
 
-        // Check that the actual spot price is not equal to the previous 
+        // Check that the actual spot price is not equal to the previous
         // checkpoint's weighted spot price.
         assertFalse(actualSpotPrice == weightedSpotPriceBefore);
     }
 
-        /// forge-config: default.fuzz.runs = 1000
+    /// forge-config: default.fuzz.runs = 1000
     function test_weighted_average_skipped_checkpoint() external {
         uint256 fixedRate = 0.035e18;
         uint256 initialLiquidity = 500_000_000e18;
@@ -225,17 +231,14 @@ contract CircuitBreakerTest is HyperdriveTest {
 
         // One term passes and shorts mature.
         advanceTime(POSITION_DURATION, 0);
-        hyperdrive.checkpoint(
-            HyperdriveUtils.latestCheckpoint(hyperdrive),
-            0
-        );
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
 
         // A checkpoint is missed.
         advanceTime(CHECKPOINT_DURATION, 0);
         uint256 missedCheckpointTime = block.timestamp;
-        uint256 weightedSpotPriceMissed = hyperdrive.getCheckpoint(
-            missedCheckpointTime
-        ).weightedSpotPrice;
+        uint256 weightedSpotPriceMissed = hyperdrive
+            .getCheckpoint(missedCheckpointTime)
+            .weightedSpotPrice;
 
         // The weighted spot price at the missed checkpoint
         // should be zero.
@@ -243,16 +246,15 @@ contract CircuitBreakerTest is HyperdriveTest {
 
         // Several checkpoints are minted.
         advanceTimeWithCheckpoints2(3 * CHECKPOINT_DURATION, 0);
-        uint256 currentSpotPrice =  HyperdriveUtils.calculateSpotPrice(
+        uint256 currentSpotPrice = HyperdriveUtils.calculateSpotPrice(
             hyperdrive
         );
 
         // Mint the missed checkpoint.
         hyperdrive.checkpoint(missedCheckpointTime, 0);
-        uint256 weightedSpotPriceMinted = hyperdrive.getCheckpoint(
-            missedCheckpointTime
-        ).weightedSpotPrice;
-
+        uint256 weightedSpotPriceMinted = hyperdrive
+            .getCheckpoint(missedCheckpointTime)
+            .weightedSpotPrice;
 
         // The missed checkpoint has now been minted. The
         // weighted spot price should be equal to the current
@@ -266,10 +268,12 @@ contract CircuitBreakerTest is HyperdriveTest {
         int256 variableInterest = 0.05e18;
         uint256 numTrades = 5;
         uint256 tradeSize = 1_000_000e18;
-        _test_weighted_average_netted_positions(initialVaultSharePrice,
-                variableInterest,
-                tradeSize,
-                numTrades);
+        _test_weighted_average_netted_positions(
+            initialVaultSharePrice,
+            variableInterest,
+            tradeSize,
+            numTrades
+        );
     }
 
     function test_weighted_average_netted_positions_fuzz(
@@ -286,10 +290,12 @@ contract CircuitBreakerTest is HyperdriveTest {
         variableInterest = variableInterest.normalizeToRange(0e18, .5e18);
         numTrades = tradeSize.normalizeToRange(1, 5);
         tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18 / numTrades);
-        _test_weighted_average_netted_positions(initialVaultSharePrice,
-                variableInterest,
-                tradeSize,
-                numTrades);
+        _test_weighted_average_netted_positions(
+            initialVaultSharePrice,
+            variableInterest,
+            tradeSize,
+            numTrades
+        );
     }
 
     function _test_weighted_average_netted_positions(
@@ -312,9 +318,7 @@ contract CircuitBreakerTest is HyperdriveTest {
         uint256[] memory longMaturityTimes = new uint256[](numTrades);
         uint256[] memory shortMaturityTimes = new uint256[](numTrades);
         uint256[] memory bondAmounts = new uint256[](numTrades);
-        uint256 lowestPrice = HyperdriveUtils.calculateSpotPrice(
-            hyperdrive
-        );
+        uint256 lowestPrice = HyperdriveUtils.calculateSpotPrice(hyperdrive);
         uint256 highestPrice = lowestPrice;
         for (uint256 i = 0; i < numTrades; i++) {
             // Open long position.
@@ -325,35 +329,27 @@ contract CircuitBreakerTest is HyperdriveTest {
             );
             longMaturityTimes[i] = maturityTimeLong;
             bondAmounts[i] = bondAmount;
-            if(HyperdriveUtils.calculateSpotPrice(hyperdrive) < lowestPrice)
-            {
+            if (HyperdriveUtils.calculateSpotPrice(hyperdrive) < lowestPrice) {
                 lowestPrice = HyperdriveUtils.calculateSpotPrice(hyperdrive);
             }
 
             // Open short position.
             (uint256 maturityTimeShort, ) = openShort(bob, bondAmount);
             shortMaturityTimes[i] = maturityTimeShort;
-            if(HyperdriveUtils.calculateSpotPrice(hyperdrive) > highestPrice)
-            {
+            if (HyperdriveUtils.calculateSpotPrice(hyperdrive) > highestPrice) {
                 highestPrice = HyperdriveUtils.calculateSpotPrice(hyperdrive);
             }
         }
-        uint256 weightedSpotPriceAfter = hyperdrive.getCheckpoint(
-        HyperdriveUtils.latestCheckpoint(hyperdrive)
-        ).weightedSpotPrice;
-        uint256 spotPrice =  HyperdriveUtils.calculateSpotPrice(
-            hyperdrive
-        );
+        uint256 weightedSpotPriceAfter = hyperdrive
+            .getCheckpoint(HyperdriveUtils.latestCheckpoint(hyperdrive))
+            .weightedSpotPrice;
+        uint256 spotPrice = HyperdriveUtils.calculateSpotPrice(hyperdrive);
 
         // The weighted spot price should equal the existing spot price since
         // all the trades netted out
-        assertApproxEqAbs(
-            weightedSpotPriceAfter,
-            spotPrice,
-            10 wei
-        );
+        assertApproxEqAbs(weightedSpotPriceAfter, spotPrice, 10 wei);
 
-        // The weighted spot price should be greater than or equal to the 
+        // The weighted spot price should be greater than or equal to the
         // existing spot price.
         assertGe(highestPrice, weightedSpotPriceAfter);
 
@@ -369,21 +365,16 @@ contract CircuitBreakerTest is HyperdriveTest {
             closeShort(bob, shortMaturityTimes[i], bondAmounts[i]);
             closeLong(bob, longMaturityTimes[i], bondAmounts[i]);
         }
-        weightedSpotPriceAfter = hyperdrive.getCheckpoint(
-            HyperdriveUtils.latestCheckpoint(hyperdrive)
-        ).weightedSpotPrice;
-        spotPrice =  HyperdriveUtils.calculateSpotPrice(
-            hyperdrive
-        );
+        weightedSpotPriceAfter = hyperdrive
+            .getCheckpoint(HyperdriveUtils.latestCheckpoint(hyperdrive))
+            .weightedSpotPrice;
+        spotPrice = HyperdriveUtils.calculateSpotPrice(hyperdrive);
 
         // The weighted spot price should equal the existing spot price since
         // all the trades netted out
-        assertEq(
-            weightedSpotPriceAfter,
-            spotPrice
-        );
+        assertEq(weightedSpotPriceAfter, spotPrice);
 
-        // The weighted spot price should be greater than or equal to the 
+        // The weighted spot price should be greater than or equal to the
         // existing spot price.
         assertGe(highestPrice, weightedSpotPriceAfter);
 
