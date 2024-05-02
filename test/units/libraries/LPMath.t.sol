@@ -26,7 +26,10 @@ contract LPMathTest is HyperdriveTest {
         uint256 vaultSharePrice = 2.5e18;
         uint256 apr = 0.001e18;
         uint256 positionDuration = 365 days;
-        uint256 timeStretch = ONE.divDown(1109.3438508425959e18);
+        uint256 timeStretch = HyperdriveMath.calculateTimeStretch(
+            0.001e18,
+            positionDuration
+        );
         (, int256 shareAdjustment, uint256 bondReserves) = lpMath
             .calculateInitialReserves(
                 shareReserves,
@@ -49,7 +52,10 @@ contract LPMathTest is HyperdriveTest {
 
         // Test 1% APR
         apr = 0.01e18;
-        timeStretch = ONE.divDown(110.93438508425959e18);
+        timeStretch = HyperdriveMath.calculateTimeStretch(
+            0.01e18,
+            positionDuration
+        );
         (, shareAdjustment, bondReserves) = lpMath.calculateInitialReserves(
             shareReserves,
             vaultSharePrice,
@@ -73,7 +79,10 @@ contract LPMathTest is HyperdriveTest {
 
         // Test 5% APR
         apr = 0.05e18;
-        timeStretch = ONE.divDown(22.186877016851916266e18);
+        timeStretch = HyperdriveMath.calculateTimeStretch(
+            0.05e18,
+            positionDuration
+        );
         (, shareAdjustment, bondReserves) = lpMath.calculateInitialReserves(
             shareReserves,
             vaultSharePrice,
@@ -97,7 +106,10 @@ contract LPMathTest is HyperdriveTest {
 
         // Test 25% APR
         apr = 0.25e18;
-        timeStretch = ONE.divDown(4.437375403370384e18);
+        timeStretch = HyperdriveMath.calculateTimeStretch(
+            0.25e18,
+            positionDuration
+        );
         (, shareAdjustment, bondReserves) = lpMath.calculateInitialReserves(
             shareReserves,
             vaultSharePrice,
@@ -120,8 +132,11 @@ contract LPMathTest is HyperdriveTest {
         assertApproxEqAbs(result, apr, 1);
 
         // Test 50% APR
-        apr = 0.50e18;
-        timeStretch = ONE.divDown(2.218687701685192e18);
+        apr = 0.5e18;
+        timeStretch = HyperdriveMath.calculateTimeStretch(
+            0.5e18,
+            positionDuration
+        );
         (, shareAdjustment, bondReserves) = lpMath.calculateInitialReserves(
             shareReserves,
             vaultSharePrice,
@@ -145,7 +160,10 @@ contract LPMathTest is HyperdriveTest {
 
         // Test 100% APR
         apr = 1e18;
-        timeStretch = ONE.divDown(1.109343850842596e18);
+        timeStretch = HyperdriveMath.calculateTimeStretch(
+            1e18,
+            positionDuration
+        );
         (, shareAdjustment, bondReserves) = lpMath.calculateInitialReserves(
             shareReserves,
             vaultSharePrice,
