@@ -8,9 +8,6 @@ import { IHyperdriveTargetDeployer } from "../interfaces/IHyperdriveTargetDeploy
 import { VERSION } from "../libraries/Constants.sol";
 import { ONE } from "../libraries/FixedPointMath.sol";
 
-// FIXME: Add the maximumAddLiquidityAPRDelta to `deployAndInitialize`. We need
-//        min and max parameters for this delta.
-//
 /// @author DELV
 /// @title HyperdriveDeployerCoordinator
 /// @notice This Hyperdrive deployer coordinates the process of deploying the
@@ -505,8 +502,7 @@ abstract contract HyperdriveDeployerCoordinator is
         _config.minimumShareReserves = _deployConfig.minimumShareReserves;
         _config.minimumTransactionAmount = _deployConfig
             .minimumTransactionAmount;
-        _config.maximumAddLiquidityAPRDelta = _deployConfig
-            .maximumAddLiquidityAPRDelta;
+        _config.circuitBreakerDelta = _deployConfig.circuitBreakerDelta;
         _config.positionDuration = _deployConfig.positionDuration;
         _config.checkpointDuration = _deployConfig.checkpointDuration;
         _config.timeStretch = _deployConfig.timeStretch;

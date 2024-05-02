@@ -231,6 +231,10 @@ abstract contract InstanceTest is HyperdriveTest {
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
                 maxPositionDuration: 10 * 365 days,
+                minCircuitBreakerDelta: 0.15e18,
+                // NOTE: This is a high max circuit breaker delta to ensure that
+                // trading during tests isn't impeded by the circuit breaker.
+                maxCircuitBreakerDelta: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.005e18,
@@ -261,7 +265,7 @@ abstract contract InstanceTest is HyperdriveTest {
             linkerCodeHash: factory.linkerCodeHash(),
             minimumShareReserves: 1e15,
             minimumTransactionAmount: config.minTransactionAmount,
-            maximumAddLiquidityAPRDelta: 2e18,
+            circuitBreakerDelta: 2e18,
             positionDuration: config.positionDuration,
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: 0,

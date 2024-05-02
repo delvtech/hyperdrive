@@ -93,7 +93,7 @@ interface IHyperdrive is
         /// @dev The maximum delta between the last checkpoint's weighted spot
         ///      APR and the current spot APR for an LP to add liquidity. This
         ///      protects LPs from sandwich attacks.
-        uint256 maximumAddLiquidityAPRDelta;
+        uint256 circuitBreakerDelta;
         /// @dev The duration of a position prior to maturity.
         uint256 positionDuration;
         /// @dev The duration of a checkpoint.
@@ -130,7 +130,7 @@ interface IHyperdrive is
         /// @dev The maximum delta between the last checkpoint's weighted spot
         ///      APR and the current spot APR for an LP to add liquidity. This
         ///      protects LPs from sandwich attacks.
-        uint256 maximumAddLiquidityAPRDelta;
+        uint256 circuitBreakerDelta;
         /// @dev The duration of a position prior to maturity.
         uint256 positionDuration;
         /// @dev The duration of a checkpoint.

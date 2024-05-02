@@ -27,9 +27,6 @@ abstract contract HyperdriveLP is
     using SafeCast for int256;
     using SafeCast for uint256;
 
-    // FIXME: Make sure this checkpoint's and the previous checkpoint's weighted
-    //        spot prices are set to non-zero values.
-    //
     /// @dev Allows the first LP to initialize the market with a target APR.
     /// @param _contribution The amount of capital to supply. The units of this
     ///        quantity are either base or vault shares, depending on the value
@@ -146,8 +143,6 @@ abstract contract HyperdriveLP is
         return lpShares;
     }
 
-    // FIXME: Add circuit breakers.
-    //
     /// @dev Allows LPs to supply liquidity for LP shares.
     /// @param _contribution The amount of capital to supply. The units of this
     ///        quantity are either base or vault shares, depending on the value
@@ -215,9 +210,9 @@ abstract contract HyperdriveLP is
                 _positionDuration
             );
             if (
-                apr > weightedSpotAPR + _maximumAddLiquidityAPRDelta ||
-                (weightedSpotAPR > _maximumAddLiquidityAPRDelta &&
-                    apr < weightedSpotAPR - _maximumAddLiquidityAPRDelta)
+                apr > weightedSpotAPR + _circuitBreakerDelta ||
+                (weightedSpotAPR > _circuitBreakerDelta &&
+                    apr < weightedSpotAPR - _circuitBreakerDelta)
             ) {
                 revert IHyperdrive.CircuitBreakerTriggered();
             }
