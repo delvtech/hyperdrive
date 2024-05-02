@@ -58,6 +58,13 @@ contract MockLPMath {
         require(success, "MockLPMath: calculateUpdateLiquiditySafe failed");
     }
 
+    function calculateDistributeExcessIdle(
+        LPMath.DistributeExcessIdleParams memory _params,
+        uint256 _maxIterations
+    ) external pure returns (uint256, uint256) {
+        return LPMath.calculateDistributeExcessIdle(_params, _maxIterations);
+    }
+
     function calculatePresentValue(
         LPMath.PresentValueParams memory _params
     ) external pure returns (uint256) {
@@ -125,6 +132,19 @@ contract MockLPMath {
                 _params,
                 _originalEffectiveShareReserves,
                 _bondAmount
+            );
+    }
+
+    function shouldShortCircuitDistributeExcessIdleShareProceeds(
+        LPMath.DistributeExcessIdleParams memory _params,
+        uint256 _lpTotalSupply,
+        uint256 _presentValue
+    ) external pure returns (bool) {
+        return
+            LPMath.shouldShortCircuitDistributeExcessIdleShareProceeds(
+                _params,
+                _lpTotalSupply,
+                _presentValue
             );
     }
 

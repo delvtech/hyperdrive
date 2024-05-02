@@ -1,14 +1,6 @@
 # Global Code Owners
 * @jalextowle @jrhea @mcclurejt
 
-# Rust SDK Code Owners
-.github/ @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree @sentilesdal
-crates/ @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree @sentilesdal
-Cargo.toml @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree @sentilesdal
-rustfmt.toml @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree @sentilesdal
-Makefile @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree @sentilesdal
-README.md @jalextowle @jrhea @mcclurejt @dpaiton @slundqui @ryangoree @sentilesdal
-
 # Instance Owners
 contracts/src/deployers/ @jalextowle @jrhea @mcclurejt @cashd @sentilesdal
 contracts/src/instances/ @jalextowle @jrhea @mcclurejt @cashd @sentilesdal
