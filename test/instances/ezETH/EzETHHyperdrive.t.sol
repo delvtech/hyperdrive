@@ -70,6 +70,8 @@ contract EzETHHyperdriveTest is InstanceTest {
             1e15,
             POSITION_DURATION_15_DAYS,
             false,
+            true,
+            false,
             true
         );
 
@@ -221,16 +223,47 @@ contract EzETHHyperdriveTest is InstanceTest {
         }
     }
 
-    /// Getters ///
+    /// @dev Verifies that withdrawal accounting is correct when closing positions.
+    function verifyWithdrawal(
+        address trader,
+        uint256 baseProceeds,
+        bool asBase,
+        uint256 totalPooledEtherBefore,
+        uint256 totalSharesBefore,
+        AccountBalances memory traderBalancesBefore,
+        AccountBalances memory hyperdriveBalancesBefore
+    ) internal override {
+        // Base withdraws are not supported for this instance.
+        if (asBase) {
+            revert IHyperdrive.UnsupportedToken();
+        }
 
-    function test_getters() external {
+        // Ensure that the total pooled ether and shares stays the same.
+        (, uint256 totalPooledEther, ) = getSharePrice();
+        assertEq(totalPooledEther, totalPooledEtherBefore);
+        assertApproxEqAbs(EZETH.totalSupply(), totalSharesBefore, 1);
+
+        // Ensure that the ETH balances were updated correctly.
         assertEq(
-            address(IEzETHHyperdriveRead(address(hyperdrive)).renzo()),
-            address(RESTAKE_MANAGER)
+            address(hyperdrive).balance,
+            hyperdriveBalancesBefore.ETHBalance
         );
-        assertEq(
-            address(IEzETHHyperdriveRead(address(hyperdrive)).renzoOracle()),
-            address(RENZO_ORACLE)
+        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
+
+        // Ensure that the ezETH shares were updated correctly.
+        uint256 expectedShares = baseProceeds.mulDivDown(
+            totalSharesBefore,
+            totalPooledEtherBefore
+        );
+        assertApproxEqAbs(
+            EZETH.balanceOf(address(hyperdrive)),
+            hyperdriveBalancesBefore.sharesBalance - expectedShares,
+            1
+        );
+        assertApproxEqAbs(
+            EZETH.balanceOf(trader),
+            traderBalancesBefore.sharesBalance + expectedShares,
+            1
         );
     }
 
@@ -249,6 +282,19 @@ contract EzETHHyperdriveTest is InstanceTest {
         assertEq(
             sharePriceBefore.mulDown(1e18 + positionAdjustedInterestRate),
             sharePriceAfter
+        );
+    }
+
+    /// Getters ///
+
+    function test_getters() external {
+        assertEq(
+            address(IEzETHHyperdriveRead(address(hyperdrive)).renzo()),
+            address(RESTAKE_MANAGER)
+        );
+        assertEq(
+            address(IEzETHHyperdriveRead(address(hyperdrive)).renzoOracle()),
+            address(RENZO_ORACLE)
         );
     }
 
@@ -291,48 +337,12 @@ contract EzETHHyperdriveTest is InstanceTest {
 
     /// Long ///
 
-    function test_close_long_with_eth(uint256 basePaid) external {
-        vm.stopPrank();
-        vm.startPrank(bob);
-
-        // Calculate the maximum amount of basePaid we can test.
-        uint256 maxLong = HyperdriveUtils.calculateMaxLong(hyperdrive);
-        uint256 maxEzEth = EZETH.balanceOf(address(bob));
-        uint256 maxRange = maxLong > maxEzEth ? maxEzEth : maxLong;
-        basePaid = basePaid.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            maxRange
-        );
-
-        // Convert to shares and approve hyperdrive.
-        uint256 sharesPaid = getAndApproveShares(basePaid);
-
-        // Bob opens a long.
-        (uint256 maturityTime, uint256 longAmount) = openLong(
-            bob,
-            sharesPaid,
-            false
-        );
-
-        // Bob attempts to close his long with ETH as the target asset. This
-        // fails since ETH isn't supported as a withdrawal asset.
-        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-        hyperdrive.closeLong(
-            maturityTime,
-            longAmount,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-    }
-
-    function test_close_long_with_ezeth(
+    /// @dev We override this test case from InstanceTest, because EzETH's
+    ///      accounting requires larger assertion constraints.
+    function test_close_long_with_shares(
         uint256 basePaid,
         int256 variableRate
-    ) external {
+    ) external override {
         // Accrue interest for a term to ensure that the share price is greater
         // than one.
         advanceTime(POSITION_DURATION_15_DAYS, 0.05e18);
@@ -391,9 +401,10 @@ contract EzETHHyperdriveTest is InstanceTest {
 
         // Ensure that Renzo's aggregates and the token balances were updated
         // correctly during the trade.
-        verifyEzethWithdrawal(
+        verifyWithdrawal(
             bob,
             baseProceeds,
+            false,
             totalPooledEtherBefore,
             totalSharesBefore,
             bobBalancesBefore,
@@ -401,7 +412,7 @@ contract EzETHHyperdriveTest is InstanceTest {
         );
     }
 
-    // /// Short ///
+    /// Short ///
 
     function test_open_short_refunds() external {
         vm.startPrank(bob);
@@ -440,56 +451,12 @@ contract EzETHHyperdriveTest is InstanceTest {
         assertEq(address(bob).balance, ethBalanceBefore);
     }
 
-    function test_close_short_with_eth(
+    /// @dev We override this test case from InstanceTest, because EzETH's
+    ///      accounting requires larger assertion constraints.
+    function test_close_short_with_shares(
         uint256 shortAmount,
         int256 variableRate
-    ) external {
-        // Accrue interest for a term to ensure that the share price is greater
-        // than one.
-        advanceTime(POSITION_DURATION, 0.05e18);
-
-        // Calculate the maximum amount we can short.
-        shortAmount = shortAmount.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxShort(hyperdrive)
-        );
-
-        // Approve hyperdrive to use bob's ezEth.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        EZETH.approve(address(hyperdrive), shortAmount);
-
-        // Bob opens a short.
-        (uint256 maturityTime, ) = openShort(bob, shortAmount, false);
-
-        // NOTE: The variable rate must be greater than 0 since the unsupported
-        // check is only triggered if the shares amount is non-zero.
-        //
-        // The term passes and interest accrues.
-        variableRate = variableRate.normalizeToRange(0.01e18, 2.5e18);
-        advanceTime(POSITION_DURATION_15_DAYS, variableRate);
-
-        // Bob attempts to close his short with ETH as the target asset. This
-        // fails since ETH isn't supported as a withdrawal asset.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-        hyperdrive.closeShort(
-            maturityTime,
-            shortAmount,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-    }
-
-    function test_close_short_with_ezeth(
-        uint256 shortAmount,
-        int256 variableRate
-    ) external {
+    ) external override {
         // Accrue interest for a term to ensure that the share price is greater
         // than one.
         advanceTime(POSITION_DURATION_15_DAYS, 0.05e18);
@@ -548,9 +515,10 @@ contract EzETHHyperdriveTest is InstanceTest {
 
         // Ensure that Lido's aggregates and the token balances were updated
         // correctly during the trade.
-        verifyEzethWithdrawal(
+        verifyWithdrawal(
             bob,
             baseProceeds,
+            false,
             totalPooledEtherBefore,
             totalSharesBefore,
             bobBalancesBefore,
@@ -598,50 +566,14 @@ contract EzETHHyperdriveTest is InstanceTest {
 
         // Ensure that Renzo's aggregates and the token balances were updated
         // correctly during the trade.
-        verifyEzethWithdrawal(
+        verifyWithdrawal(
             bob,
             baseProceeds,
+            false,
             totalPooledEtherBefore,
             totalSharesBefore,
             bobBalancesBefore,
             hyperdriveBalancesBefore
-        );
-    }
-
-    function verifyEzethWithdrawal(
-        address trader,
-        uint256 baseProceeds,
-        uint256 totalPooledEtherBefore,
-        uint256 totalSharesBefore,
-        AccountBalances memory traderBalancesBefore,
-        AccountBalances memory hyperdriveBalancesBefore
-    ) internal {
-        // Ensure that the total pooled ether and shares stays the same.
-        (, uint256 totalPooledEther, ) = getSharePrice();
-        assertEq(totalPooledEther, totalPooledEtherBefore);
-        assertApproxEqAbs(EZETH.totalSupply(), totalSharesBefore, 1);
-
-        // Ensure that the ETH balances were updated correctly.
-        assertEq(
-            address(hyperdrive).balance,
-            hyperdriveBalancesBefore.ETHBalance
-        );
-        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-        // Ensure that the ezETH shares were updated correctly.
-        uint256 expectedShares = baseProceeds.mulDivDown(
-            totalSharesBefore,
-            totalPooledEtherBefore
-        );
-        assertApproxEqAbs(
-            EZETH.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.sharesBalance - expectedShares,
-            1
-        );
-        assertApproxEqAbs(
-            EZETH.balanceOf(trader),
-            traderBalancesBefore.sharesBalance + expectedShares,
-            1
         );
     }
 

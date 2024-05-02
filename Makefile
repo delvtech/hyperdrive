@@ -1,11 +1,11 @@
-.PHONY: build build-sol build-rust test test-sol test-rust lint lint-rust \
+.PHONY: build build-sol test test-sol lint \
 	lint-sol code-size-check solhint style-check spell-check warnings-check \
 	prettier
 
 ### Build ###
 
-build:
-	make build-sol && make build-rust
+build: 
+	make build-sol
 
 build-sol:
 	forge build
@@ -19,8 +19,8 @@ SOLIDITY_LP_WITHDRAWAL_TESTS = LPWithdrawalTest
 SOLIDITY_NETTING_TESTS = IntraCheckpointNettingTest
 SOLIDITY_ZOMBIE_TESTS = ZombieInterestTest
 
-test:
-	make test-sol && make test-rust
+test: 
+	make test-sol
 
 test-sol: test-sol-core test-sol-instances test-sol-lp-withdrawal test-sol-netting test-sol-zombie
 
@@ -55,7 +55,7 @@ test-rust:
 ### Lint ###
 
 lint:
-	make lint-sol && make lint-rust
+	make lint-sol
 
 lint-sol:
 	make solhint && make style-check && make spell-check && make warnings-check && make code-size-check

@@ -38,6 +38,8 @@ abstract contract InstanceTest is HyperdriveTest {
         uint256 positionDuration;
         bool enableBaseDeposits;
         bool enableShareDeposits;
+        bool enableBaseWithdraws;
+        bool enableShareWithdraws;
     }
 
     // Fixed rate used to configure market.
@@ -163,7 +165,7 @@ abstract contract InstanceTest is HyperdriveTest {
         config.vaultSharesToken.approve(deployerCoordinator, 100_000e18);
 
         // We expect the deployAndInitialize to fail with an
-        // UnsupportedToken error if depositing with base is not supported.
+        // UnsupportedToken error if depositing with base are not supported.
         // If the base token is ETH we expect a NotPayable error.
         if (!config.enableBaseDeposits && asBase) {
             vm.expectRevert(
@@ -174,7 +176,7 @@ abstract contract InstanceTest is HyperdriveTest {
         }
 
         // We expect the deployAndInitialize to fail with an
-        // UnsupportedToken error if depositing with shares is not supported.
+        // UnsupportedToken error if depositing with shares are not supported.
         if (!config.enableShareDeposits && !asBase) {
             vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         }
@@ -318,6 +320,25 @@ abstract contract InstanceTest is HyperdriveTest {
     function verifyDeposit(
         address trader,
         uint256 basePaid,
+        bool asBase,
+        uint256 totalBaseBefore,
+        uint256 totalSharesBefore,
+        AccountBalances memory traderBalancesBefore,
+        AccountBalances memory hyperdriveBalancesBefore
+    ) internal virtual;
+
+    /// @dev A virtual function that ensures the withdrawal accounting is correct
+    ///      when opening positions.
+    /// @param trader The account opening the position.
+    /// @param baseProceeds The amount the position was opened with in terms of base.
+    /// @param asBase Flag to determine whether the position was opened with the base or share token.
+    /// @param totalBaseBefore Total supply of the base token before the trade.
+    /// @param totalSharesBefore Total supply of the share token before the trade.
+    /// @param traderBalancesBefore Balances of tokens of the trader before the trade.
+    /// @param hyperdriveBalancesBefore Balances of tokens of the Hyperdrive contract before the trade.
+    function verifyWithdrawal(
+        address trader,
+        uint256 baseProceeds,
         bool asBase,
         uint256 totalBaseBefore,
         uint256 totalSharesBefore,
@@ -501,14 +522,15 @@ abstract contract InstanceTest is HyperdriveTest {
         );
     }
 
-    /// @dev Fuzz Test to ensure deposit accounting is correct when opening longs
-    ///      with the share token.
+    /// @dev Fuzz Test to ensure deposit accounting is correct when opening
+    ///      longs with the share token. This test case is expected to fail if
+    ///      share deposits are not supported.
     /// @param basePaid Amount in terms of base to open a long.
     function test_open_long_with_shares(uint256 basePaid) external {
         // Get balance information before opening a long.
         (
             uint256 totalBaseSupplyBefore,
-            uint256 totalSharesSupplyBefore
+            uint256 totalShareSupplyBefore
         ) = getSupply();
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
         AccountBalances memory hyperdriveBalanceBefore = getAccountBalances(
@@ -530,9 +552,8 @@ abstract contract InstanceTest is HyperdriveTest {
         // Convert the amount to deposit in terms of the share token.
         uint256 sharesPaid = convertToShares(basePaid);
 
-        // Bob opens a long by depositing the base token.
-        // We expect openLong to fail with an UnsupportedToken error
-        // if depositing with shares is not supported.
+        // Bob opens the long. We expect to fail with an UnsupportedToken error
+        // if depositing with shares are not supported.
         vm.startPrank(bob);
         if (!config.enableShareDeposits) {
             vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
@@ -548,7 +569,7 @@ abstract contract InstanceTest is HyperdriveTest {
             })
         );
 
-        // Early termination if share deposits is not supported.
+        // Early termination if share deposits are not supported.
         if (!config.enableShareDeposits) {
             return;
         }
@@ -568,21 +589,21 @@ abstract contract InstanceTest is HyperdriveTest {
             basePaid,
             false,
             totalBaseSupplyBefore,
-            totalSharesSupplyBefore,
+            totalShareSupplyBefore,
             bobBalancesBefore,
             hyperdriveBalanceBefore
         );
     }
 
-    /// @dev Fuzz Test to ensure deposit accounting is correct when opening longs
-    ///      with the base token. This test case is expected to fail if base deposits
-    ///      is not supported.
+    /// @dev Fuzz Test to ensure deposit accounting is correct when opening
+    ///      longs with the base token. This test case is expected to fail if
+    ///      base deposits are not supported.
     /// @param basePaid Amount in terms of base to open a long.
     function test_open_long_with_base(uint256 basePaid) external {
         // Get balance information before opening a long.
         (
             uint256 totalBaseSupplyBefore,
-            uint256 totalSharesSupplyBefore
+            uint256 totalShareSupplyBefore
         ) = getSupply();
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
         AccountBalances memory hyperdriveBalanceBefore = getAccountBalances(
@@ -657,21 +678,180 @@ abstract contract InstanceTest is HyperdriveTest {
             basePaid,
             true,
             totalBaseSupplyBefore,
-            totalSharesSupplyBefore,
+            totalShareSupplyBefore,
             bobBalancesBefore,
             hyperdriveBalanceBefore
         );
     }
 
+    /// @dev Fuzz Test to ensure withdrawal accounting is correct when closing
+    ///      longs with the share token. This test case is expected to fail if
+    ///      share withdraws are not supported.
+    /// @param basePaid Amount in terms of base.
+    /// @param variableRate Rate of interest accrual over the position duration.
+    function test_close_long_with_shares(
+        uint256 basePaid,
+        int256 variableRate
+    ) external virtual {
+        // Get Bob's account balances before opening the long.
+        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
+
+        // Accrue interest for a term to ensure that the share price is greater
+        // than one.
+        advanceTime(POSITION_DURATION, int256(FIXED_RATE));
+
+        // Calculate the maximum amount of basePaid we can test. The limit is
+        // either the maximum long that Hyperdrive can open or the amount of the
+        // share token the trader has.
+        uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
+        uint256 maxShareAmount = bobBalancesBefore.sharesBalance;
+
+        // We normalize the basePaid variable within a valid range the market can support.
+        basePaid = basePaid.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            maxLongAmount > maxShareAmount ? maxShareAmount : maxLongAmount
+        );
+
+        // Bob opens a long with the share token.
+        (uint256 maturityTime, uint256 longAmount) = openLong(
+            bob,
+            convertToShares(basePaid),
+            false
+        );
+
+        // The term passes and some interest accrues.
+        variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        advanceTime(config.positionDuration, variableRate);
+
+        // Get some balance information before closing the long.
+        (
+            uint256 totalBaseSupplyBefore,
+            uint256 totalShareSupplyBefore
+        ) = getSupply();
+        bobBalancesBefore = getAccountBalances(bob);
+        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
+            address(hyperdrive)
+        );
+
+        // Bob closes his long with shares as the target asset.
+        uint256 shareProceeds = closeLong(bob, maturityTime, longAmount, false);
+        uint256 baseProceeds = convertToBase(shareProceeds);
+
+        // Ensure that Bob received approximately the bond amount but wasn't
+        // overpaid.
+        assertLe(baseProceeds, longAmount);
+        assertApproxEqAbs(baseProceeds, longAmount, 10);
+
+        // Ensure the withdrawal accounting is correct.
+        verifyWithdrawal(
+            bob,
+            baseProceeds,
+            false,
+            totalBaseSupplyBefore,
+            totalShareSupplyBefore,
+            bobBalancesBefore,
+            hyperdriveBalancesBefore
+        );
+    }
+
+    /// @dev Fuzz Test to ensure withdrawal accounting is correct when closing
+    ///      longs with the base token. This test case is expected to fail if
+    ///      base withdraws are not supported.
+    /// @param basePaid Amount in terms of base.
+    /// @param variableRate Rate of interest accrual over the position duration.
+    function test_close_long_with_base(
+        uint256 basePaid,
+        int256 variableRate
+    ) external {
+        // Get Bob's account balances before opening the long.
+        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
+
+        // Accrue interest for a term to ensure that the share price is greater
+        // than one.
+        advanceTime(POSITION_DURATION, int256(FIXED_RATE));
+
+        // Calculate the maximum amount of basePaid we can test. The limit is
+        // either the maximum long that Hyperdrive can open or the amount of the
+        // share token the trader has.
+        uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
+        uint256 maxShareAmount = bobBalancesBefore.sharesBalance;
+
+        // We normalize the basePaid variable within a valid range the market can support.
+        basePaid = basePaid.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            maxLongAmount > maxShareAmount ? maxShareAmount : maxLongAmount
+        );
+
+        // Bob opens a long with the share token.
+        (uint256 maturityTime, uint256 longAmount) = openLong(
+            bob,
+            convertToShares(basePaid),
+            false
+        );
+
+        // The term passes and some interest accrues.
+        variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        advanceTime(config.positionDuration, variableRate);
+
+        // Get some balance information before closing the long.
+        (
+            uint256 totalBaseSupplyBefore,
+            uint256 totalShareSupplyBefore
+        ) = getSupply();
+        bobBalancesBefore = getAccountBalances(bob);
+        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
+            address(hyperdrive)
+        );
+
+        // Bob closes the long. We expect to fail with an UnsupportedToken error
+        // if withdrawing with base are not supported.
+        vm.startPrank(bob);
+        if (!config.enableBaseWithdraws) {
+            vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        }
+        uint256 baseProceeds = hyperdrive.closeLong(
+            maturityTime,
+            longAmount,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+
+        // Early termination if base withdraws are not supported.
+        if (!config.enableBaseWithdraws) {
+            return;
+        }
+
+        // Ensure Bob is credited the correct amount of bonds.
+        assertLe(baseProceeds, longAmount);
+        assertApproxEqAbs(baseProceeds, longAmount, 10);
+
+        // Ensure the withdrawal accounting is correct.
+        verifyWithdrawal(
+            bob,
+            baseProceeds,
+            true,
+            totalBaseSupplyBefore,
+            totalShareSupplyBefore,
+            bobBalancesBefore,
+            hyperdriveBalancesBefore
+        );
+    }
+
+    /// Shorts ///
+
     /// @dev Fuzz Test to ensure deposit accounting is correct when opening shorts
-    ///      with the share token. This test case is expected to fail if base deposits
-    ///      is not supported.
+    ///      with the base token. This test case is expected to fail if base deposits
+    ///      are not supported.
     /// @param shortAmount Amount of bonds to short.
-    function test_open_short_with_shares(uint256 shortAmount) external {
+    function test_open_short_with_base(uint256 shortAmount) external {
         // Get some balance information before opening a short.
         (
             uint256 totalBaseSupplyBefore,
-            uint256 totalSharesSupplyBefore
+            uint256 totalShareSupplyBefore
         ) = getSupply();
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
@@ -680,13 +860,100 @@ abstract contract InstanceTest is HyperdriveTest {
 
         // We normalize the short amount within a valid range the market can support.
         shortAmount = shortAmount.normalizeToRange(
-            100 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            HyperdriveUtils.calculateMaxShort(hyperdrive)
+        );
+
+        // Bob opens a short by depositing base.
+        // We expect the openShort to fail with an UnsupportedToken error
+        // if depositing with base is not supported or a NotPayable error
+        // if the base token is ETH.
+        vm.startPrank(bob);
+        if (!config.enableBaseDeposits) {
+            vm.expectRevert(
+                isBaseETH
+                    ? IHyperdrive.NotPayable.selector
+                    : IHyperdrive.UnsupportedToken.selector
+            );
+        }
+        (uint256 maturityTime, uint256 basePaid) = hyperdrive.openShort{
+            value: isBaseETH ? shortAmount : 0
+        }(
+            shortAmount,
+            shortAmount,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+
+        // Early termination if base deposits are not supported.
+        if (!config.enableBaseDeposits) {
+            return;
+        }
+
+        // Ensure that Bob received the correct amount of shorted bonds.
+        assertEq(
+            hyperdrive.balanceOf(
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    maturityTime
+                ),
+                bob
+            ),
+            shortAmount
+        );
+
+        // Ensure that the amount of base paid by the short is reasonable.
+        uint256 realizedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
+            shortAmount - basePaid,
+            shortAmount,
+            1e18
+        );
+        assertGt(basePaid, 0);
+        assertGe(
+            realizedRate,
+            FIXED_RATE.mulDown(config.positionDuration.divDown(365 days))
+        );
+
+        // Ensure the deposit accounting is correct.
+        verifyDeposit(
+            bob,
+            basePaid,
+            true,
+            totalBaseSupplyBefore,
+            totalShareSupplyBefore,
+            bobBalancesBefore,
+            hyperdriveBalancesBefore
+        );
+    }
+
+    /// @dev Fuzz Test to ensure deposit accounting is correct when opening
+    ///      shorts with the share token. This test case is expected to fail if
+    ///      base deposits are not supported.
+    /// @param shortAmount Amount of bonds to short.
+    function test_open_short_with_shares(uint256 shortAmount) external {
+        // Get some balance information before opening a short.
+        (
+            uint256 totalBaseSupplyBefore,
+            uint256 totalShareSupplyBefore
+        ) = getSupply();
+        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
+        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
+            address(hyperdrive)
+        );
+
+        // We normalize the short amount within a valid range the market can support.
+        shortAmount = shortAmount.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
 
         // Bob opens a short by depositing shares.
         // We expect the openShort to fail with an UnsupportedToken error
-        // if depositing with shares is not supported.
+        // if depositing with shares are not supported.
         vm.startPrank(bob);
         if (!config.enableShareDeposits) {
             vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
@@ -702,7 +969,7 @@ abstract contract InstanceTest is HyperdriveTest {
             })
         );
 
-        // Early termination if base deposits is not supported.
+        // Early termination if base deposits are not supported.
         if (!config.enableShareDeposits) {
             return;
         }
@@ -740,71 +1007,59 @@ abstract contract InstanceTest is HyperdriveTest {
             basePaid,
             false,
             totalBaseSupplyBefore,
-            totalSharesSupplyBefore,
+            totalShareSupplyBefore,
             bobBalancesBefore,
             hyperdriveBalancesBefore
         );
     }
 
-    /// @dev Fuzz Test to ensure deposit accounting is correct when opening shorts
-    ///      with the share token. This test case is expected to fail if base deposits
-    ///      is not supported.
+    /// @dev Fuzz Test to ensure withdrawal accounting is correct when closing shorts
+    ///      with the base token. This test case is expected to fail if base withdraws
+    ///      are not supported.
     /// @param shortAmount Amount of bonds to short.
-    function test_open_short_with_base(uint256 shortAmount) external {
-        // Get some balance information before opening a short.
+    function test_close_short_with_base(
+        uint256 shortAmount,
+        int256 variableRate
+    ) external virtual {
+        // Accrue interest for a term to ensure that the share price is greater
+        // than one.
+        advanceTime(POSITION_DURATION, int256(FIXED_RATE));
+
+        // Bob opens a short with the share token.
+        shortAmount = shortAmount.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            HyperdriveUtils.calculateMaxShort(hyperdrive)
+        );
+        (uint256 maturityTime, ) = openShort(bob, shortAmount, false);
+
+        // The term passes and interest accrues.
+        uint256 startingVaultSharePrice = hyperdrive
+            .getPoolInfo()
+            .vaultSharePrice;
+        variableRate = variableRate.normalizeToRange(0.01e18, 2.5e18);
+        advanceTime(POSITION_DURATION, variableRate);
+
+        // Get some balance information before closing the long.
         (
             uint256 totalBaseSupplyBefore,
-            uint256 totalSharesSupplyBefore
+            uint256 totalShareSupplyBefore
         ) = getSupply();
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
         );
-
-        // We normalize the short amount within a valid range the market can support.
-        shortAmount = shortAmount.normalizeToRange(
-            100 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxShort(hyperdrive)
-        );
-
-        // If base deposits aren't enabled, we verify that ETH can't be sent to
-        // `openLong` and that `openLong` can't be called with `asBase = true`.
+        // Bob closes his short with shares as the target asset. Bob's proceeds
+        // should be the variable interest that accrued on the shorted bonds
         vm.startPrank(bob);
-        if (!config.enableBaseDeposits) {
-            // Check the `NotPayable` route.
-            vm.expectRevert(IHyperdrive.NotPayable.selector);
-            hyperdrive.openShort{ value: shortAmount }(
-                shortAmount,
-                shortAmount,
-                0,
-                IHyperdrive.Options({
-                    destination: bob,
-                    asBase: true,
-                    extraData: new bytes(0)
-                })
-            );
-
-            // Check the `UnsupportedToken` route.
+        uint256 expectedBaseProceeds = shortAmount.mulDivDown(
+            hyperdrive.getPoolInfo().vaultSharePrice - startingVaultSharePrice,
+            startingVaultSharePrice
+        );
+        if (!config.enableBaseWithdraws) {
             vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-            hyperdrive.openShort(
-                shortAmount,
-                shortAmount,
-                0,
-                IHyperdrive.Options({
-                    destination: bob,
-                    asBase: true,
-                    extraData: new bytes(0)
-                })
-            );
-
-            return;
         }
-
-        // Bob opens a short with `asBase = true`.
-        (uint256 maturityTime, uint256 basePaid) = hyperdrive.openShort{
-            value: isBaseETH ? shortAmount : 0
-        }(
-            shortAmount,
+        uint256 baseProceeds = hyperdrive.closeShort(
+            maturityTime,
             shortAmount,
             0,
             IHyperdrive.Options({
@@ -814,37 +1069,97 @@ abstract contract InstanceTest is HyperdriveTest {
             })
         );
 
-        // Ensure that Bob received the correct amount of shorted bonds.
-        assertEq(
-            hyperdrive.balanceOf(
-                AssetId.encodeAssetId(
-                    AssetId.AssetIdPrefix.Short,
-                    maturityTime
-                ),
-                bob
-            ),
-            shortAmount
-        );
+        // Early termination if share withdraws are not supported.
+        if (!config.enableBaseWithdraws) {
+            return;
+        }
 
-        // Ensure that the amount of base paid by the short is reasonable.
-        uint256 realizedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
-            shortAmount - basePaid,
-            shortAmount,
-            1e18
-        );
-        assertGt(basePaid, 0);
-        assertGe(
-            realizedRate,
-            FIXED_RATE.mulDown(config.positionDuration.divDown(365 days))
-        );
+        // Convert proceeds to the base token and ensure the proper about of
+        // interest was credited to Bob.
+        // uint256 baseProceeds = convertToBase(shareProceeds);
+        assertLe(baseProceeds, expectedBaseProceeds + 10);
+        assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 100);
 
-        // Ensure the deposit accounting is correct.
-        verifyDeposit(
+        // Ensure the withdrawal accounting is correct.
+        verifyWithdrawal(
             bob,
-            basePaid,
+            baseProceeds,
             true,
             totalBaseSupplyBefore,
-            totalSharesSupplyBefore,
+            totalShareSupplyBefore,
+            bobBalancesBefore,
+            hyperdriveBalancesBefore
+        );
+    }
+
+    /// @dev Fuzz Test to ensure withdrawal accounting is correct when closing shorts
+    ///      with the share token. This test case is expected to fail if share withdraws
+    ///      are not supported.
+    function test_close_short_with_shares(
+        uint256 shortAmount,
+        int256 variableRate
+    ) external virtual {
+        // Accrue interest for a term to ensure that the share price is greater
+        // than one.
+        advanceTime(POSITION_DURATION, int256(FIXED_RATE));
+
+        // Bob opens a short with the share token.
+        shortAmount = shortAmount.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            HyperdriveUtils.calculateMaxShort(hyperdrive)
+        );
+        (uint256 maturityTime, ) = openShort(bob, shortAmount, false);
+
+        // The term passes and interest accrues.
+        uint256 startingVaultSharePrice = hyperdrive
+            .getPoolInfo()
+            .vaultSharePrice;
+        variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        advanceTime(POSITION_DURATION, variableRate);
+
+        // Get some balance information before closing the long.
+        (
+            uint256 totalBaseSupplyBefore,
+            uint256 totalShareSupplyBefore
+        ) = getSupply();
+        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
+        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
+            address(hyperdrive)
+        );
+        // Bob closes his short with shares as the target asset. Bob's proceeds
+        // should be the variable interest that accrued on the shorted bonds.
+        uint256 expectedBaseProceeds = shortAmount.mulDivDown(
+            hyperdrive.getPoolInfo().vaultSharePrice - startingVaultSharePrice,
+            startingVaultSharePrice
+        );
+        if (!config.enableShareWithdraws) {
+            vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        }
+        uint256 shareProceeds = closeShort(
+            bob,
+            maturityTime,
+            shortAmount,
+            false
+        );
+
+        // Early termination if share withdraws are not supported.
+        if (!config.enableShareWithdraws) {
+            return;
+        }
+
+        // Convert proceeds to the base token and ensure the proper about of
+        // interest was credited to Bob.
+        uint256 baseProceeds = convertToBase(shareProceeds);
+        assertLe(baseProceeds, expectedBaseProceeds + 10);
+        assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 100);
+
+        // Ensure the withdrawal accounting is correct.
+        verifyWithdrawal(
+            bob,
+            baseProceeds,
+            false,
+            totalBaseSupplyBefore,
+            totalShareSupplyBefore,
             bobBalancesBefore,
             hyperdriveBalancesBefore
         );
