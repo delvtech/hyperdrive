@@ -81,12 +81,13 @@ contract MockHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     }
 
     function _checkPoolConfig(
-        IHyperdrive.PoolDeployConfig memory
+        IHyperdrive.PoolDeployConfig memory _config
     ) internal view override {
         require(
             _checkPoolConfigStatus,
             "MockDeployerCoordinator: invalid config"
         );
+        super._checkPoolConfig(_config);
     }
 
     function _getInitialVaultSharePrice(
@@ -176,6 +177,155 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
         coordinator.setCheckPoolConfigStatus(false);
         vm.expectRevert("MockDeployerCoordinator: invalid config");
         coordinator.deployTarget(DEPLOYMENT_ID, config, new bytes(0), 0, SALT);
+        coordinator.setCheckPoolConfigStatus(true);
+
+        // Attempt to deploy a target0 instance with a minimum share reserves
+        // that is too low.
+        {
+            uint256 oldMinimumShareReserves = config.minimumShareReserves;
+            config.minimumShareReserves = 1e2;
+            vm.expectRevert(
+                IHyperdriveDeployerCoordinator
+                    .InvalidMinimumShareReserves
+                    .selector
+            );
+            coordinator.deployTarget(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                0,
+                SALT
+            );
+            config.minimumShareReserves = oldMinimumShareReserves;
+        }
+
+        // Attempt to deploy a target0 instance with a checkpoint duration
+        // equal to zero.
+        {
+            uint256 oldCheckpointDuration = config.checkpointDuration;
+            config.checkpointDuration = 0;
+            vm.expectRevert(
+                IHyperdriveDeployerCoordinator
+                    .InvalidCheckpointDuration
+                    .selector
+            );
+            coordinator.deployTarget(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                0,
+                SALT
+            );
+            config.checkpointDuration = oldCheckpointDuration;
+        }
+
+        // Attempt to deploy a target0 instance with a position duration
+        // less than the checkpoint duration.
+        {
+            uint256 oldPositionDuration = config.positionDuration;
+            config.positionDuration = config.checkpointDuration - 1;
+            vm.expectRevert(
+                IHyperdriveDeployerCoordinator.InvalidPositionDuration.selector
+            );
+            coordinator.deployTarget(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                0,
+                SALT
+            );
+            config.positionDuration = oldPositionDuration;
+        }
+
+        // Attempt to deploy a target0 instance with a position duration
+        // that isn't a multiple of the checkpoint duration.
+        {
+            uint256 oldPositionDuration = config.positionDuration;
+            config.positionDuration = config.checkpointDuration + 1;
+            vm.expectRevert(
+                IHyperdriveDeployerCoordinator.InvalidPositionDuration.selector
+            );
+            coordinator.deployTarget(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                0,
+                SALT
+            );
+            config.positionDuration = oldPositionDuration;
+        }
+
+        // Attempt to deploy a target0 instance with a curve fee greater than
+        // one.
+        {
+            uint256 oldCurveFee = config.fees.curve;
+            config.fees.curve = ONE + 1;
+            vm.expectRevert(
+                IHyperdriveDeployerCoordinator.InvalidFeeAmounts.selector
+            );
+            coordinator.deployTarget(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                0,
+                SALT
+            );
+            config.fees.curve = oldCurveFee;
+        }
+
+        // Attempt to deploy a target0 instance with a flat fee greater than
+        // one.
+        {
+            uint256 oldFlatFee = config.fees.flat;
+            config.fees.flat = ONE + 1;
+            vm.expectRevert(
+                IHyperdriveDeployerCoordinator.InvalidFeeAmounts.selector
+            );
+            coordinator.deployTarget(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                0,
+                SALT
+            );
+            config.fees.flat = oldFlatFee;
+        }
+
+        // Attempt to deploy a target0 instance with a governance LP fee greater
+        // than one.
+        {
+            uint256 oldGovernanceLPFee = config.fees.governanceLP;
+            config.fees.governanceLP = ONE + 1;
+            vm.expectRevert(
+                IHyperdriveDeployerCoordinator.InvalidFeeAmounts.selector
+            );
+            coordinator.deployTarget(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                0,
+                SALT
+            );
+            config.fees.governanceLP = oldGovernanceLPFee;
+        }
+
+        // Attempt to deploy a target0 instance with a governance zombie fee
+        // greater than one.
+        {
+            uint256 oldGovernanceZombieFee = config.fees.governanceZombie;
+            config.fees.governanceZombie = ONE + 1;
+            vm.expectRevert(
+                IHyperdriveDeployerCoordinator.InvalidFeeAmounts.selector
+            );
+            coordinator.deployTarget(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                0,
+                SALT
+            );
+            config.fees.governanceZombie = oldGovernanceZombieFee;
+        }
     }
 
     function test_deployTarget_failure_invalidCheckPoolConfigTarget1()

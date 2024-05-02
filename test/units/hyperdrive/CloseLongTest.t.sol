@@ -165,11 +165,11 @@ contract CloseLongTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Open a long position.
-        uint256 baseAmount = minimumShareReserves;
+        uint256 baseAmount = 2 * minimumShareReserves;
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, baseAmount);
 
         // Open a short position.
-        uint256 shortAmount = 2 * minimumShareReserves;
+        uint256 shortAmount = hyperdrive.calculateMaxShort();
         openShort(bob, shortAmount);
 
         // Attempt to open a long that would bring the share reserves below the
