@@ -4,7 +4,6 @@ pragma solidity 0.8.20;
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockHyperdrive, MockHyperdriveTarget0, MockHyperdriveTarget1 } from "contracts/test/MockHyperdrive.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";

@@ -12,7 +12,7 @@ import { RETHBase } from "./RETHBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract RETHTarget5 is HyperdriveTarget5, RETHBase {
-    /// @notice Initializes the target4 contract.
+    /// @notice Initializes the target5 contract.
     /// @param _config The configuration of the Hyperdrive pool.
     constructor(
         IHyperdrive.PoolConfig memory _config

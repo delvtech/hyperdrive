@@ -330,8 +330,6 @@ abstract contract HyperdriveTarget0 is
                 _getPresentValueParams(vaultSharePrice)
             );
             presentValue = presentValue.mulDown(vaultSharePrice);
-        } else {
-            presentValue = 0;
         }
         IHyperdrive.PoolInfo memory poolInfo = IHyperdrive.PoolInfo({
             shareReserves: _marketState.shareReserves,
