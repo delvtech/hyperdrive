@@ -11,6 +11,7 @@ import { RETHTarget1Deployer } from "contracts/src/deployers/reth/RETHTarget1Dep
 import { RETHTarget2Deployer } from "contracts/src/deployers/reth/RETHTarget2Deployer.sol";
 import { RETHTarget3Deployer } from "contracts/src/deployers/reth/RETHTarget3Deployer.sol";
 import { RETHTarget4Deployer } from "contracts/src/deployers/reth/RETHTarget4Deployer.sol";
+import { RETHTarget5Deployer } from "contracts/src/deployers/reth/RETHTarget5Deployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
@@ -93,7 +94,8 @@ contract RethDeployerCoordinatorTest is DeployerCoordinatorTest {
             address(new RETHTarget1Deployer()),
             address(new RETHTarget2Deployer()),
             address(new RETHTarget3Deployer()),
-            address(new RETHTarget4Deployer())
+            address(new RETHTarget4Deployer()),
+            address(new RETHTarget5Deployer())
         );
 
         // Start a prank as the factory address. This is the default address

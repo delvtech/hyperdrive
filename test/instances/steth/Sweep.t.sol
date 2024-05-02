@@ -7,6 +7,7 @@ import { StETHTarget1 } from "contracts/src/instances/steth/StETHTarget1.sol";
 import { StETHTarget2 } from "contracts/src/instances/steth/StETHTarget2.sol";
 import { StETHTarget3 } from "contracts/src/instances/steth/StETHTarget3.sol";
 import { StETHTarget4 } from "contracts/src/instances/steth/StETHTarget4.sol";
+import { StETHTarget5 } from "contracts/src/instances/steth/StETHTarget5.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdriveEvents } from "contracts/src/interfaces/IHyperdriveEvents.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
@@ -74,7 +75,8 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
                     address(new StETHTarget1(config)),
                     address(new StETHTarget2(config)),
                     address(new StETHTarget3(config)),
-                    address(new StETHTarget4(config))
+                    address(new StETHTarget4(config)),
+                    address(new StETHTarget5(config))
                 )
             )
         );

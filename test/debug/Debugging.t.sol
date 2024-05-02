@@ -14,6 +14,10 @@ import { EtchingUtils } from "test/utils/EtchingUtils.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract Debugging is BaseTest, EtchingUtils {
+    /// @dev A flag indicating whether or not the test should be skipped. This
+    ///      should be set to false when debugging.
+    bool internal constant SHOULD_SKIP = true;
+
     /// @dev The block to fork. If you're debugging a failing transaction, this
     ///      should be the block at which the transaction was failing. If you're
     ///      debugging a successful transaction, you may need to subtract one
@@ -44,6 +48,9 @@ contract Debugging is BaseTest, EtchingUtils {
         hex"cba2e58d0000000000000000000000000000000000000000000007d9a5405edc26fa36b50000000000000000000000000000000000000000000007d7f3c7d8d354cd71990000000000000000000000000000000000000000000000000de326f195450cd200000000000000000000000000000000000000000000000000000000000000800000000000000000000000002c76cc659ec83e36323f32e6a9789c29e7b56c4b0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000";
 
     function test_debug() external __sepolia_fork(FORK_BLOCK) {
+        // Skip this test during regular execution.
+        vm.skip(SHOULD_SKIP);
+
         // Etch the hyperdrive instance to add console logs.
         if (HYPERDRIVE.baseToken() == ETH) {
             etchStETHHyperdrive(address(HYPERDRIVE));

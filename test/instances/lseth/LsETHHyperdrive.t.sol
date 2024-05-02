@@ -11,6 +11,7 @@ import { LsETHTarget1Deployer } from "contracts/src/deployers/lseth/LsETHTarget1
 import { LsETHTarget2Deployer } from "contracts/src/deployers/lseth/LsETHTarget2Deployer.sol";
 import { LsETHTarget3Deployer } from "contracts/src/deployers/lseth/LsETHTarget3Deployer.sol";
 import { LsETHTarget4Deployer } from "contracts/src/deployers/lseth/LsETHTarget4Deployer.sol";
+import { LsETHTarget5Deployer } from "contracts/src/deployers/lseth/LsETHTarget5Deployer.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IRiverV1 } from "contracts/src/interfaces/IRiverV1.sol";
@@ -87,6 +88,7 @@ contract LsETHHyperdriveTest is InstanceTest {
                     address(new LsETHTarget2Deployer()),
                     address(new LsETHTarget3Deployer()),
                     address(new LsETHTarget4Deployer()),
+                    address(new LsETHTarget5Deployer()),
                     RIVER
                 )
             );

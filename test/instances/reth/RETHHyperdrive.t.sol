@@ -26,6 +26,7 @@ import { RETHTarget1Deployer } from "contracts/src/deployers/reth/RETHTarget1Dep
 import { RETHTarget2Deployer } from "contracts/src/deployers/reth/RETHTarget2Deployer.sol";
 import { RETHTarget3Deployer } from "contracts/src/deployers/reth/RETHTarget3Deployer.sol";
 import { RETHTarget4Deployer } from "contracts/src/deployers/reth/RETHTarget4Deployer.sol";
+import { RETHTarget5Deployer } from "contracts/src/deployers/reth/RETHTarget5Deployer.sol";
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 
 contract RETHHyperdriveTest is InstanceTest {
@@ -108,6 +109,7 @@ contract RETHHyperdriveTest is InstanceTest {
                     address(new RETHTarget2Deployer()),
                     address(new RETHTarget3Deployer()),
                     address(new RETHTarget4Deployer()),
+                    address(new RETHTarget5Deployer()),
                     rocketTokenRETH
                 )
             );

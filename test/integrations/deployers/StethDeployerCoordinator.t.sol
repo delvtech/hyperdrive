@@ -11,6 +11,7 @@ import { StETHTarget1Deployer } from "contracts/src/deployers/steth/StETHTarget1
 import { StETHTarget2Deployer } from "contracts/src/deployers/steth/StETHTarget2Deployer.sol";
 import { StETHTarget3Deployer } from "contracts/src/deployers/steth/StETHTarget3Deployer.sol";
 import { StETHTarget4Deployer } from "contracts/src/deployers/steth/StETHTarget4Deployer.sol";
+import { StETHTarget5Deployer } from "contracts/src/deployers/steth/StETHTarget5Deployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
@@ -93,7 +94,8 @@ contract StethDeployerCoordinatorTest is DeployerCoordinatorTest {
             address(new StETHTarget1Deployer()),
             address(new StETHTarget2Deployer()),
             address(new StETHTarget3Deployer()),
-            address(new StETHTarget4Deployer())
+            address(new StETHTarget4Deployer()),
+            address(new StETHTarget5Deployer())
         );
 
         // Start a prank as the factory address. This is the default address

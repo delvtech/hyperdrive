@@ -14,21 +14,23 @@ import { StETHHyperdrive } from "../../instances/steth/StETHHyperdrive.sol";
 contract StETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param target0 The target0 address.
-    /// @param target1 The target1 address.
-    /// @param target2 The target2 address.
-    /// @param target3 The target3 address.
-    /// @param target4 The target4 address.
+    /// @param _target0 The target0 address.
+    /// @param _target1 The target1 address.
+    /// @param _target2 The target2 address.
+    /// @param _target3 The target3 address.
+    /// @param _target4 The target4 address.
+    /// @param _target5 The target5 address.
     /// @param _salt The create2 salt used in the deployment.
     /// @return The address of the newly deployed StETHHyperdrive instance.
     function deploy(
         IHyperdrive.PoolConfig memory _config,
         bytes memory, // unused extra data
-        address target0,
-        address target1,
-        address target2,
-        address target3,
-        address target4,
+        address _target0,
+        address _target1,
+        address _target2,
+        address _target3,
+        address _target4,
+        address _target5,
         bytes32 _salt
     ) external returns (address) {
         return (
@@ -37,7 +39,15 @@ contract StETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
                 // front-running of deployments.
                 new StETHHyperdrive{
                     salt: keccak256(abi.encode(msg.sender, _salt))
-                }(_config, target0, target1, target2, target3, target4)
+                }(
+                    _config,
+                    _target0,
+                    _target1,
+                    _target2,
+                    _target3,
+                    _target4,
+                    _target5
+                )
             )
         );
     }

@@ -360,4 +360,8 @@ interface IHyperdrive is
     /// @notice Gets the target4 address.
     /// @return The target4 address.
     function target4() external view returns (address);
+
+    /// @notice Gets the target5 address.
+    /// @return The target5 address.
+    function target5() external view returns (address);
 }
