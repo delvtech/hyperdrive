@@ -10,8 +10,6 @@ import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest, HyperdriveUtils } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-import "forge-std/console2.sol";
-
 contract CircuitBreakerTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for *;
@@ -340,6 +338,28 @@ contract CircuitBreakerTest is HyperdriveTest {
                 highestPrice = HyperdriveUtils.calculateSpotPrice(hyperdrive);
             }
         }
+        uint256 weightedSpotPriceAfter = hyperdrive.getCheckpoint(
+        HyperdriveUtils.latestCheckpoint(hyperdrive)
+        ).weightedSpotPrice;
+        uint256 spotPrice =  HyperdriveUtils.calculateSpotPrice(
+            hyperdrive
+        );
+
+        // The weighted spot price should equal the existing spot price since
+        // all the trades netted out
+        assertApproxEqAbs(
+            weightedSpotPriceAfter,
+            spotPrice,
+            10 wei
+        );
+
+        // The weighted spot price should be greater than or equal to the 
+        // existing spot price.
+        assertGe(highestPrice, weightedSpotPriceAfter);
+
+        // The weighted spot price should be less than the  or equal to the
+        // existing spot price.
+        assertLe(lowestPrice, weightedSpotPriceAfter);
 
         // Fast forward time, create checkpoints and accrue interest.
         advanceTimeWithCheckpoints2(POSITION_DURATION, 0);
@@ -349,10 +369,10 @@ contract CircuitBreakerTest is HyperdriveTest {
             closeShort(bob, shortMaturityTimes[i], bondAmounts[i]);
             closeLong(bob, longMaturityTimes[i], bondAmounts[i]);
         }
-        uint256 weightedSpotPriceAfter = hyperdrive.getCheckpoint(
+        weightedSpotPriceAfter = hyperdrive.getCheckpoint(
             HyperdriveUtils.latestCheckpoint(hyperdrive)
         ).weightedSpotPrice;
-        uint256 spotPrice =  HyperdriveUtils.calculateSpotPrice(
+        spotPrice =  HyperdriveUtils.calculateSpotPrice(
             hyperdrive
         );
 
