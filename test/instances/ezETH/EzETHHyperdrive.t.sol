@@ -598,6 +598,16 @@ contract EzETHHyperdriveTest is InstanceTest {
         //  Since the ezETHSupply is held constant when we advanceTime.
 
         (, uint256 totalTVLBefore, ) = getSharePrice();
+        uint256 checkpointDuration = hyperdrive
+            .getPoolConfig()
+            .checkpointDuration;
+        for (
+            ;
+            timeDelta >= checkpointDuration;
+            timeDelta -= checkpointDuration
+        ) {
+            vm.warp(block.timestamp + checkpointDuration);
+        }
         vm.warp(block.timestamp + timeDelta);
 
         // Accrue interest in Renzo. Since the share price is given by

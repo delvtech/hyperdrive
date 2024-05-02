@@ -220,7 +220,7 @@ contract CircuitBreakerTest is HyperdriveTest {
 
         // Initialize the pool with capital.
         deploy(bob, fixedRate, 1e18, 0, 0, 0, 0);
-        initialize(bob, fixedRate, 2 * MINIMUM_SHARE_RESERVES);
+        initialize(bob, fixedRate, 5 * MINIMUM_SHARE_RESERVES);
 
         // Alice adds liquidity.
         addLiquidity(alice, initialLiquidity);

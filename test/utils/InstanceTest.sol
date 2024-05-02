@@ -698,7 +698,10 @@ abstract contract InstanceTest is HyperdriveTest {
 
         // Accrue interest for a term to ensure that the share price is greater
         // than one.
-        advanceTime(POSITION_DURATION, int256(FIXED_RATE));
+        advanceTime(
+            hyperdrive.getPoolConfig().positionDuration,
+            int256(FIXED_RATE)
+        );
 
         // Calculate the maximum amount of basePaid we can test. The limit is
         // either the maximum long that Hyperdrive can open or the amount of the
@@ -721,7 +724,7 @@ abstract contract InstanceTest is HyperdriveTest {
 
         // The term passes and some interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
-        advanceTime(config.positionDuration, variableRate);
+        advanceTime(hyperdrive.getPoolConfig().positionDuration, variableRate);
 
         // Get some balance information before closing the long.
         (
@@ -768,7 +771,10 @@ abstract contract InstanceTest is HyperdriveTest {
 
         // Accrue interest for a term to ensure that the share price is greater
         // than one.
-        advanceTime(POSITION_DURATION, int256(FIXED_RATE));
+        advanceTime(
+            hyperdrive.getPoolConfig().positionDuration,
+            int256(FIXED_RATE)
+        );
 
         // Calculate the maximum amount of basePaid we can test. The limit is
         // either the maximum long that Hyperdrive can open or the amount of the
@@ -791,7 +797,7 @@ abstract contract InstanceTest is HyperdriveTest {
 
         // The term passes and some interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
-        advanceTime(config.positionDuration, variableRate);
+        advanceTime(hyperdrive.getPoolConfig().positionDuration, variableRate);
 
         // Get some balance information before closing the long.
         (
@@ -1023,7 +1029,10 @@ abstract contract InstanceTest is HyperdriveTest {
     ) external virtual {
         // Accrue interest for a term to ensure that the share price is greater
         // than one.
-        advanceTime(POSITION_DURATION, int256(FIXED_RATE));
+        advanceTime(
+            hyperdrive.getPoolConfig().positionDuration,
+            int256(FIXED_RATE)
+        );
 
         // Bob opens a short with the share token.
         shortAmount = shortAmount.normalizeToRange(
@@ -1037,7 +1046,7 @@ abstract contract InstanceTest is HyperdriveTest {
             .getPoolInfo()
             .vaultSharePrice;
         variableRate = variableRate.normalizeToRange(0.01e18, 2.5e18);
-        advanceTime(POSITION_DURATION, variableRate);
+        advanceTime(hyperdrive.getPoolConfig().positionDuration, variableRate);
 
         // Get some balance information before closing the long.
         (
@@ -1101,7 +1110,10 @@ abstract contract InstanceTest is HyperdriveTest {
     ) external virtual {
         // Accrue interest for a term to ensure that the share price is greater
         // than one.
-        advanceTime(POSITION_DURATION, int256(FIXED_RATE));
+        advanceTime(
+            hyperdrive.getPoolConfig().positionDuration,
+            int256(FIXED_RATE)
+        );
 
         // Bob opens a short with the share token.
         shortAmount = shortAmount.normalizeToRange(
@@ -1115,7 +1127,7 @@ abstract contract InstanceTest is HyperdriveTest {
             .getPoolInfo()
             .vaultSharePrice;
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
-        advanceTime(POSITION_DURATION, variableRate);
+        advanceTime(hyperdrive.getPoolConfig().positionDuration, variableRate);
 
         // Get some balance information before closing the long.
         (
