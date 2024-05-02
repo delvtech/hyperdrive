@@ -29,7 +29,7 @@ contract CircuitBreakerTest is HyperdriveTest {
                 timeStretchFixedRate,
                 POSITION_DURATION
             );
-            config.maximumAddLiquidityAPRDelta = 1e18;
+            config.circuitBreakerDelta = 1e18;
             deploy(alice, config);
             uint256 contribution = 10_000_000e18;
             initialize(alice, fixedRate, contribution);
@@ -69,7 +69,7 @@ contract CircuitBreakerTest is HyperdriveTest {
                 timeStretchFixedRate,
                 POSITION_DURATION
             );
-            config.maximumAddLiquidityAPRDelta = 1e18;
+            config.circuitBreakerDelta = 1e18;
             deploy(alice, config);
             uint256 contribution = 10_000_000e18;
             initialize(alice, fixedRate, contribution);
@@ -117,7 +117,7 @@ contract CircuitBreakerTest is HyperdriveTest {
             timeStretchFixedRate,
             POSITION_DURATION
         );
-        config.maximumAddLiquidityAPRDelta = 1e18;
+        config.circuitBreakerDelta = 1e18;
         deploy(alice, config);
         uint256 contribution = 10_000_000e18;
         initialize(alice, fixedRate, contribution);
@@ -168,7 +168,7 @@ contract CircuitBreakerTest is HyperdriveTest {
             timeStretchFixedRate,
             POSITION_DURATION
         );
-        config.maximumAddLiquidityAPRDelta = 1e18;
+        config.circuitBreakerDelta = 1e18;
         deploy(alice, config);
         uint256 contribution = 10_000_000e18;
         initialize(alice, fixedRate, contribution);
