@@ -164,12 +164,13 @@ contract YieldSpaceMathTest is Test {
                     fixedRate,
                     365 days
                 );
+                uint256 fixedRate_ = fixedRate; // avoid stack-too-deep
                 (, int256 shareAdjustment, uint256 bondReserves) = LPMath
                     .calculateInitialReserves(
                         shareReserves,
                         vaultSharePrice,
                         initialVaultSharePrice,
-                        fixedRate,
+                        fixedRate_,
                         365 days,
                         timeStretch
                     );
@@ -198,13 +199,15 @@ contract YieldSpaceMathTest is Test {
                         maxBondAmount
                     );
                 }
+                uint256 shareReserves_ = shareReserves; // avoid stack-too-deep
                 uint256 vaultSharePrice_ = vaultSharePrice; // avoid stack-too-deep
                 uint256 initialVaultSharePrice_ = initialVaultSharePrice; // avoid stack-too-deep
+                uint256 tradeSize_ = tradeSize; // avoid stack-too-deep
                 uint256 result = yieldSpaceMath
                     .calculateSharesInGivenBondsOutDown(
-                        shareReserves,
+                        shareReserves_,
                         bondReserves,
-                        tradeSize,
+                        tradeSize_,
                         1e18 - ONE.mulDown(timeStretch),
                         vaultSharePrice_,
                         initialVaultSharePrice_
