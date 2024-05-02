@@ -5,7 +5,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveCoreDeployer } from "../interfaces/IHyperdriveCoreDeployer.sol";
 import { IHyperdriveDeployerCoordinator } from "../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IHyperdriveTargetDeployer } from "../interfaces/IHyperdriveTargetDeployer.sol";
-import { VERSION } from "../libraries/Constants.sol";
+import { VERSION, NUM_TARGETS } from "../libraries/Constants.sol";
 import { ONE } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
@@ -42,10 +42,6 @@ abstract contract HyperdriveDeployerCoordinator is
         address target2;
         /// @dev The address of the HyperdriveTarget3 contract.
         address target3;
-        /// @dev The address of the HyperdriveTarget4 contract.
-        address target4;
-        /// @dev The address of the HyperdriveTarget5 contract.
-        address target5;
     }
 
     /// @notice The factory that this deployer will be registered with.
@@ -66,12 +62,6 @@ abstract contract HyperdriveDeployerCoordinator is
     /// @notice The contract used to deploy new instances of HyperdriveTarget3.
     address public immutable target3Deployer;
 
-    /// @notice The contract used to deploy new instances of HyperdriveTarget4.
-    address public immutable target4Deployer;
-
-    /// @notice The contract used to deploy new instances of HyperdriveTarget5.
-    address public immutable target5Deployer;
-
     /// @notice A mapping from deployment ID to deployment.
     mapping(bytes32 => Deployment) internal _deployments;
 
@@ -81,17 +71,13 @@ abstract contract HyperdriveDeployerCoordinator is
     /// @param _target0Deployer The target0 deployer.
     /// @param _target1Deployer The target1 deployer.
     /// @param _target2Deployer The target2 deployer.
-    /// @param _target4Deployer The target4 deployer.
-    /// @param _target5Deployer The target5 deployer.
     constructor(
         address _factory,
         address _coreDeployer,
         address _target0Deployer,
         address _target1Deployer,
         address _target2Deployer,
-        address _target3Deployer,
-        address _target4Deployer,
-        address _target5Deployer
+        address _target3Deployer
     ) {
         factory = _factory;
         coreDeployer = _coreDeployer;
@@ -99,8 +85,6 @@ abstract contract HyperdriveDeployerCoordinator is
         target1Deployer = _target1Deployer;
         target2Deployer = _target2Deployer;
         target3Deployer = _target3Deployer;
-        target4Deployer = _target4Deployer;
-        target5Deployer = _target5Deployer;
     }
 
     /// @dev Ensures that the contract is being called by the associated
@@ -152,9 +136,7 @@ abstract contract HyperdriveDeployerCoordinator is
             deployment.target0 == address(0) ||
             deployment.target1 == address(0) ||
             deployment.target2 == address(0) ||
-            deployment.target3 == address(0) ||
-            deployment.target4 == address(0) ||
-            deployment.target5 == address(0)
+            deployment.target3 == address(0)
         ) {
             revert IHyperdriveDeployerCoordinator.IncompleteDeployment();
         }
@@ -190,8 +172,6 @@ abstract contract HyperdriveDeployerCoordinator is
             deployment.target1,
             deployment.target2,
             deployment.target3,
-            deployment.target4,
-            deployment.target5,
             // NOTE: We hash the deployment ID with the salt to prevent the
             // front-running of deployments.
             keccak256(abi.encode(deploymentId, salt))
@@ -329,26 +309,6 @@ abstract contract HyperdriveDeployerCoordinator is
                 keccak256(abi.encode(msg.sender, _deploymentId, _salt))
             );
             deployment.target3 = target;
-        } else if (_targetIndex == 4) {
-            if (deployment.target4 != address(0)) {
-                revert IHyperdriveDeployerCoordinator.TargetAlreadyDeployed();
-            }
-            target = IHyperdriveTargetDeployer(target4Deployer).deploy(
-                config,
-                _extraData,
-                keccak256(abi.encode(msg.sender, _deploymentId, _salt))
-            );
-            deployment.target4 = target;
-        } else if (_targetIndex == 5) {
-            if (deployment.target5 != address(0)) {
-                revert IHyperdriveDeployerCoordinator.TargetAlreadyDeployed();
-            }
-            target = IHyperdriveTargetDeployer(target5Deployer).deploy(
-                config,
-                _extraData,
-                keccak256(abi.encode(msg.sender, _deploymentId, _salt))
-            );
-            deployment.target5 = target;
         } else {
             revert IHyperdriveDeployerCoordinator.InvalidTargetIndex();
         }
@@ -421,6 +381,14 @@ abstract contract HyperdriveDeployerCoordinator is
         bytes32 _deploymentId
     ) external view returns (Deployment memory) {
         return _deployments[_deploymentId];
+    }
+
+    /// @notice Gets the number of targets that need to be deployed for a full
+    ///         deployment.
+    /// @return numTargets The number of targets that need to be deployed for a
+    ///         full deployment.
+    function getNumberOfTargets() external pure returns (uint256) {
+        return NUM_TARGETS;
     }
 
     /// @dev Prepares the coordinator for initialization by drawing funds from

@@ -5,7 +5,7 @@ import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IHyperdriveTargetDeployer } from "contracts/src/interfaces/IHyperdriveTargetDeployer.sol";
-import { VERSION } from "contracts/src/libraries/Constants.sol";
+import { VERSION, NUM_TARGETS } from "contracts/src/libraries/Constants.sol";
 import { MockHyperdrive } from "./MockHyperdrive.sol";
 
 contract MockHyperdriveDeployer is IHyperdriveDeployerCoordinator {
@@ -71,6 +71,10 @@ contract MockHyperdriveDeployer is IHyperdriveDeployerCoordinator {
         baseToken.transferFrom(_lp, address(this), _contribution);
         baseToken.approve(address(hyperdrive), _contribution);
         return hyperdrive.initialize(_contribution, _apr, _options);
+    }
+
+    function getNumberOfTargets() external pure returns (uint256) {
+        return NUM_TARGETS;
     }
 }
 

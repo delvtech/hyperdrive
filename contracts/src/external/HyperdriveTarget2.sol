@@ -30,49 +30,52 @@ abstract contract HyperdriveTarget2 is
         IHyperdrive.PoolConfig memory _config
     ) HyperdriveStorage(_config) {}
 
-    /// Longs ///
+    /// Shorts ///
 
-    /// @notice Closes a long position with a specified maturity time.
-    /// @param _maturityTime The maturity time of the long.
-    /// @param _bondAmount The amount of longs to close.
-    /// @param _minOutput The minimum proceeds the trader will accept. The units
-    ///        of this quantity are either base or vault shares, depending on
-    ///        the value of `_options.asBase`.
+    /// @notice Opens a short position.
+    /// @param _bondAmount The amount of bonds to short.
+    /// @param _maxDeposit The most the user expects to deposit for this trade.
+    ///        The units of this quantity are either base or vault shares,
+    ///        depending on the value of `_options.asBase`.
+    /// @param _minVaultSharePrice The minimum vault share price at which to
+    ///        open the short. This allows traders to protect themselves from
+    ///        opening a short in a checkpoint where negative interest has
+    ///        accrued.
     /// @param _options The options that configure how the trade is settled.
-    /// @return The proceeds the user receives. The units of this quantity are
-    ///         either base or vault shares, depending on the value of
-    ///         `_options.asBase`.
-    function closeLong(
-        uint256 _maturityTime,
+    /// @return The maturity time of the short.
+    /// @return The amount the user deposited for this trade. The units of this
+    ///         quantity are either base or vault shares, depending on the value
+    ///         of `_options.asBase`.
+    function openShort(
         uint256 _bondAmount,
-        uint256 _minOutput,
+        uint256 _maxDeposit,
+        uint256 _minVaultSharePrice,
         IHyperdrive.Options calldata _options
-    ) external returns (uint256) {
-        return _closeLong(_maturityTime, _bondAmount, _minOutput, _options);
+    ) external payable returns (uint256, uint256) {
+        return
+            _openShort(_bondAmount, _maxDeposit, _minVaultSharePrice, _options);
     }
 
-    /// LPs ///
+    /// Longs ///
 
-    /// @notice Allows an LP to burn shares and withdraw from the pool.
-    /// @param _lpShares The LP shares to burn.
-    /// @param _minOutputPerShare The minimum amount the LP expects to receive
-    ///        for each withdrawal share that is burned. The units of this
-    ///        quantity are either base or vault shares, depending on the value
-    ///        of `_options.asBase`.
-    /// @param _options The options that configure how the operation is settled.
-    /// @return The amount the LP removing liquidity receives. The
+    /// @notice Opens a long position.
+    /// @param _amount The amount of capital provided to open the long. The
     ///        units of this quantity are either base or vault shares, depending
     ///        on the value of `_options.asBase`.
-    /// @return The base that the LP receives buys out some of their LP shares,
-    ///         but it may not be sufficient to fully buy the LP out. In this
-    ///         case, the LP receives withdrawal shares equal in value to the
-    ///         present value they are owed. As idle capital becomes available,
-    ///         the pool will buy back these shares.
-    function removeLiquidity(
-        uint256 _lpShares,
-        uint256 _minOutputPerShare,
+    /// @param _minOutput The minimum number of bonds to receive.
+    /// @param _minVaultSharePrice The minimum vault share price at which to
+    ///        open the long. This allows traders to protect themselves from
+    ///        opening a long in a checkpoint where negative interest has
+    ///        accrued.
+    /// @param _options The options that configure how the trade is settled.
+    /// @return The maturity time of the bonds.
+    /// @return The amount of bonds the user received.
+    function openLong(
+        uint256 _amount,
+        uint256 _minOutput,
+        uint256 _minVaultSharePrice,
         IHyperdrive.Options calldata _options
-    ) external returns (uint256, uint256) {
-        return _removeLiquidity(_lpShares, _minOutputPerShare, _options);
+    ) external payable returns (uint256, uint256) {
+        return _openLong(_amount, _minOutput, _minVaultSharePrice, _options);
     }
 }

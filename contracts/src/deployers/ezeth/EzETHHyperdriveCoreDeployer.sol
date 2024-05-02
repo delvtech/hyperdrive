@@ -28,8 +28,6 @@ contract EzETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     /// @param target1 The target1 address.
     /// @param target2 The target2 address.
     /// @param target3 The target3 address.
-    /// @param target4 The target4 address.
-    /// @param target5 The target5 address.
     /// @param _salt The create2 salt used in the deployment.
     /// @return The address of the newly deployed EzETHHyperdrive instance.
     function deploy(
@@ -39,8 +37,6 @@ contract EzETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
         address target1,
         address target2,
         address target3,
-        address target4,
-        address target5,
         bytes32 _salt
     ) external returns (address) {
         address hyperdrive = address(
@@ -48,16 +44,7 @@ contract EzETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
             // front-running of deployments.
             new EzETHHyperdrive{
                 salt: keccak256(abi.encode(msg.sender, _salt))
-            }(
-                _config,
-                target0,
-                target1,
-                target2,
-                target3,
-                target4,
-                target5,
-                restakeManager
-            )
+            }(_config, target0, target1, target2, target3, restakeManager)
         );
         return hyperdrive;
     }

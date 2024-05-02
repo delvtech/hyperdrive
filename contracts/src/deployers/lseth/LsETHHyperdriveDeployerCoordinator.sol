@@ -33,8 +33,6 @@ contract LsETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target1Deployer The target1 deployer.
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
-    /// @param _target4Deployer The target4 deployer.
-    /// @param _target5Deployer The target5 deployer.
     /// @param _river The LsETH contract.
     constructor(
         address _factory,
@@ -43,8 +41,6 @@ contract LsETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _target1Deployer,
         address _target2Deployer,
         address _target3Deployer,
-        address _target4Deployer,
-        address _target5Deployer,
         IRiverV1 _river
     )
         HyperdriveDeployerCoordinator(
@@ -53,9 +49,7 @@ contract LsETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _target0Deployer,
             _target1Deployer,
             _target2Deployer,
-            _target3Deployer,
-            _target4Deployer,
-            _target5Deployer
+            _target3Deployer
         )
     {
         river = _river;

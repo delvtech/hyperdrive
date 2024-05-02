@@ -7,15 +7,11 @@ import { ERC4626Target0Deployer } from "contracts/src/deployers/erc4626/ERC4626T
 import { ERC4626Target1Deployer } from "contracts/src/deployers/erc4626/ERC4626Target1Deployer.sol";
 import { ERC4626Target2Deployer } from "contracts/src/deployers/erc4626/ERC4626Target2Deployer.sol";
 import { ERC4626Target3Deployer } from "contracts/src/deployers/erc4626/ERC4626Target3Deployer.sol";
-import { ERC4626Target4Deployer } from "contracts/src/deployers/erc4626/ERC4626Target4Deployer.sol";
-import { ERC4626Target5Deployer } from "contracts/src/deployers/erc4626/ERC4626Target5Deployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { ERC4626Target0 } from "contracts/src/instances/erc4626/ERC4626Target0.sol";
 import { ERC4626Target1 } from "contracts/src/instances/erc4626/ERC4626Target1.sol";
 import { ERC4626Target2 } from "contracts/src/instances/erc4626/ERC4626Target2.sol";
 import { ERC4626Target3 } from "contracts/src/instances/erc4626/ERC4626Target3.sol";
-import { ERC4626Target4 } from "contracts/src/instances/erc4626/ERC4626Target4.sol";
-import { ERC4626Target5 } from "contracts/src/instances/erc4626/ERC4626Target5.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -117,8 +113,6 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         target1Deployer = address(new ERC4626Target1Deployer());
         target2Deployer = address(new ERC4626Target2Deployer());
         target3Deployer = address(new ERC4626Target3Deployer());
-        target4Deployer = address(new ERC4626Target4Deployer());
-        target5Deployer = address(new ERC4626Target5Deployer());
         deployerCoordinator = address(
             new ERC4626HyperdriveDeployerCoordinator(
                 address(factory),
@@ -126,9 +120,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 target0Deployer,
                 target1Deployer,
                 target2Deployer,
-                target3Deployer,
-                target4Deployer,
-                target5Deployer
+                target3Deployer
             )
         );
 
@@ -160,16 +152,12 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         address target1 = address(new ERC4626Target1(config));
         address target2 = address(new ERC4626Target2(config));
         address target3 = address(new ERC4626Target3(config));
-        address target4 = address(new ERC4626Target4(config));
-        address target5 = address(new ERC4626Target5(config));
         mockHyperdrive = new MockERC4626Hyperdrive(
             config,
             target0,
             target1,
             target2,
-            target3,
-            target4,
-            target5
+            target3
         );
 
         vm.stopPrank();
@@ -343,66 +331,24 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
             });
         dai.approve(address(deployerCoordinator), type(uint256).max);
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            apr,
-            apr,
-            0,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            apr,
-            apr,
-            1,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            apr,
-            apr,
-            2,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            apr,
-            apr,
-            3,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            apr,
-            apr,
-            4,
-            bytes32(uint256(0xdeadbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdeadbeef)),
-            deployerCoordinator,
-            config,
-            new bytes(0),
-            apr,
-            apr,
-            5,
-            bytes32(uint256(0xdeadbabe))
-        );
+        for (
+            uint256 i = 0;
+            i <
+            IHyperdriveDeployerCoordinator(deployerCoordinator)
+                .getNumberOfTargets();
+            i++
+        ) {
+            factory.deployTarget(
+                bytes32(uint256(0xdeadbeef)),
+                deployerCoordinator,
+                config,
+                new bytes(0),
+                apr,
+                apr,
+                i,
+                bytes32(uint256(0xdeadbabe))
+            );
+        }
         hyperdrive = factory.deployAndInitialize(
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
@@ -467,71 +413,29 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
             });
         dai.approve(address(deployerCoordinator), type(uint256).max);
-        factory.deployTarget(
-            bytes32(uint256(0xdead)),
-            deployerCoordinator,
-            config,
-            abi.encode(address(pool)),
-            apr,
-            apr,
-            0,
-            bytes32(uint256(0xbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdead)),
-            deployerCoordinator,
-            config,
-            abi.encode(address(pool)),
-            apr,
-            apr,
-            1,
-            bytes32(uint256(0xbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdead)),
-            deployerCoordinator,
-            config,
-            abi.encode(address(pool)),
-            apr,
-            apr,
-            2,
-            bytes32(uint256(0xbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdead)),
-            deployerCoordinator,
-            config,
-            abi.encode(address(pool)),
-            apr,
-            apr,
-            3,
-            bytes32(uint256(0xbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdead)),
-            deployerCoordinator,
-            config,
-            abi.encode(address(pool)),
-            apr,
-            apr,
-            4,
-            bytes32(uint256(0xbabe))
-        );
-        factory.deployTarget(
-            bytes32(uint256(0xdead)),
-            deployerCoordinator,
-            config,
-            abi.encode(address(pool)),
-            apr,
-            apr,
-            5,
-            bytes32(uint256(0xbabe))
-        );
+        for (
+            uint256 i = 0;
+            i <
+            IHyperdriveDeployerCoordinator(deployerCoordinator)
+                .getNumberOfTargets();
+            i++
+        ) {
+            factory.deployTarget(
+                bytes32(uint256(0xdead)),
+                deployerCoordinator,
+                config,
+                new bytes(0),
+                apr,
+                apr,
+                i,
+                bytes32(uint256(0xbabe))
+            );
+        }
         hyperdrive = factory.deployAndInitialize(
             bytes32(uint256(0xdead)),
             deployerCoordinator,
             config,
-            abi.encode(address(pool)),
+            new bytes(0),
             contribution,
             apr,
             apr,
