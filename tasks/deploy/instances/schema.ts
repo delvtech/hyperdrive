@@ -7,7 +7,7 @@ import {
   zHex,
   zDuration,
   Prettify,
-} from "../utils";
+} from "../types";
 import { zeroAddress } from "viem";
 
 // Schema for hyperdrive instance configuration (specified in hardhat.config.ts)

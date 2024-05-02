@@ -1,11 +1,13 @@
-import { task, types } from "hardhat/config";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-dayjs.extend(duration);
+import { task, types } from "hardhat/config";
 import { parseEther, toFunctionSelector, zeroAddress } from "viem";
-import { zAddress } from "../utils";
 import { z } from "zod";
+import { Deployments } from "../deployments";
+import { DeploySaveParams } from "../save";
+import { zAddress } from "../types";
 import { DeployCoordinatorsBaseParams } from "./shared";
+dayjs.extend(duration);
 
 export let zStETHCoordinatorDeployConfig = z.object({
   lido: zAddress.optional(),
@@ -35,29 +37,32 @@ task("deploy:coordinators:steth", "deploys the STETH deployment coordinator")
   .setAction(
     async (
       { admin, overwrite }: DeployCoordinatorsStethParams,
-      {
-        deployments,
-        run,
-        network,
-        viem,
-        getNamedAccounts,
-        config: hardhatConfig,
-      },
+      { run, network, viem, getNamedAccounts, config: hardhatConfig },
     ) => {
-      let artifacts = await deployments.all();
-      if (!overwrite && artifacts["StETHHyperdriveCoreDeployer"]) {
-        console.log(`StETHHyperdriveCoreDeployer already deployed`);
+      if (
+        !overwrite &&
+        Deployments.get().byNameSafe(
+          "StETHHyperdriveCoreDeployer",
+          network.name,
+        )
+      ) {
+        console.log(`StETHHyperdriveDeployerCoordinator already deployed`);
         return;
       }
       // Retrieve the HyperdriveFactory deployment artifact for the current network
-      let factory = await deployments.get("HyperdriveFactory");
+      let factory = await Deployments.get().byName(
+        "HyperdriveFactory",
+        network.name,
+      );
       let factoryAddress = factory.address as `0x${string}`;
 
       // Set the admin address to the deployer address if one was not provided
       if (!admin?.length) admin = (await getNamedAccounts())["deployer"];
 
       // Deploy a mock Lido contract if no adress was provided
-      let lido = hardhatConfig.networks[network.name].coordinators?.lido;
+      let lido =
+        hardhatConfig.networks[network.name].coordinators?.lido ??
+        Deployments.get().byNameSafe("MockLido", network.name)?.address;
       if (!lido?.length) {
         let mockLido = await viem.deployContract("MockLido", [
           parseEther("0.035"),
@@ -65,18 +70,19 @@ task("deploy:coordinators:steth", "deploys the STETH deployment coordinator")
           true,
           parseEther("500"),
         ]);
-        await deployments.save("MockLido", {
-          ...mockLido,
+        await run("deploy:save", {
+          name: "MockLido",
           args: [
             parseEther("0.035"),
             admin as `0x${string}`,
             true,
             parseEther("500"),
           ],
-        });
-        await run("deploy:verify", {
-          name: "MockLido",
-        });
+          abi: mockLido.abi,
+          address: mockLido.address,
+          contract: "MockLido",
+        } as DeploySaveParams);
+
         // allow minting by the general public
         await mockLido.write.setPublicCapability([
           toFunctionSelector("mint(uint256)"),
@@ -101,17 +107,17 @@ task("deploy:coordinators:steth", "deploys the STETH deployment coordinator")
       console.log("deploying StETHHyperdriveDeployerCoordinator...");
       let args = [
         factoryAddress,
-        (await deployments.get("StETHHyperdriveCoreDeployer"))
+        Deployments.get().byName("StETHHyperdriveCoreDeployer", network.name)
           .address as `0x${string}`,
-        (await deployments.get("StETHTarget0Deployer"))
+        Deployments.get().byName("StETHTarget0Deployer", network.name)
           .address as `0x${string}`,
-        (await deployments.get("StETHTarget1Deployer"))
+        Deployments.get().byName("StETHTarget1Deployer", network.name)
           .address as `0x${string}`,
-        (await deployments.get("StETHTarget2Deployer"))
+        Deployments.get().byName("StETHTarget2Deployer", network.name)
           .address as `0x${string}`,
-        (await deployments.get("StETHTarget3Deployer"))
+        Deployments.get().byName("StETHTarget3Deployer", network.name)
           .address as `0x${string}`,
-        (await deployments.get("StETHTarget4Deployer"))
+        Deployments.get().byName("StETHTarget4Deployer", network.name)
           .address as `0x${string}`,
         lido,
       ];
@@ -119,13 +125,13 @@ task("deploy:coordinators:steth", "deploys the STETH deployment coordinator")
         "StETHHyperdriveDeployerCoordinator",
         args as any,
       );
-      await deployments.save("StETHHyperdriveDeployerCoordinator", {
-        ...stethCoordinator,
-        args,
-      });
-      await run("deploy:verify", {
+      await run("deploy:save", {
         name: "StETHHyperdriveDeployerCoordinator",
-      });
+        args,
+        abi: stethCoordinator.abi,
+        address: stethCoordinator.address,
+        contract: "StETHHyperdriveDeployerCoordinator",
+      } as DeploySaveParams);
 
       // Register the coordinator with governance if the factory's governance address is the deployer's address
       let factoryContract = await viem.getContractAt(

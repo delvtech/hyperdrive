@@ -1,4 +1,5 @@
 import { task, types } from "hardhat/config";
+import { Deployments } from "../deploy/deployments";
 
 export type RegistryAddParams = {
   address: string;
@@ -21,13 +22,15 @@ task("registry:add", "adds the specified hyperdrive instance to the registry")
   .setAction(
     async (
       { address, value }: Required<RegistryAddParams>,
-      { deployments, viem },
+      { viem, network },
     ) => {
       console.log(
         `adding hyperdrive instance at ${address} to registry with value ${value}`,
       );
-      const registryAddress = (await deployments.get("HyperdriveRegistry"))
-        .address as `0x${string}`;
+      const registryAddress = Deployments.get().byName(
+        "HyperdriveRegistry",
+        network.name,
+      ).address as `0x${string}`;
       const registryContract = await viem.getContractAt(
         "IHyperdriveGovernedRegistry",
         registryAddress,

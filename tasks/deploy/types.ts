@@ -1,7 +1,7 @@
-import duration, { DurationUnitType } from "dayjs/plugin/duration";
 import dayjs from "dayjs";
+import duration, { DurationUnitType } from "dayjs/plugin/duration";
+import { pad, parseEther } from "viem";
 import { z } from "zod";
-import { parseEther, pad } from "viem";
 
 dayjs.extend(duration);
 
@@ -94,5 +94,5 @@ export const validHyperdrivePrefixes = {
   erc4626: "ERC4626",
   steth: "StETH",
   reth: "RETH",
-  ezeth: "EZETH",
+  ezeth: "EzETH",
 } as const;

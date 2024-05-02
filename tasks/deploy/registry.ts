@@ -1,4 +1,6 @@
 import { task, types } from "hardhat/config";
+import { Deployments } from "./deployments";
+import { DeploySaveParams } from "./save";
 
 export type DeployRegistryParams = { overwrite?: boolean };
 
@@ -13,13 +15,12 @@ task(
     types.boolean,
   )
   .setAction(
-    async (
-      { overwrite }: DeployRegistryParams,
-      { deployments, run, network, viem },
-    ) => {
+    async ({ overwrite }: DeployRegistryParams, { run, network, viem }) => {
       // Skip if deployed and overwrite=false.
-      let artifacts = await deployments.all();
-      if (!overwrite && artifacts["HyperdriveRegistry"]) {
+      if (
+        !overwrite &&
+        Deployments.get().byNameSafe("HyperdriveRegistry", network.name)
+      ) {
         console.log(`"HyperdriveRegistry" already deployed`);
         return;
       }
@@ -27,10 +28,12 @@ task(
       let hyperdriveRegistry = await viem.deployContract("HyperdriveRegistry", [
         `registry-${network.name}`,
       ]);
-      await deployments.save("HyperdriveRegistry", {
-        ...hyperdriveRegistry,
-        args: [`registry-${network.name}`],
-      });
-      await run("deploy:verify", { name: "HyperdriveRegistry" });
+      await run("deploy:save", {
+        name: "HyperdriveRegistry",
+        args: [],
+        abi: hyperdriveRegistry.abi,
+        address: hyperdriveRegistry.address,
+        contract: "HyperdriveRegistry",
+      } as DeploySaveParams);
     },
   );

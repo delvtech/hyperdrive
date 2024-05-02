@@ -1,4 +1,6 @@
 import { task, types } from "hardhat/config";
+import { Deployments } from "./deployments";
+import { DeploySaveParams } from "./save";
 
 export type DeployForwarderParams = {
   overwrite?: boolean;
@@ -15,21 +17,25 @@ task(
     types.boolean,
   )
   .setAction(
-    async (
-      { overwrite }: DeployForwarderParams,
-      { deployments, run, network, viem },
-    ) => {
+    async ({ overwrite }: DeployForwarderParams, { run, network, viem }) => {
       const contractName = "ERC20ForwarderFactory";
       // Skip if deployed and overwrite=false.
-      let artifacts = await deployments.all();
-      if (!overwrite && artifacts[contractName]) {
+      if (
+        !overwrite &&
+        Deployments.get().byNameSafe(contractName, network.name)
+      ) {
         console.log(`${contractName} already deployed`);
         return;
       }
       // Deploy the ERC20ForwarderFactory
       console.log(`deploying ${contractName}...`);
       const linkerFactory = await viem.deployContract(contractName, []);
-      await deployments.save(contractName, { ...linkerFactory, args: [] });
-      await run("deploy:verify", { name: contractName });
+      await run("deploy:save", {
+        name: contractName,
+        args: [],
+        abi: linkerFactory.abi,
+        address: linkerFactory.address,
+        contract: contractName,
+      } as DeploySaveParams);
     },
   );

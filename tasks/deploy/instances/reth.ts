@@ -1,13 +1,9 @@
-import { task, types } from "hardhat/config";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { task, types } from "hardhat/config";
 import { z } from "zod";
-import {
-  DeployInstanceParams,
-  PoolConfig,
-  PoolDeployConfig,
-  zInstanceDeployConfig,
-} from "./schema";
+import { Deployments } from "../deployments";
+import { DeployInstanceParams, zInstanceDeployConfig } from "./schema";
 
 dayjs.extend(duration);
 
@@ -51,21 +47,16 @@ task("deploy:instances:reth", "deploys the RETH deployment coordinator")
   .setAction(
     async (
       { name, admin, overwrite }: DeployInstanceParams,
-      {
-        deployments,
-        run,
-        network,
-        viem,
-        getNamedAccounts,
-        config: hardhatConfig,
-      },
+      { run, network, viem, getNamedAccounts, config: hardhatConfig },
     ) => {
-      let artifacts = await deployments.all();
-      if (!overwrite && artifacts[`${name}_RETHTarget0`]) {
-        console.log(`${name}_RETHTarget0 already deployed`);
+      if (
+        !overwrite &&
+        Deployments.get().byNameSafe(`${name}_RETHTarget0`, network.name)
+      ) {
+        console.log(`${name}_RETHHyperdrive already deployed`);
         return;
       }
-      console.log(`starting hyperdrive deployment ${name}`);
+      console.log(`starting hyperdrive instance deployment ${name}`);
       let deployer = (await getNamedAccounts())["deployer"] as `0x${string}`;
       // Read and parse the provided configuration file
       let config = hardhatConfig.networks[network.name].instances?.reth?.find(
@@ -80,12 +71,14 @@ task("deploy:instances:reth", "deploys the RETH deployment coordinator")
       if (!admin?.length) admin = deployer;
 
       // Get the lido token address from the deployer coordinator
-      let coordinatorAddress = (
-        await deployments.get("RETHHyperdriveDeployerCoordinator")
+      let coordinatorAddress = Deployments.get().byName(
+        "RETHHyperdriveDeployerCoordinator",
+        network.name,
       ).address as `0x${string}`;
       let reth = await viem.getContractAt(
         "MockRocketPool",
-        (await deployments.get("MockRocketPool")).address as `0x${string}`,
+        Deployments.get().byName("MockRocketPool", network.name)
+          .address as `0x${string}`,
       );
       config.poolDeployConfig.vaultSharesToken = reth.address;
 

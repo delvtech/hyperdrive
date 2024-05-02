@@ -1,6 +1,6 @@
-import { task, types } from "hardhat/config";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { task, types } from "hardhat/config";
 
 dayjs.extend(duration);
 
@@ -25,21 +25,18 @@ task("deploy:instances:all", "deploys all hyperdrive instances")
 
       if (erc4626) {
         for (let { name } of erc4626) {
-          console.log(`deploying erc4626 instance ${name}`);
           await run("deploy:instances:erc4626", { name, admin });
         }
       }
 
       if (steth) {
         for (let { name } of steth) {
-          console.log(`deploying steth instance ${name}`);
           await run("deploy:instances:steth", { name, admin });
         }
       }
 
       if (reth) {
         for (let { name } of reth) {
-          console.log(`deploying reth instance ${name}`);
           await run("deploy:instances:reth", { name, admin });
         }
       }

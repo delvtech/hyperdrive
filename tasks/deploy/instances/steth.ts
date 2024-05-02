@@ -1,13 +1,9 @@
-import { task, types } from "hardhat/config";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { task, types } from "hardhat/config";
 import { z } from "zod";
-import {
-  DeployInstanceParams,
-  PoolConfig,
-  PoolDeployConfig,
-  zInstanceDeployConfig,
-} from "./schema";
+import { Deployments } from "../deployments";
+import { DeployInstanceParams, zInstanceDeployConfig } from "./schema";
 
 dayjs.extend(duration);
 
@@ -51,18 +47,13 @@ task("deploy:instances:steth", "deploys the StETH deployment coordinator")
   .setAction(
     async (
       { name, admin, overwrite }: DeployInstanceParams,
-      {
-        deployments,
-        run,
-        network,
-        viem,
-        getNamedAccounts,
-        config: hardhatConfig,
-      },
+      { run, network, viem, getNamedAccounts, config: hardhatConfig },
     ) => {
-      let artifacts = await deployments.all();
-      if (!overwrite && artifacts[`${name}_StETHTarget0`]) {
-        console.log(`${name}_StETHTarget0 already deployed`);
+      if (
+        !overwrite &&
+        Deployments.get().byNameSafe(`${name}_StETHTarget0`, network.name)
+      ) {
+        console.log(`${name}_StETHHyperdrive already deployed`);
         return;
       }
       console.log(`starting hyperdrive deployment ${name}`);
@@ -80,8 +71,9 @@ task("deploy:instances:steth", "deploys the StETH deployment coordinator")
       if (!admin?.length) admin = deployer;
 
       // Get the lido token address from the deployer coordinator
-      let coordinatorAddress = (
-        await deployments.get("StETHHyperdriveDeployerCoordinator")
+      let coordinatorAddress = Deployments.get().byName(
+        "StETHHyperdriveDeployerCoordinator",
+        network.name,
       ).address as `0x${string}`;
       let coordinator = await viem.getContractAt(
         "StETHHyperdriveDeployerCoordinator",

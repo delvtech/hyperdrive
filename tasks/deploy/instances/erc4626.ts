@@ -1,8 +1,10 @@
-import { task, types } from "hardhat/config";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { z } from "zod";
+import { task, types } from "hardhat/config";
 import { parseEther, toFunctionSelector } from "viem";
+import { z } from "zod";
+import { Deployments } from "../deployments";
+import { DeploySaveParams } from "../save";
 import { DeployInstanceParams, zInstanceDeployConfig } from "./schema";
 
 dayjs.extend(duration);
@@ -67,18 +69,13 @@ task("deploy:instances:erc4626", "deploys the ERC4626 deployment coordinator")
   .setAction(
     async (
       { name, admin, overwrite }: DeployInstanceParams,
-      {
-        deployments,
-        run,
-        network,
-        viem,
-        getNamedAccounts,
-        config: hardhatConfig,
-      },
+      { run, network, viem, getNamedAccounts, config: hardhatConfig },
     ) => {
-      let artifacts = await deployments.all();
-      if (!overwrite && artifacts[`${name}_ERC4626Target0`]) {
-        console.log(`${name}_ERC4626Target0 already deployed`);
+      if (
+        !overwrite &&
+        Deployments.get().byNameSafe(`${name}_ERC4626Target0`, network.name)
+      ) {
+        console.log(`${name}_ERC4626Hyperdrive already deployed`);
         return;
       }
       console.log(`starting hyperdrive deployment ${name}`);
@@ -96,9 +93,10 @@ task("deploy:instances:erc4626", "deploys the ERC4626 deployment coordinator")
       if (!admin?.length) admin = deployer;
 
       // Get the address and contract for the deployer coordinator
-      let coordinatorAddress = (
-        await deployments.get("ERC4626HyperdriveDeployerCoordinator")
-      ).address as `0x${string}`;
+      let coordinatorAddress = Deployments.get().byName(
+        "ERC4626HyperdriveDeployerCoordinator",
+        network.name,
+      )?.address as `0x${string}`;
 
       // Deploy mock assets if baseToken and vaultSharesToken are left unspecified
       if (
@@ -108,7 +106,7 @@ task("deploy:instances:erc4626", "deploys the ERC4626 deployment coordinator")
         // deploy base token
         let baseTokenName = name + "_BASE";
         console.log("deploying mock baseToken...");
-        // NOTE: letructor args have to be specified inline due to viem's type inferencing.
+        // NOTE: constructor args have to be specified inline due to viem's type inferencing.
         let baseToken = await viem.deployContract("ERC20Mintable", [
           baseTokenName,
           baseTokenName,
@@ -117,10 +115,20 @@ task("deploy:instances:erc4626", "deploys the ERC4626 deployment coordinator")
           true,
           parseEther("10000"),
         ]);
-        await deployments.save(baseTokenName, baseToken);
-        await run("deploy:verify", {
+        await run("deploy:save", {
           name: baseTokenName,
-        });
+          args: [
+            baseTokenName,
+            baseTokenName,
+            18,
+            admin as `0x${string}`,
+            true,
+            parseEther("10000"),
+          ],
+          abi: baseToken.abi,
+          address: baseToken.address,
+          contract: "ERC20Mintable",
+        } as DeploySaveParams);
         config.poolDeployConfig.baseToken = baseToken.address;
         await baseToken.write.approve([
           coordinatorAddress,
@@ -129,7 +137,7 @@ task("deploy:instances:erc4626", "deploys the ERC4626 deployment coordinator")
         // deploy shares token
         let vaultSharesTokenName = name + "_SHARES";
         console.log("deploying mock vaultSharesToken...");
-        // NOTE: letructor args have to be specified inline due to viem's type inferencing.
+        // NOTE: constructor args have to be specified inline due to viem's type inferencing.
         let vaultSharesToken = await viem.deployContract("MockERC4626", [
           baseToken.address,
           vaultSharesTokenName,
@@ -139,10 +147,21 @@ task("deploy:instances:erc4626", "deploys the ERC4626 deployment coordinator")
           true,
           parseEther("10000"),
         ]);
-        await deployments.save(vaultSharesTokenName, vaultSharesToken);
-        await run("deploy:verify", {
+        await run("deploy:save", {
           name: vaultSharesTokenName,
-        });
+          args: [
+            baseToken.address,
+            vaultSharesTokenName,
+            vaultSharesTokenName,
+            parseEther("0.13"),
+            admin as `0x${string}`,
+            true,
+            parseEther("10000"),
+          ],
+          abi: vaultSharesToken.abi,
+          address: vaultSharesToken.address,
+          contract: "MockERC4626",
+        } as DeploySaveParams);
         config.poolDeployConfig.vaultSharesToken = vaultSharesToken.address;
         await vaultSharesToken.write.approve([
           coordinatorAddress,

@@ -1,9 +1,11 @@
-import { subtask, types } from "hardhat/config";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { PoolDeployConfig } from "./schema";
+import { subtask, types } from "hardhat/config";
+import { Deployments } from "../deployments";
+import { DeploySaveParams } from "../save";
 import "../type-extensions";
-import { validHyperdrivePrefixes } from "../utils";
+import { validHyperdrivePrefixes } from "../types";
+import { PoolDeployConfig } from "./schema";
 
 dayjs.extend(duration);
 
@@ -26,7 +28,7 @@ subtask(
   .setAction(
     async (
       { prefix, name }: DeployInstancesTargetsParams,
-      { deployments, run, network, viem, getNamedAccounts, artifacts },
+      { run, network, viem, getNamedAccounts, artifacts },
     ) => {
       let prefixValue = validHyperdrivePrefixes[prefix];
       let deployer = (await getNamedAccounts())["deployer"] as `0x${string}`;
@@ -41,15 +43,19 @@ subtask(
         );
 
       // Obtain data for the factory and connect a contract instance.
-      let factoryDeployment = await deployments.get(`HyperdriveFactory`);
+      let factoryDeployment = Deployments.get().byName(
+        `HyperdriveFactory`,
+        network.name,
+      );
       let factory = await viem.getContractAt(
         "HyperdriveFactory",
         factoryDeployment.address as `0x${string}`,
       );
 
       // Obtain data for the coordinator and connect a contract instance.
-      let coordinatorDeployment = await deployments.get(
+      let coordinatorDeployment = Deployments.get().byName(
         `${prefixValue}HyperdriveDeployerCoordinator`,
+        network.name,
       );
       let coordinator = await viem.getContractAt(
         `HyperdriveDeployerCoordinator`,
@@ -65,7 +71,7 @@ subtask(
 
       // Deploy the targets (saving and verification will be performed later)
       let pc = await viem.getPublicClient();
-      let initialVaultSharePrice = 0n;
+      let initialVaultSharePrice;
       let targets: `0x${string}`[] = [];
       for (let i = 0; i < 5; i++) {
         console.log(`deploying ${name}_${prefixValue}Target${i}`);
@@ -79,6 +85,8 @@ subtask(
           BigInt(i),
           config.salt,
         ];
+        // Simulating the deployment as a separate step is necessary
+        // to obtain the return value from a viem contract write.
         let { result: address } = await factory.simulate.deployTarget(
           args as any,
           {
@@ -90,26 +98,30 @@ subtask(
           hash: await factory.write.deployTarget(args as any, {
             gas: 10_000_000n,
           }),
+          confirmations: network.live ? 3 : 1,
         });
-        let { abi, bytecode } = artifacts.readArtifactSync(
-          `${prefixValue}Target${i}`,
-        );
-        if (i == 0)
+        // Load the abi from the compilation artifacts for verification.
+        let { abi } = artifacts.readArtifactSync(`${prefixValue}Target${i}`);
+        // The initial vault share price is part of the constructor arguments
+        // for the contract which are needed for verification. It remains
+        // the same across all targets, only retrieve it once to avoid
+        // unnecessary network requests.
+        if (i == 0) {
           initialVaultSharePrice = (
             await coordinator.read.deployments([config.deploymentId])
           ).initialSharePrice;
-        await deployments.save(`${name}_${prefixValue}Target${i}`, {
-          abi,
-          bytecode,
-          address,
-          args: [{ ...poolDeployConfig, initialVaultSharePrice }],
-        });
-        await run("deploy:verify", {
+        }
+        // Save the artifacts and verify
+        await run("deploy:save", {
           name: `${name}_${prefixValue}Target${i}`,
-        });
+          args: [{ ...poolDeployConfig, initialVaultSharePrice }],
+          abi,
+          address,
+          contract: `${prefixValue}Target${i}`,
+        } as DeploySaveParams);
       }
 
-      // Deploy hyperdrive (saving and verification will be performed later)
+      // Deploy hyperdrive
       console.log(`deploying ${name}_${prefixValue}Hyperdrive`);
       let args = [
         config.deploymentId,
@@ -125,7 +137,9 @@ subtask(
         },
         config.salt,
       ];
-      let { result: hyperdriveAddress, request } =
+      // Simulating the deployment as a separate step is necessary
+      // to obtain the return value from a viem contract write.
+      let { result: hyperdriveAddress } =
         await factory.simulate.deployAndInitialize(args as any, {
           gas: 10_000_000n,
         });
@@ -134,14 +148,10 @@ subtask(
       });
       await pc.waitForTransactionReceipt({ hash: hyperdriveTX });
 
-      // Verify and save the hyperdrive deployment.
-      let { abi, bytecode } = artifacts.readArtifactSync(
-        `${prefixValue}Hyperdrive`,
-      );
-      await deployments.save(`${name}_${prefixValue}Hyperdrive`, {
-        abi,
-        bytecode,
-        address: hyperdriveAddress,
+      // Load the abi from the compilation artifacts for verification.
+      let { abi } = artifacts.readArtifactSync(`${prefixValue}Hyperdrive`);
+      await run("deploy:save", {
+        name: `${name}_${prefixValue}Hyperdrive`,
         args: [
           {
             ...poolDeployConfig,
@@ -149,7 +159,9 @@ subtask(
           },
           ...targets,
         ],
-      });
-      await run("deploy:verify", { name: `${name}_${prefixValue}Hyperdrive` });
+        abi,
+        address: hyperdriveAddress,
+        contract: `${prefixValue}Hyperdrive`,
+      } as DeploySaveParams);
     },
   );

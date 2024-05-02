@@ -1,11 +1,11 @@
-import { task, types } from "hardhat/config";
 import dayjs from "dayjs";
-import duration, { DurationUnitType } from "dayjs/plugin/duration";
-dayjs.extend(duration);
-import { readFile } from "fs/promises";
-import { Prettify, zAddress, zDuration, zEther } from "./utils";
+import duration from "dayjs/plugin/duration";
+import { task, types } from "hardhat/config";
 import { z } from "zod";
-import util from "util";
+import { Deployments } from "./deployments";
+import { DeploySaveParams } from "./save";
+import { Prettify, zAddress, zDuration, zEther } from "./types";
+dayjs.extend(duration);
 
 // Schema for HyperdriveFactory configuration read from hardhat config
 export let zFactoryDeployConfig = z.object({
@@ -62,21 +62,25 @@ task("deploy:factory", "deploys the hyperdrive factory to the configured chain")
   .setAction(
     async (
       { overwrite }: DeployFactoryParams,
-      { deployments, run, network, viem, config: hardhatConfig },
+      { run, network, viem, config: hardhatConfig },
     ) => {
       const contractName = "HyperdriveFactory";
       // Skip if deployed and overwrite=false.
-      let artifacts = await deployments.all();
-      if (!overwrite && artifacts[contractName]) {
+      if (
+        !overwrite &&
+        Deployments.get().byNameSafe(contractName, network.name)
+      ) {
         console.log(`${contractName} already deployed`);
         return;
       }
+
       // Read and parse the provided configuration file
       let config = hardhatConfig.networks[network.name].factory;
 
       // Get the address and codehash for the forwarder factory
-      let forwarderAddress = (await deployments.get("ERC20ForwarderFactory"))
-        .address;
+      let forwarderAddress = (
+        await Deployments.get().byName("ERC20ForwarderFactory", network.name)
+      ).address;
       let forwarder = await viem.getContractAt(
         "ERC20ForwarderFactory",
         forwarderAddress as `0x${string}`,
@@ -95,10 +99,12 @@ task("deploy:factory", "deploys the hyperdrive factory to the configured chain")
         factoryConfig,
         `factory_${network.name}`,
       ]);
-      await deployments.save(contractName, {
-        ...hyperdriveFactory,
+      await run("deploy:save", {
+        name: contractName,
         args: [factoryConfig, `factory_${network.name}`],
-      });
-      await run("deploy:verify", { name: contractName });
+        abi: hyperdriveFactory.abi,
+        address: hyperdriveFactory.address,
+        contract: "HyperdriveFactory",
+      } as DeploySaveParams);
     },
   );

@@ -1,8 +1,8 @@
-import { HardhatUserConfig, task } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox-viem";
 import "@nomicfoundation/hardhat-foundry";
-import "hardhat-deploy";
+import "@nomicfoundation/hardhat-toolbox-viem";
 import "dotenv/config";
+import "hardhat-deploy";
+import { HardhatUserConfig } from "hardhat/config";
 import "./tasks";
 import {
   ERC4626InstanceDeployConfigInput,
@@ -75,9 +75,9 @@ const TEST_ERC4626: ERC4626InstanceDeployConfigInput = {
 
 const TEST_STETH: StETHInstanceDeployConfigInput = {
   name: "TEST_STETH",
-  deploymentId: "0x666666",
-  salt: "0x69420",
-  contribution: "0.1",
+  deploymentId: "0x66666661",
+  salt: "0x6942011",
+  contribution: "0.01",
   fixedAPR: "0.5",
   timestretchAPR: "0.5",
   options: {
@@ -137,9 +137,9 @@ const TEST_EZETH: EzETHInstanceDeployConfigInput = {
 
 const TEST_RETH: RETHInstanceDeployConfigInput = {
   name: "TEST_RETH",
-  deploymentId: "0x666666666",
-  salt: "0x69420",
-  contribution: "0.1",
+  deploymentId: "0x665",
+  salt: "0x69420111232",
+  contribution: "0.01",
   fixedAPR: "0.5",
   timestretchAPR: "0.5",
   options: {

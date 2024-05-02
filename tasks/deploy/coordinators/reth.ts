@@ -1,11 +1,13 @@
-import { task, types } from "hardhat/config";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-dayjs.extend(duration);
+import { task, types } from "hardhat/config";
 import { parseEther, toFunctionSelector } from "viem";
 import { z } from "zod";
-import { zAddress } from "../utils";
+import { Deployments } from "../deployments";
+import { DeploySaveParams } from "../save";
+import { zAddress } from "../types";
 import { DeployCoordinatorsBaseParams } from "./shared";
+dayjs.extend(duration);
 
 export let zRETHCoordinatorDeployConfig = z.object({
   reth: zAddress.optional(),
@@ -35,22 +37,17 @@ task("deploy:coordinators:reth", "deploys the RETH deployment coordinator")
   .setAction(
     async (
       { admin, overwrite }: DeployCoordinatorsRethParams,
-      {
-        deployments,
-        run,
-        network,
-        viem,
-        getNamedAccounts,
-        config: hardhatConfig,
-      },
+      { run, network, viem, getNamedAccounts, config: hardhatConfig },
     ) => {
-      let artifacts = await deployments.all();
-      if (!overwrite && artifacts["HyperdriveFactory"]) {
-        console.log(`HyperdriveFactory already deployed`);
+      if (
+        !overwrite &&
+        Deployments.get().byNameSafe("RETHHyperdriveCoreDeployer", network.name)
+      ) {
+        console.log(`RETHHyperdriveDeployerCoordinator already deployed`);
         return;
       }
       // Retrieve the HyperdriveFactory deployment artifact for the current network
-      let factory = await deployments.get("HyperdriveFactory");
+      let factory = Deployments.get().byName("HyperdriveFactory", network.name);
       let factoryAddress = factory.address as `0x${string}`;
 
       // Set the admin address to the deployer address if one was not provided
@@ -65,18 +62,19 @@ task("deploy:coordinators:reth", "deploys the RETH deployment coordinator")
           true,
           parseEther("500"),
         ]);
-        await deployments.save("MockRocketPool", {
-          ...mockRocketPool,
+        await run("deploy:save", {
+          name: "MockRocketPool",
           args: [
             parseEther("0.035"),
             admin as `0x${string}`,
             true,
             parseEther("500"),
           ],
-        });
-        await run("deploy:verify", {
-          name: "MockRocketPool",
-        });
+          abi: mockRocketPool.abi,
+          address: mockRocketPool.address,
+          contract: "MockRocketPool",
+        } as DeploySaveParams);
+
         // allow minting by the general public
         await mockRocketPool.write.setPublicCapability([
           toFunctionSelector("mint(uint256)"),
@@ -98,26 +96,31 @@ task("deploy:coordinators:reth", "deploys the RETH deployment coordinator")
       console.log("deploying RETHHyperdriveDeployerCoordinator...");
       let args = [
         factoryAddress,
-        (await deployments.get("RETHHyperdriveCoreDeployer"))
+        Deployments.get().byName("RETHHyperdriveCoreDeployer", network.name)
           .address as `0x${string}`,
-        (await deployments.get("RETHTarget0Deployer")).address as `0x${string}`,
-        (await deployments.get("RETHTarget1Deployer")).address as `0x${string}`,
-        (await deployments.get("RETHTarget2Deployer")).address as `0x${string}`,
-        (await deployments.get("RETHTarget3Deployer")).address as `0x${string}`,
-        (await deployments.get("RETHTarget4Deployer")).address as `0x${string}`,
+        Deployments.get().byName("RETHTarget0Deployer", network.name)
+          .address as `0x${string}`,
+        Deployments.get().byName("RETHTarget1Deployer", network.name)
+          .address as `0x${string}`,
+        Deployments.get().byName("RETHTarget2Deployer", network.name)
+          .address as `0x${string}`,
+        Deployments.get().byName("RETHTarget3Deployer", network.name)
+          .address as `0x${string}`,
+        Deployments.get().byName("RETHTarget4Deployer", network.name)
+          .address as `0x${string}`,
         reth,
       ];
       let rethCoordinator = await viem.deployContract(
         "RETHHyperdriveDeployerCoordinator",
         args as any,
       );
-      await deployments.save("RETHHyperdriveDeployerCoordinator", {
-        ...rethCoordinator,
-        args,
-      });
-      await run("deploy:verify", {
+      await run("deploy:save", {
         name: "RETHHyperdriveDeployerCoordinator",
-      });
+        args,
+        abi: rethCoordinator.abi,
+        address: rethCoordinator.address,
+        contract: "RETHHyperdriveDeployerCoordinator",
+      } as DeploySaveParams);
 
       // Register the coordinator with governance if the factory's governance address is the deployer's address
       let factoryContract = await viem.getContractAt(

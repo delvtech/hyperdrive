@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Prettify } from "../utils";
+import { Prettify } from "../types";
 import { zRETHCoordinatorDeployConfig } from "./reth";
 import { zStETHCoordinatorDeployConfig } from "./steth";
 import { zEzETHCoordinatorDeployConfig } from "./ezeth";

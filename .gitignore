@@ -55,4 +55,7 @@ crash_report.json
 
 # Hardhat Artifacts
 artifacts
-deployments
+deployments/
+
+# Local network deployment addresses
+deployments.local.json

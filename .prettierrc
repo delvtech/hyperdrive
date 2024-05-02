@@ -1,4 +1,8 @@
 {
   "bracketSpacing": true,
-  "plugins": ["solhint-plugin-prettier", "prettier-plugin-solidity"]
+  "plugins": [
+    "solhint-plugin-prettier",
+    "prettier-plugin-solidity",
+    "prettier-plugin-organize-imports"
+  ]
 }

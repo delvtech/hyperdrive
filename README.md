@@ -73,7 +73,7 @@ coordinators and the deployer contracts used by the coordinators can be found in
 
 This repository makes use of [foundry](https://github.com/foundry-rs/foundry) to
 build and test the smart contracts and uses several node.js packages to lint and
-prettify the source code. Proceed through the following steps to set up the repository:
+rettify the source code. Proceed through the following steps to set up the repository:
 - [Install forge](https://github.com/foundry-rs/foundry#installatio://github.com/foundry-rs/foundry#installation)
 - [Install yarn](https://yarnpkg.com/getting-started/install)
 - Install lib/forge-std dependencies by running `forge install` from the project root
