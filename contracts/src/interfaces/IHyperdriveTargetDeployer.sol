@@ -9,7 +9,7 @@ interface IHyperdriveTargetDeployer {
     /// @param _extraData The extra data that contains the pool and sweep targets.
     /// @param _salt The create2 salt used in the deployment.
     /// @return The address of the newly deployed target instance.
-    function deploy(
+    function deployTarget(
         IHyperdrive.PoolConfig memory _config,
         bytes memory _extraData,
         bytes32 _salt

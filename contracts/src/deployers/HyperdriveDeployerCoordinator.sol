@@ -113,7 +113,7 @@ abstract contract HyperdriveDeployerCoordinator is
     /// @param _extraData The extra data that contains the pool and sweep targets.
     /// @param _salt The create2 salt used to deploy Hyperdrive.
     /// @return The address of the newly deployed Hyperdrive instance.
-    function deploy(
+    function deployHyperdrive(
         bytes32 _deploymentId,
         IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory _extraData,
@@ -165,17 +165,18 @@ abstract contract HyperdriveDeployerCoordinator is
         // Deploy the Hyperdrive instance and add it to the deployment struct.
         bytes32 deploymentId = _deploymentId; // Avoid stack too deep error
         bytes32 salt = _salt; // Avoid stack too deep error
-        address hyperdrive = IHyperdriveCoreDeployer(coreDeployer).deploy(
-            config,
-            _extraData,
-            deployment.target0,
-            deployment.target1,
-            deployment.target2,
-            deployment.target3,
-            // NOTE: We hash the deployment ID with the salt to prevent the
-            // front-running of deployments.
-            keccak256(abi.encode(deploymentId, salt))
-        );
+        address hyperdrive = IHyperdriveCoreDeployer(coreDeployer)
+            .deployHyperdrive(
+                config,
+                _extraData,
+                deployment.target0,
+                deployment.target1,
+                deployment.target2,
+                deployment.target3,
+                // NOTE: We hash the deployment ID with the salt to prevent the
+                // front-running of deployments.
+                keccak256(abi.encode(deploymentId, salt))
+            );
         _deployments[_deploymentId].hyperdrive = hyperdrive;
 
         return hyperdrive;
@@ -230,7 +231,7 @@ abstract contract HyperdriveDeployerCoordinator is
             config_.initialVaultSharePrice = initialSharePrice;
 
             // Deploy the target0 contract.
-            target = IHyperdriveTargetDeployer(target0Deployer).deploy(
+            target = IHyperdriveTargetDeployer(target0Deployer).deployTarget(
                 config_,
                 _extraData,
                 // NOTE: We hash the deployment ID with the salt to prevent the
@@ -283,7 +284,7 @@ abstract contract HyperdriveDeployerCoordinator is
             if (deployment.target1 != address(0)) {
                 revert IHyperdriveDeployerCoordinator.TargetAlreadyDeployed();
             }
-            target = IHyperdriveTargetDeployer(target1Deployer).deploy(
+            target = IHyperdriveTargetDeployer(target1Deployer).deployTarget(
                 config,
                 _extraData,
                 keccak256(abi.encode(msg.sender, _deploymentId, _salt))
@@ -293,7 +294,7 @@ abstract contract HyperdriveDeployerCoordinator is
             if (deployment.target2 != address(0)) {
                 revert IHyperdriveDeployerCoordinator.TargetAlreadyDeployed();
             }
-            target = IHyperdriveTargetDeployer(target2Deployer).deploy(
+            target = IHyperdriveTargetDeployer(target2Deployer).deployTarget(
                 config,
                 _extraData,
                 keccak256(abi.encode(msg.sender, _deploymentId, _salt))
@@ -303,7 +304,7 @@ abstract contract HyperdriveDeployerCoordinator is
             if (deployment.target3 != address(0)) {
                 revert IHyperdriveDeployerCoordinator.TargetAlreadyDeployed();
             }
-            target = IHyperdriveTargetDeployer(target3Deployer).deploy(
+            target = IHyperdriveTargetDeployer(target3Deployer).deployTarget(
                 config,
                 _extraData,
                 keccak256(abi.encode(msg.sender, _deploymentId, _salt))

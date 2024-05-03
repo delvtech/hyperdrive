@@ -16,7 +16,7 @@ contract StETHTarget3Deployer is IHyperdriveTargetDeployer {
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _salt The create2 salt used in the deployment.
     /// @return The address of the newly deployed StETHTarget3 instance.
-    function deploy(
+    function deployTarget(
         IHyperdrive.PoolConfig memory _config,
         bytes memory, // unused extra data
         bytes32 _salt

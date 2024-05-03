@@ -717,14 +717,15 @@ contract HyperdriveFactory is IHyperdriveFactory {
         // Deploy the Hyperdrive instance with the specified deployer
         // coordinator.
         IHyperdrive hyperdrive = IHyperdrive(
-            IHyperdriveDeployerCoordinator(_deployerCoordinator).deploy(
-                // NOTE: We hash the deployer's address into the deployment ID
-                // to prevent their deployment from being front-run.
-                keccak256(abi.encode(msg.sender, _deploymentId)),
-                _config,
-                _extraData,
-                _salt
-            )
+            IHyperdriveDeployerCoordinator(_deployerCoordinator)
+                .deployHyperdrive(
+                    // NOTE: We hash the deployer's address into the deployment ID
+                    // to prevent their deployment from being front-run.
+                    keccak256(abi.encode(msg.sender, _deploymentId)),
+                    _config,
+                    _extraData,
+                    _salt
+                )
         );
 
         // Add this instance to the registry and emit an event with the
