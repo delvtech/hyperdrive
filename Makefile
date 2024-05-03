@@ -7,10 +7,10 @@
 build: 
 	make build-sol
 
-build-sol: 
+build-sol:
 	forge build
 
-build-rust: 
+build-rust:
 	cargo build
 
 ### Test ###
@@ -22,11 +22,19 @@ SOLIDITY_ZOMBIE_TESTS = ZombieInterestTest
 test: 
 	make test-sol
 
-test-instances:
-	forge test -vv --match-path test/instances/*.t.sol
+test-sol: test-sol-core test-sol-instances test-sol-lp-withdrawal test-sol-netting test-sol-zombie
+
 
 test-sol-core:
-	forge test -vv --no-match-contract "$(SOLIDITY_LP_WITHDRAWAL_TESTS)|$(SOLIDITY_NETTING_TESTS)|$(SOLIDITY_ZOMBIE_TESTS)"
+	forge test -vv \
+		--no-match-contract "$(SOLIDITY_LP_WITHDRAWAL_TESTS)|$(SOLIDITY_NETTING_TESTS)|$(SOLIDITY_ZOMBIE_TESTS)" \
+		--no-match-path "test/combinatorial/*.t.sol test/instances/*.t.sol"
+
+test-sol-combinatorial:
+	forge test -vv --match-path "test/combinatorial/*.t.sol"
+
+test-sol-instances:
+	forge test -vv --match-path test/instances/*.t.sol
 
 # NOTE: Breaking these out onto a separate machine speeds up CI execution.
 test-sol-lp-withdrawal:

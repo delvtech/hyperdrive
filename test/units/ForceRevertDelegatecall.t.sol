@@ -36,6 +36,7 @@ contract DummyHyperdrive is Hyperdrive, MockHyperdriveBase {
                 initialVaultSharePrice: 1e18,
                 minimumShareReserves: 1e18,
                 minimumTransactionAmount: 1e15,
+                circuitBreakerDelta: 1e18,
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
                 timeStretch: HyperdriveMath.calculateTimeStretch(

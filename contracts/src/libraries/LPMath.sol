@@ -81,7 +81,7 @@ library LPMath {
         uint256 _positionDuration,
         uint256 _timeStretch
     )
-        internal
+        external
         pure
         returns (
             uint256 shareReserves,
@@ -145,7 +145,7 @@ library LPMath {
         uint256 _minimumShareReserves,
         int256 _shareReservesDelta
     )
-        internal
+        public
         pure
         returns (
             uint256 shareReserves,
@@ -235,7 +235,7 @@ library LPMath {
     /// @return The present value of the pool.
     function calculatePresentValue(
         PresentValueParams memory _params
-    ) internal pure returns (uint256) {
+    ) public pure returns (uint256) {
         (uint256 presentValue, bool success) = calculatePresentValueSafe(
             _params
         );
@@ -257,7 +257,7 @@ library LPMath {
     /// @return A flag indicating whether the calculation succeeded or failed.
     function calculatePresentValueSafe(
         PresentValueParams memory _params
-    ) internal pure returns (uint256, bool) {
+    ) public pure returns (uint256, bool) {
         // We calculate the LP present value by simulating the closing of all
         // of the outstanding long and short positions and applying this impact
         // on the share reserves. The present value is the share reserves after
@@ -566,7 +566,7 @@ library LPMath {
     function calculateDistributeExcessIdle(
         DistributeExcessIdleParams memory _params,
         uint256 _maxIterations
-    ) internal pure returns (uint256, uint256) {
+    ) external pure returns (uint256, uint256) {
         // Steps 1 and 2: Calculate the maximum amount the share reserves can be
         // debited. If the effective share reserves or the maximum share
         // reserves delta can't be calculated or if the maximum share reserves

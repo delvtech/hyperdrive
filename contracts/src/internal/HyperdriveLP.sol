@@ -195,11 +195,28 @@ abstract contract HyperdriveLP is
         );
 
         // Perform a checkpoint.
+        uint256 latestCheckpoint = _latestCheckpoint();
         _applyCheckpoint(
-            _latestCheckpoint(),
+            latestCheckpoint,
             vaultSharePrice,
             LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
         );
+
+        // Ensure that the spot APR is close enough to the previous weighted
+        // spot price to fall within the tolerance.
+        {
+            uint256 weightedSpotAPR = HyperdriveMath.calculateAPRFromPrice(
+                _checkpoints[latestCheckpoint].weightedSpotPrice,
+                _positionDuration
+            );
+            if (
+                apr > weightedSpotAPR + _circuitBreakerDelta ||
+                (weightedSpotAPR > _circuitBreakerDelta &&
+                    apr < weightedSpotAPR - _circuitBreakerDelta)
+            ) {
+                revert IHyperdrive.CircuitBreakerTriggered();
+            }
+        }
 
         // Get the initial value for the total LP supply and the total supply
         // of withdrawal shares before the liquidity is added. The total LP
@@ -258,7 +275,8 @@ abstract contract HyperdriveLP is
         // NOTE: Round down to make the check more conservative.
         //
         // Enforce the minimum LP share price slippage guard.
-        if (_contribution.divDown(lpShares) < _minLpSharePrice) {
+        uint256 contribution = _contribution; // avoid stack-too-deep
+        if (contribution.divDown(lpShares) < _minLpSharePrice) {
             revert IHyperdrive.OutputLimit();
         }
 
@@ -278,13 +296,12 @@ abstract contract HyperdriveLP is
         uint256 lpSharePrice = lpTotalSupply == 0
             ? 0 // NOTE: We always round the LP share price down for consistency.
             : startingPresentValue.divDown(lpTotalSupply);
-        uint256 contribution = _contribution; // avoid stack-too-deep
+        IHyperdrive.Options calldata options = _options; // avoid stack-too-deep
         uint256 baseContribution = _convertToBaseFromOption(
             contribution,
             vaultSharePrice,
-            _options
+            options
         );
-        IHyperdrive.Options calldata options = _options; // avoid stack-too-deep
         emit AddLiquidity(
             options.destination,
             lpShares,

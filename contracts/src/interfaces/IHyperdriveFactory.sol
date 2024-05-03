@@ -62,6 +62,12 @@ interface IHyperdriveFactory {
     /// @notice Emitted when the minimum position duration is updated.
     event MinPositionDurationUpdated(uint256 newMinPositionDuration);
 
+    /// @notice Emitted when the maximum circuit breaker delta is updated.
+    event MaxCircuitBreakerDeltaUpdated(uint256 newMaxCircuitBreakerDelta);
+
+    /// @notice Emitted when the minimum circuit breaker delta is updated.
+    event MinCircuitBreakerDeltaUpdated(uint256 newMinCircuitBreakerDelta);
+
     /// @notice Emitted when the maximum fixed APR is updated.
     event MaxFixedAPRUpdated(uint256 newMaxFixedAPR);
 
@@ -167,6 +173,21 @@ interface IHyperdriveFactory {
     ///         doesn't fall within the range specified by the minimum and
     ///         maximum position durations.
     error InvalidPositionDuration();
+
+    /// @notice Thrown when governance attempts to set the maximum circuit
+    ///         breaker delta to a value that is less than the minimum
+    ///         circuit breaker delta.
+    error InvalidMaxCircuitBreakerDelta();
+
+    /// @notice Thrown when governance attempts to set the minimum circuit
+    ///         breaker delta to a value that is greater than the maximum
+    ///         circuit breaker delta.
+    error InvalidMinCircuitBreakerDelta();
+
+    /// @notice Thrown when the circuit breaker delta passed to
+    ///         `deployAndInitialize` doesn't fall within the range specified by
+    ///         the minimum and maximum circuit breaker delta.
+    error InvalidCircuitBreakerDelta();
 
     /// @notice Thrown when governance attempts to set the maximum fixed APR to
     ///         a value that is smaller than the minimum fixed APR.

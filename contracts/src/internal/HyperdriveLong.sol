@@ -89,10 +89,12 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         // deposit function.
         uint256 shareReservesDelta;
         uint256 totalGovernanceFee;
+        uint256 spotPrice;
         (
             shareReservesDelta,
             bondProceeds,
-            totalGovernanceFee
+            totalGovernanceFee,
+            spotPrice
         ) = _calculateOpenLong(sharesDeposited, vaultSharePrice);
 
         // Enforce the minimum user outputs.
@@ -102,6 +104,9 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
 
         // Attribute the governance fee.
         _governanceFeesAccrued += totalGovernanceFee;
+
+        // Update the weighted spot price.
+        _updateWeightedSpotPrice(latestCheckpoint, block.timestamp, spotPrice);
 
         // Apply the open long to the state.
         maturityTime = latestCheckpoint + _positionDuration;
@@ -196,7 +201,8 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             uint256 shareProceeds,
             uint256 shareReservesDelta,
             int256 shareAdjustmentDelta,
-            uint256 totalGovernanceFee
+            uint256 totalGovernanceFee,
+            uint256 spotPrice
         ) = _calculateCloseLong(_bondAmount, vaultSharePrice, _maturityTime);
 
         // If the position hasn't matured, apply the accounting updates that
@@ -206,6 +212,15 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         if (block.timestamp < _maturityTime) {
             // Attribute the governance fee.
             _governanceFeesAccrued += totalGovernanceFee;
+
+            // Update the weighted spot price.
+            _updateWeightedSpotPrice(
+                _latestCheckpoint(),
+                block.timestamp,
+                spotPrice
+            );
+
+            // Apply the close long to the state.
             _applyCloseLong(
                 _bondAmount,
                 bondReservesDelta,
@@ -423,6 +438,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
     /// @return shareReservesDelta The change in the share reserves.
     /// @return bondReservesDelta The change in the bond reserves.
     /// @return totalGovernanceFee The governance fee in shares.
+    /// @return spotPrice The pool's current spot price.
     function _calculateOpenLong(
         uint256 _shareAmount,
         uint256 _vaultSharePrice
@@ -432,7 +448,8 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
-            uint256 totalGovernanceFee
+            uint256 totalGovernanceFee,
+            uint256 spotPrice
         )
     {
         // Calculate the effect that opening the long should have on the pool's
@@ -448,7 +465,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
 
         // Ensure that the trader didn't purchase bonds at a negative interest
         // rate after accounting for fees.
-        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+        spotPrice = HyperdriveMath.calculateSpotPrice(
             _effectiveShareReserves(),
             _marketState.bondReserves,
             _initialVaultSharePrice,
@@ -521,7 +538,12 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             Errors.throwInsufficientLiquidityError();
         }
 
-        return (shareReservesDelta, bondReservesDelta, totalGovernanceFee);
+        return (
+            shareReservesDelta,
+            bondReservesDelta,
+            totalGovernanceFee,
+            spotPrice
+        );
     }
 
     /// @dev Calculate the pool reserve and trader deltas that result from
@@ -546,7 +568,8 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             uint256 shareProceeds,
             uint256 shareReservesDelta,
             int256 shareAdjustmentDelta,
-            uint256 totalGovernanceFee
+            uint256 totalGovernanceFee,
+            uint256 spotPrice
         )
     {
         // Calculate the effect that closing the long should have on the pool's
@@ -579,7 +602,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             uint256 curveFee;
             uint256 governanceCurveFee;
             uint256 flatFee;
-            uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+            spotPrice = HyperdriveMath.calculateSpotPrice(
                 _effectiveShareReserves(),
                 _marketState.bondReserves,
                 _initialVaultSharePrice,
@@ -646,6 +669,15 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
                 ? _vaultSharePrice
                 : _checkpoints[_maturityTime].vaultSharePrice, // close vault share price
             true
+        );
+
+        return (
+            bondReservesDelta,
+            shareProceeds,
+            shareReservesDelta,
+            shareAdjustmentDelta,
+            totalGovernanceFee,
+            spotPrice
         );
     }
 }

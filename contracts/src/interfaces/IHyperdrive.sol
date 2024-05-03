@@ -44,10 +44,16 @@ interface IHyperdrive is
     }
 
     struct Checkpoint {
+        /// @dev The time-weighted average spot price of the checkpoint. This is
+        ///      used to implement circuit-breakers that prevents liquidity from
+        ///      being added when the pool's rate moves too quickly.
+        uint128 weightedSpotPrice;
+        /// @dev The last time the weighted spot price was updated.
+        uint128 lastWeightedSpotPriceUpdateTime;
         /// @dev The vault share price during the first transaction in the
         ///      checkpoint. This is used to track the amount of interest
         ///      accrued by shorts as well as the vault share price at closing
-        //       of matured longs and shorts.
+        ///      of matured longs and shorts.
         uint128 vaultSharePrice;
     }
 
@@ -84,6 +90,10 @@ interface IHyperdrive is
         /// @dev The minimum amount of tokens that a position can be opened or
         ///      closed with.
         uint256 minimumTransactionAmount;
+        /// @dev The maximum delta between the last checkpoint's weighted spot
+        ///      APR and the current spot APR for an LP to add liquidity. This
+        ///      protects LPs from sandwich attacks.
+        uint256 circuitBreakerDelta;
         /// @dev The duration of a position prior to maturity.
         uint256 positionDuration;
         /// @dev The duration of a checkpoint.
@@ -117,6 +127,10 @@ interface IHyperdrive is
         /// @dev The minimum amount of tokens that a position can be opened or
         ///      closed with.
         uint256 minimumTransactionAmount;
+        /// @dev The maximum delta between the last checkpoint's weighted spot
+        ///      APR and the current spot APR for an LP to add liquidity. This
+        ///      protects LPs from sandwich attacks.
+        uint256 circuitBreakerDelta;
         /// @dev The duration of a position prior to maturity.
         uint256 positionDuration;
         /// @dev The duration of a checkpoint.
@@ -190,6 +204,9 @@ interface IHyperdrive is
     ///         to cover the minimum share reserves and the LP shares that are
     ///         burned on initialization.
     error BelowMinimumContribution();
+
+    /// @notice Thrown when the add liquidity circuit breaker is triggered.
+    error CircuitBreakerTriggered();
 
     /// @notice Thrown when the exponent to `FixedPointMath.exp` would cause the
     ///         the result to be larger than the representable scale.
