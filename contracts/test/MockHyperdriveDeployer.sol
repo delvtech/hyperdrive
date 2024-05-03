@@ -15,7 +15,7 @@ contract MockHyperdriveDeployer is IHyperdriveDeployerCoordinator {
 
     mapping(address => mapping(bytes32 => address)) internal _deployments;
 
-    function deploy(
+    function deployHyperdrive(
         bytes32 _deploymentId,
         IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory,
@@ -81,7 +81,7 @@ contract MockHyperdriveDeployer is IHyperdriveDeployerCoordinator {
 // HACK: This contract doesn't return anything because MockHyperdrive deploys
 // the target contracts in it's constructor.
 contract MockHyperdriveTargetDeployer is IHyperdriveTargetDeployer {
-    function deploy(
+    function deployTarget(
         IHyperdrive.PoolConfig memory,
         bytes memory,
         bytes32

@@ -13,7 +13,7 @@ interface IHyperdriveCoreDeployer {
     /// @param _target3 The target3 address.
     /// @param _salt The create2 salt used in the deployment.
     /// @return The address of the newly deployed Hyperdrive instance.
-    function deploy(
+    function deployHyperdrive(
         IHyperdrive.PoolConfig memory _config,
         bytes memory _extraData,
         address _target0,

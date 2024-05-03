@@ -124,7 +124,12 @@ contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {
 
         // Deploy a Hyperdrive instance.
         IHyperdrive hyperdrive = IHyperdrive(
-            coordinator.deploy(DEPLOYMENT_ID, config, new bytes(0), SALT)
+            coordinator.deployHyperdrive(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                SALT
+            )
         );
 
         // Initialization should succeed with Alice as the initializer.
@@ -171,7 +176,12 @@ contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {
 
         // Deploy a Hyperdrive instance.
         IHyperdrive hyperdrive = IHyperdrive(
-            coordinator.deploy(DEPLOYMENT_ID, config, new bytes(0), SALT)
+            coordinator.deployHyperdrive(
+                DEPLOYMENT_ID,
+                config,
+                new bytes(0),
+                SALT
+            )
         );
 
         // Initialization should succeed.
