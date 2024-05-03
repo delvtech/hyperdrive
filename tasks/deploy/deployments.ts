@@ -18,21 +18,21 @@ export const LOCAL_NETWORK_NAME = "hardhat";
  * Since tasks can be run from any directory, this is the best point of reference.
  */
 export const DEPLOYMENTS_PATH = path.resolve(
-  __dirname,
-  path.join("../../", DEPLOYMENTS_FILENAME),
+    __dirname,
+    path.join("../../", DEPLOYMENTS_FILENAME),
 );
 export const LOCAL_DEPLOYMENTS_PATH = path.resolve(
-  __dirname,
-  path.join("../../", LOCAL_FILENAME),
+    __dirname,
+    path.join("../../", LOCAL_FILENAME),
 );
 
 /** Schema for {@link DeployedContract} */
 export const zDeployedContract = z.object({
-  contract: z.string().min(1, "contract cannot be empty"),
-  address: zAddress.refine((v) => !(v === zeroAddress), {
-    message: "address for DeployedContract cannot be the zero address",
-  }),
-  timestamp: z.string().datetime(),
+    contract: z.string().min(1, "contract cannot be empty"),
+    address: zAddress.refine((v) => !(v === zeroAddress), {
+        message: "address for DeployedContract cannot be the zero address",
+    }),
+    timestamp: z.string().datetime(),
 });
 
 /**
@@ -51,25 +51,25 @@ export type DeployedContract = z.infer<typeof zDeployedContract>;
 
 /** Schema for {@link DeploymentsFile} */
 export const zDeployments = z
-  .record(
-    z.string({ description: "network name" }),
-    z.record(
-      z.string({ description: "deployed contract name" }),
-      zDeployedContract,
-    ),
-  )
-  // Check for duplicate addresses within a network.
-  .superRefine((val, ctx) =>
-    Object.values(val).forEach(
-      (v) =>
-        new Set(Object.values(v).map((v) => v.address)).size !=
-          Object.values(v).length &&
-        ctx.addIssue({
-          code: "custom",
-          message: `the same address is specified for more than one DeployedContract in the network`,
-        }),
-    ),
-  );
+    .record(
+        z.string({ description: "network name" }),
+        z.record(
+            z.string({ description: "deployed contract name" }),
+            zDeployedContract,
+        ),
+    )
+    // Check for duplicate addresses within a network.
+    .superRefine((val, ctx) =>
+        Object.values(val).forEach(
+            (v) =>
+                new Set(Object.values(v).map((v) => v.address)).size !=
+                    Object.values(v).length &&
+                ctx.addIssue({
+                    code: "custom",
+                    message: `the same address is specified for more than one DeployedContract in the network`,
+                }),
+        ),
+    );
 
 /**
  * Tracks deployed contracts across all networks.
@@ -104,135 +104,138 @@ export type DeploymentsFile = z.infer<typeof zDeployments>;
  * may compete for filesystem access.
  */
 export class Deployments {
-  static #instance: Deployments;
+    static #instance: Deployments;
 
-  #f: DeploymentsFile;
+    #f: DeploymentsFile;
 
-  private constructor() {
-    if (!fs.existsSync(DEPLOYMENTS_PATH))
-      fs.writeFileSync(DEPLOYMENTS_PATH, "{}");
-    if (!fs.existsSync(LOCAL_DEPLOYMENTS_PATH))
-      fs.writeFileSync(LOCAL_DEPLOYMENTS_PATH, "{}");
-    this.#f = zDeployments.parse(
-      JSON.parse(fs.readFileSync(DEPLOYMENTS_PATH).toString()),
-    );
-  }
-
-  static get() {
-    if (!Deployments.#instance) {
-      Deployments.#instance = new Deployments();
+    private constructor() {
+        if (!fs.existsSync(DEPLOYMENTS_PATH))
+            fs.writeFileSync(DEPLOYMENTS_PATH, "{}");
+        if (!fs.existsSync(LOCAL_DEPLOYMENTS_PATH))
+            fs.writeFileSync(LOCAL_DEPLOYMENTS_PATH, "{}");
+        this.#f = zDeployments.parse(
+            JSON.parse(fs.readFileSync(DEPLOYMENTS_PATH).toString()),
+        );
     }
-    return Deployments.#instance;
-  }
 
-  /**
-   * Returns a list of {@link DeployedContract}s for the specified network.
-   *
-   * The unique name for each deployed contract is included.
-   */
-  byNetwork(network: string): (DeployedContract & { name: string })[] {
-    return network in this.#f
-      ? Object.entries(this.#f[network]).map(([k, v]) => ({ name: k, ...v }))
-      : [];
-  }
-
-  /**
-   * Returns the {@link DeployedContract} throwing if it does not exist.
-   */
-  byName(name: string, network: string) {
-    if (!(network in this.#f) || !(name in this.#f[network]))
-      throw new Error(`contract not found`);
-    return this.#f[network][name];
-  }
-
-  /**
-   * Returns whether a {@link DeployedContract} or undefined if it does not exist.
-   */
-  byNameSafe(name: string, network: string) {
-    try {
-      return this.byName(name, network);
-    } catch (e) {}
-  }
-
-  /**
-   * Returns a list of {@link DeployedContract}s that have the specified source contract.
-   */
-  byContract(contract: string, network?: string) {
-    return Object.entries(this.#f)
-      .filter(([k, _]) => (network ? k === network : true))
-      .flatMap(([_, v]) => Object.values(v))
-      .filter((dc) => dc.contract === contract);
-  }
-
-  /**
-   * Returns the specified {@link DeployedContract} throwing if it does not exist.
-   */
-  byAddress(address: string, network: string) {
-    let contract = Object.entries(this.#f)
-      .filter(([k, _]) => (network ? k === network : false))
-      .flatMap(([_, v]) => Object.values(v))
-      .find((dc) => dc.address === address);
-    if (!contract) throw new Error("contract not found");
-  }
-
-  /**
-   * Returns the specified {@link DeployedContract} or undefined if it does not exist.
-   */
-  byAddressSafe(address: string, network: string) {
-    return Object.entries(this.#f)
-      .filter(([k, _]) => (network ? k === network : false))
-      .flatMap(([_, v]) => Object.values(v))
-      .find((dc) => dc.address === address);
-  }
-
-  /**
-   * Parses the deployed contract information and adds it to the file.
-   *
-   * NOTE: Throws an error if the parsed information or the resulting
-   * deployments file is invalid.
-   */
-  add(name: string, contract: string, address: string, network: string) {
-    let parsed = zDeployedContract.parse({
-      contract,
-      address,
-      timestamp: new Date().toISOString(),
-    });
-    if (!(network in this.#f)) this.#f[network] = {};
-    this.#f[network][name] = parsed;
-    this.#updateFile(network);
-  }
-
-  /**
-   * Removes the {@link DeployedContract} with the specified name and network.
-   *
-   * NOTE: This function does not throw when the contract is not present.
-   */
-  remove(name: string, network: string) {
-    if (this.byName(name, network)) {
-      delete this.#f[network][name];
-      this.#updateFile(network);
-    }
-  }
-
-  /**
-   * Write the current {@link DeploymentsFile} object to disk.
-   */
-  #updateFile(network: string) {
-    let isLocal = network == LOCAL_NETWORK_NAME;
-    let data = isLocal
-      ? {
-          [LOCAL_NETWORK_NAME]: this.#f[LOCAL_NETWORK_NAME],
+    static get() {
+        if (!Deployments.#instance) {
+            Deployments.#instance = new Deployments();
         }
-      : this.#f;
-    try {
-      fs.writeFileSync(
-        isLocal ? LOCAL_DEPLOYMENTS_PATH : DEPLOYMENTS_PATH,
-        JSON.stringify(zDeployments.parse(data), null, 4),
-      );
-    } catch (e) {
-      console.error(e);
-      console.error(this.#f);
-      throw e;
+        return Deployments.#instance;
     }
-  }
+
+    /**
+     * Returns a list of {@link DeployedContract}s for the specified network.
+     *
+     * The unique name for each deployed contract is included.
+     */
+    byNetwork(network: string): (DeployedContract & { name: string })[] {
+        return network in this.#f
+            ? Object.entries(this.#f[network]).map(([k, v]) => ({
+                  name: k,
+                  ...v,
+              }))
+            : [];
+    }
+
+    /**
+     * Returns the {@link DeployedContract} throwing if it does not exist.
+     */
+    byName(name: string, network: string) {
+        if (!(network in this.#f) || !(name in this.#f[network]))
+            throw new Error(`contract not found`);
+        return this.#f[network][name];
+    }
+
+    /**
+     * Returns whether a {@link DeployedContract} or undefined if it does not exist.
+     */
+    byNameSafe(name: string, network: string) {
+        try {
+            return this.byName(name, network);
+        } catch (e) {}
+    }
+
+    /**
+     * Returns a list of {@link DeployedContract}s that have the specified source contract.
+     */
+    byContract(contract: string, network?: string) {
+        return Object.entries(this.#f)
+            .filter(([k, _]) => (network ? k === network : true))
+            .flatMap(([_, v]) => Object.values(v))
+            .filter((dc) => dc.contract === contract);
+    }
+
+    /**
+     * Returns the specified {@link DeployedContract} throwing if it does not exist.
+     */
+    byAddress(address: string, network: string) {
+        let contract = Object.entries(this.#f)
+            .filter(([k, _]) => (network ? k === network : false))
+            .flatMap(([_, v]) => Object.values(v))
+            .find((dc) => dc.address === address);
+        if (!contract) throw new Error("contract not found");
+    }
+
+    /**
+     * Returns the specified {@link DeployedContract} or undefined if it does not exist.
+     */
+    byAddressSafe(address: string, network: string) {
+        return Object.entries(this.#f)
+            .filter(([k, _]) => (network ? k === network : false))
+            .flatMap(([_, v]) => Object.values(v))
+            .find((dc) => dc.address === address);
+    }
+
+    /**
+     * Parses the deployed contract information and adds it to the file.
+     *
+     * NOTE: Throws an error if the parsed information or the resulting
+     * deployments file is invalid.
+     */
+    add(name: string, contract: string, address: string, network: string) {
+        let parsed = zDeployedContract.parse({
+            contract,
+            address,
+            timestamp: new Date().toISOString(),
+        });
+        if (!(network in this.#f)) this.#f[network] = {};
+        this.#f[network][name] = parsed;
+        this.#updateFile(network);
+    }
+
+    /**
+     * Removes the {@link DeployedContract} with the specified name and network.
+     *
+     * NOTE: This function does not throw when the contract is not present.
+     */
+    remove(name: string, network: string) {
+        if (this.byName(name, network)) {
+            delete this.#f[network][name];
+            this.#updateFile(network);
+        }
+    }
+
+    /**
+     * Write the current {@link DeploymentsFile} object to disk.
+     */
+    #updateFile(network: string) {
+        let isLocal = network == LOCAL_NETWORK_NAME;
+        let data = isLocal
+            ? {
+                  [LOCAL_NETWORK_NAME]: this.#f[LOCAL_NETWORK_NAME],
+              }
+            : this.#f;
+        try {
+            fs.writeFileSync(
+                isLocal ? LOCAL_DEPLOYMENTS_PATH : DEPLOYMENTS_PATH,
+                JSON.stringify(zDeployments.parse(data), null, 4),
+            );
+        } catch (e) {
+            console.error(e);
+            console.error(this.#f);
+            throw e;
+        }
+    }
 }

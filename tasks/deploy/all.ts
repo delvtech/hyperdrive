@@ -9,51 +9,51 @@ import { DeployRegistryParams } from "./registry";
 dayjs.extend(duration);
 
 export type DeployAllParams = {
-  overwrite?: boolean;
+    overwrite?: boolean;
 } & DeployCoordinatorsAllParams;
 
 task(
-  "deploy:all",
-  "deploys the HyperdriveFactory, all deployer coordinators, and all hyperdrive instances",
+    "deploy:all",
+    "deploys the HyperdriveFactory, all deployer coordinators, and all hyperdrive instances",
 )
-  .addOptionalParam(
-    "overwrite",
-    "overwrite deployment artifacts if they exist",
-    false,
-    types.boolean,
-  )
-  .addOptionalParam(
-    "lido",
-    "address of the lido contract",
-    undefined,
-    types.string,
-  )
-  .addOptionalParam(
-    "reth",
-    "address of the reth contract",
-    undefined,
-    types.string,
-  )
-  .addOptionalParam("admin", "admin address", undefined, types.string)
-  .setAction(async ({ admin, overwrite }: DeployAllParams, { run }) => {
-    // deploy the forwarder
-    await run("deploy:forwarder", { overwrite } as DeployForwarderParams);
+    .addOptionalParam(
+        "overwrite",
+        "overwrite deployment artifacts if they exist",
+        false,
+        types.boolean,
+    )
+    .addOptionalParam(
+        "lido",
+        "address of the lido contract",
+        undefined,
+        types.string,
+    )
+    .addOptionalParam(
+        "reth",
+        "address of the reth contract",
+        undefined,
+        types.string,
+    )
+    .addOptionalParam("admin", "admin address", undefined, types.string)
+    .setAction(async ({ admin, overwrite }: DeployAllParams, { run }) => {
+        // deploy the forwarder
+        await run("deploy:forwarder", { overwrite } as DeployForwarderParams);
 
-    // deploy the factory
-    await run("deploy:factory", { overwrite } as DeployFactoryParams);
+        // deploy the factory
+        await run("deploy:factory", { overwrite } as DeployFactoryParams);
 
-    // deploy the registry
-    await run("deploy:registry", { overwrite } as DeployRegistryParams);
+        // deploy the registry
+        await run("deploy:registry", { overwrite } as DeployRegistryParams);
 
-    // deploy all deployer coordinators
-    await run("deploy:coordinators:all", {
-      admin,
-      overwrite,
-    } as DeployCoordinatorsAllParams);
+        // deploy all deployer coordinators
+        await run("deploy:coordinators:all", {
+            admin,
+            overwrite,
+        } as DeployCoordinatorsAllParams);
 
-    // deploy all instances
-    await run("deploy:instances:all", {
-      admin,
-      overwrite,
-    } as DeployInstancesAllParams);
-  });
+        // deploy all instances
+        await run("deploy:instances:all", {
+            admin,
+            overwrite,
+        } as DeployInstancesAllParams);
+    });
