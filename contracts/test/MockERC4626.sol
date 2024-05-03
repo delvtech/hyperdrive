@@ -24,7 +24,8 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
     uint256 internal _lastUpdated;
 
     bool public immutable isCompetitionMode;
-    uint256 public immutable maxMintAmount;
+    uint256 public maxMintAmount;
+    mapping(address => bool) public isUnrestricted;
 
     constructor(
         ERC20Mintable _asset,
@@ -57,7 +58,12 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
     /// Minting and Burning ///
 
     function mint(uint256 amount) external requiresAuthDuringCompetition {
-        require(amount <= maxMintAmount, "MockERC4626: Invalid mint amount");
+        if (!isUnrestricted[msg.sender]) {
+            require(
+                amount <= maxMintAmount,
+                "MockERC4626: Invalid mint amount"
+            );
+        }
         _mint(msg.sender, amount);
     }
 
@@ -65,7 +71,12 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
         address destination,
         uint256 amount
     ) external requiresAuthDuringCompetition {
-        require(amount <= maxMintAmount, "MockERC4626: Invalid mint amount");
+        if (!isUnrestricted[msg.sender]) {
+            require(
+                amount <= maxMintAmount,
+                "MockERC4626: Invalid mint amount"
+            );
+        }
         _mint(destination, amount);
     }
 
@@ -121,6 +132,19 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
     }
 
     /// Mock ///
+
+    function setMaxMintAmount(
+        uint256 _maxMintAmount
+    ) external requiresAuthDuringCompetition {
+        maxMintAmount = _maxMintAmount;
+    }
+
+    function setUnrestrictedMintStatus(
+        address _target,
+        bool _status
+    ) external requiresAuthDuringCompetition {
+        isUnrestricted[_target] = _status;
+    }
 
     function setRate(uint256 _rate_) external requiresAuthDuringCompetition {
         _accrue();
