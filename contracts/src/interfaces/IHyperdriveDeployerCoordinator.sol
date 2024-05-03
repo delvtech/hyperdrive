@@ -147,4 +147,10 @@ interface IHyperdriveDeployerCoordinator {
         uint256 _apr,
         IHyperdrive.Options memory _options
     ) external payable returns (uint256 lpShares);
+
+    /// @notice Gets the number of targets that need to be deployed for a full
+    ///         deployment.
+    /// @return numTargets The number of targets that need to be deployed for a
+    ///         full deployment.
+    function getNumberOfTargets() external pure returns (uint256 numTargets);
 }

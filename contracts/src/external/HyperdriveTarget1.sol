@@ -51,32 +51,24 @@ abstract contract HyperdriveTarget1 is
         return _closeShort(_maturityTime, _bondAmount, _minOutput, _options);
     }
 
-    /// LPs ///
+    /// Longs ///
 
-    /// @notice Redeems withdrawal shares by giving the LP a pro-rata amount of
-    ///         the withdrawal pool's proceeds. This function redeems the
-    ///         maximum amount of the specified withdrawal shares given the
-    ///         amount of withdrawal shares ready to withdraw.
-    /// @param _withdrawalShares The withdrawal shares to redeem.
-    /// @param _minOutputPerShare The minimum amount the LP expects to
-    ///        receive for each withdrawal share that is burned. The units of
-    ///        this quantity are either base or vault shares, depending on the
-    ///        value of `_options.asBase`.
-    /// @param _options The options that configure how the operation is settled.
-    /// @return The amount the LP received. The units of this quantity are
+    /// @notice Closes a long position with a specified maturity time.
+    /// @param _maturityTime The maturity time of the long.
+    /// @param _bondAmount The amount of longs to close.
+    /// @param _minOutput The minimum proceeds the trader will accept. The units
+    ///        of this quantity are either base or vault shares, depending on
+    ///        the value of `_options.asBase`.
+    /// @param _options The options that configure how the trade is settled.
+    /// @return The proceeds the user receives. The units of this quantity are
     ///         either base or vault shares, depending on the value of
     ///         `_options.asBase`.
-    /// @return The amount of withdrawal shares that were redeemed.
-    function redeemWithdrawalShares(
-        uint256 _withdrawalShares,
-        uint256 _minOutputPerShare,
+    function closeLong(
+        uint256 _maturityTime,
+        uint256 _bondAmount,
+        uint256 _minOutput,
         IHyperdrive.Options calldata _options
-    ) external returns (uint256, uint256) {
-        return
-            _redeemWithdrawalShares(
-                _withdrawalShares,
-                _minOutputPerShare,
-                _options
-            );
+    ) external returns (uint256) {
+        return _closeLong(_maturityTime, _bondAmount, _minOutput, _options);
     }
 }

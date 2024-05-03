@@ -58,25 +58,11 @@ contract StETHHyperdrive is Hyperdrive, StETHBase {
     /// @param _target1 The target1 address.
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
-    /// @param _target4 The target4 address.
-    /// @param _target5 The target5 address.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         address _target0,
         address _target1,
         address _target2,
-        address _target3,
-        address _target4,
-        address _target5
-    )
-        Hyperdrive(
-            _config,
-            _target0,
-            _target1,
-            _target2,
-            _target3,
-            _target4,
-            _target5
-        )
-    {}
+        address _target3
+    ) Hyperdrive(_config, _target0, _target1, _target2, _target3) {}
 }
