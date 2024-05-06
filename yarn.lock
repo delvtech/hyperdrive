@@ -914,9 +914,9 @@
     chalk "^2.4.2"
 
 "@nomicfoundation/hardhat-ignition-viem@^0.15.0":
-  version "0.15.1"
-  resolved "https://registry.yarnpkg.com/@nomicfoundation/hardhat-ignition-viem/-/hardhat-ignition-viem-0.15.1.tgz#35bff84c6ac9ca900781a33c30965270b2cf9398"
-  integrity sha512-1mjIbZhT4fAVrsEw5y0TDBLVNNMPHnbUq8aKFcHc5si5YswxgcXZE2AgoseXwc7IsOPHO7gtBwpjHFNBtuJCtQ==
+  version "0.15.2"
+  resolved "https://registry.yarnpkg.com/@nomicfoundation/hardhat-ignition-viem/-/hardhat-ignition-viem-0.15.2.tgz#17102000def82f038db5fc6d7e8e322a5f30002d"
+  integrity sha512-iYmw9vJLXY1Tum0idnNsrsEmuvHsRDVJcudgzaMY6sA2nLLhJDSReK2gVZdtx3rdfJz4QRhG2+h2s3T+Rzv0TQ==
 
 "@nomicfoundation/hardhat-ignition@^0.15.1":
   version "0.15.1"

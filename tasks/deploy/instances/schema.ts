@@ -28,6 +28,7 @@ export const zInstanceDeployConfig = z.object({
             vaultSharesToken: zAddress.optional(),
             minimumShareReserves: zEther,
             minimumTransactionAmount: zEther,
+            circuitBreakerDelta: zEther,
             positionDuration: zDuration,
             checkpointDuration: zDuration,
             timeStretch: zEther,

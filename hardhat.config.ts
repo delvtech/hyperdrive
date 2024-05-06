@@ -1,18 +1,20 @@
 import "@nomicfoundation/hardhat-foundry";
 import "@nomicfoundation/hardhat-toolbox-viem";
+import "@nomicfoundation/hardhat-viem";
 import "dotenv/config";
 import "hardhat-deploy";
 import { HardhatUserConfig } from "hardhat/config";
 import "./tasks";
 import {
     ERC4626InstanceDeployConfigInput,
-    FactoryDeployConfigInput,
     StETHInstanceDeployConfigInput,
 } from "./tasks";
 import { EzETHInstanceDeployConfigInput } from "./tasks/deploy/instances/ezeth";
 import { RETHInstanceDeployConfigInput } from "./tasks/deploy/instances/reth";
+import { HyperdriveFactoryDeployConfigInput } from "./tasks/deploy/schemas";
 
-const TEST_FACTORY: FactoryDeployConfigInput = {
+const TEST_FACTORY: HyperdriveFactoryDeployConfigInput = {
+    name: "hello",
     governance: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
     hyperdriveGovernance: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
     defaultPausers: ["0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8"],
@@ -27,6 +29,8 @@ const TEST_FACTORY: FactoryDeployConfigInput = {
     maxFixedAPR: "0.6",
     minTimeStretchAPR: "0.01",
     maxTimeStretchAPR: "0.6",
+    minCircuitBreakerDelta: "0.5",
+    maxCircuitBreakerDelta: "1",
     minFees: {
         curve: "0.001",
         flat: "0.0001",
@@ -56,6 +60,7 @@ const TEST_ERC4626: ERC4626InstanceDeployConfigInput = {
     poolDeployConfig: {
         // baseToken: "0x...",
         // vaultSharesToken: "0x...",
+        circuitBreakerDelta: "0.6",
         minimumShareReserves: "0.001",
         minimumTransactionAmount: "0.001",
         positionDuration: "30 days",
@@ -91,6 +96,7 @@ const TEST_STETH: StETHInstanceDeployConfigInput = {
         minimumTransactionAmount: "0.001",
         positionDuration: "30 days",
         checkpointDuration: "1 day",
+        circuitBreakerDelta: "0.6",
         timeStretch: "0",
         governance: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
         feeCollector: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
@@ -122,6 +128,7 @@ const TEST_EZETH: EzETHInstanceDeployConfigInput = {
         minimumTransactionAmount: "0.001",
         positionDuration: "30 days",
         checkpointDuration: "1 day",
+        circuitBreakerDelta: "0.6",
         timeStretch: "0",
         governance: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
         feeCollector: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
@@ -153,6 +160,7 @@ const TEST_RETH: RETHInstanceDeployConfigInput = {
         minimumTransactionAmount: "0.001",
         positionDuration: "30 days",
         checkpointDuration: "1 day",
+        circuitBreakerDelta: "0.6",
         timeStretch: "0",
         governance: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
         feeCollector: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
@@ -191,17 +199,20 @@ const config: HardhatUserConfig = {
                     balance: "1000000000000000000",
                 },
             ],
-            factory: TEST_FACTORY,
+            hyperdriveDeploy: {
+                factories: [TEST_FACTORY],
+            },
+            // factory: TEST_FACTORY,
             // coordinators: {
             //   reth: "0x....",
             //   lido: "0x...."
             // },
-            instances: {
-                erc4626: [TEST_ERC4626],
-                steth: [TEST_STETH],
-                reth: [TEST_RETH],
-                ezeth: [TEST_EZETH],
-            },
+            // instances: {
+            //     erc4626: [TEST_ERC4626],
+            //     steth: [TEST_STETH],
+            //     reth: [TEST_RETH],
+            //     ezeth: [TEST_EZETH],
+            // },
         },
         sepolia: {
             chainId: 11155111,
@@ -213,15 +224,18 @@ const config: HardhatUserConfig = {
                 },
             },
             live: true,
-            factory: TEST_FACTORY,
+            // factory: TEST_FACTORY,
             // coordinators: {
             //   reth: "0x....",
             //   lido: "0x...."
             // },
-            instances: {
-                erc4626: [TEST_ERC4626],
-                steth: [TEST_STETH],
-                reth: [TEST_RETH],
+            // instances: {
+            //     erc4626: [TEST_ERC4626],
+            //     steth: [TEST_STETH],
+            //     reth: [TEST_RETH],
+            // },
+            hyperdriveDeploy: {
+                factories: [TEST_FACTORY],
             },
         },
     },

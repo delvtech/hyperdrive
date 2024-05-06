@@ -1,5 +1,4 @@
 import { subtask, types } from "hardhat/config";
-import { Deployments } from "./deployments";
 
 export type DeploySaveParams = {
     name: string;
@@ -40,13 +39,22 @@ subtask(
         undefined,
         types.boolean,
     )
+    .addOptionalParam(
+        "noSave",
+        "skip saving the deployment artifacts and data",
+        false,
+        types.boolean,
+    )
     .setAction(
         async (
             { name, abi, args, contract, address }: DeploySaveParams,
-            { run, deployments: hhDeployments, network },
+            { run, network, hyperdriveDeploy },
         ) => {
-            await hhDeployments.save(name, { abi, args, address });
-            Deployments.get().add(name, contract, address, network.name);
+            let exists = !!hyperdriveDeploy.deployments.byName(
+                name,
+                network.name,
+            );
+            // Deployments.get().add(name, contract, address, network.name);
             // skip verification on non-live networks (hardhat,foundry,etc)
             if (network.live)
                 await run("verify:verify", {

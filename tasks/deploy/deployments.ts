@@ -1,6 +1,5 @@
 import fs from "fs";
 import path from "path";
-import { zeroAddress } from "viem";
 import { z } from "zod";
 import { zAddress } from "./types";
 
@@ -12,7 +11,7 @@ export const LOCAL_FILENAME = "deployments.local.json";
 export const LOCAL_NETWORK_NAME = "hardhat";
 
 /**
- * Absolute path to the deployments file
+ * Absolute paths to files
  *
  * We use `__dirname` which gives us the location of this source file.
  * Since tasks can be run from any directory, this is the best point of reference.
@@ -29,10 +28,8 @@ export const LOCAL_DEPLOYMENTS_PATH = path.resolve(
 /** Schema for {@link DeployedContract} */
 export const zDeployedContract = z.object({
     contract: z.string().min(1, "contract cannot be empty"),
-    address: zAddress.refine((v) => !(v === zeroAddress), {
-        message: "address for DeployedContract cannot be the zero address",
-    }),
-    timestamp: z.string().datetime(),
+    address: zAddress,
+    timestamp: z.string(),
 });
 
 /**
@@ -97,6 +94,24 @@ export const zDeployments = z
 export type DeploymentsFile = z.infer<typeof zDeployments>;
 
 /**
+ * Type describing the contract deployment data file.
+ *
+ * A schema is not needed for this because it is not intended for manual modification.
+ */
+export type DeploymentDataFile = Record<
+    // network name
+    string,
+    Record<
+        // contract instance name
+        string,
+        {
+            contract: string;
+            args: string;
+        }
+    >
+>;
+
+/**
  * Logic for interacting with the {@link DeploymentsFile}.
  *
  * This class is implemented as a singleton because multiple
@@ -114,7 +129,7 @@ export class Deployments {
         if (!fs.existsSync(LOCAL_DEPLOYMENTS_PATH))
             fs.writeFileSync(LOCAL_DEPLOYMENTS_PATH, "{}");
         this.#f = zDeployments.parse(
-            JSON.parse(fs.readFileSync(DEPLOYMENTS_PATH).toString()),
+            JSON.parse(fs.readFileSync(LOCAL_DEPLOYMENTS_PATH).toString()),
         );
     }
 
@@ -202,7 +217,7 @@ export class Deployments {
         });
         if (!(network in this.#f)) this.#f[network] = {};
         this.#f[network][name] = parsed;
-        this.#updateFile(network);
+        this.#updateDeploymentsFile(network);
     }
 
     /**
@@ -213,14 +228,14 @@ export class Deployments {
     remove(name: string, network: string) {
         if (this.byName(name, network)) {
             delete this.#f[network][name];
-            this.#updateFile(network);
+            this.#updateDeploymentsFile(network);
         }
     }
 
     /**
      * Write the current {@link DeploymentsFile} object to disk.
      */
-    #updateFile(network: string) {
+    #updateDeploymentsFile(network: string) {
         let isLocal = network == LOCAL_NETWORK_NAME;
         let data = isLocal
             ? {
