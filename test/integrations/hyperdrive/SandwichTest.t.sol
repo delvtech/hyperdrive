@@ -270,63 +270,146 @@ contract SandwichTest is HyperdriveTest {
         assertGe(lpProceeds, contribution);
     }
 
+    struct TestCase {
+        uint256 aliceContribution;
+        uint256 aliceLpShares;
+        uint256 aliceBaseProceeds;
+        uint256 aliceWithdrawalShares;
+        uint256 celineContribution;
+        uint256 celineBaseProceeds;
+        uint256 celineWithdrawalShares;
+    }
+
     // This test ensures that add liquidity sandwiches are limited in scope for
     // a 5% time stretch. In general, these sandwich attacks can result in early
     // LPs losing money, but these vulnerabilities are mitigated by circuit
     // breakers on `addLiquidity`.
     function test_sandwich_add_liquidity(
-        uint256 contribution,
-        uint256 celineContribution
+        uint256 aliceContribution,
+        uint256 celineContribution,
+        uint256 timeStretchAPR,
+        uint256 shortAmount,
+        uint256 longBasePaid
     ) external {
+        // Normalize the test parameters.
+        TestCase memory testCase;
+        testCase.aliceContribution = aliceContribution.normalizeToRange(
+            1_000e18,
+            100_000_000e18
+        );
+        testCase.celineContribution = celineContribution.normalizeToRange(
+            1_000e18,
+            100_000_000e18
+        );
+        timeStretchAPR = timeStretchAPR.normalizeToRange(0.01e18, 0.3e18);
+
+        // Alice deploys and initializes the pool.
         IHyperdrive.PoolConfig memory config = testConfig(
-            0.05e18,
+            timeStretchAPR,
             POSITION_DURATION
         );
         config.fees.curve = 0.01e18;
         config.fees.flat = 0.0005e18;
+        config.circuitBreakerDelta = 0.15e18;
         deploy(alice, config);
         uint256 apr = 0.05e18;
-        contribution = contribution.normalizeToRange(100e18, 100_000_000e18);
-        uint256 lpShares = initialize(alice, apr, contribution);
+        testCase.aliceLpShares = initialize(
+            alice,
+            apr,
+            testCase.aliceContribution
+        );
 
         // Celine opens a large short.
-        uint256 shortAmount = hyperdrive.calculateMaxShort().mulDown(0.9e18);
+        shortAmount = shortAmount.normalizeToRange(
+            hyperdrive.getPoolConfig().minimumTransactionAmount,
+            hyperdrive.calculateMaxShort()
+        );
         (, uint256 shortPaid) = openShort(celine, shortAmount);
 
         // Celine adds liquidity.
-        celineContribution = celineContribution.normalizeToRange(
-            100e18,
-            100_000_000e18
-        );
-        uint256 celineLpShares = addLiquidity(celine, celineContribution);
+        vm.stopPrank();
+        vm.startPrank(celine);
+        baseToken.mint(testCase.celineContribution);
+        baseToken.approve(address(hyperdrive), testCase.celineContribution);
+        try
+            hyperdrive.addLiquidity(
+                testCase.celineContribution,
+                0,
+                0,
+                type(uint256).max,
+                IHyperdrive.Options({
+                    destination: celine,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            )
+        returns (uint256 celineLpShares) {
+            // Bob opens a large long.
+            longBasePaid = longBasePaid.normalizeToRange(
+                hyperdrive.getPoolConfig().minimumTransactionAmount,
+                hyperdrive.calculateMaxLong().mulDown(0.9e18)
+            );
+            (uint256 maturityTime, uint256 longAmount) = openLong(
+                celine,
+                longBasePaid
+            );
 
-        // Bob opens a large long.
-        uint256 basePaid = hyperdrive.calculateMaxLong().mulDown(0.9e18);
-        (uint256 maturityTime, uint256 bondAmount) = openLong(celine, basePaid);
+            // The term advances. Alice removes her liquidity.
+            advanceTime(POSITION_DURATION, int256(apr));
 
-        // The term advances. Alice removes her liquidity.
-        advanceTime(POSITION_DURATION, 0.05e18);
+            // Remove liquidity.
+            (
+                testCase.aliceBaseProceeds,
+                testCase.aliceWithdrawalShares
+            ) = removeLiquidity(alice, testCase.aliceLpShares);
+            assertGt(
+                testCase.aliceBaseProceeds,
+                testCase.aliceContribution.mulDown(1.03e18)
+            );
+            assertEq(testCase.aliceWithdrawalShares, 0);
 
-        // Remove liquidity.
-        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
-            alice,
-            lpShares
-        );
-        assertGt(baseProceeds, contribution);
-        assertEq(withdrawalShares, 0);
+            // Celine closes her long and removes liquidity.
+            uint256 shortProceeds = closeShort(
+                celine,
+                maturityTime,
+                shortAmount
+            );
+            uint256 longProceeds = closeLong(celine, maturityTime, longAmount);
+            (
+                testCase.celineBaseProceeds,
+                testCase.celineWithdrawalShares
+            ) = removeLiquidity(celine, celineLpShares);
+            assertLt(
+                testCase.celineBaseProceeds + longProceeds + shortProceeds,
+                (testCase.celineContribution + longBasePaid + shortPaid)
+                    .mulDown(1.06e18)
+            );
+            assertEq(testCase.celineWithdrawalShares, 0);
 
-        // Celine closes her long and removes liquidity.
-        uint256 shortProceeds = closeShort(celine, maturityTime, shortAmount);
-        uint256 longProceeds = closeLong(celine, maturityTime, bondAmount);
-        (baseProceeds, withdrawalShares) = removeLiquidity(
-            celine,
-            celineLpShares
-        );
-        uint256 celineContribution_ = celineContribution; // avoid stack-too-deep
-        assertLt(
-            baseProceeds + longProceeds + shortProceeds,
-            (celineContribution_ + basePaid + shortPaid).mulDown(1.06e18)
-        );
-        assertEq(withdrawalShares, 0);
+            // Ensure that Alice did better than Celine.
+            uint256 _longBasePaid = longBasePaid;
+            uint256 _shortPaid = shortPaid;
+            TestCase memory _testCase = testCase;
+            assertGt(
+                _testCase
+                    .aliceBaseProceeds
+                    .divDown(_testCase.aliceContribution)
+                    .mulDown(1.02e18),
+                (_testCase.celineBaseProceeds + longProceeds + shortProceeds)
+                    .divDown(
+                        _testCase.celineContribution +
+                            _longBasePaid +
+                            _shortPaid
+                    )
+            );
+        } catch (bytes memory error) {
+            assert(
+                error.eq(
+                    abi.encodeWithSelector(
+                        IHyperdrive.CircuitBreakerTriggered.selector
+                    )
+                )
+            );
+        }
     }
 }
