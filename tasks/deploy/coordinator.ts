@@ -1,8 +1,8 @@
 import { task } from "hardhat/config";
 import {
-    HyperdriveDeployBaseTaskParams,
     HyperdriveDeployBaseTask,
-} from "./environment-extensions";
+    HyperdriveDeployBaseTaskParams,
+} from "./lib";
 
 export type DeployCoordinatorParams = HyperdriveDeployBaseTaskParams & {};
 

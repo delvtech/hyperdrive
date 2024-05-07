@@ -2,7 +2,7 @@ import { task } from "hardhat/config";
 import {
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
-} from "./environment-extensions";
+} from "./lib";
 
 export type DeployRegistryParams = HyperdriveDeployBaseTaskParams & {
     name: string;
@@ -16,8 +16,13 @@ HyperdriveDeployBaseTask(
 ).setAction(
     async ({ name, ...rest }: DeployRegistryParams, { hyperdriveDeploy }) => {
         console.log("\nRunning deploy:registry ...");
-        await hyperdriveDeploy.deployContract(name, "HyperdriveRegistry", [], {
-            ...rest,
-        });
+        await hyperdriveDeploy.deployContract(
+            name,
+            "HyperdriveRegistry",
+            [name],
+            {
+                ...rest,
+            },
+        );
     },
 );

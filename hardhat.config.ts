@@ -5,7 +5,16 @@ import "dotenv/config";
 import "hardhat-deploy";
 import { HardhatUserConfig } from "hardhat/config";
 import "./tasks";
-import { SAMPLE_HYPERDRIVE } from "./tasks/deploy/config/sample";
+import {
+    SAMPLE_COORDINATOR,
+    SAMPLE_FACTORY,
+    SAMPLE_INSTANCE,
+} from "./tasks/deploy/config/sample";
+import {
+    SEPOLIA_DAI_14DAY,
+    SEPOLIA_ERC4626_COORDINATOR,
+    SEPOLIA_FACTORY,
+} from "./tasks/deploy/config/sepolia";
 
 const { env } = process;
 const config: HardhatUserConfig = {
@@ -32,7 +41,20 @@ const config: HardhatUserConfig = {
                     balance: "1000000000000000000",
                 },
             ],
-            hyperdriveDeploy: SAMPLE_HYPERDRIVE,
+            hyperdriveDeploy: {
+                factories: [SEPOLIA_FACTORY],
+                coordinators: [SEPOLIA_ERC4626_COORDINATOR],
+                instances: [SEPOLIA_DAI_14DAY],
+            },
+        },
+        localhost: {
+            url: "http://127.0.0.1:8545/",
+            accounts: [env.PRIVATE_KEY!],
+            hyperdriveDeploy: {
+                factories: [SAMPLE_FACTORY],
+                coordinators: [SAMPLE_COORDINATOR],
+                instances: [SAMPLE_INSTANCE],
+            },
         },
         sepolia: {
             chainId: 11155111,
@@ -44,8 +66,11 @@ const config: HardhatUserConfig = {
                 },
             },
             live: true,
-
-            hyperdriveDeploy: SAMPLE_HYPERDRIVE,
+            hyperdriveDeploy: {
+                factories: [SEPOLIA_FACTORY],
+                coordinators: [SEPOLIA_ERC4626_COORDINATOR],
+                instances: [SEPOLIA_DAI_14DAY],
+            },
         },
     },
     etherscan: {

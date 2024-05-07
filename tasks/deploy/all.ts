@@ -1,12 +1,10 @@
 import { task } from "hardhat/config";
 import { DeployFactoryParams } from "./factory";
 
-import { DeployCoordinatorParams } from "./coordinator";
 import {
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
-} from "./environment-extensions";
-import { DeployInstanceParams } from "./instance";
+} from "./lib";
 export type DeployAllParams = HyperdriveDeployBaseTaskParams & {};
 
 HyperdriveDeployBaseTask(
@@ -14,22 +12,39 @@ HyperdriveDeployBaseTask(
         "deploy:all",
         "deploys the HyperdriveFactory, all deployer coordinators, and all hyperdrive instances",
     ),
-).setAction(async ({ name, ...rest }: DeployAllParams, { run }) => {
-    // deploy the factory
-    await run("deploy:factory", {
-        name: "SAMPLE_FACTORY",
-        ...rest,
-    } as DeployFactoryParams);
+).setAction(
+    async ({ name, ...rest }: DeployAllParams, { run, config, network }) => {
+        // deploy the registry
+        await run("deploy:registry", {
+            name: `${name}_REGISTRY`,
+            ...rest,
+        });
 
-    // deploy the coordinator
-    await run("deploy:coordinator", {
-        name: "SAMPLE_COORDINATOR",
-        ...rest,
-    } as DeployCoordinatorParams);
+        let hyperdriveDeploy = config.networks[network.name].hyperdriveDeploy;
+        if (!hyperdriveDeploy) {
+            console.log("no config found for network");
+            return;
+        }
 
-    // deploy the instance
-    await run("deploy:instance", {
-        name: "SAMPLE_INSTANCE",
-        ...rest,
-    } as DeployInstanceParams);
-});
+        for (let f of hyperdriveDeploy.factories ?? []) {
+            await run("deploy:factory", {
+                name: f.name,
+                ...rest,
+            } as DeployFactoryParams);
+        }
+
+        for (let f of hyperdriveDeploy.coordinators ?? []) {
+            await run("deploy:coordinator", {
+                name: f.name,
+                ...rest,
+            } as DeployFactoryParams);
+        }
+
+        for (let f of hyperdriveDeploy.instances ?? []) {
+            await run("deploy:instance", {
+                name: f.name,
+                ...rest,
+            } as DeployFactoryParams);
+        }
+    },
+);

@@ -15,7 +15,12 @@ task("deploy:verify", "verifies contract(s) from the deployments file")
     .setAction(
         async (
             { name }: { name: string },
-            { hyperdriveDeploy: { deployments }, run, network },
+            {
+                deployments: hhDeployments,
+                hyperdriveDeploy: { deployments },
+                run,
+                network,
+            },
         ) => {
             // Skip verifying contracts on test chains.
             if (!network.live) {
@@ -30,7 +35,7 @@ task("deploy:verify", "verifies contract(s) from the deployments file")
                 const artifact = deployments.byName(name, network.name);
                 if (name) {
                     try {
-                        let { args } = deployments.data(name, network.name);
+                        let { args } = await hhDeployments.get(name)!;
                         await run("verify:verify", {
                             address: artifact.address,
                             constructorArguments: args,
@@ -48,7 +53,7 @@ task("deploy:verify", "verifies contract(s) from the deployments file")
             // - Use the hh-deploy artifacts to obtain the constructorArguments.
             const deployedContracts = deployments.byNetwork(network.name);
             for (let dc of deployedContracts) {
-                let { args } = deployments.data(dc.name, network.name);
+                let { args } = await hhDeployments.get(dc.name);
                 await run("verify:verify", {
                     address: dc.address,
                     constructorArguments: args,

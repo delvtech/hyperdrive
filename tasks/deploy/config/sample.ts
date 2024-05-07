@@ -1,12 +1,11 @@
 import { parseEther, toFunctionSelector } from "viem";
 import {
     HyperdriveCoordinatorDeployConfigInput,
-    HyperdriveDeployConfigInput,
     HyperdriveFactoryDeployConfigInput,
     HyperdriveInstanceDeployConfigInput,
-} from "../schemas";
+} from "../lib";
 
-const SAMPLE_FACTORY: HyperdriveFactoryDeployConfigInput = {
+export const SAMPLE_FACTORY: HyperdriveFactoryDeployConfigInput = {
     name: "SAMPLE_FACTORY",
     governance: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
     hyperdriveGovernance: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
@@ -38,7 +37,7 @@ const SAMPLE_FACTORY: HyperdriveFactoryDeployConfigInput = {
     },
 };
 
-const SAMPLE_COORDINATOR: HyperdriveCoordinatorDeployConfigInput = {
+export const SAMPLE_COORDINATOR: HyperdriveCoordinatorDeployConfigInput = {
     name: "SAMPLE_COORDINATOR",
     contract: "ERC4626HyperdriveDeployerCoordinator",
     factoryName: "SAMPLE_FACTORY",
@@ -47,10 +46,8 @@ const SAMPLE_COORDINATOR: HyperdriveCoordinatorDeployConfigInput = {
     setup: async (hre) => {
         // register the coordinator with the factory if the deployer is the governance address
         let deployer = (await hre.getNamedAccounts())["deployer"];
-        let coordinatorDeployment = hre.hyperdriveDeploy.deployments.byName(
-            "SAMPLE_COORDINATOR_ERC4626HyperdriveDeployerCoordinator",
-            hre.network.name,
-        );
+        let coordinatorDeployment =
+            hre.hyperdriveDeploy.deployments.byName("SAMPLE_COORDINATOR");
         let coordinator = await hre.viem.getContractAt(
             "ERC4626HyperdriveDeployerCoordinator",
             coordinatorDeployment.address,
@@ -75,7 +72,7 @@ const SAMPLE_COORDINATOR: HyperdriveCoordinatorDeployConfigInput = {
     },
 };
 
-const SAMPLE_INSTANCE: HyperdriveInstanceDeployConfigInput = {
+export const SAMPLE_INSTANCE: HyperdriveInstanceDeployConfigInput = {
     name: "SAMPLE_INSTANCE",
     contract: "ERC4626Hyperdrive",
     coordinatorName: "SAMPLE_COORDINATOR_ERC4626HyperdriveDeployerCoordinator",
@@ -121,16 +118,13 @@ const SAMPLE_INSTANCE: HyperdriveInstanceDeployConfigInput = {
                 // approve the coordinator for the contribution
                 tx = await baseToken.write.approve([
                     hre.hyperdriveDeploy.deployments.byName(
-                        "SAMPLE_COORDINATOR_ERC4626HyperdriveDeployerCoordinator",
-                        hre.network.name,
+                        "SAMPLE_COORDINATOR",
                     ).address,
                     parseEther("1000"),
                 ]);
                 tx = await baseToken.write.approve([
-                    hre.hyperdriveDeploy.deployments.byName(
-                        "SAMPLE_FACTORY",
-                        hre.network.name,
-                    ).address,
+                    hre.hyperdriveDeploy.deployments.byName("SAMPLE_FACTORY")
+                        .address,
                     parseEther("1000"),
                 ]);
                 await pc.waitForTransactionReceipt({ hash: tx });
@@ -143,10 +137,10 @@ const SAMPLE_INSTANCE: HyperdriveInstanceDeployConfigInput = {
             name: "SAMPLE_SHARES",
             deploy: async (hre) => {
                 let pc = await hre.viem.getPublicClient();
-                let baseToken = hre.hyperdriveDeploy.deployments.byName(
-                    "SAMPLE_BASE",
-                    hre.network.name,
-                ).address;
+                let baseToken =
+                    hre.hyperdriveDeploy.deployments.byName(
+                        "SAMPLE_BASE",
+                    ).address;
                 let vaultSharesToken =
                     await hre.hyperdriveDeploy.deployContract(
                         "SAMPLE_SHARES",
@@ -176,17 +170,14 @@ const SAMPLE_INSTANCE: HyperdriveInstanceDeployConfigInput = {
                 // approve the coordinator for the contribution
                 tx = await vaultSharesToken.write.approve([
                     hre.hyperdriveDeploy.deployments.byName(
-                        "SAMPLE_COORDINATOR_ERC4626HyperdriveDeployerCoordinator",
-                        hre.network.name,
+                        "SAMPLE_COORDINATOR",
                     ).address,
                     parseEther("1000"),
                 ]);
                 await pc.waitForTransactionReceipt({ hash: tx });
                 tx = await vaultSharesToken.write.approve([
-                    hre.hyperdriveDeploy.deployments.byName(
-                        "SAMPLE_FACTORY",
-                        hre.network.name,
-                    ).address,
+                    hre.hyperdriveDeploy.deployments.byName("SAMPLE_FACTORY")
+                        .address,
                     parseEther("1000"),
                 ]);
                 await pc.waitForTransactionReceipt({ hash: tx });
@@ -210,7 +201,7 @@ const SAMPLE_INSTANCE: HyperdriveInstanceDeployConfigInput = {
     },
 };
 
-// const SAMPLE_STETH: StETHInstanceDeployConfigInput = {
+// export const SAMPLE_STETH: StETHInstanceDeployConfigInput = {
 //     name: "SAMPLE_STETH",
 //     deploymentId: "0x66666661",
 //     salt: "0x6942011",
@@ -242,7 +233,7 @@ const SAMPLE_INSTANCE: HyperdriveInstanceDeployConfigInput = {
 //     },
 // };
 
-// const SAMPLE_EZETH: EzETHInstanceDeployConfigInput = {
+// export const SAMPLE_EZETH: EzETHInstanceDeployConfigInput = {
 //     name: "SAMPLE_EZETH",
 //     deploymentId: "0xabbabac",
 //     salt: "0x69420",
@@ -274,7 +265,7 @@ const SAMPLE_INSTANCE: HyperdriveInstanceDeployConfigInput = {
 //     },
 // };
 
-// const SAMPLE_RETH: RETHInstanceDeployConfigInput = {
+// export const SAMPLE_RETH: RETHInstanceDeployConfigInput = {
 //     name: "SAMPLE_RETH",
 //     deploymentId: "0x665",
 //     salt: "0x69420111232",
@@ -305,9 +296,3 @@ const SAMPLE_INSTANCE: HyperdriveInstanceDeployConfigInput = {
 //         },
 //     },
 // };
-
-export const SAMPLE_HYPERDRIVE: HyperdriveDeployConfigInput = {
-    factories: [SAMPLE_FACTORY],
-    coordinators: [SAMPLE_COORDINATOR],
-    instances: [SAMPLE_INSTANCE],
-};
