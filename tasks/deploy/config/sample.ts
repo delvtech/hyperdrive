@@ -102,7 +102,6 @@ export const SAMPLE_INSTANCE: HyperdriveInstanceDeployConfigInput = {
                         true,
                         parseEther("10000"),
                     ],
-                    { noVerify: true },
                 );
                 // allow minting by the public
                 let tx = await baseToken.write.setPublicCapability([
@@ -154,7 +153,6 @@ export const SAMPLE_INSTANCE: HyperdriveInstanceDeployConfigInput = {
                             true,
                             parseEther("10000"),
                         ],
-                        { noVerify: true },
                     );
                 // allow minting by the public
                 let tx = await vaultSharesToken.write.setPublicCapability([

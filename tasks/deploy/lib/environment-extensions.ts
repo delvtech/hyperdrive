@@ -297,7 +297,7 @@ extendEnvironment((hre) => {
             let coreDeployer = await deployContract(
                 `${name}_${coreDeployerContractName}`,
                 coreDeployerContractName,
-                [],
+                coordinatorConfig.coreConstructorArguments ? await coordinatorConfig.coreConstructorArguments(hre) : [],
                 options,
             );
 
@@ -356,7 +356,7 @@ extendEnvironment((hre) => {
                 let tx = await wc.deployContract({
                     abi: targetArtifact.abi,
                     bytecode: targetBytecode as `0x${string}`,
-                    args: [],
+                    args: coordinatorConfig.targetConstructorArguments ? await coordinatorConfig.targetConstructorArguments(hre) : [],
                     gas: 15_000_000n,
                 });
                 let receipt = await pc.waitForTransactionReceipt({ hash: tx });
@@ -387,6 +387,7 @@ extendEnvironment((hre) => {
 
                 coordinatorArgs.push(address);
             }
+
 
             // Deploy the coordinator
             if (tokenAddress) coordinatorArgs.push(tokenAddress);
@@ -522,7 +523,7 @@ extendEnvironment((hre) => {
         let initialVaultSharePrice;
         for (let i = 0; i < targetCount; i++) {
             let contractName = `${prefix}Target${i}`;
-
+            console.log(`deploying ${name}_${contractName}...`)
             // Simulate and deploy the target
             //  - Skip if deployment already exists and overwrite=false
             //  - Simulate the deployment of the target so we can obtain the address.
@@ -535,11 +536,19 @@ extendEnvironment((hre) => {
                 console.log(
                     `skipping ${name}_${contractName}, found existing deployment`,
                 );
+                // Address must be added to the target list
                 targets.push(
                     deployments.byName(
                         `${name}_${contractName}`,
                     ).address,
                 );
+                // Edge case if all targets are deployed but the instance isn't, we need to obtain
+                // the initial share price
+                initialVaultSharePrice = (
+                    await coordinator.read.deployments([
+                        instanceConfig.deploymentId,
+                    ])
+            ).initialSharePrice
                 continue;
             }
             let { result: address } = await factory.simulate.deployTarget(
@@ -581,6 +590,7 @@ extendEnvironment((hre) => {
 
             // Save
             if (!options?.noSave) {
+              console.log(` - saving ${name}_${contractName}`)
                 deployments.add(
                     `${name}_${contractName}`,
                     contractName,
@@ -593,20 +603,21 @@ extendEnvironment((hre) => {
                 });
             }
             // Verify
-            if (!options?.noVerify && hre.network.live)
-                await hre.run("verify:verify", {
+            if (!options?.noVerify && hre.network.live){               
+              console.log(` - verifying ${name}_${contractName}`)
+              await hre.run("verify:verify", {
                     address: address,
                     constructorArguments: [
                         { ...poolDeployConfig, initialVaultSharePrice },
                     ],
                     network: hre.network.name,
                 });
-
+           }
             // Read the deployment data for the target and add to the list
             targets.push(address);
         }
 
-        // Deploy the Hyperdrive instance
+        // Form the Hyperdrive instance args
         let hyperdriveConstructorArgs = [
             instanceConfig.deploymentId,
             coordinator.address,
@@ -626,20 +637,21 @@ extendEnvironment((hre) => {
 
         // Skip if deployment already exists and overwrite=false
         if (
-            !!deployments.byNameSafe(`${name}_${contract}` ) &&
+            !!deployments.byNameSafe(name) &&
             !options?.overwrite
         ) {
             console.log(
                 `skipping ${name}_${contract}, found existing deployment`,
             );
             return hre.viem.getContractAt(
-                name,
-                deployments.byName(`${name}_${contract}` )
+                contract,
+                deployments.byName(name)
                     .address,
             );
         }
 
         // Simulate and deploy
+        console.log(`deploying ${name}_${prefix}Hyperdrive`);
         let { result: address } = await factory.simulate.deployAndInitialize(
             hyperdriveConstructorArgs as any,
             {
@@ -655,6 +667,7 @@ extendEnvironment((hre) => {
         // Save
         let abi = (await hre.artifacts.readArtifact(contract)).abi;
         if (!options?.noSave) {
+          console.log(` - Saving ${name}_${prefix}Hyperdrive`)
             deployments.add(
                 name,
                 contract,
@@ -667,12 +680,14 @@ extendEnvironment((hre) => {
             });
         }
         // Verify
-        if (!options?.noVerify && hre.network.live)
+        if (!options?.noVerify && hre.network.live){  
+          console.log(` - Verifying ${name}_${prefix}Hyperdrive`)
             await hre.run("verify:verify", {
                 address: address,
                 constructorArguments: hyperdriveConstructorArgs,
                 network: hre.network.name,
-            });
+            }); 
+        }
 
         return hre.viem.getContractAt(contract, address);
     };

@@ -20,6 +20,7 @@ task("deploy:verify", "verifies contract(s) from the deployments file")
                 hyperdriveDeploy: { deployments },
                 run,
                 network,
+                artifacts,
             },
         ) => {
             // Skip verifying contracts on test chains.
@@ -32,20 +33,22 @@ task("deploy:verify", "verifies contract(s) from the deployments file")
 
             // Verify a single deployment if name is specified.
             if (name) {
-                const artifact = deployments.byName(name, network.name);
-                if (name) {
-                    try {
-                        let { args } = await hhDeployments.get(name)!;
-                        await run("verify:verify", {
-                            address: artifact.address,
-                            constructorArguments: args,
-                            network: network.name,
-                        });
-                    } catch (e) {
-                        console.error(e);
-                    }
-                    return;
+                const deploymentArtifact = deployments.byName(name);
+                const artifact = await artifacts.readArtifact(
+                    deploymentArtifact.contract,
+                );
+                try {
+                    let { args } = await hhDeployments.get(name)!;
+                    await run("verify:verify", {
+                        address: deploymentArtifact.address,
+                        constructorArguments: args,
+                        contract:
+                            artifact.sourceName + ":" + artifact.contractName,
+                    });
+                } catch (e) {
+                    console.error(e);
                 }
+                return;
             }
 
             // Verify all deployed contracts for the network since name is unspecified.

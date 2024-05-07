@@ -6,15 +6,25 @@ import "hardhat-deploy";
 import { HardhatUserConfig } from "hardhat/config";
 import "./tasks";
 import {
+    SEPOLIA_DAI_14DAY,
+    SEPOLIA_DAI_30DAY,
+    SEPOLIA_ERC4626_COORDINATOR,
+    SEPOLIA_EZETH_14DAY,
+    SEPOLIA_EZETH_30DAY,
+    SEPOLIA_EZETH_COORDINATOR,
+    SEPOLIA_FACTORY,
+    SEPOLIA_RETH_14DAY,
+    SEPOLIA_RETH_30DAY,
+    SEPOLIA_RETH_COORDINATOR,
+    SEPOLIA_STETH_14DAY,
+    SEPOLIA_STETH_30DAY,
+    SEPOLIA_STETH_COORDINATOR,
+} from "./tasks/deploy/config/";
+import {
     SAMPLE_COORDINATOR,
     SAMPLE_FACTORY,
     SAMPLE_INSTANCE,
 } from "./tasks/deploy/config/sample";
-import {
-    SEPOLIA_DAI_14DAY,
-    SEPOLIA_ERC4626_COORDINATOR,
-    SEPOLIA_FACTORY,
-} from "./tasks/deploy/config/sepolia";
 
 const { env } = process;
 const config: HardhatUserConfig = {
@@ -23,7 +33,7 @@ const config: HardhatUserConfig = {
         settings: {
             optimizer: {
                 enabled: true,
-                runs: 10_000_000,
+                runs: 10000000,
             },
             evmVersion: "paris",
         },
@@ -32,6 +42,9 @@ const config: HardhatUserConfig = {
         deployer: {
             default: 0,
         },
+    },
+    paths: {
+        artifacts: "./artifacts",
     },
     networks: {
         hardhat: {
@@ -43,8 +56,22 @@ const config: HardhatUserConfig = {
             ],
             hyperdriveDeploy: {
                 factories: [SEPOLIA_FACTORY],
-                coordinators: [SEPOLIA_ERC4626_COORDINATOR],
-                instances: [SEPOLIA_DAI_14DAY],
+                coordinators: [
+                    SEPOLIA_ERC4626_COORDINATOR,
+                    SEPOLIA_STETH_COORDINATOR,
+                    SEPOLIA_RETH_COORDINATOR,
+                    SEPOLIA_EZETH_COORDINATOR,
+                ],
+                instances: [
+                    SEPOLIA_DAI_14DAY,
+                    SEPOLIA_DAI_30DAY,
+                    SEPOLIA_STETH_14DAY,
+                    SEPOLIA_STETH_30DAY,
+                    SEPOLIA_RETH_14DAY,
+                    SEPOLIA_RETH_30DAY,
+                    SEPOLIA_EZETH_14DAY,
+                    SEPOLIA_EZETH_30DAY,
+                ],
             },
         },
         localhost: {
@@ -68,8 +95,22 @@ const config: HardhatUserConfig = {
             live: true,
             hyperdriveDeploy: {
                 factories: [SEPOLIA_FACTORY],
-                coordinators: [SEPOLIA_ERC4626_COORDINATOR],
-                instances: [SEPOLIA_DAI_14DAY],
+                coordinators: [
+                    SEPOLIA_ERC4626_COORDINATOR,
+                    SEPOLIA_STETH_COORDINATOR,
+                    SEPOLIA_RETH_COORDINATOR,
+                    SEPOLIA_EZETH_COORDINATOR,
+                ],
+                instances: [
+                    SEPOLIA_DAI_14DAY,
+                    SEPOLIA_DAI_30DAY,
+                    SEPOLIA_STETH_14DAY,
+                    SEPOLIA_STETH_30DAY,
+                    SEPOLIA_RETH_14DAY,
+                    SEPOLIA_RETH_30DAY,
+                    SEPOLIA_EZETH_14DAY,
+                    SEPOLIA_EZETH_30DAY,
+                ],
             },
         },
     },
