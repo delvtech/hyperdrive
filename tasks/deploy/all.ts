@@ -1,59 +1,35 @@
-import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
-import { task, types } from "hardhat/config";
-import { DeployCoordinatorsAllParams } from "./coordinators";
+import { task } from "hardhat/config";
 import { DeployFactoryParams } from "./factory";
-import { DeployForwarderParams } from "./forwarder";
-import { DeployInstancesAllParams } from "./instances";
-import { DeployRegistryParams } from "./registry";
-dayjs.extend(duration);
 
-export type DeployAllParams = {
-    overwrite?: boolean;
-} & DeployCoordinatorsAllParams;
+import { DeployCoordinatorParams } from "./coordinator";
+import {
+    HyperdriveDeployBaseTask,
+    HyperdriveDeployBaseTaskParams,
+} from "./environment-extensions";
+import { DeployInstanceParams } from "./instance";
+export type DeployAllParams = HyperdriveDeployBaseTaskParams & {};
 
-task(
-    "deploy:all",
-    "deploys the HyperdriveFactory, all deployer coordinators, and all hyperdrive instances",
-)
-    .addOptionalParam(
-        "overwrite",
-        "overwrite deployment artifacts if they exist",
-        false,
-        types.boolean,
-    )
-    .addOptionalParam(
-        "lido",
-        "address of the lido contract",
-        undefined,
-        types.string,
-    )
-    .addOptionalParam(
-        "reth",
-        "address of the reth contract",
-        undefined,
-        types.string,
-    )
-    .addOptionalParam("admin", "admin address", undefined, types.string)
-    .setAction(async ({ admin, overwrite }: DeployAllParams, { run }) => {
-        // deploy the forwarder
-        await run("deploy:forwarder", { overwrite } as DeployForwarderParams);
+HyperdriveDeployBaseTask(
+    task(
+        "deploy:all",
+        "deploys the HyperdriveFactory, all deployer coordinators, and all hyperdrive instances",
+    ),
+).setAction(async ({ name, ...rest }: DeployAllParams, { run }) => {
+    // deploy the factory
+    await run("deploy:factory", {
+        name: "SAMPLE_FACTORY",
+        ...rest,
+    } as DeployFactoryParams);
 
-        // deploy the factory
-        await run("deploy:factory", { overwrite } as DeployFactoryParams);
+    // deploy the coordinator
+    await run("deploy:coordinator", {
+        name: "SAMPLE_COORDINATOR",
+        ...rest,
+    } as DeployCoordinatorParams);
 
-        // deploy the registry
-        await run("deploy:registry", { overwrite } as DeployRegistryParams);
-
-        // deploy all deployer coordinators
-        await run("deploy:coordinators:all", {
-            admin,
-            overwrite,
-        } as DeployCoordinatorsAllParams);
-
-        // deploy all instances
-        await run("deploy:instances:all", {
-            admin,
-            overwrite,
-        } as DeployInstancesAllParams);
-    });
+    // deploy the instance
+    await run("deploy:instance", {
+        name: "SAMPLE_INSTANCE",
+        ...rest,
+    } as DeployInstanceParams);
+});

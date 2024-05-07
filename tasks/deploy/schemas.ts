@@ -50,16 +50,15 @@ export const zHyperdriveCoordinatorDeployConfig = z.object({
     name: z.string(),
     contract: z.string(),
     factoryName: z.string(),
-    // lpMath: z.string({ description: "name of the LPMath contract to link" }),
+    targetCount: z.number(),
+    lpMath: z.string({ description: "name of the LPMath contract to link" }),
     setup: z.custom<(_hre: typeof hre) => Promise<void>>().optional(),
     token: z
         .union([
             zAddress,
             z.object({
                 name: z.string(),
-                contract: z.string(),
-                constructorArgs: z.any().array(),
-                setup: z
+                deploy: z
                     .custom<(_hre: typeof hre) => Promise<void>>()
                     .optional(),
             }),
@@ -97,9 +96,7 @@ export const zHyperdriveInstanceDeployConfig = z.object({
                     zAddress,
                     z.object({
                         name: z.string(),
-                        contract: z.string(),
-                        constructorArgs: z.any().array(),
-                        setup: z
+                        deploy: z
                             .custom<(_hre: typeof hre) => Promise<void>>()
                             .optional(),
                     }),
@@ -110,9 +107,7 @@ export const zHyperdriveInstanceDeployConfig = z.object({
                     zAddress,
                     z.object({
                         name: z.string(),
-                        contract: z.string(),
-                        constructorArgs: z.any().array(),
-                        setup: z
+                        deploy: z
                             .custom<(_hre: typeof hre) => Promise<void>>()
                             .optional(),
                     }),
