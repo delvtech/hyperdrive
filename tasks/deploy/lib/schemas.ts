@@ -55,8 +55,12 @@ export const zHyperdriveCoordinatorDeployConfig = z.object({
     lpMath: z.string({ description: "name of the LPMath contract to link" }),
     prepare: z.custom<(_hre: typeof hre) => Promise<void>>().optional(),
     setup: z.custom<(_hre: typeof hre) => Promise<void>>().optional(),
-    coreConstructorArguments: z.custom<(_hre: typeof hre) => Promise<any[]>>().optional(),
-    targetConstructorArguments: z.custom<(_hre: typeof hre) => Promise<any[]>>().optional(),
+    coreConstructorArguments: z
+        .custom<(_hre: typeof hre) => Promise<any[]>>()
+        .optional(),
+    targetConstructorArguments: z
+        .custom<(_hre: typeof hre) => Promise<any[]>>()
+        .optional(),
     token: z
         .union([
             zAddress,

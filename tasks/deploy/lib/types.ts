@@ -27,8 +27,8 @@ export const zBytes32 = z
     .transform((v) => pad(v, { size: 32 }));
 
 /**
-  * Accepted lengths of time for duration specification
-  */
+ * Accepted lengths of time for duration specification
+ */
 export const durationUnits = [
     "minute",
     "minutes",
@@ -43,8 +43,8 @@ export const durationUnits = [
 ];
 
 /**
-  * Accepts durations of the following form using {@link durationUnits}
-  */
+ * Accepts durations of the following form using {@link durationUnits}
+ */
 export const parseDuration = (d: string) => {
     const parts = d.split(" ");
     if (parts.length != 2) throw new Error(`invalid duration string "${d}"`);
@@ -74,7 +74,6 @@ export const zDuration = z
             : BigInt(parseDuration(v)),
     );
 
-
 export type Duration = z.infer<typeof zDuration>;
 
 function isBigInt(value: string) {
@@ -86,8 +85,8 @@ function isBigInt(value: string) {
 }
 
 /**
-  * Accepts numbers or strings and converts to bigint
-  */
+ * Accepts numbers or strings and converts to bigint
+ */
 export const zEther = z
     .custom<
         string | number
@@ -97,10 +96,8 @@ export const zEther = z
 export type Ether = z.infer<typeof zEther>;
 
 /**
-  * Expnads the fields for object-based types in intellisense/lsp
-  */
+ * Expnads the fields for object-based types in intellisense/lsp
+ */
 export type Prettify<T> = {
     [K in keyof T]: T[K];
 } & {};
-
-

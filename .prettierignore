@@ -2,7 +2,7 @@
 *.js
 *.md
 *.yaml
-lib/
+./lib
 target/
 forge-cache/
 node_modules/

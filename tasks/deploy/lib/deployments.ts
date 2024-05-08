@@ -1,8 +1,8 @@
 import fs from "fs";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
 import path from "path";
 import { z } from "zod";
 import { zAddress } from "./types";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 // File used to store live network data
 export const DEPLOYMENTS_FILENAME = "deployments.json";
@@ -117,19 +117,27 @@ export type DeploymentDataFile = Record<
  */
 export class Deployments {
     network: {
-      name: string;
-      live: boolean;
+        name: string;
+        live: boolean;
     };
     #f: DeploymentsFile;
 
     constructor(hre: HardhatRuntimeEnvironment) {
-      this.network = {name: hre.network.name, live: hre.network.live};
+        this.network = { name: hre.network.name, live: hre.network.live };
         if (!fs.existsSync(DEPLOYMENTS_PATH))
             fs.writeFileSync(DEPLOYMENTS_PATH, "{}");
         if (!fs.existsSync(LOCAL_DEPLOYMENTS_PATH))
             fs.writeFileSync(LOCAL_DEPLOYMENTS_PATH, "{}");
         this.#f = zDeployments.parse(
-            JSON.parse(fs.readFileSync(this.network.live ? DEPLOYMENTS_PATH :LOCAL_DEPLOYMENTS_PATH).toString()),
+            JSON.parse(
+                fs
+                    .readFileSync(
+                        this.network.live
+                            ? DEPLOYMENTS_PATH
+                            : LOCAL_DEPLOYMENTS_PATH,
+                    )
+                    .toString(),
+            ),
         );
     }
 
@@ -151,7 +159,10 @@ export class Deployments {
      * Returns the {@link DeployedContract} throwing if it does not exist.
      */
     byName(name: string) {
-        if (!(this.network.name in this.#f) || !(name in this.#f[this.network.name]))
+        if (
+            !(this.network.name in this.#f) ||
+            !(name in this.#f[this.network.name])
+        )
             throw new Error(`contract not found`);
         return this.#f[this.network.name][name];
     }
@@ -168,9 +179,11 @@ export class Deployments {
     /**
      * Returns a list of {@link DeployedContract}s that have the specified source contract.
      */
-    byContract(contract: string, ) {
+    byContract(contract: string) {
         return Object.entries(this.#f)
-            .filter(([k, _]) => (this.network.name ? k === this.network.name : true))
+            .filter(([k, _]) =>
+                this.network.name ? k === this.network.name : true,
+            )
             .flatMap(([_, v]) => Object.values(v))
             .filter((dc) => dc.contract === contract);
     }
@@ -180,7 +193,9 @@ export class Deployments {
      */
     byAddress(address: string) {
         let contract = Object.entries(this.#f)
-            .filter(([k, _]) => (this.network.name ? k === this.network.name : false))
+            .filter(([k, _]) =>
+                this.network.name ? k === this.network.name : false,
+            )
             .flatMap(([_, v]) => Object.values(v))
             .find((dc) => dc.address === address);
         if (!contract) throw new Error("contract not found");
@@ -191,7 +206,9 @@ export class Deployments {
      */
     byAddressSafe(address: string) {
         return Object.entries(this.#f)
-            .filter(([k, _]) => (this.network.name ? k === this.network.name : false))
+            .filter(([k, _]) =>
+                this.network.name ? k === this.network.name : false,
+            )
             .flatMap(([_, v]) => Object.values(v))
             .find((dc) => dc.address === address);
     }
@@ -229,7 +246,7 @@ export class Deployments {
      * Write the current {@link DeploymentsFile} object to disk.
      */
     #updateDeploymentsFile() {
-        let isLocal = !this.network.live
+        let isLocal = !this.network.live;
         let data = isLocal
             ? {
                   [this.network.name]: this.#f[this.network.name],

@@ -4,7 +4,7 @@ import {
     HyperdriveDeployBaseTaskParams,
 } from "../deploy";
 
-export type DeployFactoryParams = HyperdriveDeployBaseTaskParams & {
+export type AddRegistryParams = HyperdriveDeployBaseTaskParams & {
     value: number;
 };
 
@@ -22,7 +22,7 @@ HyperdriveDeployBaseTask(
     )
     .setAction(
         async (
-            { name, value, ...rest }: Required<DeployFactoryParams>,
+            { name, value, ...rest }: Required<AddRegistryParams>,
             { viem, hyperdriveDeploy: { deployments }, network },
         ) => {
             let deployment = deployments.byName(name);
