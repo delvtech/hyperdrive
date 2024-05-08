@@ -31,11 +31,15 @@ const config: HardhatUserConfig = {
     solidity: {
         version: "0.8.20",
         settings: {
+            viaIR: false,
             optimizer: {
                 enabled: true,
                 runs: 10000000,
             },
             evmVersion: "paris",
+            metadata: {
+                useLiteralContent: true,
+            },
         },
     },
     namedAccounts: {
@@ -90,6 +94,37 @@ const config: HardhatUserConfig = {
             verify: {
                 etherscan: {
                     apiKey: env.ETHERSCAN_API_KEY!,
+                    apiUrl: "https://api-sepolia.etherscan.io",
+                },
+            },
+            live: true,
+            hyperdriveDeploy: {
+                factories: [SEPOLIA_FACTORY],
+                coordinators: [
+                    SEPOLIA_ERC4626_COORDINATOR,
+                    // SEPOLIA_STETH_COORDINATOR,
+                    // SEPOLIA_RETH_COORDINATOR,
+                    // SEPOLIA_EZETH_COORDINATOR,
+                ],
+                instances: [
+                    SEPOLIA_DAI_14DAY,
+                    // SEPOLIA_DAI_30DAY,
+                    // SEPOLIA_STETH_14DAY,
+                    // SEPOLIA_STETH_30DAY,
+                    // SEPOLIA_RETH_14DAY,
+                    // SEPOLIA_RETH_30DAY,
+                    // SEPOLIA_EZETH_14DAY,
+                    // SEPOLIA_EZETH_30DAY,
+                ],
+            },
+        },
+        base_sepolia: {
+            accounts: [env.PRIVATE_KEY!],
+            url: env.BASE_SEPOLIA_RPC_URL!,
+            verify: {
+                etherscan: {
+                    apiKey: env.ETHERSCAN_BASE_API_KEY!,
+                    apiUrl: "https://api-sepolia.basescan.org",
                 },
             },
             live: true,
@@ -115,9 +150,7 @@ const config: HardhatUserConfig = {
         },
     },
     etherscan: {
-        apiKey: {
-            sepolia: env.ETHERSCAN_API_KEY!,
-        },
+        apiKey: env.ETHERSCAN_API_KEY!,
     },
 };
 
