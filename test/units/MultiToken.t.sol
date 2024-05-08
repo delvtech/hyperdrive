@@ -28,14 +28,14 @@ contract DummyHyperdriveMultiToken is HyperdriveMultiToken, MockHyperdrive {
 contract MultiTokenTest is HyperdriveTest {
     using Lib for *;
 
-    function testFactory() public {
+    function testFactory() public view {
         assertEq(
             hyperdrive.getPoolConfig().linkerFactory,
             address(forwarderFactory)
         );
     }
 
-    function testLinkerCodeHash() public {
+    function testLinkerCodeHash() public view {
         assertEq(
             hyperdrive.getPoolConfig().linkerCodeHash,
             forwarderFactory.ERC20LINK_HASH()

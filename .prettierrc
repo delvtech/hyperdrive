@@ -1,3 +1,22 @@
 {
-  "bracketSpacing": true
+  "plugins": ["prettier-plugin-solidity", "prettier-plugin-organize-imports"],
+  "overrides": [
+    {
+      "files": "*.sol",
+      "options": {
+        "printWidth": 80,
+        "tabWidth": 4,
+        "useTabs": false,
+        "singleQuote": false,
+        "bracketSpacing": true
+      }
+    },
+    {
+      "files": "*.ts",
+      "options": {
+        "printWidth": 80,
+        "tabWidth": 4
+      }
+    }
+  ]
 }

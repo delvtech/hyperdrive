@@ -6,6 +6,4 @@ import { ISharesManagerV1 } from "./ISharesManagerV1.sol";
 /// @title River Interface (v1)
 /// @author Kiln
 /// @notice The main system interface
-interface IRiverV1 is ISharesManagerV1 {
-
-}
+interface IRiverV1 is ISharesManagerV1 {}

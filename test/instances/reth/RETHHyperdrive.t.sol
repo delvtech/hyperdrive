@@ -138,7 +138,7 @@ contract RETHHyperdriveTest is InstanceTest {
         uint256 totalSharesBefore,
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
-    ) internal override {
+    ) internal view override {
         // Deposits as base is not supported for this instance.
         if (asBase) {
             revert IHyperdrive.UnsupportedToken();
@@ -182,7 +182,7 @@ contract RETHHyperdriveTest is InstanceTest {
         uint256 totalSharesBefore,
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
-    ) internal override {
+    ) internal view override {
         // Convert baseProceeds to shares to verify accounting.
         uint256 shareProceeds = rocketTokenRETH.getRethValue(baseProceeds);
 

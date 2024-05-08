@@ -7,7 +7,8 @@ import { ERC20 } from "solmate/tokens/ERC20.sol";
 
 contract ERC20Mintable is ERC20, MultiRolesAuthority {
     bool public immutable isCompetitionMode;
-    uint256 public immutable maxMintAmount;
+    uint256 public maxMintAmount;
+    mapping(address => bool) public isUnrestricted;
 
     constructor(
         string memory name,
@@ -35,7 +36,12 @@ contract ERC20Mintable is ERC20, MultiRolesAuthority {
     }
 
     function mint(uint256 amount) external requiresAuthDuringCompetition {
-        require(amount <= maxMintAmount, "MockERC4626: Invalid mint amount");
+        if (!isUnrestricted[msg.sender]) {
+            require(
+                amount <= maxMintAmount,
+                "ERC20Mintable: Invalid mint amount"
+            );
+        }
         _mint(msg.sender, amount);
     }
 
@@ -43,7 +49,12 @@ contract ERC20Mintable is ERC20, MultiRolesAuthority {
         address destination,
         uint256 amount
     ) external requiresAuthDuringCompetition {
-        require(amount <= maxMintAmount, "MockERC4626: Invalid mint amount");
+        if (!isUnrestricted[msg.sender]) {
+            require(
+                amount <= maxMintAmount,
+                "ERC20Mintable: Invalid mint amount"
+            );
+        }
         _mint(destination, amount);
     }
 
@@ -56,5 +67,18 @@ contract ERC20Mintable is ERC20, MultiRolesAuthority {
         uint256 amount
     ) external requiresAuthDuringCompetition {
         _burn(destination, amount);
+    }
+
+    function setMaxMintAmount(
+        uint256 _maxMintAmount
+    ) external requiresAuthDuringCompetition {
+        maxMintAmount = _maxMintAmount;
+    }
+
+    function setUnrestrictedMintStatus(
+        address _target,
+        bool _status
+    ) external requiresAuthDuringCompetition {
+        isUnrestricted[_target] = _status;
     }
 }

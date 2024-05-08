@@ -469,7 +469,7 @@ contract OpenLongTest is HyperdriveTest {
         uint256 bondAmount,
         uint256 maturityTime,
         uint256 apr
-    ) internal {
+    ) internal view {
         // Verify that base was transferred from the trader to Hyperdrive.
         assertEq(baseToken.balanceOf(user), 0);
         assertEq(

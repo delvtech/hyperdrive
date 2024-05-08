@@ -798,7 +798,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         uint256 totalSharesBefore,
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
-    ) internal {
+    ) internal view {
         // Ensure that the amount of assets increased by the base paid.
         assertApproxEqAbs(
             token.totalAssets(),
@@ -859,7 +859,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         uint256 totalSharesBefore,
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
-    ) internal {
+    ) internal view {
         // Ensure that the totalAssets of the token stays the same.
         assertEq(token.totalAssets(), totalPooledAssetsBefore);
 
@@ -915,7 +915,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         uint256 totalSharesBefore,
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
-    ) internal {
+    ) internal view {
         // Ensure that the total pooled assets and shares stays the same.
         assertEq(token.totalAssets(), totalPooledAssetsBefore);
         assertApproxEqAbs(
@@ -953,7 +953,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         uint256 totalPooledAssetsBefore,
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
-    ) internal {
+    ) internal view {
         // Allowances are set to 3 due to the expected number of conversions which can occur.
         // Ensure that the total pooled assets decreased by the amount paid out
         assertApproxEqAbs(

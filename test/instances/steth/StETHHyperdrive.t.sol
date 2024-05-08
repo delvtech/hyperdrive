@@ -125,7 +125,7 @@ contract StETHHyperdriveTest is InstanceTest {
         uint256 totalSharesBefore,
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
-    ) internal override {
+    ) internal view override {
         if (asBase) {
             // Ensure that the amount of pooled ether increased by the base paid.
             assertEq(LIDO.getTotalPooledEther(), totalBaseBefore + amountPaid);
@@ -207,7 +207,7 @@ contract StETHHyperdriveTest is InstanceTest {
         uint256 totalSharesBefore,
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
-    ) internal override {
+    ) internal view override {
         // Base withdraws are not supported for this instance.
         if (asBase) {
             revert IHyperdrive.UnsupportedToken();

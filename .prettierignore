@@ -3,8 +3,10 @@
 *.md
 *.yaml
 lib/
+!tasks/deploy/lib
 target/
 forge-cache/
 node_modules/
 out/
 coverage_report/
+!package.json

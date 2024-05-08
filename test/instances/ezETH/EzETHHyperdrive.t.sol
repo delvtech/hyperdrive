@@ -160,7 +160,7 @@ contract EzETHHyperdriveTest is InstanceTest {
         uint256 totalSharesBefore,
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
-    ) internal override {
+    ) internal view override {
         if (asBase) {
             // Ensure that the amount of pooled ether increased by the base paid.
             (, uint256 totalPooledEther, ) = getSharePrice();
@@ -228,7 +228,7 @@ contract EzETHHyperdriveTest is InstanceTest {
         uint256 totalSharesBefore,
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
-    ) internal override {
+    ) internal view override {
         // Base withdraws are not supported for this instance.
         if (asBase) {
             revert IHyperdrive.UnsupportedToken();
@@ -283,7 +283,7 @@ contract EzETHHyperdriveTest is InstanceTest {
 
     /// Getters ///
 
-    function test_getters() external {
+    function test_getters() external view {
         assertEq(
             address(IEzETHHyperdriveRead(address(hyperdrive)).renzo()),
             address(RESTAKE_MANAGER)
