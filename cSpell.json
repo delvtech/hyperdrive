@@ -85,6 +85,7 @@
         "joinswap",
         "keccak",
         "logx",
+        "lseth",
         "mintable",
         "mixedcase",
         "mkdirp",
