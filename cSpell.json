@@ -69,6 +69,7 @@
         "ethersproject",
         "exitswap",
         "extern",
+        "ezeth",
         "gasleft",
         "githubusercontent",
         "gitmodules",
