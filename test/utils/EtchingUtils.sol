@@ -12,6 +12,11 @@ import { EzETHTarget0 } from "contracts/src/instances/ezeth/EzETHTarget0.sol";
 import { EzETHTarget1 } from "contracts/src/instances/ezeth/EzETHTarget1.sol";
 import { EzETHTarget2 } from "contracts/src/instances/ezeth/EzETHTarget2.sol";
 import { EzETHTarget3 } from "contracts/src/instances/ezeth/EzETHTarget3.sol";
+import { RETHHyperdrive } from "contracts/src/instances/reth/RETHHyperdrive.sol";
+import { RETHTarget0 } from "contracts/src/instances/reth/RETHTarget0.sol";
+import { RETHTarget1 } from "contracts/src/instances/reth/RETHTarget1.sol";
+import { RETHTarget2 } from "contracts/src/instances/reth/RETHTarget2.sol";
+import { RETHTarget3 } from "contracts/src/instances/reth/RETHTarget3.sol";
 import { StETHHyperdrive } from "contracts/src/instances/steth/StETHHyperdrive.sol";
 import { StETHTarget0 } from "contracts/src/instances/steth/StETHTarget0.sol";
 import { StETHTarget1 } from "contracts/src/instances/steth/StETHTarget1.sol";
@@ -26,6 +31,7 @@ import { EtchingVault } from "contracts/test/EtchingVault.sol";
 import { MockERC4626 } from "contracts/test/MockERC4626.sol";
 import { MockEzEthPool } from "contracts/test/MockEzEthPool.sol";
 import { MockLido } from "contracts/test/MockLido.sol";
+import { MockRocketPool } from "contracts/test/MockRocketPool.sol";
 import { Lib } from "test/utils/Lib.sol";
 
 contract EtchingUtils is Test {
@@ -40,7 +46,9 @@ contract EtchingUtils is Test {
         // Ensure that the contract's version matches.
         IHyperdrive hyperdrive = IHyperdrive(_hyperdrive);
         if (!hyperdrive.version().eq(VERSION)) {
-            revert("EtchingUtils: Empty deployment");
+            revert(
+                "EtchingUtils: Version mismatch. Consider checking out a different tag."
+            );
         }
 
         // Using the name, decide which type of Hyperdrive instance needs to
@@ -207,12 +215,65 @@ contract EtchingUtils is Test {
         }
     }
 
-    function etchLsETHHyperdrive(address _hyperdrive) internal {
+    function etchLsETHHyperdrive(address) internal {
+        // TODO: This needs  to be implemented when `MockLsETH` is implemented.
         revert("FIXME");
     }
 
     function etchRETHHyperdrive(address _hyperdrive) internal {
-        revert("FIXME");
+        // Get an interface to the target Hyperdrive instance. This will be
+        // used to load immutables that will be used during the etching process.
+        IHyperdrive hyperdrive = IHyperdrive(_hyperdrive);
+
+        // Etch the vault contract.
+        {
+            MockRocketPool target = MockRocketPool(
+                hyperdrive.vaultSharesToken()
+            );
+            MockRocketPool template = new MockRocketPool(
+                0,
+                address(0),
+                target.isCompetitionMode(),
+                target.maxMintAmount()
+            );
+            vm.etch(address(target), address(template).code);
+        }
+
+        // Etch the target0 contract.
+        {
+            RETHTarget0 template = new RETHTarget0(hyperdrive.getPoolConfig());
+            vm.etch(hyperdrive.target0(), address(template).code);
+        }
+
+        // Etch the target1 contract.
+        {
+            RETHTarget1 template = new RETHTarget1(hyperdrive.getPoolConfig());
+            vm.etch(hyperdrive.target1(), address(template).code);
+        }
+
+        // Etch the target2 contract.
+        {
+            RETHTarget2 template = new RETHTarget2(hyperdrive.getPoolConfig());
+            vm.etch(hyperdrive.target2(), address(template).code);
+        }
+
+        // Etch the target3 contract.
+        {
+            RETHTarget3 template = new RETHTarget3(hyperdrive.getPoolConfig());
+            vm.etch(hyperdrive.target3(), address(template).code);
+        }
+
+        // Etch the hyperdrive contract.
+        {
+            RETHHyperdrive template = new RETHHyperdrive(
+                hyperdrive.getPoolConfig(),
+                hyperdrive.target0(),
+                hyperdrive.target1(),
+                hyperdrive.target2(),
+                hyperdrive.target3()
+            );
+            vm.etch(address(hyperdrive), address(template).code);
+        }
     }
 
     function etchStETHHyperdrive(address _hyperdrive) internal {
