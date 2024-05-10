@@ -196,7 +196,7 @@ contract MockEzEthPool is
     {
         uint256[][] memory operator_tokens_tvls;
         uint256[] memory operator_tvls;
-        uint256 tvl = getTotalPooledEther();
+        uint256 tvl = getTotalPooledEther() + totalSupply;
         return (operator_tokens_tvls, operator_tvls, tvl);
     }
 
