@@ -6,6 +6,7 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ETH } from "contracts/src/libraries/Constants.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
 import { EtchingUtils } from "test/utils/EtchingUtils.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 /// @author DELV
 /// @title Debugging
@@ -14,27 +15,29 @@ import { EtchingUtils } from "test/utils/EtchingUtils.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract Debugging is BaseTest, EtchingUtils {
+    using Lib for *;
+
     /// @dev A flag indicating whether or not the test should be skipped. This
     ///      should be set to false when debugging.
-    bool internal constant SHOULD_SKIP = true;
+    bool internal constant SHOULD_SKIP = false;
 
     /// @dev The block to fork. If you're debugging a failing transaction, this
     ///      should be the block at which the transaction was failing. If you're
     ///      debugging a successful transaction, you may need to subtract one
     ///      from the block.
-    uint256 internal constant FORK_BLOCK = 5676348;
+    uint256 internal constant FORK_BLOCK = 5875056;
 
     /// @dev The hyperdrive instance to connect to. If you're debugging a
     ///      Hyperdrive transaction, this should probably be the `to` address in
     ///      the failing transaction.
     IHyperdrive internal constant HYPERDRIVE =
-        IHyperdrive(address(0x392839dA0dACAC790bd825C81ce2c5E264D793a8));
+        IHyperdrive(address(0xA2Ad31DaEbfE222dc96810898EF7FC239daAb580));
 
     /// @dev The sender to use in the debugging call. If you're debugging a
     ///      Hyperdrive transaction, this should probably be the `from`
     ///      address in the failing transaction.
     address internal constant SENDER =
-        address(0x2C76cc659ec83E36323f32E6a9789C29e7b56c4B);
+        address(0x005BB73FddB8CE049eE366b50d2f48763E9Dc0De);
 
     /// @dev The value to use in the debugging call. If you're debugging a
     ///      Hyperdrive transaction, this should probably be the `value`
@@ -45,18 +48,14 @@ contract Debugging is BaseTest, EtchingUtils {
     ///      Hyperdrive transaction, this should probably be the calldata from
     ///      the failing transaction (remove the "0x" prefix from the calldata).
     bytes internal constant CALLDATA =
-        hex"cba2e58d0000000000000000000000000000000000000000000007d9a5405edc26fa36b50000000000000000000000000000000000000000000007d7f3c7d8d354cd71990000000000000000000000000000000000000000000000000de326f195450cd200000000000000000000000000000000000000000000000000000000000000800000000000000000000000002c76cc659ec83e36323f32e6a9789c29e7b56c4b0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000";
+        hex"cba2e58d000000000000000000000000000000000000000000000000ebec21ee1da400000000000000000000000000000000000000000000000000000009a6802140858400000000000000000000000000000000000000000000000000009181dcef8eda0000000000000000000000000000000000000000000000000000000000000080000000000000000000000000005bb73fddb8ce049ee366b50d2f48763e9dc0de0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000";
 
     function test_debug() external __sepolia_fork(FORK_BLOCK) {
         // Skip this test during regular execution.
-        vm.skip(SHOULD_SKIP);
+        // vm.skip(SHOULD_SKIP);
 
         // Etch the hyperdrive instance to add console logs.
-        if (HYPERDRIVE.baseToken() == ETH) {
-            etchStETHHyperdrive(address(HYPERDRIVE));
-        } else {
-            etchERC4626Hyperdrive(address(HYPERDRIVE));
-        }
+        etchHyperdrive(address(HYPERDRIVE));
 
         // Log a preamble.
         console.log("---------------");

@@ -7,18 +7,59 @@ import { ERC4626Target0 } from "contracts/src/instances/erc4626/ERC4626Target0.s
 import { ERC4626Target1 } from "contracts/src/instances/erc4626/ERC4626Target1.sol";
 import { ERC4626Target2 } from "contracts/src/instances/erc4626/ERC4626Target2.sol";
 import { ERC4626Target3 } from "contracts/src/instances/erc4626/ERC4626Target3.sol";
+import { EzETHHyperdrive } from "contracts/src/instances/ezeth/EzETHHyperdrive.sol";
+import { EzETHTarget0 } from "contracts/src/instances/ezeth/EzETHTarget0.sol";
+import { EzETHTarget1 } from "contracts/src/instances/ezeth/EzETHTarget1.sol";
+import { EzETHTarget2 } from "contracts/src/instances/ezeth/EzETHTarget2.sol";
+import { EzETHTarget3 } from "contracts/src/instances/ezeth/EzETHTarget3.sol";
 import { StETHHyperdrive } from "contracts/src/instances/steth/StETHHyperdrive.sol";
 import { StETHTarget0 } from "contracts/src/instances/steth/StETHTarget0.sol";
 import { StETHTarget1 } from "contracts/src/instances/steth/StETHTarget1.sol";
 import { StETHTarget2 } from "contracts/src/instances/steth/StETHTarget2.sol";
 import { StETHTarget3 } from "contracts/src/instances/steth/StETHTarget3.sol";
+import { IEzETHHyperdrive } from "contracts/src/interfaces/IEzETHHyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IRestakeManager } from "contracts/src/interfaces/IRenzo.sol";
+import { VERSION } from "contracts/src/libraries/Constants.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { EtchingVault } from "contracts/test/EtchingVault.sol";
-import { MockLido } from "contracts/test/MockLido.sol";
 import { MockERC4626 } from "contracts/test/MockERC4626.sol";
+import { MockEzEthPool } from "contracts/test/MockEzEthPool.sol";
+import { MockLido } from "contracts/test/MockLido.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract EtchingUtils is Test {
+    using Lib for *;
+
+    function etchHyperdrive(address _hyperdrive) internal {
+        // Ensure that the contract is deployed.
+        if (address(_hyperdrive).code.length == 0) {
+            revert("EtchingUtils: Empty deployment");
+        }
+
+        // Ensure that the contract's version matches.
+        IHyperdrive hyperdrive = IHyperdrive(_hyperdrive);
+        if (!hyperdrive.version().eq(VERSION)) {
+            revert("EtchingUtils: Empty deployment");
+        }
+
+        // Using the name, decide which type of Hyperdrive instance needs to
+        // be etched.
+        if (hyperdrive.name().eq("ERC4626Hyperdrive")) {
+            etchERC4626Hyperdrive(_hyperdrive);
+        } else if (hyperdrive.name().eq("EzETHHyperdrive")) {
+            etchEzETHHyperdrive(_hyperdrive);
+        } else if (hyperdrive.name().eq("LsETHHyperdrive")) {
+            etchLsETHHyperdrive(_hyperdrive);
+        } else if (hyperdrive.name().eq("RETHHyperdrive")) {
+            etchRETHHyperdrive(_hyperdrive);
+        } else if (hyperdrive.name().eq("StETHHyperdrive")) {
+            etchStETHHyperdrive(_hyperdrive);
+        } else {
+            revert("EtchingUtils: Unrecognized deployment");
+        }
+    }
+
     function etchERC4626Hyperdrive(address _hyperdrive) internal {
         // Get an interface to the target Hyperdrive instance. This will be
         // used to load immutables that will be used during the etching process.
@@ -96,6 +137,82 @@ contract EtchingUtils is Test {
             );
             vm.etch(address(hyperdrive), address(template).code);
         }
+    }
+
+    function etchEzETHHyperdrive(address _hyperdrive) internal {
+        // Get an interface to the target Hyperdrive instance. This will be
+        // used to load immutables that will be used during the etching process.
+        IEzETHHyperdrive hyperdrive = IEzETHHyperdrive(_hyperdrive);
+
+        // Etch the vault contract.
+        {
+            MockEzEthPool target = MockEzEthPool(hyperdrive.vaultSharesToken());
+            MockEzEthPool template = new MockEzEthPool(
+                0,
+                address(0),
+                target.isCompetitionMode(),
+                target.maxMintAmount()
+            );
+            vm.etch(address(target), address(template).code);
+        }
+
+        // Etch the target0 contract.
+        IRestakeManager renzo = hyperdrive.renzo();
+        {
+            EzETHTarget0 template = new EzETHTarget0(
+                hyperdrive.getPoolConfig(),
+                renzo
+            );
+            vm.etch(hyperdrive.target0(), address(template).code);
+        }
+
+        // Etch the target1 contract.
+        {
+            EzETHTarget1 template = new EzETHTarget1(
+                hyperdrive.getPoolConfig(),
+                renzo
+            );
+            vm.etch(hyperdrive.target1(), address(template).code);
+        }
+
+        // Etch the target2 contract.
+        {
+            EzETHTarget2 template = new EzETHTarget2(
+                hyperdrive.getPoolConfig(),
+                renzo
+            );
+            vm.etch(hyperdrive.target2(), address(template).code);
+        }
+
+        // Etch the target3 contract.
+        {
+            EzETHTarget3 template = new EzETHTarget3(
+                hyperdrive.getPoolConfig(),
+                renzo
+            );
+            vm.etch(hyperdrive.target3(), address(template).code);
+        }
+
+        // Etch the hyperdrive contract.
+        {
+            EzETHHyperdrive template = new EzETHHyperdrive(
+                hyperdrive.getPoolConfig(),
+                hyperdrive.target0(),
+                hyperdrive.target1(),
+                hyperdrive.target2(),
+                hyperdrive.target3(),
+                renzo
+            );
+            vm.etch(address(hyperdrive), address(template).code);
+        }
+    }
+
+    function etchLsETHHyperdrive(address _hyperdrive) internal {
+        revert("FIXME");
+    }
+
+    function etchRETHHyperdrive(address _hyperdrive) internal {
+        revert("FIXME");
     }
 
     function etchStETHHyperdrive(address _hyperdrive) internal {
