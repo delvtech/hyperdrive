@@ -12,6 +12,11 @@ import { EzETHTarget0 } from "contracts/src/instances/ezeth/EzETHTarget0.sol";
 import { EzETHTarget1 } from "contracts/src/instances/ezeth/EzETHTarget1.sol";
 import { EzETHTarget2 } from "contracts/src/instances/ezeth/EzETHTarget2.sol";
 import { EzETHTarget3 } from "contracts/src/instances/ezeth/EzETHTarget3.sol";
+import { LsETHHyperdrive } from "contracts/src/instances/lseth/LsETHHyperdrive.sol";
+import { LsETHTarget0 } from "contracts/src/instances/lseth/LsETHTarget0.sol";
+import { LsETHTarget1 } from "contracts/src/instances/lseth/LsETHTarget1.sol";
+import { LsETHTarget2 } from "contracts/src/instances/lseth/LsETHTarget2.sol";
+import { LsETHTarget3 } from "contracts/src/instances/lseth/LsETHTarget3.sol";
 import { RETHHyperdrive } from "contracts/src/instances/reth/RETHHyperdrive.sol";
 import { RETHTarget0 } from "contracts/src/instances/reth/RETHTarget0.sol";
 import { RETHTarget1 } from "contracts/src/instances/reth/RETHTarget1.sol";
@@ -87,6 +92,8 @@ contract EtchingUtils is Test {
             vm.etch(address(target), address(template).code);
         }
 
+        // TODO: Remove this once we leave testnet.
+        //
         // Etch the vault contract.
         {
             MockERC4626 target = MockERC4626(hyperdrive.vaultSharesToken());
@@ -152,6 +159,8 @@ contract EtchingUtils is Test {
         // used to load immutables that will be used during the etching process.
         IEzETHHyperdrive hyperdrive = IEzETHHyperdrive(_hyperdrive);
 
+        // TODO: Remove this once we leave testnet.
+        //
         // Etch the vault contract.
         {
             MockEzEthPool target = MockEzEthPool(hyperdrive.vaultSharesToken());
@@ -215,9 +224,54 @@ contract EtchingUtils is Test {
         }
     }
 
-    function etchLsETHHyperdrive(address) internal {
-        // TODO: This needs  to be implemented when `MockLsETH` is implemented.
-        revert("FIXME");
+    function etchLsETHHyperdrive(address _hyperdrive) internal {
+        // Get an interface to the target Hyperdrive instance. This will be
+        // used to load immutables that will be used during the etching process.
+        IHyperdrive hyperdrive = IHyperdrive(_hyperdrive);
+
+        // Etch the target0 contract.
+        {
+            LsETHTarget0 template = new LsETHTarget0(
+                hyperdrive.getPoolConfig()
+            );
+            vm.etch(hyperdrive.target0(), address(template).code);
+        }
+
+        // Etch the target1 contract.
+        {
+            LsETHTarget1 template = new LsETHTarget1(
+                hyperdrive.getPoolConfig()
+            );
+            vm.etch(hyperdrive.target1(), address(template).code);
+        }
+
+        // Etch the target2 contract.
+        {
+            LsETHTarget2 template = new LsETHTarget2(
+                hyperdrive.getPoolConfig()
+            );
+            vm.etch(hyperdrive.target2(), address(template).code);
+        }
+
+        // Etch the target3 contract.
+        {
+            LsETHTarget3 template = new LsETHTarget3(
+                hyperdrive.getPoolConfig()
+            );
+            vm.etch(hyperdrive.target3(), address(template).code);
+        }
+
+        // Etch the hyperdrive contract.
+        {
+            LsETHHyperdrive template = new LsETHHyperdrive(
+                hyperdrive.getPoolConfig(),
+                hyperdrive.target0(),
+                hyperdrive.target1(),
+                hyperdrive.target2(),
+                hyperdrive.target3()
+            );
+            vm.etch(address(hyperdrive), address(template).code);
+        }
     }
 
     function etchRETHHyperdrive(address _hyperdrive) internal {
@@ -225,6 +279,8 @@ contract EtchingUtils is Test {
         // used to load immutables that will be used during the etching process.
         IHyperdrive hyperdrive = IHyperdrive(_hyperdrive);
 
+        // TODO: Remove this once we leave testnet.
+        //
         // Etch the vault contract.
         {
             MockRocketPool target = MockRocketPool(
@@ -281,6 +337,8 @@ contract EtchingUtils is Test {
         // used to load immutables that will be used during the etching process.
         IHyperdrive hyperdrive = IHyperdrive(_hyperdrive);
 
+        // TODO: Remove this once we leave testnet.
+        //
         // Etch the vault contract.
         {
             MockLido target = MockLido(hyperdrive.vaultSharesToken());
