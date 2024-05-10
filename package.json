@@ -1,6 +1,6 @@
 {
+  "private": true,
   "name": "hyperdrive",
-  "version": "1.0.0",
   "description": "Hyperdrive Smart Contracts",
   "engines": {
     "node": "^18"
