@@ -19,25 +19,25 @@ contract Debugging is BaseTest, EtchingUtils {
 
     /// @dev A flag indicating whether or not the test should be skipped. This
     ///      should be set to false when debugging.
-    bool internal constant SHOULD_SKIP = false;
+    bool internal constant SHOULD_SKIP = true;
 
     /// @dev The block to fork. If you're debugging a failing transaction, this
     ///      should be the block at which the transaction was failing. If you're
     ///      debugging a successful transaction, you may need to subtract one
     ///      from the block.
-    uint256 internal constant FORK_BLOCK = 5875056;
+    uint256 internal constant FORK_BLOCK = 5876130;
 
     /// @dev The hyperdrive instance to connect to. If you're debugging a
     ///      Hyperdrive transaction, this should probably be the `to` address in
     ///      the failing transaction.
     IHyperdrive internal constant HYPERDRIVE =
-        IHyperdrive(address(0xA2Ad31DaEbfE222dc96810898EF7FC239daAb580));
+        IHyperdrive(address(0xF2A8f3dcc019FD8F3EF286fe88F7efdd0c4D4b0c));
 
     /// @dev The sender to use in the debugging call. If you're debugging a
     ///      Hyperdrive transaction, this should probably be the `from`
     ///      address in the failing transaction.
     address internal constant SENDER =
-        address(0x005BB73FddB8CE049eE366b50d2f48763E9Dc0De);
+        address(0x2C76cc659ec83E36323f32E6a9789C29e7b56c4B);
 
     /// @dev The value to use in the debugging call. If you're debugging a
     ///      Hyperdrive transaction, this should probably be the `value`
@@ -48,11 +48,11 @@ contract Debugging is BaseTest, EtchingUtils {
     ///      Hyperdrive transaction, this should probably be the calldata from
     ///      the failing transaction (remove the "0x" prefix from the calldata).
     bytes internal constant CALLDATA =
-        hex"cba2e58d000000000000000000000000000000000000000000000000ebec21ee1da400000000000000000000000000000000000000000000000000000009a6802140858400000000000000000000000000000000000000000000000000009181dcef8eda0000000000000000000000000000000000000000000000000000000000000080000000000000000000000000005bb73fddb8ce049ee366b50d2f48763e9dc0de0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000";
+        hex"cba2e58d00000000000000000000000000000000000000000000006c6b935b8bbd400000000000000000000000000000000000000000000000000044c704eb74e081ea6600000000000000000000000000000000000000000000000008d2495c9d20228d00000000000000000000000000000000000000000000000000000000000000800000000000000000000000002c76cc659ec83e36323f32e6a9789c29e7b56c4b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000";
 
     function test_debug() external __sepolia_fork(FORK_BLOCK) {
         // Skip this test during regular execution.
-        // vm.skip(SHOULD_SKIP);
+        vm.skip(SHOULD_SKIP);
 
         // Etch the hyperdrive instance to add console logs.
         etchHyperdrive(address(HYPERDRIVE));
