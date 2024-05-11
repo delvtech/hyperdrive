@@ -35,8 +35,13 @@ contract HyperdriveFactory is IHyperdriveFactory {
     ///      received. Defaults to `RECEIVE_LOCKED`
     uint256 private receiveLockState = RECEIVE_LOCKED;
 
-    /// @notice The governance address that updates the factory's configuration.
+    /// @notice The governance address that updates the factory's configuration
+    ///         and can add or remove deployer coordinators.
     address public governance;
+
+    /// @notice The deployer coordinator manager that can add or remove deployer
+    ///         coordinators.
+    address public deployerCoordinatorManager;
 
     /// @notice The governance address used when new instances are deployed.
     address public hyperdriveGovernance;
@@ -105,6 +110,8 @@ contract HyperdriveFactory is IHyperdriveFactory {
     struct FactoryConfig {
         /// @dev The address which can update a factory.
         address governance;
+        /// @dev The address which can add and remove deployer coordinators.
+        address deployerCoordinatorManager;
         /// @dev The address which is set as the governor of hyperdrive.
         address hyperdriveGovernance;
         /// @dev The default addresses which will be set to have the pauser role.
@@ -304,6 +311,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
 
         // Initialize the other parameters.
         governance = _factoryConfig.governance;
+        deployerCoordinatorManager = _factoryConfig.deployerCoordinatorManager;
         hyperdriveGovernance = _factoryConfig.hyperdriveGovernance;
         feeCollector = _factoryConfig.feeCollector;
         sweepCollector = _factoryConfig.sweepCollector;
@@ -317,6 +325,17 @@ contract HyperdriveFactory is IHyperdriveFactory {
     /// @dev Ensure that the sender is the governance address.
     modifier onlyGovernance() {
         if (msg.sender != governance) {
+            revert IHyperdriveFactory.Unauthorized();
+        }
+        _;
+    }
+
+    /// @dev Ensure that the sender is allowed to either the governance address
+    ///      or the deployer coordinator manager.
+    modifier onlyDeployerCoordinatorManager() {
+        if (
+            msg.sender != governance && msg.sender != deployerCoordinatorManager
+        ) {
             revert IHyperdriveFactory.Unauthorized();
         }
         _;
@@ -337,7 +356,18 @@ contract HyperdriveFactory is IHyperdriveFactory {
         emit GovernanceUpdated(_governance);
     }
 
-    /// @notice Allows governance to change the hyperdrive governance address
+    /// @notice Allows governance to change the deployer coordinator manager
+    ///         address.
+    /// @param _deployerCoordinatorManager The new deployer coordinator manager
+    ///        address.
+    function updateDeployerCoordinatorManager(
+        address _deployerCoordinatorManager
+    ) external onlyGovernance {
+        deployerCoordinatorManager = _deployerCoordinatorManager;
+        emit DeployerCoordinatorManagerUpdated(_deployerCoordinatorManager);
+    }
+
+    /// @notice Allows governance to change the hyperdrive governance address.
     /// @param _hyperdriveGovernance The new hyperdrive governance address.
     function updateHyperdriveGovernance(
         address _hyperdriveGovernance
@@ -648,7 +678,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
     /// @param _deployerCoordinator The new deployer coordinator.
     function addDeployerCoordinator(
         address _deployerCoordinator
-    ) external onlyGovernance {
+    ) external onlyDeployerCoordinatorManager {
         if (isDeployerCoordinator[_deployerCoordinator]) {
             revert IHyperdriveFactory.DeployerCoordinatorAlreadyAdded();
         }
@@ -663,7 +693,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
     function removeDeployerCoordinator(
         address _deployerCoordinator,
         uint256 _index
-    ) external onlyGovernance {
+    ) external onlyDeployerCoordinatorManager {
         if (!isDeployerCoordinator[_deployerCoordinator]) {
             revert IHyperdriveFactory.DeployerCoordinatorNotAdded();
         }

@@ -47,6 +47,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
     event DeployerCoordinatorRemoved(address indexed deployerCoordinator);
 
+    event DeployerCoordinatorManagerUpdated(
+        address indexed deployerCoordinatorManager
+    );
+
     event HyperdriveGovernanceUpdated(address indexed hyperdriveGovernance);
 
     event LinkerFactoryUpdated(address indexed newLinkerFactory);
@@ -92,6 +96,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         HyperdriveFactory.FactoryConfig memory config = HyperdriveFactory
             .FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -137,6 +142,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -169,6 +175,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -201,6 +208,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -233,6 +241,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -262,6 +271,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -292,6 +302,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -321,6 +332,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -351,6 +363,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -381,6 +394,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -410,6 +424,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -439,6 +454,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -468,6 +484,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -497,6 +514,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -526,6 +544,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -555,6 +574,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -584,6 +604,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -613,6 +634,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -641,6 +663,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         HyperdriveFactory.FactoryConfig memory config = HyperdriveFactory
             .FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -665,6 +688,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         assert(factory.name().eq(NAME));
         assert(factory.version().eq(VERSION));
         assertEq(factory.governance(), config.governance);
+        assertEq(
+            factory.deployerCoordinatorManager(),
+            config.deployerCoordinatorManager
+        );
         assertEq(factory.hyperdriveGovernance(), config.hyperdriveGovernance);
         assertEq(factory.linkerFactory(), config.linkerFactory);
         assertEq(factory.linkerCodeHash(), config.linkerCodeHash);
@@ -719,6 +746,29 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         emit GovernanceUpdated(newGovernance);
         factory.updateGovernance(newGovernance);
         assertEq(factory.governance(), newGovernance);
+    }
+
+    function test_updateDeployerCoordinatorManager() external {
+        address newDeployerCoordinatorManager = address(0xdeadbeef);
+
+        // Ensure that the deployer coordinator manager can't be updated by
+        // someone other than the current governance.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
+        factory.updateDeployerCoordinatorManager(newDeployerCoordinatorManager);
+
+        // Ensure that governance was updated successfully and that the correct
+        // event was emitted.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        vm.expectEmit(true, true, true, true);
+        emit DeployerCoordinatorManagerUpdated(newDeployerCoordinatorManager);
+        factory.updateDeployerCoordinatorManager(newDeployerCoordinatorManager);
+        assertEq(
+            factory.deployerCoordinatorManager(),
+            newDeployerCoordinatorManager
+        );
     }
 
     function test_updateHyperdriveGovernance() external {
@@ -2688,6 +2738,7 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
         factory = new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -3224,6 +3275,7 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
         factory = new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -3403,7 +3455,7 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
     }
 }
 
-contract HyperdriveFactoryAddHyperdriveFactoryTest is HyperdriveTest {
+contract HyperdriveFactoryAddDeployerCoordinatorTest is HyperdriveTest {
     string internal constant NAME = "HyperdriveFactory";
 
     HyperdriveFactory factory;
@@ -3421,6 +3473,7 @@ contract HyperdriveFactoryAddHyperdriveFactoryTest is HyperdriveTest {
         factory = new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -3477,26 +3530,44 @@ contract HyperdriveFactoryAddHyperdriveFactoryTest is HyperdriveTest {
         factory.addDeployerCoordinator(deployerCoordinator0);
     }
 
-    function test_hyperdriveFactory_addDeployerCoordinator() external {
+    function test_hyperdriveFactory_addDeployerCoordinator_deployerCoordinatorManager()
+        external
+    {
+        vm.startPrank(factory.deployerCoordinatorManager());
+        _test_hyperdriveFactory_addDeployerCoordinator();
+    }
+
+    function test_hyperdriveFactory_addDeployerCoordinator_governance()
+        external
+    {
+        vm.startPrank(factory.governance());
+        _test_hyperdriveFactory_addDeployerCoordinator();
+    }
+
+    function _test_hyperdriveFactory_addDeployerCoordinator() internal {
+        // Ensure that there aren't any deployer coordinators.
         assertEq(factory.getNumberOfDeployerCoordinators(), 0);
 
-        vm.prank(alice);
+        // Add a coordinator.
         factory.addDeployerCoordinator(deployerCoordinator0);
 
+        // Ensure that the deployer coordinator was successfully added.
         assertEq(factory.getNumberOfDeployerCoordinators(), 1);
         assertEq(
             factory.getDeployerCoordinatorAtIndex(0),
             deployerCoordinator0
         );
 
+        // Ensure that the deployers in range function is working properly.
         address[] memory deployerCoordinators = factory
             .getDeployerCoordinatorsInRange(0, 0);
         assertEq(deployerCoordinators.length, 1);
         assertEq(deployerCoordinators[0], deployerCoordinator0);
 
-        vm.prank(alice);
+        // Add another coordinator.
         factory.addDeployerCoordinator(deployerCoordinator1);
 
+        // Ensure that the deployer coordinator was successfully added.
         assertEq(factory.getNumberOfDeployerCoordinators(), 2);
         assertEq(
             factory.getDeployerCoordinatorAtIndex(0),
@@ -3507,6 +3578,7 @@ contract HyperdriveFactoryAddHyperdriveFactoryTest is HyperdriveTest {
             deployerCoordinator1
         );
 
+        // Ensure that the deployers in range function is working properly.
         deployerCoordinators = factory.getDeployerCoordinatorsInRange(0, 1);
         assertEq(deployerCoordinators.length, 2);
         assertEq(deployerCoordinators[0], deployerCoordinator0);
@@ -3514,7 +3586,7 @@ contract HyperdriveFactoryAddHyperdriveFactoryTest is HyperdriveTest {
     }
 }
 
-contract HyperdriveFactoryRemoveInstanceTest is HyperdriveTest {
+contract HyperdriveFactoryRemoveDeployerCoordinatorTest is HyperdriveTest {
     string internal constant NAME = "HyperdriveFactory";
 
     HyperdriveFactory factory;
@@ -3531,6 +3603,7 @@ contract HyperdriveFactoryRemoveInstanceTest is HyperdriveTest {
         factory = new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
@@ -3571,7 +3644,9 @@ contract HyperdriveFactoryRemoveInstanceTest is HyperdriveTest {
         vm.stopPrank();
     }
 
-    function test_hyperdriveFactory_removeInstance_notGovernance() external {
+    function test_hyperdriveFactory_removeDeployerCoordinator_notGovernance()
+        external
+    {
         vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
         factory.removeDeployerCoordinator(deployerCoordinator0, 0);
 
@@ -3608,7 +3683,22 @@ contract HyperdriveFactoryRemoveInstanceTest is HyperdriveTest {
         factory.removeDeployerCoordinator(deployerCoordinator0, 0);
     }
 
-    function test_hyperdriveFactory_removeDeployerCoordinator() external {
+    function test_hyperdriveFactory_removeDeployerCoordinator_deployerCoordinatorManager()
+        external
+    {
+        vm.startPrank(factory.deployerCoordinatorManager());
+        _test_hyperdriveFactory_removeDeployerCoordinator();
+    }
+
+    function test_hyperdriveFactory_removeDeployerCoordinator_governance()
+        external
+    {
+        vm.startPrank(factory.governance());
+        _test_hyperdriveFactory_removeDeployerCoordinator();
+    }
+
+    function _test_hyperdriveFactory_removeDeployerCoordinator() internal {
+        // Ensure that there are three deployer coordinators.
         assertEq(factory.getNumberOfDeployerCoordinators(), 3);
         assertEq(
             factory.getDeployerCoordinatorAtIndex(0),
@@ -3623,6 +3713,7 @@ contract HyperdriveFactoryRemoveInstanceTest is HyperdriveTest {
             deployerCoordinator2
         );
 
+        // Ensure that deployer coordinators in range is working properly.
         address[] memory deployerCoordinators = factory
             .getDeployerCoordinatorsInRange(0, 2);
         assertEq(deployerCoordinators.length, 3);
@@ -3630,15 +3721,15 @@ contract HyperdriveFactoryRemoveInstanceTest is HyperdriveTest {
         assertEq(deployerCoordinators[1], deployerCoordinator1);
         assertEq(deployerCoordinators[2], deployerCoordinator2);
 
+        // Ensure that the expected deployer coordinators are registered.
         assertEq(factory.isDeployerCoordinator(deployerCoordinator0), true);
         assertEq(factory.isDeployerCoordinator(deployerCoordinator1), true);
         assertEq(factory.isDeployerCoordinator(deployerCoordinator2), true);
 
-        vm.prank(alice);
+        // Remove a deployer coordinator.
         factory.removeDeployerCoordinator(deployerCoordinator0, 0);
 
-        // NOTE: Demonstrate that array order is NOT preserved after removal.
-
+        // Ensure that the number of deployer coordinators has been reduced.
         assertEq(factory.getNumberOfDeployerCoordinators(), 2);
         assertEq(
             factory.getDeployerCoordinatorAtIndex(0),
@@ -3649,11 +3740,16 @@ contract HyperdriveFactoryRemoveInstanceTest is HyperdriveTest {
             deployerCoordinator1
         );
 
+        // NOTE: Demonstrate that array order is NOT preserved after removal.
+        //
+        // Ensure that deployer coordinators in range is working properly after
+        // removal.
         deployerCoordinators = factory.getDeployerCoordinatorsInRange(0, 1);
         assertEq(deployerCoordinators.length, 2);
         assertEq(deployerCoordinators[0], deployerCoordinator2);
         assertEq(deployerCoordinators[1], deployerCoordinator1);
 
+        // Ensure that the correct deployer coordinator was removed.
         assertEq(factory.isDeployerCoordinator(deployerCoordinator0), false);
         assertEq(factory.isDeployerCoordinator(deployerCoordinator1), true);
         assertEq(factory.isDeployerCoordinator(deployerCoordinator2), true);
