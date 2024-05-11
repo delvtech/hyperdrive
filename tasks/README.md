@@ -29,6 +29,12 @@ The complete list of tasks can be seen by running `npx hardhat --help` in your t
   etherscan-verify      submit contract source code to etherscan
 ```
 
+For example, to deploy the 30 DAI pool on sepolia, you can run the following command:
+
+```sh
+npx hardhat deploy:instance --name DAI_30_DAY --network sepolia
+```
+
 ## Configuration
 
 Per-network configuration must be imported to [hardhat.config.ts](../hardhat.config.ts). The values are then parsed by Zod to ensure adherance to the schema and transformed to more blockchain-friendly types. This layer of indirection enables the use of syntax sugar like using `"7 days"` in place of `604800`.
