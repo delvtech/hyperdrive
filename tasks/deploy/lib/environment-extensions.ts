@@ -476,7 +476,7 @@ extendEnvironment((hre) => {
         let baseTokenAddress;
         if (baseToken && typeof baseToken !== "string") {
             // run the token deploy function if it exists
-            if (baseToken.deploy) await baseToken.deploy(hre);
+            if (baseToken.deploy) await baseToken.deploy(hre, options);
             let tokenDeployment = deployments.byName(baseToken.name);
             baseTokenAddress = tokenDeployment.address;
         } else if (baseToken) {
@@ -488,7 +488,7 @@ extendEnvironment((hre) => {
         let vaultSharesTokenAddress;
         if (vaultSharesToken && typeof vaultSharesToken !== "string") {
             // run the token deploy function if it exists
-            if (vaultSharesToken.deploy) await vaultSharesToken.deploy(hre);
+            if (vaultSharesToken.deploy) await vaultSharesToken.deploy(hre, options);
             let tokenDeployment = deployments.byName(vaultSharesToken.name);
             vaultSharesTokenAddress = tokenDeployment.address;
         } else if (vaultSharesToken) {

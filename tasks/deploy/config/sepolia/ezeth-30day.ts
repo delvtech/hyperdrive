@@ -1,5 +1,8 @@
 import { parseEther } from "viem";
-import { HyperdriveInstanceDeployConfigInput } from "../../lib";
+import {
+    HyperdriveInstanceDeployConfigInput,
+    getDeploymentId,
+} from "../../lib";
 
 const CONTRIBUTION = "500";
 
@@ -7,7 +10,7 @@ export const SEPOLIA_EZETH_30DAY: HyperdriveInstanceDeployConfigInput = {
     name: "EZETH_30_DAY",
     contract: "EzETHHyperdrive",
     coordinatorName: "EZETH_COORDINATOR",
-    deploymentId: "0x6666",
+    deploymentId: getDeploymentId("EZETH_30_DAY"),
     salt: "0xababe",
     contribution: CONTRIBUTION,
     fixedAPR: "0.05",

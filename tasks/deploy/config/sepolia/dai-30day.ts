@@ -1,5 +1,8 @@
 import { parseEther, toFunctionSelector } from "viem";
-import { HyperdriveInstanceDeployConfigInput } from "../../lib";
+import {
+    HyperdriveInstanceDeployConfigInput,
+    getDeploymentId,
+} from "../../lib";
 
 const CONTRIBUTION = "10000";
 
@@ -7,7 +10,7 @@ export const SEPOLIA_DAI_30DAY: HyperdriveInstanceDeployConfigInput = {
     name: "DAI_30_DAY",
     contract: "ERC4626Hyperdrive",
     coordinatorName: "ERC4626_COORDINATOR",
-    deploymentId: "0x6666",
+    deploymentId: getDeploymentId("DAI_30_DAY"),
     salt: "0x694201",
     contribution: CONTRIBUTION,
     fixedAPR: "0.05",
@@ -34,7 +37,7 @@ export const SEPOLIA_DAI_30DAY: HyperdriveInstanceDeployConfigInput = {
     poolDeployConfig: {
         baseToken: {
             name: "DAI",
-            deploy: async (hre) => {
+            deploy: async (hre, options) => {
                 let pc = await hre.viem.getPublicClient();
                 let baseToken = await hre.hyperdriveDeploy.deployContract(
                     "DAI",
@@ -47,6 +50,7 @@ export const SEPOLIA_DAI_30DAY: HyperdriveInstanceDeployConfigInput = {
                         true,
                         parseEther("10000"),
                     ],
+                    options,
                 );
                 // allow minting by the public
                 let tx = await baseToken.write.setPublicCapability([
@@ -73,7 +77,7 @@ export const SEPOLIA_DAI_30DAY: HyperdriveInstanceDeployConfigInput = {
         },
         vaultSharesToken: {
             name: "SDAI",
-            deploy: async (hre) => {
+            deploy: async (hre, options) => {
                 let pc = await hre.viem.getPublicClient();
                 let baseToken =
                     hre.hyperdriveDeploy.deployments.byName("DAI").address;
@@ -90,6 +94,7 @@ export const SEPOLIA_DAI_30DAY: HyperdriveInstanceDeployConfigInput = {
                             true,
                             parseEther("10000"),
                         ],
+                        options,
                     );
                 // allow minting by the public
                 let tx = await vaultSharesToken.write.setPublicCapability([
