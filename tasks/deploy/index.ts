@@ -4,3 +4,4 @@ export * from "./factory";
 export * from "./instance";
 export * from "./lib";
 export * from "./registry";
+export * from "./verify";

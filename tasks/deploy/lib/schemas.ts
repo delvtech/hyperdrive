@@ -1,14 +1,21 @@
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import hre from "hardhat";
+import { toHex } from "viem";
 import { z } from "zod";
+import { HyperdriveDeployRuntimeOptions } from "./environment-extensions";
 import { zAddress, zBytes32, zDuration, zEther, zHex } from "./types";
 dayjs.extend(duration);
 
+export type HookFn = (
+    _hre: typeof hre,
+    _options: HyperdriveDeployRuntimeOptions,
+) => Promise<void>;
+
 export const zHyperdriveFactoryDeployConfig = z.object({
     name: z.string(),
-    prepare: z.custom<(_hre: typeof hre) => Promise<void>>().optional(),
-    setup: z.custom<(_hre: typeof hre) => Promise<void>>().optional(),
+    prepare: z.custom<HookFn>().optional(),
+    setup: z.custom<HookFn>().optional(),
     governance: zAddress,
     hyperdriveGovernance: zAddress,
     defaultPausers: zAddress.array(),
@@ -53,22 +60,30 @@ export const zHyperdriveCoordinatorDeployConfig = z.object({
     factoryName: z.string(),
     targetCount: z.number(),
     lpMath: z.string({ description: "name of the LPMath contract to link" }),
-    prepare: z.custom<(_hre: typeof hre) => Promise<void>>().optional(),
-    setup: z.custom<(_hre: typeof hre) => Promise<void>>().optional(),
+    prepare: z.custom<HookFn>().optional(),
+    setup: z.custom<HookFn>().optional(),
     coreConstructorArguments: z
-        .custom<(_hre: typeof hre) => Promise<any[]>>()
+        .custom<
+            (
+                _hre: typeof hre,
+                _options: HyperdriveDeployRuntimeOptions,
+            ) => Promise<any[]>
+        >()
         .optional(),
     targetConstructorArguments: z
-        .custom<(_hre: typeof hre) => Promise<any[]>>()
+        .custom<
+            (
+                _hre: typeof hre,
+                _options: HyperdriveDeployRuntimeOptions,
+            ) => Promise<any[]>
+        >()
         .optional(),
     token: z
         .union([
             zAddress,
             z.object({
                 name: z.string(),
-                deploy: z
-                    .custom<(_hre: typeof hre) => Promise<void>>()
-                    .optional(),
+                deploy: z.custom<HookFn>().optional(),
             }),
         ])
         .optional(),
@@ -86,9 +101,11 @@ export const zHyperdriveInstanceDeployConfig = z.object({
     name: z.string(),
     contract: z.string(),
     coordinatorName: z.string(),
-    prepare: z.custom<(_hre: typeof hre) => Promise<void>>().optional(),
-    setup: z.custom<(_hre: typeof hre) => Promise<void>>().optional(),
-    deploymentId: zBytes32,
+    prepare: z.custom<HookFn>().optional(),
+    setup: z.custom<HookFn>().optional(),
+    deploymentId: zBytes32.default(
+        toHex(new Date().toISOString(), { size: 32 }),
+    ),
     salt: zBytes32,
     contribution: zEther,
     fixedAPR: zEther,
@@ -105,9 +122,7 @@ export const zHyperdriveInstanceDeployConfig = z.object({
                     zAddress,
                     z.object({
                         name: z.string(),
-                        deploy: z
-                            .custom<(_hre: typeof hre) => Promise<void>>()
-                            .optional(),
+                        deploy: z.custom<HookFn>().optional(),
                     }),
                 ])
                 .optional(),
@@ -116,9 +131,7 @@ export const zHyperdriveInstanceDeployConfig = z.object({
                     zAddress,
                     z.object({
                         name: z.string(),
-                        deploy: z
-                            .custom<(_hre: typeof hre) => Promise<void>>()
-                            .optional(),
+                        deploy: z.custom<HookFn>().optional(),
                     }),
                 ])
                 .optional(),

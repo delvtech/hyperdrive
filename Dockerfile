@@ -17,7 +17,7 @@ COPY ./foundry.toml ./foundry.toml
 RUN forge install && forge build
 
 # Compile the migration script.
-Run source $HOME/.profile && cargo build -Z sparse-registry --bin migrate
+RUN source $HOME/.profile && cargo build -Z sparse-registry --bin migrate
 
 # Load the environment variables used in the migration script.
 ENV HYPERDRIVE_ETHEREUM_URL=http://localhost:8545

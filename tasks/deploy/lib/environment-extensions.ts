@@ -117,7 +117,6 @@ extendEnvironment((hre) => {
         args,
         { noSave, overwrite, viemConfig } = {},
     ) => {
-        let artifact = await hre.artifacts.readArtifact(contract);
         if (!overwrite && !!deployments.byNameSafe(name)) {
             console.log(`skipping ${name}, found existing deployment`);
             return await hre.viem.getContractAt(
@@ -164,7 +163,7 @@ extendEnvironment((hre) => {
             factoryConfig.prepare
         ) {
             console.log(`running prepare for ${name} ...`);
-            await factoryConfig.prepare(hre);
+            await factoryConfig.prepare(hre, options ?? {});
         }
 
         let forwarder = await deployContract(
@@ -198,7 +197,7 @@ extendEnvironment((hre) => {
         )?.setup;
         if (setupFunction) {
             console.log(` - running setup function for ${name}`);
-            await setupFunction(hre);
+            await setupFunction(hre, options ?? {});
         }
         return instance;
     };
@@ -222,7 +221,7 @@ extendEnvironment((hre) => {
                 coordinatorConfig.prepare
             ) {
                 console.log(`running prepare for ${name} ...`);
-                await coordinatorConfig.prepare(hre);
+                await coordinatorConfig.prepare(hre, options ?? {});
             }
 
             // Parse out the prefix from the contract so it can be used to name the various
@@ -268,7 +267,7 @@ extendEnvironment((hre) => {
             let tokenAddress;
             if (token && typeof token !== "string") {
                 if (token.deploy) {
-                    await token.deploy(hre);
+                    await token.deploy(hre, options ?? {});
                 }
                 let tokenDeployment = deployments.byName(token.name);
                 tokenAddress = tokenDeployment.address;
@@ -282,7 +281,10 @@ extendEnvironment((hre) => {
                 `${name}_${coreDeployerContractName}`,
                 coreDeployerContractName,
                 coordinatorConfig.coreConstructorArguments
-                    ? await coordinatorConfig.coreConstructorArguments(hre)
+                    ? await coordinatorConfig.coreConstructorArguments(
+                          hre,
+                          options ?? {},
+                      )
                     : [],
                 options,
             );
@@ -345,6 +347,7 @@ extendEnvironment((hre) => {
                     args: coordinatorConfig.targetConstructorArguments
                         ? await coordinatorConfig.targetConstructorArguments(
                               hre,
+                              options ?? {},
                           )
                         : [],
                     gas: 5_000_000n,
@@ -369,6 +372,7 @@ extendEnvironment((hre) => {
                         args: coordinatorConfig.targetConstructorArguments
                             ? await coordinatorConfig.targetConstructorArguments(
                                   hre,
+                                  options ?? {},
                               )
                             : [],
                         libraries: {
@@ -391,7 +395,7 @@ extendEnvironment((hre) => {
             );
             if (coordinatorConfig.setup) {
                 console.log(` - running setup function for ${name}`);
-                await coordinatorConfig.setup(hre);
+                await coordinatorConfig.setup(hre, options ?? {});
             }
 
             // Optionally register the coordinator with the factory if enabled and having the
@@ -433,7 +437,7 @@ extendEnvironment((hre) => {
             instanceConfig.prepare
         ) {
             console.log(`running prepare for ${name} ...`);
-            await instanceConfig.prepare(hre);
+            await instanceConfig.prepare(hre, options ?? {});
         }
 
         // Parse out the prefix from the contract so it can be used to name the various
@@ -468,7 +472,7 @@ extendEnvironment((hre) => {
         // run the instance prepare function if available
         if (instanceConfig.prepare) {
             console.log(` - running setup function for ${name}`);
-            await instanceConfig.prepare(hre);
+            await instanceConfig.prepare(hre, options ?? {});
         }
 
         // Parse the baseToken field and deploy it if it is defined and not a string
@@ -476,7 +480,7 @@ extendEnvironment((hre) => {
         let baseTokenAddress;
         if (baseToken && typeof baseToken !== "string") {
             // run the token deploy function if it exists
-            if (baseToken.deploy) await baseToken.deploy(hre, options);
+            if (baseToken.deploy) await baseToken.deploy(hre, options ?? {});
             let tokenDeployment = deployments.byName(baseToken.name);
             baseTokenAddress = tokenDeployment.address;
         } else if (baseToken) {
@@ -488,7 +492,8 @@ extendEnvironment((hre) => {
         let vaultSharesTokenAddress;
         if (vaultSharesToken && typeof vaultSharesToken !== "string") {
             // run the token deploy function if it exists
-            if (vaultSharesToken.deploy) await vaultSharesToken.deploy(hre, options);
+            if (vaultSharesToken.deploy)
+                await vaultSharesToken.deploy(hre, options ?? {});
             let tokenDeployment = deployments.byName(vaultSharesToken.name);
             vaultSharesTokenAddress = tokenDeployment.address;
         } else if (vaultSharesToken) {
@@ -506,6 +511,12 @@ extendEnvironment((hre) => {
 
         // Obtain the number of targets from the coordinator
         let targetCount = await coordinator.read.getNumberOfTargets();
+
+        // Obtain configuration for the coordinator to determine if additional contructor arguments
+        // need to be logged
+        let coordinatorConfig = config?.coordinators!.find(
+            (c) => (c.name = instanceConfig.coordinatorName),
+        );
 
         // Obtain the factory deployment and artifacts to use for simulation and calling the
         // `deployTarget` function.
@@ -587,7 +598,15 @@ extendEnvironment((hre) => {
                     await hhDeployments.getExtendedArtifact(contractName);
                 await hhDeployments.save(`${name}_${contractName}`, {
                     address: address,
-                    args: [{ ...poolDeployConfig, initialVaultSharePrice }],
+                    args: coordinatorConfig?.targetConstructorArguments
+                        ? [
+                              { ...poolDeployConfig, initialVaultSharePrice },
+                              ...(await coordinatorConfig.targetConstructorArguments(
+                                  hre,
+                                  options ?? {},
+                              )),
+                          ]
+                        : [{ ...poolDeployConfig, initialVaultSharePrice }],
                     libraries: { LPMath: deployments.byName("LPMath").address },
                     ...exArtifact,
                 });
@@ -669,15 +688,16 @@ extendEnvironment((hre) => {
             },
             ...targets,
         ];
-        let coordinatorConfig = config?.coordinators!.find(
-            (c) => (c.name = instanceConfig.coordinatorName),
-        );
+
         if (
             coordinatorConfig?.coreConstructorArguments &&
-            coordinatorConfig.targetConstructorArguments
+            coordinatorConfig?.targetConstructorArguments
         ) {
             hyperdriveConstructorArgs.push(
-                ...(await coordinatorConfig.coreConstructorArguments(hre)),
+                ...(await coordinatorConfig.coreConstructorArguments(
+                    hre,
+                    options ?? {},
+                )),
             );
         }
 

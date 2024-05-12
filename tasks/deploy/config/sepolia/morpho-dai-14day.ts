@@ -1,16 +1,13 @@
 import { parseEther, toFunctionSelector } from "viem";
-import {
-    HyperdriveInstanceDeployConfigInput,
-    getDeploymentId,
-} from "../../lib";
+import { HyperdriveInstanceDeployConfigInput } from "../../lib";
 
 const CONTRIBUTION = "10000";
 
-export const SEPOLIA_DAI_14DAY: HyperdriveInstanceDeployConfigInput = {
-    name: "DAI_14_DAY",
+export const MORPHO_DAI_14DAY: HyperdriveInstanceDeployConfigInput = {
+    name: "MORPHO_DAI_14DAY",
     contract: "ERC4626Hyperdrive",
     coordinatorName: "ERC4626_COORDINATOR",
-    deploymentId: getDeploymentId("DAI_14_DAY"),
+    deploymentId: "0x666666",
     salt: "0x69420",
     contribution: CONTRIBUTION,
     fixedAPR: "0.05",
@@ -20,24 +17,10 @@ export const SEPOLIA_DAI_14DAY: HyperdriveInstanceDeployConfigInput = {
         asBase: true,
         // extraData: "0x",
     },
-    setup: async (hre) => {
-        let baseToken = await hre.viem.getContractAt(
-            "ERC20Mintable",
-            hre.hyperdriveDeploy.deployments.byName("DAI").address,
-        );
-        let sharesTokenAddress =
-            hre.hyperdriveDeploy.deployments.byName("SDAI").address;
-        let pc = await hre.viem.getPublicClient();
-        let tx = await baseToken.write.setUnrestrictedMintStatus([
-            sharesTokenAddress,
-            true,
-        ]);
-        await pc.waitForTransactionReceipt({ hash: tx });
-    },
     poolDeployConfig: {
         baseToken: {
             name: "DAI",
-            deploy: async (hre, options) => {
+            deploy: async (hre) => {
                 let pc = await hre.viem.getPublicClient();
                 let baseToken = await hre.hyperdriveDeploy.deployContract(
                     "DAI",
@@ -50,7 +33,6 @@ export const SEPOLIA_DAI_14DAY: HyperdriveInstanceDeployConfigInput = {
                         true,
                         parseEther("10000"),
                     ],
-                    options,
                 );
                 // allow minting by the public
                 let tx = await baseToken.write.setPublicCapability([
@@ -75,40 +57,7 @@ export const SEPOLIA_DAI_14DAY: HyperdriveInstanceDeployConfigInput = {
                 await pc.waitForTransactionReceipt({ hash: tx });
             },
         },
-        vaultSharesToken: {
-            name: "SDAI",
-            deploy: async (hre, options) => {
-                let pc = await hre.viem.getPublicClient();
-                let baseToken =
-                    hre.hyperdriveDeploy.deployments.byName("DAI").address;
-                let vaultSharesToken =
-                    await hre.hyperdriveDeploy.deployContract(
-                        "SDAI",
-                        "MockERC4626",
-                        [
-                            baseToken,
-                            "Savings DAI",
-                            "SDAI",
-                            parseEther("0.13"),
-                            "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
-                            true,
-                            parseEther("10000"),
-                        ],
-                        options,
-                    );
-                // allow minting by the public
-                let tx = await vaultSharesToken.write.setPublicCapability([
-                    toFunctionSelector("mint(uint256)"),
-                    true,
-                ]);
-                await pc.waitForTransactionReceipt({ hash: tx });
-                tx = await vaultSharesToken.write.setPublicCapability([
-                    toFunctionSelector("mint(address,uint256)"),
-                    true,
-                ]);
-                await pc.waitForTransactionReceipt({ hash: tx });
-            },
-        },
+        vaultSharesToken: "0x3A2031f3FAb5AA2b5c47c02fcD9f26072977834c",
         circuitBreakerDelta: "0.6",
         minimumShareReserves: "10",
         minimumTransactionAmount: "0.001",
