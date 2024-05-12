@@ -4,6 +4,7 @@ pragma solidity 0.8.20;
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IRestakeManager, IRenzoOracle } from "../../interfaces/IRenzo.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
+import { console2 as console } from "forge-std/console2.sol";
 
 /// @author DELV
 /// @title ezETH Base Contract
@@ -89,11 +90,14 @@ abstract contract EzETHBase is HyperdriveBase {
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
+        console.log('_convertToBase');
         // Get the total TVL priced in ETH from restakeManager
         (, , uint256 totalTVL) = _restakeManager.calculateTVLs();
+        console.log('totalTVL', totalTVL);
 
         // Get the total supply of the ezETH token
         uint256 totalSupply = _vaultSharesToken.totalSupply();
+        console.log('totalSupply', totalSupply);
 
         return
             _renzoOracle.calculateRedeemAmount(

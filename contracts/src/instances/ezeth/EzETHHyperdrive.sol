@@ -70,5 +70,10 @@ contract EzETHHyperdrive is Hyperdrive, EzETHBase {
     )
         Hyperdrive(_config, _target0, _target1, _target2, _target3)
         EzETHBase(_restakeManager)
-    {}
+    {
+    }
+
+    function pricePerVaultShare() external view returns (uint256) {
+        return _pricePerVaultShare();
+    }
 }

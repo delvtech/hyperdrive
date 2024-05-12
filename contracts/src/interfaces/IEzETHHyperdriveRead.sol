@@ -12,4 +12,6 @@ interface IEzETHHyperdriveRead is IHyperdriveRead {
     /// @notice Gets the RenzoOracle contract.
     /// @return The RenzoOracle contract.
     function renzoOracle() external view returns (IRenzoOracle);
+
+    function pricePerVaultShare() external view returns (uint256);
 }
