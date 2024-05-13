@@ -330,8 +330,8 @@ contract HyperdriveFactory is IHyperdriveFactory {
         _;
     }
 
-    /// @dev Ensure that the sender is allowed to either the governance address
-    ///      or the deployer coordinator manager.
+    /// @dev Ensure that the sender is either the governance address or the
+    ///      deployer coordinator manager.
     modifier onlyDeployerCoordinatorManager() {
         if (
             msg.sender != governance && msg.sender != deployerCoordinatorManager

@@ -356,6 +356,37 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             NAME
         );
 
+        // Ensure that the factory can't be constructed with a maximum
+        // position duration that isn't a multiple of the checkpoint duration
+        // resolution.
+        vm.expectRevert(IHyperdriveFactory.InvalidMaxPositionDuration.selector);
+        new HyperdriveFactory(
+            HyperdriveFactory.FactoryConfig({
+                governance: alice,
+                deployerCoordinatorManager: celine,
+                hyperdriveGovernance: bob,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
+                defaultPausers: defaults,
+                checkpointDurationResolution: 1 hours,
+                minCheckpointDuration: 8 hours,
+                maxCheckpointDuration: 1 days,
+                minPositionDuration: 7 days,
+                maxPositionDuration: 10 * 365 days + 30 minutes,
+                minCircuitBreakerDelta: 0.15e18,
+                maxCircuitBreakerDelta: 0.6e18,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
+                minFees: IHyperdrive.Fees(0, 0, 0, 0),
+                maxFees: IHyperdrive.Fees(ONE, ONE, ONE, ONE),
+                linkerFactory: address(0),
+                linkerCodeHash: bytes32(0)
+            }),
+            NAME
+        );
+
         // Ensure that the factory can't be constructed with a minimum
         // circuit breaker delta that is greater than the maximum circuit
         // breaker delta.
@@ -387,10 +418,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             NAME
         );
 
-        // Ensure that the factory can't be constructed with a maximum
-        // position duration that isn't a multiple of the checkpoint duration
-        // resolution.
-        vm.expectRevert(IHyperdriveFactory.InvalidMaxPositionDuration.selector);
+        // Ensure that the factory can't be constructed with a minimum
+        // fixed APR that is greater than the maximum fixed APR.
+        vm.expectRevert(IHyperdriveFactory.InvalidFixedAPR.selector);
         new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -403,12 +433,42 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 minCheckpointDuration: 8 hours,
                 maxCheckpointDuration: 1 days,
                 minPositionDuration: 7 days,
-                maxPositionDuration: 10 * 365 days + 30 minutes,
-                minCircuitBreakerDelta: 0.15e18,
+                maxPositionDuration: 10 * 365 days,
+                minCircuitBreakerDelta: 0.1e18,
+                maxCircuitBreakerDelta: 0.6e18,
+                minFixedAPR: 0.6e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
+                minFees: IHyperdrive.Fees(0, 0, 0, 0),
+                maxFees: IHyperdrive.Fees(ONE, ONE, ONE, ONE),
+                linkerFactory: address(0),
+                linkerCodeHash: bytes32(0)
+            }),
+            NAME
+        );
+
+        // Ensure that the factory can't be constructed with a minimum
+        // timestretch APR that is greater than the maximum timestretch APR.
+        vm.expectRevert(IHyperdriveFactory.InvalidTimeStretchAPR.selector);
+        new HyperdriveFactory(
+            HyperdriveFactory.FactoryConfig({
+                governance: alice,
+                deployerCoordinatorManager: celine,
+                hyperdriveGovernance: bob,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
+                defaultPausers: defaults,
+                checkpointDurationResolution: 1 hours,
+                minCheckpointDuration: 8 hours,
+                maxCheckpointDuration: 1 days,
+                minPositionDuration: 7 days,
+                maxPositionDuration: 10 * 365 days,
+                minCircuitBreakerDelta: 0.1e18,
                 maxCircuitBreakerDelta: 0.6e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
-                minTimeStretchAPR: 0.01e18,
+                minTimeStretchAPR: 0.6e18,
                 maxTimeStretchAPR: 0.5e18,
                 minFees: IHyperdrive.Fees(0, 0, 0, 0),
                 maxFees: IHyperdrive.Fees(ONE, ONE, ONE, ONE),
