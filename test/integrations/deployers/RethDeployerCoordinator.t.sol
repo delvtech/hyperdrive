@@ -52,6 +52,7 @@ contract RethDeployerCoordinatorTest is DeployerCoordinatorTest {
             new HyperdriveFactory(
                 HyperdriveFactory.FactoryConfig({
                     governance: alice,
+                    deployerCoordinatorManager: celine,
                     hyperdriveGovernance: bob,
                     feeCollector: feeCollector,
                     sweepCollector: sweepCollector,

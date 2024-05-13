@@ -230,6 +230,7 @@ abstract contract InstanceTest is HyperdriveTest {
         factory = new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: celine,
                 sweepCollector: sweepCollector,
