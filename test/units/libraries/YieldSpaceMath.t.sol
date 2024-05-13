@@ -16,12 +16,14 @@ contract YieldSpaceMathTest is Test {
     using Lib for *;
 
     function test__calculateSharesInGivenBondsOutDown__failure() external {
-        // This case demonstrates y < dy 
+        // This case demonstrates y < dy
         {
             // NOTE: Coverage only works if I initialize the fixture in the test function
             MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
             vm.expectRevert(
-                abi.encodeWithSelector(IHyperdrive.InsufficientLiquidity.selector)
+                abi.encodeWithSelector(
+                    IHyperdrive.InsufficientLiquidity.selector
+                )
             );
             yieldSpaceMath.calculateSharesInGivenBondsOutDown(
                 1_000_000e18, // shareReserves
@@ -49,17 +51,19 @@ contract YieldSpaceMathTest is Test {
             dy = dy.normalizeToRange(0, 500_000_000e18);
             c = c.normalizeToRange(0.0001e18, 1e18);
             mu = mu.normalizeToRange(0.0001e18, 1e18);
-            if(y < dy) return;
+            if (y < dy) return;
             vm.expectRevert(
-                abi.encodeWithSelector(IHyperdrive.InsufficientLiquidity.selector)
+                abi.encodeWithSelector(
+                    IHyperdrive.InsufficientLiquidity.selector
+                )
             );
             yieldSpaceMath.calculateSharesInGivenBondsOutDown(
-                    ze, // shareReserves
-                    y, // bondReserves
-                    dy, // amountIn
-                    t, // stretchedTimeElapsed
-                    c, // c
-                    mu // mu
+                ze, // shareReserves
+                y, // bondReserves
+                dy, // amountIn
+                t, // stretchedTimeElapsed
+                c, // c
+                mu // mu
             );
         }
     }
@@ -80,14 +84,14 @@ contract YieldSpaceMathTest is Test {
             abi.encodeWithSelector(IHyperdrive.InsufficientLiquidity.selector)
         );
         yieldSpaceMath.calculateBondsOutGivenSharesInDown(
-                ze, // shareReserves
-                y, // bondReserves
-                dz, // amountIn
-                t, // stretchedTimeElapsed
-                c, // c
-                mu // mu
+            ze, // shareReserves
+            y, // bondReserves
+            dz, // amountIn
+            t, // stretchedTimeElapsed
+            c, // c
+            mu // mu
         );
-    }   
+    }
 
     function test__calculateOutGivenIn() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
@@ -159,20 +163,22 @@ contract YieldSpaceMathTest is Test {
             dy = dy.normalizeToRange(0, 500_000_000e18);
             c = c.normalizeToRange(0.0001e18, 1e18);
             mu = mu.normalizeToRange(0.0001e18, 1e18);
-            if(y < dy) return;
+            if (y < dy) return;
             vm.expectRevert(
-                abi.encodeWithSelector(IHyperdrive.InsufficientLiquidity.selector)
+                abi.encodeWithSelector(
+                    IHyperdrive.InsufficientLiquidity.selector
+                )
             );
             yieldSpaceMath.calculateSharesInGivenBondsOutUp(
-                    ze, // shareReserves
-                    y, // bondReserves
-                    dy, // amountIn
-                    t, // stretchedTimeElapsed
-                    c, // c
-                    mu // mu
+                ze, // shareReserves
+                y, // bondReserves
+                dy, // amountIn
+                t, // stretchedTimeElapsed
+                c, // c
+                mu // mu
             );
         }
-    } 
+    }
 
     // calculateInGivenOut false
     function test__calculateSharesInGivenBondsOut() external {
