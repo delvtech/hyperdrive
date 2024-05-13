@@ -16,20 +16,78 @@ contract YieldSpaceMathTest is Test {
     using Lib for *;
 
     function test__calculateSharesInGivenBondsOutDown__failure() external {
+        // This case demonstrates y < dy 
+        {
+            // NOTE: Coverage only works if I initialize the fixture in the test function
+            MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
+            vm.expectRevert(
+                abi.encodeWithSelector(IHyperdrive.InsufficientLiquidity.selector)
+            );
+            yieldSpaceMath.calculateSharesInGivenBondsOutDown(
+                1_000_000e18, // shareReserves
+                3_000_000e18, // bondReserves + s
+                3_000_000e18 + 1, // amountOut
+                ONE - ONE.divDown(22.186877016851916266e18), // stretchedTimeElapsed
+                ONE, // c
+                ONE // mu
+            );
+        }
+
+        // This failure case represents _z < ze
+        {
+            // NOTE: Coverage only works if I initialize the fixture in the test function
+            MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
+            uint256 ze = 201711851401369463146;
+            uint256 y = 88213171903337272229610;
+            uint256 dy = 0;
+            uint256 timeStretch = ONE.divDown(22.186877016851916266e18);
+            uint256 t = 1e18 - ONE.divDown(2e18).mulDown(timeStretch);
+            uint256 c = 1093118736259066507447734907058253;
+            uint256 mu = 783036196803737685851513777904720724235403957943825401897387005112993629524;
+            ze = ze.normalizeToRange(0, 500_000_000e18);
+            y = y.normalizeToRange(0, 500_000_000e18);
+            dy = dy.normalizeToRange(0, 500_000_000e18);
+            c = c.normalizeToRange(0.0001e18, 1e18);
+            mu = mu.normalizeToRange(0.0001e18, 1e18);
+            if(y < dy) return;
+            vm.expectRevert(
+                abi.encodeWithSelector(IHyperdrive.InsufficientLiquidity.selector)
+            );
+            yieldSpaceMath.calculateSharesInGivenBondsOutDown(
+                    ze, // shareReserves
+                    y, // bondReserves
+                    dy, // amountIn
+                    t, // stretchedTimeElapsed
+                    c, // c
+                    mu // mu
+            );
+        }
+    }
+
+    function test__calculateBondsOutGivenSharesInDown__failure() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
+        uint256 ze = 224;
+        uint256 y = 3226;
+        uint256 dz = 5936;
+        uint256 timeStretch = ONE.divDown(22.186877016851916266e18);
+        uint256 t = 1e18 - ONE.divDown(2e18).mulDown(timeStretch);
+        uint256 c = 120209876281281145568259943;
+        uint256 mu = 1984;
+        mu = mu.normalizeToRange(0, 1e18);
+        c = c.normalizeToRange(0, 1e18);
         vm.expectRevert(
             abi.encodeWithSelector(IHyperdrive.InsufficientLiquidity.selector)
         );
-        yieldSpaceMath.calculateSharesInGivenBondsOutDown(
-            1_000_000e18, // shareReserves
-            3_000_000e18, // bondReserves + s
-            3_000_000e18 + 1, // amountOut
-            ONE - ONE.divDown(22.186877016851916266e18), // stretchedTimeElapsed
-            ONE, // c
-            ONE // mu
+        yieldSpaceMath.calculateBondsOutGivenSharesInDown(
+                ze, // shareReserves
+                y, // bondReserves
+                dz, // amountIn
+                t, // stretchedTimeElapsed
+                c, // c
+                mu // mu
         );
-    }
+    }   
 
     function test__calculateOutGivenIn() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
@@ -83,6 +141,38 @@ contract YieldSpaceMathTest is Test {
         uint256 pythonResult4 = 76850.14470187116e18;
         assertApproxEqAbs(result4, pythonResult4, 1e9);
     }
+
+    function test__calculateSharesInGivenBondsOutUp__failure() external {
+        // This failure case represents _z < ze
+        {
+            // NOTE: Coverage only works if I initialize the fixture in the test function
+            MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
+            uint256 ze = 201711851401369463146;
+            uint256 y = 88213171903337272229610;
+            uint256 dy = 0;
+            uint256 timeStretch = ONE.divDown(22.186877016851916266e18);
+            uint256 t = 1e18 - ONE.divDown(2e18).mulDown(timeStretch);
+            uint256 c = 1093118736259066507447734907058253;
+            uint256 mu = 783036196803737685851513777904720724235403957943825401897387005112993629524;
+            ze = ze.normalizeToRange(0, 500_000_000e18);
+            y = y.normalizeToRange(0, 500_000_000e18);
+            dy = dy.normalizeToRange(0, 500_000_000e18);
+            c = c.normalizeToRange(0.0001e18, 1e18);
+            mu = mu.normalizeToRange(0.0001e18, 1e18);
+            if(y < dy) return;
+            vm.expectRevert(
+                abi.encodeWithSelector(IHyperdrive.InsufficientLiquidity.selector)
+            );
+            yieldSpaceMath.calculateSharesInGivenBondsOutUp(
+                    ze, // shareReserves
+                    y, // bondReserves
+                    dy, // amountIn
+                    t, // stretchedTimeElapsed
+                    c, // c
+                    mu // mu
+            );
+        }
+    } 
 
     // calculateInGivenOut false
     function test__calculateSharesInGivenBondsOut() external {
