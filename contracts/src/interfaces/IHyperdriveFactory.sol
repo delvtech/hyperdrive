@@ -33,6 +33,11 @@ interface IHyperdriveFactory {
     /// @notice Emitted when the factory's governance is updated.
     event GovernanceUpdated(address indexed governance);
 
+    /// @notice Emitted when the deployer coordinator manager is updated.
+    event DeployerCoordinatorManagerUpdated(
+        address indexed deployerCoordinatorManager
+    );
+
     /// @notice Emitted when the governance address used in new deployments is
     ///         updated.
     event HyperdriveGovernanceUpdated(address indexed hyperdriveGovernance);

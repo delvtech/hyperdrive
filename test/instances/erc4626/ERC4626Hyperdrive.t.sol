@@ -74,6 +74,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         factory = new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,

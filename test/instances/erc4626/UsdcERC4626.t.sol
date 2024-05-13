@@ -70,6 +70,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         factory = new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
+                deployerCoordinatorManager: celine,
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
