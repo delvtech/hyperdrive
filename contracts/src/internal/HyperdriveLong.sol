@@ -134,8 +134,8 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             options.destination,
             assetId,
             maturityTime_,
-            _convertToBaseFromOption(amount, vaultSharePrice_, options), // base deposit
-            _convertToVaultSharesFromOption(amount, vaultSharePrice_, options), // vault shares deposit
+            amount,
+            vaultSharePrice_,
             options.asBase,
             bondProceeds_
         );
@@ -286,14 +286,8 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             options.destination, // destination
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             maturityTime,
-            // base proceeds
-            _convertToBaseFromOption(proceeds, vaultSharePrice_, options),
-            // vault shares proceeds
-            _convertToVaultSharesFromOption(
-                proceeds,
-                vaultSharePrice_,
-                options
-            ),
+            proceeds,
+            vaultSharePrice_,
             options.asBase,
             bondAmount
         );

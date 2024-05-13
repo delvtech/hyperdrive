@@ -557,8 +557,8 @@ contract OpenShortTest is HyperdriveTest {
         );
         (
             uint256 eventMaturityTime,
-            uint256 eventBaseAmount,
-            uint256 eventVaultShareAmount,
+            uint256 eventAmount,
+            uint256 eventVaultSharePrice,
             bool eventAsBase,
             uint256 eventBaseProceeds,
             uint256 eventBondAmount
@@ -567,10 +567,10 @@ contract OpenShortTest is HyperdriveTest {
                 (uint256, uint256, uint256, bool, uint256, uint256)
             );
         assertEq(eventMaturityTime, maturityTime);
-        assertEq(eventBaseAmount, basePaid);
+        assertEq(eventAmount, basePaid);
         assertEq(
-            eventVaultShareAmount,
-            basePaid.divDown(hyperdrive.getPoolInfo().vaultSharePrice)
+            eventVaultSharePrice,
+            hyperdrive.getPoolInfo().vaultSharePrice
         );
         assertEq(eventAsBase, true);
         assertEq(eventBaseProceeds, shortAmount - basePaid);

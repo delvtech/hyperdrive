@@ -351,19 +351,21 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertEq(address(uint160(uint256(log.topics[2]))), destination);
         (
             uint256 lpShares,
-            uint256 baseAmount,
-            uint256 vaultShareAmount,
+            uint256 amount,
+            uint256 vaultSharePrice,
             bool asBase,
-            uint256 withdrawalShares
-        ) = abi.decode(log.data, (uint256, uint256, uint256, bool, uint256));
+            uint256 withdrawalShares,
+            uint256 lpSharePrice
+        ) = abi.decode(
+                log.data,
+                (uint256, uint256, uint256, bool, uint256, uint256)
+            );
         assertEq(lpShares, expectedLpShares);
-        assertEq(baseAmount, expectedBaseAmount);
-        assertEq(
-            vaultShareAmount,
-            expectedBaseAmount.divDown(hyperdrive.getPoolInfo().vaultSharePrice)
-        );
+        assertEq(amount, expectedBaseAmount);
+        assertEq(vaultSharePrice, hyperdrive.getPoolInfo().vaultSharePrice);
         assertEq(asBase, true);
         assertEq(withdrawalShares, expectedWithdrawalShares);
+        assertEq(lpSharePrice, hyperdrive.getPoolInfo().lpSharePrice);
     }
 
     function lpTotalSupply() internal view returns (uint256) {

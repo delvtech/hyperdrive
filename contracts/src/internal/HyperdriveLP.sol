@@ -126,16 +126,11 @@ abstract contract HyperdriveLP is
         );
 
         // Emit an Initialize event.
-        uint256 baseContribution = _convertToBaseFromOption(
-            _contribution,
-            vaultSharePrice,
-            _options
-        );
         emit Initialize(
             _options.destination,
             lpShares,
-            baseContribution, // base contribution
-            shareContribution, // vault shares contribution
+            _contribution,
+            vaultSharePrice,
             _options.asBase,
             _apr
         );
@@ -297,16 +292,11 @@ abstract contract HyperdriveLP is
             ? 0 // NOTE: We always round the LP share price down for consistency.
             : startingPresentValue.divDown(lpTotalSupply);
         IHyperdrive.Options calldata options = _options; // avoid stack-too-deep
-        uint256 baseContribution = _convertToBaseFromOption(
-            contribution,
-            vaultSharePrice,
-            options
-        );
         emit AddLiquidity(
             options.destination,
             lpShares,
-            baseContribution, // base contribution
-            shareContribution, // vault shares contribution
+            contribution,
+            vaultSharePrice,
             options.asBase,
             lpSharePrice
         );
@@ -383,12 +373,8 @@ abstract contract HyperdriveLP is
             msg.sender, // provider
             _options.destination, // destination
             _lpShares,
-            _convertToBaseFromOption(proceeds, vaultSharePrice, _options), // base proceeds
-            _convertToVaultSharesFromOption(
-                proceeds,
-                vaultSharePrice,
-                _options
-            ), // vault shares proceeds
+            proceeds,
+            vaultSharePrice,
             _options.asBase,
             uint256(withdrawalShares),
             lpSharePrice
@@ -446,12 +432,8 @@ abstract contract HyperdriveLP is
             msg.sender, // provider
             _options.destination, // destination
             withdrawalSharesRedeemed,
-            _convertToBaseFromOption(proceeds, vaultSharePrice, _options), // base proceeds
-            _convertToVaultSharesFromOption(
-                proceeds,
-                vaultSharePrice,
-                _options
-            ), // vault shares proceeds
+            proceeds,
+            vaultSharePrice,
             _options.asBase
         );
 
