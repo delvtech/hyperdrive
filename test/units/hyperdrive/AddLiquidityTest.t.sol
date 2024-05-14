@@ -589,11 +589,17 @@ contract AddLiquidityTest is HyperdriveTest {
         assertEq(logs.length, 1);
         VmSafe.Log memory log = logs[0];
         assertEq(address(uint160(uint256(log.topics[1]))), provider);
-        (uint256 lpShares, uint256 baseAmount) = abi.decode(
-            log.data,
-            (uint256, uint256)
-        );
+        (
+            uint256 lpShares,
+            uint256 amount,
+            uint256 vaultSharePrice,
+            bool asBase,
+            uint256 lpSharePrice
+        ) = abi.decode(log.data, (uint256, uint256, uint256, bool, uint256));
         assertEq(lpShares, expectedLpShares);
-        assertEq(baseAmount, expectedBaseAmount);
+        assertEq(amount, expectedBaseAmount);
+        assertEq(vaultSharePrice, hyperdrive.getPoolInfo().vaultSharePrice);
+        assertEq(asBase, true);
+        assertEq(lpSharePrice, hyperdrive.getPoolInfo().lpSharePrice);
     }
 }

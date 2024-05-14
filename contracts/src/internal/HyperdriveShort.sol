@@ -147,8 +147,8 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             options.destination,
             assetId,
             maturityTime,
-            baseDeposit, // base deposit
-            _convertToVaultSharesFromOption(deposit, vaultSharePrice_, options), // vault shares deposit
+            deposit,
+            vaultSharePrice_,
             options.asBase,
             // NOTE: We subtract out the governance fee from the share reserves
             // delta since the user is responsible for paying the governance
@@ -311,14 +311,8 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             options.destination, // destination
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime),
             maturityTime,
-            // base proceeds
-            _convertToBaseFromOption(proceeds, vaultSharePrice_, options),
-            // vault shares proceeds
-            _convertToVaultSharesFromOption(
-                proceeds,
-                vaultSharePrice_,
-                options
-            ),
+            proceeds,
+            vaultSharePrice_,
             options.asBase,
             // NOTE: We add the governance fee to the share reserves delta since
             // the user is responsible for paying the governance fee.

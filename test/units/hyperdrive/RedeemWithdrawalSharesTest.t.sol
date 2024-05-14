@@ -449,11 +449,15 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         VmSafe.Log memory log = logs[0];
         assertEq(address(uint160(uint256(log.topics[1]))), provider);
         assertEq(address(uint160(uint256(log.topics[2]))), destination);
-        (uint256 sharesRedeemed, uint256 baseProceeds) = abi.decode(
-            log.data,
-            (uint256, uint256)
-        );
-        assertEq(sharesRedeemed, expectedSharesRedeemed);
-        assertEq(baseProceeds, expectedBaseProceeds);
+        (
+            uint256 withdrawalSharesAmount,
+            uint256 amount,
+            uint256 vaultSharePrice,
+            bool asBase
+        ) = abi.decode(log.data, (uint256, uint256, uint256, bool));
+        assertEq(withdrawalSharesAmount, expectedSharesRedeemed);
+        assertEq(amount, expectedBaseProceeds);
+        assertEq(vaultSharePrice, hyperdrive.getPoolInfo().vaultSharePrice);
+        assertEq(asBase, true);
     }
 }

@@ -51,7 +51,9 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
         proceeds = _withdraw(governanceFeesAccrued, vaultSharePrice, _options);
         emit CollectGovernanceFee(
             feeCollector,
-            _convertToBaseFromOption(proceeds, vaultSharePrice, _options)
+            proceeds,
+            vaultSharePrice,
+            _options.asBase
         );
     }
 
