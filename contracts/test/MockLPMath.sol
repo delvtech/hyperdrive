@@ -157,4 +157,8 @@ contract MockLPMath {
                     _params
                 );
     }
+
+    function getTimestamp() external view returns (uint256) {
+        return block.timestamp;
+    }
 }
