@@ -9,6 +9,7 @@ export const SAMPLE_FACTORY: HyperdriveFactoryDeployConfigInput = {
     name: "SAMPLE_FACTORY",
     governance: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
     hyperdriveGovernance: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
+    deployerCoordinatorManager: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
     defaultPausers: ["0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8"],
     feeCollector: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
     sweepCollector: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",

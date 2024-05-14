@@ -9,21 +9,21 @@ dayjs.extend(duration);
  * Specifies a 42 character string with the prefix '0x'
  */
 export const zAddress = z.custom<`0x${string}`>(
-    (v) => typeof v === "string" && /^0x[\da-fA-f]{40}$/g.test(v),
+    (v) => typeof v === "string" && /^0x[\da-fA-F]{40}$/g.test(v),
 );
 
 /**
  * Specifies a string of any length with the prefix '0x'
  */
 export const zHex = z.custom<`0x${string}`>(
-    (v) => typeof v === "string" && /^0x[\da-fA-f]*$/g.test(v),
+    (v) => typeof v === "string" && /^0x[\da-fA-F]*$/g.test(v),
 );
 
 /**
  * Specifies a string with the prefix '0x' to be converted to bytes32
  */
 export const zBytes32 = z
-    .custom<`0x${string}`>((v) => typeof v === "string" && /^0x[\da-fA-f]*$/g.test(v))
+    .custom<`0x${string}`>((v) => typeof v === "string" && /^0x[\da-fA-F]*$/g.test(v))
     .transform((v) => pad(v, { size: 32 }));
 
 /**

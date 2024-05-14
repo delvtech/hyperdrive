@@ -17,6 +17,7 @@ export const zHyperdriveFactoryDeployConfig = z.object({
     prepare: z.custom<HookFn>().optional(),
     setup: z.custom<HookFn>().optional(),
     governance: zAddress,
+    deployerCoordinatorManager: zAddress,
     hyperdriveGovernance: zAddress,
     defaultPausers: zAddress.array(),
     feeCollector: zAddress,
