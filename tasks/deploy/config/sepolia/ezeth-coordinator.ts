@@ -16,7 +16,7 @@ export const SEPOLIA_EZETH_COORDINATOR: HyperdriveCoordinatorDeployConfigInput =
         ],
         token: {
             name: "EZETH",
-            deploy: async (hre) => {
+            deploy: async (hre, options) => {
                 let deployer = (await hre.getNamedAccounts())["deployer"];
                 let pc = await hre.viem.getPublicClient();
                 let vaultSharesToken =
@@ -29,6 +29,7 @@ export const SEPOLIA_EZETH_COORDINATOR: HyperdriveCoordinatorDeployConfigInput =
                             true,
                             parseEther("500"),
                         ],
+                        options,
                     );
                 // allow minting by the public
                 let tx = await vaultSharesToken.write.setPublicCapability([

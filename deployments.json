@@ -2,369 +2,368 @@
     "sepolia": {
         "SEPOLIA_REGISTRY": {
             "contract": "HyperdriveRegistry",
-            "address": "0x424e48057caa978e21e29b2dfd17992024f97f5c",
-            "timestamp": "2024-05-09T19:24:15.573Z"
+            "address": "0xdfec062deebfe801a2577abebed0ef081cc8ede3",
+            "timestamp": "2024-05-14T03:11:29.670Z"
         },
         "FACTORY_FORWARDER": {
             "contract": "ERC20ForwarderFactory",
-            "address": "0xf039fd46fe8d81c116cf4bdc787b3272a4c52815",
-            "timestamp": "2024-05-09T19:24:28.896Z"
+            "address": "0xad9dd6a3dc722feda37d679c995344a19d5f8da3",
+            "timestamp": "2024-05-14T03:11:38.944Z"
         },
         "FACTORY": {
             "contract": "HyperdriveFactory",
-            "address": "0x547d30758cc841a5a3a7c4ba7e8997659f788b81",
-            "timestamp": "2024-05-09T19:24:38.219Z"
+            "address": "0xf6a35ed46c7e05f678023e504bee683bd447977d",
+            "timestamp": "2024-05-14T03:11:52.447Z"
         },
         "LPMath": {
             "contract": "LPMath",
-            "address": "0x477171dc3a9ffdbb19e19ee5b986f5e574945318",
-            "timestamp": "2024-05-09T19:24:51.449Z"
+            "address": "0xae94f2afcf1fcbf8ab15757472893d96b6f02247",
+            "timestamp": "2024-05-14T03:12:05.826Z"
         },
         "ERC4626_COORDINATOR_ERC4626HyperdriveCoreDeployer": {
             "contract": "ERC4626HyperdriveCoreDeployer",
-            "address": "0x874e2277f03580da16576cab52c53a23f84ed683",
-            "timestamp": "2024-05-09T19:25:04.785Z"
+            "address": "0x5bac6f40ce688d44005f4bf0a41dbdd327002635",
+            "timestamp": "2024-05-14T03:12:15.160Z"
         },
         "ERC4626_COORDINATOR_ERC4626Target0Deployer": {
             "contract": "ERC4626Target0Deployer",
-            "address": "0x1f72814e52dd01ac55f22f75f78b6b424e2c3121",
-            "timestamp": "2024-05-09T19:25:18.812Z"
+            "address": "0x6f350fccd0b67849adbe4348713f9323ef2f32d8",
+            "timestamp": "2024-05-14T03:12:28.577Z"
         },
         "ERC4626_COORDINATOR_ERC4626Target1Deployer": {
             "contract": "ERC4626Target1Deployer",
-            "address": "0xa66a1b6404e837750ec392dbaf027074a62d3ff8",
-            "timestamp": "2024-05-09T19:25:28.129Z"
+            "address": "0x84709eeaf96ad4566fceeefd5df67d2a39c08f3c",
+            "timestamp": "2024-05-14T03:12:37.876Z"
         },
         "ERC4626_COORDINATOR_ERC4626Target2Deployer": {
             "contract": "ERC4626Target2Deployer",
-            "address": "0x011794e97947440e05c7d2dc859a33039c577f75",
-            "timestamp": "2024-05-09T19:25:41.615Z"
+            "address": "0x220352e592d4c9f3e3528b3c62637f3aba65f5b6",
+            "timestamp": "2024-05-14T03:12:51.349Z"
         },
         "ERC4626_COORDINATOR_ERC4626Target3Deployer": {
             "contract": "ERC4626Target3Deployer",
-            "address": "0x747d5803df55e7957f06b23db0167411619bbc97",
-            "timestamp": "2024-05-09T19:25:51.129Z"
+            "address": "0xd6b0ceb47f998005509571f1483dab27d0c0e82c",
+            "timestamp": "2024-05-14T03:13:04.794Z"
         },
         "ERC4626_COORDINATOR": {
             "contract": "ERC4626HyperdriveDeployerCoordinator",
-            "address": "0xf13d854aa734bee5dfe4a22d88aa05ea29ab2bfc",
-            "timestamp": "2024-05-09T19:26:04.541Z"
+            "address": "0x1f6542d3dd0d332060eb9a5a514e4315004a3b9a",
+            "timestamp": "2024-05-14T03:13:14.082Z"
         },
         "STETH": {
             "contract": "MockLido",
-            "address": "0xd8a5c98e985986754d608782bb58717a0168b21d",
-            "timestamp": "2024-05-09T19:26:27.368Z"
+            "address": "0xee8863cf6b648335bf3d5340b5a9c45d07827935",
+            "timestamp": "2024-05-14T03:13:40.560Z"
         },
         "STETH_COORDINATOR_StETHHyperdriveCoreDeployer": {
             "contract": "StETHHyperdriveCoreDeployer",
-            "address": "0xaec3045434738bd9c3d3b8c1a7466938fc40dcb5",
-            "timestamp": "2024-05-09T19:27:28.663Z"
+            "address": "0x875888b1a62f5812b217bcf675797cc3c7042aa1",
+            "timestamp": "2024-05-14T03:15:17.368Z"
         },
         "STETH_COORDINATOR_StETHTarget0Deployer": {
             "contract": "StETHTarget0Deployer",
-            "address": "0xb8977b0f856beaf09128cd7d99c90b66e1f17e05",
-            "timestamp": "2024-05-09T19:27:42.033Z"
+            "address": "0x2394c5d6d69ae26f50638fb2a325a36dd7c7da11",
+            "timestamp": "2024-05-14T03:15:26.743Z"
         },
         "STETH_COORDINATOR_StETHTarget1Deployer": {
             "contract": "StETHTarget1Deployer",
-            "address": "0x7f02f5e18d0cf992e7cbb8c7d27cc4b8780385a1",
-            "timestamp": "2024-05-09T19:27:51.433Z"
+            "address": "0xda475b7def0174a4fc0a557549a2845b89a32312",
+            "timestamp": "2024-05-14T03:15:40.206Z"
         },
         "STETH_COORDINATOR_StETHTarget2Deployer": {
             "contract": "StETHTarget2Deployer",
-            "address": "0x17f3f1ff57a2c4a84e7b11411ee8914628c07334",
-            "timestamp": "2024-05-09T19:28:04.780Z"
+            "address": "0x76d0caea718dc33a009c3d2821ff918c6e931453",
+            "timestamp": "2024-05-14T03:15:53.581Z"
         },
         "STETH_COORDINATOR_StETHTarget3Deployer": {
             "contract": "StETHTarget3Deployer",
-            "address": "0xc6424baec2913d1a473bbc913d3a561e1734416f",
-            "timestamp": "2024-05-09T19:28:18.703Z"
+            "address": "0x01f273490833bd3f8c8b1e62a69203d35b6a76ef",
+            "timestamp": "2024-05-14T03:16:02.809Z"
         },
         "STETH_COORDINATOR": {
             "contract": "StETHHyperdriveDeployerCoordinator",
-            "address": "0xb73bf618afcbfff7c8a413e44c488802c42ffa48",
-            "timestamp": "2024-05-09T19:28:28.530Z"
+            "address": "0x25ec8082d2521992b8d733f3ace920234e5733fc",
+            "timestamp": "2024-05-14T03:16:16.086Z"
         },
         "RETH": {
             "contract": "MockRocketPool",
-            "address": "0xc587d318c555a1e550d97e361932821b925c7d32",
-            "timestamp": "2024-05-09T19:28:51.522Z"
+            "address": "0xfb0760296d2cd094c6d762374eb06254d27bbbd7",
+            "timestamp": "2024-05-14T03:16:38.503Z"
         },
         "RETH_COORDINATOR_RETHHyperdriveCoreDeployer": {
             "contract": "RETHHyperdriveCoreDeployer",
-            "address": "0x970ad389afe554efbce41c1e6202e7857a832c18",
-            "timestamp": "2024-05-09T19:29:40.394Z"
+            "address": "0x34ebf1ce12aea966c64d6821120e75d0136fd693",
+            "timestamp": "2024-05-14T03:17:26.904Z"
         },
         "RETH_COORDINATOR_RETHTarget0Deployer": {
             "contract": "RETHTarget0Deployer",
-            "address": "0x1657ee8d3b4027c040f1d2c2f5f4c8670a3ba765",
-            "timestamp": "2024-05-09T19:29:49.643Z"
+            "address": "0xfa8759bf61ee280eaa61d529dee335002db6a29c",
+            "timestamp": "2024-05-14T03:17:40.412Z"
         },
         "RETH_COORDINATOR_RETHTarget1Deployer": {
             "contract": "RETHTarget1Deployer",
-            "address": "0x80adabc93e8e7c29a4d27eec14244a51f7ec3991",
-            "timestamp": "2024-05-09T19:30:03.295Z"
+            "address": "0xd6b923b48f171a45dcce7c9b08eb913fcb779083",
+            "timestamp": "2024-05-14T03:17:49.726Z"
         },
         "RETH_COORDINATOR_RETHTarget2Deployer": {
             "contract": "RETHTarget2Deployer",
-            "address": "0xccb6ab8180c918d5038768851c6977080da26e45",
-            "timestamp": "2024-05-09T19:30:16.972Z"
+            "address": "0xf252769292d20f9a1f5bd3c4bf514726fdf30048",
+            "timestamp": "2024-05-14T03:18:03.181Z"
         },
         "RETH_COORDINATOR_RETHTarget3Deployer": {
             "contract": "RETHTarget3Deployer",
-            "address": "0x9f743224f1decae76d0c43a42950c47a412a68ba",
-            "timestamp": "2024-05-09T19:30:26.402Z"
+            "address": "0x46f07e92b2ad9ffacbbccd01f03e22823f5f5e9c",
+            "timestamp": "2024-05-14T03:18:40.945Z"
         },
         "RETH_COORDINATOR": {
             "contract": "RETHHyperdriveDeployerCoordinator",
-            "address": "0x727706afe3658da1df615157baa96ad1d00caaa7",
-            "timestamp": "2024-05-09T19:30:40.042Z"
+            "address": "0xc58dc7d1469966a86337a9e4acbfb405573eb0f9",
+            "timestamp": "2024-05-14T03:18:50.311Z"
         },
         "EZETH": {
             "contract": "MockEzEthPool",
-            "address": "0x63e77f68fa4774a0e2fc0a085f02150746dd8230",
-            "timestamp": "2024-05-09T19:31:02.914Z"
+            "address": "0x057375c752a325a0a0e415c31836aeccb2840f48",
+            "timestamp": "2024-05-14T03:19:16.925Z"
         },
         "EZETH_COORDINATOR_EzETHHyperdriveCoreDeployer": {
             "contract": "EzETHHyperdriveCoreDeployer",
-            "address": "0x79beb271efd6b8c3cff82fc656505cffadcd6c6b",
-            "timestamp": "2024-05-09T19:31:51.570Z"
+            "address": "0x71b5e358811c1f2656dd6936f5576abb3cfc621a",
+            "timestamp": "2024-05-14T03:20:17.145Z"
         },
         "EZETH_COORDINATOR_EzETHTarget0Deployer": {
             "contract": "EzETHTarget0Deployer",
-            "address": "0x38a94c0a33c8108271e5ff86e7aa3e6c1851bc1f",
-            "timestamp": "2024-05-09T19:32:05.069Z"
+            "address": "0x7e27900c70fca0953f92e521d6cbbd678a62abde",
+            "timestamp": "2024-05-14T03:20:26.501Z"
         },
         "EZETH_COORDINATOR_EzETHTarget1Deployer": {
             "contract": "EzETHTarget1Deployer",
-            "address": "0x11773e1c04e8ed9289540f729c59c0624a02639e",
-            "timestamp": "2024-05-09T19:32:26.583Z"
+            "address": "0x7e9ca0c4c4cafc8044b9a75640dfef4aa7b6bc51",
+            "timestamp": "2024-05-14T03:20:39.850Z"
         },
         "EZETH_COORDINATOR_EzETHTarget2Deployer": {
             "contract": "EzETHTarget2Deployer",
-            "address": "0x01f5c75d7763459cf5a0f66af2af0c4addc8d2cd",
-            "timestamp": "2024-05-09T19:32:39.804Z"
+            "address": "0x9b22f8ec9621a3388a339e04953cf0983ef821ba",
+            "timestamp": "2024-05-14T03:20:53.219Z"
         },
         "EZETH_COORDINATOR_EzETHTarget3Deployer": {
             "contract": "EzETHTarget3Deployer",
-            "address": "0xac23d552f7e87e6005e485094ac2d23001d12328",
-            "timestamp": "2024-05-09T19:32:53.040Z"
+            "address": "0xe1d6132b356e2d9df988ef073c1c86c4bab64927",
+            "timestamp": "2024-05-14T03:21:02.602Z"
         },
         "EZETH_COORDINATOR": {
             "contract": "EzETHHyperdriveDeployerCoordinator",
-            "address": "0xb5a5bcaf8928318e785661c9fbed0d5a7fb4022d",
-            "timestamp": "2024-05-09T19:33:06.287Z"
+            "address": "0x84a5995e5ce2dcff8e0d82996c70fdaa0cb1818b",
+            "timestamp": "2024-05-14T03:21:28.195Z"
         },
         "DAI": {
             "contract": "ERC20Mintable",
-            "address": "0xe10c83109537670946955404e11ea2e1210aa8a9",
-            "timestamp": "2024-05-09T19:33:28.870Z"
+            "address": "0x50af07811cbbc23169e7a35547246e07b8b9a694",
+            "timestamp": "2024-05-14T03:22:02.935Z"
         },
         "SDAI": {
             "contract": "MockERC4626",
-            "address": "0xf6e2b70278f7887ee611bd4e52dd26e9353fdd67",
-            "timestamp": "2024-05-09T19:34:41.842Z"
+            "address": "0x9f5f7b498fe8b794178cdf65bedc999d8149645a",
+            "timestamp": "2024-05-14T03:23:03.808Z"
         },
         "DAI_14_DAY_ERC4626Target0": {
             "contract": "ERC4626Target0",
-            "address": "0x814d0160DD13E98E7C5b4dBE2Eb8Adf2A6F78aEE",
-            "timestamp": "2024-05-09T19:35:16.692Z"
+            "address": "0xB3C347554670769E44028848C3D2a34F810d822F",
+            "timestamp": "2024-05-14T03:30:38.182Z"
         },
         "DAI_14_DAY_ERC4626Target1": {
             "contract": "ERC4626Target1",
-            "address": "0x1064ddccDA74aEA8fc1D750a731679DD2be27C93",
-            "timestamp": "2024-05-09T19:35:26.118Z"
+            "address": "0xd76CEdF0888C728f78CF0B8b750928E077115b5C",
+            "timestamp": "2024-05-14T03:30:51.760Z"
         },
         "DAI_14_DAY_ERC4626Target2": {
             "contract": "ERC4626Target2",
-            "address": "0x71c606dA25d07a95f286c2146855887EF6844672",
-            "timestamp": "2024-05-09T19:35:39.447Z"
+            "address": "0xc46Cc8596F0A9b0D41A03b772d294aa232084A35",
+            "timestamp": "2024-05-14T03:31:01.235Z"
         },
         "DAI_14_DAY_ERC4626Target3": {
             "contract": "ERC4626Target3",
-            "address": "0xE8B6753FA513227Cf13c603704b924d86C2E5064",
-            "timestamp": "2024-05-09T19:35:52.824Z"
+            "address": "0x502F19e16594938d360b3f3280950fbA4bC5eFcf",
+            "timestamp": "2024-05-14T03:31:14.721Z"
         },
         "DAI_14_DAY": {
             "contract": "ERC4626Hyperdrive",
-            "address": "0xF2A8f3dcc019FD8F3EF286fe88F7efdd0c4D4b0c",
-            "timestamp": "2024-05-09T19:36:18.859Z"
+            "address": "0xCBadf28648F3a1a07bde584657A1bf53fa713a2a",
+            "timestamp": "2024-05-14T03:31:28.736Z"
         },
         "DAI_30_DAY_ERC4626Target0": {
             "contract": "ERC4626Target0",
-            "address": "0x68f32CDd81Ac9715C8D10DdeE201226c79B6b934",
-            "timestamp": "2024-05-09T19:38:02.327Z"
+            "address": "0xfAe64D7B47294C90d9B9ad306Dcd90c0542B0329",
+            "timestamp": "2024-05-14T03:32:51.263Z"
         },
         "DAI_30_DAY_ERC4626Target1": {
             "contract": "ERC4626Target1",
-            "address": "0xF0ae2ACd2a4213EC7128223374C39c1dDdFa4d1B",
-            "timestamp": "2024-05-09T19:38:15.756Z"
+            "address": "0xadf4777d82965e957cE4eDA804444Ac3c693A00A",
+            "timestamp": "2024-05-14T03:33:04.785Z"
         },
         "DAI_30_DAY_ERC4626Target2": {
             "contract": "ERC4626Target2",
-            "address": "0x32FBDE267767a90CaC89dF80D64c841a62815d1c",
-            "timestamp": "2024-05-09T19:38:25.035Z"
+            "address": "0xdbAcd7bAA23217f79cBCf6c3c37Bb65a5a86f6fe",
+            "timestamp": "2024-05-14T03:33:14.084Z"
         },
         "DAI_30_DAY_ERC4626Target3": {
             "contract": "ERC4626Target3",
-            "address": "0x12A9B6CDbFb626161787162Fe62FA82E61580763",
-            "timestamp": "2024-05-09T19:39:03.015Z"
+            "address": "0xAD7F227B4e853B1F7C3A7B9aDeDFEFE2ac5a354B",
+            "timestamp": "2024-05-14T03:33:27.503Z"
         },
         "DAI_30_DAY": {
             "contract": "ERC4626Hyperdrive",
-            "address": "0x4B86AF92Cb944B88089B2429234293B12AEBCEFA",
-            "timestamp": "2024-05-09T19:39:16.898Z"
+            "address": "0x1C73f6dD41e2c49b30C1A4e9301BF79332A24ee2",
+            "timestamp": "2024-05-14T03:33:41.439Z"
         },
         "STETH_14_DAY_StETHTarget0": {
             "contract": "StETHTarget0",
-            "address": "0xDd7B8D2FD792AF6Ac06ad70f398e1B7E2F49246F",
-            "timestamp": "2024-05-09T19:39:39.616Z"
+            "address": "0x3cd4Bf2bC12147ED799A3bC52cCA0756431596f8",
+            "timestamp": "2024-05-14T03:50:39.785Z"
         },
         "STETH_14_DAY_StETHTarget1": {
             "contract": "StETHTarget1",
-            "address": "0xD6A263E52Dc8F327E05dB5a9818eb5F86e8a3Cb2",
-            "timestamp": "2024-05-09T19:39:49.138Z"
+            "address": "0x57e1CE9aDDD1808d59E33D8c14c91EbB8A4Bb5A5",
+            "timestamp": "2024-05-14T03:50:49.176Z"
         },
         "STETH_14_DAY_StETHTarget2": {
             "contract": "StETHTarget2",
-            "address": "0x3EcC3eB1D916e793DA807322aBeE7102C0118E59",
-            "timestamp": "2024-05-09T19:40:14.807Z"
+            "address": "0xEE0bAd8E5f62176111Cb184287F95e2c523d2759",
+            "timestamp": "2024-05-14T03:51:02.657Z"
         },
         "STETH_14_DAY_StETHTarget3": {
             "contract": "StETHTarget3",
-            "address": "0xD64118e1093218108210B1e86cf7CBbdD2411D20",
-            "timestamp": "2024-05-09T19:40:28.203Z"
+            "address": "0x716AbC30d2376b4494186be47dD482A7f3A6FEd9",
+            "timestamp": "2024-05-14T03:51:16.016Z"
         },
         "STETH_14_DAY": {
             "contract": "StETHHyperdrive",
-            "address": "0xeD86be3F545F4F5d487DE637fdf4ceB6ab16F982",
-            "timestamp": "2024-05-09T19:40:43.157Z"
+            "address": "0x5c98db02985517Ef6499C869951f81D2EDAa7A52",
+            "timestamp": "2024-05-14T03:51:25.787Z"
         },
         "STETH_30_DAY_StETHTarget0": {
             "contract": "StETHTarget0",
-            "address": "0xbF1b4EdB70B0C63b0c0629b2E4791ce1c8D8D023",
-            "timestamp": "2024-05-09T19:41:39.152Z"
+            "address": "0xfcb741125F3c899Ac79589C085d63530fAA07FC9",
+            "timestamp": "2024-05-14T04:01:16.365Z"
         },
         "STETH_30_DAY_StETHTarget1": {
             "contract": "StETHTarget1",
-            "address": "0xbb846bBBB75c1A32a24BA2590E07292a3c0Ae217",
-            "timestamp": "2024-05-09T19:41:52.629Z"
+            "address": "0xc2Da1C1684564cA3C86D0FDf2d6A797B0427b01f",
+            "timestamp": "2024-05-14T04:01:25.892Z"
         },
         "STETH_30_DAY_StETHTarget2": {
             "contract": "StETHTarget2",
-            "address": "0x6aC8dBaeeFDce42fcc8ACfbd2115d21958FF3007",
-            "timestamp": "2024-05-09T19:42:05.931Z"
+            "address": "0xBc15AFc7cE8d01E4fc1bb5db30DeEF000070197B",
+            "timestamp": "2024-05-14T04:01:40.023Z"
         },
         "STETH_30_DAY_StETHTarget3": {
             "contract": "StETHTarget3",
-            "address": "0xc6cfb751004Bf71D8Ae70B3A487Da93624ab302e",
-            "timestamp": "2024-05-09T19:42:15.381Z"
+            "address": "0x91DC747e83d039aFc4838fA57e55593402dC916A",
+            "timestamp": "2024-05-14T04:01:49.668Z"
         },
         "STETH_30_DAY": {
             "contract": "StETHHyperdrive",
-            "address": "0x36916729B314D8e3d1a450B5850268d203425a03",
-            "timestamp": "2024-05-09T19:42:29.261Z"
+            "address": "0xF69cA575455B84B3e3c80B4Ae7c9686b4694db82",
+            "timestamp": "2024-05-14T04:02:03.851Z"
         },
         "RETH_14_DAY_RETHTarget0": {
             "contract": "RETHTarget0",
-            "address": "0xBda017eD3ad7342CBF7c4007AE9Fb91bF631b156",
-            "timestamp": "2024-05-09T19:43:04.223Z"
+            "address": "0xCb830ef7309c7ACfb169cc8BC9E7e4d6b253F783",
+            "timestamp": "2024-05-14T04:02:38.784Z"
         },
         "RETH_14_DAY_RETHTarget1": {
             "contract": "RETHTarget1",
-            "address": "0x799545004F3cf09a702c5a7e350DC27F07939e27",
-            "timestamp": "2024-05-09T19:43:13.717Z"
+            "address": "0xDa6045D652d1c98d351c0bC1A7C2FcA296841b55",
+            "timestamp": "2024-05-14T04:03:04.611Z"
         },
         "RETH_14_DAY_RETHTarget2": {
             "contract": "RETHTarget2",
-            "address": "0x3775354D1D20E1440006d183E273862c0Dc2C4Ec",
-            "timestamp": "2024-05-09T19:43:39.440Z"
+            "address": "0x0DA2d219296Fea31C042e09b08A54eAD625B572B",
+            "timestamp": "2024-05-14T04:03:14.418Z"
         },
         "RETH_14_DAY_RETHTarget3": {
             "contract": "RETHTarget3",
-            "address": "0xcfFDfc936065c9f8947cacbc4d3B3378D6e04a46",
-            "timestamp": "2024-05-09T19:43:52.769Z"
+            "address": "0x273FAF12827b60eAB26f20d8b104A699e3Affe12",
+            "timestamp": "2024-05-14T04:03:28.009Z"
         },
         "RETH_14_DAY": {
             "contract": "RETHHyperdrive",
-            "address": "0xBEd9572dF3683E9d713ee8d5bFa53C0ea2706022",
-            "timestamp": "2024-05-09T19:44:14.661Z"
+            "address": "0x6005d6160aEBabbc2dCE3Dd8CBD9a9ee094909D9",
+            "timestamp": "2024-05-14T04:03:50.315Z"
         },
         "RETH_30_DAY_RETHTarget0": {
             "contract": "RETHTarget0",
-            "address": "0x78c2EFae22294Ca7577936794DC5E3B89C99Df90",
-            "timestamp": "2024-05-09T19:45:02.496Z"
+            "address": "0xFA1cC8B1b3AE5A3b1475Bf72bBB829B18EA83B07",
+            "timestamp": "2024-05-14T04:28:03.809Z"
         },
         "RETH_30_DAY_RETHTarget1": {
             "contract": "RETHTarget1",
-            "address": "0x9aF43Bcf27B6F2d5cbFE493AD9a42FA1Ce2Dd047",
-            "timestamp": "2024-05-09T19:45:16.039Z"
+            "address": "0x14cAc7aA1d4FB1002861cebA228ccafcBeEbDC69",
+            "timestamp": "2024-05-14T04:28:13.204Z"
         },
         "RETH_30_DAY_RETHTarget2": {
             "contract": "RETHTarget2",
-            "address": "0xAb2CB7729D0534ae779c12d9b7656C62a54C7444",
-            "timestamp": "2024-05-09T19:45:25.541Z"
+            "address": "0xE75F75bdd08536dDA617bCE534EBAEa2b4959a22",
+            "timestamp": "2024-05-14T04:28:26.730Z"
         },
         "RETH_30_DAY_RETHTarget3": {
             "contract": "RETHTarget3",
-            "address": "0x4e7b0b4f3dE77B203c91Be2A32c93b4eB67F3438",
-            "timestamp": "2024-05-09T19:45:38.909Z"
+            "address": "0x5aE1329502Bd62240d6eD05125599E2c825D5e32",
+            "timestamp": "2024-05-14T04:28:40.125Z"
         },
         "RETH_30_DAY": {
             "contract": "RETHHyperdrive",
-            "address": "0xaE815d2229545C67c9C32744e5476D7B04E0017C",
-            "timestamp": "2024-05-09T19:45:53.019Z"
+            "address": "0xd3A58Bd725Fc1493Ac76AE429e75477b8B2927bb",
+            "timestamp": "2024-05-14T04:28:49.978Z"
         },
         "EZETH_14_DAY_EzETHTarget0": {
             "contract": "EzETHTarget0",
-            "address": "0x6FEd1532183991A34481c5a71160194B1380B267",
-            "timestamp": "2024-05-09T19:46:15.780Z"
+            "address": "0x63c52749F71010075b5e27e8E22Ea6aA6F72f8bE",
+            "timestamp": "2024-05-14T04:29:16.757Z"
         },
         "EZETH_14_DAY_EzETHTarget1": {
             "contract": "EzETHTarget1",
-            "address": "0xf2ce6d2f7c7BA21cB91d49122FcAdAD20d8baa5D",
-            "timestamp": "2024-05-09T19:46:25.385Z"
+            "address": "0xb276440a1c3C3321d9342437bA819CD36012465A",
+            "timestamp": "2024-05-14T04:29:26.220Z"
         },
         "EZETH_14_DAY_EzETHTarget2": {
             "contract": "EzETHTarget2",
-            "address": "0xCB9A7b32c88f43a09AE26283ba9fFF41814AEd1a",
-            "timestamp": "2024-05-09T19:46:38.698Z"
+            "address": "0x4F460c020e4add285D7a7430A56c01F9aa6A23b6",
+            "timestamp": "2024-05-14T04:29:39.653Z"
         },
         "EZETH_14_DAY_EzETHTarget3": {
             "contract": "EzETHTarget3",
-            "address": "0xCdCd195abB0cFC4Cb4B8Cf1B93D561924E56501d",
-            "timestamp": "2024-05-09T19:47:04.342Z"
+            "address": "0xbC437b2A2aCB6307a8eE312E3addC00B6b303bCD",
+            "timestamp": "2024-05-14T04:29:49.105Z"
         },
         "EZETH_14_DAY": {
             "contract": "EzETHHyperdrive",
-            "address": "0xA955F5d36D3a8Af3739600e49376d65c4fa99412",
-            "timestamp": "2024-05-09T19:47:14.083Z"
+            "address": "0xdC34A4D03c760d1E4fd3Cea8084C0E4242D8C081",
+            "timestamp": "2024-05-14T04:30:02.947Z"
         },
         "EZETH_30_DAY_EzETHTarget0": {
             "contract": "EzETHTarget0",
-            "address": "0x35Ee8a8A1cccdADbeCBF56A5827aaB6b6D1587A4",
-            "timestamp": "2024-05-09T19:48:14.725Z"
+            "address": "0x6A13d0eF5df8515c942ac19C23f44D17991D11b5",
+            "timestamp": "2024-05-14T04:31:15.690Z"
         },
         "EZETH_30_DAY_EzETHTarget1": {
             "contract": "EzETHTarget1",
-            "address": "0xB96c0Cc93162396caB853fa6861c104D9f6ee15d",
-            "timestamp": "2024-05-09T19:48:28.279Z"
+            "address": "0x699d5844CC92a3191971eB6F64311911969D1Fc2",
+            "timestamp": "2024-05-14T04:31:24.995Z"
         },
         "EZETH_30_DAY_EzETHTarget2": {
             "contract": "EzETHTarget2",
-            "address": "0x25a31f8b5B0e0148685FCC25A5749864B35181BC",
-            "timestamp": "2024-05-09T19:48:41.593Z"
+            "address": "0x0B5A5f484B5dA5394A05e162d588d1De6829C6AE",
+            "timestamp": "2024-05-14T04:31:50.556Z"
         },
         "EZETH_30_DAY_EzETHTarget3": {
             "contract": "EzETHTarget3",
-            "address": "0x58Eb0Dc43bAD3fFA62390bde5D5954DF4bA43061",
-            "timestamp": "2024-05-09T19:48:50.831Z"
+            "address": "0x59aE00Ff0266f77fA177b671d82225c169bcdEA3",
+            "timestamp": "2024-05-14T04:32:04.062Z"
         },
         "EZETH_30_DAY": {
             "contract": "EzETHHyperdrive",
-            "address": "0xA2Ad31DaEbfE222dc96810898EF7FC239daAb580",
-            "timestamp": "2024-05-09T19:49:04.636Z"
+            "address": "0xf39A607da106ED3ac99a4f1B27D40c9eAF67d212",
+            "timestamp": "2024-05-14T04:32:14.041Z"
         }
     }
 }
-
