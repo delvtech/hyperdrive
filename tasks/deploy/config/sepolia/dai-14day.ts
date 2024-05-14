@@ -13,8 +13,8 @@ export const SEPOLIA_DAI_14DAY: HyperdriveInstanceDeployConfigInput = {
     deploymentId: getDeploymentId("DAI_14_DAY"),
     salt: "0x69420",
     contribution: CONTRIBUTION,
-    fixedAPR: "0.05",
-    timestretchAPR: "0.05",
+    fixedAPR: "0.10",
+    timestretchAPR: "0.10",
     options: {
         // destination: "0xsomeone", defaults to deployer
         asBase: true,

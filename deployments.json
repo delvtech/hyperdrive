@@ -155,66 +155,6 @@
             "address": "0x84a5995e5ce2dcff8e0d82996c70fdaa0cb1818b",
             "timestamp": "2024-05-14T03:21:28.195Z"
         },
-        "DAI": {
-            "contract": "ERC20Mintable",
-            "address": "0x50af07811cbbc23169e7a35547246e07b8b9a694",
-            "timestamp": "2024-05-14T03:22:02.935Z"
-        },
-        "SDAI": {
-            "contract": "MockERC4626",
-            "address": "0x9f5f7b498fe8b794178cdf65bedc999d8149645a",
-            "timestamp": "2024-05-14T03:23:03.808Z"
-        },
-        "DAI_14_DAY_ERC4626Target0": {
-            "contract": "ERC4626Target0",
-            "address": "0xB3C347554670769E44028848C3D2a34F810d822F",
-            "timestamp": "2024-05-14T03:30:38.182Z"
-        },
-        "DAI_14_DAY_ERC4626Target1": {
-            "contract": "ERC4626Target1",
-            "address": "0xd76CEdF0888C728f78CF0B8b750928E077115b5C",
-            "timestamp": "2024-05-14T03:30:51.760Z"
-        },
-        "DAI_14_DAY_ERC4626Target2": {
-            "contract": "ERC4626Target2",
-            "address": "0xc46Cc8596F0A9b0D41A03b772d294aa232084A35",
-            "timestamp": "2024-05-14T03:31:01.235Z"
-        },
-        "DAI_14_DAY_ERC4626Target3": {
-            "contract": "ERC4626Target3",
-            "address": "0x502F19e16594938d360b3f3280950fbA4bC5eFcf",
-            "timestamp": "2024-05-14T03:31:14.721Z"
-        },
-        "DAI_14_DAY": {
-            "contract": "ERC4626Hyperdrive",
-            "address": "0xCBadf28648F3a1a07bde584657A1bf53fa713a2a",
-            "timestamp": "2024-05-14T03:31:28.736Z"
-        },
-        "DAI_30_DAY_ERC4626Target0": {
-            "contract": "ERC4626Target0",
-            "address": "0xfAe64D7B47294C90d9B9ad306Dcd90c0542B0329",
-            "timestamp": "2024-05-14T03:32:51.263Z"
-        },
-        "DAI_30_DAY_ERC4626Target1": {
-            "contract": "ERC4626Target1",
-            "address": "0xadf4777d82965e957cE4eDA804444Ac3c693A00A",
-            "timestamp": "2024-05-14T03:33:04.785Z"
-        },
-        "DAI_30_DAY_ERC4626Target2": {
-            "contract": "ERC4626Target2",
-            "address": "0xdbAcd7bAA23217f79cBCf6c3c37Bb65a5a86f6fe",
-            "timestamp": "2024-05-14T03:33:14.084Z"
-        },
-        "DAI_30_DAY_ERC4626Target3": {
-            "contract": "ERC4626Target3",
-            "address": "0xAD7F227B4e853B1F7C3A7B9aDeDFEFE2ac5a354B",
-            "timestamp": "2024-05-14T03:33:27.503Z"
-        },
-        "DAI_30_DAY": {
-            "contract": "ERC4626Hyperdrive",
-            "address": "0x1C73f6dD41e2c49b30C1A4e9301BF79332A24ee2",
-            "timestamp": "2024-05-14T03:33:41.439Z"
-        },
         "STETH_14_DAY_StETHTarget0": {
             "contract": "StETHTarget0",
             "address": "0x3cd4Bf2bC12147ED799A3bC52cCA0756431596f8",
@@ -364,6 +304,66 @@
             "contract": "EzETHHyperdrive",
             "address": "0xf39A607da106ED3ac99a4f1B27D40c9eAF67d212",
             "timestamp": "2024-05-14T04:32:14.041Z"
+        },
+        "DAI": {
+            "contract": "ERC20Mintable",
+            "address": "0xa06a63bdf080559a500c4011122cc2c738fd971d",
+            "timestamp": "2024-05-14T17:28:16.345Z"
+        },
+        "SDAI": {
+            "contract": "MockERC4626",
+            "address": "0x544a725ebeb1357cd4d29f8fe239f676c436f82c",
+            "timestamp": "2024-05-14T17:29:26.164Z"
+        },
+        "DAI_14_DAY_ERC4626Target0": {
+            "contract": "ERC4626Target0",
+            "address": "0x9E8686255003363Ab880506027b36612d19056e3",
+            "timestamp": "2024-05-14T17:30:01.661Z"
+        },
+        "DAI_14_DAY_ERC4626Target1": {
+            "contract": "ERC4626Target1",
+            "address": "0x9238cA3E640d79D644f6C042e9A420Bd85a34155",
+            "timestamp": "2024-05-14T17:30:15.268Z"
+        },
+        "DAI_14_DAY_ERC4626Target2": {
+            "contract": "ERC4626Target2",
+            "address": "0xFb33F5d04908d5e4BA0363B7D62D05F7bc7a85b3",
+            "timestamp": "2024-05-14T17:30:28.743Z"
+        },
+        "DAI_14_DAY_ERC4626Target3": {
+            "contract": "ERC4626Target3",
+            "address": "0x9B90A186736CF38F0B61748F0a55E37f5a5EAFD7",
+            "timestamp": "2024-05-14T17:30:38.406Z"
+        },
+        "DAI_14_DAY": {
+            "contract": "ERC4626Hyperdrive",
+            "address": "0xC8fA18bF8e4c9e6A7d101f19Fa7DC6645cc2b241",
+            "timestamp": "2024-05-14T17:30:52.309Z"
+        },
+        "DAI_30_DAY_ERC4626Target0": {
+            "contract": "ERC4626Target0",
+            "address": "0x1c56B309a9b9ed2022d4172B1E9f9B0A17Ad891e",
+            "timestamp": "2024-05-14T17:32:25.209Z"
+        },
+        "DAI_30_DAY_ERC4626Target1": {
+            "contract": "ERC4626Target1",
+            "address": "0x7F017DCE14Cf80d8e4036592E7DB70Bb4955E3c0",
+            "timestamp": "2024-05-14T17:32:38.797Z"
+        },
+        "DAI_30_DAY_ERC4626Target2": {
+            "contract": "ERC4626Target2",
+            "address": "0xB8C288f008BA3d2012cA0a05dCb117D532982e6D",
+            "timestamp": "2024-05-14T17:32:52.215Z"
+        },
+        "DAI_30_DAY_ERC4626Target3": {
+            "contract": "ERC4626Target3",
+            "address": "0x167040Aa3607e368C869D91769642e3686E1Ed13",
+            "timestamp": "2024-05-14T17:33:01.702Z"
+        },
+        "DAI_30_DAY": {
+            "contract": "ERC4626Hyperdrive",
+            "address": "0x185680B2Da3A2FE0b067E43358e116F911356d60",
+            "timestamp": "2024-05-14T17:33:28.348Z"
         }
     }
 }
