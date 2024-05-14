@@ -896,10 +896,7 @@ library HyperdriveUtils {
         uint256 _curveFee
     ) internal pure returns (uint256) {
         // fee = curveFee * (1/p - 1) * x
-        return
-            _curveFee.mulDown(ONE.divDown(_spotPrice) - ONE).mulDown(
-                _baseAmount
-            );
+        return _curveFee.mulUp(ONE.divUp(_spotPrice) - ONE).mulUp(_baseAmount);
     }
 
     /// @dev Gets the governance fee paid by longs for a given base amount.
@@ -922,9 +919,9 @@ library HyperdriveUtils {
         uint256 _governanceLPFee
     ) internal pure returns (uint256) {
         return
-            _governanceLPFee.mulDown(_spotPrice).mulDown(
-                calculateLongCurveFee(_baseAmount, _spotPrice, _curveFee)
-            );
+            calculateLongCurveFee(_baseAmount, _spotPrice, _curveFee)
+                .mulDown(_governanceLPFee)
+                .mulDown(_spotPrice);
     }
 
     /// @dev A struct used to hold extra variables in the max short calculation
@@ -1359,7 +1356,7 @@ library HyperdriveUtils {
         uint256 _spotPrice,
         uint256 _curveFee
     ) internal pure returns (uint256) {
-        return _curveFee.mulDown(ONE - _spotPrice).mulDown(_bondAmount);
+        return _curveFee.mulUp(ONE - _spotPrice).mulUp(_bondAmount);
     }
 
     /// @dev Gets the governance fee paid by the trader when they open a short.
@@ -1375,8 +1372,8 @@ library HyperdriveUtils {
         uint256 _governanceLPFee
     ) internal pure returns (uint256) {
         return
-            _governanceLPFee.mulDown(
-                calculateShortCurveFee(_bondAmount, _spotPrice, _curveFee)
+            calculateShortCurveFee(_bondAmount, _spotPrice, _curveFee).mulUp(
+                _governanceLPFee
             );
     }
 
