@@ -8,7 +8,7 @@ interface IHyperdriveEvents is IMultiTokenEvents {
     event Initialize(
         address indexed provider,
         uint256 lpAmount,
-        uint256 baseAmount,
+        uint256 amount,
         uint256 vaultSharePrice,
         bool asBase,
         uint256 apr
@@ -18,8 +18,8 @@ interface IHyperdriveEvents is IMultiTokenEvents {
     event AddLiquidity(
         address indexed provider,
         uint256 lpAmount,
-        uint256 baseAmount,
-        uint256 vaultShareAmount,
+        uint256 amount,
+        uint256 vaultSharePrice,
         bool asBase,
         uint256 lpSharePrice
     );
