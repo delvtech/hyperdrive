@@ -812,44 +812,6 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
             flatFee.mulDown(_governanceLPFee);
     }
 
-    /// @dev Converts input to base if necessary according to what is specified
-    ///      in options.
-    /// @param _amount The amount to convert.
-    /// @param _vaultSharePrice The current vault share price.
-    /// @param _options The options that configure the conversion.
-    /// @return The converted amount.
-    function _convertToBaseFromOption(
-        uint256 _amount,
-        uint256 _vaultSharePrice,
-        IHyperdrive.Options calldata _options
-    ) internal pure returns (uint256) {
-        if (_options.asBase) {
-            return _amount;
-        } else {
-            // NOTE: Round down to underestimate the base amount.
-            return _amount.mulDown(_vaultSharePrice);
-        }
-    }
-
-    /// @dev Converts input to vault shares if necessary according to what is
-    ///      specified in options.
-    /// @param _amount The amount to convert.
-    /// @param _vaultSharePrice The current vault share price.
-    /// @param _options The options that configure the conversion.
-    /// @return The converted amount.
-    function _convertToVaultSharesFromOption(
-        uint256 _amount,
-        uint256 _vaultSharePrice,
-        IHyperdrive.Options calldata _options
-    ) internal pure returns (uint256) {
-        if (_options.asBase) {
-            // NOTE: Round down to underestimate the vault share amount.
-            return _amount.divDown(_vaultSharePrice);
-        } else {
-            return _amount;
-        }
-    }
-
     /// @dev Converts input to what is specified in the options from base.
     /// @param _amount The amount to convert.
     /// @param _vaultSharePrice The current vault share price.

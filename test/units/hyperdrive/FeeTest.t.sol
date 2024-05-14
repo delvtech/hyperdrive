@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { stdError } from "forge-std/StdError.sol";
+import { VmSafe } from "forge-std/Vm.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
@@ -13,10 +17,18 @@ import { Lib } from "test/utils/Lib.sol";
 contract FeeTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;
-    uint256 deployCurveFee = 0.1e18; // 10%
-    uint256 deployFlatFee = 0.01e18; // 0.1%
-    uint256 deployGovernanceLPFee = 0.5e18; // 50%
-    uint256 deployGovernanceZombieFee = 0.5e18; // 50%
+
+    uint256 internal deployCurveFee = 0.1e18; // 10%
+    uint256 internal deployFlatFee = 0.01e18; // 0.1%
+    uint256 internal deployGovernanceLPFee = 0.5e18; // 50%
+    uint256 internal deployGovernanceZombieFee = 0.5e18; // 50%
+
+    function setUp() public override {
+        super.setUp();
+
+        // Start recording event logs.
+        vm.recordLogs();
+    }
 
     function test_governanceFeeAccrual_invalidFeeDestination_failure() public {
         // Deploy and initialize a new pool with fees.
@@ -78,7 +90,8 @@ contract FeeTest is HyperdriveTest {
         // Time passes and the pool accrues interest at the current apr.
         advanceTime(POSITION_DURATION.mulDown(0.5e18), int256(apr));
 
-        // Collect fees and test that the fees received in the governance address have earned interest.
+        // Collect fees and test that the fees received in the governance address
+        // have earned interest.
         vm.stopPrank();
         vm.prank(feeCollector);
         hyperdrive.collectGovernanceFee(
@@ -90,6 +103,9 @@ contract FeeTest is HyperdriveTest {
         );
         uint256 governanceBalanceAfter = baseToken.balanceOf(feeCollector);
         assertGt(governanceBalanceAfter, governanceFeesAfterOpenLong);
+
+        // Ensure that the correct event was emitted.
+        verifyCollectGovernanceFeeEvent(feeCollector, governanceBalanceAfter);
     }
 
     function test_zombie_interest_governance_fee() external {
@@ -496,6 +512,12 @@ contract FeeTest is HyperdriveTest {
         // Ensure that the governance address has received the fees.
         uint256 governanceBalanceAfter = baseToken.balanceOf(feeCollector);
         assertGt(governanceBalanceAfter, governanceBalanceBefore);
+
+        // Ensure that the correct event was emitted.
+        verifyCollectGovernanceFeeEvent(
+            feeCollector,
+            governanceBalanceAfter - governanceBalanceBefore
+        );
     }
 
     function test_collectFees_short() public {
@@ -546,7 +568,8 @@ contract FeeTest is HyperdriveTest {
         ).getGovernanceFeesAccrued();
         assertGt(governanceFeesAfterCloseShort, governanceFeesAfterOpenShort);
 
-        // collect governance fees
+        // Attempting to collect governance fees with the wrong address should
+        // fail.
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
         hyperdrive.collectGovernanceFee(
             IHyperdrive.Options({
@@ -555,6 +578,8 @@ contract FeeTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
+
+        // Collect governance fees.
         vm.stopPrank();
         vm.prank(governance);
         hyperdrive.collectGovernanceFee(
@@ -574,6 +599,12 @@ contract FeeTest is HyperdriveTest {
         // Ensure that the governance address has received the fees.
         uint256 governanceBalanceAfter = baseToken.balanceOf(feeCollector);
         assertGt(governanceBalanceAfter, governanceBalanceBefore);
+
+        // Ensure that the correct event was emitted.
+        verifyCollectGovernanceFeeEvent(
+            feeCollector,
+            governanceBalanceAfter - governanceBalanceBefore
+        );
     }
 
     function test_calculateOpenLongFees() public {
@@ -697,5 +728,36 @@ contract FeeTest is HyperdriveTest {
         assertEq(flatFee, 0.1 ether);
         assertEq(governanceCurveFee, 0 ether);
         assertEq(totalGovernanceFee - governanceCurveFee, 0.05 ether);
+    }
+
+    function verifyCollectGovernanceFeeEvent(
+        address collector,
+        uint256 baseAmount
+    ) internal {
+        // Get the recorded `CollectGovernanceFee` logs.
+        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
+            CollectGovernanceFee.selector
+        );
+
+        // Verify that the log was correct.
+        assertEq(logs.length, 1);
+        VmSafe.Log memory log = logs[0];
+        assertEq(log.topics.length, 2); // the event name and the collector
+        assertEq(address(uint160(uint256(log.topics[1]))), collector);
+        (
+            uint256 eventAmount,
+            uint256 eventVaultSharePrice,
+            bool eventAsBase
+        ) = abi.decode(log.data, (uint256, uint256, bool));
+        assertEq(eventAmount, baseAmount);
+        assertApproxEqAbs(
+            eventVaultSharePrice,
+            hyperdrive.getPoolInfo().vaultSharePrice,
+            1
+        );
+        assertEq(eventAsBase, true);
+
+        // Start recording logs again.
+        vm.recordLogs();
     }
 }

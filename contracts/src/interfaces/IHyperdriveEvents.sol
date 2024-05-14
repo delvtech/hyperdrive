@@ -105,7 +105,12 @@ interface IHyperdriveEvents is IMultiTokenEvents {
     );
 
     /// @notice Emitted when governance fees are collected.
-    event CollectGovernanceFee(address indexed collector, uint256 fees);
+    event CollectGovernanceFee(
+        address indexed collector,
+        uint256 amount,
+        uint256 vaultSharePrice,
+        bool asBase
+    );
 
     /// @notice Emitted when the fee collector address is updated.
     event FeeCollectorUpdated(address indexed newFeeCollector);
