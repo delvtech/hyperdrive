@@ -16,8 +16,6 @@ import { Deployments } from "./deployments";
 export type HyperdriveDeployRuntimeOptions = {
     // Skip saving the deployment artifacts and data
     noSave?: boolean;
-    // Overwrite existing deployment artifacts (default=true)
-    overwrite?: boolean;
     // Options to pass to `viem.deployContract`
     viemConfig?: {
         gas?: bigint;
@@ -50,12 +48,6 @@ export const HyperdriveDeployBaseTask = (task: ConfigurableTaskDefinition) =>
         .addOptionalParam(
             "noSave",
             "skip saving deployment artifacts and data",
-            false,
-            types.boolean,
-        )
-        .addOptionalParam(
-            "overwrite",
-            "overwrite deployment artifacts if they exist",
             false,
             types.boolean,
         );
@@ -115,9 +107,9 @@ extendEnvironment((hre) => {
         name,
         contract,
         args,
-        { noSave, overwrite, viemConfig } = {},
+        { noSave, viemConfig } = {},
     ) => {
-        if (!overwrite && !!deployments.byNameSafe(name)) {
+        if (!!deployments.byNameSafe(name)) {
             console.log(`skipping ${name}, found existing deployment`);
             return await hre.viem.getContractAt(
                 contract as string,
@@ -158,10 +150,7 @@ extendEnvironment((hre) => {
         }
 
         // run prepare function if present
-        if (
-            (options?.overwrite || !deployments.byNameSafe(name)) &&
-            factoryConfig.prepare
-        ) {
+        if (!deployments.byNameSafe(name) && factoryConfig.prepare) {
             console.log(`running prepare for ${name} ...`);
             await factoryConfig.prepare(hre, options ?? {});
         }
@@ -216,10 +205,7 @@ extendEnvironment((hre) => {
             }
 
             // run prepare function if present
-            if (
-                (options?.overwrite || !deployments.byNameSafe(name)) &&
-                coordinatorConfig.prepare
-            ) {
+            if (!deployments.byNameSafe(name) && coordinatorConfig.prepare) {
                 console.log(`running prepare for ${name} ...`);
                 await coordinatorConfig.prepare(hre, options ?? {});
             }
@@ -315,7 +301,7 @@ extendEnvironment((hre) => {
                 let targetDeployment = deployments.byNameSafe(
                     `${name}_${targetContractName}`,
                 );
-                if (!options?.overwrite && !!targetDeployment) {
+                if (!!targetDeployment) {
                     coordinatorArgs.push(targetDeployment.address);
                     continue;
                 }
@@ -432,10 +418,7 @@ extendEnvironment((hre) => {
         }
 
         // run prepare function if present
-        if (
-            (options?.overwrite || !deployments.byNameSafe(name)) &&
-            instanceConfig.prepare
-        ) {
+        if (!deployments.byNameSafe(name) && instanceConfig.prepare) {
             console.log(`running prepare for ${name} ...`);
             await instanceConfig.prepare(hre, options ?? {});
         }
@@ -527,12 +510,9 @@ extendEnvironment((hre) => {
             let contractName = `${prefix}Target${i}`;
             console.log(`deploying ${name}_${contractName}...`);
             // Simulate and deploy the target
-            //  - Skip if deployment already exists and overwrite=false
+            //  - Skip if deployment already exists
             //  - Simulate the deployment of the target so we can obtain the address.
-            if (
-                !!deployments.byNameSafe(`${name}_${contractName}`) &&
-                !options?.overwrite
-            ) {
+            if (!!deployments.byNameSafe(`${name}_${contractName}`)) {
                 console.log(
                     `skipping ${name}_${contractName}, found existing deployment`,
                 );
@@ -616,8 +596,8 @@ extendEnvironment((hre) => {
             targets.push(address);
         }
 
-        // Skip if deployment already exists and overwrite=false
-        if (!!deployments.byNameSafe(name) && !options?.overwrite) {
+        // Skip if deployment already exists
+        if (!!deployments.byNameSafe(name)) {
             console.log(
                 `skipping ${name}_${contract}, found existing deployment`,
             );
