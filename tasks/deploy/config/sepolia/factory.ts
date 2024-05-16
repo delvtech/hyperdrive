@@ -5,7 +5,7 @@ export const SEPOLIA_FACTORY: HyperdriveFactoryConfig = {
     name: "FACTORY",
     prepare: async (hre, options) => {
         await hre.hyperdriveDeploy.ensureDeployed(
-            "LINKER_FACTORY",
+            "FACTORY_FORWARDER",
             "ERC20ForwarderFactory",
             [],
             options,
@@ -44,12 +44,12 @@ export const SEPOLIA_FACTORY: HyperdriveFactoryConfig = {
                 governanceZombie: parseEther("0.03"),
             },
             linkerFactory:
-                hre.hyperdriveDeploy.deployments.byName("LINKER_FACTORY")
+                hre.hyperdriveDeploy.deployments.byName("FACTORY_FORWARDER")
                     .address,
             linkerCodeHash: await (
                 await hre.viem.getContractAt(
                     "ERC20ForwarderFactory",
-                    hre.hyperdriveDeploy.deployments.byName("LINKER_FACTORY")
+                    hre.hyperdriveDeploy.deployments.byName("FACTORY_FORWARDER")
                         .address,
                 )
             ).read.ERC20LINK_HASH(),
