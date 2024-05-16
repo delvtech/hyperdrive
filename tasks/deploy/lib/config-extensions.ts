@@ -7,7 +7,7 @@ import {
     HttpNetworkUserConfig,
 } from "hardhat/types/config";
 import "hardhat/types/runtime";
-import { HyperdriveConfig } from "./schemas";
+import { HyperdriveConfig } from "./types";
 
 declare module "hardhat/types/config" {
     // We extend the user's HardhatNetworkUserConfig with our factory and instance configuration inputs.

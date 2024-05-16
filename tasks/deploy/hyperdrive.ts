@@ -1,19 +1,24 @@
 import { task } from "hardhat/config";
 import { DeployFactoryParams } from "./factory";
 
+import { DeployCoordinatorParams } from "./coordinator";
+import { DeployInstanceParams } from "./instance";
 import {
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
 } from "./lib";
-export type DeployAllParams = HyperdriveDeployBaseTaskParams & {};
+export type DeployHyperdriveParams = HyperdriveDeployBaseTaskParams & {};
 
 HyperdriveDeployBaseTask(
     task(
-        "deploy:all",
+        "deploy:hyperdrive",
         "deploys the HyperdriveFactory, all deployer coordinators, and all hyperdrive instances",
     ),
 ).setAction(
-    async ({ name, ...rest }: DeployAllParams, { run, config, network }) => {
+    async (
+        { name, ...rest }: DeployHyperdriveParams,
+        { run, config, network },
+    ) => {
         // compile contracts
         await run("compile", {});
 
@@ -40,14 +45,14 @@ HyperdriveDeployBaseTask(
             await run("deploy:coordinator", {
                 name: f.name,
                 ...rest,
-            } as DeployFactoryParams);
+            } as DeployCoordinatorParams);
         }
 
         for (let f of hyperdriveDeploy.instances ?? []) {
             await run("deploy:instance", {
                 name: f.name,
                 ...rest,
-            } as DeployFactoryParams);
+            } as DeployInstanceParams);
         }
     },
 );

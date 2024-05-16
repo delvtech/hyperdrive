@@ -3,8 +3,12 @@ import _duration from "dayjs/plugin/duration";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { Address, Hex, toHex } from "viem";
 import { HyperdriveDeployRuntimeOptions } from "./environment-extensions";
-import { ExtractValueOrHREFn, ValueOrHREFn } from "./schemas";
-import { DurationString, parseDuration } from "./types";
+import {
+    DurationString,
+    ExtractValueOrHREFn,
+    ValueOrHREFn,
+    parseDuration,
+} from "./types";
 
 dayjs.extend(_duration);
 
@@ -54,7 +58,7 @@ export async function evaluateValueOrHREFn<T extends ValueOrHREFn<unknown>>(
 /**
  * Converts the input `fee` and `duration` into an annualized fee rate
  */
-export function annualizeFee(fee: bigint, duration: DurationString) {
+export function normalizeFee(fee: bigint, duration: DurationString) {
     return (
         fee /
         (BigInt(dayjs.duration(365, "days").asSeconds()) /

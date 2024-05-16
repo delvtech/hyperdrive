@@ -196,9 +196,12 @@ export class Deployments {
             .filter(([k, _]) =>
                 this.network.name ? k === this.network.name : false,
             )
-            .flatMap(([_, v]) => Object.values(v))
+            .flatMap(([k, v]) =>
+                Object.values(v).map((i) => ({ ...i, name: k })),
+            )
             .find((dc) => dc.address === address);
         if (!contract) throw new Error("contract not found");
+        return contract;
     }
 
     /**

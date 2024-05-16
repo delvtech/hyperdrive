@@ -54,21 +54,6 @@ export const HyperdriveDeployBaseTask = (task: ConfigurableTaskDefinition) =>
             types.boolean,
         );
 
-export type HyperdriveDeployCoordinatorRuntimeOptions =
-    HyperdriveDeployRuntimeOptions & {
-        approveWithFactory?: boolean;
-    };
-
-export const HyperdriveDeployCoordinatorTask = (
-    task: ConfigurableTaskDefinition,
-) =>
-    HyperdriveDeployBaseTask(task).addOptionalParam(
-        "approveWithFactory",
-        "attempt approving the HyperdriveDeployerCoordinator with its factory (will fail if deployer address is not governance)",
-        false,
-        types.boolean,
-    );
-
 declare module "hardhat/types/runtime" {
     interface HardhatRuntimeEnvironment {
         hyperdriveDeploy: {
@@ -92,7 +77,7 @@ declare module "hardhat/types/runtime" {
                     `${string}HyperdriveDeployerCoordinator`]["contractName"],
             >(
                 name: string,
-                options?: HyperdriveDeployCoordinatorRuntimeOptions,
+                options?: HyperdriveDeployRuntimeOptions,
             ) => Promise<GetContractReturnType<ArtifactsMap[T]["abi"]>>;
             deployInstance: <
                 T extends ArtifactsMap[keyof ArtifactsMap]["contractName"],
@@ -188,7 +173,7 @@ extendEnvironment((hre) => {
 
     let deployCoordinator = async (
         name: string,
-        options?: HyperdriveDeployCoordinatorRuntimeOptions,
+        options?: HyperdriveDeployRuntimeOptions,
     ) => {
         // Retrieve configuration for the coordinator by finding one with the same name/network
         // in the configuration file
@@ -225,6 +210,11 @@ extendEnvironment((hre) => {
 
         // Parse out the prefix to name various components
         let { prefix } = coordinatorConfig;
+
+        // Resolve the token (deploying it if defined)
+        let token = coordinatorConfig.token
+            ? await evaluateValueOrHREFn(coordinatorConfig.token, hre, options)
+            : undefined;
 
         // Deploy the HyperdriveCoreDeployer
         let coreDeployerContractName = `${prefix}HyperdriveCoreDeployer`;
@@ -318,15 +308,7 @@ extendEnvironment((hre) => {
             factoryAddress,
             coreDeployer.address,
             ...targets,
-            ...(coordinatorConfig.token
-                ? [
-                      await evaluateValueOrHREFn(
-                          coordinatorConfig.token,
-                          hre,
-                          options,
-                      ),
-                  ]
-                : []),
+            ...(token ? [token] : []),
         ];
         let coordinator = await ensureDeployed(
             name,
@@ -339,23 +321,20 @@ extendEnvironment((hre) => {
             await coordinatorConfig.setup(hre, options ?? {});
         }
 
-        // Optionally register the coordinator with the factory if enabled and having the
-        // correct permissions
-        if (options?.approveWithFactory) {
-            let factoryGovernanceAddress = await factory.read.governance();
-            let deployer = (await hre.getNamedAccounts())["deployer"];
-            if (deployer === factoryGovernanceAddress) {
-                console.log(
-                    `adding ${name}_${prefix}HyperdriveDeployerCoordinator to factory`,
-                );
-                await factory.write.addDeployerCoordinator([
-                    coordinator.address,
-                ]);
-            } else {
-                console.log(
-                    `unable to add ${name}_${prefix}HyperdriveDeployerCoordinator to factory, deployer is not governance`,
-                );
-            }
+        // Optionally register the coordinator with the factory if deployer has correct permissions.
+        let deployerCoordinatorManager =
+            await factory.read.deployerCoordinatorManager();
+        if (
+            deployer === deployerCoordinatorManager &&
+            !(await factory.read.isDeployerCoordinator([coordinator.address]))
+        ) {
+            console.log(
+                `adding ${name}_${prefix}HyperdriveDeployerCoordinator to factory`,
+            );
+            let tx = await factory.write.addDeployerCoordinator([
+                coordinator.address,
+            ]);
+            await pc.waitForTransactionReceipt({ hash: tx });
         }
 
         return coordinator as unknown as GetContractReturnType<

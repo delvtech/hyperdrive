@@ -1,4 +1,4 @@
-import { task } from "hardhat/config";
+import { subtask } from "hardhat/config";
 import {
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
@@ -7,7 +7,7 @@ import {
 export type DeployCoordinatorParams = HyperdriveDeployBaseTaskParams & {};
 
 HyperdriveDeployBaseTask(
-    task(
+    subtask(
         "deploy:coordinator",
         "deploys the HyperdriveDeployerCoordinator with the provided name and chain",
     ),

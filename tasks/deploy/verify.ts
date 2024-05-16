@@ -3,6 +3,9 @@ import { evaluateValueOrHREFn } from "./lib";
 
 export type VerifyParams = {};
 
+/**
+ * Used to avoid Etherscan rate limiting.
+ */
 function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -50,6 +53,8 @@ task(
 
         // loop through all instances
         for (let c of hyperdriveConfig.coordinators ?? []) {
+            await sleep(1000);
+
             // verify the core deployer
             let coreDeployer = `${c.name}_${c.prefix}HyperdriveCoreDeployer`;
             let coreAddress =
@@ -110,12 +115,33 @@ task(
 
         // loop through all instances
         for (let i of hyperdriveConfig.instances ?? []) {
+            await sleep(1000);
+
             let instance = hre.hyperdriveDeploy.deployments.byName(i.name);
             let instanceContract = await hre.viem.getContractAt(
                 "IHyperdriveRead",
                 instance.address,
             );
             let poolConfig = await instanceContract.read.getPoolConfig();
+            let targetArgs: any[] = [poolConfig];
+
+            // obtain the instance's coordinator configuration to determine if additional
+            // constructor arguments are necessary
+            let coordinatorName = hre.hyperdriveDeploy.deployments.byAddress(
+                await evaluateValueOrHREFn(i.coordinatorAddress, hre, {}),
+            ).name;
+            let coordinatorConfig = hyperdriveConfig.coordinators.find(
+                (c) => c.name == coordinatorName,
+            )!;
+            targetArgs.push(
+                ...[
+                    await evaluateValueOrHREFn(
+                        coordinatorConfig.extraConstructorArgs,
+                        hre,
+                        {},
+                    ),
+                ],
+            );
 
             // verify the targets
             let targets = [];
@@ -128,7 +154,7 @@ task(
                 console.log(`verifying ${targetName}...`);
                 await run("verify:verify", {
                     address: targetAddress,
-                    constructorArguments: [poolConfig],
+                    constructorArguments: targetArgs,
                     libraries: {
                         LPMath: hyperdriveDeploy.deployments.byName("LPMath")
                             .address,
@@ -138,10 +164,20 @@ task(
 
             // verify the instance
             console.log(`verifying ${i.name}...`);
+            let args = [poolConfig, ...targets];
+            if (coordinatorConfig.token) {
+                args.push(
+                    await evaluateValueOrHREFn(
+                        coordinatorConfig.token,
+                        hre,
+                        {},
+                    ),
+                );
+            }
             await run("verify:verify", {
                 address: hre.hyperdriveDeploy.deployments.byName(i.name)
                     .address,
-                constructorArguments: [poolConfig, ...targets],
+                constructorArguments: args,
                 contract: `contracts/src/instances/${i.prefix.toLowerCase()}/${i.prefix}Hyperdrive.sol:${i.prefix}Hyperdrive`,
             });
         }

@@ -1,8 +1,8 @@
 import { parseEther, toFunctionSelector } from "viem";
 import {
     HyperdriveInstanceConfig,
-    annualizeFee,
     getLinkerDetails,
+    normalizeFee,
     parseDuration,
     toBytes32,
 } from "../../lib";
@@ -98,7 +98,7 @@ export const SEPOLIA_DAI_14DAY: HyperdriveInstanceConfig<"ERC4626"> = {
             minimumTransactionAmount: parseEther("0.001"),
             positionDuration: parseDuration("14 days"),
             checkpointDuration: parseDuration("1 day"),
-            timeStretch: parseEther("0"),
+            timeStretch: 0n,
             governance: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
             feeCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
             sweepCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
@@ -108,7 +108,7 @@ export const SEPOLIA_DAI_14DAY: HyperdriveInstanceConfig<"ERC4626"> = {
             )),
             fees: {
                 curve: parseEther("0.01"),
-                flat: annualizeFee(parseEther("0.0005"), "14 days"),
+                flat: normalizeFee(parseEther("0.0005"), "14 days"),
                 governanceLP: parseEther("0.15"),
                 governanceZombie: parseEther("0.03"),
             },
