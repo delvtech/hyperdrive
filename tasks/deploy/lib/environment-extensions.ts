@@ -8,7 +8,7 @@ import { ArtifactsMap } from "hardhat/types";
 import "hardhat/types/config";
 import "hardhat/types/runtime";
 import { ConfigurableTaskDefinition } from "hardhat/types/runtime";
-import { Address, BaseError, ContractConstructorArgs, isHex } from "viem";
+import { Address, ContractConstructorArgs, isHex } from "viem";
 import { Deployments } from "./deployments";
 import { evaluateValueOrHREFn } from "./utils";
 
@@ -466,27 +466,10 @@ extendEnvironment((hre) => {
         }
 
         // prepare arguments
-        let initialVaultSharePrice: bigint = 0n;
-        try {
-            initialVaultSharePrice = (
-                await (
-                    await hre.viem.getContractAt(
-                        "HyperdriveDeployerCoordinator",
-                        coordinatorAddress,
-                    )
-                ).read.deployments([instanceConfig.deploymentId])
-            ).initialSharePrice;
-        } catch (e) {
-            console.log((e as BaseError).details);
-        }
-        let poolConfig = {
-            ...poolDeployConfig,
-            initialVaultSharePrice,
-        };
         let args = [
             deploymentId,
             coordinatorAddress,
-            poolConfig,
+            poolDeployConfig,
             extraData,
             instanceConfig.contribution,
             fixedAPR,
