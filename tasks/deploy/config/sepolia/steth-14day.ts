@@ -26,7 +26,7 @@ export const SEPOLIA_STETH_14DAY: HyperdriveInstanceConfig<"StETH"> = {
         asBase: false,
         extraData: "0x",
     },
-    poolDeployConfig: async (hre) => {
+    prepare: async (hre) => {
         let vaultSharesToken = await hre.viem.getContractAt(
             "MockLido",
             hre.hyperdriveDeploy.deployments.byName("STETH").address,
@@ -41,10 +41,12 @@ export const SEPOLIA_STETH_14DAY: HyperdriveInstanceConfig<"StETH"> = {
             CONTRIBUTION + parseEther("10"),
         ]);
         await pc.waitForTransactionReceipt({ hash: tx });
-
+    },
+    poolDeployConfig: async (hre) => {
         return {
             baseToken: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-            vaultSharesToken: vaultSharesToken.address,
+            vaultSharesToken:
+                hre.hyperdriveDeploy.deployments.byName("STETH").address,
             circuitBreakerDelta: parseEther("0.6"),
             minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),

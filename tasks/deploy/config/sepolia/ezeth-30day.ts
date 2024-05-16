@@ -26,7 +26,7 @@ export const SEPOLIA_EZETH_30DAY: HyperdriveInstanceConfig<"EzETH"> = {
         asBase: false,
         extraData: "0x",
     },
-    poolDeployConfig: async (hre) => {
+    prepare: async (hre) => {
         let vaultSharesToken = await hre.viem.getContractAt(
             "MockEzEthPool",
             hre.hyperdriveDeploy.deployments.byName("EZETH").address,
@@ -41,9 +41,12 @@ export const SEPOLIA_EZETH_30DAY: HyperdriveInstanceConfig<"EzETH"> = {
             CONTRIBUTION + parseEther("10"),
         ]);
         await pc.waitForTransactionReceipt({ hash: tx });
+    },
+    poolDeployConfig: async (hre) => {
         return {
             baseToken: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-            vaultSharesToken: vaultSharesToken.address,
+            vaultSharesToken:
+                hre.hyperdriveDeploy.deployments.byName("EZETH").address,
             circuitBreakerDelta: parseEther("0.6"),
             minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),

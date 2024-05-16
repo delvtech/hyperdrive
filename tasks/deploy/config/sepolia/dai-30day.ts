@@ -26,7 +26,7 @@ export const SEPOLIA_DAI_30DAY: HyperdriveInstanceConfig<"ERC4626"> = {
         asBase: true,
         destination: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
     },
-    poolDeployConfig: async (hre, options) => {
+    prepare: async (hre, options) => {
         let pc = await hre.viem.getPublicClient();
         let baseToken = await hre.hyperdriveDeploy.ensureDeployed(
             "DAI",
@@ -89,10 +89,12 @@ export const SEPOLIA_DAI_30DAY: HyperdriveInstanceConfig<"ERC4626"> = {
         // mint some tokens for the contribution
         tx = await baseToken.write.mint([CONTRIBUTION]);
         await pc.waitForTransactionReceipt({ hash: tx });
-
+    },
+    poolDeployConfig: async (hre) => {
         return {
-            baseToken: baseToken.address,
-            vaultSharesToken: vaultSharesToken.address,
+            baseToken: hre.hyperdriveDeploy.deployments.byName("DAI").address,
+            vaultSharesToken:
+                hre.hyperdriveDeploy.deployments.byName("SDAI").address,
             circuitBreakerDelta: parseEther("0.6"),
             minimumShareReserves: parseEther("10"),
             minimumTransactionAmount: parseEther("0.001"),

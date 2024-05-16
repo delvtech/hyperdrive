@@ -10,7 +10,7 @@ export const SEPOLIA_EZETH_COORDINATOR: HyperdriveCoordinatorConfig<"EzETH"> = {
     extraConstructorArgs: async (hre) => [
         hre.hyperdriveDeploy.deployments.byName("EZETH").address,
     ],
-    token: async (hre, options) => {
+    prepare: async (hre, options) => {
         let deployer = (await hre.getNamedAccounts())["deployer"];
         let pc = await hre.viem.getPublicClient();
         let vaultSharesToken = await hre.hyperdriveDeploy.ensureDeployed(
@@ -40,6 +40,7 @@ export const SEPOLIA_EZETH_COORDINATOR: HyperdriveCoordinatorConfig<"EzETH"> = {
             value: parseEther("0.1"),
         });
         await pc.waitForTransactionReceipt({ hash: tx });
-        return vaultSharesToken.address;
     },
+    token: async (hre) =>
+        hre.hyperdriveDeploy.deployments.byName("EZETH").address,
 };

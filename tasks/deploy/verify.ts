@@ -123,25 +123,38 @@ task(
                 instance.address,
             );
             let poolConfig = await instanceContract.read.getPoolConfig();
-            let targetArgs: any[] = [poolConfig];
 
             // obtain the instance's coordinator configuration to determine if additional
             // constructor arguments are necessary
-            let coordinatorName = hre.hyperdriveDeploy.deployments.byAddress(
-                await evaluateValueOrHREFn(i.coordinatorAddress, hre, {}),
-            ).name;
+            let coordinatorDeployment =
+                hre.hyperdriveDeploy.deployments.byAddress(
+                    await evaluateValueOrHREFn(i.coordinatorAddress, hre, {}),
+                );
             let coordinatorConfig = hyperdriveConfig.coordinators.find(
-                (c) => c.name == coordinatorName,
+                (c) => c.name == coordinatorDeployment.name,
             )!;
-            targetArgs.push(
-                ...[
-                    await evaluateValueOrHREFn(
-                        coordinatorConfig.extraConstructorArgs,
-                        hre,
-                        {},
-                    ),
-                ],
+            let coordinatorContract = await hre.viem.getContractAt(
+                "HyperdriveDeployerCoordinator",
+                coordinatorDeployment.address,
             );
+            let factoryAddress = await coordinatorContract.read.factory();
+
+            // form target constructor args
+            let targetArgs:
+                | [typeof poolConfig]
+                | [typeof poolConfig, `0x${string}`] = [
+                { ...poolConfig, governance: factoryAddress },
+            ];
+
+            // add extra args if present
+            let extras = await evaluateValueOrHREFn(
+                coordinatorConfig.extraConstructorArgs,
+                hre,
+                {},
+            );
+            if (extras.length) {
+                targetArgs = [poolConfig, ...extras];
+            }
 
             // verify the targets
             let targets = [];
@@ -165,14 +178,8 @@ task(
             // verify the instance
             console.log(`verifying ${i.name}...`);
             let args = [poolConfig, ...targets];
-            if (coordinatorConfig.token) {
-                args.push(
-                    await evaluateValueOrHREFn(
-                        coordinatorConfig.token,
-                        hre,
-                        {},
-                    ),
-                );
+            if (extras.length) {
+                args.push(...extras);
             }
             await run("verify:verify", {
                 address: hre.hyperdriveDeploy.deployments.byName(i.name)

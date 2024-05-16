@@ -8,7 +8,7 @@ export const SEPOLIA_RETH_COORDINATOR: HyperdriveCoordinatorConfig<"RETH"> = {
         hre.hyperdriveDeploy.deployments.byName("FACTORY").address,
     targetCount: 4,
     extraConstructorArgs: [],
-    token: async (hre, options) => {
+    prepare: async (hre, options) => {
         let pc = await hre.viem.getPublicClient();
         let deployer = (await hre.getNamedAccounts())["deployer"];
         let vaultSharesToken = await hre.hyperdriveDeploy.ensureDeployed(
@@ -38,6 +38,7 @@ export const SEPOLIA_RETH_COORDINATOR: HyperdriveCoordinatorConfig<"RETH"> = {
             value: parseEther("0.1"),
         });
         await pc.waitForTransactionReceipt({ hash: tx });
-        return vaultSharesToken.address;
     },
+    token: async (hre) =>
+        hre.hyperdriveDeploy.deployments.byName("EZETH").address,
 };
