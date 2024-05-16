@@ -15,16 +15,13 @@ HyperdriveDeployBaseTask(
         "deploys the HyperdriveFactory, all deployer coordinators, and all hyperdrive instances",
     ),
 ).setAction(
-    async (
-        { name, ...rest }: DeployHyperdriveParams,
-        { run, config, network },
-    ) => {
+    async ({ ...rest }: DeployHyperdriveParams, { run, config, network }) => {
         // compile contracts
-        await run("compile", {});
+        await run("compile", { force: true });
 
         // deploy the registry
         await run("deploy:registry", {
-            name: `${name}_REGISTRY`,
+            name: `${network.name.toUpperCase()}_REGISTRY`,
             ...rest,
         });
 

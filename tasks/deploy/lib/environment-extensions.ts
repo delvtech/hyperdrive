@@ -28,31 +28,40 @@ export type HyperdriveDeployRuntimeOptions = {
 };
 
 /**
- * Type representing the Hardhat Task params accepted by all Hyperdrive deploy tasks
+ * Represents the parameters used by all Hyperdrive deploy tasks
  */
-export type HyperdriveDeployBaseTaskParams = HyperdriveDeployRuntimeOptions & {
+export type HyperdriveDeployBaseTaskParams = HyperdriveDeployRuntimeOptions;
+
+/**
+ * Represents the parameters for a Hyperdrive deploy task requiring a name
+ */
+export type HyperdriveDeployNamedTaskParams = HyperdriveDeployRuntimeOptions & {
     // Name of the primary contract to deploy
     //  - supporting contract names will be derived from it if applicable
     name: string;
 };
 
 /**
- * Base Hyperdrive deploy task with all base params already added.
+ * Base Hyperdrive deploy task with all base params.
  */
 export const HyperdriveDeployBaseTask = (task: ConfigurableTaskDefinition) =>
-    task
-        .addParam(
-            "name",
-            "name of the primary contract to deploy (supporting contract names will be derived from it)",
-            undefined,
-            types.string,
-        )
-        .addOptionalParam(
-            "noSave",
-            "skip saving deployment artifacts and data",
-            false,
-            types.boolean,
-        );
+    task.addOptionalParam(
+        "noSave",
+        "skip saving deployment artifacts and data",
+        false,
+        types.boolean,
+    );
+
+/**
+ * Named Hyperdrive deploy task with all base params already added.
+ */
+export const HyperdriveDeployNamedTask = (task: ConfigurableTaskDefinition) =>
+    HyperdriveDeployBaseTask(task).addParam(
+        "name",
+        "name of the primary contract to deploy (supporting contract names will be derived from it)",
+        undefined,
+        types.string,
+    );
 
 declare module "hardhat/types/runtime" {
     interface HardhatRuntimeEnvironment {

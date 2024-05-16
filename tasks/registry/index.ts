@@ -1,10 +1,10 @@
 import { task, types } from "hardhat/config";
 import {
     HyperdriveDeployBaseTask,
-    HyperdriveDeployBaseTaskParams,
+    HyperdriveDeployNamedTaskParams,
 } from "../deploy";
 
-export type AddRegistryParams = HyperdriveDeployBaseTaskParams & {
+export type AddRegistryParams = HyperdriveDeployNamedTaskParams & {
     value: number;
 };
 

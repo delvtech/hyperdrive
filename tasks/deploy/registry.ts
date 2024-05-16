@@ -1,12 +1,10 @@
 import { subtask } from "hardhat/config";
 import {
     HyperdriveDeployBaseTask,
-    HyperdriveDeployBaseTaskParams,
+    HyperdriveDeployNamedTaskParams,
 } from "./lib";
 
-export type DeployRegistryParams = HyperdriveDeployBaseTaskParams & {
-    name: string;
-};
+export type DeployRegistryParams = HyperdriveDeployNamedTaskParams;
 
 HyperdriveDeployBaseTask(
     subtask(

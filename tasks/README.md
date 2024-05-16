@@ -26,7 +26,7 @@ The complete list of tasks can be seen by running `npx hardhat --help` in your t
 
 The `deploy:hyperdrive` task should be run for all deployments. It handles resuming existing deploys
 and only deploys configurations that are not already present on the specified chain. It must be
-provided a `--name` and `--network` flag.
+provided a `--network` flag.
 
 ## Configuration
 

@@ -40,5 +40,5 @@ export const SEPOLIA_RETH_COORDINATOR: HyperdriveCoordinatorConfig<"RETH"> = {
         await pc.waitForTransactionReceipt({ hash: tx });
     },
     token: async (hre) =>
-        hre.hyperdriveDeploy.deployments.byName("EZETH").address,
+        hre.hyperdriveDeploy.deployments.byName("RETH").address,
 };

@@ -137,14 +137,16 @@ task(
                 "HyperdriveDeployerCoordinator",
                 coordinatorDeployment.address,
             );
+
+            // targets and hyperdrive instance are deployed with governance set to the factory
+            // address
             let factoryAddress = await coordinatorContract.read.factory();
+            poolConfig.governance = factoryAddress;
 
             // form target constructor args
             let targetArgs:
                 | [typeof poolConfig]
-                | [typeof poolConfig, `0x${string}`] = [
-                { ...poolConfig, governance: factoryAddress },
-            ];
+                | [typeof poolConfig, `0x${string}`] = [poolConfig];
 
             // add extra args if present
             let extras = await evaluateValueOrHREFn(
@@ -181,11 +183,13 @@ task(
             if (extras.length) {
                 args.push(...extras);
             }
+            let contract = `contracts/src/instances/${i.prefix.toLowerCase()}/${i.prefix}Hyperdrive.sol:${i.prefix}Hyperdrive`;
+            await sleep(1000);
             await run("verify:verify", {
                 address: hre.hyperdriveDeploy.deployments.byName(i.name)
                     .address,
                 constructorArguments: args,
-                contract: `contracts/src/instances/${i.prefix.toLowerCase()}/${i.prefix}Hyperdrive.sol:${i.prefix}Hyperdrive`,
+                contract,
             });
         }
     });
