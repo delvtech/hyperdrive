@@ -14,7 +14,7 @@ export const SEPOLIA_RETH_COORDINATOR: HyperdriveCoordinatorDeployConfigInput =
                 let pc = await hre.viem.getPublicClient();
                 let deployer = (await hre.getNamedAccounts())["deployer"];
                 let vaultSharesToken =
-                    await hre.hyperdriveDeploy.deployContract(
+                    await hre.hyperdriveDeploy.ensureDeployed(
                         "RETH",
                         "MockRocketPool",
                         [

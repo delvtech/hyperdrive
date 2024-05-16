@@ -14,6 +14,9 @@ HyperdriveDeployBaseTask(
     ),
 ).setAction(
     async ({ name, ...rest }: DeployAllParams, { run, config, network }) => {
+        // compile contracts
+        await run("compile", {});
+
         // deploy the registry
         await run("deploy:registry", {
             name: `${name}_REGISTRY`,

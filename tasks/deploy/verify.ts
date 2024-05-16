@@ -1,6 +1,7 @@
 import { task, types } from "hardhat/config";
+import { evaluateValueOrHREFn } from "./lib";
 
-export type VerifyParams = { name?: string };
+export type VerifyParams = {};
 
 task(
     "deploy:verify",
@@ -12,32 +13,43 @@ task(
         undefined,
         types.string,
     )
-    .setAction(
-        async (
-            { name: nameParam }: VerifyParams,
-            { config, hyperdriveDeploy, deployments, network, run },
-        ) => {
-            for (let {
-                name,
-                address,
-                contract,
-                timestamp,
-            } of hyperdriveDeploy.deployments
-                .byNetwork(network.name)
-                .filter((d) => !nameParam || d.name === nameParam)) {
-                console.log(`verifying ${name} ${contract}...`);
-                try {
-                    await run("verify:verify", {
-                        address,
-                        constructorArguments: (await deployments.get(name))
-                            .args,
-                        libraries: {
-                            ...((await deployments.get(name)).libraries ?? {}),
-                        },
-                    });
-                } catch (e) {
-                    console.error(e);
-                }
-            }
-        },
-    );
+    .setAction(async ({}: VerifyParams, hre) => {
+        let { run, hyperdriveDeploy, config, network } = hre;
+        let hyperdriveConfig = config.networks[network.name].hyperdriveDeploy;
+        if (!hyperdriveConfig) {
+            console.log("no config found for network");
+            return;
+        }
+
+        for (let f of hyperdriveConfig.factories ?? []) {
+            // resolve the constructor args
+            let constructorArguments = await evaluateValueOrHREFn(
+                f.constructorArguments,
+                hre,
+            );
+            // verify the linker factory
+            await run("verify:verify", {
+                address: constructorArguments[0].linkerFactory,
+                constructorArguments: [],
+            });
+            // verify the factory
+            await run("verify:verify", {
+                address: hyperdriveDeploy.deployments.byName(f.name).address,
+                constructorArguments,
+            });
+        }
+
+        // for (let f of hyperdriveConfig.coordinators ?? []) {
+        //     await run("deploy:coordinator", {
+        //         name: f.name,
+        //         ...rest,
+        //     } as DeployFactoryParams);
+        // }
+        //
+        // for (let f of hyperdriveConfig.instances ?? []) {
+        //     await run("deploy:instance", {
+        //         name: f.name,
+        //         ...rest,
+        //     } as DeployFactoryParams);
+        // }
+    });

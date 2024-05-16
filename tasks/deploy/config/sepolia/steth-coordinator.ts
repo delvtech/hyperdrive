@@ -14,7 +14,7 @@ export const SEPOLIA_STETH_COORDINATOR: HyperdriveCoordinatorDeployConfigInput =
                 let deployer = (await hre.getNamedAccounts())["deployer"];
                 let pc = await hre.viem.getPublicClient();
                 let vaultSharesToken =
-                    await hre.hyperdriveDeploy.deployContract(
+                    await hre.hyperdriveDeploy.ensureDeployed(
                         "STETH",
                         "MockLido",
                         [

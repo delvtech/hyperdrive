@@ -1,7 +1,7 @@
 import { parseEther } from "viem";
 import {
     HyperdriveInstanceDeployConfigInput,
-    getDeploymentId,
+    toBytes32,
 } from "../../lib";
 
 const CONTRIBUTION = "500";
@@ -10,7 +10,7 @@ export const SEPOLIA_STETH_14DAY: HyperdriveInstanceDeployConfigInput = {
     name: "STETH_14_DAY",
     contract: "StETHHyperdrive",
     coordinatorName: "STETH_COORDINATOR",
-    deploymentId: getDeploymentId("STETH_14_DAY"),
+    deploymentId: toBytes32("STETH_14_DAY"),
     salt: "0xababe",
     contribution: CONTRIBUTION,
     fixedAPR: "0.05",

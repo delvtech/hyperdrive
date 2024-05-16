@@ -1,21 +1,122 @@
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import hre from "hardhat";
-import { toHex } from "viem";
+import { ArtifactsMap } from "hardhat/types";
+import {
+    Address,
+    ContractConstructorArgs,
+    ContractFunctionArgs,
+    Hex,
+    toHex,
+} from "viem";
 import { z } from "zod";
 import { HyperdriveDeployRuntimeOptions } from "./environment-extensions";
 import { zAddress, zBytes32, zDuration, zEther, zHex } from "./types";
+
 dayjs.extend(duration);
 
-export type HookFn = (
+export type HREFn<T extends unknown = undefined> = (
     _hre: typeof hre,
     _options: HyperdriveDeployRuntimeOptions,
-) => Promise<void>;
+) => Promise<T>;
+
+export type ValueOrHREFn<T extends unknown> = T | HREFn<T>;
+
+export type ExtractValueOrHREFn<T extends ValueOrHREFn<unknown>> =
+    T extends ValueOrHREFn<infer V> ? V : never;
+
+export type ContractName = ArtifactsMap[keyof ArtifactsMap]["contractName"];
+
+type FactoryConstructorArgs = ContractConstructorArgs<
+    ArtifactsMap["HyperdriveFactory"]["abi"]
+>;
+
+export type HyperdriveFactoryConfig = {
+    name: string;
+    constructorArguments: ValueOrHREFn<FactoryConstructorArgs>;
+    prepare?: HREFn;
+    setup?: HREFn;
+};
+
+/**
+ * Coordinator
+ */
+
+type CoordinatorPrefix<T extends string> = T extends `${infer P}Target0Deployer`
+    ? P
+    : never;
+
+export type CoordinatorContract = ContractName &
+    `${string}HyperdriveDeployerCoordinator`;
+
+export type CoordinatorConstructorArgs<T extends ContractName> =
+    ContractConstructorArgs<ArtifactsMap[T]["abi"]>;
+
+export type CoreDeployerConstructorArgs<
+    T extends CoordinatorPrefix<ContractName>,
+> = ContractConstructorArgs<ArtifactsMap[`${T}HyperdriveCoreDeployer`]["abi"]>;
+
+export type HyperdriveCoordinatorConfig<
+    T extends CoordinatorPrefix<ContractName>,
+> = {
+    name: string;
+    prefix: T;
+    factoryAddress: ValueOrHREFn<Address>;
+    targetCount: number;
+    token?: ValueOrHREFn<Address>;
+    extraConstructorArgs: ValueOrHREFn<CoreDeployerConstructorArgs<T>>;
+    prepare?: HREFn;
+    setup?: HREFn;
+};
+
+/**
+ * Instances
+ */
+type InstancePrefix<T extends string> = T extends `${infer P}Target0`
+    ? P
+    : never;
+
+type DeployTargetArguments = ContractFunctionArgs<
+    ArtifactsMap["HyperdriveFactory"]["abi"],
+    "nonpayable",
+    "deployTarget"
+>;
+
+type DeployHyperdriveArguments = ContractFunctionArgs<
+    ArtifactsMap["HyperdriveFactory"]["abi"],
+    "payable",
+    "deployAndInitialize"
+>;
+
+export type HyperdriveInstanceConfig<T extends InstancePrefix<ContractName>> = {
+    name: string;
+    prefix: T;
+    coordinatorAddress: ValueOrHREFn<Address>;
+    deploymentId: Hex;
+    salt: Hex;
+    extraData: Hex;
+    contribution: bigint;
+    fixedAPR: bigint;
+    timestretchAPR: bigint;
+    targetCount: number;
+    poolDeployConfig: ValueOrHREFn<DeployTargetArguments[2]>;
+    options: ValueOrHREFn<DeployHyperdriveArguments[7]>;
+    prepare?: HREFn;
+    setup?: HREFn;
+};
+
+export type HyperdriveConfig = {
+    factories: HyperdriveFactoryConfig[];
+    coordinators: HyperdriveCoordinatorConfig<
+        CoordinatorPrefix<ContractName>
+    >[];
+    instances: HyperdriveInstanceConfig<InstancePrefix<ContractName>>[];
+};
 
 export const zHyperdriveFactoryDeployConfig = z.object({
     name: z.string(),
-    prepare: z.custom<HookFn>().optional(),
-    setup: z.custom<HookFn>().optional(),
+    prepare: z.custom<HREFn>().optional(),
+    setup: z.custom<HREFn>().optional(),
     governance: zAddress,
     deployerCoordinatorManager: zAddress,
     hyperdriveGovernance: zAddress,
@@ -61,8 +162,8 @@ export const zHyperdriveCoordinatorDeployConfig = z.object({
     factoryName: z.string(),
     targetCount: z.number(),
     lpMath: z.string({ description: "name of the LPMath contract to link" }),
-    prepare: z.custom<HookFn>().optional(),
-    setup: z.custom<HookFn>().optional(),
+    prepare: z.custom<HREFn>().optional(),
+    setup: z.custom<HREFn>().optional(),
     coreConstructorArguments: z
         .custom<
             (
@@ -84,7 +185,7 @@ export const zHyperdriveCoordinatorDeployConfig = z.object({
             zAddress,
             z.object({
                 name: z.string(),
-                deploy: z.custom<HookFn>().optional(),
+                deploy: z.custom<HREFn>().optional(),
             }),
         ])
         .optional(),
@@ -102,8 +203,8 @@ export const zHyperdriveInstanceDeployConfig = z.object({
     name: z.string(),
     contract: z.string(),
     coordinatorName: z.string(),
-    prepare: z.custom<HookFn>().optional(),
-    setup: z.custom<HookFn>().optional(),
+    prepare: z.custom<HREFn>().optional(),
+    setup: z.custom<HREFn>().optional(),
     deploymentId: zBytes32.default(
         toHex(new Date().toISOString(), { size: 32 }),
     ),
@@ -123,7 +224,7 @@ export const zHyperdriveInstanceDeployConfig = z.object({
                     zAddress,
                     z.object({
                         name: z.string(),
-                        deploy: z.custom<HookFn>().optional(),
+                        deploy: z.custom<HREFn>().optional(),
                     }),
                 ])
                 .optional(),
@@ -132,7 +233,7 @@ export const zHyperdriveInstanceDeployConfig = z.object({
                     zAddress,
                     z.object({
                         name: z.string(),
-                        deploy: z.custom<HookFn>().optional(),
+                        deploy: z.custom<HREFn>().optional(),
                     }),
                 ])
                 .optional(),

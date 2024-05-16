@@ -16,7 +16,7 @@ HyperdriveDeployBaseTask(
 ).setAction(
     async ({ name, ...rest }: DeployRegistryParams, { hyperdriveDeploy }) => {
         console.log("\nRunning deploy:registry ...");
-        await hyperdriveDeploy.deployContract(
+        await hyperdriveDeploy.ensureDeployed(
             name,
             "HyperdriveRegistry",
             [name],

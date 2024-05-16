@@ -92,7 +92,7 @@ export const SAMPLE_INSTANCE: HyperdriveInstanceDeployConfigInput = {
             name: "SAMPLE_BASE",
             deploy: async (hre) => {
                 let pc = await hre.viem.getPublicClient();
-                let baseToken = await hre.hyperdriveDeploy.deployContract(
+                let baseToken = await hre.hyperdriveDeploy.ensureDeployed(
                     "SAMPLE_BASE",
                     "ERC20Mintable",
                     [
@@ -142,7 +142,7 @@ export const SAMPLE_INSTANCE: HyperdriveInstanceDeployConfigInput = {
                         "SAMPLE_BASE",
                     ).address;
                 let vaultSharesToken =
-                    await hre.hyperdriveDeploy.deployContract(
+                    await hre.hyperdriveDeploy.ensureDeployed(
                         "SAMPLE_SHARES",
                         "MockERC4626",
                         [

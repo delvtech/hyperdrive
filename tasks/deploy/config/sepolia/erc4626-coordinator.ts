@@ -1,12 +1,13 @@
-import { HyperdriveCoordinatorDeployConfigInput } from "../../lib";
+import { HyperdriveCoordinatorConfig } from "../../lib";
 
-export const SEPOLIA_ERC4626_COORDINATOR: HyperdriveCoordinatorDeployConfigInput =
+export const SEPOLIA_ERC4626_COORDINATOR: HyperdriveCoordinatorConfig<"ERC4626"> =
     {
         name: "ERC4626_COORDINATOR",
-        contract: "ERC4626HyperdriveDeployerCoordinator",
-        factoryName: "FACTORY",
+        prefix: "ERC4626",
         targetCount: 4,
-        lpMath: "SEPOLIA",
+        extraConstructorArgs: [],
+        factoryAddress: async (hre) =>
+            hre.hyperdriveDeploy.deployments.byName("FACTORY").address,
         setup: async (hre) => {
             // register the coordinator with the factory if the deployer is the governance address
             let deployer = (await hre.getNamedAccounts())["deployer"];

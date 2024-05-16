@@ -42,19 +42,23 @@ export const durationUnits = [
     "years",
 ];
 
+export type DurationString = `${number} ${(typeof durationUnits)[number]}`;
+
 /**
  * Accepts durations of the following form using {@link durationUnits}
  */
-export const parseDuration = (d: string) => {
+export const parseDuration = (d: DurationString) => {
     const parts = d.split(" ");
     if (parts.length != 2) throw new Error(`invalid duration string "${d}"`);
     const [quantityString, unit] = parts;
     if (!durationUnits.includes(unit)) throw new Error(`invalid unit ${unit}`);
     if (isNaN(parseInt(quantityString)))
         throw new Error(`invalid quantity ${quantityString}`);
-    return dayjs
-        .duration(parseInt(quantityString), unit as DurationUnitType)
-        .asSeconds();
+    return BigInt(
+        dayjs
+            .duration(parseInt(quantityString), unit as DurationUnitType)
+            .asSeconds(),
+    );
 };
 
 /**
