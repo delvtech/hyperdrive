@@ -1372,7 +1372,7 @@ library HyperdriveUtils {
         uint256 _governanceLPFee
     ) internal pure returns (uint256) {
         return
-            calculateShortCurveFee(_bondAmount, _spotPrice, _curveFee).mulUp(
+            calculateShortCurveFee(_bondAmount, _spotPrice, _curveFee).mulDown(
                 _governanceLPFee
             );
     }
