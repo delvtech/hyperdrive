@@ -34,6 +34,7 @@ export const SEPOLIA_EZETH_14DAY: HyperdriveInstanceConfig<"EzETH"> = {
         let pc = await hre.viem.getPublicClient();
         // mint the contribution
         let tx = await vaultSharesToken.write.mint([CONTRIBUTION]);
+        await pc.waitForTransactionReceipt({ hash: tx });
         // approve the coordinator
         tx = await vaultSharesToken.write.approve([
             hre.hyperdriveDeploy.deployments.byName("EZETH_COORDINATOR")

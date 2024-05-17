@@ -465,6 +465,14 @@ extendEnvironment((hre) => {
             }
         }
 
+        // skip deploying the instance if it already exists
+        if (!!deployments.byNameSafe(name)) {
+            return hre.viem.getContractAt(
+                `${prefix}Hyperdrive` as string,
+                deployments.byName(name).address,
+            );
+        }
+
         // prepare arguments
         let args = [
             deploymentId,

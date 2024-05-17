@@ -38,16 +38,16 @@ HyperdriveDeployBaseTask(
             } as DeployFactoryParams);
         }
 
-        for (let f of hyperdriveDeploy.coordinators ?? []) {
+        for (let c of hyperdriveDeploy.coordinators ?? []) {
             await run("deploy:coordinator", {
-                name: f.name,
+                name: c.name,
                 ...rest,
             } as DeployCoordinatorParams);
         }
 
-        for (let f of hyperdriveDeploy.instances ?? []) {
+        for (let i of hyperdriveDeploy.instances ?? []) {
             await run("deploy:instance", {
-                name: f.name,
+                name: i.name,
                 ...rest,
             } as DeployInstanceParams);
         }

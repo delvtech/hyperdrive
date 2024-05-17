@@ -58,7 +58,7 @@ export const parseDuration = (d: DurationString) => {
  * A function that receives the {@link HardhatRuntimeEnvironment}.
  * Typically used as a hook in configuration for users to deploy contracts or read state.
  */
-export type HREFn<T extends unknown = undefined> = (
+export type HREFn<T extends unknown = void> = (
     _hre: typeof hre,
     _options: HyperdriveDeployRuntimeOptions,
 ) => Promise<T>;
@@ -135,7 +135,9 @@ export type HyperdriveCoordinatorConfig<
  * eliminate undesireable interfaces and test contracts as candidates.
  */
 type InstancePrefix<T extends string> = T extends `${infer P}Target0`
-    ? P
+    ? `${P}Hyperdrive` extends ContractName
+        ? P
+        : never
     : never;
 
 /**
