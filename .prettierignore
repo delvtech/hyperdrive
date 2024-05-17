@@ -3,7 +3,7 @@
 *.md
 *.yaml
 lib/
-!tasks/deploy/lib
+!tasks/deploy/lib/
 target/
 forge-cache/
 node_modules/
