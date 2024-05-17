@@ -16,8 +16,6 @@ import { evaluateValueOrHREFn } from "./utils";
  * Options accepted by all Hyperdrive deploy tasks
  */
 export type HyperdriveDeployRuntimeOptions = {
-    // Skip saving the deployment artifacts and data
-    noSave?: boolean;
     // Options to pass to `viem.deployContract`
     viemConfig?: {
         gas?: bigint;
@@ -42,15 +40,10 @@ export type HyperdriveDeployNamedTaskParams = HyperdriveDeployRuntimeOptions & {
 };
 
 /**
- * Base Hyperdrive deploy task with all base params.
+ * Base Hyperdrive deploy task, left as a stub to easily add params across all deploy tasks.
  */
 export const HyperdriveDeployBaseTask = (task: ConfigurableTaskDefinition) =>
-    task.addOptionalParam(
-        "noSave",
-        "skip saving deployment artifacts and data",
-        false,
-        types.boolean,
-    );
+    task;
 
 /**
  * Named Hyperdrive deploy task with all base params already added.
@@ -111,7 +104,7 @@ extendEnvironment((hre) => {
         name,
         contract,
         args,
-        { noSave, viemConfig } = {},
+        { viemConfig } = {},
     ) => {
         if (!!deployments.byNameSafe(name)) {
             console.log(`skipping ${name}, found existing deployment`);
@@ -130,10 +123,8 @@ extendEnvironment((hre) => {
             { ...viemConfig, gas: 5_000_000n },
         );
 
-        if (!noSave) {
-            console.log(` - saving ${name}...`);
-            deployments.add(name, contract, instance.address);
-        }
+        console.log(` - saving ${name}...`);
+        deployments.add(name, contract, instance.address);
 
         return hre.viem.getContractAt(
             contract as ContractName<typeof contract>,
@@ -307,14 +298,12 @@ extendEnvironment((hre) => {
             targets.push(address);
 
             // handle options
-            if (!options?.noSave) {
-                console.log(` - saving ${name}_${targetContractName}...`);
-                deployments.add(
-                    `${name}_${targetContractName}`,
-                    targetContractName,
-                    address,
-                );
-            }
+            console.log(` - saving ${name}_${targetContractName}...`);
+            deployments.add(
+                `${name}_${targetContractName}`,
+                targetContractName,
+                address,
+            );
         }
 
         // Deploy the coordinator
@@ -455,14 +444,8 @@ extendEnvironment((hre) => {
             targets.push(address);
 
             // Save
-            if (!options?.noSave) {
-                console.log(` - saving ${name}_${contractName}`);
-                deployments.add(
-                    `${name}_${contractName}`,
-                    contractName,
-                    address,
-                );
-            }
+            console.log(` - saving ${name}_${contractName}`);
+            deployments.add(`${name}_${contractName}`, contractName, address);
         }
 
         // skip deploying the instance if it already exists
@@ -500,10 +483,8 @@ extendEnvironment((hre) => {
         await pc.waitForTransactionReceipt({ hash: tx });
 
         // Save
-        if (!options?.noSave) {
-            console.log(` - Saving ${name}_${prefix}Hyperdrive`);
-            deployments.add(name, `${prefix}Hyperdrive`, address);
-        }
+        console.log(` - Saving ${name}_${prefix}Hyperdrive`);
+        deployments.add(name, `${prefix}Hyperdrive`, address);
 
         return hre.viem.getContractAt(`${prefix}Hyperdrive` as string, address);
     };
