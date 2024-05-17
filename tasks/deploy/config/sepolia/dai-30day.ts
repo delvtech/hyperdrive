@@ -1,123 +1,118 @@
 import { parseEther, toFunctionSelector } from "viem";
-import { HyperdriveInstanceDeployConfigInput } from "../../lib";
+import {
+    HyperdriveInstanceConfig,
+    getLinkerDetails,
+    normalizeFee,
+    parseDuration,
+    toBytes32,
+} from "../../lib";
 
-const CONTRIBUTION = "10000";
+const CONTRIBUTION = parseEther("10000");
 
-export const SEPOLIA_DAI_30DAY: HyperdriveInstanceDeployConfigInput = {
+export const SEPOLIA_DAI_30DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     name: "DAI_30_DAY",
-    contract: "ERC4626Hyperdrive",
-    coordinatorName: "ERC4626_COORDINATOR",
-    deploymentId: "0x6666",
-    salt: "0x694201",
+    prefix: "ERC4626",
+    coordinatorAddress: async (hre) =>
+        hre.hyperdriveDeploy.deployments.byName("ERC4626_COORDINATOR").address,
+    deploymentId: toBytes32("DAI_30_DAY"),
+    salt: toBytes32("0x69420"),
+    extraData: "0x",
     contribution: CONTRIBUTION,
-    fixedAPR: "0.05",
-    timestretchAPR: "0.05",
+    fixedAPR: parseEther("0.10"),
+    timestretchAPR: parseEther("0.10"),
     options: {
-        // destination: "0xsomeone",
+        extraData: "0x",
         asBase: true,
-        // extraData: "0x",
+        destination: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
     },
-    setup: async (hre) => {
-        let baseToken = await hre.viem.getContractAt(
-            "ERC20Mintable",
-            hre.hyperdriveDeploy.deployments.byName("DAI").address,
-        );
-        let sharesTokenAddress =
-            hre.hyperdriveDeploy.deployments.byName("SDAI").address;
+    prepare: async (hre, options) => {
         let pc = await hre.viem.getPublicClient();
-        let tx = await baseToken.write.setUnrestrictedMintStatus([
-            sharesTokenAddress,
+        let baseToken = await hre.hyperdriveDeploy.ensureDeployed(
+            "DAI",
+            "ERC20Mintable",
+            [
+                "DAI",
+                "DAI",
+                18,
+                "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
+                true,
+                parseEther("10000"),
+            ],
+            options,
+        );
+        let vaultSharesToken = await hre.hyperdriveDeploy.ensureDeployed(
+            "SDAI",
+            "MockERC4626",
+            [
+                hre.hyperdriveDeploy.deployments.byName("DAI").address,
+                "Savings DAI",
+                "SDAI",
+                parseEther("0.10"),
+                "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
+                true,
+                parseEther("10000"),
+            ],
+            options,
+        );
+
+        // allow minting by the public
+        let tx = await baseToken.write.setPublicCapability([
+            toFunctionSelector("mint(uint256)"),
             true,
         ]);
         await pc.waitForTransactionReceipt({ hash: tx });
+        tx = await vaultSharesToken.write.setPublicCapability([
+            toFunctionSelector("mint(uint256)"),
+            true,
+        ]);
+        await pc.waitForTransactionReceipt({ hash: tx });
+        tx = await baseToken.write.setPublicCapability([
+            toFunctionSelector("mint(address,uint256)"),
+            true,
+        ]);
+        await pc.waitForTransactionReceipt({ hash: tx });
+        tx = await vaultSharesToken.write.setPublicCapability([
+            toFunctionSelector("mint(address,uint256)"),
+            true,
+        ]);
+        await pc.waitForTransactionReceipt({ hash: tx });
+
+        // approve the coordinator for the contribution
+        tx = await baseToken.write.approve([
+            hre.hyperdriveDeploy.deployments.byName("ERC4626_COORDINATOR")
+                .address,
+            CONTRIBUTION,
+        ]);
+        await pc.waitForTransactionReceipt({ hash: tx });
+
+        // mint some tokens for the contribution
+        tx = await baseToken.write.mint([CONTRIBUTION]);
+        await pc.waitForTransactionReceipt({ hash: tx });
     },
-    poolDeployConfig: {
-        baseToken: {
-            name: "DAI",
-            deploy: async (hre) => {
-                let pc = await hre.viem.getPublicClient();
-                let baseToken = await hre.hyperdriveDeploy.deployContract(
-                    "DAI",
-                    "ERC20Mintable",
-                    [
-                        "DAI",
-                        "DAI",
-                        18,
-                        "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
-                        true,
-                        parseEther("10000"),
-                    ],
-                );
-                // allow minting by the public
-                let tx = await baseToken.write.setPublicCapability([
-                    toFunctionSelector("mint(uint256)"),
-                    true,
-                ]);
-                await pc.waitForTransactionReceipt({ hash: tx });
-                tx = await baseToken.write.setPublicCapability([
-                    toFunctionSelector("mint(address,uint256)"),
-                    true,
-                ]);
-                await pc.waitForTransactionReceipt({ hash: tx });
-                // approve the coordinator for the contribution
-                tx = await baseToken.write.approve([
-                    hre.hyperdriveDeploy.deployments.byName(
-                        "ERC4626_COORDINATOR",
-                    ).address,
-                    parseEther(CONTRIBUTION),
-                ]);
-                await pc.waitForTransactionReceipt({ hash: tx });
-                tx = await baseToken.write.mint([parseEther(CONTRIBUTION)]);
-                await pc.waitForTransactionReceipt({ hash: tx });
+    poolDeployConfig: async (hre) => {
+        return {
+            baseToken: hre.hyperdriveDeploy.deployments.byName("DAI").address,
+            vaultSharesToken:
+                hre.hyperdriveDeploy.deployments.byName("SDAI").address,
+            circuitBreakerDelta: parseEther("0.6"),
+            minimumShareReserves: parseEther("10"),
+            minimumTransactionAmount: parseEther("0.001"),
+            positionDuration: parseDuration("30 days"),
+            checkpointDuration: parseDuration("1 day"),
+            timeStretch: 0n,
+            governance: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
+            feeCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
+            sweepCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
+            ...(await getLinkerDetails(
+                hre,
+                hre.hyperdriveDeploy.deployments.byName("FACTORY").address,
+            )),
+            fees: {
+                curve: parseEther("0.01"),
+                flat: normalizeFee(parseEther("0.0005"), "30 days"),
+                governanceLP: parseEther("0.15"),
+                governanceZombie: parseEther("0.03"),
             },
-        },
-        vaultSharesToken: {
-            name: "SDAI",
-            deploy: async (hre) => {
-                let pc = await hre.viem.getPublicClient();
-                let baseToken =
-                    hre.hyperdriveDeploy.deployments.byName("DAI").address;
-                let vaultSharesToken =
-                    await hre.hyperdriveDeploy.deployContract(
-                        "SDAI",
-                        "MockERC4626",
-                        [
-                            baseToken,
-                            "Savings DAI",
-                            "SDAI",
-                            parseEther("0.13"),
-                            "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
-                            true,
-                            parseEther("10000"),
-                        ],
-                    );
-                // allow minting by the public
-                let tx = await vaultSharesToken.write.setPublicCapability([
-                    toFunctionSelector("mint(uint256)"),
-                    true,
-                ]);
-                await pc.waitForTransactionReceipt({ hash: tx });
-                tx = await vaultSharesToken.write.setPublicCapability([
-                    toFunctionSelector("mint(address,uint256)"),
-                    true,
-                ]);
-                await pc.waitForTransactionReceipt({ hash: tx });
-            },
-        },
-        circuitBreakerDelta: "0.6",
-        minimumShareReserves: "10",
-        minimumTransactionAmount: "0.001",
-        positionDuration: "30 days",
-        checkpointDuration: "1 day",
-        timeStretch: "0",
-        governance: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
-        feeCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
-        sweepCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
-        fees: {
-            curve: "0.01",
-            flat: "0.0005",
-            governanceLP: "0.15",
-            governanceZombie: "0.03",
-        },
+        };
     },
 };

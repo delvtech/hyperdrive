@@ -2,8 +2,8 @@
 
 [Hardhat tasks](https://hardhat.org/hardhat-runner/docs/guides/tasks) are used to deploy the Hyperdrive contracts for the networks specified in [hardhat.config.ts](../hardhat.config.ts).
 
-Deploys are resumable, and flags must be used to override the default behavior of preserving
-existing deployments.
+Deploys are resumable and ensured to not duplicate items on a network unless they are deleted from
+the [deployments.json](../deployments.json).
 
 ## TLDR
 
@@ -20,20 +20,34 @@ The complete list of tasks can be seen by running `npx hardhat --help` in your t
 | The bare `deploy` task is unrelated to our deployment process and SHOULD NOT BE RUN. It will be disabled/overridden in the future     |
 
 ```sh
-  deploy                Deploy contracts
-  deploy:all            deploys the HyperdriveFactory, all deployer coordinators, and all hyperdrive instances
-  deploy:coordinator    deploys the HyperdriveDeployerCoordinator with the provided name and chain
-  deploy:factory        deploys the HyperdriveFactory with the provided name and chain
-  deploy:instance       deploys the Hyperdrive instance with the provided name and chain
-  deploy:registry       deploys the hyperdrive factory to the configured chain
-  etherscan-verify      submit contract source code to etherscan
+  deploy:hyperdrive     deploys the HyperdriveFactory, all deployer coordinators, and all hyperdrive instances
+  deploy:verify         attempts to verify all deployed contracts for the specified network
+```
+
+The `deploy:hyperdrive` task should be run for all deployments. It handles resuming existing deploys
+and only deploys configurations that are not already present on the specified chain. It must be
+provided a `--network` flag.
+
+### Examples
+
+Deploy all sepolia contracts
+
+```sh
+npx hardhat deploy:hyperdrive --network sepolia --show-stack-traces
+```
+
+Verify all sepolia contracts
+
+```sh
+npx hardhat deploy:verify --network sepolia --show-stack-traces
 ```
 
 ## Configuration
 
-Per-network configuration must be imported to [hardhat.config.ts](../hardhat.config.ts). The values are then parsed by Zod to ensure adherance to the schema and transformed to more blockchain-friendly types. This layer of indirection enables the use of syntax sugar like using `"7 days"` in place of `604800`.
-
-Many tasks also accept cli parameters at runtime to change their behavior.
+Per-network configuration must be imported to [hardhat.config.ts](../hardhat.config.ts). The types
+used for the configuration objects are derived directly from the contract abi's. Breaking changes to
+the underlying contracts will cause compile-time errors for the configurations and deploys will not
+be able to be run until these are fixed.
 
 [Schemas](./deploy/lib/schemas.ts)
 

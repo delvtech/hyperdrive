@@ -20,11 +20,6 @@ import {
     SEPOLIA_STETH_30DAY,
     SEPOLIA_STETH_COORDINATOR,
 } from "./tasks/deploy/config/";
-import {
-    SAMPLE_COORDINATOR,
-    SAMPLE_FACTORY,
-    SAMPLE_INSTANCE,
-} from "./tasks/deploy/config/sample";
 
 const { env } = process;
 const config: HardhatUserConfig = {
@@ -60,31 +55,8 @@ const config: HardhatUserConfig = {
             ],
             hyperdriveDeploy: {
                 factories: [SEPOLIA_FACTORY],
-                coordinators: [
-                    SEPOLIA_ERC4626_COORDINATOR,
-                    SEPOLIA_STETH_COORDINATOR,
-                    SEPOLIA_RETH_COORDINATOR,
-                    SEPOLIA_EZETH_COORDINATOR,
-                ],
-                instances: [
-                    SEPOLIA_DAI_14DAY,
-                    SEPOLIA_DAI_30DAY,
-                    SEPOLIA_STETH_14DAY,
-                    SEPOLIA_STETH_30DAY,
-                    SEPOLIA_RETH_14DAY,
-                    SEPOLIA_RETH_30DAY,
-                    SEPOLIA_EZETH_14DAY,
-                    SEPOLIA_EZETH_30DAY,
-                ],
-            },
-        },
-        localhost: {
-            url: "http://127.0.0.1:8545/",
-            accounts: [env.PRIVATE_KEY!],
-            hyperdriveDeploy: {
-                factories: [SAMPLE_FACTORY],
-                coordinators: [SAMPLE_COORDINATOR],
-                instances: [SAMPLE_INSTANCE],
+                coordinators: [SEPOLIA_ERC4626_COORDINATOR],
+                instances: [SEPOLIA_DAI_14DAY, SEPOLIA_DAI_30DAY],
             },
         },
         sepolia: {

@@ -1,23 +1,21 @@
 // To extend one of Hardhat's types, you need to import the module where it has been defined, and redeclare it.
 import {
     ContractName,
-    deployContract,
+    GetContractReturnType,
 } from "@nomicfoundation/hardhat-viem/types";
 import { extendEnvironment, types } from "hardhat/config";
+import { ArtifactsMap } from "hardhat/types";
 import "hardhat/types/config";
 import "hardhat/types/runtime";
 import { ConfigurableTaskDefinition } from "hardhat/types/runtime";
-import { isHex } from "viem";
+import { Address, ContractConstructorArgs, isHex } from "viem";
 import { Deployments } from "./deployments";
+import { evaluateValueOrHREFn } from "./utils";
 
 /**
  * Options accepted by all Hyperdrive deploy tasks
  */
 export type HyperdriveDeployRuntimeOptions = {
-    // Skip saving the deployment artifacts and data
-    noSave?: boolean;
-    // Overwrite existing deployment artifacts (default=true)
-    overwrite?: boolean;
     // Options to pass to `viem.deployContract`
     viemConfig?: {
         gas?: bigint;
@@ -28,75 +26,67 @@ export type HyperdriveDeployRuntimeOptions = {
 };
 
 /**
- * Type representing the Hardhat Task params accepted by all Hyperdrive deploy tasks
+ * Represents the parameters used by all Hyperdrive deploy tasks
  */
-export type HyperdriveDeployBaseTaskParams = HyperdriveDeployRuntimeOptions & {
+export type HyperdriveDeployBaseTaskParams = HyperdriveDeployRuntimeOptions;
+
+/**
+ * Represents the parameters for a Hyperdrive deploy task requiring a name
+ */
+export type HyperdriveDeployNamedTaskParams = HyperdriveDeployRuntimeOptions & {
     // Name of the primary contract to deploy
     //  - supporting contract names will be derived from it if applicable
     name: string;
 };
 
 /**
- * Base Hyperdrive deploy task with all base params already added.
+ * Base Hyperdrive deploy task, left as a stub to easily add params across all deploy tasks.
  */
 export const HyperdriveDeployBaseTask = (task: ConfigurableTaskDefinition) =>
-    task
-        .addParam(
-            "name",
-            "name of the primary contract to deploy (supporting contract names will be derived from it)",
-            undefined,
-            types.string,
-        )
-        .addOptionalParam(
-            "noSave",
-            "skip saving deployment artifacts and data",
-            false,
-            types.boolean,
-        )
-        .addOptionalParam(
-            "overwrite",
-            "overwrite deployment artifacts if they exist",
-            false,
-            types.boolean,
-        );
+    task;
 
-export type HyperdriveDeployCoordinatorRuntimeOptions =
-    HyperdriveDeployRuntimeOptions & {
-        approveWithFactory?: boolean;
-    };
-
-export const HyperdriveDeployCoordinatorTask = (
-    task: ConfigurableTaskDefinition,
-) =>
-    HyperdriveDeployBaseTask(task).addOptionalParam(
-        "approveWithFactory",
-        "attempt approving the HyperdriveDeployerCoordinator with its factory (will fail if deployer address is not governance)",
-        false,
-        types.boolean,
+/**
+ * Named Hyperdrive deploy task with all base params already added.
+ */
+export const HyperdriveDeployNamedTask = (task: ConfigurableTaskDefinition) =>
+    HyperdriveDeployBaseTask(task).addParam(
+        "name",
+        "name of the primary contract to deploy (supporting contract names will be derived from it)",
+        undefined,
+        types.string,
     );
 
 declare module "hardhat/types/runtime" {
     interface HardhatRuntimeEnvironment {
         hyperdriveDeploy: {
             deployments: Deployments;
-            deployContract: <T extends string>(
+            ensureDeployed: <
+                T extends ArtifactsMap[keyof ArtifactsMap]["contractName"],
+            >(
                 name: string,
                 contract: T,
-                args: Parameters<typeof deployContract<T>>[1],
+                args: ContractConstructorArgs<ArtifactsMap[T]["abi"]>,
                 options?: HyperdriveDeployRuntimeOptions,
-            ) => ReturnType<typeof deployContract<T>>;
+            ) => Promise<GetContractReturnType<ArtifactsMap[T]["abi"]>>;
             deployFactory: (
                 name: string,
                 options?: HyperdriveDeployRuntimeOptions,
-            ) => ReturnType<typeof deployContract<"HyperdriveFactory">>;
-            deployCoordinator: <T extends string>(
-                name: string,
-                options?: HyperdriveDeployCoordinatorRuntimeOptions,
-            ) => ReturnType<typeof deployContract<T>>;
-            deployInstance: <T extends string>(
+            ) => Promise<
+                GetContractReturnType<ArtifactsMap["HyperdriveFactory"]["abi"]>
+            >;
+            deployCoordinator: <
+                T extends ArtifactsMap[keyof ArtifactsMap &
+                    `${string}HyperdriveDeployerCoordinator`]["contractName"],
+            >(
                 name: string,
                 options?: HyperdriveDeployRuntimeOptions,
-            ) => ReturnType<typeof deployContract<T>>;
+            ) => Promise<GetContractReturnType<ArtifactsMap[T]["abi"]>>;
+            deployInstance: <
+                T extends ArtifactsMap[keyof ArtifactsMap]["contractName"],
+            >(
+                name: string,
+                options?: HyperdriveDeployRuntimeOptions,
+            ) => Promise<GetContractReturnType<ArtifactsMap[T]["abi"]>>;
         };
     }
 }
@@ -108,22 +98,22 @@ export interface Link {
 }
 
 extendEnvironment((hre) => {
-    let hhDeployments = hre.deployments;
     let deployments = new Deployments(hre);
     let config = hre.config.networks[hre.network.name].hyperdriveDeploy;
-    let deployContract: typeof hre.hyperdriveDeploy.deployContract = async (
+    let ensureDeployed: typeof hre.hyperdriveDeploy.ensureDeployed = async (
         name,
         contract,
         args,
-        { noSave, overwrite, viemConfig } = {},
+        { viemConfig } = {},
     ) => {
-        let artifact = await hre.artifacts.readArtifact(contract);
-        if (!overwrite && !!deployments.byNameSafe(name)) {
+        if (!!deployments.byNameSafe(name)) {
             console.log(`skipping ${name}, found existing deployment`);
-            return await hre.viem.getContractAt(
-                contract as string,
+            return (await hre.viem.getContractAt(
+                contract as ContractName<typeof contract>,
                 deployments.byNameSafe(name)!.address,
-            );
+            )) as unknown as GetContractReturnType<
+                ArtifactsMap[typeof contract]["abi"]
+            >;
         }
         console.log(`deploying ${name}...`);
 
@@ -133,18 +123,15 @@ extendEnvironment((hre) => {
             { ...viemConfig, gas: 5_000_000n },
         );
 
-        let exArtifact = await hhDeployments.getExtendedArtifact(contract);
-        if (!noSave) {
-            console.log(` - saving ${name}...`);
-            deployments.add(name, contract, instance.address);
-            await hhDeployments.save(name, {
-                address: instance.address,
-                args,
-                ...exArtifact,
-            });
-        }
+        console.log(` - saving ${name}...`);
+        deployments.add(name, contract, instance.address);
 
-        return hre.viem.getContractAt(contract as string, instance.address);
+        return hre.viem.getContractAt(
+            contract as ContractName<typeof contract>,
+            instance.address,
+        ) as unknown as GetContractReturnType<
+            ArtifactsMap[typeof contract]["abi"]
+        >;
     };
 
     let deployFactory: typeof hre.hyperdriveDeploy.deployFactory = async (
@@ -159,299 +146,237 @@ extendEnvironment((hre) => {
         }
 
         // run prepare function if present
-        if (
-            (options?.overwrite || !deployments.byNameSafe(name)) &&
-            factoryConfig.prepare
-        ) {
+        if (!deployments.byNameSafe(name) && factoryConfig.prepare) {
             console.log(`running prepare for ${name} ...`);
-            await factoryConfig.prepare(hre);
+            await factoryConfig.prepare(hre, options ?? {});
         }
 
-        let forwarder = await deployContract(
-            name + "_FORWARDER",
-            "ERC20ForwarderFactory",
-            [],
-            options,
-        );
-        let linkerHash = await forwarder.read.ERC20LINK_HASH();
-        let args = [
-            {
-                ...(factoryConfig as Omit<
-                    typeof factoryConfig,
-                    "name" | "contract" | "setup" | "prepare"
-                >),
-                linkerFactory: forwarder.address,
-                linkerCodeHash: linkerHash,
-            },
-            name,
-        ];
-
-        let instance = await deployContract(
+        // deploy the factory
+        let instance = await ensureDeployed(
             name,
             "HyperdriveFactory",
-            args,
+            await evaluateValueOrHREFn(
+                factoryConfig.constructorArguments,
+                hre,
+                options,
+            ),
             options,
         );
 
-        let setupFunction = config?.factories?.find(
-            (f) => f.name === name,
-        )?.setup;
-        if (setupFunction) {
+        // run the setup function if present
+        if (factoryConfig.setup) {
             console.log(` - running setup function for ${name}`);
-            await setupFunction(hre);
+            await factoryConfig.setup(hre, options ?? {});
         }
         return instance;
     };
 
-    let deployCoordinator: typeof hre.hyperdriveDeploy.deployCoordinator =
-        async (name, options) => {
-            // Retrieve configuration for the coordinator by finding one with the same name/network
-            // in the configuration file
-            let coordinatorConfig = config?.coordinators?.find(
-                (f) => f.name === name,
+    let deployCoordinator = async (
+        name: string,
+        options?: HyperdriveDeployRuntimeOptions,
+    ) => {
+        // Retrieve configuration for the coordinator by finding one with the same name/network
+        // in the configuration file
+        let coordinatorConfig = config?.coordinators?.find(
+            (f) => f.name === name,
+        );
+        if (!coordinatorConfig) {
+            throw new Error(
+                `no coordinator deploy configuration found for ${name}`,
             );
-            if (!coordinatorConfig) {
-                throw new Error(
-                    `no factory deploy configuration found for ${name}`,
-                );
-            }
+        }
 
-            // run prepare function if present
-            if (
-                (options?.overwrite || !deployments.byNameSafe(name)) &&
-                coordinatorConfig.prepare
-            ) {
-                console.log(`running prepare for ${name} ...`);
-                await coordinatorConfig.prepare(hre);
-            }
+        // run prepare function if present
+        if (!deployments.byNameSafe(name) && coordinatorConfig.prepare) {
+            console.log(`running prepare for ${name} ...`);
+            await coordinatorConfig.prepare(hre, options ?? {});
+        }
 
-            // Parse out the prefix from the contract so it can be used to name the various
-            // components
-            let contract = coordinatorConfig.contract;
-            if (!contract.endsWith("HyperdriveDeployerCoordinator")) {
-                throw new Error(
-                    `unable to parse coordinator contract ${contract}`,
-                );
-            }
-            let prefix = contract.replace("HyperdriveDeployerCoordinator", "");
+        // Deploy the LPMath contract if needed
+        let { address: lpMathAddress } = await ensureDeployed(
+            `LPMath`,
+            "LPMath",
+            [],
+            options,
+        );
+        let lpMathArtifact = await hre.artifacts.readArtifact("LPMath");
+        let libraries: Link[] = [
+            {
+                address: lpMathAddress,
+                sourceName: lpMathArtifact.sourceName,
+                libraryName: "LPMath",
+            },
+        ];
 
-            // Lookup the LPMath contract and ensure it's deployed.
-            // - Generate the link object from the artifact for use later
-            let lpMath = coordinatorConfig.lpMath;
-            let lpMathDeployment = deployments.byNameSafe(lpMath);
-            let lpMathAddress;
-            if (!lpMathDeployment) {
-                let { address } = await deployContract(
-                    `LPMath`,
-                    "LPMath",
-                    [],
-                    options,
-                );
-                lpMathDeployment = deployments.byNameSafe(`LPMath`);
-                lpMathAddress = address;
-            } else {
-                lpMathAddress = lpMathDeployment.address;
-            }
-            let lpMathArtifact = await hre.artifacts.readArtifact(
-                lpMathDeployment?.contract!,
+        // Parse out the prefix to name various components
+        let { prefix } = coordinatorConfig;
+
+        // Resolve the token (deploying it if defined)
+        let token = coordinatorConfig.token
+            ? await evaluateValueOrHREFn(coordinatorConfig.token, hre, options)
+            : undefined;
+
+        // Deploy the HyperdriveCoreDeployer
+        let coreDeployerContractName = `${prefix}HyperdriveCoreDeployer`;
+        let extraArgs = await evaluateValueOrHREFn(
+            coordinatorConfig.extraConstructorArgs,
+            hre,
+            options,
+        );
+        let coreDeployer = await ensureDeployed(
+            `${name}_${coreDeployerContractName}`,
+            coreDeployerContractName as ArtifactsMap[keyof ArtifactsMap]["contractName"],
+            extraArgs,
+            options,
+        );
+
+        // Obtain the associated HyperdriveFactory instance
+        let factoryAddress = await evaluateValueOrHREFn(
+            coordinatorConfig.factoryAddress,
+            hre,
+            options,
+        );
+        let factory = await hre.viem.getContractAt(
+            "HyperdriveFactory",
+            factoryAddress,
+        );
+
+        // Deploy all of the target deployers and push them to the constructor arguments array
+        // for the coordinator
+        let deployer = (await hre.getNamedAccounts())[
+            "deployer"
+        ]! as `0x${string}`;
+        let wc = await hre.viem.getWalletClient(deployer);
+        let pc = await hre.viem.getPublicClient();
+        let targets: Address[] = [];
+        let targetCount = await evaluateValueOrHREFn(
+            coordinatorConfig.targetCount,
+            hre,
+            options,
+        );
+        for (let i = 0; i < targetCount; i++) {
+            let targetContractName = `${prefix}Target${i}Deployer`;
+
+            // retrieve from deployments and continue if it already exists
+            let targetDeployment = deployments.byNameSafe(
+                `${name}_${targetContractName}`,
             );
-            let libraries: Link[] = [
-                {
-                    address: lpMathAddress,
-                    sourceName: lpMathArtifact.sourceName,
-                    libraryName: "LPMath",
-                },
-            ];
-
-            //  Parse the token field and deploy it if it is defined and not a string
-            let token = coordinatorConfig.token;
-            let tokenAddress;
-            if (token && typeof token !== "string") {
-                if (token.deploy) {
-                    await token.deploy(hre);
-                }
-                let tokenDeployment = deployments.byName(token.name);
-                tokenAddress = tokenDeployment.address;
-            } else if (token) {
-                tokenAddress = token as `0x${string}`;
+            if (!!targetDeployment) {
+                targets.push(targetDeployment.address);
+                continue;
             }
 
-            // Deploy the HyperdriveCoreDeployer
-            let coreDeployerContractName = `${prefix}HyperdriveCoreDeployer`;
-            let coreDeployer = await deployContract(
-                `${name}_${coreDeployerContractName}`,
-                coreDeployerContractName,
-                coordinatorConfig.coreConstructorArguments
-                    ? await coordinatorConfig.coreConstructorArguments(hre)
-                    : [],
-                options,
-            );
-
-            // Obtain the associated HyperdriveFactory instance
-            let factoryDeployment = deployments.byName(
-                coordinatorConfig.factoryName,
-            );
-            let factory = await hre.viem.getContractAt(
-                factoryDeployment.contract,
-                factoryDeployment.address,
-            );
-
-            // Begin assembling the coordinator constructor args
-            let coordinatorArgs = [factory.address, coreDeployer.address];
-
-            // Deploy all of the target deployers and push them to the constructor arguments array
-            // for the coordinator
-            let deployer = (await hre.getNamedAccounts())[
-                "deployer"
-            ]! as `0x${string}`;
-            let wc = await hre.viem.getWalletClient(deployer);
-            let pc = await hre.viem.getPublicClient();
-            for (let i = 0; i < coordinatorConfig.targetCount; i++) {
-                let targetContractName = `${prefix}Target${i}Deployer`;
-
-                // retrieve from deployments and continue if it already exists
-                let targetDeployment = deployments.byNameSafe(
-                    `${name}_${targetContractName}`,
-                );
-                if (!options?.overwrite && !!targetDeployment) {
-                    coordinatorArgs.push(targetDeployment.address);
-                    continue;
-                }
-
-                // link the LPMath library with the target (won't happen unless needed)
-                let targetArtifact =
-                    await hre.artifacts.readArtifact(targetContractName);
-                let targetBytecode = targetArtifact.bytecode;
-                for (const { sourceName, libraryName, address } of libraries) {
-                    const linkReferences =
-                        targetArtifact.linkReferences[sourceName][libraryName];
-                    for (const { start, length } of linkReferences) {
-                        targetBytecode =
-                            targetBytecode.substring(0, 2 + start * 2) +
-                            address.substring(2) +
-                            targetBytecode.substring(2 + (start + length) * 2);
-                    }
-                }
-                targetBytecode = isHex(targetBytecode)
-                    ? targetBytecode
-                    : `0x${targetBytecode}`;
-
-                // deploy the contract using the bytecode
-                console.log(`deploying ${name}_${targetContractName}`);
-
-                let tx = await wc.deployContract({
-                    abi: targetArtifact.abi,
-                    bytecode: targetBytecode as `0x${string}`,
-                    args: coordinatorConfig.targetConstructorArguments
-                        ? await coordinatorConfig.targetConstructorArguments(
-                              hre,
-                          )
-                        : [],
-                    gas: 5_000_000n,
-                });
-                let receipt = await pc.waitForTransactionReceipt({ hash: tx });
-                let address = receipt.contractAddress!;
-
-                // handle options
-                if (!options?.noSave) {
-                    console.log(` - saving ${name}_${targetContractName}...`);
-                    let exArtifact =
-                        await hhDeployments.getExtendedArtifact(
-                            targetContractName,
-                        );
-                    deployments.add(
-                        `${name}_${targetContractName}`,
-                        targetContractName,
-                        address,
-                    );
-                    await hhDeployments.save(`${name}_${targetContractName}`, {
-                        address: address,
-                        args: coordinatorConfig.targetConstructorArguments
-                            ? await coordinatorConfig.targetConstructorArguments(
-                                  hre,
-                              )
-                            : [],
-                        libraries: {
-                            LPMath: deployments.byName("LPMath").address,
-                        },
-                        ...exArtifact,
-                    });
-                }
-
-                coordinatorArgs.push(address);
-            }
-
-            // Deploy the coordinator
-            if (tokenAddress) coordinatorArgs.push(tokenAddress);
-            let coordinator = await deployContract(
-                name,
-                contract,
-                coordinatorArgs,
-                options,
-            );
-            if (coordinatorConfig.setup) {
-                console.log(` - running setup function for ${name}`);
-                await coordinatorConfig.setup(hre);
-            }
-
-            // Optionally register the coordinator with the factory if enabled and having the
-            // correct permissions
-            if (options?.approveWithFactory) {
-                let factoryGovernanceAddress = await factory.read.governance();
-                let deployer = (await hre.getNamedAccounts())["deployer"];
-                if (deployer === factoryGovernanceAddress) {
-                    console.log(`adding ${name}_${contract} to factory`);
-                    await factory.write.addDeployerCoordinator([
-                        coordinator.address,
-                    ]);
-                } else {
-                    console.log(
-                        `unable to add ${name}_${contract} to factory, deployer is not governance`,
-                    );
+            // link the LPMath library with the target (won't happen unless needed)
+            let targetArtifact =
+                await hre.artifacts.readArtifact(targetContractName);
+            let targetBytecode = targetArtifact.bytecode;
+            for (const { sourceName, libraryName, address } of libraries) {
+                const linkReferences =
+                    targetArtifact.linkReferences[sourceName][libraryName];
+                for (const { start, length } of linkReferences) {
+                    targetBytecode =
+                        targetBytecode.substring(0, 2 + start * 2) +
+                        address.substring(2) +
+                        targetBytecode.substring(2 + (start + length) * 2);
                 }
             }
+            targetBytecode = isHex(targetBytecode)
+                ? targetBytecode
+                : `0x${targetBytecode}`;
 
-            return coordinator;
-        };
+            // deploy the contract using the bytecode
+            console.log(`deploying ${name}_${targetContractName}`);
 
-    let deployInstance: typeof hre.hyperdriveDeploy.deployInstance = async (
-        name,
-        options,
+            let tx = await wc.deployContract({
+                abi: targetArtifact.abi,
+                bytecode: targetBytecode as `0x${string}`,
+                args: extraArgs,
+                gas: 5_000_000n,
+            });
+            let receipt = await pc.waitForTransactionReceipt({ hash: tx });
+            let address = receipt.contractAddress!;
+            targets.push(address);
+
+            // handle options
+            console.log(` - saving ${name}_${targetContractName}...`);
+            deployments.add(
+                `${name}_${targetContractName}`,
+                targetContractName,
+                address,
+            );
+        }
+
+        // Deploy the coordinator
+        let args = [
+            factoryAddress,
+            coreDeployer.address,
+            ...targets,
+            ...(token ? [token] : []),
+        ];
+        let coordinator = await ensureDeployed(
+            name,
+            `${prefix}HyperdriveDeployerCoordinator`,
+            args as any,
+            options,
+        );
+        if (coordinatorConfig.setup) {
+            console.log(` - running setup function for ${name}`);
+            await coordinatorConfig.setup(hre, options ?? {});
+        }
+
+        // Optionally register the coordinator with the factory if deployer has correct permissions.
+        let deployerCoordinatorManager =
+            await factory.read.deployerCoordinatorManager();
+        if (
+            deployer === deployerCoordinatorManager &&
+            !(await factory.read.isDeployerCoordinator([coordinator.address]))
+        ) {
+            console.log(
+                `adding ${name}_${prefix}HyperdriveDeployerCoordinator to factory`,
+            );
+            let tx = await factory.write.addDeployerCoordinator([
+                coordinator.address,
+            ]);
+            await pc.waitForTransactionReceipt({ hash: tx });
+        }
+
+        return coordinator as unknown as GetContractReturnType<
+            ArtifactsMap[`${typeof prefix}HyperdriveDeployerCoordinator`]["abi"]
+        >;
+    };
+
+    let deployInstance = async (
+        name: string,
+        options: HyperdriveDeployRuntimeOptions,
     ) => {
         // Retrieve configuration for the coordinator by finding one with the same name/network
         // in the configuration file
         let instanceConfig = config?.instances?.find((f) => f.name === name);
         if (!instanceConfig) {
             throw new Error(
-                `no factory deploy configuration found for ${name}`,
+                `no instance deploy configuration found for ${name}`,
             );
         }
 
         // run prepare function if present
-        if (
-            (options?.overwrite || !deployments.byNameSafe(name)) &&
-            instanceConfig.prepare
-        ) {
+        if (!deployments.byNameSafe(name) && instanceConfig.prepare) {
             console.log(`running prepare for ${name} ...`);
-            await instanceConfig.prepare(hre);
+            await instanceConfig.prepare(hre, options ?? {});
         }
 
-        // Parse out the prefix from the contract so it can be used to name the various
+        // Parse out the prefix so it can be used to name the various
         // components
-        let contract = instanceConfig.contract;
-        if (!contract.endsWith("Hyperdrive")) {
-            throw new Error(`unable to parse coordinator contract ${contract}`);
-        }
-        let prefix = contract.replace("Hyperdrive", "");
+        let { prefix } = instanceConfig;
 
         // Retrieve the HyperdriveDeployerCoordinator from the configuration and ensure it is
         // approved with its factory before continuing
-        let coordinatorDeployment = deployments.byName(
-            instanceConfig.coordinatorName,
-        );
         let coordinator = await hre.viem.getContractAt(
             `HyperdriveDeployerCoordinator`,
-            coordinatorDeployment.address,
+            await evaluateValueOrHREFn(
+                instanceConfig.coordinatorAddress,
+                hre,
+                options,
+            ),
         );
         let factory = await hre.viem.getContractAt(
             "HyperdriveFactory",
@@ -465,241 +390,109 @@ extendEnvironment((hre) => {
                 `skipping ${name}, factory does not have coordinator for instance with name '${name}`,
             );
 
-        // run the instance prepare function if available
-        if (instanceConfig.prepare) {
-            console.log(` - running setup function for ${name}`);
-            await instanceConfig.prepare(hre);
-        }
-
-        // Parse the baseToken field and deploy it if it is defined and not a string
-        let baseToken = instanceConfig.poolDeployConfig.baseToken;
-        let baseTokenAddress;
-        if (baseToken && typeof baseToken !== "string") {
-            // run the token deploy function if it exists
-            if (baseToken.deploy) await baseToken.deploy(hre);
-            let tokenDeployment = deployments.byName(baseToken.name);
-            baseTokenAddress = tokenDeployment.address;
-        } else if (baseToken) {
-            baseTokenAddress = baseToken as `0x${string}`;
-        }
-
-        // Parse the vaultSharesToken field and deploy it if it is defined and not a string
-        let vaultSharesToken = instanceConfig.poolDeployConfig.vaultSharesToken;
-        let vaultSharesTokenAddress;
-        if (vaultSharesToken && typeof vaultSharesToken !== "string") {
-            // run the token deploy function if it exists
-            if (vaultSharesToken.deploy) await vaultSharesToken.deploy(hre);
-            let tokenDeployment = deployments.byName(vaultSharesToken.name);
-            vaultSharesTokenAddress = tokenDeployment.address;
-        } else if (vaultSharesToken) {
-            vaultSharesTokenAddress = vaultSharesToken as `0x${string}`;
-        }
-
-        // Add the linkerFactory and codeHash to the poolDeployConfig.
-        let poolDeployConfig = {
-            ...instanceConfig.poolDeployConfig,
-            baseToken: baseTokenAddress!,
-            vaultSharesToken: vaultSharesTokenAddress!,
-            linkerFactory: await factory.read.linkerFactory(),
-            linkerCodeHash: await factory.read.linkerCodeHash(),
-        };
-
-        // Obtain the number of targets from the coordinator
-        let targetCount = await coordinator.read.getNumberOfTargets();
-
         // Obtain the factory deployment and artifacts to use for simulation and calling the
         // `deployTarget` function.
         let pc = await hre.viem.getPublicClient();
         let targets: `0x${string}`[] = [];
-        let initialVaultSharePrice;
-        for (let i = 0; i < targetCount; i++) {
+        let { deploymentId, extraData, fixedAPR, timestretchAPR, salt } =
+            instanceConfig;
+        let poolDeployConfig = await evaluateValueOrHREFn(
+            instanceConfig.poolDeployConfig,
+            hre,
+            options ?? {},
+        );
+        let coordinatorAddress = await evaluateValueOrHREFn(
+            instanceConfig.coordinatorAddress,
+            hre,
+            options,
+        );
+        let targetCount = await coordinator.read.getNumberOfTargets();
+        for (let i = 0; i < Number(targetCount); i++) {
             let contractName = `${prefix}Target${i}`;
-            console.log(`deploying ${name}_${contractName}...`);
-            // Simulate and deploy the target
-            //  - Skip if deployment already exists and overwrite=false
-            //  - Simulate the deployment of the target so we can obtain the address.
-            if (
-                !!deployments.byNameSafe(`${name}_${contractName}`) &&
-                !options?.overwrite
-            ) {
-                console.log(
-                    `skipping ${name}_${contractName}, found existing deployment`,
-                );
-                // Address must be added to the target list
-                targets.push(
-                    deployments.byName(`${name}_${contractName}`).address,
-                );
-                // Edge case if all targets are deployed but the instance isn't, we need to obtain
-                // the initial share price
-                initialVaultSharePrice = (
-                    await coordinator.read.deployments([
-                        instanceConfig.deploymentId,
-                    ])
-                ).initialSharePrice;
+            // skip if the target is already deployed
+            let existingDeployment = deployments.byNameSafe(
+                `${name}_${contractName}`,
+            );
+            if (!!existingDeployment) {
+                // record the address for the hyperdrive instance constructor args
+                targets.push(existingDeployment.address);
                 continue;
             }
+
+            // deploy the target
+            console.log(`deploying ${name}_${contractName}...`);
+            let args = [
+                deploymentId,
+                coordinatorAddress,
+                poolDeployConfig,
+                extraData,
+                fixedAPR,
+                timestretchAPR,
+                BigInt(i).valueOf(),
+                salt,
+            ];
             let { result: address } = await factory.simulate.deployTarget(
-                [
-                    instanceConfig.deploymentId,
-                    coordinator.address,
-                    poolDeployConfig as any,
-                    instanceConfig.options.extraData,
-                    instanceConfig.fixedAPR,
-                    instanceConfig.timestretchAPR,
-                    BigInt(i),
-                    instanceConfig.salt,
-                ],
+                args as any,
                 { gas: 5_000_000n, ...options?.viemConfig },
             );
-            let tx = await factory.write.deployTarget(
-                [
-                    instanceConfig.deploymentId,
-                    coordinator.address,
-                    poolDeployConfig as any,
-                    instanceConfig.options.extraData,
-                    instanceConfig.fixedAPR,
-                    instanceConfig.timestretchAPR,
-                    BigInt(i),
-                    instanceConfig.salt,
-                ],
-                { gas: 5_000_000n },
-            );
+            let tx = await factory.write.deployTarget(args as any, {
+                gas: 5_000_000n,
+            });
             await pc.waitForTransactionReceipt({ hash: tx });
 
-            // Read the InitialVaultSharePrice from the coordinator's deployment struct since it is
-            // it is the only additional field needed to convert PoolDeployConfig into the
-            // instance's constructor arguments.
-            initialVaultSharePrice = (
-                await coordinator.read.deployments([
-                    instanceConfig.deploymentId,
-                ])
-            ).initialSharePrice;
+            // record the address for the hyperdrive instance constructor args
+            targets.push(address);
 
             // Save
-            if (!options?.noSave) {
-                console.log(` - saving ${name}_${contractName}`);
-                deployments.add(
-                    `${name}_${contractName}`,
-                    contractName,
-                    address,
-                );
-                let exArtifact =
-                    await hhDeployments.getExtendedArtifact(contractName);
-                await hhDeployments.save(`${name}_${contractName}`, {
-                    address: address,
-                    args: [{ ...poolDeployConfig, initialVaultSharePrice }],
-                    libraries: { LPMath: deployments.byName("LPMath").address },
-                    ...exArtifact,
-                });
-            }
-
-            // Read the deployment data for the target and add to the list
-            targets.push(address);
+            console.log(` - saving ${name}_${contractName}`);
+            deployments.add(`${name}_${contractName}`, contractName, address);
         }
 
-        // Skip if deployment already exists and overwrite=false
-        if (!!deployments.byNameSafe(name) && !options?.overwrite) {
-            console.log(
-                `skipping ${name}_${contract}, found existing deployment`,
-            );
+        // skip deploying the instance if it already exists
+        if (!!deployments.byNameSafe(name)) {
             return hre.viem.getContractAt(
-                contract,
+                `${prefix}Hyperdrive` as string,
                 deployments.byName(name).address,
             );
         }
 
+        // prepare arguments
+        let args = [
+            deploymentId,
+            coordinatorAddress,
+            poolDeployConfig,
+            extraData,
+            instanceConfig.contribution,
+            fixedAPR,
+            timestretchAPR,
+            await evaluateValueOrHREFn(instanceConfig.options, hre, options),
+            salt,
+        ];
+
         // Simulate and deploy
         console.log(`deploying ${name}_${prefix}Hyperdrive`);
         let { result: address } = await factory.simulate.deployAndInitialize(
-            [
-                instanceConfig.deploymentId,
-                coordinator.address,
-                poolDeployConfig,
-                instanceConfig.options.extraData,
-                instanceConfig.contribution,
-                instanceConfig.fixedAPR,
-                instanceConfig.timestretchAPR,
-                {
-                    ...instanceConfig.options,
-                    destination:
-                        instanceConfig.options.destination ??
-                        ((await hre.getNamedAccounts())[
-                            "deployer"
-                        ] as `0x${string}`),
-                },
-                instanceConfig.salt,
-            ],
+            args as any,
             {
                 gas: 5_000_000n,
             },
         );
-        let tx = await factory.write.deployAndInitialize(
-            [
-                instanceConfig.deploymentId,
-                coordinator.address,
-                poolDeployConfig,
-                instanceConfig.options.extraData,
-                instanceConfig.contribution,
-                instanceConfig.fixedAPR,
-                instanceConfig.timestretchAPR,
-                {
-                    ...instanceConfig.options,
-                    destination:
-                        instanceConfig.options.destination ??
-                        ((await hre.getNamedAccounts())[
-                            "deployer"
-                        ] as `0x${string}`),
-                },
-                instanceConfig.salt,
-            ],
-            { gas: 5_000_000n },
-        );
+        let tx = await factory.write.deployAndInitialize(args as any, {
+            gas: 5_000_000n,
+        });
         await pc.waitForTransactionReceipt({ hash: tx });
 
-        let hyperdrive0 = await hre.viem.getContractAt(
-            "HyperdriveTarget0",
-            address,
-        );
-
-        // Form the Hyperdrive instance args
-        let hyperdriveConstructorArgs = [
-            {
-                ...(await hyperdrive0.read.getPoolConfig()),
-                governance: factory.address,
-            },
-            ...targets,
-        ];
-        let coordinatorConfig = config?.coordinators!.find(
-            (c) => (c.name = instanceConfig.coordinatorName),
-        );
-        if (
-            coordinatorConfig?.coreConstructorArguments &&
-            coordinatorConfig.targetConstructorArguments
-        ) {
-            hyperdriveConstructorArgs.push(
-                ...(await coordinatorConfig.coreConstructorArguments(hre)),
-            );
-        }
-
         // Save
-        if (!options?.noSave) {
-            console.log(` - Saving ${name}_${prefix}Hyperdrive`);
-            let exArtifact = await hhDeployments.getExtendedArtifact(contract);
-            deployments.add(name, contract, address);
-            await hhDeployments.save(name, {
-                address: address,
-                args: hyperdriveConstructorArgs,
-                ...exArtifact,
-            });
-        }
+        console.log(` - Saving ${name}_${prefix}Hyperdrive`);
+        deployments.add(name, `${prefix}Hyperdrive`, address);
 
-        return hre.viem.getContractAt(contract, address);
+        return hre.viem.getContractAt(`${prefix}Hyperdrive` as string, address);
     };
     hre.hyperdriveDeploy = {
         deployments,
-        deployContract,
+        ensureDeployed,
         deployFactory,
-        deployCoordinator,
-        deployInstance,
+        deployCoordinator: deployCoordinator as any,
+        deployInstance: deployInstance as any,
     };
 });

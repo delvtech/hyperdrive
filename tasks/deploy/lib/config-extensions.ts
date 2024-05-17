@@ -7,28 +7,24 @@ import {
     HttpNetworkUserConfig,
 } from "hardhat/types/config";
 import "hardhat/types/runtime";
-import {
-    HyperdriveDeployConfig,
-    HyperdriveDeployConfigInput,
-    zHyperdriveDeployConfig,
-} from "./schemas";
+import { HyperdriveConfig } from "./types";
 
 declare module "hardhat/types/config" {
     // We extend the user's HardhatNetworkUserConfig with our factory and instance configuration inputs.
     // These will be parsed, validated, and written to the global configuration.
     export interface HttpNetworkUserConfig {
-        hyperdriveDeploy?: HyperdriveDeployConfigInput;
+        hyperdriveDeploy?: HyperdriveConfig;
     }
     export interface HardhatNetworkUserConfig {
-        hyperdriveDeploy?: HyperdriveDeployConfigInput;
+        hyperdriveDeploy?: HyperdriveConfig;
     }
 
     // Extend the global config with output types.
     export interface HttpNetworkConfig {
-        hyperdriveDeploy?: HyperdriveDeployConfig;
+        hyperdriveDeploy?: HyperdriveConfig;
     }
     export interface HardhatNetworkConfig {
-        hyperdriveDeploy?: HyperdriveDeployConfig;
+        hyperdriveDeploy?: HyperdriveConfig;
     }
 }
 
@@ -39,7 +35,7 @@ extendConfig(
             userConfig.networks as Record<string, HttpNetworkUserConfig>,
         ).forEach(([k, v]) => {
             config.networks[k].hyperdriveDeploy = v
-                ? zHyperdriveDeployConfig.parse(v.hyperdriveDeploy)
+                ? v.hyperdriveDeploy
                 : undefined;
         });
     },

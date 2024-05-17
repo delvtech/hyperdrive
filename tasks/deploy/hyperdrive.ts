@@ -1,22 +1,27 @@
 import { task } from "hardhat/config";
 import { DeployFactoryParams } from "./factory";
 
+import { DeployCoordinatorParams } from "./coordinator";
+import { DeployInstanceParams } from "./instance";
 import {
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
 } from "./lib";
-export type DeployAllParams = HyperdriveDeployBaseTaskParams & {};
+export type DeployHyperdriveParams = HyperdriveDeployBaseTaskParams & {};
 
 HyperdriveDeployBaseTask(
     task(
-        "deploy:all",
+        "deploy:hyperdrive",
         "deploys the HyperdriveFactory, all deployer coordinators, and all hyperdrive instances",
     ),
 ).setAction(
-    async ({ name, ...rest }: DeployAllParams, { run, config, network }) => {
+    async ({ ...rest }: DeployHyperdriveParams, { run, config, network }) => {
+        // compile contracts
+        await run("compile", { force: true, quiet: true });
+
         // deploy the registry
         await run("deploy:registry", {
-            name: `${name}_REGISTRY`,
+            name: `${network.name.toUpperCase()}_REGISTRY`,
             ...rest,
         });
 
@@ -33,18 +38,18 @@ HyperdriveDeployBaseTask(
             } as DeployFactoryParams);
         }
 
-        for (let f of hyperdriveDeploy.coordinators ?? []) {
+        for (let c of hyperdriveDeploy.coordinators ?? []) {
             await run("deploy:coordinator", {
-                name: f.name,
+                name: c.name,
                 ...rest,
-            } as DeployFactoryParams);
+            } as DeployCoordinatorParams);
         }
 
-        for (let f of hyperdriveDeploy.instances ?? []) {
+        for (let i of hyperdriveDeploy.instances ?? []) {
             await run("deploy:instance", {
-                name: f.name,
+                name: i.name,
                 ...rest,
-            } as DeployFactoryParams);
+            } as DeployInstanceParams);
         }
     },
 );

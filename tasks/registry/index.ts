@@ -1,10 +1,10 @@
 import { task, types } from "hardhat/config";
 import {
     HyperdriveDeployBaseTask,
-    HyperdriveDeployBaseTaskParams,
+    HyperdriveDeployNamedTaskParams,
 } from "../deploy";
 
-export type AddRegistryParams = HyperdriveDeployBaseTaskParams & {
+export type AddRegistryParams = HyperdriveDeployNamedTaskParams & {
     value: number;
 };
 
@@ -22,7 +22,7 @@ HyperdriveDeployBaseTask(
     )
     .setAction(
         async (
-            { name, value, ...rest }: Required<AddRegistryParams>,
+            { name, value }: Required<AddRegistryParams>,
             { viem, hyperdriveDeploy: { deployments }, network },
         ) => {
             let deployment = deployments.byName(name);
