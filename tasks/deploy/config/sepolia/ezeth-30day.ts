@@ -20,7 +20,6 @@ export const SEPOLIA_EZETH_30DAY: HyperdriveInstanceConfig<"EzETH"> = {
     contribution: CONTRIBUTION,
     fixedAPR: parseEther("0.05"),
     timestretchAPR: parseEther("0.05"),
-    targetCount: 4,
     options: {
         destination: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
         asBase: false,
@@ -39,7 +38,7 @@ export const SEPOLIA_EZETH_30DAY: HyperdriveInstanceConfig<"EzETH"> = {
         tx = await vaultSharesToken.write.approve([
             hre.hyperdriveDeploy.deployments.byName("EZETH_COORDINATOR")
                 .address,
-            CONTRIBUTION + parseEther("10"),
+            CONTRIBUTION + parseEther("0.01"),
         ]);
         await pc.waitForTransactionReceipt({ hash: tx });
     },

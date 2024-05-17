@@ -28,6 +28,20 @@ The `deploy:hyperdrive` task should be run for all deployments. It handles resum
 and only deploys configurations that are not already present on the specified chain. It must be
 provided a `--network` flag.
 
+### Examples
+
+Deploy all sepolia contracts
+
+```sh
+npx hardhat deploy:hyperdrive --network sepolia --show-stack-traces
+```
+
+Verify all sepolia contracts
+
+```sh
+npx hardhat deploy:verify --network sepolia --show-stack-traces
+```
+
 ## Configuration
 
 Per-network configuration must be imported to [hardhat.config.ts](../hardhat.config.ts). The types

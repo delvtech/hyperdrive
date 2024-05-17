@@ -22,7 +22,7 @@ HyperdriveDeployBaseTask(
     )
     .setAction(
         async (
-            { name, value, ...rest }: Required<AddRegistryParams>,
+            { name, value }: Required<AddRegistryParams>,
             { viem, hyperdriveDeploy: { deployments }, network },
         ) => {
             let deployment = deployments.byName(name);

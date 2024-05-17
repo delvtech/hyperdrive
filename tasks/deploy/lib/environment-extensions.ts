@@ -258,7 +258,12 @@ extendEnvironment((hre) => {
         let wc = await hre.viem.getWalletClient(deployer);
         let pc = await hre.viem.getPublicClient();
         let targets: Address[] = [];
-        for (let i = 0; i < coordinatorConfig.targetCount; i++) {
+        let targetCount = await evaluateValueOrHREFn(
+            coordinatorConfig.targetCount,
+            hre,
+            options,
+        );
+        for (let i = 0; i < targetCount; i++) {
             let targetContractName = `${prefix}Target${i}Deployer`;
 
             // retrieve from deployments and continue if it already exists
@@ -400,14 +405,8 @@ extendEnvironment((hre) => {
         // `deployTarget` function.
         let pc = await hre.viem.getPublicClient();
         let targets: `0x${string}`[] = [];
-        let {
-            targetCount,
-            deploymentId,
-            extraData,
-            fixedAPR,
-            timestretchAPR,
-            salt,
-        } = instanceConfig;
+        let { deploymentId, extraData, fixedAPR, timestretchAPR, salt } =
+            instanceConfig;
         let poolDeployConfig = await evaluateValueOrHREFn(
             instanceConfig.poolDeployConfig,
             hre,
@@ -418,7 +417,8 @@ extendEnvironment((hre) => {
             hre,
             options,
         );
-        for (let i = 0; i < targetCount; i++) {
+        let targetCount = await coordinator.read.getNumberOfTargets();
+        for (let i = 0; i < Number(targetCount); i++) {
             let contractName = `${prefix}Target${i}`;
             // skip if the target is already deployed
             let existingDeployment = deployments.byNameSafe(

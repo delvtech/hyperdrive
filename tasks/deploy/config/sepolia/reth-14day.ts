@@ -20,7 +20,6 @@ export const SEPOLIA_RETH_14DAY: HyperdriveInstanceConfig<"RETH"> = {
     contribution: CONTRIBUTION,
     fixedAPR: parseEther("0.05"),
     timestretchAPR: parseEther("0.05"),
-    targetCount: 4,
     options: {
         destination: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
         asBase: false,

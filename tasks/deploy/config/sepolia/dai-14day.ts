@@ -20,7 +20,6 @@ export const SEPOLIA_DAI_14DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     contribution: CONTRIBUTION,
     fixedAPR: parseEther("0.10"),
     timestretchAPR: parseEther("0.10"),
-    targetCount: 4,
     options: {
         extraData: "0x",
         asBase: true,

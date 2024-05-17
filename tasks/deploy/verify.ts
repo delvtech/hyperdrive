@@ -51,7 +51,7 @@ task(
             });
         }
 
-        // loop through all instances
+        // loop through all coordinators
         for (let c of hyperdriveConfig.coordinators ?? []) {
             await sleep(1000);
 
@@ -73,7 +73,7 @@ task(
                     : [],
             });
 
-            // verify the targets
+            // verify the target deployers
             let targets = [];
             for (let i = 0; i < c.targetCount; i++) {
                 await sleep(1000);
@@ -160,7 +160,9 @@ task(
 
             // verify the targets
             let targets = [];
-            for (let j = 0; j < i.targetCount; j++) {
+            let targetCount =
+                await coordinatorContract.read.getNumberOfTargets();
+            for (let j = 0; j < targetCount; j++) {
                 await sleep(1000);
                 let targetName = `${i.name}_${i.prefix}Target${j}`;
                 let targetAddress =
