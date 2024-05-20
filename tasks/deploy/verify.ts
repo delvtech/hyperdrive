@@ -29,89 +29,89 @@ task(
         }
 
         // loop through all factories
-        for (let f of hyperdriveConfig.factories ?? []) {
-            // resolve the constructor args
-            let constructorArguments = await evaluateValueOrHREFn(
-                f.constructorArguments,
-                hre,
-            );
-
-            // verify the linker factory
-            console.log(`verifying ${f.name} linker factory...`);
-            await run("verify:verify", {
-                address: constructorArguments[0].linkerFactory,
-                constructorArguments: [],
-            });
-
-            // verify the factory
-            console.log(`verifying ${f.name}...`);
-            await run("verify:verify", {
-                address: hyperdriveDeploy.deployments.byName(f.name).address,
-                constructorArguments,
-            });
-        }
+        // for (let f of hyperdriveConfig.factories ?? []) {
+        //     // resolve the constructor args
+        //     let constructorArguments = await evaluateValueOrHREFn(
+        //         f.constructorArguments,
+        //         hre,
+        //     );
+        //
+        //     // verify the linker factory
+        //     console.log(`verifying ${f.name} linker factory...`);
+        //     await run("verify:verify", {
+        //         address: constructorArguments[0].linkerFactory,
+        //         constructorArguments: [],
+        //     });
+        //
+        //     // verify the factory
+        //     console.log(`verifying ${f.name}...`);
+        //     await run("verify:verify", {
+        //         address: hyperdriveDeploy.deployments.byName(f.name).address,
+        //         constructorArguments,
+        //     });
+        // }
 
         // loop through all coordinators
-        for (let c of hyperdriveConfig.coordinators ?? []) {
-            await sleep(1000);
-
-            // verify the core deployer
-            let coreDeployer = `${c.name}_${c.prefix}HyperdriveCoreDeployer`;
-            let coreAddress =
-                hyperdriveDeploy.deployments.byName(coreDeployer).address;
-            console.log(
-                `verifying ${c.name} ${c.prefix}HyperdriveCoreDeployer...`,
-            );
-            await run("verify:verify", {
-                address: coreAddress,
-                constructorArguments: c.extraConstructorArgs
-                    ? await evaluateValueOrHREFn(
-                          c.extraConstructorArgs,
-                          hre,
-                          {},
-                      )
-                    : [],
-            });
-
-            // verify the target deployers
-            let targets = [];
-            for (let i = 0; i < c.targetCount; i++) {
-                await sleep(1000);
-                let target = `${c.name}_${c.prefix}Target${i}Deployer`;
-                let address =
-                    hyperdriveDeploy.deployments.byName(target).address;
-                targets.push(address);
-                console.log(`verifying ${target}...`);
-                await run("verify:verify", {
-                    address,
-                    constructorArguments: c.extraConstructorArgs
-                        ? await evaluateValueOrHREFn(
-                              c.extraConstructorArgs,
-                              hre,
-                              {},
-                          )
-                        : [],
-                    libraries: {
-                        LPMath: hyperdriveDeploy.deployments.byName("LPMath")
-                            .address,
-                    },
-                });
-            }
-
-            // verify the coordinator
-            console.log(`verifying ${c.name}...`);
-            await run("verify:verify", {
-                address: hyperdriveDeploy.deployments.byName(c.name).address,
-                constructorArguments: [
-                    await evaluateValueOrHREFn(c.factoryAddress, hre, {}),
-                    coreAddress,
-                    ...targets,
-                    ...(c.token
-                        ? [await evaluateValueOrHREFn(c.token, hre, {})]
-                        : []),
-                ],
-            });
-        }
+        // for (let c of hyperdriveConfig.coordinators ?? []) {
+        //     await sleep(1000);
+        //
+        //     // verify the core deployer
+        //     let coreDeployer = `${c.name}_${c.prefix}HyperdriveCoreDeployer`;
+        //     let coreAddress =
+        //         hyperdriveDeploy.deployments.byName(coreDeployer).address;
+        //     console.log(
+        //         `verifying ${c.name} ${c.prefix}HyperdriveCoreDeployer...`,
+        //     );
+        //     await run("verify:verify", {
+        //         address: coreAddress,
+        //         constructorArguments: c.extraConstructorArgs
+        //             ? await evaluateValueOrHREFn(
+        //                   c.extraConstructorArgs,
+        //                   hre,
+        //                   {},
+        //               )
+        //             : [],
+        //     });
+        //
+        //     // verify the target deployers
+        //     let targets = [];
+        //     for (let i = 0; i < c.targetCount; i++) {
+        //         await sleep(1000);
+        //         let target = `${c.name}_${c.prefix}Target${i}Deployer`;
+        //         let address =
+        //             hyperdriveDeploy.deployments.byName(target).address;
+        //         targets.push(address);
+        //         console.log(`verifying ${target}...`);
+        //         await run("verify:verify", {
+        //             address,
+        //             constructorArguments: c.extraConstructorArgs
+        //                 ? await evaluateValueOrHREFn(
+        //                       c.extraConstructorArgs,
+        //                       hre,
+        //                       {},
+        //                   )
+        //                 : [],
+        //             libraries: {
+        //                 LPMath: hyperdriveDeploy.deployments.byName("LPMath")
+        //                     .address,
+        //             },
+        //         });
+        //     }
+        //
+        //     // verify the coordinator
+        //     console.log(`verifying ${c.name}...`);
+        //     await run("verify:verify", {
+        //         address: hyperdriveDeploy.deployments.byName(c.name).address,
+        //         constructorArguments: [
+        //             await evaluateValueOrHREFn(c.factoryAddress, hre, {}),
+        //             coreAddress,
+        //             ...targets,
+        //             ...(c.token
+        //                 ? [await evaluateValueOrHREFn(c.token, hre, {})]
+        //                 : []),
+        //         ],
+        //     });
+        // }
 
         // loop through all instances
         for (let i of hyperdriveConfig.instances ?? []) {
