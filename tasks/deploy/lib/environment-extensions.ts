@@ -226,7 +226,7 @@ extendEnvironment((hre) => {
         let coreDeployer = await ensureDeployed(
             `${name}_${coreDeployerContractName}`,
             coreDeployerContractName as ArtifactsMap[keyof ArtifactsMap]["contractName"],
-            extraArgs,
+            extraArgs ?? [],
             options,
         );
 
@@ -290,7 +290,7 @@ extendEnvironment((hre) => {
             let tx = await wc.deployContract({
                 abi: targetArtifact.abi,
                 bytecode: targetBytecode as `0x${string}`,
-                args: extraArgs,
+                args: extraArgs ?? [],
                 gas: 5_000_000n,
             });
             let receipt = await pc.waitForTransactionReceipt({ hash: tx });
@@ -433,19 +433,25 @@ extendEnvironment((hre) => {
             ];
             let { result: address } = await factory.simulate.deployTarget(
                 args as any,
-                { gas: 5_000_000n, ...options?.viemConfig },
+                {
+                    gas: 5_000_000n,
+                    ...options.viemConfig,
+                },
             );
             let tx = await factory.write.deployTarget(args as any, {
                 gas: 5_000_000n,
+                ...(options.viemConfig as any),
             });
-            await pc.waitForTransactionReceipt({ hash: tx });
+            await pc.waitForTransactionReceipt({
+                hash: tx,
+            });
 
             // record the address for the hyperdrive instance constructor args
             targets.push(address);
 
             // Save
             console.log(` - saving ${name}_${contractName}`);
-            deployments.add(`${name}_${contractName}`, contractName, address);
+            deployments.add(`${name}_${contractName}`, contractName, address!);
         }
 
         // skip deploying the instance if it already exists

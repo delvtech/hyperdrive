@@ -67,7 +67,7 @@ deployer coordinators that correspond to Hyperdrive instances. These deployer
 coordinators and the deployer contracts used by the coordinators can be found in
 [`contracts/src/deployers/`](./contracts/src/deployers/).
 
-# Gettings Started
+# Getting Started
 
 ## Pre-requisites
 
@@ -87,18 +87,45 @@ provider URLs.
 
 ## Build
 
-To build the smart contracts, run `make build`.
+To build the smart contracts, run: 
+
+```sh
+make build
+```
 
 ## Test
 
-To test the smart contracts, run `make test`.
+To test the smart contracts, run:
+
+```sh
+make test
+```
+
 
 ## Lint
 
 We have several linters. Solhint is a Solidity linter that checks for best
 practices and style, prettier is a Solidity formatter that checks for formatting
-and style, and cSpell is a spell checker. To run all three, run `make lint`.
-If you want to automatically format the code, run `make prettier`.
+and style, and cSpell is a spell checker. To run all three, run:
+
+```sh
+make lint
+```
+
+If you want to automatically format the code, run:
+
+```sh
+make prettier
+```
+
+
+## Deploy
+
+To deploy the smart contracts, run:
+
+```sh
+NETWORK=<hardhat|localhost|sepolia|mainnet> make deploy
+```
 
 # Disclaimer
 

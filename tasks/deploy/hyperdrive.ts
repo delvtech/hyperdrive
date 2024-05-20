@@ -17,6 +17,7 @@ HyperdriveDeployBaseTask(
 ).setAction(
     async ({ ...rest }: DeployHyperdriveParams, { run, config, network }) => {
         // compile contracts
+        console.log("compiling contracts");
         await run("compile", { force: true, quiet: true });
 
         // deploy the registry
@@ -50,6 +51,9 @@ HyperdriveDeployBaseTask(
                 name: i.name,
                 ...rest,
             } as DeployInstanceParams);
+        }
+        if (!network.live) {
+            await run("deploy:verify");
         }
     },
 );

@@ -154,7 +154,7 @@ task(
                 hre,
                 {},
             );
-            if (extras.length) {
+            if (extras) {
                 targetArgs = [poolConfig, ...extras];
             }
 
@@ -167,6 +167,7 @@ task(
                 let targetName = `${i.name}_${i.prefix}Target${j}`;
                 let targetAddress =
                     hre.hyperdriveDeploy.deployments.byName(targetName).address;
+                console.log(targetAddress);
                 targets.push(targetAddress);
                 console.log(`verifying ${targetName}...`);
                 await run("verify:verify", {
@@ -181,8 +182,20 @@ task(
 
             // verify the instance
             console.log(`verifying ${i.name}...`);
-            let args = [poolConfig, ...targets];
-            if (extras.length) {
+            let ihyperdrive = await hre.viem.getContractAt(
+                "IHyperdrive",
+                instance.address,
+            );
+            let args = [
+                poolConfig,
+                await ihyperdrive.read.target0(),
+                await ihyperdrive.read.target1(),
+                await ihyperdrive.read.target2(),
+                await ihyperdrive.read.target3(),
+            ];
+            console.log("args", ...args.slice(1));
+            console.log("targets", ...targets);
+            if (extras) {
                 args.push(...extras);
             }
             let contract = `contracts/src/instances/${i.prefix.toLowerCase()}/${i.prefix}Hyperdrive.sol:${i.prefix}Hyperdrive`;
