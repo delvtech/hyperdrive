@@ -1,7 +1,7 @@
 import { parseEther } from "viem";
 import { HyperdriveFactoryConfig, parseDuration } from "../../lib";
 
-export const SEPOLIA_FACTORY: HyperdriveFactoryConfig = {
+export const ${NETWORK_NAME}_FACTORY: HyperdriveFactoryConfig = {
     name: "FACTORY",
     prepare: async (hre, options) => {
         await hre.hyperdriveDeploy.ensureDeployed(

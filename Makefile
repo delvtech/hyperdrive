@@ -87,3 +87,6 @@ prettier:
 
 deploy:
 	./scripts/deploy.sh
+
+generate-deploy:
+	./scripts/generate-deploy-config.sh
