@@ -4,11 +4,12 @@ set -e
 
 config_dir=tasks/deploy/config
 
+# Store names of generated configurations for integration instructions at end of script.
 factories=()
 coordinators=()
 instances=()
 
-# Non-destructively updates the `index.ts` file for the network and global config
+# Non-destructively updates the `index.ts` file for the network and global config.
 function update_indexes() {
 	local network=$1
 	echo " - updating $config_dir/$network/index.ts"
@@ -26,7 +27,7 @@ function update_indexes() {
 	fi
 }
 
-# Generates factory from `factory.env` if present, see `echo` statements for context
+# Generates factory from `factory.env` if present, see `echo` statements for context.
 factory_input=factory.env
 factory_template=$config_dir/factory.ts.tmpl
 factory_output_filename=factory.ts
@@ -35,6 +36,7 @@ if [ -f $factory_input ]; then
 	echo " - reading configuration from ${factory_input}"
 	export $(grep -v '^#' $factory_input | xargs)
 
+	# Skip generation if output file already exists.
 	factory_output_dir="$config_dir/$NETWORK_NAME"
 	factory_output_file="$factory_output_dir/$factory_output_filename"
 	if [ -f $factory_output_file ]; then
@@ -49,7 +51,7 @@ if [ -f $factory_input ]; then
 	echo "done! \n"
 fi
 
-# Generates coordinator from `coordinator.env` if present, see `echo` statements for context
+# Generates coordinator from `coordinator.env` if present, see `echo` statements for context.
 coordinator_input=coordinator.env
 coordinator_template=$config_dir/coordinator.ts.tmpl
 if [ -f $coordinator_input ]; then
@@ -57,6 +59,7 @@ if [ -f $coordinator_input ]; then
 	echo " - reading configuration from ${coordinator_input}"
 	export $(grep -v '^#' $coordinator_input | xargs)
 
+	# Skip generation if output file already exists.
 	coordinator_output_filename="$NAME.ts"
 	coordinator_output_dir="$config_dir/$NETWORK_NAME"
 	coordinator_output_file="$coordinator_output_dir/$coordinator_output_filename"
@@ -72,7 +75,7 @@ if [ -f $coordinator_input ]; then
 	echo "done! \n"
 fi
 
-# Generates instance from `instance.env` if present, see `echo` statements for context
+# Generates instance from `instance.env` if present, see `echo` statements for context.
 instance_input=instance.env
 instance_template=$config_dir/instance.ts.tmpl
 if [ -f $instance_input ]; then
@@ -80,6 +83,7 @@ if [ -f $instance_input ]; then
 	echo " - reading configuration from ${instance_input}"
 	export $(grep -v '^#' $instance_input | xargs)
 
+	# Skip generation if output file already exists.
 	instance_output_filename="$NAME.ts"
 	instance_output_dir="$config_dir/$NETWORK_NAME"
 	instance_output_file="$instance_output_dir/$instance_output_filename"
@@ -96,7 +100,7 @@ if [ -f $instance_input ]; then
 fi
 
 # Outputs instructions for integrating the generated configurations with
-# existing deploy configurations in `hardhat.config.ts`
+# existing deploy configurations in `hardhat.config.ts`.
 names=(${factories[@]} ${coordinators[@]} ${instances[@]})
 IFS=,\n
 if [ ! ${#names[@]} -eq 0 ]; then
