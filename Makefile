@@ -82,3 +82,8 @@ lint-rust:
 
 prettier:
 	npx prettier --write .
+
+### Deploy ###
+
+deploy:
+	./scripts/deploy.sh

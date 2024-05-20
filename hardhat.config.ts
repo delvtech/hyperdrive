@@ -55,8 +55,22 @@ const config: HardhatUserConfig = {
             ],
             hyperdriveDeploy: {
                 factories: [SEPOLIA_FACTORY],
-                coordinators: [SEPOLIA_ERC4626_COORDINATOR],
-                instances: [SEPOLIA_DAI_14DAY, SEPOLIA_DAI_30DAY],
+                coordinators: [
+                    SEPOLIA_ERC4626_COORDINATOR,
+                    SEPOLIA_STETH_COORDINATOR,
+                    SEPOLIA_RETH_COORDINATOR,
+                    SEPOLIA_EZETH_COORDINATOR,
+                ],
+                instances: [
+                    SEPOLIA_DAI_14DAY,
+                    SEPOLIA_DAI_30DAY,
+                    SEPOLIA_STETH_14DAY,
+                    SEPOLIA_STETH_30DAY,
+                    SEPOLIA_RETH_14DAY,
+                    SEPOLIA_RETH_30DAY,
+                    SEPOLIA_EZETH_14DAY,
+                    SEPOLIA_EZETH_30DAY,
+                ],
             },
         },
         sepolia: {
