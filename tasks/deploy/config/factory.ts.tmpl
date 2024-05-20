@@ -1,0 +1,66 @@
+import { parseEther } from "viem";
+import { HyperdriveFactoryConfig, parseDuration } from "../../lib";
+
+export const ${NETWORK_NAME}_FACTORY: HyperdriveFactoryConfig = {
+    name: "FACTORY",
+    prepare: async (hre, options) => {
+        await hre.hyperdriveDeploy.ensureDeployed(
+            "FACTORY_FORWARDER",
+            "ERC20ForwarderFactory",
+            [],
+            options,
+        );
+    },
+    constructorArguments: async (hre) => [
+        {
+            governance: "$GOV_ADDRESS",
+            deployerCoordinatorManager: (await hre.getNamedAccounts())['deployer'],
+            hyperdriveGovernance: "$GOV_ADDRESS",
+            defaultPausers: ["$GOV_ADDRESS"],
+            feeCollector: "$GOV_ADDRESS",
+            sweepCollector: "$GOV_ADDRESS",
+            checkpointDurationResolution: parseDuration(
+                "$CHECKPOINT_DURATION_RESOLUTION_HOURS hours",
+            ),
+            minCheckpointDuration: parseDuration(
+                "$MIN_CHECKPOINT_DURATION_HOURS hours",
+            ),
+            maxCheckpointDuration: parseDuration(
+                "$MAX_CHECKPOINT_DURATION_HOURS hours",
+            ),
+            minPositionDuration: parseDuration(
+                "$MIN_POSITION_DURATION_DAYS days",
+            ),
+            maxPositionDuration: parseDuration("$MAX_POSITION_DURATION_DAYS days"),
+            minFixedAPR: parseEther("$MIN_FIXED_APR"),
+            maxFixedAPR: parseEther("$MAX_FIXED_APR"),
+            minTimeStretchAPR: parseEther("$MIN_TIMESTRETCH_APR"),
+            maxTimeStretchAPR: parseEther("$MAX_FIXED_APR"),
+            minCircuitBreakerDelta: parseEther("$MIN_CIRCUIT_BREAKER_DELTA"),
+            maxCircuitBreakerDelta: parseEther("$MAX_CIRCUIT_BREAKER_DELTA"),
+            minFees: {
+                curve: parseEther("$MIN_CURVE_FEE"),
+                flat: parseEther("$MIN_FLAT_FEE"),
+                governanceLP: parseEther("$MIN_GOV_LP_FEE"),
+                governanceZombie: parseEther("$MIN_GOV_ZOMBIE_FEE"),
+            },
+            maxFees: {
+                curve: parseEther("$MAX_CURVE_FEE"),
+                flat: parseEther("$MAX_FLAT_FEE"),
+                governanceLP: parseEther("$MAX_GOV_LP_FEE"),
+                governanceZombie: parseEther("$MAX_GOV_ZOMBIE_FEE"),
+            },
+            linkerFactory:
+                hre.hyperdriveDeploy.deployments.byName("FACTORY_FORWARDER")
+                    .address,
+            linkerCodeHash: await (
+                await hre.viem.getContractAt(
+                    "ERC20ForwarderFactory",
+                    hre.hyperdriveDeploy.deployments.byName("FACTORY_FORWARDER")
+                        .address,
+                )
+            ).read.ERC20LINK_HASH(),
+        },
+        "FACTORY",
+    ],
+};

@@ -1,0 +1,11 @@
+import { HyperdriveCoordinatorConfig } from "../../lib";
+
+export const ${NAME}_COORDINATOR: HyperdriveCoordinatorConfig<"$PREFIX"> = {
+    name: "${NAME}_COORDINATOR".toUpperCase(),
+    prefix: "$PREFIX",
+    factoryAddress: async (hre) =>
+        hre.hyperdriveDeploy.deployments.byName("FACTORY").address,
+    targetCount: 4,
+    extraConstructorArgs: ["$EXTRA_CONSTRUCTOR_ARG"],
+    token: "$PREFIX" === "ERC4626" ? undefined : "$VAULT_SHARES_TOKEN_ADDRESS",
+};

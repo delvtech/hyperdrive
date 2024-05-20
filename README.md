@@ -118,7 +118,6 @@ If you want to automatically format the code, run:
 make prettier
 ```
 
-
 ## Deploy
 
 To deploy the smart contracts, run:
@@ -126,6 +125,28 @@ To deploy the smart contracts, run:
 ```sh
 NETWORK=<hardhat|localhost|sepolia|mainnet> make deploy
 ```
+
+### Generate Deploy Configurations
+
+Factory, coordinator, and instance deploy configurations can be generated via templates.
+
+To get started, create a new variable file from the sample by running:
+
+```sh
+cp \
+  tasks/deploy/config/<factory|coordinator|instance>.sample.env \
+  <factory|coordinator|instance>.env
+```
+
+Next, set values for each of the fields in the file `<factory|coordinator|instance>.env`. Sample values are provided as examples, but should be overwritten.
+
+Finally, to generate the configuration files run:
+
+```sh
+make generate-deploy
+```
+
+The above command will output next steps to integrate the new configuration files with existing configuration.
 
 # Disclaimer
 

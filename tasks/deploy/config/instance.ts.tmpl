@@ -1,0 +1,56 @@
+import { parseEther } from "viem";
+import {
+    HyperdriveInstanceConfig,
+    getLinkerDetails,
+    normalizeFee,
+    parseDuration,
+    toBytes32,
+} from "../../lib";
+
+const CONTRIBUTION = parseEther("$CONTRIBUTION");
+
+export const $NAME: HyperdriveInstanceConfig<"$PREFIX"> = {
+    name: "$NAME",
+    prefix: "$PREFIX",
+    coordinatorAddress: async (hre) =>
+        hre.hyperdriveDeploy.deployments.byName("$COORDINATOR_NAME").address,
+    deploymentId: toBytes32("$NAME"),
+    salt: toBytes32("$SALT"),
+    extraData: "0x",
+    contribution: CONTRIBUTION,
+    fixedAPR: parseEther("$FIXED_APR"),
+    timestretchAPR: parseEther("$TIMESTRETCH_APR"),
+    options: async (hre) => ({
+      destination: (await hre.getNamedAccounts())['deployer'] as any,
+      asBase: $AS_BASE,
+      extraData: "0x",
+    }),
+    poolDeployConfig: async (hre) => {
+        let factoryAddress = hre.hyperdriveDeploy.deployments.byName("FACTORY").address;
+        let factoryContract = await hre.viem.getContractAt("HyperdriveFactory", factoryAddress);
+        let govAddress = await factoryContract.read.governance();
+        return {
+            baseToken: "$BASE_TOKEN",
+            vaultSharesToken: "$VAULT_SHARES_TOKEN",
+            circuitBreakerDelta: parseEther("$CIRCUIT_BREAKER_DELTA"),
+            minimumShareReserves: parseEther("$MIN_SHARE_RESERVES"),
+            minimumTransactionAmount: parseEther("$MIN_TX_AMOUNT"),
+            positionDuration: parseDuration("$POSITION_DURATION_DAYS days"),
+            checkpointDuration: parseDuration("$CHECKPOINT_DURATION_DAYS days"),
+            timeStretch: 0n,
+            governance: govAddress,
+            feeCollector: govAddress,
+            sweepCollector: govAddress,
+            ...(await getLinkerDetails(
+                hre,
+                factoryAddress, 
+            )),
+            fees: {
+                curve: parseEther("$CURVE_FEE"),
+                flat: normalizeFee(parseEther("FLAT_FEE"), "$POSITION_DURATION_DAYS days"),
+                governanceLP: parseEther("GOV_LP_FEE"),
+                governanceZombie: parseEther("GOV_ZOMBIE_FEE"),
+            },
+        };
+    },
+};
