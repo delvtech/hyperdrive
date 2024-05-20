@@ -124,7 +124,7 @@ export type HyperdriveCoordinatorConfig<
     factoryAddress: ValueOrHREFn<Address>;
     targetCount: number;
     token?: ValueOrHREFn<Address>;
-    extraConstructorArgs: ValueOrHREFn<CoreDeployerConstructorArgs<T>>;
+    extraConstructorArgs?: ValueOrHREFn<CoreDeployerConstructorArgs<T>>;
     prepare?: HREFn;
     setup?: HREFn;
 };

@@ -51,5 +51,8 @@ HyperdriveDeployBaseTask(
                 ...rest,
             } as DeployInstanceParams);
         }
+        if (network.name != "hardhat" && network.name != "localhost") {
+            await run("deploy:verify");
+        }
     },
 );
