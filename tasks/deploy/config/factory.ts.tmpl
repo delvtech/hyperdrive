@@ -20,7 +20,7 @@ export const ${NETWORK_NAME}_FACTORY: HyperdriveFactoryConfig = {
             feeCollector: "$GOV_ADDRESS",
             sweepCollector: "$GOV_ADDRESS",
             checkpointDurationResolution: parseDuration(
-                "$CHECKPOINT_DURATION_RES_HOURS hours",
+                "$CHECKPOINT_DURATION_RESOLUTION_HOURS hours",
             ),
             minCheckpointDuration: parseDuration(
                 "$MIN_CHECKPOINT_DURATION_HOURS hours",
@@ -41,14 +41,14 @@ export const ${NETWORK_NAME}_FACTORY: HyperdriveFactoryConfig = {
             minFees: {
                 curve: parseEther("$MIN_CURVE_FEE"),
                 flat: parseEther("$MIN_FLAT_FEE"),
-                governanceLP: parseEther("$MIN_GOVLP_FEE"),
-                governanceZombie: parseEther("$MIN_GOVZOMBIE_FEE"),
+                governanceLP: parseEther("$MIN_GOV_LP_FEE"),
+                governanceZombie: parseEther("$MIN_GOV_ZOMBIE_FEE"),
             },
             maxFees: {
                 curve: parseEther("$MAX_CURVE_FEE"),
                 flat: parseEther("$MAX_FLAT_FEE"),
-                governanceLP: parseEther("$MAX_GOVLP_FEE"),
-                governanceZombie: parseEther("$MAX_GOVZOMBIE_FEE"),
+                governanceLP: parseEther("$MAX_GOV_LP_FEE"),
+                governanceZombie: parseEther("$MAX_GOV_ZOMBIE_FEE"),
             },
             linkerFactory:
                 hre.hyperdriveDeploy.deployments.byName("FACTORY_FORWARDER")

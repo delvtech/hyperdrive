@@ -48,8 +48,8 @@ export const $NAME: HyperdriveInstanceConfig<"$PREFIX"> = {
             fees: {
                 curve: parseEther("$CURVE_FEE"),
                 flat: normalizeFee(parseEther("FLAT_FEE"), "$POSITION_DURATION_DAYS days"),
-                governanceLP: parseEther("GOVLP_FEE"),
-                governanceZombie: parseEther("GOVZOMBIE_FEE"),
+                governanceLP: parseEther("GOV_LP_FEE"),
+                governanceZombie: parseEther("GOV_ZOMBIE_FEE"),
             },
         };
     },
