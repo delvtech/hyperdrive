@@ -13,6 +13,7 @@ import {
     SEPOLIA_EZETH_30DAY,
     SEPOLIA_EZETH_COORDINATOR,
     SEPOLIA_FACTORY,
+    SEPOLIA_MORPHO_DAI_14DAY,
     SEPOLIA_MORPHO_DAI_30DAY,
     SEPOLIA_RETH_14DAY,
     SEPOLIA_RETH_30DAY,
@@ -21,7 +22,6 @@ import {
     SEPOLIA_STETH_30DAY,
     SEPOLIA_STETH_COORDINATOR,
 } from "./tasks/deploy/config/";
-import { SEPOLIA_MORPHO_DAI_14DAY } from "./tasks/deploy/config/sepolia/morpho-dai-14day";
 
 const { env } = process;
 const config: HardhatUserConfig = {
