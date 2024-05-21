@@ -10,6 +10,10 @@ import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDepl
 import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
+import { Id, IMorpho, Market, MarketParams, Position } from "../../interfaces/IMorpho.sol";
+import { MorphoSharesMath } from "../../libraries/MorphoSharesMath.sol";
+import { MorphoParamsLib } from "../../libraries/MorphoParamsLib.sol";
+
 /// @author DELV
 /// @title MorphoHyperdriveDeployerCoordinator
 /// @notice The deployer coordinator for the MorphoHyperdrive
@@ -19,6 +23,11 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 ///                    particular legal or regulatory significance.
 contract MorphoHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     using SafeERC20 for ERC20;
+    using MorphoSharesMath for uint256;
+    using MorphoParamsLib for MarketParams;
+
+    IMorpho private immutable _morpho;
+    MarketParams private _marketParams;
 
     /// @notice The deployer coordinator's name.
     string public constant override name =
@@ -39,7 +48,9 @@ contract MorphoHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _target1Deployer,
         address _target2Deployer,
         address _target3Deployer,
-        address _target4Deployer
+        address _target4Deployer,
+        IMorpho __morpho,
+        MarketParams memory __marketParams
     )
         HyperdriveDeployerCoordinator(
             _factory,
@@ -50,7 +61,10 @@ contract MorphoHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _target3Deployer,
             _target4Deployer
         )
-    {}
+    {
+        _morpho = __morpho;
+        _marketParams = __marketParams;
+    }
 
     /// @dev Prepares the coordinator for initialization by drawing funds from
     ///      the LP, if necessary.
@@ -126,10 +140,14 @@ contract MorphoHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     function _getInitialVaultSharePrice(
         IHyperdrive.PoolDeployConfig memory, // unused _deployConfig
         bytes memory // unused _extraData
-    ) internal pure override returns (uint256) {
-        // ****************************************************************
-        // FIXME:  Implement this for new instances.
-        return ONE;
-        // ****************************************************************
+    ) internal view override returns (uint256) {
+        Id marketId = _marketParams.id();
+        Market memory market = _morpho.market(marketId);
+
+        return
+            ONE.toAssetsDown(
+                market.totalSupplyAssets,
+                market.totalSupplyShares
+            );
     }
 }

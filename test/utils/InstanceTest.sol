@@ -14,6 +14,7 @@ import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
+import "forge-std/console2.sol";
 
 /// @author DELV
 /// @title InstanceTest
@@ -90,13 +91,16 @@ abstract contract InstanceTest is HyperdriveTest {
         address[] memory accounts = new address[](2);
         accounts[0] = alice;
         accounts[1] = bob;
-        for (uint256 i = 0; i < config.whaleAccounts.length; i++) {
-            fundAccounts(
-                address(hyperdrive),
-                config.vaultSharesToken,
-                config.whaleAccounts[i],
-                accounts
-            );
+
+        if (address(config.vaultSharesToken) != address(0)) {
+            for (uint256 i = 0; i < config.whaleAccounts.length; i++) {
+                fundAccounts(
+                    address(hyperdrive),
+                    config.vaultSharesToken,
+                    config.whaleAccounts[i],
+                    accounts
+                );
+            }
         }
 
         // Deploy the Hyperdrive Factory contract.
@@ -111,12 +115,21 @@ abstract contract InstanceTest is HyperdriveTest {
             DEFAULT_DEPLOYMENT_ID, // Deployment Id
             DEFAULT_DEPLOYMENT_SALT, // Deployment Salt
             contribution, // Contribution
-            false // asBase
+            true // asBase
         );
+
+        // console2.log("here4");
 
         config.vaultSharesToken.approve(address(hyperdrive), 100_000e18);
         vm.startPrank(bob);
         config.vaultSharesToken.approve(address(hyperdrive), 100_000e18);
+
+        // console2.log(contribution);
+        // // console2.log(convertToShares(contribution));
+        console2.log(convertToShares(1e18));
+        // // console2.log(convertToBase(5000e18));
+        // // console2.log(hyperdrive.getPoolConfig().minimumShareReserves);
+        // console2.log(hyperdrive.getPoolConfig().initialVaultSharePrice);
 
         // Ensure that Alice received the correct amount of LP tokens. She should
         // receive LP shares totaling the amount of shares that she contributed
@@ -162,7 +175,7 @@ abstract contract InstanceTest is HyperdriveTest {
         }
 
         // Alice gives approval to the deployer coordinator to fund the market.
-        config.vaultSharesToken.approve(deployerCoordinator, 100_000e18);
+        config.baseToken.approve(deployerCoordinator, 100_000e18);
 
         // We expect the deployAndInitialize to fail with an
         // UnsupportedToken error if depositing with base are not supported.
