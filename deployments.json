@@ -364,6 +364,56 @@
             "contract": "EzETHHyperdrive",
             "address": "0x496c57E03B63911ED37cd1ffc95d49b60AA22107",
             "timestamp": "2024-05-14T21:42:16.404Z"
+        },
+        "MORPHO_DAI_14_DAY_ERC4626Target0": {
+            "contract": "ERC4626Target0",
+            "address": "0x3B0bDc75620206d1103a11db4376fc23274280eD",
+            "timestamp": "2024-05-21T19:16:50.813Z"
+        },
+        "MORPHO_DAI_14_DAY_ERC4626Target1": {
+            "contract": "ERC4626Target1",
+            "address": "0x33baE9e5bac9dD76EBF539312F7B247527EF6502",
+            "timestamp": "2024-05-21T19:17:04.080Z"
+        },
+        "MORPHO_DAI_14_DAY_ERC4626Target2": {
+            "contract": "ERC4626Target2",
+            "address": "0xeA3b48d2F6855eb22574b8a13eae6b42e7349995",
+            "timestamp": "2024-05-21T19:17:38.327Z"
+        },
+        "MORPHO_DAI_14_DAY_ERC4626Target3": {
+            "contract": "ERC4626Target3",
+            "address": "0x85eFa2EA89B77a68f2a75820E57C0E3F8F2c3710",
+            "timestamp": "2024-05-21T19:18:04.062Z"
+        },
+        "MORPHO_DAI_14_DAY": {
+            "contract": "ERC4626Hyperdrive",
+            "address": "0x4C377aBA27F87a53cBb4028B28E95B5ffbecd68c",
+            "timestamp": "2024-05-21T19:18:13.136Z"
+        },
+        "MORPHO_DAI_30_DAY_ERC4626Target0": {
+            "contract": "ERC4626Target0",
+            "address": "0x851006c831C9D6879766cA4266B754baB31693A8",
+            "timestamp": "2024-05-21T19:19:14.731Z"
+        },
+        "MORPHO_DAI_30_DAY_ERC4626Target1": {
+            "contract": "ERC4626Target1",
+            "address": "0xE1C1dEB5bF2113135F2427084DFDb3FDd15E93a8",
+            "timestamp": "2024-05-21T19:19:28.354Z"
+        },
+        "MORPHO_DAI_30_DAY_ERC4626Target2": {
+            "contract": "ERC4626Target2",
+            "address": "0xB7CEE78715a5aD33BB35162eE35a5C55F9cb2d4c",
+            "timestamp": "2024-05-21T19:19:53.731Z"
+        },
+        "MORPHO_DAI_30_DAY_ERC4626Target3": {
+            "contract": "ERC4626Target3",
+            "address": "0xA9FeA91bF5521693303aCC4a6609FCA0b4a1B8a8",
+            "timestamp": "2024-05-21T19:20:02.724Z"
+        },
+        "MORPHO_DAI_30_DAY": {
+            "contract": "ERC4626Hyperdrive",
+            "address": "0xb4E605E079B4D9ed50B7202Ca0d008EE473A8de4",
+            "timestamp": "2024-05-21T19:20:16.433Z"
         }
     }
 }

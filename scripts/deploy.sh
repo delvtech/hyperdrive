@@ -7,7 +7,7 @@ fi
 
 git remote update
 tag=$(git describe --tags --abbrev=0)
-diff=$(git diff ${tag} --raw)
+diff=$(git diff ${tag} --raw -- contracts lib)
 
 if [[ "${NETWORK}" != "localhost" && "${NETWORK}" != "hardhat" && ! -z "${diff}" ]]; then
 	echo "$diff"
