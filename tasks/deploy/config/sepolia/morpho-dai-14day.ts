@@ -14,7 +14,7 @@ export const SEPOLIA_MORPHO_DAI_14DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     prefix: "ERC4626",
     coordinatorAddress: async (hre) =>
         hre.hyperdriveDeploy.deployments.byName("ERC4626_COORDINATOR").address,
-    deploymentId: toBytes32("MORPHO_DAI_14_DAY"),
+    deploymentId: toBytes32("MORPHO_DAI_14_DAY_2"),
     salt: toBytes32("0x69420"),
     extraData: "0x",
     contribution: CONTRIBUTION,
@@ -60,7 +60,7 @@ export const SEPOLIA_MORPHO_DAI_14DAY: HyperdriveInstanceConfig<"ERC4626"> = {
             circuitBreakerDelta: parseEther("0.6"),
             minimumShareReserves: parseEther("10"),
             minimumTransactionAmount: parseEther("0.001"),
-            positionDuration: parseDuration("30 days"),
+            positionDuration: parseDuration("14 days"),
             checkpointDuration: parseDuration("1 day"),
             timeStretch: 0n,
             governance: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
@@ -72,7 +72,7 @@ export const SEPOLIA_MORPHO_DAI_14DAY: HyperdriveInstanceConfig<"ERC4626"> = {
             )),
             fees: {
                 curve: parseEther("0.01"),
-                flat: normalizeFee(parseEther("0.0005"), "30 days"),
+                flat: normalizeFee(parseEther("0.0005"), "14 days"),
                 governanceLP: parseEther("0.15"),
                 governanceZombie: parseEther("0.03"),
             },
