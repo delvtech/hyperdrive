@@ -52,8 +52,5 @@ HyperdriveDeployBaseTask(
                 ...rest,
             } as DeployInstanceParams);
         }
-        if (!network.live) {
-            await run("deploy:verify");
-        }
     },
 );

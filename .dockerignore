@@ -1,0 +1,11 @@
+artifacts/
+cache/
+deployments/
+forge-cache/
+node_modules/
+out/
+target/
+*.env
+deployments.json
+deployments.*.json
+

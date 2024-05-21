@@ -1,6 +1,6 @@
 import { task, types } from "hardhat/config";
 import {
-    HyperdriveDeployBaseTask,
+    HyperdriveDeployNamedTask,
     HyperdriveDeployNamedTaskParams,
 } from "../deploy";
 
@@ -8,7 +8,7 @@ export type AddRegistryParams = HyperdriveDeployNamedTaskParams & {
     value: number;
 };
 
-HyperdriveDeployBaseTask(
+HyperdriveDeployNamedTask(
     task(
         "registry:add",
         "adds the specified hyperdrive instance to the registry",

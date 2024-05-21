@@ -27,6 +27,12 @@ task(
             console.log("no config found for network");
             return;
         }
+        if (!network.live) {
+            console.log(
+                `skipping verification for non-live network ${network.name}`,
+            );
+            return;
+        }
 
         // loop through all factories
         for (let f of hyperdriveConfig.factories ?? []) {
