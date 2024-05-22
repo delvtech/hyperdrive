@@ -11,6 +11,7 @@ import {
     ANVIL_FACTORY,
     ANVIL_STETH_COORDINATOR,
     ANVIL_STETH_HYPERDRIVE,
+    MAINNET_FORK_FACTORY,
     SEPOLIA_DAI_14DAY,
     SEPOLIA_DAI_30DAY,
     SEPOLIA_ERC4626_COORDINATOR,
@@ -96,6 +97,16 @@ const config: HardhatUserConfig = {
                     ANVIL_STETH_COORDINATOR,
                 ],
                 instances: [ANVIL_ERC4626_HYPERDRIVE, ANVIL_STETH_HYPERDRIVE],
+            },
+        },
+        mainnet_fork: {
+            live: false,
+            url: "http://127.0.0.1:8545",
+            accounts: [env.DEPLOYER_PRIVATE_KEY ?? DEFAULT_PK],
+            hyperdriveDeploy: {
+                factories: [MAINNET_FORK_FACTORY],
+                coordinators: [],
+                instances: [],
             },
         },
         sepolia: {
