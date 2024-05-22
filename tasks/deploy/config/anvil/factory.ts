@@ -16,7 +16,9 @@ export const ANVIL_FACTORY: HyperdriveFactoryConfig = {
     constructorArguments: async (hre) => [
         {
             governance: env.ADMIN as Address,
-            deployerCoordinatorManager: env.ADMIN as Address,
+            deployerCoordinatorManager: (await hre.getNamedAccounts())[
+                "deployer"
+            ] as Address,
             hyperdriveGovernance: env.ADMIN as Address,
             defaultPausers: [env.ADMIN as Address],
             feeCollector: env.ADMIN as Address,

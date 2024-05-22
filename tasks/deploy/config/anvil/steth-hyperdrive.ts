@@ -11,6 +11,7 @@ let { env } = process;
 
 const CONTRIBUTION = parseEther(env.STETH_HYPERDRIVE_CONTRIBUTION!);
 
+// ERC4626 instance deployed to anvil and used for devnet/testnet.
 export const ANVIL_STETH_HYPERDRIVE: HyperdriveInstanceConfig<"StETH"> = {
     name: "STETH_HYPERDRIVE",
     prefix: "StETH",
@@ -27,6 +28,10 @@ export const ANVIL_STETH_HYPERDRIVE: HyperdriveInstanceConfig<"StETH"> = {
         asBase: false,
         destination: (await hre.getNamedAccounts())["deployer"] as Address,
     }),
+    // Prepare for instance deployment by deploying the StETH token if needed,
+    // approving the coordinator for the contribution amount.
+    // When finished, transfer ownership of the base and vault token
+    // to the admin address.
     prepare: async (hre) => {
         let vaultSharesToken = await hre.viem.getContractAt(
             "MockLido",
@@ -40,7 +45,7 @@ export const ANVIL_STETH_HYPERDRIVE: HyperdriveInstanceConfig<"StETH"> = {
         tx = await vaultSharesToken.write.approve([
             hre.hyperdriveDeploy.deployments.byName("STETH_COORDINATOR")
                 .address,
-            CONTRIBUTION + parseEther("10"),
+            CONTRIBUTION + parseEther("1"),
         ]);
         await pc.waitForTransactionReceipt({ hash: tx });
     },

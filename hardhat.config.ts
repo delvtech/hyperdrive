@@ -29,6 +29,8 @@ import {
 } from "./tasks/deploy/config/";
 
 const { env } = process;
+let DEFAULT_PK =
+    "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
 const config: HardhatUserConfig = {
     solidity: {
@@ -57,7 +59,7 @@ const config: HardhatUserConfig = {
         hardhat: {
             accounts: [
                 {
-                    privateKey: env.PRIVATE_KEY ?? "",
+                    privateKey: env.PRIVATE_KEY ?? DEFAULT_PK,
                     balance: "1000000000000000000",
                 },
             ],
@@ -86,7 +88,7 @@ const config: HardhatUserConfig = {
         anvil: {
             live: false,
             url: env.HYPERDRIVE_ETHEREUM_URL ?? "http://127.0.0.1:8545",
-            accounts: [env.PRIVATE_KEY!],
+            accounts: [env.DEPLOYER_PRIVATE_KEY ?? DEFAULT_PK],
             hyperdriveDeploy: {
                 factories: [ANVIL_FACTORY],
                 coordinators: [
@@ -99,11 +101,11 @@ const config: HardhatUserConfig = {
         sepolia: {
             live: true,
             chainId: 11155111,
-            accounts: [env.PRIVATE_KEY ?? ""],
+            accounts: [env.DEPLOYER_PRIVATE_KEY ?? DEFAULT_PK],
             url: env.SEPOLIA_RPC_URL ?? "",
             verify: {
                 etherscan: {
-                    apiKey: env.ETHERSCAN_API_KEY ?? "",
+                    apiKey: env.ETHERSCAN_API_KEY ?? DEFAULT_PK,
                     apiUrl: "https://api-sepolia.etherscan.io",
                 },
             },
@@ -131,7 +133,7 @@ const config: HardhatUserConfig = {
         },
         base_sepolia: {
             live: true,
-            accounts: [env.PRIVATE_KEY ?? ""],
+            accounts: [env.DEPLOYER_PRIVATE_KEY ?? DEFAULT_PK],
             url: env.BASE_SEPOLIA_RPC_URL ?? "",
             verify: {
                 etherscan: {

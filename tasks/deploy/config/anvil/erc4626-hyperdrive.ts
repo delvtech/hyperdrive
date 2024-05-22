@@ -11,6 +11,7 @@ let { env } = process;
 
 const CONTRIBUTION = parseEther(env.ERC4626_HYPERDRIVE_CONTRIBUTION!);
 
+// ERC4626 instance deployed to anvil and used for devnet/testnet.
 export const ANVIL_ERC4626_HYPERDRIVE: HyperdriveInstanceConfig<"ERC4626"> = {
     name: "ERC4626_HYPERDRIVE",
     prefix: "ERC4626",
@@ -27,6 +28,11 @@ export const ANVIL_ERC4626_HYPERDRIVE: HyperdriveInstanceConfig<"ERC4626"> = {
         asBase: true,
         destination: (await hre.getNamedAccounts())["deployer"] as Address,
     }),
+    // Prepare for instance deployment by deploying the tokens if needed,
+    // setting permissions on the mint+burn functions of the base token
+    // and approving the coordinator for the contribution amount.
+    // When finished, transfer ownership of the base and vault token
+    // to the admin address.
     prepare: async (hre, options) => {
         let pc = await hre.viem.getPublicClient();
         let baseToken = await hre.hyperdriveDeploy.ensureDeployed(
@@ -56,39 +62,29 @@ export const ANVIL_ERC4626_HYPERDRIVE: HyperdriveInstanceConfig<"ERC4626"> = {
             ],
             options,
         );
-
-        // allow minting by the public
         let tx = await baseToken.write.setPublicCapability([
             toFunctionSelector("mint(uint256)"),
             env.IS_COMPETITION_MODE! === "true",
         ]);
         await pc.waitForTransactionReceipt({ hash: tx });
-        tx = await vaultSharesToken.write.setPublicCapability([
-            toFunctionSelector("mint(uint256)"),
-            env.IS_COMPETITION_MODE! === "true",
-        ]);
-        await pc.waitForTransactionReceipt({ hash: tx });
         tx = await baseToken.write.setPublicCapability([
-            toFunctionSelector("mint(address,uint256)"),
+            toFunctionSelector("burn(uint256)"),
             env.IS_COMPETITION_MODE! === "true",
         ]);
         await pc.waitForTransactionReceipt({ hash: tx });
-        tx = await vaultSharesToken.write.setPublicCapability([
-            toFunctionSelector("mint(address,uint256)"),
-            env.IS_COMPETITION_MODE! === "true",
-        ]);
-        await pc.waitForTransactionReceipt({ hash: tx });
-
-        // approve the coordinator for the contribution
         tx = await baseToken.write.approve([
             hre.hyperdriveDeploy.deployments.byName("ERC4626_COORDINATOR")
                 .address,
             CONTRIBUTION,
         ]);
         await pc.waitForTransactionReceipt({ hash: tx });
-
-        // mint some tokens for the contribution
         tx = await baseToken.write.mint([CONTRIBUTION]);
+        await pc.waitForTransactionReceipt({ hash: tx });
+        tx = await baseToken.write.transferOwnership([env.ADMIN! as Address]);
+        await pc.waitForTransactionReceipt({ hash: tx });
+        tx = await vaultSharesToken.write.transferOwnership([
+            env.ADMIN! as Address,
+        ]);
         await pc.waitForTransactionReceipt({ hash: tx });
     },
     poolDeployConfig: async (hre) => {
