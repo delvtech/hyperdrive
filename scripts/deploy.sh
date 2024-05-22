@@ -9,7 +9,7 @@ fi
 # When deploying to "live" networks, ensure that the repository is equivalent
 # to the latest remote tag. This avoids accidentally deploying out-of-date or
 # ambiguously versioned contracts.
-if [[ "${NETWORK}" != "anvil" && "${NETWORK}" != "hardhat" ]]; then
+if [[ "${NETWORK}" != "anvil" && "${NETWORK}" != "hardhat" && "${NETWORK}" != "mainnet_fork" ]]; then
 	git remote update
 	tag=$(git describe --tags --abbrev=0)
 	diff=$(git diff ${tag} --raw -- contracts lib)

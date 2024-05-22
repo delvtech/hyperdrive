@@ -11,6 +11,9 @@ import {
     ANVIL_FACTORY,
     ANVIL_STETH_COORDINATOR,
     ANVIL_STETH_HYPERDRIVE,
+    MAINNET_FORK_DAI_14DAY,
+    MAINNET_FORK_DAI_30DAY,
+    MAINNET_FORK_ERC4626_COORDINATOR,
     MAINNET_FORK_FACTORY,
     SEPOLIA_DAI_14DAY,
     SEPOLIA_DAI_30DAY,
@@ -102,11 +105,16 @@ const config: HardhatUserConfig = {
         mainnet_fork: {
             live: false,
             url: "http://127.0.0.1:8545",
+            verify: {
+                etherscan: {
+                    apiUrl: "http://127.0.0.1:3000",
+                },
+            },
             accounts: [env.DEPLOYER_PRIVATE_KEY ?? DEFAULT_PK],
             hyperdriveDeploy: {
                 factories: [MAINNET_FORK_FACTORY],
-                coordinators: [],
-                instances: [],
+                coordinators: [MAINNET_FORK_ERC4626_COORDINATOR],
+                instances: [MAINNET_FORK_DAI_14DAY, MAINNET_FORK_DAI_30DAY],
             },
         },
         sepolia: {
