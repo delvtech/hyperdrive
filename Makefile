@@ -10,9 +10,6 @@ build:
 build-sol:
 	forge build
 
-build-rust:
-	cargo build
-
 ### Test ###
 
 SOLIDITY_LP_WITHDRAWAL_TESTS = LPWithdrawalTest
@@ -47,11 +44,7 @@ test-sol-netting:
 # NOTE: Breaking these out onto a separate machine speeds up CI execution.
 test-sol-zombie:
 	forge test -vv --match-contract "$(SOLIDITY_ZOMBIE_TESTS)"
-
-test-rust:
-	cargo test --workspace --exclude hyperdrive-math && \
-	cargo test --package hyperdrive-math -- --test-threads=1
-
+	
 ### Lint ###
 
 lint:
@@ -74,9 +67,6 @@ style-check:
 
 warnings-check:
 	FOUNDRY_PROFILE=production forge build --deny-warnings --force
-
-lint-rust:
-	cargo check && cargo clippy && cargo fmt --check
 
 ### Prettier ###
 

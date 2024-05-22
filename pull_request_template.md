@@ -8,7 +8,7 @@ Please check each item **before approving** the pull request. While going
 through the checklist, it is recommended to leave comments on items that are
 referenced in the checklist to make sure that they are reviewed. If there are
 multiple reviewers, copy the checklists into sections titled `## [Reviewer Name]`.
-If the PR doesn't touch Solidity and/or Rust, the corresponding checklist can
+If the PR doesn't touch Solidity, the corresponding checklist can
 be removed.
 
 ## [[Reviewer Name]]

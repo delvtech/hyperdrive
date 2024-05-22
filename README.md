@@ -123,7 +123,7 @@ make prettier
 To deploy the smart contracts, run:
 
 ```sh
-NETWORK=<hardhat|localhost|sepolia|mainnet> make deploy
+NETWORK=<hardhat|anvil|sepolia|mainnet> make deploy
 ```
 
 ### Generate Deploy Configurations

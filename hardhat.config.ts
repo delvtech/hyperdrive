@@ -6,6 +6,11 @@ import "hardhat-deploy";
 import { HardhatUserConfig } from "hardhat/config";
 import "./tasks";
 import {
+    ANVIL_ERC4626_COORDINATOR,
+    ANVIL_ERC4626_HYPERDRIVE,
+    ANVIL_FACTORY,
+    ANVIL_STETH_COORDINATOR,
+    ANVIL_STETH_HYPERDRIVE,
     SEPOLIA_DAI_14DAY,
     SEPOLIA_DAI_30DAY,
     SEPOLIA_ERC4626_COORDINATOR,
@@ -24,6 +29,9 @@ import {
 } from "./tasks/deploy/config/";
 
 const { env } = process;
+let DEFAULT_PK =
+    "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+
 const config: HardhatUserConfig = {
     solidity: {
         version: "0.8.20",
@@ -51,7 +59,7 @@ const config: HardhatUserConfig = {
         hardhat: {
             accounts: [
                 {
-                    privateKey: env.PRIVATE_KEY!,
+                    privateKey: env.PRIVATE_KEY ?? DEFAULT_PK,
                     balance: "1000000000000000000",
                 },
             ],
@@ -77,17 +85,30 @@ const config: HardhatUserConfig = {
                 ],
             },
         },
+        anvil: {
+            live: false,
+            url: env.HYPERDRIVE_ETHEREUM_URL ?? "http://127.0.0.1:8545",
+            accounts: [env.DEPLOYER_PRIVATE_KEY ?? DEFAULT_PK],
+            hyperdriveDeploy: {
+                factories: [ANVIL_FACTORY],
+                coordinators: [
+                    ANVIL_ERC4626_COORDINATOR,
+                    ANVIL_STETH_COORDINATOR,
+                ],
+                instances: [ANVIL_ERC4626_HYPERDRIVE, ANVIL_STETH_HYPERDRIVE],
+            },
+        },
         sepolia: {
+            live: true,
             chainId: 11155111,
-            accounts: [env.PRIVATE_KEY!],
-            url: env.SEPOLIA_RPC_URL!,
+            accounts: [env.DEPLOYER_PRIVATE_KEY ?? DEFAULT_PK],
+            url: env.SEPOLIA_RPC_URL ?? "",
             verify: {
                 etherscan: {
-                    apiKey: env.ETHERSCAN_API_KEY!,
+                    apiKey: env.ETHERSCAN_API_KEY ?? DEFAULT_PK,
                     apiUrl: "https://api-sepolia.etherscan.io",
                 },
             },
-            live: true,
             hyperdriveDeploy: {
                 factories: [SEPOLIA_FACTORY],
                 coordinators: [
@@ -111,15 +132,15 @@ const config: HardhatUserConfig = {
             },
         },
         base_sepolia: {
-            accounts: [env.PRIVATE_KEY!],
-            url: env.BASE_SEPOLIA_RPC_URL!,
+            live: true,
+            accounts: [env.DEPLOYER_PRIVATE_KEY ?? DEFAULT_PK],
+            url: env.BASE_SEPOLIA_RPC_URL ?? "",
             verify: {
                 etherscan: {
-                    apiKey: env.ETHERSCAN_BASE_API_KEY!,
+                    apiKey: env.ETHERSCAN_BASE_API_KEY ?? "",
                     apiUrl: "https://api-sepolia.basescan.org",
                 },
             },
-            live: true,
             hyperdriveDeploy: {
                 factories: [SEPOLIA_FACTORY],
                 coordinators: [
@@ -144,7 +165,7 @@ const config: HardhatUserConfig = {
         },
     },
     etherscan: {
-        apiKey: env.ETHERSCAN_API_KEY!,
+        apiKey: env.ETHERSCAN_API_KEY ?? "",
     },
 };
 
