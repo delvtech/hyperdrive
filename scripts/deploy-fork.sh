@@ -2,11 +2,11 @@
 
 set -e
 
-npx hardhat fork:mint-eth --address 0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8 --amount 1000 --network mainnet_fork --config hardhat.config.fork.ts
-npx hardhat fork:mint-steth --address 0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8 --amount 1000 --network mainnet_fork --config hardhat.config.fork.ts
-npx hardhat fork:mint-reth --address 0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8 --amount 1000 --network mainnet_fork --config hardhat.config.fork.ts
-npx hardhat fork:mint-dai --address 0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8 --amount 20000 --network mainnet_fork --config hardhat.config.fork.ts
-npx hardhat fork:mint-sdai --address 0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8 --amount 20000 --network mainnet_fork --config hardhat.config.fork.ts
+npx hardhat fork:mint-eth --address ${ADMIN} --amount 1000 --network mainnet_fork --config hardhat.config.fork.ts
+npx hardhat fork:mint-steth --address ${ADMIN} --amount 1000 --network mainnet_fork --config hardhat.config.fork.ts
+npx hardhat fork:mint-reth --address ${ADMIN} --amount 1000 --network mainnet_fork --config hardhat.config.fork.ts
+npx hardhat fork:mint-dai --address ${ADMIN} --amount 20000 --network mainnet_fork --config hardhat.config.fork.ts
+npx hardhat fork:mint-sdai --address ${ADMIN} --amount 20000 --network mainnet_fork --config hardhat.config.fork.ts
 
 npx hardhat deploy:hyperdrive --network mainnet_fork --config hardhat.config.fork.ts --show-stack-traces
 
