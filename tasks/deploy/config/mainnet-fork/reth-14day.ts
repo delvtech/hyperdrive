@@ -1,56 +1,54 @@
 import { formatEther, parseEther } from "viem";
 import {
     HyperdriveInstanceConfig,
+    MAINNET_RETH_ADDRESS,
     getLinkerDetails,
     normalizeFee,
     parseDuration,
     toBytes32,
 } from "../../lib";
-import { MAINNET_DAI_ADDRESS, MAINNET_SDAI_ADDRESS } from "../../lib/constants";
 
-const CONTRIBUTION = parseEther("10000");
+const CONTRIBUTION = parseEther("500");
 
-export const MAINNET_FORK_DAI_14DAY: HyperdriveInstanceConfig<"ERC4626"> = {
-    name: "DAI_14_DAY",
-    prefix: "ERC4626",
+export const MAINNET_FORK_RETH_14DAY: HyperdriveInstanceConfig<"RETH"> = {
+    name: "RETH_14_DAY",
+    prefix: "RETH",
     coordinatorAddress: async (hre) =>
-        hre.hyperdriveDeploy.deployments.byName("ERC4626_COORDINATOR").address,
-    deploymentId: toBytes32("DAI_14_DAY"),
-    salt: toBytes32("0x69420"),
+        hre.hyperdriveDeploy.deployments.byName("RETH_COORDINATOR").address,
+    deploymentId: toBytes32("RETH_14_DAY"),
+    salt: toBytes32("0x666"),
     extraData: "0x",
     contribution: CONTRIBUTION,
-    fixedAPR: parseEther("0.10"),
-    timestretchAPR: parseEther("0.10"),
+    fixedAPR: parseEther("0.05"),
+    timestretchAPR: parseEther("0.05"),
     options: {
-        extraData: "0x",
-        asBase: true,
         destination: process.env.ADMIN! as `0x${string}`,
+        asBase: false,
+        extraData: "0x",
     },
-    // Prepare to deploy the contract by setting approvals and minting sufficient
-    // tokens for the contribution.
     prepare: async (hre) => {
-        let baseToken = await hre.viem.getContractAt(
-            "ERC20Mintable",
-            MAINNET_DAI_ADDRESS,
-        );
-        let tx = await baseToken.write.approve([
-            hre.hyperdriveDeploy.deployments.byName("ERC4626_COORDINATOR")
-                .address,
-            CONTRIBUTION,
-        ]);
-        let pc = await hre.viem.getPublicClient();
-        await pc.waitForTransactionReceipt({ hash: tx });
-        await hre.run("fork:mint-dai", {
-            amount: formatEther(CONTRIBUTION),
+        await hre.run("fork:mint-reth", {
             address: (await hre.getNamedAccounts())["deployer"],
+            amount: formatEther(CONTRIBUTION),
         });
+        let vaultSharesToken = await hre.viem.getContractAt(
+            "MockRocketPool",
+            MAINNET_RETH_ADDRESS,
+        );
+        let pc = await hre.viem.getPublicClient();
+        // TODO: Investigate why significant additional allowance is needed for deposit (10 ether is too little)
+        let tx = await vaultSharesToken.write.approve([
+            hre.hyperdriveDeploy.deployments.byName("RETH_COORDINATOR").address,
+            CONTRIBUTION + parseEther("100"),
+        ]);
+        await pc.waitForTransactionReceipt({ hash: tx });
     },
     poolDeployConfig: async (hre) => {
         return {
-            baseToken: MAINNET_DAI_ADDRESS,
-            vaultSharesToken: MAINNET_SDAI_ADDRESS,
+            baseToken: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+            vaultSharesToken: MAINNET_RETH_ADDRESS,
             circuitBreakerDelta: parseEther("0.6"),
-            minimumShareReserves: parseEther("10"),
+            minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),
             positionDuration: parseDuration("14 days"),
             checkpointDuration: parseDuration("1 day"),

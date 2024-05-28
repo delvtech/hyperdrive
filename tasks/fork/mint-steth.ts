@@ -22,24 +22,30 @@ HyperdriveDeployBaseTask(
     .setAction(
         async (
             { address, amount }: Required<MintSTETHParams>,
-            { viem, artifacts, run },
+            { viem, artifacts },
         ) => {
-            await run("fork:mint-eth", { address, amount });
-            let data = encodeFunctionData({
+            let transferData = encodeFunctionData({
                 abi: (await artifacts.readArtifact("MockLido")).abi,
                 functionName: "submit",
                 args: [address as Address],
             });
+
+            let pc = await viem.getPublicClient();
             let tc = await viem.getTestClient({
                 mode: "anvil",
+            });
+            await tc.setBalance({
+                address: address as Address,
+                value:
+                    (await pc.getBalance({ address: address as Address })) +
+                    parseEther(amount!),
             });
             let tx = await tc.sendUnsignedTransaction({
                 from: address as Address,
                 to: MAINNET_STETH_ADDRESS,
-                data,
-                value: parseEther(amount),
+                data: transferData,
+                value: parseEther(amount!),
             });
-            let pc = await viem.getPublicClient();
             await pc.waitForTransactionReceipt({ hash: tx });
         },
     );

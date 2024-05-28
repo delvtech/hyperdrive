@@ -4,7 +4,10 @@ import {
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
 } from "../deploy";
-import { MAINNET_SDAI_ADDRESS } from "../deploy/lib/constants";
+import {
+    MAINNET_SDAI_ADDRESS,
+    MAINNET_SDAI_WHALE,
+} from "../deploy/lib/constants";
 
 export type MintSDAIParams = HyperdriveDeployBaseTaskParams & {
     address: string;
@@ -22,22 +25,25 @@ HyperdriveDeployBaseTask(
     .setAction(
         async (
             { address, amount }: Required<MintSDAIParams>,
-            { viem, artifacts, run },
+            { viem, artifacts },
         ) => {
-            await run("fork:mint-dai", { address, amount });
-            let data = encodeFunctionData({
-                abi: (await artifacts.readArtifact("ERC4626")).abi,
-                functionName: "deposit",
-                args: [parseEther(amount), address as Address],
+            let transferData = encodeFunctionData({
+                abi: (await artifacts.readArtifact("ERC20Mintable")).abi,
+                functionName: "transfer",
+                args: [address as Address, parseEther(amount!)],
             });
+
             let tc = await viem.getTestClient({
                 mode: "anvil",
             });
+            await tc.setBalance({
+                address: MAINNET_SDAI_WHALE,
+                value: parseEther("1"),
+            });
             let tx = await tc.sendUnsignedTransaction({
-                from: address as Address,
+                from: MAINNET_SDAI_WHALE,
                 to: MAINNET_SDAI_ADDRESS,
-                data,
-                value: parseEther(amount),
+                data: transferData,
             });
             let pc = await viem.getPublicClient();
             await pc.waitForTransactionReceipt({ hash: tx });
