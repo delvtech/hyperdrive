@@ -55,3 +55,4 @@ jobs:
             ADMIN=${{ vars.DEVNET_ADMIN }}
             DEPLOYER_PRIVATE_KEY=${{ vars.DEVNET_ADMIN_PRIVATE_KEY }}
             MAINNET_RPC_URL=${{ secrets.MAINNET_RPC_URL }}
+          file: fork.Dockerfile
