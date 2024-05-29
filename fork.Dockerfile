@@ -52,6 +52,8 @@ RUN anvil --fork-url ${MAINNET_RPC_URL} --dump-state ./data & ANVIL="$!" && \
 # Copy over only the stored chain data and list of contract addresses to minimize image size.
 FROM ghcr.io/foundry-rs/foundry@sha256:4606590c8f3cef6a8cba4bdf30226cedcdbd9f1b891e2bde17b7cf66c363b2b3
 WORKDIR /src
+RUN apk add --no-cache npm jq make && \
+  npm install -g yarn
 COPY --from=builder /src/data /src/data
 COPY --from=builder /src/artifacts/addresses.json /src/artifacts/addresses.json
 COPY --from=builder /src/deployments.local.json /src/deployments.local.json
@@ -60,3 +62,4 @@ COPY --from=builder /src/tasks /src/tasks
 COPY --from=builder /src/package.json /src/package.json
 COPY --from=builder /src/yarn.lock /src/yarn.lock
 COPY --from=builder /src/hardhat.config.fork.ts /src/hardhat.config.ts
+COPY --from=builder /src/tsconfig.json /src/tsconfig.json
