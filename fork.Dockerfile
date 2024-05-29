@@ -30,7 +30,7 @@ ARG NETWORK=mainnet_fork
 ARG HYPERDRIVE_ETHEREUM_URL=http://127.0.0.1:8545
 ARG ADMIN=0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
 RUN anvil --fork-url ${MAINNET_RPC_URL} --fork-block-number 19975564 --dump-state ./data --auto-impersonate & ANVIL="$!" && \
-  sleep 2 && \
+  sleep 5 && \
   # PERF: The deploy step comprises ~90% of cached build time due to a solc download
   # on the first compiler run. Running `npx hardhat compile` in the node-builder stage
   # would fix the issue, but also require defining all build args in that stage
@@ -47,7 +47,7 @@ RUN anvil --fork-url ${MAINNET_RPC_URL} --fork-block-number 19975564 --dump-stat
   factory: .FACTORY.address, \
   hyperdriveRegistry: .MAINNET_FORK_REGISTRY.address, \
   }' >./artifacts/addresses.json && \
-  kill $ANVIL && sleep 1s
+  kill $ANVIL && sleep 5
 
 # Copy over only the stored chain data and list of contract addresses to minimize image size.
 FROM ghcr.io/foundry-rs/foundry@sha256:4606590c8f3cef6a8cba4bdf30226cedcdbd9f1b891e2bde17b7cf66c363b2b3
