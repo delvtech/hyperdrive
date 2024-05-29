@@ -55,7 +55,7 @@ WORKDIR /src
 RUN apk add --no-cache npm jq make && \
   npm install -g yarn
 COPY --from=builder /src/data /src/data
-COPY --from=builder /src/artifacts/addresses.json /src/artifacts/addresses.json
+COPY --from=builder /src/artifacts /src/artifacts
 COPY --from=builder /src/deployments.local.json /src/deployments.local.json
 COPY --from=builder /src/node_modules /src/node_modules
 COPY --from=builder /src/tasks /src/tasks
