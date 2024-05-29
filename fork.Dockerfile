@@ -29,7 +29,7 @@ ARG DEPLOYER_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784
 ARG NETWORK=mainnet_fork
 ARG HYPERDRIVE_ETHEREUM_URL=http://127.0.0.1:8545
 ARG ADMIN=0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
-RUN anvil --fork-url ${MAINNET_RPC_URL} --dump-state ./data & ANVIL="$!" && \
+RUN anvil --fork-url ${MAINNET_RPC_URL} --dump-state ./data --auto-impersonate & ANVIL="$!" && \
   sleep 2 && \
   # PERF: The deploy step comprises ~90% of cached build time due to a solc download
   # on the first compiler run. Running `npx hardhat compile` in the node-builder stage
@@ -38,12 +38,12 @@ RUN anvil --fork-url ${MAINNET_RPC_URL} --dump-state ./data & ANVIL="$!" && \
   npx hardhat compile --config hardhat.config.fork.ts && \
   scripts/deploy-fork.sh && \
   cat ./deployments.local.json | jq '.mainnet_fork | { \
-  dai_14_day: .DAI_14_DAY.address, \
-  dai_30_day: .DAI_30_DAY.address, \
-  steth_14_day: .STETH_14_DAY.address, \
-  steth_30_day: .STETH_30_DAY.address, \
-  reth_14_day: .RETH_14_DAY.address, \
-  reth_30_day: .RETH_30_DAY.address, \
+  dai14Day: .DAI_14_DAY.address, \
+  dai30Day: .DAI_30_DAY.address, \
+  steth14Day: .STETH_14_DAY.address, \
+  steth30Day: .STETH_30_DAY.address, \
+  reth14Day: .RETH_14_DAY.address, \
+  reth30Day: .RETH_30_DAY.address, \
   factory: .FACTORY.address, \
   hyperdriveRegistry: .MAINNET_FORK_REGISTRY.address, \
   }' >./artifacts/addresses.json && \
