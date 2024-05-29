@@ -41,8 +41,9 @@ HyperdriveDeployBaseTask(
             let timeSeconds = parseDuration(time);
             // if checkpoint param is blank, simply advance time and return
             if (!checkpoint) {
-                await tc.increaseTime({
-                    seconds: Number(timeSeconds),
+                await tc.mine({
+                    blocks: Number(timeSeconds / 12n),
+                    interval: 12,
                 });
                 return;
             }

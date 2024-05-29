@@ -1,10 +1,12 @@
+# WARN: Version pinned to avoid https://github.com/foundry-rs/foundry/issues/7502
+
 # NOTE: The `latest` version of foundry does not include arm64 as a build platform,
 #       but tagged versions do. Using an arm64-compatible image enables developers to
 #       locally rebuild this image with different arguments for debugging/testing purposes.
 #
 # Use a dedicated stage to generate node_modules.
 # Since only package.json and yarn.lock are copied, it's likely this layer will stay cached.
-FROM ghcr.io/foundry-rs/foundry@sha256:4606590c8f3cef6a8cba4bdf30226cedcdbd9f1b891e2bde17b7cf66c363b2b3 AS node-builder
+FROM ghcr.io/foundry-rs/foundry:nightly-fdad9fb0dde45d3476fc5d1fe6f40e8dc7c17caa AS node-builder
 RUN apk add --no-cache npm && \
   npm install -g yarn
 WORKDIR /app
@@ -18,7 +20,7 @@ RUN yarn install --immutable
 #
 # Build args are used to define the parameters for the deployment.
 # These can be overridden at build time to debug generate different hyperdrive configurations.
-FROM ghcr.io/foundry-rs/foundry@sha256:4606590c8f3cef6a8cba4bdf30226cedcdbd9f1b891e2bde17b7cf66c363b2b3 as builder
+FROM ghcr.io/foundry-rs/foundry:nightly-fdad9fb0dde45d3476fc5d1fe6f40e8dc7c17caa as builder
 RUN apk add --no-cache npm jq make && \
   npm install -g yarn
 WORKDIR /src
@@ -50,7 +52,7 @@ RUN anvil --fork-url ${MAINNET_RPC_URL} --fork-block-number 19975564 --dump-stat
   kill $ANVIL && sleep 5
 
 # Copy over only the stored chain data and list of contract addresses to minimize image size.
-FROM ghcr.io/foundry-rs/foundry@sha256:4606590c8f3cef6a8cba4bdf30226cedcdbd9f1b891e2bde17b7cf66c363b2b3
+FROM ghcr.io/foundry-rs/foundry:nightly-fdad9fb0dde45d3476fc5d1fe6f40e8dc7c17caa
 WORKDIR /src
 RUN apk add --no-cache npm jq make && \
   npm install -g yarn
