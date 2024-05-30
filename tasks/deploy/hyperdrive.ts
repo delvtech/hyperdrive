@@ -16,11 +16,9 @@ HyperdriveDeployBaseTask(
     ),
 ).setAction(
     async ({ ...rest }: DeployHyperdriveParams, { run, config, network }) => {
-        // Compile contracts if network is live.
-        if (network.live) {
-            console.log("compiling contracts");
-            await run("compile", { force: true, quiet: true });
-        }
+        // Only force compile contracts if network is live.
+        console.log("compiling contracts");
+        await run("compile", { force: network.live, quiet: true });
 
         // deploy the registry
         await run("deploy:registry", {
