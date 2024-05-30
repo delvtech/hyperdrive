@@ -85,6 +85,7 @@ RUN anvil --dump-state ./data & ANVIL="$!" && \
   # on the first compiler run. Running `npx hardhat compile` in the node-builder stage
   # would fix the issue, but also require defining all build args in that stage 
   # as well as defining them without defaults in this stage 🤮.
+  npx hardhat fork:mint-eth --address ${ADMIN} --amount 10 --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
   make deploy && \
   npx hardhat registry:add --name ERC4626_HYPERDRIVE --value 1 --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
   npx hardhat registry:add --name STETH_HYPERDRIVE --value 1 --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
