@@ -19,7 +19,7 @@ FROM base as node-modules-builder
 WORKDIR /src
 COPY ./package.json ./package.json
 COPY ./yarn.lock ./yarn.lock
-RUN yarn install --immutable
+RUN yarn install --immutable && yarn cache clean
 
 # Use a dedicated stage for contract compilation
 FROM node-modules-builder as contracts-builder

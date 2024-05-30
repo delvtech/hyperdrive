@@ -10,7 +10,7 @@ RUN apk add --no-cache npm && \
 WORKDIR /app
 COPY ./package.json ./package.json
 COPY ./yarn.lock ./yarn.lock
-RUN yarn install --immutable 
+RUN yarn install --immutable && yarn cache clean
 
 # Deploy the contracts to an Anvil node and save the node's state to a file.
 # By storing the freshly-deployed state, resetting the chain to that point is
@@ -86,9 +86,9 @@ RUN anvil --dump-state ./data & ANVIL="$!" && \
   # would fix the issue, but also require defining all build args in that stage 
   # as well as defining them without defaults in this stage 🤮.
   make deploy && \
-  npx hardhat registry:add --name ERC4626_HYPERDRIVE --value 1 --network anvil && \
-  npx hardhat registry:add --name STETH_HYPERDRIVE --value 1 --network anvil && \
-  npx hardhat registry:update-governance --address ${ADMIN} --network anvil && \
+  npx hardhat registry:add --name ERC4626_HYPERDRIVE --value 1 --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
+  npx hardhat registry:add --name STETH_HYPERDRIVE --value 1 --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
+  npx hardhat registry:update-governance --address ${ADMIN} --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
   ./scripts/format-devnet-addresses.sh && \
   kill $ANVIL && sleep 1s
 
