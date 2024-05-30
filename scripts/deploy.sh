@@ -20,5 +20,5 @@ if [[ "${NETWORK}" != "anvil" && "${NETWORK}" != "hardhat" && "${NETWORK}" != "m
 	fi
 fi
 
-npx hardhat deploy:hyperdrive --show-stack-traces --network ${NETWORK}
-npx hardhat deploy:verify --show-stack-traces --network ${NETWORK}
+npx hardhat deploy:hyperdrive --show-stack-traces --network ${NETWORK} --config hardhat.config.${NETWORK}.ts
+npx hardhat deploy:verify --show-stack-traces --network ${NETWORK} --config hardhat.config.${NETWORK}.ts
