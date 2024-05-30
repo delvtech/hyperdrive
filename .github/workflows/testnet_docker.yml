@@ -53,6 +53,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             ADMIN=${{ vars.TESTNET_ADMIN }}
+            DEPLOYER_PRIVATE_KEY=${{ vars.TESTNET_ADMIN_PRIVATE_KEY }}
             IS_COMPETITION_MODE=true
             BASE_TOKEN_NAME=Multi Collateral DAI
             BASE_TOKEN_SYMBOL=DAI
