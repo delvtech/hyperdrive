@@ -176,7 +176,15 @@ contract MockEzEthPool is
     }
 
     function _getAccruedInterest() internal view returns (uint256) {
+        // If the rate is zero, no interest has accrued.
         if (_rate == 0) {
+            return 0;
+        }
+
+        // If the block timestamp is less than last updated, the accrual
+        // calculation will underflow. This can occur when using anvil's state
+        // snapshots.
+        if (block.timestamp < _lastUpdated) {
             return 0;
         }
 
