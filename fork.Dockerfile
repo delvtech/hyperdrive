@@ -7,10 +7,9 @@ ARG HYPERDRIVE_ETHEREUM_URL=http://127.0.0.1:8545
 ARG ADMIN=0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
 
 
-FROM ghcr.io/foundry-rs/foundry:nightly-5b7e4cb3c882b28f3c32ba580de27ce7381f415a AS base
+FROM ghcr.io/foundry-rs/foundry@sha256:4606590c8f3cef6a8cba4bdf30226cedcdbd9f1b891e2bde17b7cf66c363b2b3 AS base
 RUN apk add --no-cache npm jq make && \
   npm install -g yarn
-WORKDIR /src
 
 
 # Use a dedicated stage to generate node_modules.
@@ -33,15 +32,7 @@ ARG HYPERDRIVE_ETHEREUM_URL
 ARG ADMIN
 RUN npx hardhat compile --config hardhat.config.fork.ts
 
-# Deploy the contracts to an Anvil node and save the node's state to a file.
-# By storing the freshly-deployed state, resetting the chain to that point is
-# far simpler and faster.
-#
-# Build args are used to define the parameters for the deployment.
-# These can be overridden at build time to debug generate different hyperdrive configurations.
-FROM ghcr.io/foundry-rs/foundry:nightly-5b7e4cb3c882b28f3c32ba580de27ce7381f415a as deployer
-RUN apk add --no-cache npm jq make && \
-  npm install -g yarn
+FROM base
 WORKDIR /src
 COPY --from=contracts-builder /src/node_modules/ node_modules/
 COPY --from=contracts-builder /src/artifacts/ artifacts/
@@ -51,7 +42,12 @@ ARG DEPLOYER_PRIVATE_KEY
 ARG NETWORK
 ARG HYPERDRIVE_ETHEREUM_URL
 ARG ADMIN
-RUN anvil --fork-url ${MAINNET_RPC_URL} --dump-state ./data & ANVIL="$!" && \
+ENV MAINNET_RPC_URL=$MAINNET_RPC_URL
+ENV DEPLOYER_PRIVATE_KEY=$DEPLOYER_PRIVATE_KEY
+ENV NETWORK=$NETWORK
+ENV HYPERDRIVE_ETHEREUM_URL=$HYPERDRIVE_ETHEREUM_URL
+ENV ADMIN=$ADMIN
+CMD anvil --fork-url ${MAINNET_RPC_URL} --dump-state ./data  & \
   sleep 5 && \
   # PERF: The deploy step comprises ~90% of cached build time due to a solc download
   # on the first compiler run. Running `npx hardhat compile` in the node-builder stage
@@ -68,19 +64,4 @@ RUN anvil --fork-url ${MAINNET_RPC_URL} --dump-state ./data & ANVIL="$!" && \
   factory: .FACTORY.address, \
   hyperdriveRegistry: .MAINNET_FORK_REGISTRY.address, \
   }' >./artifacts/addresses.json && \
-  kill $ANVIL && sleep 5
-
-# Copy over only the stored chain data and list of contract addresses to minimize image size.
-FROM ghcr.io/foundry-rs/foundry:nightly-5b7e4cb3c882b28f3c32ba580de27ce7381f415a
-WORKDIR /src
-RUN apk add --no-cache npm jq make && \
-  npm install -g yarn
-COPY --from=deployer /src/data /src/data
-COPY --from=deployer /src/artifacts /src/artifacts
-COPY --from=deployer /src/deployments.local.json /src/deployments.local.json
-COPY --from=deployer /src/node_modules /src/node_modules
-COPY --from=deployer /src/tasks /src/tasks
-COPY --from=deployer /src/package.json /src/package.json
-COPY --from=deployer /src/yarn.lock /src/yarn.lock
-COPY --from=deployer /src/hardhat.config.fork.ts /src/hardhat.config.ts
-COPY --from=deployer /src/tsconfig.json /src/tsconfig.json
+  fg

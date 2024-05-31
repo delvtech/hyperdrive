@@ -80,3 +80,6 @@ deploy:
 
 generate-deploy:
 	./scripts/generate-deploy-config.sh
+
+deploy-fork:
+	./scripts/deploy-fork.sh
