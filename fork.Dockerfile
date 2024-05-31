@@ -24,7 +24,7 @@ COPY . .
 # ARG HYPERDRIVE_ETHEREUM_URL=http://127.0.0.1:8545
 # ARG ADMIN=0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
 # ARG NETWORK=mainnet_fork
-RUN npx hardhat compile --config hardhat.config.fork.ts
+RUN npx hardhat compile --config hardhat.config.mainnet_fork.ts
 
 FROM base
 WORKDIR /src

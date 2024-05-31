@@ -7,21 +7,6 @@ import { HardhatUserConfig } from "hardhat/config";
 import baseConfig from "./hardhat.config";
 import "./tasks";
 import {
-    ANVIL_ERC4626_COORDINATOR,
-    ANVIL_ERC4626_HYPERDRIVE,
-    ANVIL_FACTORY,
-    ANVIL_STETH_COORDINATOR,
-    ANVIL_STETH_HYPERDRIVE,
-    MAINNET_FORK_DAI_14DAY,
-    MAINNET_FORK_DAI_30DAY,
-    MAINNET_FORK_ERC4626_COORDINATOR,
-    MAINNET_FORK_FACTORY,
-    MAINNET_FORK_RETH_14DAY,
-    MAINNET_FORK_RETH_30DAY,
-    MAINNET_FORK_RETH_COORDINATOR,
-    MAINNET_FORK_STETH_14DAY,
-    MAINNET_FORK_STETH_30DAY,
-    MAINNET_FORK_STETH_COORDINATOR,
     SEPOLIA_DAI_14DAY,
     SEPOLIA_DAI_30DAY,
     SEPOLIA_ERC4626_COORDINATOR,
@@ -72,45 +57,6 @@ const config: HardhatUserConfig = {
                     SEPOLIA_RETH_30DAY,
                     SEPOLIA_STETH_14DAY,
                     SEPOLIA_STETH_30DAY,
-                ],
-            },
-        },
-        anvil: {
-            live: false,
-            url: env.HYPERDRIVE_ETHEREUM_URL ?? "http://127.0.0.1:8545",
-            accounts: [env.DEPLOYER_PRIVATE_KEY ?? DEFAULT_PK],
-            hyperdriveDeploy: {
-                factories: [ANVIL_FACTORY],
-                coordinators: [
-                    ANVIL_ERC4626_COORDINATOR,
-                    ANVIL_STETH_COORDINATOR,
-                ],
-                instances: [ANVIL_ERC4626_HYPERDRIVE, ANVIL_STETH_HYPERDRIVE],
-            },
-        },
-        mainnet_fork: {
-            live: false,
-            url: "http://127.0.0.1:8545",
-            verify: {
-                etherscan: {
-                    apiUrl: "http://127.0.0.1:3000",
-                },
-            },
-            accounts: [env.DEPLOYER_PRIVATE_KEY ?? DEFAULT_PK],
-            hyperdriveDeploy: {
-                factories: [MAINNET_FORK_FACTORY],
-                coordinators: [
-                    MAINNET_FORK_ERC4626_COORDINATOR,
-                    MAINNET_FORK_STETH_COORDINATOR,
-                    MAINNET_FORK_RETH_COORDINATOR,
-                ],
-                instances: [
-                    MAINNET_FORK_DAI_14DAY,
-                    MAINNET_FORK_DAI_30DAY,
-                    MAINNET_FORK_STETH_14DAY,
-                    MAINNET_FORK_STETH_30DAY,
-                    MAINNET_FORK_RETH_14DAY,
-                    MAINNET_FORK_RETH_30DAY,
                 ],
             },
         },

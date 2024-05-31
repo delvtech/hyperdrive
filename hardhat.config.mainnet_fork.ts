@@ -4,6 +4,7 @@ import "@nomicfoundation/hardhat-viem";
 import "dotenv/config";
 import "hardhat-deploy";
 import { HardhatUserConfig } from "hardhat/config";
+import baseConfig from "./hardhat.config";
 import "./tasks";
 import {
     MAINNET_FORK_DAI_14DAY,
@@ -23,28 +24,7 @@ let DEFAULT_PK =
     "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
 const config: HardhatUserConfig = {
-    solidity: {
-        version: "0.8.20",
-        settings: {
-            viaIR: false,
-            optimizer: {
-                enabled: true,
-                runs: 10000000,
-            },
-            evmVersion: "paris",
-            metadata: {
-                useLiteralContent: true,
-            },
-        },
-    },
-    namedAccounts: {
-        deployer: {
-            default: 0,
-        },
-    },
-    paths: {
-        artifacts: "./artifacts",
-    },
+    ...baseConfig,
     networks: {
         mainnet_fork: {
             live: false,
@@ -67,9 +47,6 @@ const config: HardhatUserConfig = {
                 ],
             },
         },
-    },
-    etherscan: {
-        apiKey: env.ETHERSCAN_API_KEY ?? "",
     },
 };
 
