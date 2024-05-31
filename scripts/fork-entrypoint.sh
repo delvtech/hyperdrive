@@ -2,7 +2,11 @@
 
 set -e
 
+# When a user hits `ctrl+c` or another interrupt, kill all background processes as well.
+trap 'kill $(jobs -p) 2>/dev/null' EXIT
+
 anvil --fork-url ${MAINNET_RPC_URL} --chain-id 42069 &
+
 sleep 5
 # PERF: The deploy step comprises ~90% of cached build time due to a solc download
 # on the first compiler run. Running `npx hardhat compile` in the node-builder stage
@@ -19,4 +23,3 @@ cat ./deployments.local.json | jq ".mainnet_fork | {
   factory: .FACTORY.address,
   hyperdriveRegistry: .MAINNET_FORK_REGISTRY.address,
   }" >./artifacts/addresses.json
-fg
