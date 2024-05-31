@@ -47,7 +47,7 @@ ENV DEPLOYER_PRIVATE_KEY=$DEPLOYER_PRIVATE_KEY
 ENV NETWORK=$NETWORK
 ENV HYPERDRIVE_ETHEREUM_URL=$HYPERDRIVE_ETHEREUM_URL
 ENV ADMIN=$ADMIN
-CMD anvil --fork-url ${MAINNET_RPC_URL} --dump-state ./data  & \
+CMD anvil --fork-url ${MAINNET_RPC_URL} --chain-id 42069  & \
   sleep 5 && \
   # PERF: The deploy step comprises ~90% of cached build time due to a solc download
   # on the first compiler run. Running `npx hardhat compile` in the node-builder stage
