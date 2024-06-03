@@ -84,6 +84,6 @@ HyperdriveDeployBaseTask(
                 default:
             }
         }
-        sleep(interval);
+        await sleep(interval);
     }
 });
