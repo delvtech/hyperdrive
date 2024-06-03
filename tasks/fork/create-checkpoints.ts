@@ -4,6 +4,7 @@ import {
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
 } from "../deploy";
+import { sleep } from "./lib";
 
 export type CreateCheckpointsParams = HyperdriveDeployBaseTaskParams & {
     pollInterval: number;
@@ -16,13 +17,6 @@ export function getCheckpointId(
     return blockTimestamp - (blockTimestamp % checkpointDuration);
 }
 
-/**
- * Used to control polling for checkpoint creation.
- */
-function sleep(minutes: number) {
-    return new Promise((resolve) => setTimeout(resolve, minutes * 60 * 1000));
-}
-
 HyperdriveDeployBaseTask(
     task(
         "fork:create-checkpoints",
@@ -32,7 +26,7 @@ HyperdriveDeployBaseTask(
     .addOptionalParam(
         "pollInterval",
         "Amount of time in minutes between polls for checkpoint state",
-        1,
+        240,
         types.int,
     )
     .setAction(
@@ -82,7 +76,7 @@ HyperdriveDeployBaseTask(
                             ` - ${poolAddresses![i]}: retrieving checkpoint status ${latestCheckpointTimestamp}...`,
                         );
                         // this will throw if the checkpoint doesn't exist
-                        let hello = await (
+                        await (
                             await viem.getContractAt(
                                 "IHyperdriveRead",
                                 poolAddresses![i] as Address,
@@ -97,7 +91,7 @@ HyperdriveDeployBaseTask(
                         );
                         await (
                             await viem.getContractAt(
-                                "HyperdriveTarget3",
+                                "IHyperdrive",
                                 poolAddresses![i],
                             )
                         ).write.checkpoint([latestCheckpointTimestamp, 0n]);

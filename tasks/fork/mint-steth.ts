@@ -24,7 +24,7 @@ HyperdriveDeployBaseTask(
             { address, amount }: Required<MintSTETHParams>,
             { viem, artifacts },
         ) => {
-            let transferData = encodeFunctionData({
+            let submitData = encodeFunctionData({
                 abi: (await artifacts.readArtifact("MockLido")).abi,
                 functionName: "submit",
                 args: [address as Address],
@@ -43,7 +43,7 @@ HyperdriveDeployBaseTask(
             let tx = await tc.sendUnsignedTransaction({
                 from: address as Address,
                 to: MAINNET_STETH_ADDRESS,
-                data: transferData,
+                data: submitData,
                 value: parseEther(amount!),
             });
             await pc.waitForTransactionReceipt({ hash: tx });

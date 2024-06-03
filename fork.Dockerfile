@@ -31,4 +31,3 @@ WORKDIR /src
 COPY --from=contracts-builder /src/node_modules/ node_modules/
 COPY --from=contracts-builder /src/artifacts/ artifacts/
 COPY . .
-CMD [ "./scripts/fork-entrypoint.sh" ]
