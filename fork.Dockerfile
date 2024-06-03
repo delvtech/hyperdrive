@@ -1,10 +1,10 @@
-# WARN: Version pinned to avoid https://github.com/foundry-rs/foundry/issues/7502
-
+# NOTE: The `latest` version of foundry does not include arm64 as a build platform,
+#       but tagged versions do. Using an arm64-compatible image enables developers to
+#       locally rebuild this image with different arguments for debugging/testing purposes.
 
 FROM ghcr.io/foundry-rs/foundry@sha256:4606590c8f3cef6a8cba4bdf30226cedcdbd9f1b891e2bde17b7cf66c363b2b3 AS base
 RUN apk add --no-cache npm jq make && \
   npm install -g yarn
-
 
 # Use a dedicated stage to generate node_modules.
 # Since only package.json and yarn.lock are copied, it's likely this layer will stay cached.
@@ -19,11 +19,6 @@ FROM node-modules-builder as contracts-builder
 WORKDIR /src
 COPY --from=node-modules-builder /src/node_modules/ /src/node_modules/
 COPY . .
-# ARG MAINNET_RPC_URL=http://mainnet-rpc-url
-# ARG DEPLOYER_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-# ARG HYPERDRIVE_ETHEREUM_URL=http://127.0.0.1:8545
-# ARG ADMIN=0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
-# ARG NETWORK=mainnet_fork
 RUN npx hardhat compile --config hardhat.config.mainnet_fork.ts
 
 FROM base
