@@ -10,7 +10,6 @@ import { ERC4626Target2Deployer } from "contracts/src/deployers/erc4626/ERC4626T
 import { ERC4626Target3Deployer } from "contracts/src/deployers/erc4626/ERC4626Target3Deployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { HyperdriveRegistry } from "contracts/src/factory/HyperdriveRegistry.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
@@ -19,7 +18,6 @@ import { IHyperdriveGovernedRegistry } from "contracts/src/interfaces/IHyperdriv
 import { IHyperdriveRegistry } from "contracts/src/interfaces/IHyperdriveRegistry.sol";
 import { VERSION } from "contracts/src/libraries/Constants.sol";
 import { ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockERC4626 } from "contracts/test/MockERC4626.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
@@ -366,8 +364,8 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         ensureRemoveFactoryInfo(factories);
     }
 
-    function test_setFactoryInfo_success_removeNonexistantFactory() public {
-        // Ensure that a non-existant factory can be successfully removed (with
+    function test_setFactoryInfo_success_removeNonexistentFactory() public {
+        // Ensure that a nonexistent factory can be successfully removed (with
         // no effect).
         address[] memory factories = new address[](1);
         uint128[] memory data = new uint128[](1);
@@ -798,8 +796,8 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         ensureRemoveInstanceInfo(instances);
     }
 
-    function test_setInstanceInfo_success_removeNonexistantInstance() public {
-        // Ensure that a non-existant instance can be successfully removed (with
+    function test_setInstanceInfo_success_removeNonexistentInstance() public {
+        // Ensure that a nonexistent instance can be successfully removed (with
         // no effect).
         address[] memory instances = new address[](1);
         uint128[] memory data = new uint128[](1);

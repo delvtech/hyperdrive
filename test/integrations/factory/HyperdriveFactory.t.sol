@@ -3086,7 +3086,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
         assertEq(factory.getNumberOfInstances(), 1);
         assertEq(factory.getInstanceAtIndex(0), address(hyperdrive1));
 
-        address[] memory instances = factory.getInstancesInRange(0, 0);
+        address[] memory instances = factory.getInstancesInRange(0, 1);
         assertEq(instances.length, 1);
         assertEq(instances[0], address(hyperdrive1));
 
@@ -3156,7 +3156,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
         assertEq(factory.getInstanceAtIndex(0), address(hyperdrive1));
         assertEq(factory.getInstanceAtIndex(1), address(hyperdrive2));
 
-        instances = factory.getInstancesInRange(0, 1);
+        instances = factory.getInstancesInRange(0, 2);
         assertEq(instances.length, 2);
         assertEq(instances[0], address(hyperdrive1));
         assertEq(instances[1], address(hyperdrive2));
@@ -3234,7 +3234,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
         assertEq(factory.getInstanceAtIndex(1), address(hyperdrive2));
         assertEq(factory.getInstanceAtIndex(2), address(hyperdrive3));
 
-        instances = factory.getInstancesInRange(0, 2);
+        instances = factory.getInstancesInRange(0, 3);
         assertEq(instances.length, 3);
         assertEq(instances[0], address(hyperdrive1));
         assertEq(instances[1], address(hyperdrive2));
@@ -3285,7 +3285,7 @@ contract ERC4626InstanceGetterTest is HyperdriveFactoryBaseTest {
     function test_hyperdriveFactory_getInstancesInRange_failure_endIndexTooLarge()
         external
     {
-        uint256 endIndex = factory.getNumberOfInstances();
+        uint256 endIndex = factory.getNumberOfInstances() + 1;
         vm.expectRevert(IHyperdriveFactory.EndIndexTooLarge.selector);
         factory.getInstancesInRange(0, endIndex);
     }
@@ -3299,7 +3299,7 @@ contract ERC4626InstanceGetterTest is HyperdriveFactoryBaseTest {
 
         numberOfInstances = _bound(numberOfInstances, 1, 10);
         startingIndex = _bound(startingIndex, 0, numberOfInstances - 1);
-        endingIndex = _bound(endingIndex, startingIndex, numberOfInstances - 1);
+        endingIndex = _bound(endingIndex, startingIndex + 1, numberOfInstances);
 
         IHyperdrive[] memory hyperdrives = new IHyperdrive[](numberOfInstances);
 
@@ -3312,7 +3312,7 @@ contract ERC4626InstanceGetterTest is HyperdriveFactoryBaseTest {
             endingIndex
         );
 
-        assertEq(instances.length, endingIndex - startingIndex + 1);
+        assertEq(instances.length, endingIndex - startingIndex);
 
         for (uint256 i; i < instances.length; i++) {
             assertEq(instances[i], address(hyperdrives[i + startingIndex]));
