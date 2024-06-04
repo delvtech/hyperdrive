@@ -12,7 +12,7 @@ interface IHyperdriveRegistry {
     }
 
     /// @dev The info related to each Hyperdrive instance.
-    struct HyperdriveInfo {
+    struct InstanceInfo {
         /// @dev Data about the instance. Different registries can utilize
         ///      different schemas for these values.
         uint256 data;
@@ -39,8 +39,8 @@ interface IHyperdriveRegistry {
 
     /// @notice Gets the registered factories in the range of the provided
     ///         indices.
-    /// @param _startIndex The start of the range.
-    /// @param _endIndex The end of the range.
+    /// @param _startIndex The start of the range (inclusive).
+    /// @param _endIndex The end of the range (exclusive).
     /// @return The list of registered factories in the range.
     function getFactoriesInRange(
         uint256 _startIndex,
@@ -48,37 +48,35 @@ interface IHyperdriveRegistry {
     ) external view returns (address[] memory);
 
     /// @notice Gets the hyperdrive factory info for a list of factories.
-    /// @param _factories The list of factories.
+    /// @param __factories The list of factories.
     /// @return The hyperdrive factory info.
     function getFactoryInfo(
-        address[] calldata _factories
+        address[] calldata __factories
     ) external view returns (FactoryInfo[] memory);
 
     /// @notice Gets the number of Hyperdrive instances that have been registered.
     /// @return The number of registered instances.
-    function getNumberOfHyperdriveInstances() external view returns (uint256);
+    function getNumberOfInstances() external view returns (uint256);
 
     /// @notice Gets the registered instance at an index.
     /// @param _index The index of the instance.
     /// @return The registered instance.
-    function getHyperdriveInstanceAtIndex(
-        uint256 _index
-    ) external view returns (address);
+    function getInstanceAtIndex(uint256 _index) external view returns (address);
 
     /// @notice Gets the registered instances in the range of the provided
     ///         indices.
-    /// @param _startIndex The start of the range.
-    /// @param _endIndex The end of the range.
+    /// @param _startIndex The start of the range (inclusive).
+    /// @param _endIndex The end of the range (exclusive).
     /// @return The list of registered instances in the range.
-    function getHyperdriveInstancesInRange(
+    function getInstancesInRange(
         uint256 _startIndex,
         uint256 _endIndex
     ) external view returns (address[] memory);
 
     /// @notice Gets the hyperdrive info for a list of instances.
-    /// @param _instances The list of instances.
+    /// @param __instances The list of instances.
     /// @return The hyperdrive info.
-    function getHyperdriveInfo(
-        address[] calldata _instances
-    ) external view returns (HyperdriveInfo[] memory);
+    function getInstanceInfo(
+        address[] calldata __instances
+    ) external view returns (InstanceInfo[] memory);
 }

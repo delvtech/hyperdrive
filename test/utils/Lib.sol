@@ -226,4 +226,13 @@ library Lib {
             bytes(b1).length == bytes(b2).length &&
             keccak256(abi.encodePacked(b1)) == keccak256(abi.encodePacked(b2));
     }
+
+    function eq(
+        address[] memory b1,
+        address[] memory b2
+    ) public pure returns (bool) {
+        return
+            b1.length == b2.length &&
+            keccak256(abi.encodePacked(b1)) == keccak256(abi.encodePacked(b2));
+    }
 }

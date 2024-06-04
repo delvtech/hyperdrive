@@ -890,24 +890,24 @@ contract HyperdriveFactory is IHyperdriveFactory {
     }
 
     /// @notice Returns the _instances array according to specified indices.
-    /// @param startIndex The starting index of the instances to get.
-    /// @param endIndex The ending index of the instances to get.
+    /// @param startIndex The starting index of the instances to get (inclusive).
+    /// @param endIndex The ending index of the instances to get (exclusive).
     /// @return range The resulting custom portion of the _instances array.
     function getInstancesInRange(
         uint256 startIndex,
         uint256 endIndex
     ) external view returns (address[] memory range) {
         // If the indexes are malformed, revert.
-        if (startIndex > endIndex) {
+        if (startIndex >= endIndex) {
             revert IHyperdriveFactory.InvalidIndexes();
         }
-        if (endIndex >= _instances.length) {
+        if (endIndex > _instances.length) {
             revert IHyperdriveFactory.EndIndexTooLarge();
         }
 
         // Return the range of instances.
-        range = new address[](endIndex - startIndex + 1);
-        for (uint256 i = startIndex; i <= endIndex; i++) {
+        range = new address[](endIndex - startIndex);
+        for (uint256 i = startIndex; i < endIndex; i++) {
             unchecked {
                 range[i - startIndex] = _instances[i];
             }

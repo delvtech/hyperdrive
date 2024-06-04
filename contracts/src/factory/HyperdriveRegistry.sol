@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveFactory } from "../interfaces/IHyperdriveFactory.sol";
 import { IHyperdriveGovernedRegistry } from "../interfaces/IHyperdriveGovernedRegistry.sol";
@@ -36,7 +33,7 @@ contract HyperdriveRegistry is
 
     /// @dev A list of all of the Hyperdrive factories that have been added to
     ///      the Hyperdrive registry.
-    address[] internal _hyperdriveFactories;
+    address[] internal _factories;
 
     /// @dev A mapping from hyperdrive factories to info associated with those
     ///      factories.
@@ -44,12 +41,12 @@ contract HyperdriveRegistry is
 
     /// @dev A list of all of the Hyperdrive instances that have been added to
     ///      the Hyperdrive registry.
-    address[] internal _hyperdriveInstances;
+    address[] internal _instances;
 
     /// @dev A mapping from hyperdrive instances to info associated with those
     ///      instances.
-    mapping(address hyperdrive => HyperdriveInfoInternal info)
-        internal _hyperdriveInfo;
+    mapping(address hyperdrive => InstanceInfoInternal info)
+        internal _instanceInfo;
 
     /// @notice Instantiates the hyperdrive registry.
     /// @param _name The registry's name.
@@ -74,83 +71,33 @@ contract HyperdriveRegistry is
 
     /// @inheritdoc IHyperdriveGovernedRegistry
     function setFactoryInfo(
-        address[] calldata _factories,
+        address[] calldata __factories,
         uint128[] calldata _data
     ) external override onlyAdmin {
         // Ensure that the arrays have the same length.
-        if (_factories.length != _data.length) {
+        if (__factories.length != _data.length) {
             revert IHyperdriveGovernedRegistry.InputLengthMismatch();
         }
 
         // Add the Hyperdrive factory data to the registry.
-        for (uint256 i = 0; i < _factories.length; i++) {
+        for (uint256 i = 0; i < __factories.length; i++) {
             // If the updated data is zero, we are deleting the entry. We remove
             // the entry from the list of Hyperdrive factories and delete the
             // stored info. If the existing data is zero, we can simply skip
             // this entry.
-            uint256 data = _factoryInfo[_factories[i]].data;
+            uint256 data = _factoryInfo[__factories[i]].data;
             if (_data[i] == 0 && data != 0) {
-                _removeFactoryInstance(_factories[i]);
+                _removeFactory(__factories[i]);
             }
             // If the updated data is non-zero and the existing data is non-zero,
             // we are updating an existing entry in the registry.
             else if (_data[i] != 0 && data != 0) {
-                _updateFactoryInstance(_factories[i], _data[i]);
+                _updateFactory(__factories[i], _data[i]);
             }
             // If the updated data is non-zero and the existing data is zero,
             // we are adding a new entry to the registry.
             else if (_data[i] != 0 && data == 0) {
-                _addFactoryInstance(_factories[i], _data[i]);
-            }
-
-            // Emit an event recording the update.
-            emit FactoryInfoUpdated(_factories[i], _data[i]);
-        }
-    }
-
-    /// @inheritdoc IHyperdriveGovernedRegistry
-    function setHyperdriveInfo(
-        address[] calldata _instances,
-        uint128[] calldata _data,
-        address[] calldata _factories
-    ) external override onlyAdmin {
-        // Ensure that the arrays have the same length.
-        if (
-            _instances.length != _data.length ||
-            _instances.length != _factories.length
-        ) {
-            revert IHyperdriveGovernedRegistry.InputLengthMismatch();
-        }
-
-        // Add the Hyperdrive data to the registry.
-        for (uint256 i = 0; i < _instances.length; i++) {
-            // If the updated data is zero, we are deleting the entry. The
-            // factory should also be zero, and we remove the entry from the
-            // list of Hyperdrive instances and delete the stored info. If the
-            // existing data is zero, we can simply skip this entry.
-            uint256 data = _hyperdriveInfo[_instances[i]].data;
-            if (_data[i] == 0 && data != 0) {
-                // Ensure that the factory address is zero.
-                if (_factories[i] != address(0)) {
-                    revert IHyperdriveGovernedRegistry.InvalidFactory();
-                }
-
-                // Remove the entry from the registry.
-                _removeHyperdriveInstance(_instances[i]);
-            }
-            // If the updated data is non-zero and the existing data is non-zero,
-            // we are updating an existing entry in the registry.
-            else if (_data[i] != 0 && data != 0) {
-                _updateHyperdriveInstance(
-                    _instances[i],
-                    _data[i],
-                    _factories[i]
-                );
-            }
-            // If the updated data is non-zero and the existing data is zero,
-            // we are adding a new entry to the registry.
-            else if (_data[i] != 0 && data == 0) {
-                _addHyperdriveInstance(_instances[i], _data[i], _factories[i]);
+                _addFactory(__factories[i], _data[i]);
             }
             // Otherwise, the update is attempting to remove a non-existant
             // entry. To avoid emitting a confusing event, we continue.
@@ -159,13 +106,64 @@ contract HyperdriveRegistry is
             }
 
             // Emit an event recording the update.
-            emit HyperdriveInfoUpdated(_instances[i], _data[i], _factories[i]);
+            emit FactoryInfoUpdated(__factories[i], _data[i]);
+        }
+    }
+
+    /// @inheritdoc IHyperdriveGovernedRegistry
+    function setInstanceInfo(
+        address[] calldata __instances,
+        uint128[] calldata _data,
+        address[] calldata __factories
+    ) external override onlyAdmin {
+        // Ensure that the arrays have the same length.
+        if (
+            __instances.length != _data.length ||
+            __instances.length != __factories.length
+        ) {
+            revert IHyperdriveGovernedRegistry.InputLengthMismatch();
+        }
+
+        // Add the Hyperdrive data to the registry.
+        for (uint256 i = 0; i < __instances.length; i++) {
+            // If the updated data is zero, we are deleting the entry. The
+            // factory should also be zero, and we remove the entry from the
+            // list of Hyperdrive instances and delete the stored info. If the
+            // existing data is zero, we can simply skip this entry.
+            uint256 data = _instanceInfo[__instances[i]].data;
+            if (_data[i] == 0 && data != 0) {
+                // Ensure that the factory address is zero.
+                if (__factories[i] != address(0)) {
+                    revert IHyperdriveGovernedRegistry.InvalidFactory();
+                }
+
+                // Remove the entry from the registry.
+                _removeInstance(__instances[i]);
+            }
+            // If the updated data is non-zero and the existing data is non-zero,
+            // we are updating an existing entry in the registry.
+            else if (_data[i] != 0 && data != 0) {
+                _updateInstance(__instances[i], _data[i], __factories[i]);
+            }
+            // If the updated data is non-zero and the existing data is zero,
+            // we are adding a new entry to the registry.
+            else if (_data[i] != 0 && data == 0) {
+                _addInstance(__instances[i], _data[i], __factories[i]);
+            }
+            // Otherwise, the update is attempting to remove a non-existant
+            // entry. To avoid emitting a confusing event, we continue.
+            else {
+                continue;
+            }
+
+            // Emit an event recording the update.
+            emit InstanceInfoUpdated(__instances[i], _data[i], __factories[i]);
         }
     }
 
     /// @inheritdoc IHyperdriveRegistry
     function getNumberOfFactories() external view returns (uint256) {
-        return _hyperdriveFactories.length;
+        return _factories.length;
     }
 
     /// @inheritdoc IHyperdriveRegistry
@@ -177,14 +175,14 @@ contract HyperdriveRegistry is
         if (_startIndex > _endIndex) {
             revert IHyperdriveGovernedRegistry.InvalidIndexes();
         }
-        if (_endIndex >= _hyperdriveInstances.length) {
+        if (_endIndex > _factories.length) {
             revert IHyperdriveGovernedRegistry.EndIndexTooLarge();
         }
 
         // Get the registered factories in the range.
         factories = new address[](_endIndex - _startIndex);
         for (uint256 i = _startIndex; i < _endIndex; i++) {
-            factories[i] = _hyperdriveFactories[i];
+            factories[i - _startIndex] = _factories[i];
         }
 
         return factories;
@@ -192,27 +190,27 @@ contract HyperdriveRegistry is
 
     /// @inheritdoc IHyperdriveRegistry
     function getFactoryAtIndex(uint256 _index) external view returns (address) {
-        return _hyperdriveFactories[_index];
+        return _factories[_index];
     }
 
     /// @inheritdoc IHyperdriveRegistry
     function getFactoryInfo(
-        address[] calldata _factories
+        address[] calldata __factories
     ) external view override returns (FactoryInfo[] memory info) {
-        info = new FactoryInfo[](_factories.length);
-        for (uint256 i = 0; i < _factories.length; i++) {
-            info[i] = FactoryInfo({ data: _factoryInfo[_factories[i]].data });
+        info = new FactoryInfo[](__factories.length);
+        for (uint256 i = 0; i < __factories.length; i++) {
+            info[i] = FactoryInfo({ data: _factoryInfo[__factories[i]].data });
         }
         return info;
     }
 
     /// @inheritdoc IHyperdriveRegistry
-    function getNumberOfHyperdriveInstances() external view returns (uint256) {
-        return _hyperdriveInstances.length;
+    function getNumberOfInstances() external view returns (uint256) {
+        return _instances.length;
     }
 
     /// @inheritdoc IHyperdriveRegistry
-    function getHyperdriveInstancesInRange(
+    function getInstancesInRange(
         uint256 _startIndex,
         uint256 _endIndex
     ) external view returns (address[] memory instances) {
@@ -220,35 +218,35 @@ contract HyperdriveRegistry is
         if (_startIndex > _endIndex) {
             revert IHyperdriveGovernedRegistry.InvalidIndexes();
         }
-        if (_endIndex >= _hyperdriveInstances.length) {
+        if (_endIndex > _instances.length) {
             revert IHyperdriveGovernedRegistry.EndIndexTooLarge();
         }
 
         // Get the registered instances in the range.
         instances = new address[](_endIndex - _startIndex);
         for (uint256 i = _startIndex; i < _endIndex; i++) {
-            instances[i] = _hyperdriveInstances[i];
+            instances[i - _startIndex] = _instances[i];
         }
 
         return instances;
     }
 
     /// @inheritdoc IHyperdriveRegistry
-    function getHyperdriveInstanceAtIndex(
+    function getInstanceAtIndex(
         uint256 _index
     ) external view returns (address) {
-        return _hyperdriveInstances[_index];
+        return _instances[_index];
     }
 
     /// @inheritdoc IHyperdriveRegistry
-    function getHyperdriveInfo(
-        address[] calldata _instances
-    ) external view override returns (HyperdriveInfo[] memory info) {
-        info = new HyperdriveInfo[](_instances.length);
-        for (uint256 i = 0; i < _instances.length; i++) {
-            info[i] = HyperdriveInfo({
-                data: _hyperdriveInfo[_instances[i]].data,
-                factory: _hyperdriveInfo[_instances[i]].factory
+    function getInstanceInfo(
+        address[] calldata __instances
+    ) external view override returns (InstanceInfo[] memory info) {
+        info = new InstanceInfo[](__instances.length);
+        for (uint256 i = 0; i < __instances.length; i++) {
+            info[i] = InstanceInfo({
+                data: _instanceInfo[__instances[i]].data,
+                factory: _instanceInfo[__instances[i]].factory
             });
         }
         return info;
@@ -257,10 +255,10 @@ contract HyperdriveRegistry is
     /// @dev Adds a new Hyperdrive factory to the registry.
     /// @param _factory The factory to add.
     /// @param _data The data associated with the new factory.
-    function _addFactoryInstance(address _factory, uint128 _data) internal {
+    function _addFactory(address _factory, uint128 _data) internal {
         // Add the new factory to the list of Hyperdrive factories.
-        uint256 index = _hyperdriveFactories.length;
-        _hyperdriveFactories.push(_factory);
+        uint256 index = _factories.length;
+        _factories.push(_factory);
 
         // Add the entry to the mapping.
         _factoryInfo[_factory] = FactoryInfoInternal({
@@ -273,18 +271,28 @@ contract HyperdriveRegistry is
     ///      existing Hyperdrive factory in the registry.
     /// @param _factory The Hyperdrive factory to update.
     /// @param _data The data associated with the new factory.
-    function _updateFactoryInstance(address _factory, uint128 _data) internal {
+    function _updateFactory(address _factory, uint128 _data) internal {
         _factoryInfo[_factory].data = _data;
     }
 
     /// @dev Removes a Hyperdrive factory from the registry.
     /// @param _factory The Hyperdrive factory to remove.
-    function _removeFactoryInstance(address _factory) internal {
-        // Delete the entry from the factories list.
-        _hyperdriveFactories[
-            _factoryInfo[_factory].index
-        ] = _hyperdriveFactories[_hyperdriveFactories.length - 1];
-        _hyperdriveFactories.pop();
+    function _removeFactory(address _factory) internal {
+        // Delete the entry from the factories list. If the factory isn't the
+        // last item in the list, the item is replaced with the last item in the
+        // list.
+        uint128 index = _factoryInfo[_factory].index;
+        uint256 length = _factories.length;
+        if (index != length - 1) {
+            // Update the index of the entry that will replace the removed entry
+            // in the list.
+            address replacementFactory = _factories[length - 1];
+            _factoryInfo[replacementFactory].index = index;
+
+            // Replace the entry that is being removed.
+            _factories[index] = replacementFactory;
+        }
+        _factories.pop();
 
         // Delete the entry from the mapping.
         delete _factoryInfo[_factory];
@@ -294,7 +302,7 @@ contract HyperdriveRegistry is
     /// @param _instance The instance to add.
     /// @param _data The data associated with the new instance.
     /// @param _factory The factory that deployed the new instance.
-    function _addHyperdriveInstance(
+    function _addInstance(
         address _instance,
         uint128 _data,
         address _factory
@@ -309,11 +317,11 @@ contract HyperdriveRegistry is
         }
 
         // Add the new instance to the list of Hyperdrive instances.
-        uint256 index = _hyperdriveInstances.length;
-        _hyperdriveInstances.push(_instance);
+        uint256 index = _instances.length;
+        _instances.push(_instance);
 
         // Add the entry to the mapping.
-        _hyperdriveInfo[_instance] = HyperdriveInfoInternal({
+        _instanceInfo[_instance] = InstanceInfoInternal({
             data: _data,
             factory: _factory,
             index: uint128(index)
@@ -325,7 +333,7 @@ contract HyperdriveRegistry is
     /// @param _instance The Hyperdrive instance to update.
     /// @param _data The data associated with the new instance.
     /// @param _factory The factory that deployed the new instance.
-    function _updateHyperdriveInstance(
+    function _updateInstance(
         address _instance,
         uint128 _data,
         address _factory
@@ -335,7 +343,7 @@ contract HyperdriveRegistry is
         // updated factory address is non-zero, verify that the
         // Hyperdrive instance was actually deployed by the factory. If
         // the updated factory address is zero, we skip this check.
-        address factory = _hyperdriveInfo[_instance].factory;
+        address factory = _instanceInfo[_instance].factory;
         if (
             (factory != address(0) && factory != _factory) ||
             (factory == address(0) &&
@@ -346,30 +354,30 @@ contract HyperdriveRegistry is
         }
 
         // Update the entry in the mapping.
-        _hyperdriveInfo[_instance].data = _data;
-        _hyperdriveInfo[_instance].factory = _factory;
+        _instanceInfo[_instance].data = _data;
+        _instanceInfo[_instance].factory = _factory;
     }
 
     /// @dev Removes a Hyperdrive instance from the registry.
     /// @param _instance The Hyperdrive instance to remove.
-    function _removeHyperdriveInstance(address _instance) internal {
+    function _removeInstance(address _instance) internal {
         // Delete the entry from the instances list. If the instance isn't the
         // last item in the list, the item is replaced with the last item in the
         // list.
-        uint128 index = _hyperdriveInfo[_instance].index;
-        uint256 length = _hyperdriveInstances.length;
+        uint128 index = _instanceInfo[_instance].index;
+        uint256 length = _instances.length;
         if (index != length - 1) {
             // Update the index of the entry that will replace the removed entry
             // in the list.
-            address replacementInstance = _hyperdriveInstances[length - 1];
-            _hyperdriveInfo[replacementInstance].index = index;
+            address replacementInstance = _instances[length - 1];
+            _instanceInfo[replacementInstance].index = index;
 
             // Replace the entry that is being removed.
-            _hyperdriveInstances[index] = replacementInstance;
+            _instances[index] = replacementInstance;
         }
-        _hyperdriveInstances.pop();
+        _instances.pop();
 
         // Delete the entry from the mapping.
-        delete _hyperdriveInfo[_instance];
+        delete _instanceInfo[_instance];
     }
 }

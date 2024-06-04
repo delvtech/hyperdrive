@@ -31,7 +31,9 @@ contract HyperdriveRegistryTest is HyperdriveTest {
     string internal constant NAME = "HyperdriveRegistry";
     uint256 internal constant FIXED_RATE = 0.05e18;
 
-    event HyperdriveInfoUpdated(
+    event FactoryInfoUpdated(address indexed factory, uint256 indexed data);
+
+    event InstanceInfoUpdated(
         address indexed hyperdrive,
         uint256 indexed data,
         address indexed factory
@@ -234,9 +236,231 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         assertEq(registry.admin(), newAdmin);
     }
 
-    // FIXME: Add tests for the factory info
+    function test_setFactoryInfo_failure_onlyAdmin() public {
+        // Deploy a factory.
+        address notAdmin = makeAddr("notAdmin");
+        (IHyperdriveFactory factory, ) = deployFactory();
 
-    function test_setHyperdriveInfo_failure_onlyAdmin() public {
+        // Ensure that `setFactoryInfo` can't be called by an address that
+        // isn't the admin.
+        vm.stopPrank();
+        vm.startPrank(notAdmin);
+        address[] memory factories = new address[](1);
+        uint128[] memory data = new uint128[](1);
+        factories[0] = address(factory);
+        data[0] = 1;
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        registry.setFactoryInfo(factories, data);
+    }
+
+    function test_setFactoryInfo_failure_inputLengthMismatch() public {
+        // Deploy a factory.
+        (IHyperdriveFactory factory, ) = deployFactory();
+
+        // Ensure that adding a factory fails when then factories list is
+        // longer than the data list.
+        vm.stopPrank();
+        vm.startPrank(registry.admin());
+        address[] memory factories = new address[](1);
+        uint128[] memory data = new uint128[](0);
+        factories[0] = address(factory);
+        vm.expectRevert(
+            IHyperdriveGovernedRegistry.InputLengthMismatch.selector
+        );
+        registry.setFactoryInfo(factories, data);
+    }
+
+    function test_setFactoryInfo_success_addSingleFactory() public {
+        // Deploy a factory.
+        (IHyperdriveFactory factory, ) = deployFactory();
+
+        // Ensure that the new factory is registered correctly.
+        address[] memory factories = new address[](1);
+        uint128[] memory data = new uint128[](1);
+        factories[0] = address(factory);
+        data[0] = 1;
+        ensureAddFactoryInfo(factories, data);
+    }
+
+    function test_setFactoryInfo_success_addSingleFactoryTwice() public {
+        // Deploy two factories.
+        (IHyperdriveFactory factory0, ) = deployFactory();
+        (IHyperdriveFactory factory1, ) = deployFactory();
+
+        // Ensure that the first factory is registered correctly.
+        address[] memory factories = new address[](1);
+        uint128[] memory data = new uint128[](1);
+        factories[0] = address(factory0);
+        data[0] = 1;
+        ensureAddFactoryInfo(factories, data);
+
+        // Ensure that the second factory is registered correctly.
+        factories[0] = address(factory1);
+        ensureAddFactoryInfo(factories, data);
+    }
+
+    function test_setFactoryInfo_success_addMultipleFactories() public {
+        // Deploy several factories.
+        uint256 factoryCount = 3;
+        address[] memory factories = new address[](factoryCount);
+        uint128[] memory data = new uint128[](factoryCount);
+        for (uint256 i = 0; i < factoryCount; i++) {
+            (IHyperdriveFactory factory, ) = deployFactory();
+            factories[i] = address(factory);
+            data[i] = 1;
+        }
+
+        // Ensure that the factories are registered correctly.
+        ensureAddFactoryInfo(factories, data);
+    }
+
+    function test_setFactoryInfo_success_updateSingleFactory() public {
+        // Deploy a factory.
+        (IHyperdriveFactory factory, ) = deployFactory();
+
+        // Register the factory.
+        address[] memory factories = new address[](1);
+        uint128[] memory data = new uint128[](1);
+        factories[0] = address(factory);
+        data[0] = 1;
+        ensureAddFactoryInfo(factories, data);
+
+        // Update the factory.
+        data[0] = 2;
+        ensureUpdateFactoryInfo(factories, data);
+    }
+
+    function test_setFactoryInfo_success_updateMultipleFactories() public {
+        // Deploy several factories.
+        uint256 factoryCount = 7;
+        address[] memory factories = new address[](factoryCount);
+        uint128[] memory data = new uint128[](factoryCount);
+        for (uint256 i = 0; i < factoryCount; i++) {
+            (IHyperdriveFactory factory, ) = deployFactory();
+            factories[i] = address(factory);
+            data[i] = 1;
+        }
+
+        // Register the new factories.
+        ensureAddFactoryInfo(factories, data);
+
+        // Ensure the factories are updated correctly.
+        for (uint256 i = 0; i < factoryCount; i++) {
+            data[i] = uint128(i + 1);
+        }
+        ensureUpdateFactoryInfo(factories, data);
+    }
+
+    function test_setFactoryInfo_success_removeSingleFactory() public {
+        // Deploy a factory.
+        (IHyperdriveFactory factory, ) = deployFactory();
+
+        // Register the factory.
+        address[] memory factories = new address[](1);
+        uint128[] memory data = new uint128[](1);
+        factories[0] = address(factory);
+        data[0] = 1;
+        ensureAddFactoryInfo(factories, data);
+
+        // Ensure that the factory is successfully removed.
+        ensureRemoveFactoryInfo(factories);
+    }
+
+    function test_setFactoryInfo_success_removeNonexistantFactory() public {
+        // Ensure that a non-existant factory can be successfully removed (with
+        // no effect).
+        address[] memory factories = new address[](1);
+        uint128[] memory data = new uint128[](1);
+        factories[0] = address(0xdeadbeef);
+        data[0] = 0;
+        registry.setFactoryInfo(factories, data);
+
+        // Ensure that the list wasn't updated and that the mapping wasn't
+        // updated.
+        assertEq(registry.getNumberOfFactories(), 0);
+        IHyperdriveRegistry.FactoryInfo[] memory info = registry.getFactoryInfo(
+            factories
+        );
+        assertEq(info[0].data, 0);
+
+        // Ensure that no events were emitted.
+        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
+            FactoryInfoUpdated.selector
+        );
+        assertEq(logs.length, 0);
+    }
+
+    function test_setFactoryInfo_success_removeMultipleFactories() public {
+        // Deploy several factories.
+        uint256 factoryCount = 4;
+        address[] memory factories = new address[](factoryCount);
+        uint128[] memory data = new uint128[](factoryCount);
+        for (uint256 i = 0; i < factoryCount; i++) {
+            (IHyperdriveFactory factory, ) = deployFactory();
+            factories[i] = address(factory);
+            data[i] = 1;
+        }
+
+        // Registered the new factories.
+        ensureAddFactoryInfo(factories, data);
+
+        // Removed the factories.
+        ensureRemoveFactoryInfo(factories);
+    }
+
+    function test_setFactoryInfo_success_mixed() public {
+        // Deploy several factories.
+        uint256 factoryCount = 4;
+        address[] memory factories = new address[](factoryCount);
+        for (uint256 i = 0; i < factoryCount; i++) {
+            (IHyperdriveFactory factory, ) = deployFactory();
+            factories[i] = address(factory);
+        }
+
+        // Register three of the factories.
+        address[] memory addedFactories = new address[](factoryCount - 1);
+        uint128[] memory addedData = new uint128[](factoryCount - 1);
+        for (uint256 i = 0; i < factoryCount - 1; i++) {
+            addedFactories[i] = factories[i];
+            addedData[i] = 1;
+        }
+        ensureAddFactoryInfo(addedFactories, addedData);
+
+        // Mix and match updating the registry. The first entry is removed, the
+        // second and third are updated, and the last is added.
+        uint128[] memory data = new uint128[](factoryCount);
+        data[0] = 0;
+        data[1] = 2;
+        data[2] = 2;
+        data[3] = 1;
+        registry.setFactoryInfo(factories, data);
+
+        // Ensure that the entries were updated properly in the registry.
+        assertEq(registry.getNumberOfFactories(), factoryCount - 1);
+        assertEq(registry.getFactoryAtIndex(0), factories[2]);
+        assertEq(registry.getFactoryAtIndex(1), factories[1]);
+        assertEq(registry.getFactoryAtIndex(2), factories[3]);
+        IHyperdriveRegistry.FactoryInfo[] memory info = registry.getFactoryInfo(
+            factories
+        );
+        for (uint256 i = 0; i < factories.length; i++) {
+            assertEq(info[i].data, data[i]);
+        }
+
+        // Verify that the correct events were emitted.
+        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
+            FactoryInfoUpdated.selector
+        );
+        assertEq(logs.length, factories.length);
+        for (uint256 i = 0; i < factories.length; i++) {
+            VmSafe.Log memory log = logs[i];
+            assertEq(address(uint160(uint256(log.topics[1]))), factories[i]);
+            assertEq(uint128(uint256(log.topics[2])), data[i]);
+        }
+    }
+
+    function test_setInstanceInfo_failure_onlyAdmin() public {
+        // Deploy a factory and an instance.
         address notAdmin = makeAddr("notAdmin");
         (
             IHyperdriveFactory factory,
@@ -244,7 +468,8 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         ) = deployFactory();
         IHyperdrive instance = deployInstance(factory, deployerCoordinator, 0);
 
-        // Ensure that `setHyperdriveInfo` can't be called without
+        // Ensure that `setInstanceInfo` can't be called by an address that isn't
+        // the admin.
         vm.stopPrank();
         vm.startPrank(notAdmin);
         address[] memory instances = new address[](1);
@@ -254,10 +479,10 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         data[0] = 1;
         factories[0] = address(factory);
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
-        registry.setHyperdriveInfo(instances, data, factories);
+        registry.setInstanceInfo(instances, data, factories);
     }
 
-    function test_setHyperdriveInfo_failure_inputLengthMismatch() public {
+    function test_setInstanceInfo_failure_inputLengthMismatch() public {
         // Deploy a factory and an instance.
         (
             IHyperdriveFactory factory,
@@ -278,7 +503,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
             vm.expectRevert(
                 IHyperdriveGovernedRegistry.InputLengthMismatch.selector
             );
-            registry.setHyperdriveInfo(instances, data, factories);
+            registry.setInstanceInfo(instances, data, factories);
         }
 
         // Ensure that adding an instance fails when then instances list is
@@ -294,11 +519,11 @@ contract HyperdriveRegistryTest is HyperdriveTest {
             vm.expectRevert(
                 IHyperdriveGovernedRegistry.InputLengthMismatch.selector
             );
-            registry.setHyperdriveInfo(instances, data, factories);
+            registry.setInstanceInfo(instances, data, factories);
         }
     }
 
-    function test_setHyperdriveInfo_failure_addWithInvalidFactory() public {
+    function test_setInstanceInfo_failure_addWithInvalidFactory() public {
         // Deploy a factory and an instance. Then deploy a separate factory.
         (
             IHyperdriveFactory factory,
@@ -318,10 +543,10 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(registry.admin());
         vm.expectRevert(IHyperdriveGovernedRegistry.InvalidFactory.selector);
-        registry.setHyperdriveInfo(instances, data, factories);
+        registry.setInstanceInfo(instances, data, factories);
     }
 
-    function test_setHyperdriveInfo_success_addSingleInstance() public {
+    function test_setInstanceInfo_success_addSingleInstance() public {
         // Deploy a factory and an instance.
         (
             IHyperdriveFactory factory,
@@ -336,10 +561,10 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         instances[0] = address(instance);
         data[0] = 1;
         factories[0] = address(factory);
-        ensureAddHyperdriveInfo(instances, data, factories);
+        ensureAddInstanceInfo(instances, data, factories);
     }
 
-    function test_setHyperdriveInfo_success_addSingleInstanceWithoutFactory()
+    function test_setInstanceInfo_success_addSingleInstanceWithoutFactory()
         public
     {
         // Deploy a factory and an instance.
@@ -356,10 +581,10 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         instances[0] = address(instance);
         data[0] = 1;
         factories[0] = address(0);
-        ensureAddHyperdriveInfo(instances, data, factories);
+        ensureAddInstanceInfo(instances, data, factories);
     }
 
-    function test_setHyperdriveInfo_success_addSingleInstanceTwice() public {
+    function test_setInstanceInfo_success_addSingleInstanceTwice() public {
         // Deploy a factory and two instances.
         (
             IHyperdriveFactory factory,
@@ -375,7 +600,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         instances[0] = address(instance0);
         data[0] = 1;
         factories[0] = address(factory);
-        ensureAddHyperdriveInfo(instances, data, factories);
+        ensureAddInstanceInfo(instances, data, factories);
 
         // Ensure that the second instance is registered correctly.
         instances = new address[](1);
@@ -384,10 +609,10 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         instances[0] = address(instance1);
         data[0] = 1;
         factories[0] = address(factory);
-        ensureAddHyperdriveInfo(instances, data, factories);
+        ensureAddInstanceInfo(instances, data, factories);
     }
 
-    function test_setHyperdriveInfo_success_addMultipleInstances() public {
+    function test_setInstanceInfo_success_addMultipleInstances() public {
         // Deploy several factories and instances.
         uint256 instanceCount = 3;
         address[] memory instances = new address[](instanceCount);
@@ -409,10 +634,10 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         }
 
         // Ensure that the instances are registered correctly.
-        ensureAddHyperdriveInfo(instances, data, factories);
+        ensureAddInstanceInfo(instances, data, factories);
     }
 
-    function test_setHyperdriveInfo_failure_updateInvalidFactory() public {
+    function test_setInstanceInfo_failure_updateInvalidFactory() public {
         // Deploy a factory and an instance.
         (
             IHyperdriveFactory factory,
@@ -429,7 +654,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         factories[0] = address(factory);
         vm.stopPrank();
         vm.startPrank(registry.admin());
-        registry.setHyperdriveInfo(instances, data, factories);
+        registry.setInstanceInfo(instances, data, factories);
 
         // Ensure that the instance that had a non-zero factory can't be updated
         // with a zero factory.
@@ -438,7 +663,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(registry.admin());
         vm.expectRevert(IHyperdriveGovernedRegistry.InvalidFactory.selector);
-        registry.setHyperdriveInfo(instances, data, factories);
+        registry.setInstanceInfo(instances, data, factories);
 
         // Ensure that the instance can't be updated with an invalid factory.
         data[0] = 2;
@@ -446,10 +671,10 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(registry.admin());
         vm.expectRevert(IHyperdriveGovernedRegistry.InvalidFactory.selector);
-        registry.setHyperdriveInfo(instances, data, factories);
+        registry.setInstanceInfo(instances, data, factories);
     }
 
-    function test_setHyperdriveInfo_success_updateSingleInstance() public {
+    function test_setInstanceInfo_success_updateSingleInstance() public {
         // Deploy a factory and an instance.
         (
             IHyperdriveFactory factory,
@@ -464,14 +689,14 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         instances[0] = address(instance);
         data[0] = 1;
         factories[0] = address(factory);
-        ensureAddHyperdriveInfo(instances, data, factories);
+        ensureAddInstanceInfo(instances, data, factories);
 
         // Update the instance.
         data[0] = 2;
-        ensureUpdateHyperdriveInfo(instances, data, factories);
+        ensureUpdateInstanceInfo(instances, data, factories);
     }
 
-    function test_setHyperdriveInfo_success_updateSingleInstanceWithFactory()
+    function test_setInstanceInfo_success_updateSingleInstanceWithFactory()
         public
     {
         // Deploy a factory and an instance.
@@ -488,15 +713,15 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         instances[0] = address(instance);
         data[0] = 1;
         factories[0] = address(0);
-        ensureAddHyperdriveInfo(instances, data, factories);
+        ensureAddInstanceInfo(instances, data, factories);
 
         // Update the instance with a non-zero factory address.
         data[0] = 2;
         factories[0] = address(factory);
-        ensureUpdateHyperdriveInfo(instances, data, factories);
+        ensureUpdateInstanceInfo(instances, data, factories);
     }
 
-    function test_setHyperdriveInfo_success_updateMultipleInstances() public {
+    function test_setInstanceInfo_success_updateMultipleInstances() public {
         // Deploy several factories and instances.
         uint256 instanceCount = 7;
         address[] memory instances = new address[](instanceCount);
@@ -517,17 +742,17 @@ contract HyperdriveRegistryTest is HyperdriveTest {
             factories[i] = address(factory);
         }
 
-        // Registered the new instances.
-        ensureAddHyperdriveInfo(instances, data, factories);
+        // Register the new instances.
+        ensureAddInstanceInfo(instances, data, factories);
 
-        // Updated the instances.
+        // Update the instances.
         for (uint256 i = 0; i < instanceCount; i++) {
             data[i] = uint128(i + 1);
         }
-        ensureUpdateHyperdriveInfo(instances, data, factories);
+        ensureUpdateInstanceInfo(instances, data, factories);
     }
 
-    function test_setHyperdriveInfo_failure_removeNonzeroFactory() public {
+    function test_setInstanceInfo_failure_removeNonzeroFactory() public {
         // Deploy a factory and an instance.
         (
             IHyperdriveFactory factory,
@@ -542,17 +767,17 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         instances[0] = address(instance);
         data[0] = 1;
         factories[0] = address(factory);
-        ensureAddHyperdriveInfo(instances, data, factories);
+        ensureAddInstanceInfo(instances, data, factories);
 
         // Ensure that the instance can't be removed with a non-zero factory.
         data[0] = 0;
         vm.stopPrank();
         vm.startPrank(registry.admin());
         vm.expectRevert(IHyperdriveGovernedRegistry.InvalidFactory.selector);
-        registry.setHyperdriveInfo(instances, data, factories);
+        registry.setInstanceInfo(instances, data, factories);
     }
 
-    function test_setHyperdriveInfo_success_removeSingleInstance() public {
+    function test_setInstanceInfo_success_removeSingleInstance() public {
         // Deploy a factory and an instance.
         (
             IHyperdriveFactory factory,
@@ -567,14 +792,14 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         instances[0] = address(instance);
         data[0] = 1;
         factories[0] = address(factory);
-        ensureAddHyperdriveInfo(instances, data, factories);
+        ensureAddInstanceInfo(instances, data, factories);
 
         // Ensure that the instance is successfully removed.
-        ensureRemoveHyperdriveInfo(instances);
+        ensureRemoveInstanceInfo(instances);
     }
 
-    function test_setHyperdriveInfo_success_removeNonexistantEntry() public {
-        // Ensure that a non-existant entry can be successfully removed (with
+    function test_setInstanceInfo_success_removeNonexistantInstance() public {
+        // Ensure that a non-existant instance can be successfully removed (with
         // no effect).
         address[] memory instances = new address[](1);
         uint128[] memory data = new uint128[](1);
@@ -582,17 +807,24 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         instances[0] = address(0xdeadbeef);
         data[0] = 0;
         factories[0] = address(0);
-        registry.setHyperdriveInfo(instances, data, factories);
+        registry.setInstanceInfo(instances, data, factories);
 
-        // Ensure that the list wasn't updated and that the entry wasn't updated.
-        assertEq(registry.getNumberOfHyperdriveInstances(), 0);
-        IHyperdriveRegistry.HyperdriveInfo[] memory info = registry
-            .getHyperdriveInfo(instances);
+        // Ensure that the list wasn't updated and that the mapping wasn't
+        // updated.
+        assertEq(registry.getNumberOfInstances(), 0);
+        IHyperdriveRegistry.InstanceInfo[] memory info = registry
+            .getInstanceInfo(instances);
         assertEq(info[0].data, 0);
         assertEq(info[0].factory, address(0));
+
+        // Ensure that no events were emitted.
+        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
+            InstanceInfoUpdated.selector
+        );
+        assertEq(logs.length, 0);
     }
 
-    function test_setHyperdriveInfo_success_removeMultipleInstances() public {
+    function test_setInstanceInfo_success_removeMultipleInstances() public {
         // Deploy several factories and instances.
         uint256 instanceCount = 4;
         address[] memory instances = new address[](instanceCount);
@@ -614,13 +846,13 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         }
 
         // Registered the new instances.
-        ensureAddHyperdriveInfo(instances, data, factories);
+        ensureAddInstanceInfo(instances, data, factories);
 
         // Removed the instances.
-        ensureRemoveHyperdriveInfo(instances);
+        ensureRemoveInstanceInfo(instances);
     }
 
-    function test_setHyperdriveInfo_success_mixed() public {
+    function test_setInstanceInfo_success_mixed() public {
         // Deploy several factories and instances.
         uint256 instanceCount = 4;
         address[] memory instances = new address[](instanceCount);
@@ -648,7 +880,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
             addedData[i] = 1;
             addedFactories[i] = factories[i];
         }
-        ensureAddHyperdriveInfo(addedInstances, addedData, addedFactories);
+        ensureAddInstanceInfo(addedInstances, addedData, addedFactories);
 
         // Mix and match updating the registry. The first entry is removed, the
         // second and third are updated, and the last is added.
@@ -658,15 +890,15 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         data[2] = 2;
         data[3] = 1;
         factories[0] = address(0);
-        registry.setHyperdriveInfo(instances, data, factories);
+        registry.setInstanceInfo(instances, data, factories);
 
         // Ensure that the entries were updated properly in the registry.
-        assertEq(registry.getNumberOfHyperdriveInstances(), instanceCount - 1);
-        assertEq(registry.getHyperdriveInstanceAtIndex(0), instances[2]);
-        assertEq(registry.getHyperdriveInstanceAtIndex(1), instances[1]);
-        assertEq(registry.getHyperdriveInstanceAtIndex(2), instances[3]);
-        IHyperdriveRegistry.HyperdriveInfo[] memory info = registry
-            .getHyperdriveInfo(instances);
+        assertEq(registry.getNumberOfInstances(), instanceCount - 1);
+        assertEq(registry.getInstanceAtIndex(0), instances[2]);
+        assertEq(registry.getInstanceAtIndex(1), instances[1]);
+        assertEq(registry.getInstanceAtIndex(2), instances[3]);
+        IHyperdriveRegistry.InstanceInfo[] memory info = registry
+            .getInstanceInfo(instances);
         for (uint256 i = 0; i < instances.length; i++) {
             assertEq(info[i].data, data[i]);
             assertEq(info[i].factory, factories[i]);
@@ -674,7 +906,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
 
         // Verify that the correct events were emitted.
         VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
-            HyperdriveInfoUpdated.selector
+            InstanceInfoUpdated.selector
         );
         assertEq(logs.length, instances.length);
         for (uint256 i = 0; i < instances.length; i++) {
@@ -685,15 +917,147 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         }
     }
 
-    function ensureAddHyperdriveInfo(
+    function ensureAddFactoryInfo(
+        address[] memory _factories,
+        uint128[] memory _data
+    ) internal {
+        // Ensure that the factories haven't been registered.
+        uint256 factoryCountBefore = registry.getNumberOfFactories();
+        IHyperdriveRegistry.FactoryInfo[] memory info = registry.getFactoryInfo(
+            _factories
+        );
+        for (uint256 i = 0; i < _factories.length; i++) {
+            assertEq(info[i].data, 0);
+        }
+
+        // Register the factories.
+        vm.stopPrank();
+        vm.startPrank(registry.admin());
+        registry.setFactoryInfo(_factories, _data);
+
+        // Ensure that the factories are registered in the list and the mapping.
+        assertEq(
+            registry.getNumberOfFactories(),
+            factoryCountBefore + _factories.length
+        );
+        address[] memory factories = registry.getFactoriesInRange(
+            factoryCountBefore,
+            factoryCountBefore + _factories.length
+        );
+        assertTrue(factories.eq(_factories));
+        info = registry.getFactoryInfo(_factories);
+        for (uint256 i = 0; i < _factories.length; i++) {
+            assertEq(
+                registry.getFactoryAtIndex(factoryCountBefore + i),
+                _factories[i]
+            );
+            assertEq(info[i].data, _data[i]);
+        }
+
+        // Verify that the correct events were emitted.
+        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
+            FactoryInfoUpdated.selector
+        );
+        assertEq(logs.length, _factories.length);
+        for (uint256 i = 0; i < _factories.length; i++) {
+            VmSafe.Log memory log = logs[i];
+            assertEq(address(uint160(uint256(log.topics[1]))), _factories[i]);
+            assertEq(uint128(uint256(log.topics[2])), _data[i]);
+        }
+
+        // Start recording logs again.
+        vm.recordLogs();
+    }
+
+    function ensureUpdateFactoryInfo(
+        address[] memory _factories,
+        uint128[] memory _data
+    ) internal {
+        // Get the factory count before the update. This shouldn't change.
+        uint256 factoryCountBefore = registry.getNumberOfFactories();
+
+        // Update the factories.
+        vm.stopPrank();
+        vm.startPrank(registry.admin());
+        registry.setFactoryInfo(_factories, _data);
+
+        // Ensure that the factories are still registered in the list and that
+        // the associated data has been updated correctly in the mapping.
+        assertEq(registry.getNumberOfFactories(), factoryCountBefore);
+        IHyperdriveRegistry.FactoryInfo[] memory info = registry.getFactoryInfo(
+            _factories
+        );
+        for (uint256 i = 0; i < _factories.length; i++) {
+            assertEq(registry.getFactoryAtIndex(i), _factories[i]);
+            assertEq(info[i].data, _data[i]);
+        }
+
+        // Verify that the correct events were emitted.
+        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
+            FactoryInfoUpdated.selector
+        );
+        assertEq(logs.length, _factories.length);
+        for (uint256 i = 0; i < _factories.length; i++) {
+            VmSafe.Log memory log = logs[i];
+            assertEq(address(uint160(uint256(log.topics[1]))), _factories[i]);
+            assertEq(uint128(uint256(log.topics[2])), _data[i]);
+        }
+
+        // Start recording logs again.
+        vm.recordLogs();
+    }
+
+    function ensureRemoveFactoryInfo(address[] memory _factories) internal {
+        // Get the factory count before the update. This should decrease by
+        // the number of factories that we are removing.
+        uint256 factoryCountBefore = registry.getNumberOfFactories();
+
+        // Remove the instances.
+        uint128[] memory data = new uint128[](_factories.length);
+        for (uint256 i = 0; i < _factories.length; i++) {
+            data[i] = 0;
+        }
+        vm.stopPrank();
+        vm.startPrank(registry.admin());
+        registry.setFactoryInfo(_factories, data);
+
+        // Ensure that the factories have been removed from the list and that
+        // the associated data has been removed from the mapping.
+        assertEq(
+            registry.getNumberOfFactories(),
+            factoryCountBefore - _factories.length
+        );
+        IHyperdriveRegistry.FactoryInfo[] memory info = registry.getFactoryInfo(
+            _factories
+        );
+        for (uint256 i = 0; i < _factories.length; i++) {
+            assertEq(info[i].data, 0);
+        }
+
+        // Verify that the correct events were emitted.
+        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
+            FactoryInfoUpdated.selector
+        );
+        assertEq(logs.length, _factories.length);
+        for (uint256 i = 0; i < _factories.length; i++) {
+            VmSafe.Log memory log = logs[i];
+            assertEq(address(uint160(uint256(log.topics[1]))), _factories[i]);
+            assertEq(uint128(uint256(log.topics[2])), 0);
+        }
+
+        // Start recording logs again.
+        vm.recordLogs();
+    }
+
+    function ensureAddInstanceInfo(
         address[] memory _instances,
         uint128[] memory _data,
         address[] memory _factories
     ) internal {
         // Ensure that the instances haven't been registered.
-        uint256 instanceCountBefore = registry.getNumberOfHyperdriveInstances();
-        IHyperdriveRegistry.HyperdriveInfo[] memory info = registry
-            .getHyperdriveInfo(_instances);
+        uint256 instanceCountBefore = registry.getNumberOfInstances();
+        IHyperdriveRegistry.InstanceInfo[] memory info = registry
+            .getInstanceInfo(_instances);
         for (uint256 i = 0; i < _instances.length; i++) {
             assertEq(info[i].data, 0);
             assertEq(info[i].factory, address(0));
@@ -702,17 +1066,22 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         // Register the instances.
         vm.stopPrank();
         vm.startPrank(registry.admin());
-        registry.setHyperdriveInfo(_instances, _data, _factories);
+        registry.setInstanceInfo(_instances, _data, _factories);
 
         // Ensure that the instances are registered in the list and the mapping.
         assertEq(
-            registry.getNumberOfHyperdriveInstances(),
+            registry.getNumberOfInstances(),
             instanceCountBefore + _instances.length
         );
-        info = registry.getHyperdriveInfo(_instances);
+        address[] memory instances = registry.getInstancesInRange(
+            instanceCountBefore,
+            instanceCountBefore + _instances.length
+        );
+        assertTrue(instances.eq(_instances));
+        info = registry.getInstanceInfo(_instances);
         for (uint256 i = 0; i < _instances.length; i++) {
             assertEq(
-                registry.getHyperdriveInstanceAtIndex(instanceCountBefore + i),
+                registry.getInstanceAtIndex(instanceCountBefore + i),
                 _instances[i]
             );
             assertEq(info[i].data, _data[i]);
@@ -721,7 +1090,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
 
         // Verify that the correct events were emitted.
         VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
-            HyperdriveInfoUpdated.selector
+            InstanceInfoUpdated.selector
         );
         assertEq(logs.length, _instances.length);
         for (uint256 i = 0; i < _instances.length; i++) {
@@ -735,37 +1104,34 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         vm.recordLogs();
     }
 
-    function ensureUpdateHyperdriveInfo(
+    function ensureUpdateInstanceInfo(
         address[] memory _instances,
         uint128[] memory _data,
         address[] memory _factories
     ) internal {
         // Get the instance count before the update. This shouldn't change.
-        uint256 instanceCountBefore = registry.getNumberOfHyperdriveInstances();
+        uint256 instanceCountBefore = registry.getNumberOfInstances();
 
         // Update the instances.
         vm.stopPrank();
         vm.startPrank(registry.admin());
-        registry.setHyperdriveInfo(_instances, _data, _factories);
+        registry.setInstanceInfo(_instances, _data, _factories);
 
         // Ensure that the instances are still registered in the list and that
         // the associated data and factories has been updated correctly in the
         // mapping.
-        assertEq(
-            registry.getNumberOfHyperdriveInstances(),
-            instanceCountBefore
-        );
-        IHyperdriveRegistry.HyperdriveInfo[] memory info = registry
-            .getHyperdriveInfo(_instances);
+        assertEq(registry.getNumberOfInstances(), instanceCountBefore);
+        IHyperdriveRegistry.InstanceInfo[] memory info = registry
+            .getInstanceInfo(_instances);
         for (uint256 i = 0; i < _instances.length; i++) {
-            assertEq(registry.getHyperdriveInstanceAtIndex(i), _instances[i]);
+            assertEq(registry.getInstanceAtIndex(i), _instances[i]);
             assertEq(info[i].data, _data[i]);
             assertEq(info[i].factory, _factories[i]);
         }
 
         // Verify that the correct events were emitted.
         VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
-            HyperdriveInfoUpdated.selector
+            InstanceInfoUpdated.selector
         );
         assertEq(logs.length, _instances.length);
         for (uint256 i = 0; i < _instances.length; i++) {
@@ -779,10 +1145,10 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         vm.recordLogs();
     }
 
-    function ensureRemoveHyperdriveInfo(address[] memory _instances) internal {
+    function ensureRemoveInstanceInfo(address[] memory _instances) internal {
         // Get the instance count before the update. This should decrease by
         // the number of instances that we are removing.
-        uint256 instanceCountBefore = registry.getNumberOfHyperdriveInstances();
+        uint256 instanceCountBefore = registry.getNumberOfInstances();
 
         // Remove the instances.
         uint128[] memory data = new uint128[](_instances.length);
@@ -793,16 +1159,16 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         }
         vm.stopPrank();
         vm.startPrank(registry.admin());
-        registry.setHyperdriveInfo(_instances, data, factories);
+        registry.setInstanceInfo(_instances, data, factories);
 
         // Ensure that the instances have been removed from the list and that
         // the associated data and factories has been removed from the mapping.
         assertEq(
-            registry.getNumberOfHyperdriveInstances(),
+            registry.getNumberOfInstances(),
             instanceCountBefore - _instances.length
         );
-        IHyperdriveRegistry.HyperdriveInfo[] memory info = registry
-            .getHyperdriveInfo(_instances);
+        IHyperdriveRegistry.InstanceInfo[] memory info = registry
+            .getInstanceInfo(_instances);
         for (uint256 i = 0; i < _instances.length; i++) {
             assertEq(info[i].data, 0);
             assertEq(info[i].factory, address(0));
@@ -810,14 +1176,14 @@ contract HyperdriveRegistryTest is HyperdriveTest {
 
         // Verify that the correct events were emitted.
         VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
-            HyperdriveInfoUpdated.selector
+            InstanceInfoUpdated.selector
         );
         assertEq(logs.length, _instances.length);
         for (uint256 i = 0; i < _instances.length; i++) {
             VmSafe.Log memory log = logs[i];
             assertEq(address(uint160(uint256(log.topics[1]))), _instances[i]);
-            assertEq(uint128(uint256(log.topics[2])), data[i]);
-            assertEq(address(uint160(uint256(log.topics[3]))), factories[i]);
+            assertEq(uint128(uint256(log.topics[2])), 0);
+            assertEq(address(uint160(uint256(log.topics[3]))), address(0));
         }
 
         // Start recording logs again.

@@ -7,12 +7,12 @@ interface IHyperdriveGovernedRegistry is IHyperdriveRegistry {
     /// @notice Emitted when admin is transferred.
     event AdminUpdated(address indexed admin);
 
-    /// @notice Emitted when hyperdrive factory info is updated.
+    /// @notice Emitted when Hyperdrive factory info is updated.
     event FactoryInfoUpdated(address indexed factory, uint256 indexed data);
 
-    /// @notice Emitted when hyperdrive info is updated.
-    event HyperdriveInfoUpdated(
-        address indexed hyperdrive,
+    /// @notice Emitted when Hyperdrive instance info is updated.
+    event InstanceInfoUpdated(
+        address indexed instance,
         uint256 indexed data,
         address indexed factory
     );
@@ -28,7 +28,7 @@ interface IHyperdriveGovernedRegistry is IHyperdriveRegistry {
     }
 
     /// @dev The info collected for each Hyperdrive instance.
-    struct HyperdriveInfoInternal {
+    struct InstanceInfoInternal {
         /// @dev Data about the instance. Different registries can utilize
         ///      different schemas for these values.
         uint128 data;
@@ -66,20 +66,20 @@ interface IHyperdriveGovernedRegistry is IHyperdriveRegistry {
     function updateAdmin(address _admin) external;
 
     /// @notice Allows governance to set arbitrary info for Hyperdrive factories.
-    /// @param _factories The Hyperdrive factories to update.
+    /// @param __factories The Hyperdrive factories to update.
     /// @param _data The data associated with the factories.
     function setFactoryInfo(
-        address[] memory _factories,
+        address[] memory __factories,
         uint128[] memory _data
     ) external;
 
     /// @notice Allows governance to set arbitrary info for Hyperdrive instances.
-    /// @param _instances The Hyperdrive instances to update.
+    /// @param __instances The Hyperdrive instances to update.
     /// @param _data The data associated with the instances.
-    /// @param _factories The factory associated with the instances.
-    function setHyperdriveInfo(
-        address[] memory _instances,
+    /// @param __factories The factory associated with the instances.
+    function setInstanceInfo(
+        address[] memory __instances,
         uint128[] memory _data,
-        address[] memory _factories
+        address[] memory __factories
     ) external;
 }
