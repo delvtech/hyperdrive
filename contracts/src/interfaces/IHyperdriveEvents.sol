@@ -11,7 +11,8 @@ interface IHyperdriveEvents is IMultiTokenEvents {
         uint256 amount,
         uint256 vaultSharePrice,
         bool asBase,
-        uint256 apr
+        uint256 apr,
+        bytes extraData
     );
 
     /// @notice Emitted when an LP adds liquidity to the Hyperdrive pool.
@@ -21,7 +22,8 @@ interface IHyperdriveEvents is IMultiTokenEvents {
         uint256 amount,
         uint256 vaultSharePrice,
         bool asBase,
-        uint256 lpSharePrice
+        uint256 lpSharePrice,
+        bytes extraData
     );
 
     /// @notice Emitted when an LP removes liquidity from the Hyperdrive pool.
@@ -33,7 +35,8 @@ interface IHyperdriveEvents is IMultiTokenEvents {
         uint256 vaultSharePrice,
         bool asBase,
         uint256 withdrawalShareAmount,
-        uint256 lpSharePrice
+        uint256 lpSharePrice,
+        bytes extraData
     );
 
     /// @notice Emitted when an LP redeems withdrawal shares.
@@ -43,7 +46,8 @@ interface IHyperdriveEvents is IMultiTokenEvents {
         uint256 withdrawalShareAmount,
         uint256 amount,
         uint256 vaultSharePrice,
-        bool asBase
+        bool asBase,
+        bytes extraData
     );
 
     /// @notice Emitted when a long position is opened.
@@ -54,7 +58,8 @@ interface IHyperdriveEvents is IMultiTokenEvents {
         uint256 amount,
         uint256 vaultSharePrice,
         bool asBase,
-        uint256 bondAmount
+        uint256 bondAmount,
+        bytes extraData
     );
 
     /// @notice Emitted when a short position is opened.
@@ -66,7 +71,8 @@ interface IHyperdriveEvents is IMultiTokenEvents {
         uint256 vaultSharePrice,
         bool asBase,
         uint256 baseProceeds,
-        uint256 bondAmount
+        uint256 bondAmount,
+        bytes extraData
     );
 
     /// @notice Emitted when a long position is closed.
@@ -78,7 +84,8 @@ interface IHyperdriveEvents is IMultiTokenEvents {
         uint256 amount,
         uint256 vaultSharePrice,
         bool asBase,
-        uint256 bondAmount
+        uint256 bondAmount,
+        bytes extraData
     );
 
     /// @notice Emitted when a short position is closed.
@@ -91,7 +98,8 @@ interface IHyperdriveEvents is IMultiTokenEvents {
         uint256 vaultSharePrice,
         bool asBase,
         uint256 basePayment,
-        uint256 bondAmount
+        uint256 bondAmount,
+        bytes extraData
     );
 
     /// @notice Emitted when a checkpoint is created.

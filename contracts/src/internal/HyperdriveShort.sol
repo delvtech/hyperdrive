@@ -156,7 +156,8 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             (shareReservesDelta_ - totalGovernanceFee_).mulDown(
                 vaultSharePrice_
             ),
-            bondAmount
+            bondAmount,
+            options.extraData
         );
 
         return (maturityTime, deposit);
@@ -319,7 +320,8 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             (shareReservesDelta_ + totalGovernanceFee_).mulDown(
                 vaultSharePrice_
             ),
-            bondAmount
+            bondAmount,
+            options.extraData
         );
 
         return proceeds;

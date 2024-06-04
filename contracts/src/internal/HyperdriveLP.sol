@@ -132,7 +132,8 @@ abstract contract HyperdriveLP is
             _contribution,
             vaultSharePrice,
             _options.asBase,
-            _apr
+            _apr,
+            _options.extraData
         );
 
         return lpShares;
@@ -298,7 +299,8 @@ abstract contract HyperdriveLP is
             contribution,
             vaultSharePrice,
             options.asBase,
-            lpSharePrice
+            lpSharePrice,
+            options.extraData
         );
     }
 
@@ -377,7 +379,8 @@ abstract contract HyperdriveLP is
             vaultSharePrice,
             _options.asBase,
             uint256(withdrawalShares),
-            lpSharePrice
+            lpSharePrice,
+            _options.extraData
         );
 
         return (proceeds, withdrawalShares);
@@ -434,7 +437,8 @@ abstract contract HyperdriveLP is
             withdrawalSharesRedeemed,
             proceeds,
             vaultSharePrice,
-            _options.asBase
+            _options.asBase,
+            _options.extraData
         );
 
         return (proceeds, withdrawalSharesRedeemed);
