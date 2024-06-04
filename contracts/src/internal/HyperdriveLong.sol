@@ -137,7 +137,8 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             amount,
             vaultSharePrice_,
             options.asBase,
-            bondProceeds_
+            bondProceeds_,
+            options.extraData
         );
 
         return (maturityTime, bondProceeds_);
@@ -289,7 +290,8 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             proceeds,
             vaultSharePrice_,
             options.asBase,
-            bondAmount
+            bondAmount,
+            options.extraData
         );
 
         return proceeds;
