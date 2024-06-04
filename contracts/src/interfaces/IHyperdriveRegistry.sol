@@ -7,6 +7,10 @@ interface IHyperdriveRegistry {
         /// @dev Data about the factory. Different registries can utilize
         ///      different schemas for these values.
         uint256 data;
+        /// @dev The factory's name.
+        string name;
+        /// @dev The factory's version.
+        string version;
     }
 
     /// @dev The info related to each Hyperdrive instance.
@@ -16,6 +20,10 @@ interface IHyperdriveRegistry {
         uint256 data;
         /// @dev The factory that deployed this instance.
         address factory;
+        /// @dev The instance's name.
+        string name;
+        /// @dev The instance's version.
+        string version;
     }
 
     /// @notice Gets the registry's name.

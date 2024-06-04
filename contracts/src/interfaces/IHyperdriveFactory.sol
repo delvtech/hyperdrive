@@ -381,6 +381,14 @@ interface IHyperdriveFactory {
 
     /// Getters ///
 
+    /// @notice Gets the factory's name.
+    /// @return The factory's name.
+    function name() external view returns (string memory);
+
+    /// @notice Gets the factory's version.
+    /// @return The factory's version.
+    function version() external pure returns (string memory);
+
     /// @notice Returns the governance address that updates the factory's
     ///         configuration.
     /// @return The factory's governance address.
@@ -475,17 +483,17 @@ interface IHyperdriveFactory {
     function getNumberOfInstances() external view returns (uint256);
 
     /// @notice Gets the instance at the specified index.
-    /// @param index The index of the instance to get.
+    /// @param _index The index of the instance to get.
     /// @return The instance at the specified index.
-    function getInstanceAtIndex(uint256 index) external view returns (address);
+    function getInstanceAtIndex(uint256 _index) external view returns (address);
 
     /// @notice Returns the _instances array according to specified indices.
-    /// @param startIndex The starting index of the instances to get.
-    /// @param endIndex The ending index of the instances to get.
+    /// @param _startIndex The starting index of the instances to get.
+    /// @param _endIndex The ending index of the instances to get.
     /// @return range The resulting custom portion of the _instances array.
     function getInstancesInRange(
-        uint256 startIndex,
-        uint256 endIndex
+        uint256 _startIndex,
+        uint256 _endIndex
     ) external view returns (address[] memory range);
 
     /// @notice Returns a flag indicating whether or not an instance was
@@ -501,20 +509,20 @@ interface IHyperdriveFactory {
     function getNumberOfDeployerCoordinators() external view returns (uint256);
 
     /// @notice Gets the deployer coordinator at the specified index.
-    /// @param index The index of the deployer coordinator to get.
+    /// @param _index The index of the deployer coordinator to get.
     /// @return The deployer coordinator at the specified index.
     function getDeployerCoordinatorAtIndex(
-        uint256 index
+        uint256 _index
     ) external view returns (address);
 
     /// @notice Returns the deployer coordinators with an index between the
     ///         starting and ending indexes (inclusive).
-    /// @param startIndex The starting index (inclusive).
-    /// @param endIndex The ending index (inclusive).
+    /// @param _startIndex The starting index (inclusive).
+    /// @param _endIndex The ending index (inclusive).
     /// @return range The deployer coordinators within the specified range.
     function getDeployerCoordinatorsInRange(
-        uint256 startIndex,
-        uint256 endIndex
+        uint256 _startIndex,
+        uint256 _endIndex
     ) external view returns (address[] memory range);
 
     /// @notice Returns a flag indicating whether or not a deployer coordinator
@@ -526,12 +534,10 @@ interface IHyperdriveFactory {
         address _deployerCoordinator
     ) external view returns (bool);
 
-    /// @notice Gets the deployer coordinator that deployed a Hyperdrive
-    ///         instance.
-    /// @param _instance The instance that was deployed.
-    /// @return deployerCoordinator The deployer coordinator that deployed the
-    ///         instance.
-    function instancesToDeployerCoordinators(
-        address _instance
-    ) external view returns (address deployerCoordinator);
+    /// @notice Gets the deployer coordinators that deployed a list of instances.
+    /// @param __instances The instances.
+    /// @return coordinators The deployer coordinators.
+    function getDeployerCoordinatorByInstances(
+        address[] calldata __instances
+    ) external view returns (address[] memory coordinators);
 }

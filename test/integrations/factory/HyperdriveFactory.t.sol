@@ -3452,7 +3452,7 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
     function test_hyperdriveFactory_getDeployerCoordinatorsInRange_failure_endIndexTooLarge()
         external
     {
-        uint256 endIndex = factory.getNumberOfDeployerCoordinators();
+        uint256 endIndex = factory.getNumberOfDeployerCoordinators() + 1;
         vm.expectRevert(IHyperdriveFactory.EndIndexTooLarge.selector);
         factory.getDeployerCoordinatorsInRange(0, endIndex);
     }
@@ -3474,8 +3474,8 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
         );
         endingIndex = bound(
             endingIndex,
-            startingIndex,
-            numberOfDeployerCoordinators - 1
+            startingIndex + 1,
+            numberOfDeployerCoordinators
         );
 
         address[] memory deployerCoordinators = new address[](
@@ -3501,10 +3501,7 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
         address[] memory deployerCoordinatorsArray = factory
             .getDeployerCoordinatorsInRange(startingIndex, endingIndex);
 
-        assertEq(
-            deployerCoordinatorsArray.length,
-            endingIndex - startingIndex + 1
-        );
+        assertEq(deployerCoordinatorsArray.length, endingIndex - startingIndex);
 
         for (uint256 i; i < deployerCoordinatorsArray.length; i++) {
             assertEq(
@@ -3620,7 +3617,7 @@ contract HyperdriveFactoryAddDeployerCoordinatorTest is HyperdriveTest {
 
         // Ensure that the deployers in range function is working properly.
         address[] memory deployerCoordinators = factory
-            .getDeployerCoordinatorsInRange(0, 0);
+            .getDeployerCoordinatorsInRange(0, 1);
         assertEq(deployerCoordinators.length, 1);
         assertEq(deployerCoordinators[0], deployerCoordinator0);
 
@@ -3639,7 +3636,7 @@ contract HyperdriveFactoryAddDeployerCoordinatorTest is HyperdriveTest {
         );
 
         // Ensure that the deployers in range function is working properly.
-        deployerCoordinators = factory.getDeployerCoordinatorsInRange(0, 1);
+        deployerCoordinators = factory.getDeployerCoordinatorsInRange(0, 2);
         assertEq(deployerCoordinators.length, 2);
         assertEq(deployerCoordinators[0], deployerCoordinator0);
         assertEq(deployerCoordinators[1], deployerCoordinator1);
@@ -3775,7 +3772,7 @@ contract HyperdriveFactoryRemoveDeployerCoordinatorTest is HyperdriveTest {
 
         // Ensure that deployer coordinators in range is working properly.
         address[] memory deployerCoordinators = factory
-            .getDeployerCoordinatorsInRange(0, 2);
+            .getDeployerCoordinatorsInRange(0, 3);
         assertEq(deployerCoordinators.length, 3);
         assertEq(deployerCoordinators[0], deployerCoordinator0);
         assertEq(deployerCoordinators[1], deployerCoordinator1);
@@ -3804,7 +3801,7 @@ contract HyperdriveFactoryRemoveDeployerCoordinatorTest is HyperdriveTest {
         //
         // Ensure that deployer coordinators in range is working properly after
         // removal.
-        deployerCoordinators = factory.getDeployerCoordinatorsInRange(0, 1);
+        deployerCoordinators = factory.getDeployerCoordinatorsInRange(0, 2);
         assertEq(deployerCoordinators.length, 2);
         assertEq(deployerCoordinators[0], deployerCoordinator2);
         assertEq(deployerCoordinators[1], deployerCoordinator1);

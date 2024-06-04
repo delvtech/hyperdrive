@@ -10,9 +10,10 @@ import { SafeCast } from "../libraries/SafeCast.sol";
 
 /// @author DELV
 /// @title HyperdriveRegistry
-/// @notice Allows a governance address to manage a list of registered
-///         Hyperdrive instances. This provides a convenient place for consumers
-///         of Hyperdrive contracts to query a list of well-known pools.
+/// @notice Allows an admin address to manage a list of registered Hyperdrive
+///         instances and factories. This provides a convenient place for
+///         consumers of Hyperdrive contracts to query a list of well-known
+///         pools.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
@@ -199,7 +200,12 @@ contract HyperdriveRegistry is
     ) external view override returns (FactoryInfo[] memory info) {
         info = new FactoryInfo[](__factories.length);
         for (uint256 i = 0; i < __factories.length; i++) {
-            info[i] = FactoryInfo({ data: _factoryInfo[__factories[i]].data });
+            IHyperdriveFactory factory = IHyperdriveFactory(__factories[i]);
+            info[i] = FactoryInfo({
+                data: _factoryInfo[__factories[i]].data,
+                name: factory.name(),
+                version: factory.version()
+            });
         }
         return info;
     }
@@ -244,9 +250,12 @@ contract HyperdriveRegistry is
     ) external view override returns (InstanceInfo[] memory info) {
         info = new InstanceInfo[](__instances.length);
         for (uint256 i = 0; i < __instances.length; i++) {
+            IHyperdrive instance = IHyperdrive(__instances[i]);
             info[i] = InstanceInfo({
                 data: _instanceInfo[__instances[i]].data,
-                factory: _instanceInfo[__instances[i]].factory
+                factory: _instanceInfo[__instances[i]].factory,
+                name: instance.name(),
+                version: instance.version()
             });
         }
         return info;

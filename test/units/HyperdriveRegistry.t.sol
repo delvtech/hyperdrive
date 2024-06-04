@@ -365,12 +365,17 @@ contract HyperdriveRegistryTest is HyperdriveTest {
     }
 
     function test_setFactoryInfo_success_removeNonexistentFactory() public {
+        // Deploy a factory.
+        (IHyperdriveFactory factory, ) = deployFactory();
+
         // Ensure that a nonexistent factory can be successfully removed (with
         // no effect).
         address[] memory factories = new address[](1);
         uint128[] memory data = new uint128[](1);
-        factories[0] = address(0xdeadbeef);
+        factories[0] = address(factory);
         data[0] = 0;
+        vm.stopPrank();
+        vm.startPrank(registry.admin());
         registry.setFactoryInfo(factories, data);
 
         // Ensure that the list wasn't updated and that the mapping wasn't
@@ -797,14 +802,23 @@ contract HyperdriveRegistryTest is HyperdriveTest {
     }
 
     function test_setInstanceInfo_success_removeNonexistentInstance() public {
+        // Deploy a factory and an instance.
+        (
+            IHyperdriveFactory factory,
+            address deployerCoordinator
+        ) = deployFactory();
+        IHyperdrive instance = deployInstance(factory, deployerCoordinator, 0);
+
         // Ensure that a nonexistent instance can be successfully removed (with
         // no effect).
         address[] memory instances = new address[](1);
         uint128[] memory data = new uint128[](1);
         address[] memory factories = new address[](1);
-        instances[0] = address(0xdeadbeef);
+        instances[0] = address(instance);
         data[0] = 0;
         factories[0] = address(0);
+        vm.stopPrank();
+        vm.startPrank(registry.admin());
         registry.setInstanceInfo(instances, data, factories);
 
         // Ensure that the list wasn't updated and that the mapping wasn't
