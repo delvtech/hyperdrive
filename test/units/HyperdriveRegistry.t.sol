@@ -24,15 +24,17 @@ import { MockERC4626 } from "contracts/test/MockERC4626.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-// FIXME: Update the tests.
-//
-// - [ ] Add tests for `getHyperdriveInfo`
-// - [ ] Add tests for `setHyperdriveInfo`
-contract HyperdriveRegistryTests is HyperdriveTest {
+contract HyperdriveRegistryTest is HyperdriveTest {
     using Lib for *;
 
     string internal constant NAME = "HyperdriveRegistry";
     uint256 internal constant FIXED_RATE = 0.05e18;
+
+    event HyperdriveInfoUpdated(
+        address indexed hyperdrive,
+        uint256 indexed data,
+        address indexed factory
+    );
 
     IERC4626 internal vaultSharesToken;
     IHyperdriveGovernedRegistry internal registry;
@@ -70,6 +72,9 @@ contract HyperdriveRegistryTests is HyperdriveTest {
                 )
             )
         );
+
+        // Start recording event logs.
+        vm.recordLogs();
     }
 
     /// Helpers ///
@@ -650,9 +655,23 @@ contract HyperdriveRegistryTests is HyperdriveTest {
             assertEq(info[i].data, _data[i]);
             assertEq(info[i].factory, _factories[i]);
         }
+
+        // Verify that the correct events were emitted.
+        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
+            HyperdriveInfoUpdated.selector
+        );
+        assertEq(logs.length, _instances.length);
+        for (uint256 i = 0; i < _instances.length; i++) {
+            VmSafe.Log memory log = logs[i];
+            assertEq(address(uint160(uint256(log.topics[1]))), _instances[i]);
+            assertEq(uint128(uint256(log.topics[2])), _data[i]);
+            assertEq(address(uint160(uint256(log.topics[3]))), _factories[i]);
+        }
+
+        // Start recording logs again.
+        vm.recordLogs();
     }
 
-    // FIXME: Verify events.
     function ensureUpdateHyperdriveInfo(
         address[] memory _instances,
         uint128[] memory _data,
@@ -680,9 +699,23 @@ contract HyperdriveRegistryTests is HyperdriveTest {
             assertEq(info[i].data, _data[i]);
             assertEq(info[i].factory, _factories[i]);
         }
+
+        // Verify that the correct events were emitted.
+        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
+            HyperdriveInfoUpdated.selector
+        );
+        assertEq(logs.length, _instances.length);
+        for (uint256 i = 0; i < _instances.length; i++) {
+            VmSafe.Log memory log = logs[i];
+            assertEq(address(uint160(uint256(log.topics[1]))), _instances[i]);
+            assertEq(uint128(uint256(log.topics[2])), _data[i]);
+            assertEq(address(uint160(uint256(log.topics[3]))), _factories[i]);
+        }
+
+        // Start recording logs again.
+        vm.recordLogs();
     }
 
-    // FIXME: Verify events.
     function ensureRemoveHyperdriveInfo(address[] memory _instances) internal {
         // Get the instance count before the update. This should decrease by
         // the number of instances that we are removing.
@@ -711,5 +744,20 @@ contract HyperdriveRegistryTests is HyperdriveTest {
             assertEq(info[i].data, 0);
             assertEq(info[i].factory, address(0));
         }
+
+        // Verify that the correct events were emitted.
+        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
+            HyperdriveInfoUpdated.selector
+        );
+        assertEq(logs.length, _instances.length);
+        for (uint256 i = 0; i < _instances.length; i++) {
+            VmSafe.Log memory log = logs[i];
+            assertEq(address(uint160(uint256(log.topics[1]))), _instances[i]);
+            assertEq(uint128(uint256(log.topics[2])), data[i]);
+            assertEq(address(uint160(uint256(log.topics[3]))), factories[i]);
+        }
+
+        // Start recording logs again.
+        vm.recordLogs();
     }
 }
