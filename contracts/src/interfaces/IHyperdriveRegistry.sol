@@ -1,7 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { IERC20 } from "./IERC20.sol";
+
 interface IHyperdriveRegistry {
+    /// @dev The info collected for each Hyperdrive factory.
+    struct FactoryInfo {
+        /// @dev Data about the factory. Different registries can utilize
+        ///      different schemas for these values.
+        uint256 data;
+    }
+
     /// @dev The info related to each Hyperdrive instance.
     struct HyperdriveInfo {
         /// @dev Data about the instance. Different registries can utilize
@@ -9,15 +18,41 @@ interface IHyperdriveRegistry {
         uint256 data;
         /// @dev The factory that deployed this instance.
         address factory;
-        /// @dev The base token of the instance.
-        IERC20 baseToken;
-        /// @dev The vault shares token of the instance.
-        IERC20 vaultSharesToken;
-        /// @dev The name of the instance.
-        string name;
-        /// @dev The version of the instance.
-        string version;
     }
+
+    /// @notice Gets the registry's name.
+    /// @return The registry's name.
+    function name() external view returns (string memory);
+
+    /// @notice Gets the registry's version.
+    /// @return The registry's version.
+    function version() external pure returns (string memory);
+
+    /// @notice Gets the number of Hyperdrive factories that have been registered.
+    /// @return The number of registered factories.
+    function getNumberOfFactories() external view returns (uint256);
+
+    /// @notice Gets the registered factory at an index.
+    /// @param _index The index of the factory.
+    /// @return The registered factory.
+    function getFactoryAtIndex(uint256 _index) external view returns (address);
+
+    /// @notice Gets the registered factories in the range of the provided
+    ///         indices.
+    /// @param _startIndex The start of the range.
+    /// @param _endIndex The end of the range.
+    /// @return The list of registered factories in the range.
+    function getFactoriesInRange(
+        uint256 _startIndex,
+        uint256 _endIndex
+    ) external view returns (address[] memory);
+
+    /// @notice Gets the hyperdrive factory info for a list of factories.
+    /// @param _factories The list of factories.
+    /// @return The hyperdrive factory info.
+    function getFactoryInfo(
+        address[] calldata _factories
+    ) external view returns (FactoryInfo[] memory);
 
     /// @notice Gets the number of Hyperdrive instances that have been registered.
     /// @return The number of registered instances.
@@ -26,19 +61,9 @@ interface IHyperdriveRegistry {
     /// @notice Gets the registered instance at an index.
     /// @param _index The index of the instance.
     /// @return The registered instance.
-    function getHyperdriveInstancesAtIndex(
+    function getHyperdriveInstanceAtIndex(
         uint256 _index
     ) external view returns (address);
-
-    /// @notice Gets the registered instances in the range of the provided
-    ///         indices.
-    /// @param _startIndex The start of the range.
-    /// @param _endIndex The end of the range.
-    /// @return The list of registered instances in the range.
-    function getHyperdriveInstancesInRange(
-        uint256 _startIndex,
-        uint256 _endIndex
-    ) external view returns (address[] memory);
 
     /// @notice Gets the registered instances in the range of the provided
     ///         indices.
@@ -54,6 +79,6 @@ interface IHyperdriveRegistry {
     /// @param _instances The list of instances.
     /// @return The hyperdrive info.
     function getHyperdriveInfo(
-        address _instances
+        address[] calldata _instances
     ) external view returns (HyperdriveInfo[] memory);
 }

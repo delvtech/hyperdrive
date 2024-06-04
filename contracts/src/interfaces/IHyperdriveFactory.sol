@@ -386,6 +386,11 @@ interface IHyperdriveFactory {
     /// @return The factory's governance address.
     function governance() external view returns (address);
 
+    /// @notice Returns the deployer coordinator manager address that can add or
+    ///         remove deployer coordinators.
+    /// @return The factory's deployer coordinator manager address.
+    function deployerCoordinatorManager() external view returns (address);
+
     /// @notice Returns the governance address used when new instances are
     ///         deployed.
     /// @return The factory's hyperdrive governance address.
@@ -483,6 +488,13 @@ interface IHyperdriveFactory {
         uint256 endIndex
     ) external view returns (address[] memory range);
 
+    /// @notice Returns a flag indicating whether or not an instance was
+    ///         deployed by this factory.
+    /// @param _instance The instance to check.
+    /// @return The flag indicating whether or not the instance was deployed by
+    ///         this factory.
+    function isInstance(address _instance) external view returns (bool);
+
     /// @notice Gets the number of deployer coordinators registered in this
     ///         factory.
     /// @return The number of deployer coordinators deployed by this factory.
@@ -504,4 +516,22 @@ interface IHyperdriveFactory {
         uint256 startIndex,
         uint256 endIndex
     ) external view returns (address[] memory range);
+
+    /// @notice Returns a flag indicating whether or not a deployer coordinator
+    ///         was is registered in this factory.
+    /// @param _deployerCoordinator The deployer coordinator to check.
+    /// @return The flag indicating whether or not a deployer coordinator
+    ///         was is registered in this factory.
+    function isDeployerCoordinator(
+        address _deployerCoordinator
+    ) external view returns (bool);
+
+    /// @notice Gets the deployer coordinator that deployed a Hyperdrive
+    ///         instance.
+    /// @param _instance The instance that was deployed.
+    /// @return deployerCoordinator The deployer coordinator that deployed the
+    ///         instance.
+    function instancesToDeployerCoordinators(
+        address _instance
+    ) external view returns (address deployerCoordinator);
 }

@@ -1,19 +1,31 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IERC20 } from "./IERC20.sol";
 import { IHyperdriveRegistry } from "./IHyperdriveRegistry.sol";
 
 interface IHyperdriveGovernedRegistry is IHyperdriveRegistry {
-    /// @notice Emitted when governance is transferred.
-    event GovernanceUpdated(address indexed governance);
+    /// @notice Emitted when admin is transferred.
+    event AdminUpdated(address indexed admin);
+
+    /// @notice Emitted when hyperdrive factory info is updated.
+    event FactoryInfoUpdated(address indexed factory, uint256 indexed data);
 
     /// @notice Emitted when hyperdrive info is updated.
     event HyperdriveInfoUpdated(
         address indexed hyperdrive,
         uint256 indexed data,
-        uint256 indexed factory
+        address indexed factory
     );
+
+    /// @dev The info collected for each Hyperdrive factory.
+    struct FactoryInfoInternal {
+        /// @dev Data about the factory. Different registries can utilize
+        ///      different schemas for these values.
+        uint128 data;
+        /// @dev The index of the Hyperdrive instance in the list of all of the
+        ///      Hyperdrive instances.
+        uint128 index;
+    }
 
     /// @dev The info collected for each Hyperdrive instance.
     struct HyperdriveInfoInternal {
@@ -45,17 +57,29 @@ interface IHyperdriveGovernedRegistry is IHyperdriveRegistry {
     /// @notice Thrown when caller is not governance.
     error Unauthorized();
 
-    /// @notice Allows governance to transfer the governance role.
-    /// @param _governance The new governance address.
-    function updateGovernance(address _governance) external;
+    /// @notice Gets the admin address of this registry.
+    /// @return The admin address of this registry.
+    function admin() external view returns (address);
 
-    /// @notice Allows governance to set arbitrary info for a Hyperdrive
-    ///         instance.
-    /// @param _hyperdriveInstance The Hyperdrive instance address.
-    /// @param _data The uint256 value to be set to convey information about the
-    ///        instance.
+    /// @notice Allows admin to transfer the admin role.
+    /// @param _admin The new admin address.
+    function updateAdmin(address _admin) external;
+
+    /// @notice Allows governance to set arbitrary info for Hyperdrive factories.
+    /// @param _factories The Hyperdrive factories to update.
+    /// @param _data The data associated with the factories.
+    function setFactoryInfo(
+        address[] memory _factories,
+        uint128[] memory _data
+    ) external;
+
+    /// @notice Allows governance to set arbitrary info for Hyperdrive instances.
+    /// @param _instances The Hyperdrive instances to update.
+    /// @param _data The data associated with the instances.
+    /// @param _factories The factory associated with the instances.
     function setHyperdriveInfo(
-        address _hyperdriveInstance,
-        uint256 _data
+        address[] memory _instances,
+        uint128[] memory _data,
+        address[] memory _factories
     ) external;
 }
