@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { VmSafe } from "forge-std/Vm.sol";
 import { ERC4626HyperdriveCoreDeployer } from "contracts/src/deployers/erc4626/ERC4626HyperdriveCoreDeployer.sol";
 import { ERC4626HyperdriveDeployerCoordinator } from "contracts/src/deployers/erc4626/ERC4626HyperdriveDeployerCoordinator.sol";
 import { ERC4626Target0Deployer } from "contracts/src/deployers/erc4626/ERC4626Target0Deployer.sol";
@@ -551,7 +552,6 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         registry.setHyperdriveInfo(instances, data, factories);
     }
 
-    // FIXME
     function test_setHyperdriveInfo_success_removeSingleInstance() public {
         // Deploy a factory and an instance.
         (
@@ -592,7 +592,6 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         assertEq(info[0].factory, address(0));
     }
 
-    // FIXME
     function test_setHyperdriveInfo_success_removeMultipleInstances() public {
         // Deploy several factories and instances.
         uint256 instanceCount = 4;
@@ -621,7 +620,71 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         ensureRemoveHyperdriveInfo(instances);
     }
 
-    // FIXME: Verify events.
+    function test_setHyperdriveInfo_success_mixed() public {
+        // Deploy several factories and instances.
+        uint256 instanceCount = 4;
+        address[] memory instances = new address[](instanceCount);
+        address[] memory factories = new address[](instanceCount);
+        for (uint256 i = 0; i < instanceCount; i++) {
+            (
+                IHyperdriveFactory factory,
+                address deployerCoordinator
+            ) = deployFactory();
+            IHyperdrive instance = deployInstance(
+                factory,
+                deployerCoordinator,
+                0
+            );
+            instances[i] = address(instance);
+            factories[i] = address(factory);
+        }
+
+        // Register three of the instances.
+        address[] memory addedInstances = new address[](instanceCount - 1);
+        uint128[] memory addedData = new uint128[](instanceCount - 1);
+        address[] memory addedFactories = new address[](instanceCount - 1);
+        for (uint256 i = 0; i < instanceCount - 1; i++) {
+            addedInstances[i] = instances[i];
+            addedData[i] = 1;
+            addedFactories[i] = factories[i];
+        }
+        ensureAddHyperdriveInfo(addedInstances, addedData, addedFactories);
+
+        // Mix and match updating the registry. The first entry is removed, the
+        // second and third are updated, and the last is added.
+        uint128[] memory data = new uint128[](instanceCount);
+        data[0] = 0;
+        data[1] = 2;
+        data[2] = 2;
+        data[3] = 1;
+        factories[0] = address(0);
+        registry.setHyperdriveInfo(instances, data, factories);
+
+        // Ensure that the entries were updated properly in the registry.
+        assertEq(registry.getNumberOfHyperdriveInstances(), instanceCount - 1);
+        assertEq(registry.getHyperdriveInstanceAtIndex(0), instances[2]);
+        assertEq(registry.getHyperdriveInstanceAtIndex(1), instances[1]);
+        assertEq(registry.getHyperdriveInstanceAtIndex(2), instances[3]);
+        IHyperdriveRegistry.HyperdriveInfo[] memory info = registry
+            .getHyperdriveInfo(instances);
+        for (uint256 i = 0; i < instances.length; i++) {
+            assertEq(info[i].data, data[i]);
+            assertEq(info[i].factory, factories[i]);
+        }
+
+        // Verify that the correct events were emitted.
+        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
+            HyperdriveInfoUpdated.selector
+        );
+        assertEq(logs.length, instances.length);
+        for (uint256 i = 0; i < instances.length; i++) {
+            VmSafe.Log memory log = logs[i];
+            assertEq(address(uint160(uint256(log.topics[1]))), instances[i]);
+            assertEq(uint128(uint256(log.topics[2])), data[i]);
+            assertEq(address(uint160(uint256(log.topics[3]))), factories[i]);
+        }
+    }
+
     function ensureAddHyperdriveInfo(
         address[] memory _instances,
         uint128[] memory _data,
