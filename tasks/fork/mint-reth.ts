@@ -28,7 +28,11 @@ HyperdriveDeployBaseTask(
             { viem, artifacts },
         ) => {
             let transferData = encodeFunctionData({
-                abi: (await artifacts.readArtifact("ERC20Mintable")).abi,
+                abi: (
+                    await artifacts.readArtifact(
+                        "solmate/tokens/ERC20.sol:ERC20",
+                    )
+                ).abi,
                 functionName: "transfer",
                 args: [address as Address, parseEther(amount!)],
             });

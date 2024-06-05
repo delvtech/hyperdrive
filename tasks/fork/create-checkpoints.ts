@@ -32,7 +32,7 @@ HyperdriveDeployBaseTask(
     .setAction(
         async (
             { pollInterval }: Required<CreateCheckpointsParams>,
-            { viem, artifacts, hyperdriveDeploy, config, network },
+            { viem, hyperdriveDeploy, config, network },
         ) => {
             let poolAddresses = config.networks[
                 network.name
@@ -48,10 +48,7 @@ HyperdriveDeployBaseTask(
                           async (a) =>
                               (
                                   await (
-                                      await viem.getContractAt(
-                                          "HyperdriveTarget0",
-                                          a,
-                                      )
+                                      await viem.getContractAt("IHyperdrive", a)
                                   ).read.getPoolConfig()
                               ).checkpointDuration,
                       ),
