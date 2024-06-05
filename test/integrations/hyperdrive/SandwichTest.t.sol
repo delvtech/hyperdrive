@@ -410,7 +410,7 @@ contract SandwichTest is HyperdriveTest {
                 })
             )
         {
-            // Bob opens a large long.
+            // Celine opens a large long.
             longBasePaid = longBasePaid.normalizeToRange(
                 hyperdrive.getPoolConfig().minimumTransactionAmount,
                 hyperdrive.calculateMaxLong().mulDown(0.9e18)
@@ -420,7 +420,7 @@ contract SandwichTest is HyperdriveTest {
             // The term advances. Alice removes her liquidity.
             advanceTime(POSITION_DURATION, int256(variableAPR));
 
-            // Remove liquidity. Ensure that Alice did not lose money.
+            // Alice removes liquidity. Ensure that Alice did not lose money.
             (
                 testCase.aliceBaseProceeds,
                 testCase.aliceWithdrawalShares
@@ -538,7 +538,7 @@ contract SandwichTest is HyperdriveTest {
             2 *
             hyperdrive.getPoolConfig().minimumShareReserves;
 
-        // Bob opens a large long.
+        // Celine opens a large long.
         longBasePaid = longBasePaid.normalizeToRange(
             hyperdrive.getPoolConfig().minimumTransactionAmount,
             hyperdrive.calculateMaxLong().mulDown(0.9e18)
@@ -573,7 +573,7 @@ contract SandwichTest is HyperdriveTest {
             // The term advances and interest accrues at the original fixed rate.
             advanceTime(POSITION_DURATION, int256(variableAPR));
 
-            // Remove liquidity.
+            // Alice removes liquidity. Ensure that Alice did not lose money.
             (
                 testCase.aliceBaseProceeds,
                 testCase.aliceWithdrawalShares
