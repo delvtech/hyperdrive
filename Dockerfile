@@ -5,8 +5,6 @@ FROM ghcr.io/foundry-rs/foundry@sha256:4606590c8f3cef6a8cba4bdf30226cedcdbd9f1b8
 RUN apk add --no-cache npm jq make && \
   npm install -g yarn
 
-
-
 # Use a dedicated stage to generate node_modules.
 # Since only package.json and yarn.lock are copied, it's likely this layer will stay cached.
 FROM base AS node-modules-builder
