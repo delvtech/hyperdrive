@@ -270,63 +270,324 @@ contract SandwichTest is HyperdriveTest {
         assertGe(lpProceeds, contribution);
     }
 
-    // This test ensures that add liquidity sandwiches are limited in scope for
-    // a 5% time stretch. In general, these sandwich attacks can result in early
-    // LPs losing money, but these vulnerabilities are mitigated by circuit
-    // breakers on `addLiquidity`.
-    function test_sandwich_add_liquidity(
-        uint256 contribution,
-        uint256 celineContribution
+    struct TestCase {
+        uint256 aliceContribution;
+        uint256 aliceLpShares;
+        uint256 aliceBaseProceeds;
+        uint256 aliceWithdrawalShares;
+        uint256 celineContribution;
+    }
+
+    function test_sandwich_add_liquidity_short_and_long_high_timestretch(
+        uint256 aliceContribution,
+        uint256 celineContribution,
+        uint256 fixedAPR,
+        uint256 timeStretchAPR,
+        uint256 variableAPR,
+        uint256 shortAmount,
+        uint256 longBasePaid
     ) external {
+        // Normalize the test parameters.
+        aliceContribution = aliceContribution.normalizeToRange(
+            10_000e18,
+            100_000_000e18
+        );
+        celineContribution = celineContribution.normalizeToRange(
+            10_000e18,
+            100_000_000e18
+        );
+        timeStretchAPR = timeStretchAPR.normalizeToRange(0.05e18, 0.3e18);
+        fixedAPR = fixedAPR.normalizeToRange(0.05e18, timeStretchAPR * 2);
+        variableAPR = variableAPR.normalizeToRange(fixedAPR, fixedAPR * 2);
+
+        // Run the test.
+        _test_sandwich_add_liquidity_short_and_long(
+            aliceContribution,
+            celineContribution,
+            fixedAPR,
+            timeStretchAPR,
+            variableAPR,
+            shortAmount,
+            longBasePaid,
+            0.075e18 // circuit breaker delta = 7.5%
+        );
+    }
+
+    function test_sandwich_add_liquidity_short_and_long_low_timestretch(
+        uint256 aliceContribution,
+        uint256 celineContribution,
+        uint256 fixedAPR,
+        uint256 timeStretchAPR,
+        uint256 variableAPR,
+        uint256 shortAmount,
+        uint256 longBasePaid
+    ) external {
+        // Normalize the test parameters.
+        aliceContribution = aliceContribution.normalizeToRange(
+            10_000e18,
+            100_000_000e18
+        );
+        celineContribution = celineContribution.normalizeToRange(
+            10_000e18,
+            100_000_000e18
+        );
+        timeStretchAPR = timeStretchAPR.normalizeToRange(0.01e18, 0.05e18);
+        fixedAPR = fixedAPR.normalizeToRange(0.01e18, timeStretchAPR * 2);
+        variableAPR = variableAPR.normalizeToRange(fixedAPR, 0.15e18);
+
+        // Run the test.
+        _test_sandwich_add_liquidity_short_and_long(
+            aliceContribution,
+            celineContribution,
+            fixedAPR,
+            timeStretchAPR,
+            variableAPR,
+            shortAmount,
+            longBasePaid,
+            timeStretchAPR // circuit breaker delta = time stretch apr
+        );
+    }
+
+    // This test ensures that add liquidity sandwiches are limited in scope.
+    // In general, these sandwich attacks can result in early LPs losing money,
+    // but these vulnerabilities are mitigated by circuit breakers on
+    // `addLiquidity`.
+    function _test_sandwich_add_liquidity_short_and_long(
+        uint256 aliceContribution,
+        uint256 celineContribution,
+        uint256 fixedAPR,
+        uint256 timeStretchAPR,
+        uint256 variableAPR,
+        uint256 shortAmount,
+        uint256 longBasePaid,
+        uint256 circuitBreakerDelta
+    ) internal {
+        // Set up the test case.
+        TestCase memory testCase;
+        testCase.aliceContribution = aliceContribution;
+        testCase.celineContribution = celineContribution;
+
+        // Alice deploys and initializes the pool.
         IHyperdrive.PoolConfig memory config = testConfig(
-            0.05e18,
+            timeStretchAPR,
             POSITION_DURATION
         );
         config.fees.curve = 0.01e18;
         config.fees.flat = 0.0005e18;
+        config.circuitBreakerDelta = circuitBreakerDelta;
         deploy(alice, config);
-        uint256 apr = 0.05e18;
-        contribution = contribution.normalizeToRange(100e18, 100_000_000e18);
-        uint256 lpShares = initialize(alice, apr, contribution);
+        testCase.aliceLpShares = initialize(
+            alice,
+            fixedAPR,
+            testCase.aliceContribution
+        );
+        testCase.aliceContribution -=
+            2 *
+            hyperdrive.getPoolConfig().minimumShareReserves;
 
         // Celine opens a large short.
-        uint256 shortAmount = hyperdrive.calculateMaxShort().mulDown(0.9e18);
-        (, uint256 shortPaid) = openShort(celine, shortAmount);
+        shortAmount = shortAmount.normalizeToRange(
+            hyperdrive.getPoolConfig().minimumTransactionAmount,
+            hyperdrive.calculateMaxShort()
+        );
+        openShort(celine, shortAmount);
 
         // Celine adds liquidity.
-        celineContribution = celineContribution.normalizeToRange(
+        vm.stopPrank();
+        vm.startPrank(celine);
+        baseToken.mint(testCase.celineContribution);
+        baseToken.approve(address(hyperdrive), testCase.celineContribution);
+        try
+            hyperdrive.addLiquidity(
+                testCase.celineContribution,
+                0,
+                0,
+                type(uint256).max,
+                IHyperdrive.Options({
+                    destination: celine,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            )
+        {
+            // Celine opens a large long.
+            longBasePaid = longBasePaid.normalizeToRange(
+                hyperdrive.getPoolConfig().minimumTransactionAmount,
+                hyperdrive.calculateMaxLong().mulDown(0.9e18)
+            );
+            openLong(celine, longBasePaid);
+
+            // The term advances. Alice removes her liquidity.
+            advanceTime(POSITION_DURATION, int256(variableAPR));
+
+            // Alice removes liquidity. Ensure that Alice did not lose money.
+            (
+                testCase.aliceBaseProceeds,
+                testCase.aliceWithdrawalShares
+            ) = removeLiquidity(alice, testCase.aliceLpShares);
+            assertGt(testCase.aliceBaseProceeds, testCase.aliceContribution);
+            assertEq(testCase.aliceWithdrawalShares, 0);
+        } catch (bytes memory error) {
+            assert(
+                error.eq(
+                    abi.encodeWithSelector(
+                        IHyperdrive.CircuitBreakerTriggered.selector
+                    )
+                )
+            );
+        }
+    }
+
+    function test_sandwich_add_liquidity_long_and_short_high_time_stretch(
+        uint256 aliceContribution,
+        uint256 celineContribution,
+        uint256 fixedAPR,
+        uint256 timeStretchAPR,
+        uint256 variableAPR,
+        uint256 shortAmount,
+        uint256 longBasePaid
+    ) external {
+        // Normalize most of the test parameters.
+        TestCase memory testCase;
+        testCase.aliceContribution = aliceContribution.normalizeToRange(
             100e18,
             100_000_000e18
         );
-        uint256 celineLpShares = addLiquidity(celine, celineContribution);
+        testCase.celineContribution = celineContribution.normalizeToRange(
+            100e18,
+            100_000_000e18
+        );
+        timeStretchAPR = timeStretchAPR.normalizeToRange(0.05e18, 0.3e18);
+        fixedAPR = fixedAPR.normalizeToRange(0.05e18, timeStretchAPR * 2);
+        variableAPR = variableAPR.normalizeToRange(fixedAPR, fixedAPR * 2);
 
-        // Bob opens a large long.
-        uint256 basePaid = hyperdrive.calculateMaxLong().mulDown(0.9e18);
-        (uint256 maturityTime, uint256 bondAmount) = openLong(celine, basePaid);
+        // Execute the test.
+        _test_sandwich_add_liquidity_long_and_short(
+            testCase,
+            fixedAPR,
+            timeStretchAPR,
+            variableAPR,
+            shortAmount,
+            longBasePaid,
+            0.075e18 // circuit breaker delta = 7.5%
+        );
+    }
 
-        // The term advances. Alice removes her liquidity.
-        advanceTime(POSITION_DURATION, 0.05e18);
+    function test_sandwich_add_liquidity_long_and_short_low_time_stretch(
+        uint256 aliceContribution,
+        uint256 celineContribution,
+        uint256 fixedAPR,
+        uint256 timeStretchAPR,
+        uint256 variableAPR,
+        uint256 shortAmount,
+        uint256 longBasePaid
+    ) external {
+        // Normalize most of the test parameters.
+        TestCase memory testCase;
+        testCase.aliceContribution = aliceContribution.normalizeToRange(
+            100e18,
+            100_000_000e18
+        );
+        testCase.celineContribution = celineContribution.normalizeToRange(
+            100e18,
+            100_000_000e18
+        );
+        timeStretchAPR = timeStretchAPR.normalizeToRange(0.01e18, 0.05e18);
+        fixedAPR = fixedAPR.normalizeToRange(0.01e18, timeStretchAPR * 2);
+        variableAPR = variableAPR.normalizeToRange(fixedAPR, 0.15e18);
 
-        // Remove liquidity.
-        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
+        // Execute the test.
+        _test_sandwich_add_liquidity_long_and_short(
+            testCase,
+            fixedAPR,
+            timeStretchAPR,
+            variableAPR,
+            shortAmount,
+            longBasePaid,
+            timeStretchAPR // circuit breaker delta = time stretch apr
+        );
+    }
+
+    function _test_sandwich_add_liquidity_long_and_short(
+        TestCase memory testCase,
+        uint256 fixedAPR,
+        uint256 timeStretchAPR,
+        uint256 variableAPR,
+        uint256 shortAmount,
+        uint256 longBasePaid,
+        uint256 circuitBreakerDelta
+    ) internal {
+        // Alice deploys and initializes the pool.
+        IHyperdrive.PoolConfig memory config = testConfig(
+            timeStretchAPR,
+            POSITION_DURATION
+        );
+        config.fees.curve = 0.01e18;
+        config.fees.flat = 0.0005e18;
+        config.circuitBreakerDelta = circuitBreakerDelta;
+        // NOTE: We use a low minimum share reserves to avoid issues with
+        // `InvalidEffectiveShareReserves`.
+        config.minimumShareReserves = 1e6;
+        deploy(alice, config);
+        testCase.aliceLpShares = initialize(
             alice,
-            lpShares
+            fixedAPR,
+            testCase.aliceContribution
         );
-        assertGt(baseProceeds, contribution);
-        assertEq(withdrawalShares, 0);
+        testCase.aliceContribution -=
+            2 *
+            hyperdrive.getPoolConfig().minimumShareReserves;
 
-        // Celine closes her long and removes liquidity.
-        uint256 shortProceeds = closeShort(celine, maturityTime, shortAmount);
-        uint256 longProceeds = closeLong(celine, maturityTime, bondAmount);
-        (baseProceeds, withdrawalShares) = removeLiquidity(
-            celine,
-            celineLpShares
+        // Celine opens a large long.
+        longBasePaid = longBasePaid.normalizeToRange(
+            hyperdrive.getPoolConfig().minimumTransactionAmount,
+            hyperdrive.calculateMaxLong().mulDown(0.9e18)
         );
-        uint256 celineContribution_ = celineContribution; // avoid stack-too-deep
-        assertLt(
-            baseProceeds + longProceeds + shortProceeds,
-            (celineContribution_ + basePaid + shortPaid).mulDown(1.06e18)
-        );
-        assertEq(withdrawalShares, 0);
+        openLong(celine, longBasePaid);
+
+        // Celine adds liquidity.
+        vm.stopPrank();
+        vm.startPrank(celine);
+        baseToken.mint(testCase.celineContribution);
+        baseToken.approve(address(hyperdrive), testCase.celineContribution);
+        try
+            hyperdrive.addLiquidity(
+                testCase.celineContribution,
+                0,
+                0,
+                type(uint256).max,
+                IHyperdrive.Options({
+                    destination: celine,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            )
+        {
+            // Celine opens a large short.
+            shortAmount = shortAmount.normalizeToRange(
+                hyperdrive.getPoolConfig().minimumTransactionAmount,
+                hyperdrive.calculateMaxShort()
+            );
+            openShort(celine, shortAmount);
+
+            // The term advances and interest accrues at the original fixed rate.
+            advanceTime(POSITION_DURATION, int256(variableAPR));
+
+            // Alice removes liquidity. Ensure that Alice did not lose money.
+            (
+                testCase.aliceBaseProceeds,
+                testCase.aliceWithdrawalShares
+            ) = removeLiquidity(alice, testCase.aliceLpShares);
+            assertGt(testCase.aliceBaseProceeds, testCase.aliceContribution);
+            assertEq(testCase.aliceWithdrawalShares, 0);
+        } catch (bytes memory error) {
+            assert(
+                error.eq(
+                    abi.encodeWithSelector(
+                        IHyperdrive.CircuitBreakerTriggered.selector
+                    )
+                )
+            );
+        }
     }
 }
