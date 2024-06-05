@@ -42,7 +42,7 @@ export const MAINNET_FORK_STETH_30DAY: HyperdriveInstanceConfig<"StETH"> = {
         let tx = await vaultSharesToken.write.approve([
             hre.hyperdriveDeploy.deployments.byName("STETH_COORDINATOR")
                 .address,
-            CONTRIBUTION + parseEther("100"),
+            await vaultSharesToken.read.getPooledEthByShares([CONTRIBUTION]),
         ]);
         await pc.waitForTransactionReceipt({ hash: tx });
     },

@@ -38,7 +38,7 @@ export const SEPOLIA_STETH_14DAY: HyperdriveInstanceConfig<"StETH"> = {
         tx = await vaultSharesToken.write.approve([
             hre.hyperdriveDeploy.deployments.byName("STETH_COORDINATOR")
                 .address,
-            CONTRIBUTION + parseEther("1"),
+            await vaultSharesToken.read.getPooledEthByShares([CONTRIBUTION]),
         ]);
         await pc.waitForTransactionReceipt({ hash: tx });
     },
