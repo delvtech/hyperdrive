@@ -36,10 +36,9 @@ export const MAINNET_FORK_RETH_14DAY: HyperdriveInstanceConfig<"RETH"> = {
             MAINNET_RETH_ADDRESS,
         );
         let pc = await hre.viem.getPublicClient();
-        // TODO: Investigate why significant additional allowance is needed for deposit (10 ether is too little)
         let tx = await vaultSharesToken.write.approve([
             hre.hyperdriveDeploy.deployments.byName("RETH_COORDINATOR").address,
-            CONTRIBUTION + parseEther("100"),
+            CONTRIBUTION,
         ]);
         await pc.waitForTransactionReceipt({ hash: tx });
     },

@@ -4,7 +4,7 @@ set -e
 
 # Ensure that the `ADMIN` variable is defined.
 if [[ -z "${ADMIN}" ]]; then
-	echo 'Error: $NETWORK must be set'
+	echo 'Error: $ADMIN must be set'
 	exit 1
 fi
 

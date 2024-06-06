@@ -37,7 +37,7 @@ export const SEPOLIA_RETH_30DAY: HyperdriveInstanceConfig<"RETH"> = {
         // approve the coordinator
         tx = await vaultSharesToken.write.approve([
             hre.hyperdriveDeploy.deployments.byName("RETH_COORDINATOR").address,
-            CONTRIBUTION + parseEther("1"),
+            CONTRIBUTION,
         ]);
         await pc.waitForTransactionReceipt({ hash: tx });
     },
