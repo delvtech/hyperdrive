@@ -9,7 +9,6 @@ import { ERC4626Target3 } from "contracts/src/instances/erc4626/ERC4626Target3.s
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IHyperdriveCheckpointRewarder } from "contracts/src/interfaces/IHyperdriveCheckpointRewarder.sol";
 import { IHyperdriveEvents } from "contracts/src/interfaces/IHyperdriveEvents.sol";
 import { ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
@@ -65,7 +64,7 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
             feeCollector: bob,
             sweepCollector: celine,
             // FIXME: Deploy a real checkpoint rewarder.
-            checkpointRewarder: IHyperdriveCheckpointRewarder(address(0)),
+            checkpointRewarder: address(0),
             fees: IHyperdrive.Fees(0, 0, 0, 0)
         });
         vm.warp(3 * config.positionDuration);

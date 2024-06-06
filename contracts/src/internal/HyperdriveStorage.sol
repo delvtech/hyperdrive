@@ -4,7 +4,6 @@ pragma solidity 0.8.20;
 import { ReentrancyGuard } from "openzeppelin/utils/ReentrancyGuard.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import { IHyperdriveCheckpointRewarder } from "../interfaces/IHyperdriveCheckpointRewarder.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
@@ -94,14 +93,10 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
     /// @dev The address which collects swept tokens.
     address internal _sweepCollector;
 
-    // FIXME: Make sure to update:
-    //
-    // - [ ] The factory
-    // - [ ] The deployer coordinator
-    // - [ ] The admin contract
+    // FIXME: Add a function to update this.
     //
     /// @dev The address that will reward checkpoint minters.
-    IHyperdriveCheckpointRewarder internal _checkpointRewarder;
+    address internal _checkpointRewarder;
 
     /// @dev Governance fees that haven't been collected yet denominated in shares.
     uint256 internal _governanceFeesAccrued;

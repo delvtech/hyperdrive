@@ -330,15 +330,17 @@ abstract contract HyperdriveCheckpoint is
         // NOTE: We do this in a low-level call and ignore the status to ensure
         // that the checkpoint will be minted regardless of whether or not the
         // call succeeds.
-        bool isTrader = _isTrader; // avoid stack-too-deep
-        (bool _success, ) = address(_checkpointRewarder).call(
-            abi.encodeCall(
-                IHyperdriveCheckpointRewarder.claimCheckpointReward,
-                (msg.sender, checkpointTime, isTrader)
-            )
-        );
-        // NOTE: Avoid unused local variable warning.
-        _success;
+        if (_checkpointRewarder != address(0)) {
+            bool isTrader = _isTrader; // avoid stack-too-deep
+            (bool _success, ) = _checkpointRewarder.call(
+                abi.encodeCall(
+                    IHyperdriveCheckpointRewarder.claimCheckpointReward,
+                    (msg.sender, checkpointTime, isTrader)
+                )
+            );
+            // NOTE: Avoid unused local variable warning.
+            _success;
+        }
 
         return checkpointVaultSharePrice;
     }

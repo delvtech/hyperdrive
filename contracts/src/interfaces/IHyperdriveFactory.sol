@@ -2,7 +2,6 @@
 pragma solidity 0.8.20;
 
 import { IHyperdrive } from "./IHyperdrive.sol";
-import { IHyperdriveCheckpointRewarder } from "./IHyperdriveCheckpointRewarder.sol";
 
 interface IHyperdriveFactory {
     /// Events ///
@@ -33,9 +32,7 @@ interface IHyperdriveFactory {
 
     /// @notice Emitted when the checkpoint rewarder used in new deployments is
     ///         updated.
-    event CheckpointRewarderUpdated(
-        IHyperdriveCheckpointRewarder indexed newCheckpointRewarder
-    );
+    event CheckpointRewarderUpdated(address indexed newCheckpointRewarder);
 
     /// @notice Emitted when the factory's governance is updated.
     event GovernanceUpdated(address indexed governance);
@@ -270,9 +267,7 @@ interface IHyperdriveFactory {
 
     /// @notice Allows governance to change the checkpoint rewarder address.
     /// @param _checkpointRewarder The new checkpoint rewarder address.
-    function updateCheckpointRewarder(
-        IHyperdriveCheckpointRewarder _checkpointRewarder
-    ) external;
+    function updateCheckpointRewarder(address _checkpointRewarder) external;
 
     /// @notice Allows governance to change the checkpoint duration resolution.
     /// @param _checkpointDurationResolution The new checkpoint duration
@@ -437,10 +432,7 @@ interface IHyperdriveFactory {
     /// @notice Returns the checkpoint rewarder used when new instances are
     ///         deployed.
     /// @return The factory's checkpoint rewarder.
-    function checkpointRewarder()
-        external
-        view
-        returns (IHyperdriveCheckpointRewarder);
+    function checkpointRewarder() external view returns (address);
 
     /// @notice Returns the resolution for the checkpoint duration. Every
     ///         checkpoint duration must be a multiple of this resolution.

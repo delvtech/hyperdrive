@@ -3,7 +3,6 @@ pragma solidity 0.8.20;
 
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IHyperdriveCheckpointRewarder } from "contracts/src/interfaces/IHyperdriveCheckpointRewarder.sol";
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { HyperdriveDeployerCoordinator } from "contracts/src/deployers/HyperdriveDeployerCoordinator.sol";
 import { ERC4626HyperdriveCoreDeployer } from "contracts/src/deployers/erc4626/ERC4626HyperdriveCoreDeployer.sol";
@@ -66,9 +65,7 @@ contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {
                     feeCollector: feeCollector,
                     sweepCollector: sweepCollector,
                     // FIXME: Deploy a real checkpoint rewarder.
-                    checkpointRewarder: IHyperdriveCheckpointRewarder(
-                        address(0)
-                    ),
+                    checkpointRewarder: address(0),
                     defaultPausers: new address[](0),
                     checkpointDurationResolution: 1 hours,
                     minCheckpointDuration: 8 hours,

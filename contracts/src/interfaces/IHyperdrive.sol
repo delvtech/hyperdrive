@@ -108,7 +108,7 @@ interface IHyperdrive is
         /// @dev The address which collects swept tokens.
         address sweepCollector;
         /// @dev The address that will reward checkpoint minters.
-        IHyperdriveCheckpointRewarder checkpointRewarder;
+        address checkpointRewarder;
         /// @dev The fees applied to trades.
         IHyperdrive.Fees fees;
     }
@@ -147,7 +147,7 @@ interface IHyperdrive is
         /// @dev The address which collects swept tokens.
         address sweepCollector;
         /// @dev The address that will reward checkpoint minters.
-        IHyperdriveCheckpointRewarder checkpointRewarder;
+        address checkpointRewarder;
         /// @dev The fees applied to trades.
         IHyperdrive.Fees fees;
     }

@@ -2,7 +2,6 @@
 pragma solidity 0.8.20;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import { IHyperdriveCheckpointRewarder } from "../interfaces/IHyperdriveCheckpointRewarder.sol";
 import { IHyperdriveDeployerCoordinator } from "../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IHyperdriveFactory } from "../interfaces/IHyperdriveFactory.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
@@ -60,7 +59,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
     address public sweepCollector;
 
     /// @dev The address that will reward checkpoint minters.
-    IHyperdriveCheckpointRewarder public checkpointRewarder;
+    address public checkpointRewarder;
 
     /// @notice The resolution for the checkpoint duration. Every checkpoint
     ///         duration must be a multiple of this resolution.
@@ -125,7 +124,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
         /// @dev The recipient of swept tokens from new deployments.
         address sweepCollector;
         /// @dev The address that will reward checkpoint minters.
-        IHyperdriveCheckpointRewarder checkpointRewarder;
+        address checkpointRewarder;
         /// @dev The resolution for the checkpoint duration.
         uint256 checkpointDurationResolution;
         /// @dev The minimum checkpoint duration that can be used in new
@@ -421,7 +420,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
     /// @notice Allows governance to change the checkpoint rewarder address.
     /// @param _checkpointRewarder The new checkpoint rewarder address.
     function updateCheckpointRewarder(
-        IHyperdriveCheckpointRewarder _checkpointRewarder
+        address _checkpointRewarder
     ) external onlyGovernance {
         checkpointRewarder = _checkpointRewarder;
         emit CheckpointRewarderUpdated(_checkpointRewarder);
