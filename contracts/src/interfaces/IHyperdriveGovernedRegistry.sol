@@ -54,7 +54,7 @@ interface IHyperdriveGovernedRegistry is IHyperdriveRegistry {
     ///         ending index.
     error InvalidIndexes();
 
-    /// @notice Thrown when caller is not governance.
+    /// @notice Thrown when caller is not the admin.
     error Unauthorized();
 
     /// @notice Gets the admin address of this registry.
@@ -65,7 +65,7 @@ interface IHyperdriveGovernedRegistry is IHyperdriveRegistry {
     /// @param _admin The new admin address.
     function updateAdmin(address _admin) external;
 
-    /// @notice Allows governance to set arbitrary info for Hyperdrive factories.
+    /// @notice Allows the admin to set arbitrary info for Hyperdrive factories.
     /// @param __factories The Hyperdrive factories to update.
     /// @param _data The data associated with the factories.
     function setFactoryInfo(
@@ -73,7 +73,7 @@ interface IHyperdriveGovernedRegistry is IHyperdriveRegistry {
         uint128[] memory _data
     ) external;
 
-    /// @notice Allows governance to set arbitrary info for Hyperdrive instances.
+    /// @notice Allows the admin to set arbitrary info for Hyperdrive instances.
     /// @param __instances The Hyperdrive instances to update.
     /// @param _data The data associated with the instances.
     /// @param __factories The factory associated with the instances.

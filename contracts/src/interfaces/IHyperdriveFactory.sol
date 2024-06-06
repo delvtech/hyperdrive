@@ -526,10 +526,10 @@ interface IHyperdriveFactory {
     ) external view returns (address[] memory range);
 
     /// @notice Returns a flag indicating whether or not a deployer coordinator
-    ///         was is registered in this factory.
+    ///         is registered in this factory.
     /// @param _deployerCoordinator The deployer coordinator to check.
     /// @return The flag indicating whether or not a deployer coordinator
-    ///         was is registered in this factory.
+    ///         is registered in this factory.
     function isDeployerCoordinator(
         address _deployerCoordinator
     ) external view returns (bool);

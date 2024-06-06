@@ -173,7 +173,7 @@ contract HyperdriveRegistry is
         uint256 _endIndex
     ) external view returns (address[] memory factories) {
         // If the indexes are malformed, revert.
-        if (_startIndex > _endIndex) {
+        if (_startIndex >= _endIndex) {
             revert IHyperdriveGovernedRegistry.InvalidIndexes();
         }
         if (_endIndex > _factories.length) {
@@ -221,7 +221,7 @@ contract HyperdriveRegistry is
         uint256 _endIndex
     ) external view returns (address[] memory instances) {
         // If the indexes are malformed, revert.
-        if (_startIndex > _endIndex) {
+        if (_startIndex >= _endIndex) {
             revert IHyperdriveGovernedRegistry.InvalidIndexes();
         }
         if (_endIndex > _instances.length) {
