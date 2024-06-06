@@ -234,12 +234,15 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
     ///        method component of `_distributeExcessIdleSafe`. This defaults to
     ///        `LPMath.SHARE_PROCEEDS_MAX_ITERATIONS` if the specified value is
     ///        smaller than the constant.
+    /// @param _isTrader A boolean indicating whether or not the checkpoint was
+    ///        minted by a trader or by someone calling checkpoint directly.
     /// @return openVaultSharePrice The open vault share price of the latest
     ///         checkpoint.
     function _applyCheckpoint(
         uint256 _checkpointTime,
         uint256 _vaultSharePrice,
-        uint256 _maxIterations
+        uint256 _maxIterations,
+        bool _isTrader
     ) internal virtual returns (uint256 openVaultSharePrice);
 
     /// Helpers ///

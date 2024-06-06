@@ -80,7 +80,8 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         _applyCheckpoint(
             latestCheckpoint,
             vaultSharePrice,
-            LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
+            LPMath.SHARE_PROCEEDS_MAX_ITERATIONS,
+            true
         );
 
         // Calculate the pool and user deltas using the trading function. We
@@ -178,13 +179,15 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             _applyCheckpoint(
                 _latestCheckpoint(),
                 vaultSharePrice,
-                LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
+                LPMath.SHARE_PROCEEDS_MAX_ITERATIONS,
+                true
             );
         } else {
             _applyCheckpoint(
                 _maturityTime,
                 vaultSharePrice,
-                LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
+                LPMath.SHARE_PROCEEDS_MAX_ITERATIONS,
+                true
             );
         }
 

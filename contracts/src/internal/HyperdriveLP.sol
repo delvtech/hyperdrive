@@ -122,7 +122,8 @@ abstract contract HyperdriveLP is
         _applyCheckpoint(
             _latestCheckpoint(),
             vaultSharePrice,
-            LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
+            LPMath.SHARE_PROCEEDS_MAX_ITERATIONS,
+            true
         );
 
         // Emit an Initialize event.
@@ -195,7 +196,8 @@ abstract contract HyperdriveLP is
         _applyCheckpoint(
             latestCheckpoint,
             vaultSharePrice,
-            LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
+            LPMath.SHARE_PROCEEDS_MAX_ITERATIONS,
+            true
         );
 
         // Ensure that the spot APR is close enough to the previous weighted
@@ -342,7 +344,8 @@ abstract contract HyperdriveLP is
         _applyCheckpoint(
             _latestCheckpoint(),
             vaultSharePrice,
-            LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
+            LPMath.SHARE_PROCEEDS_MAX_ITERATIONS,
+            true
         );
 
         // Burn the LP's shares.
@@ -418,7 +421,8 @@ abstract contract HyperdriveLP is
         _applyCheckpoint(
             _latestCheckpoint(),
             vaultSharePrice,
-            LPMath.SHARE_PROCEEDS_MAX_ITERATIONS
+            LPMath.SHARE_PROCEEDS_MAX_ITERATIONS,
+            true
         );
 
         // Redeem as many of the withdrawal shares as possible.
