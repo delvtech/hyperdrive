@@ -4,26 +4,82 @@ pragma solidity 0.8.20;
 import { IHyperdriveRegistry } from "./IHyperdriveRegistry.sol";
 
 interface IHyperdriveGovernedRegistry is IHyperdriveRegistry {
-    /// @notice Emitted when governance is transferred.
-    event GovernanceUpdated(address indexed governance);
+    /// @notice Emitted when admin is transferred.
+    event AdminUpdated(address indexed admin);
 
-    /// @notice Emitted when hyperdrive info is updated.
-    event HyperdriveInfoUpdated(address indexed hyperdrive, uint256 data);
+    /// @notice Emitted when Hyperdrive factory info is updated.
+    event FactoryInfoUpdated(address indexed factory, uint256 indexed data);
 
-    /// @notice Thrown when caller is not governance.
+    /// @notice Emitted when Hyperdrive instance info is updated.
+    event InstanceInfoUpdated(
+        address indexed instance,
+        uint256 indexed data,
+        address indexed factory
+    );
+
+    /// @dev The info collected for each Hyperdrive factory.
+    struct FactoryInfoInternal {
+        /// @dev Data about the factory. Different registries can utilize
+        ///      different schemas for these values.
+        uint128 data;
+        /// @dev The index of the Hyperdrive instance in the list of all of the
+        ///      Hyperdrive instances.
+        uint128 index;
+    }
+
+    /// @dev The info collected for each Hyperdrive instance.
+    struct InstanceInfoInternal {
+        /// @dev Data about the instance. Different registries can utilize
+        ///      different schemas for these values.
+        uint128 data;
+        /// @dev The index of the Hyperdrive instance in the list of all of the
+        ///      Hyperdrive instances.
+        uint128 index;
+        /// @dev The factory that deployed this instance.
+        address factory;
+    }
+
+    /// @notice Thrown when the ending index of a range is larger than the
+    ///         underlying list.
+    error EndIndexTooLarge();
+
+    /// @notice Thrown when array inputs don't have the same length.
+    error InputLengthMismatch();
+
+    /// @notice Thrown when the provided factory doesn't recognize the
+    ///         corresponding Hyperdrive instance as a deployed pool.
+    error InvalidFactory();
+
+    /// @notice Thrown when the starting index of a range is larger than the
+    ///         ending index.
+    error InvalidIndexes();
+
+    /// @notice Thrown when caller is not the admin.
     error Unauthorized();
 
-    /// @notice Allows governance to transfer the governance role.
-    /// @param _governance The new governance address.
-    function updateGovernance(address _governance) external;
+    /// @notice Gets the admin address of this registry.
+    /// @return The admin address of this registry.
+    function admin() external view returns (address);
 
-    /// @notice Allows governance to set arbitrary info for a Hyperdrive
-    ///         instance.
-    /// @param _hyperdriveInstance The Hyperdrive instance address.
-    /// @param _data The uint256 value to be set to convey information about the
-    ///        instance.
-    function setHyperdriveInfo(
-        address _hyperdriveInstance,
-        uint256 _data
+    /// @notice Allows admin to transfer the admin role.
+    /// @param _admin The new admin address.
+    function updateAdmin(address _admin) external;
+
+    /// @notice Allows the admin to set arbitrary info for Hyperdrive factories.
+    /// @param __factories The Hyperdrive factories to update.
+    /// @param _data The data associated with the factories.
+    function setFactoryInfo(
+        address[] memory __factories,
+        uint128[] memory _data
+    ) external;
+
+    /// @notice Allows the admin to set arbitrary info for Hyperdrive instances.
+    /// @param __instances The Hyperdrive instances to update.
+    /// @param _data The data associated with the instances.
+    /// @param __factories The factory associated with the instances.
+    function setInstanceInfo(
+        address[] memory __instances,
+        uint128[] memory _data,
+        address[] memory __factories
     ) external;
 }

@@ -179,11 +179,11 @@ contract HyperdriveFactory is IHyperdriveFactory {
     ///         by governance.
     mapping(address => bool) public isDeployerCoordinator;
 
-    /// @notice A mapping from deployed Hyperdrive instances to the deployer
-    ///         coordinator that deployed them. This is useful for verifying
-    ///         the bytecode that was used to deploy the instance.
+    /// @dev A mapping from deployed Hyperdrive instances to the deployer
+    ///      coordinator that deployed them. This is useful for verifying the
+    ///      bytecode that was used to deploy the instance.
     mapping(address instance => address deployCoordinator)
-        public instancesToDeployerCoordinators;
+        public _instancesToDeployerCoordinators;
 
     /// @dev Array of all instances deployed by this factory.
     address[] internal _instances;
@@ -760,7 +760,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
 
         // Add this instance to the registry and emit an event with the
         // deployment configuration.
-        instancesToDeployerCoordinators[
+        _instancesToDeployerCoordinators[
             address(hyperdrive)
         ] = _deployerCoordinator;
         _config.governance = hyperdriveGovernance;
@@ -883,33 +883,35 @@ contract HyperdriveFactory is IHyperdriveFactory {
     }
 
     /// @notice Gets the instance at the specified index.
-    /// @param index The index of the instance to get.
+    /// @param _index The index of the instance to get.
     /// @return The instance at the specified index.
-    function getInstanceAtIndex(uint256 index) external view returns (address) {
-        return _instances[index];
+    function getInstanceAtIndex(
+        uint256 _index
+    ) external view returns (address) {
+        return _instances[_index];
     }
 
     /// @notice Returns the _instances array according to specified indices.
-    /// @param startIndex The starting index of the instances to get.
-    /// @param endIndex The ending index of the instances to get.
+    /// @param _startIndex The starting index of the instances to get (inclusive).
+    /// @param _endIndex The ending index of the instances to get (exclusive).
     /// @return range The resulting custom portion of the _instances array.
     function getInstancesInRange(
-        uint256 startIndex,
-        uint256 endIndex
+        uint256 _startIndex,
+        uint256 _endIndex
     ) external view returns (address[] memory range) {
         // If the indexes are malformed, revert.
-        if (startIndex > endIndex) {
+        if (_startIndex >= _endIndex) {
             revert IHyperdriveFactory.InvalidIndexes();
         }
-        if (endIndex >= _instances.length) {
+        if (_endIndex > _instances.length) {
             revert IHyperdriveFactory.EndIndexTooLarge();
         }
 
         // Return the range of instances.
-        range = new address[](endIndex - startIndex + 1);
-        for (uint256 i = startIndex; i <= endIndex; i++) {
+        range = new address[](_endIndex - _startIndex);
+        for (uint256 i = _startIndex; i < _endIndex; i++) {
             unchecked {
-                range[i - startIndex] = _instances[i];
+                range[i - _startIndex] = _instances[i];
             }
         }
     }
@@ -922,38 +924,51 @@ contract HyperdriveFactory is IHyperdriveFactory {
     }
 
     /// @notice Gets the deployer coordinator at the specified index.
-    /// @param index The index of the deployer coordinator to get.
+    /// @param _index The index of the deployer coordinator to get.
     /// @return The deployer coordinator at the specified index.
     function getDeployerCoordinatorAtIndex(
-        uint256 index
+        uint256 _index
     ) external view returns (address) {
-        return _deployerCoordinators[index];
+        return _deployerCoordinators[_index];
     }
 
     /// @notice Returns the deployer coordinators with an index between the
-    ///         starting and ending indexes (inclusive).
-    /// @param startIndex The starting index (inclusive).
-    /// @param endIndex The ending index (inclusive).
+    ///         starting and ending indexes.
+    /// @param _startIndex The starting index (inclusive).
+    /// @param _endIndex The ending index (exclusive).
     /// @return range The deployer coordinators within the specified range.
     function getDeployerCoordinatorsInRange(
-        uint256 startIndex,
-        uint256 endIndex
+        uint256 _startIndex,
+        uint256 _endIndex
     ) external view returns (address[] memory range) {
         // If the indexes are malformed, revert.
-        if (startIndex > endIndex) {
+        if (_startIndex >= _endIndex) {
             revert IHyperdriveFactory.InvalidIndexes();
         }
-        if (endIndex >= _deployerCoordinators.length) {
+        if (_endIndex > _deployerCoordinators.length) {
             revert IHyperdriveFactory.EndIndexTooLarge();
         }
 
         // Return the range of instances.
-        range = new address[](endIndex - startIndex + 1);
-        for (uint256 i = startIndex; i <= endIndex; i++) {
+        range = new address[](_endIndex - _startIndex);
+        for (uint256 i = _startIndex; i < _endIndex; i++) {
             unchecked {
-                range[i - startIndex] = _deployerCoordinators[i];
+                range[i - _startIndex] = _deployerCoordinators[i];
             }
         }
+    }
+
+    /// @notice Gets the deployer coordinators that deployed a list of instances.
+    /// @param __instances The instances.
+    /// @return coordinators The deployer coordinators.
+    function getDeployerCoordinatorByInstances(
+        address[] calldata __instances
+    ) external view returns (address[] memory coordinators) {
+        coordinators = new address[](_instances.length);
+        for (uint256 i = 0; i < __instances.length; i++) {
+            coordinators[i] = _instancesToDeployerCoordinators[__instances[i]];
+        }
+        return coordinators;
     }
 
     /// @dev Overrides the config values to the default values set by
