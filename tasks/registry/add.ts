@@ -1,4 +1,5 @@
 import { task, types } from "hardhat/config";
+import { Address } from "viem";
 import {
     HyperdriveDeployNamedTask,
     HyperdriveDeployNamedTaskParams,
@@ -31,6 +32,8 @@ HyperdriveDeployNamedTask(
             console.log(
                 `adding ${name} ${deployment.contract} at ${deployment.address} to registry with value ${value} ...`,
             );
+            let factoryAddress = deployments.byName("FACTORY")
+                .address as Address;
             const registryAddress = deployments.byName(
                 network.name.toUpperCase() + "_REGISTRY",
             ).address as `0x${string}`;
@@ -38,9 +41,10 @@ HyperdriveDeployNamedTask(
                 "IHyperdriveGovernedRegistry",
                 registryAddress,
             );
-            let tx = await registryContract.write.setHyperdriveInfo([
-                deployment.address as `0x${string}`,
-                BigInt(value),
+            let tx = await registryContract.write.setInstanceInfo([
+                [deployment.address as Address],
+                [BigInt(value)],
+                [factoryAddress],
             ]);
             let pc = await viem.getPublicClient();
             await pc.waitForTransactionReceipt({ hash: tx });
