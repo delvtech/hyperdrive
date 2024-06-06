@@ -33,7 +33,6 @@ export const MAINNET_FORK_STETH_14DAY: HyperdriveInstanceConfig<"StETH"> = {
         );
         let pc = await hre.viem.getPublicClient();
         // approve the coordinator
-        // TODO: Investigate why significant additional allowance is needed for deposit (10 ether is too little)
         let tx = await vaultSharesToken.write.approve([
             hre.hyperdriveDeploy.deployments.byName("STETH_COORDINATOR")
                 .address,
