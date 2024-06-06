@@ -478,6 +478,7 @@ abstract contract HyperdriveDeployerCoordinator is
         _config.governance = _deployConfig.governance;
         _config.feeCollector = _deployConfig.feeCollector;
         _config.sweepCollector = _deployConfig.sweepCollector;
+        _config.checkpointRewarder = _deployConfig.checkpointRewarder;
         _config.fees = _deployConfig.fees;
     }
 }

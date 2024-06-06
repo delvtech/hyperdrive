@@ -15,6 +15,7 @@ import { ERC4626Target3 } from "contracts/src/instances/erc4626/ERC4626Target3.s
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveCheckpointRewarder } from "contracts/src/interfaces/IHyperdriveCheckpointRewarder.sol";
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { VERSION } from "contracts/src/libraries/Constants.sol";
@@ -78,6 +79,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
+                // FIXME: Deploy a real checkpoint rewarder.
+                checkpointRewarder: IHyperdriveCheckpointRewarder(address(0)),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -147,6 +150,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             governance: alice,
             feeCollector: bob,
             sweepCollector: celine,
+            // FIXME: Deploy a real checkpoint rewarder.
+            checkpointRewarder: IHyperdriveCheckpointRewarder(address(0)),
             fees: IHyperdrive.Fees(0, 0, 0, 0)
         });
         address target0 = address(new ERC4626Target0(config));
@@ -329,6 +334,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 governance: factory.hyperdriveGovernance(),
                 feeCollector: factory.feeCollector(),
                 sweepCollector: factory.sweepCollector(),
+                // FIXME: Deploy a real checkpoint rewarder.
+                checkpointRewarder: IHyperdriveCheckpointRewarder(address(0)),
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
             });
         dai.approve(address(deployerCoordinator), type(uint256).max);
@@ -411,6 +418,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 governance: factory.hyperdriveGovernance(),
                 feeCollector: factory.feeCollector(),
                 sweepCollector: factory.sweepCollector(),
+                // FIXME: Deploy a real checkpoint rewarder.
+                checkpointRewarder: IHyperdriveCheckpointRewarder(address(0)),
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
             });
         dai.approve(address(deployerCoordinator), type(uint256).max);

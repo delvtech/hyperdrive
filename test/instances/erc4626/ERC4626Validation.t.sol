@@ -11,6 +11,7 @@ import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveCheckpointRewarder } from "contracts/src/interfaces/IHyperdriveCheckpointRewarder.sol";
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
@@ -57,6 +58,8 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
+                // FIXME: Deploy a real checkpoint rewarder.
+                checkpointRewarder: IHyperdriveCheckpointRewarder(address(0)),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,

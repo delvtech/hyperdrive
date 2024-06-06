@@ -305,6 +305,7 @@ abstract contract HyperdriveTarget0 is
                     governance: _governance,
                     feeCollector: _feeCollector,
                     sweepCollector: _sweepCollector,
+                    checkpointRewarder: _checkpointRewarder,
                     fees: IHyperdrive.Fees(
                         _curveFee,
                         _flatFee,

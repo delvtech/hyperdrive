@@ -26,6 +26,8 @@ abstract contract HyperdriveCheckpoint is
     using FixedPointMath for int256;
     using SafeCast for uint256;
 
+    // FIXME: We need to call `IHyperdriveCheckpointRewarder.claimCheckpointReward`.
+    //
     /// @dev Attempts to mint a checkpoint with the specified checkpoint time.
     /// @param _checkpointTime The time of the checkpoint to create.
     /// @param _maxIterations The number of iterations to use in the Newton's

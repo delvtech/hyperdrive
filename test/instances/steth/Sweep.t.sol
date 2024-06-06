@@ -7,6 +7,7 @@ import { StETHTarget1 } from "contracts/src/instances/steth/StETHTarget1.sol";
 import { StETHTarget2 } from "contracts/src/instances/steth/StETHTarget2.sol";
 import { StETHTarget3 } from "contracts/src/instances/steth/StETHTarget3.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { IHyperdriveCheckpointRewarder } from "contracts/src/interfaces/IHyperdriveCheckpointRewarder.sol";
 import { IHyperdriveEvents } from "contracts/src/interfaces/IHyperdriveEvents.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -63,6 +64,8 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
             governance: alice,
             feeCollector: bob,
             sweepCollector: celine,
+            // FIXME: Deploy a real checkpoint rewarder.
+            checkpointRewarder: IHyperdriveCheckpointRewarder(address(0)),
             fees: IHyperdrive.Fees(0, 0, 0, 0)
         });
         vm.warp(3 * config.positionDuration);

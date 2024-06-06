@@ -3,6 +3,7 @@ pragma solidity 0.8.20;
 
 import { IERC20 } from "./IERC20.sol";
 import { IHyperdriveCore } from "./IHyperdriveCore.sol";
+import { IHyperdriveCheckpointRewarder } from "./IHyperdriveCheckpointRewarder.sol";
 import { IHyperdriveEvents } from "./IHyperdriveEvents.sol";
 import { IHyperdriveRead } from "./IHyperdriveRead.sol";
 import { IMultiToken } from "./IMultiToken.sol";
@@ -106,6 +107,8 @@ interface IHyperdrive is
         address feeCollector;
         /// @dev The address which collects swept tokens.
         address sweepCollector;
+        /// @dev The address that will reward checkpoint minters.
+        IHyperdriveCheckpointRewarder checkpointRewarder;
         /// @dev The fees applied to trades.
         IHyperdrive.Fees fees;
     }
@@ -143,6 +146,8 @@ interface IHyperdrive is
         address feeCollector;
         /// @dev The address which collects swept tokens.
         address sweepCollector;
+        /// @dev The address that will reward checkpoint minters.
+        IHyperdriveCheckpointRewarder checkpointRewarder;
         /// @dev The fees applied to trades.
         IHyperdrive.Fees fees;
     }

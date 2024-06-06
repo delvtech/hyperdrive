@@ -5,6 +5,7 @@ import { Test } from "forge-std/Test.sol";
 import { Hyperdrive } from "contracts/src/external/Hyperdrive.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveCheckpointRewarder } from "contracts/src/interfaces/IHyperdriveCheckpointRewarder.sol";
 import { HyperdriveStorage } from "contracts/src/internal/HyperdriveStorage.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { MockHyperdriveBase } from "contracts/test/MockHyperdrive.sol";
@@ -46,6 +47,8 @@ contract DummyHyperdrive is Hyperdrive, MockHyperdriveBase {
                 governance: address(0),
                 feeCollector: address(0),
                 sweepCollector: address(0),
+                // FIXME: Deploy a real checkpoint rewarder.
+                checkpointRewarder: IHyperdriveCheckpointRewarder(address(0)),
                 fees: IHyperdrive.Fees({
                     curve: 0,
                     flat: 0,

@@ -5,6 +5,7 @@ import { VmSafe } from "forge-std/Vm.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveCheckpointRewarder } from "contracts/src/interfaces/IHyperdriveCheckpointRewarder.sol";
 import { IHyperdriveEvents } from "contracts/src/interfaces/IHyperdriveEvents.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ETH } from "contracts/src/libraries/Constants.sol";
@@ -174,6 +175,8 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 governance: governance,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
+                // FIXME: Deploy a real checkpoint rewarder.
+                checkpointRewarder: IHyperdriveCheckpointRewarder(address(0)),
                 fees: fees
             });
     }

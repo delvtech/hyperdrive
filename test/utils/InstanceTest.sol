@@ -5,6 +5,7 @@ import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveCheckpointRewarder } from "contracts/src/interfaces/IHyperdriveCheckpointRewarder.sol";
 import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IHyperdriveFactory } from "contracts/src/interfaces/IHyperdriveFactory.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -234,6 +235,8 @@ abstract contract InstanceTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: celine,
                 sweepCollector: sweepCollector,
+                // FIXME: Deploy a real checkpoint rewarder.
+                checkpointRewarder: IHyperdriveCheckpointRewarder(address(0)),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -281,6 +284,8 @@ abstract contract InstanceTest is HyperdriveTest {
             governance: factory.hyperdriveGovernance(),
             feeCollector: factory.feeCollector(),
             sweepCollector: factory.sweepCollector(),
+            // FIXME: Deploy a real checkpoint rewarder.
+            checkpointRewarder: IHyperdriveCheckpointRewarder(address(0)),
             fees: IHyperdrive.Fees({
                 curve: 0,
                 flat: 0,
