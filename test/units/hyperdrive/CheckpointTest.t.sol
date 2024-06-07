@@ -72,9 +72,7 @@ contract CheckpointTest is HyperdriveTest {
         // Initialize the Hyperdrive pool.
         initialize(alice, 0.05e18, 500_000_000e18);
 
-        // Advance a checkpoint, updating the share price. Since the long and
-        // short were opened in this checkpoint, the checkpoint should be of the
-        // old checkpoint price.
+        // Advance a checkpoint, updating the share price.
         advanceTime(CHECKPOINT_DURATION, 0.1e18);
         uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
 
@@ -101,6 +99,43 @@ contract CheckpointTest is HyperdriveTest {
         // Ensure that the checkpoint contains the latest share price.
         IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
             HyperdriveUtils.latestCheckpoint(hyperdrive)
+        );
+        assertEq(checkpoint.vaultSharePrice, vaultSharePrice);
+    }
+
+    function test_checkpoint_previous_checkpoint() external {
+        // Initialize the Hyperdrive pool.
+        initialize(alice, 0.05e18, 500_000_000e18);
+
+        // Advance a checkpoint, updating the share price.
+        advanceTime(2 * CHECKPOINT_DURATION, 0.1e18);
+        uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
+
+        // Start recording event logs.
+        vm.recordLogs();
+
+        // Mint the previous checkpoint.
+        uint256 checkpointTime = HyperdriveUtils.latestCheckpoint(hyperdrive) -
+            CHECKPOINT_DURATION;
+        uint256 aprBefore = HyperdriveUtils.calculateSpotAPR(hyperdrive);
+        hyperdrive.checkpoint(checkpointTime, 0);
+
+        // Ensure that the correct event was emitted.
+        verifyCheckpointEvent(
+            checkpointTime,
+            vaultSharePrice,
+            hyperdrive.getPoolInfo().vaultSharePrice,
+            0,
+            0,
+            hyperdrive.getPoolInfo().lpSharePrice
+        );
+
+        // Ensure that the pool's APR wasn't changed by the checkpoint.
+        assertEq(HyperdriveUtils.calculateSpotAPR(hyperdrive), aprBefore);
+
+        // Ensure that the checkpoint contains the latest share price.
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
+            checkpointTime
         );
         assertEq(checkpoint.vaultSharePrice, vaultSharePrice);
     }
