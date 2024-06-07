@@ -34,6 +34,16 @@ task(
             return;
         }
 
+        // Verify the registry.
+        await run("verify:verify", {
+            address: hyperdriveDeploy.deployments.byName(
+                `${hre.network.name.toUpperCase()}_REGISTRY`,
+            ).address,
+            constructorArguments: [
+                `${hre.network.name.toUpperCase()}_REGISTRY`,
+            ],
+        });
+
         // loop through all factories
         for (let f of hyperdriveConfig.factories ?? []) {
             // resolve the constructor args
