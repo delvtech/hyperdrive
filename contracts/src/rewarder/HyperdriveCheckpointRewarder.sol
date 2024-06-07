@@ -27,8 +27,13 @@ contract HyperdriveCheckpointRewarder is IHyperdriveCheckpointRewarder {
 
     /// @notice Instantiates the hyperdrive checkpoint rewarder.
     /// @param _name The checkpoint rewarder's name.
-    constructor(string memory _name) {
+    /// @param _subrewarder The subrewarder that processes checkpoint rewards.
+    constructor(
+        string memory _name,
+        IHyperdriveCheckpointSubrewarder _subrewarder
+    ) {
         admin = msg.sender;
+        subrewarder = _subrewarder;
         name = _name;
     }
 
@@ -48,7 +53,7 @@ contract HyperdriveCheckpointRewarder is IHyperdriveCheckpointRewarder {
     }
 
     /// @notice Allows the admin to update the subrewarder.
-    /// @param _subrewarder The rewarder that will be delegated to.
+    /// @param _subrewarder The subrewarder that processes checkpoint rewards.
     function updateSubrewarder(
         IHyperdriveCheckpointSubrewarder _subrewarder
     ) external onlyAdmin {

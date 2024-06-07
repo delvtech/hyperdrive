@@ -4,6 +4,7 @@ pragma solidity 0.8.20;
 import { IERC20 } from "./IERC20.sol";
 import { IHyperdriveRegistry } from "../interfaces/IHyperdriveRegistry.sol";
 
+// FIXME: Add the remaining functions to this interface.
 interface IHyperdriveCheckpointSubrewarder {
     /// @notice Emitted when the admin is transferred.
     event AdminUpdated(address indexed admin);
@@ -26,7 +27,7 @@ interface IHyperdriveCheckpointSubrewarder {
     /// @notice Thrown when caller is not governance.
     error Unauthorized();
 
-    /// @notice Claims a checkpoint reward.
+    /// @notice Processes a checkpoint reward.
     /// @param _instance The instance that submitted the claim.
     /// @param _claimant The address that is claiming the checkpoint reward.
     /// @param _checkpointTime The time of the checkpoint that was minted.
@@ -40,4 +41,12 @@ interface IHyperdriveCheckpointSubrewarder {
         uint256 _checkpointTime,
         bool _isTrader
     ) external returns (IERC20, uint256);
+
+    /// @notice Gets the subrewarder's name.
+    /// @return The subrewarder's name.
+    function name() external view returns (string memory);
+
+    /// @notice Gets the subrewarder's version.
+    /// @return The subrewarder's version.
+    function version() external pure returns (string memory);
 }

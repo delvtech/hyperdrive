@@ -26,6 +26,16 @@ interface IHyperdriveCheckpointRewarder {
     /// @notice Thrown when caller is not governance.
     error Unauthorized();
 
+    /// @notice Allows the admin to transfer the admin role.
+    /// @param _admin The new admin address.
+    function updateAdmin(address _admin) external;
+
+    /// @notice Allows the admin to update the subrewarder.
+    /// @param _subrewarder The rewarder that will be delegated to.
+    function updateSubrewarder(
+        IHyperdriveCheckpointSubrewarder _subrewarder
+    ) external;
+
     /// @notice Claims a checkpoint reward.
     /// @param _claimant The address that is claiming the checkpoint reward.
     /// @param _checkpointTime The time of the checkpoint that was minted.
@@ -36,4 +46,25 @@ interface IHyperdriveCheckpointRewarder {
         uint256 _checkpointTime,
         bool _isTrader
     ) external;
+
+    /// @notice Gets the subrewarder's name.
+    /// @return The subrewarder's name.
+    function name() external view returns (string memory);
+
+    /// @notice Gets the subrewarder's version.
+    /// @return The subrewarder's version.
+    function version() external pure returns (string memory);
+
+    /// @notice Returns the admin address that updates the rewarder's
+    ///         configuration.
+    /// @return The rewarder's admin address.
+    function admin() external view returns (address);
+
+    /// @notice Returns the subrewarder address that processes checkpoint
+    ///         rewards.
+    /// @return The rewarder's subrewarder address.
+    function subrewarder()
+        external
+        view
+        returns (IHyperdriveCheckpointSubrewarder);
 }
