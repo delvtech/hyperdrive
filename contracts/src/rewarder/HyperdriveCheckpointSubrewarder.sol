@@ -4,7 +4,6 @@ pragma solidity 0.8.20;
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
-import { IHyperdriveCheckpointRewarder } from "../interfaces/IHyperdriveCheckpointRewarder.sol";
 import { IHyperdriveCheckpointSubrewarder } from "../interfaces/IHyperdriveCheckpointSubrewarder.sol";
 import { IHyperdriveRegistry } from "../interfaces/IHyperdriveRegistry.sol";
 import { VERSION } from "../libraries/Constants.sol";
