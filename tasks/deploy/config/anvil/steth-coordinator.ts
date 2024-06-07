@@ -15,7 +15,9 @@ export const ANVIL_STETH_COORDINATOR: HyperdriveCoordinatorConfig<"StETH"> = {
     prepare: async (hre, options) => {
         let deployer = (await hre.getNamedAccounts())["deployer"];
         let pc = await hre.viem.getPublicClient();
-        let tc = await hre.viem.getTestClient();
+        let tc = await hre.viem.getTestClient({
+            mode: "anvil",
+        });
         let vaultSharesToken = await hre.hyperdriveDeploy.ensureDeployed(
             "STETH",
             "MockLido",

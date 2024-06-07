@@ -163,7 +163,7 @@ export class Deployments {
             !(this.network.name in this.#f) ||
             !(name in this.#f[this.network.name])
         )
-            throw new Error(`contract not found`);
+            throw new Error(`contract not found: ${name}`);
         return this.#f[this.network.name][name];
     }
 
@@ -200,7 +200,7 @@ export class Deployments {
                 Object.entries(v).map(([name, data]) => ({ ...data, name })),
             )
             .find((dc) => dc.address === address);
-        if (!contract) throw new Error("contract not found");
+        if (!contract) throw new Error(`contract not found: ${address}`);
         return contract;
     }
 

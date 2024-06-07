@@ -1,7 +1,7 @@
 import { Address, parseEther } from "viem";
 import { HyperdriveFactoryConfig, parseDuration } from "../../lib";
 
-export const SEPOLIA_FACTORY: HyperdriveFactoryConfig = {
+export const MAINNET_FORK_FACTORY: HyperdriveFactoryConfig = {
     name: "FACTORY",
     prepare: async (hre, options) => {
         await hre.hyperdriveDeploy.ensureDeployed(
@@ -13,10 +13,8 @@ export const SEPOLIA_FACTORY: HyperdriveFactoryConfig = {
     },
     constructorArguments: async (hre) => [
         {
-            governance: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
-            deployerCoordinatorManager: (await hre.getNamedAccounts())[
-                "deployer"
-            ] as Address,
+            governance: process.env.ADMIN! as `0x${string}`,
+            deployerCoordinatorManager: process.env.ADMIN! as `0x${string}`,
             hyperdriveGovernance: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
             defaultPausers: [
                 (await hre.getNamedAccounts())["deployer"] as Address,

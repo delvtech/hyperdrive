@@ -126,6 +126,12 @@ To deploy the smart contracts, run:
 NETWORK=<hardhat|anvil|sepolia|mainnet> make deploy
 ```
 
+To deploy the smart contracts to a mainnet fork environment, run:
+
+```sh
+make deploy-fork
+```
+
 ### Generate Deploy Configurations
 
 Factory, coordinator, and instance deploy configurations can be generated via templates.

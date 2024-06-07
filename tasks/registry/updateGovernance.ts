@@ -32,7 +32,7 @@ HyperdriveDeployBaseTask(
                 "IHyperdriveGovernedRegistry",
                 registryAddress,
             );
-            let tx = await registryContract.write.updateGovernance([
+            let tx = await registryContract.write.updateAdmin([
                 address as `0x${string}`,
             ]);
             let pc = await viem.getPublicClient();

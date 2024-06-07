@@ -1,6 +1,7 @@
-import { parseEther } from "viem";
+import { formatEther, parseEther } from "viem";
 import {
     HyperdriveInstanceConfig,
+    MAINNET_STETH_ADDRESS,
     getLinkerDetails,
     normalizeFee,
     parseDuration,
@@ -9,43 +10,45 @@ import {
 
 const CONTRIBUTION = parseEther("500");
 
-export const SEPOLIA_RETH_30DAY: HyperdriveInstanceConfig<"RETH"> = {
-    name: "RETH_30_DAY",
-    prefix: "RETH",
+export const MAINNET_FORK_STETH_30DAY: HyperdriveInstanceConfig<"StETH"> = {
+    name: "STETH_30_DAY",
+    prefix: "StETH",
     coordinatorAddress: async (hre) =>
-        hre.hyperdriveDeploy.deployments.byName("RETH_COORDINATOR").address,
-    deploymentId: toBytes32("RETH_30_DAY"),
-    salt: toBytes32("0x666"),
+        hre.hyperdriveDeploy.deployments.byName("STETH_COORDINATOR").address,
+    deploymentId: toBytes32("STETH_30_DAY"),
+    salt: toBytes32("0xababe"),
     extraData: "0x",
     contribution: CONTRIBUTION,
     fixedAPR: parseEther("0.05"),
     timestretchAPR: parseEther("0.05"),
     options: {
-        destination: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
+        destination: process.env.ADMIN! as `0x${string}`,
         asBase: false,
         extraData: "0x",
     },
     prepare: async (hre) => {
+        // mint steth
+        await hre.run("fork:mint-steth", {
+            amount: formatEther(CONTRIBUTION),
+            address: (await hre.getNamedAccounts())["deployer"],
+        });
         let vaultSharesToken = await hre.viem.getContractAt(
-            "MockRocketPool",
-            hre.hyperdriveDeploy.deployments.byName("RETH").address,
+            "MockLido",
+            MAINNET_STETH_ADDRESS,
         );
         let pc = await hre.viem.getPublicClient();
-        // mint the contribution
-        let tx = await vaultSharesToken.write.mint([CONTRIBUTION]);
-        await pc.waitForTransactionReceipt({ hash: tx });
         // approve the coordinator
-        tx = await vaultSharesToken.write.approve([
-            hre.hyperdriveDeploy.deployments.byName("RETH_COORDINATOR").address,
-            CONTRIBUTION,
+        let tx = await vaultSharesToken.write.approve([
+            hre.hyperdriveDeploy.deployments.byName("STETH_COORDINATOR")
+                .address,
+            await vaultSharesToken.read.getPooledEthByShares([CONTRIBUTION]),
         ]);
         await pc.waitForTransactionReceipt({ hash: tx });
     },
     poolDeployConfig: async (hre) => {
         return {
             baseToken: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-            vaultSharesToken:
-                hre.hyperdriveDeploy.deployments.byName("RETH").address,
+            vaultSharesToken: MAINNET_STETH_ADDRESS,
             circuitBreakerDelta: parseEther("0.6"),
             minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),

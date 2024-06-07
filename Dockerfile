@@ -1,16 +1,17 @@
-# NOTE: The `latest` version of foundry does not include arm64 as a build platform, 
-#       but tagged versions do. Using an arm64-compatible image enables developers to 
+# NOTE: The `latest` version of foundry does not include arm64 as a build platform,
+#       but tagged versions do. Using an arm64-compatible image enables developers to
 #       locally rebuild this image with different arguments for debugging/testing purposes.
-#
+FROM ghcr.io/foundry-rs/foundry@sha256:4606590c8f3cef6a8cba4bdf30226cedcdbd9f1b891e2bde17b7cf66c363b2b3 AS base
+RUN apk add --no-cache npm jq make && \
+  npm install -g yarn
+
 # Use a dedicated stage to generate node_modules.
 # Since only package.json and yarn.lock are copied, it's likely this layer will stay cached.
-FROM ghcr.io/foundry-rs/foundry@sha256:4606590c8f3cef6a8cba4bdf30226cedcdbd9f1b891e2bde17b7cf66c363b2b3 AS node-builder
-RUN apk add --no-cache npm && \
-  npm install -g yarn
-WORKDIR /app
+FROM base AS node-modules-builder
+WORKDIR /src
 COPY ./package.json ./package.json
 COPY ./yarn.lock ./yarn.lock
-RUN yarn install --immutable 
+RUN yarn install --immutable && yarn cache clean
 
 # Deploy the contracts to an Anvil node and save the node's state to a file.
 # By storing the freshly-deployed state, resetting the chain to that point is
@@ -18,16 +19,14 @@ RUN yarn install --immutable
 #
 # Build args are used to define the parameters for the deployment.
 # These can be overridden at build time to debug generate different hyperdrive configurations.
-FROM ghcr.io/foundry-rs/foundry@sha256:4606590c8f3cef6a8cba4bdf30226cedcdbd9f1b891e2bde17b7cf66c363b2b3 as builder
-RUN apk add --no-cache npm jq make && \
-  npm install -g yarn 
+FROM base
 WORKDIR /src
-COPY --from=node-builder /app/node_modules/ node_modules/
+COPY --from=node-modules-builder /src/node_modules/ /src/node_modules/
 COPY . .
-ENV NETWORK=anvil
-ENV HYPERDRIVE_ETHEREUM_URL=http://127.0.0.1:8545
+ARG NETWORK=anvil
+ARG HYPERDRIVE_ETHEREUM_URL=http://127.0.0.1:8545
 ARG ADMIN=0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
-ENV DEPLOYER_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+ARG DEPLOYER_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 ARG IS_COMPETITION_MODE=false
 ARG BASE_TOKEN_NAME=Base
 ARG BASE_TOKEN_SYMBOL=BASE
@@ -40,7 +39,7 @@ ARG FACTORY_CHECKPOINT_DURATION=1
 ARG FACTORY_MIN_CHECKPOINT_DURATION=1
 ARG FACTORY_MAX_CHECKPOINT_DURATION=24
 ARG FACTORY_MIN_POSITION_DURATION=7
-ARG FACTORY_MAX_POSITION_DURATION=36500
+ARG FACTORY_MAX_POSITION_DURATION=365
 ARG FACTORY_MIN_CIRCUIT_BREAKER_DELTA=0.15
 ARG FACTORY_MAX_CIRCUIT_BREAKER_DELTA=2
 ARG FACTORY_MIN_FIXED_APR=0.01
@@ -81,20 +80,11 @@ ARG STETH_HYPERDRIVE_GOVERNANCE_LP_FEE=0.15
 ARG STETH_HYPERDRIVE_GOVERNANCE_ZOMBIE_FEE=0.03
 RUN anvil --dump-state ./data & ANVIL="$!" && \
   sleep 2 && \
-  # PERF: The deploy step comprises ~90% of cached build time due to a solc download
-  # on the first compiler run. Running `npx hardhat compile` in the node-builder stage
-  # would fix the issue, but also require defining all build args in that stage 
-  # as well as defining them without defaults in this stage 🤮.
+  npx hardhat fork:mint-eth --address ${ADMIN} --amount 10 --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
   make deploy && \
-  npx hardhat registry:add --name ERC4626_HYPERDRIVE --value 1 --network anvil && \
-  npx hardhat registry:add --name STETH_HYPERDRIVE --value 1 --network anvil && \
-  npx hardhat registry:update-governance --address ${ADMIN} --network anvil && \
+  npx hardhat registry:add --name ERC4626_HYPERDRIVE --value 1 --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
+  npx hardhat registry:add --name STETH_HYPERDRIVE --value 1 --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
+  npx hardhat registry:update-governance --address ${ADMIN} --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
   ./scripts/format-devnet-addresses.sh && \
   kill $ANVIL && sleep 1s
 
-# Copy over only the stored chain data and list of contract addresses to minimize image size.
-FROM ghcr.io/foundry-rs/foundry@sha256:4606590c8f3cef6a8cba4bdf30226cedcdbd9f1b891e2bde17b7cf66c363b2b3
-WORKDIR /src
-COPY --from=builder /src/data /src/data
-COPY --from=builder /src/artifacts/addresses.json /src/artifacts/addresses.json
-COPY --from=builder /src/deployments.local.json /src/deployments.local.json

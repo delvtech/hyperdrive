@@ -7,6 +7,9 @@ on:
       - "main"
     tags:
       - "v*"
+  pull_request:
+    branches:
+      - "main"
 
 env:
   REGISTRY: ghcr.io
@@ -53,16 +56,17 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             ADMIN=${{ vars.TESTNET_ADMIN }}
+            DEPLOYER_PRIVATE_KEY=${{ vars.TESTNET_ADMIN_PRIVATE_KEY }}
             IS_COMPETITION_MODE=true
             BASE_TOKEN_NAME=Multi Collateral DAI
             BASE_TOKEN_SYMBOL=DAI
             VAULT_NAME=sDai
             VAULT_SYMBOL=SDAI
-            VAULT_STARTING_RATE=50000000000000000 # 5% APR
-            LIDO_STARTING_RATE=35000000000000000 # 3.5% APR
-            ERC4626_HYPERDRIVE_POSITION_DURATION=31536000 # 1 year in seconds
-            ERC4626_HYPERDRIVE_CHECKPOINT_DURATION=86400 # 1 day in seconds
-            ERC4626_HYPERDRIVE_FLAT_FEE=500000000000000 # 0.05% APR
-            STETH_HYPERDRIVE_POSITION_DURATION=31536000 # 1 year in seconds
-            STETH_HYPERDRIVE_CHECKPOINT_DURATION=86400 # 1 day in seconds
-            STETH_HYPERDRIVE_FLAT_FEE=500000000000000 # 0.05% APR
+            VAULT_STARTING_RATE=0.05 # 5% APR
+            LIDO_STARTING_RATE=0.035 # 3.5% APR
+            ERC4626_HYPERDRIVE_POSITION_DURATION=365 # 1 year in seconds
+            ERC4626_HYPERDRIVE_CHECKPOINT_DURATION=1 # 1 day in seconds
+            ERC4626_HYPERDRIVE_FLAT_FEE=0.0005 # 0.05% APR
+            STETH_HYPERDRIVE_POSITION_DURATION=365 # 1 year in seconds
+            STETH_HYPERDRIVE_CHECKPOINT_DURATION=1 # 1 day in seconds
+            STETH_HYPERDRIVE_FLAT_FEE=0.0005 # 0.05% APR
