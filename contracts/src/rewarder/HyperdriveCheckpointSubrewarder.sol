@@ -135,17 +135,21 @@ contract HyperdriveCheckpointSubrewarder is IHyperdriveCheckpointSubrewarder {
         bool _isTrader
     ) external onlyRewarder returns (IERC20, uint256) {
         // FIXME
-        // If the instance has a status of 1 in the registry, pay out the reward.
+        // If the instance has a status of 1 in the registry, the reward is
+        // the trader or minter reward amount. Otherwise, it's zero.
+        uint256 rewardAmount;
+        if (registry.getInstanceInfo(_instance).data == 1) {
+            rewardAmount = _isTrader ? traderRewardAmount : minterRewardAmount;
+        }
 
-        // Reward the minter.
-        uint256 rewardAmount = _isTrader
-            ? traderRewardAmount
-            : minterRewardAmount;
-        ERC20(address(rewardToken)).safeTransferFrom(
-            source,
-            _claimant,
-            rewardAmount
-        );
+        // If the reward is non-zero, we reward the minter.
+        if (rewardAmount > 0) {
+            ERC20(address(rewardToken)).safeTransferFrom(
+                source,
+                _claimant,
+                rewardAmount
+            );
+        }
 
         return (rewardToken, rewardAmount);
     }

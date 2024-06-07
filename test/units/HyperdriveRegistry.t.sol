@@ -91,6 +91,8 @@ contract HyperdriveRegistryTest is HyperdriveTest {
                         hyperdriveGovernance: bob,
                         feeCollector: feeCollector,
                         sweepCollector: sweepCollector,
+                        // FIXME: Deploy a real checkpoint rewarder.
+                        checkpointRewarder: address(0),
                         defaultPausers: new address[](0),
                         checkpointDurationResolution: 1 hours,
                         minCheckpointDuration: 8 hours,
@@ -958,12 +960,26 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         );
         assertTrue(factories.eq(_factories));
         info = registry.getFactoryInfo(_factories);
+        IHyperdriveRegistry.FactoryInfoWithMetadata[]
+            memory infoWithMetadata = registry.getFactoryInfoWithMetadata(
+                _factories
+            );
         for (uint256 i = 0; i < _factories.length; i++) {
             assertEq(
                 registry.getFactoryAtIndex(factoryCountBefore + i),
                 _factories[i]
             );
+            assertEq(registry.getFactoryInfo(_factories[i]).data, _data[i]);
             assertEq(info[i].data, _data[i]);
+            assertEq(infoWithMetadata[i].data, _data[i]);
+            assertEq(
+                infoWithMetadata[i].name,
+                IHyperdriveFactory(_factories[i]).name()
+            );
+            assertEq(
+                infoWithMetadata[i].version,
+                IHyperdriveFactory(_factories[i]).version()
+            );
         }
 
         // Verify that the correct events were emitted.
@@ -999,9 +1015,23 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         IHyperdriveRegistry.FactoryInfo[] memory info = registry.getFactoryInfo(
             _factories
         );
+        IHyperdriveRegistry.FactoryInfoWithMetadata[]
+            memory infoWithMetadata = registry.getFactoryInfoWithMetadata(
+                _factories
+            );
         for (uint256 i = 0; i < _factories.length; i++) {
             assertEq(registry.getFactoryAtIndex(i), _factories[i]);
+            assertEq(registry.getFactoryInfo(_factories[i]).data, _data[i]);
             assertEq(info[i].data, _data[i]);
+            assertEq(infoWithMetadata[i].data, _data[i]);
+            assertEq(
+                infoWithMetadata[i].name,
+                IHyperdriveFactory(_factories[i]).name()
+            );
+            assertEq(
+                infoWithMetadata[i].version,
+                IHyperdriveFactory(_factories[i]).version()
+            );
         }
 
         // Verify that the correct events were emitted.
@@ -1042,8 +1072,14 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         IHyperdriveRegistry.FactoryInfo[] memory info = registry.getFactoryInfo(
             _factories
         );
+        IHyperdriveRegistry.FactoryInfoWithMetadata[]
+            memory infoWithMetadata = registry.getFactoryInfoWithMetadata(
+                _factories
+            );
         for (uint256 i = 0; i < _factories.length; i++) {
+            assertEq(registry.getFactoryInfo(_factories[i]).data, data[i]);
             assertEq(info[i].data, 0);
+            assertEq(infoWithMetadata[i].data, data[i]);
         }
 
         // Verify that the correct events were emitted.
@@ -1091,13 +1127,32 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         );
         assertTrue(instances.eq(_instances));
         info = registry.getInstanceInfo(_instances);
+        IHyperdriveRegistry.InstanceInfoWithMetadata[]
+            memory infoWithMetadata = registry.getInstanceInfoWithMetadata(
+                _instances
+            );
         for (uint256 i = 0; i < _instances.length; i++) {
             assertEq(
                 registry.getInstanceAtIndex(instanceCountBefore + i),
                 _instances[i]
             );
+            assertEq(registry.getInstanceInfo(_instances[i]).data, _data[i]);
+            assertEq(
+                registry.getInstanceInfo(_instances[i]).factory,
+                _factories[i]
+            );
             assertEq(info[i].data, _data[i]);
             assertEq(info[i].factory, _factories[i]);
+            assertEq(infoWithMetadata[i].data, _data[i]);
+            assertEq(infoWithMetadata[i].factory, _factories[i]);
+            assertEq(
+                infoWithMetadata[i].name,
+                IHyperdrive(_instances[i]).name()
+            );
+            assertEq(
+                infoWithMetadata[i].version,
+                IHyperdrive(_instances[i]).version()
+            );
         }
 
         // Verify that the correct events were emitted.
@@ -1135,10 +1190,29 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         assertEq(registry.getNumberOfInstances(), instanceCountBefore);
         IHyperdriveRegistry.InstanceInfo[] memory info = registry
             .getInstanceInfo(_instances);
+        IHyperdriveRegistry.InstanceInfoWithMetadata[]
+            memory infoWithMetadata = registry.getInstanceInfoWithMetadata(
+                _instances
+            );
         for (uint256 i = 0; i < _instances.length; i++) {
             assertEq(registry.getInstanceAtIndex(i), _instances[i]);
+            assertEq(registry.getInstanceInfo(_instances[i]).data, _data[i]);
+            assertEq(
+                registry.getInstanceInfo(_instances[i]).factory,
+                _factories[i]
+            );
             assertEq(info[i].data, _data[i]);
             assertEq(info[i].factory, _factories[i]);
+            assertEq(infoWithMetadata[i].data, _data[i]);
+            assertEq(infoWithMetadata[i].factory, _factories[i]);
+            assertEq(
+                infoWithMetadata[i].name,
+                IHyperdrive(_instances[i]).name()
+            );
+            assertEq(
+                infoWithMetadata[i].version,
+                IHyperdrive(_instances[i]).version()
+            );
         }
 
         // Verify that the correct events were emitted.
@@ -1181,9 +1255,20 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         );
         IHyperdriveRegistry.InstanceInfo[] memory info = registry
             .getInstanceInfo(_instances);
+        IHyperdriveRegistry.InstanceInfoWithMetadata[]
+            memory infoWithMetadata = registry.getInstanceInfoWithMetadata(
+                _instances
+            );
         for (uint256 i = 0; i < _instances.length; i++) {
+            assertEq(registry.getInstanceInfo(_instances[i]).data, 0);
+            assertEq(
+                registry.getInstanceInfo(_instances[i]).factory,
+                address(0)
+            );
             assertEq(info[i].data, 0);
             assertEq(info[i].factory, address(0));
+            assertEq(infoWithMetadata[i].data, 0);
+            assertEq(infoWithMetadata[i].factory, address(0));
         }
 
         // Verify that the correct events were emitted.
