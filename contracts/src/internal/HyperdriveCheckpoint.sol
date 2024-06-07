@@ -121,6 +121,7 @@ abstract contract HyperdriveCheckpoint is
                             _initialVaultSharePrice,
                             _timeStretch
                         );
+                    break;
                 }
 
                 // If the time isn't the latest checkpoint, we check to see if
