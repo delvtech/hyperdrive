@@ -71,6 +71,32 @@ contract AdminTest is HyperdriveTest {
         assertEq(hyperdrive.getPoolConfig().sweepCollector, newSweepCollector);
     }
 
+    function test_setCheckpointRewarder_failure_unauthorized() external {
+        // Ensure that an unauthorized user cannot set the checkpoint rewarder
+        // address.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        hyperdrive.setCheckpointRewarder(alice);
+    }
+
+    function test_setCheckpointRewarder_success() external {
+        address newCheckpointRewarder = alice;
+
+        // Ensure that governance can set the checkpoint rewarder address.
+        vm.stopPrank();
+        vm.startPrank(hyperdrive.getPoolConfig().governance);
+        vm.expectEmit(true, true, true, true);
+        emit CheckpointRewarderUpdated(newCheckpointRewarder);
+        hyperdrive.setCheckpointRewarder(newCheckpointRewarder);
+
+        // Ensure that the governance address was updated.
+        assertEq(
+            hyperdrive.getPoolConfig().checkpointRewarder,
+            newCheckpointRewarder
+        );
+    }
+
     function test_setGovernance_failure_unauthorized() external {
         // Ensure that an unauthorized user cannot set the governance address.
         vm.stopPrank();

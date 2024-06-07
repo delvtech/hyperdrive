@@ -126,6 +126,9 @@ interface IHyperdriveEvents is IMultiTokenEvents {
     /// @notice Emitted when the sweep collector address is updated.
     event SweepCollectorUpdated(address indexed newSweepCollector);
 
+    /// @notice Emitted when the checkpoint rewarder address is updated.
+    event CheckpointRewarderUpdated(address indexed newCheckpointRewarder);
+
     /// @notice Emitted when the governance address is updated.
     event GovernanceUpdated(address indexed newGovernance);
 

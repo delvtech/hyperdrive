@@ -96,6 +96,19 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
         emit SweepCollectorUpdated(_who);
     }
 
+    /// @dev Allows governance to transfer the checkpoint rewarder.
+    /// @param _newCheckpointRewarder The new checkpoint rewarder.
+    function _setCheckpointRewarder(address _newCheckpointRewarder) internal {
+        // Ensure that the sender is governance.
+        if (msg.sender != _governance) {
+            revert IHyperdrive.Unauthorized();
+        }
+
+        // Update the checkpoint rewarder address and emit an event.
+        _checkpointRewarder = _newCheckpointRewarder;
+        emit CheckpointRewarderUpdated(_checkpointRewarder);
+    }
+
     /// @dev Allows governance to transfer the governance role.
     /// @param _who The new governance address.
     function _setGovernance(address _who) internal {

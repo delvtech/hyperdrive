@@ -93,8 +93,6 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
     /// @dev The address which collects swept tokens.
     address internal _sweepCollector;
 
-    // FIXME: Add a function to update this.
-    //
     /// @dev The address that will reward checkpoint minters.
     address internal _checkpointRewarder;
 

@@ -198,6 +198,10 @@ interface IHyperdriveCore is IMultiTokenCore {
     /// @param _who The new sweep collector address.
     function setSweepCollector(address _who) external;
 
+    /// @dev Allows governance to transfer the checkpoint rewarder.
+    /// @param _checkpointRewarder The new checkpoint rewarder.
+    function setCheckpointRewarder(address _checkpointRewarder) external;
+
     /// @notice Allows governance to transfer the governance role.
     /// @param _who The new governance address.
     function setGovernance(address _who) external;
