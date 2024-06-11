@@ -17,16 +17,16 @@ import { VERSION } from "../libraries/Constants.sol";
 contract HyperdriveCheckpointSubrewarder is IHyperdriveCheckpointSubrewarder {
     using SafeERC20 for ERC20;
 
-    /// @notice The checkpoint rewarder's name.
+    /// @notice The checkpoint subrewarder's name.
     string public name;
 
-    /// @notice The checkpoint rewarder's version.
+    /// @notice The checkpoint subrewarder's version.
     string public constant version = VERSION;
 
     /// @notice The rewarder address that can delegate to this subrewarder.
     address public immutable rewarder;
 
-    /// @notice The checkpoint rewarder's admin address.
+    /// @notice The admin address.
     address public admin;
 
     /// @notice The address that is the source for the reward funds.
@@ -48,16 +48,28 @@ contract HyperdriveCheckpointSubrewarder is IHyperdriveCheckpointSubrewarder {
     /// @notice Instantiates the hyperdrive checkpoint rewarder.
     /// @param _name The checkpoint rewarder's name.
     /// @param _rewarder The address of the rewarder.
+    /// @param _source The address of the source.
     /// @param _registry The address of the registry.
+    /// @param _rewardToken The address of the reward token.
+    /// @param _minterRewardAmount The minter reward amount.
+    /// @param _traderRewardAmount The trader reward amount.
     constructor(
         string memory _name,
         address _rewarder,
-        IHyperdriveRegistry _registry
+        address _source,
+        IHyperdriveRegistry _registry,
+        IERC20 _rewardToken,
+        uint256 _minterRewardAmount,
+        uint256 _traderRewardAmount
     ) {
+        name = _name;
         admin = msg.sender;
         rewarder = _rewarder;
+        source = _source;
         registry = _registry;
-        name = _name;
+        rewardToken = _rewardToken;
+        minterRewardAmount = _minterRewardAmount;
+        traderRewardAmount = _traderRewardAmount;
     }
 
     /// @dev Ensures that the modified function is only called by the admin.
@@ -83,11 +95,11 @@ contract HyperdriveCheckpointSubrewarder is IHyperdriveCheckpointSubrewarder {
         emit AdminUpdated(_admin);
     }
 
-    /// @notice Allows the admin to update the registry.
-    /// @param _registry The new registry.
-    function updateRegistry(IHyperdriveRegistry _registry) external onlyAdmin {
-        registry = _registry;
-        emit RegistryUpdated(_registry);
+    /// @notice Allows the admin to update the source.
+    /// @param _source The new source.
+    function updateSource(address _source) external onlyAdmin {
+        source = _source;
+        emit SourceUpdated(_source);
     }
 
     /// @notice Allows the admin to update the reward token.
@@ -97,20 +109,11 @@ contract HyperdriveCheckpointSubrewarder is IHyperdriveCheckpointSubrewarder {
         emit RewardTokenUpdated(_rewardToken);
     }
 
-    /// @notice Allows the admin to update the source.
-    /// @param _source The new source.
-    function updateSource(address _source) external onlyAdmin {
-        source = _source;
-        emit SourceUpdated(_source);
-    }
-
-    /// @notice Allows the admin to update the trader reward amount.
-    /// @param _traderRewardAmount The new trader reward amount.
-    function updateTraderRewardAmount(
-        uint256 _traderRewardAmount
-    ) external onlyAdmin {
-        traderRewardAmount = _traderRewardAmount;
-        emit TraderRewardAmountUpdated(_traderRewardAmount);
+    /// @notice Allows the admin to update the registry.
+    /// @param _registry The new registry.
+    function updateRegistry(IHyperdriveRegistry _registry) external onlyAdmin {
+        registry = _registry;
+        emit RegistryUpdated(_registry);
     }
 
     /// @notice Allows the admin to update the minter reward amount.
@@ -122,18 +125,28 @@ contract HyperdriveCheckpointSubrewarder is IHyperdriveCheckpointSubrewarder {
         emit MinterRewardAmountUpdated(_minterRewardAmount);
     }
 
+    /// @notice Allows the admin to update the trader reward amount.
+    /// @param _traderRewardAmount The new trader reward amount.
+    function updateTraderRewardAmount(
+        uint256 _traderRewardAmount
+    ) external onlyAdmin {
+        traderRewardAmount = _traderRewardAmount;
+        emit TraderRewardAmountUpdated(_traderRewardAmount);
+    }
+
     /// @notice Processes a checkpoint reward.
     /// @param _instance The instance that submitted the claim.
     /// @param _claimant The address that is claiming the checkpoint reward.
     /// @param _isTrader A boolean indicating whether or not the checkpoint was
     ///        minted by a trader or by someone calling checkpoint directly.
+    /// @return The reward token.
+    /// @return The reward amount.
     function processReward(
         address _instance,
         address _claimant,
         uint256, // unused
         bool _isTrader
     ) external onlyRewarder returns (IERC20, uint256) {
-        // FIXME
         // If the instance has a status of 1 in the registry, the reward is
         // the trader or minter reward amount. Otherwise, it's zero.
         uint256 rewardAmount;

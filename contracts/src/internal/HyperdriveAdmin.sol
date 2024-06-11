@@ -61,7 +61,7 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
     /// @param _status True to pause all deposits and false to unpause them.
     function _pause(bool _status) internal {
         // Ensure that the sender is authorized to pause the contract.
-        if (!_pausers[msg.sender]) {
+        if (!_pausers[msg.sender] || msg.sender != _governance) {
             revert IHyperdrive.Unauthorized();
         }
 
