@@ -3,7 +3,6 @@ pragma solidity 0.8.20;
 
 import { IERC20 } from "./IERC20.sol";
 import { IHyperdriveCore } from "./IHyperdriveCore.sol";
-import { IHyperdriveCheckpointRewarder } from "./IHyperdriveCheckpointRewarder.sol";
 import { IHyperdriveEvents } from "./IHyperdriveEvents.sol";
 import { IHyperdriveRead } from "./IHyperdriveRead.sol";
 import { IMultiToken } from "./IMultiToken.sol";

@@ -32,7 +32,7 @@ contract MockHyperdriveCheckpointSubrewarder {
         address,
         uint256,
         bool
-    ) external returns (IERC20, uint256) {
+    ) external view returns (IERC20, uint256) {
         return (rewardToken, rewardAmount);
     }
 }
