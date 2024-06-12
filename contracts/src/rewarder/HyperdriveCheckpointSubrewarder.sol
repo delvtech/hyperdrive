@@ -3,7 +3,9 @@ pragma solidity 0.8.20;
 
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveCheckpointSubrewarder } from "../interfaces/IHyperdriveCheckpointSubrewarder.sol";
 import { IHyperdriveRegistry } from "../interfaces/IHyperdriveRegistry.sol";
 import { VERSION } from "../libraries/Constants.sol";
@@ -137,6 +139,7 @@ contract HyperdriveCheckpointSubrewarder is IHyperdriveCheckpointSubrewarder {
     /// @notice Processes a checkpoint reward.
     /// @param _instance The instance that submitted the claim.
     /// @param _claimant The address that is claiming the checkpoint reward.
+    /// @param _checkpointTime The time of the checkpoint being submitted.
     /// @param _isTrader A boolean indicating whether or not the checkpoint was
     ///        minted by a trader or by someone calling checkpoint directly.
     /// @return The reward token.
@@ -144,25 +147,40 @@ contract HyperdriveCheckpointSubrewarder is IHyperdriveCheckpointSubrewarder {
     function processReward(
         address _instance,
         address _claimant,
-        uint256, // unused
+        uint256 _checkpointTime,
         bool _isTrader
     ) external onlyRewarder returns (IERC20, uint256) {
-        // If the instance has a status of 1 in the registry, the reward is
-        // the trader or minter reward amount. Otherwise, it's zero.
-        uint256 rewardAmount;
-        if (registry.getInstanceInfo(_instance).data == 1) {
-            rewardAmount = _isTrader ? traderRewardAmount : minterRewardAmount;
+        // If the checkpoint time isn't the latest checkpoint time, the reward
+        // is zero.
+        IERC20 rewardToken_ = rewardToken;
+        if (
+            _checkpointTime !=
+            HyperdriveMath.calculateCheckpointTime(
+                block.timestamp,
+                IHyperdrive(_instance).getPoolConfig().checkpointDuration
+            )
+        ) {
+            return (rewardToken_, 0);
+        }
+
+        // If the instance doesn't have a status of 1 in the registry, the
+        // reward is zero.
+        if (registry.getInstanceInfo(_instance).data != 1) {
+            return (rewardToken_, 0);
         }
 
         // If the reward is non-zero, we reward the minter.
+        uint256 rewardAmount = _isTrader
+            ? traderRewardAmount
+            : minterRewardAmount;
         if (rewardAmount > 0) {
-            ERC20(address(rewardToken)).safeTransferFrom(
+            ERC20(address(rewardToken_)).safeTransferFrom(
                 source,
                 _claimant,
                 rewardAmount
             );
         }
 
-        return (rewardToken, rewardAmount);
+        return (rewardToken_, rewardAmount);
     }
 }

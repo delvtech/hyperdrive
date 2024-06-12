@@ -13,10 +13,6 @@ import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-// FIXME: Fill this in.
-//
-// FIXME: Add integration tests for the full checkpoint -> rewarder -> subrewarder
-//        pipeline.
 contract HyperdriveCheckpointSubrewarderTest is BaseTest {
     using Lib for *;
 

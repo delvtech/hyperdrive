@@ -74,8 +74,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
-                checkpointRewarder: address(0),
+                checkpointRewarder: address(checkpointRewarder),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,

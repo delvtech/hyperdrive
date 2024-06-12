@@ -284,9 +284,10 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         view
         returns (uint256 latestCheckpoint)
     {
-        latestCheckpoint =
-            block.timestamp -
-            (block.timestamp % _checkpointDuration);
+        latestCheckpoint = HyperdriveMath.calculateCheckpointTime(
+            block.timestamp,
+            _checkpointDuration
+        );
     }
 
     /// @dev Gets the effective share reserves.

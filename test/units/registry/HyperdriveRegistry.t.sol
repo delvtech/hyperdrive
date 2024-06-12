@@ -38,16 +38,10 @@ contract HyperdriveRegistryTest is HyperdriveTest {
     );
 
     IERC4626 internal vaultSharesToken;
-    IHyperdriveGovernedRegistry internal registry;
 
     function setUp() public override {
         // Run HyperdriveTests's setUp.
         super.setUp();
-
-        // Deploy the registry.
-        registry = IHyperdriveGovernedRegistry(
-            address(new HyperdriveRegistry(NAME))
-        );
 
         // Deploy a base token.
         baseToken = new ERC20Mintable(
@@ -91,8 +85,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
                         hyperdriveGovernance: bob,
                         feeCollector: feeCollector,
                         sweepCollector: sweepCollector,
-                        // FIXME: Deploy a real checkpoint rewarder.
-                        checkpointRewarder: address(0),
+                        checkpointRewarder: address(checkpointRewarder),
                         defaultPausers: new address[](0),
                         checkpointDurationResolution: 1 hours,
                         minCheckpointDuration: 8 hours,
@@ -166,6 +159,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         config.linkerCodeHash = _factory.linkerCodeHash();
         config.feeCollector = _factory.feeCollector();
         config.sweepCollector = _factory.sweepCollector();
+        config.checkpointRewarder = _factory.checkpointRewarder();
         config.vaultSharesToken = vaultSharesToken;
         for (
             uint256 i = 0;

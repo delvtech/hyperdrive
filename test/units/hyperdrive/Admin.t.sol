@@ -14,7 +14,7 @@ contract AdminTest is HyperdriveTest {
     }
 
     function test_pause_success() external {
-        // Ensure that an authorized pauser can pause the contract.
+        // Ensure that an authorized pauser can change the pause status.
         vm.stopPrank();
         vm.startPrank(pauser);
         vm.expectEmit(true, true, true, true);
@@ -22,7 +22,17 @@ contract AdminTest is HyperdriveTest {
         hyperdrive.pause(true);
 
         // Ensure that the pause status was updated.
-        assert(hyperdrive.getMarketState().isPaused);
+        assertTrue(hyperdrive.getMarketState().isPaused);
+
+        // Ensure that governance can change the pause status.
+        vm.stopPrank();
+        vm.startPrank(hyperdrive.getPoolConfig().governance);
+        vm.expectEmit(true, true, true, true);
+        emit PauseStatusUpdated(false);
+        hyperdrive.pause(false);
+
+        // Ensure that the pause status was updated.
+        assertFalse(hyperdrive.getMarketState().isPaused);
     }
 
     function test_setFeeCollector_failure_unauthorized() external {
