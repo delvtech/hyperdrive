@@ -64,7 +64,6 @@ contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {
                     hyperdriveGovernance: bob,
                     feeCollector: feeCollector,
                     sweepCollector: sweepCollector,
-                    // FIXME: Deploy a real checkpoint rewarder.
                     checkpointRewarder: address(0),
                     defaultPausers: new address[](0),
                     checkpointDurationResolution: 1 hours,

@@ -234,7 +234,6 @@ abstract contract InstanceTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: celine,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -283,7 +282,6 @@ abstract contract InstanceTest is HyperdriveTest {
             governance: factory.hyperdriveGovernance(),
             feeCollector: factory.feeCollector(),
             sweepCollector: factory.sweepCollector(),
-            // FIXME: Deploy a real checkpoint rewarder.
             checkpointRewarder: address(0),
             fees: IHyperdrive.Fees({
                 curve: 0,

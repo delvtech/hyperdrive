@@ -100,7 +100,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -148,7 +147,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -183,7 +181,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -218,7 +215,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -253,7 +249,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -285,7 +280,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -318,7 +312,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -350,7 +343,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -383,7 +375,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -416,7 +407,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -448,7 +438,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -480,7 +469,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -512,7 +500,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -544,7 +531,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -576,7 +562,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -608,7 +593,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -640,7 +624,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -672,7 +655,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -704,7 +686,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -736,7 +717,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -767,8 +747,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
-                checkpointRewarder: address(0),
+                checkpointRewarder: address(0xdeadbeef),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -797,9 +776,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         assertEq(factory.hyperdriveGovernance(), config.hyperdriveGovernance);
         assertEq(factory.linkerFactory(), config.linkerFactory);
         assertEq(factory.linkerCodeHash(), config.linkerCodeHash);
-        // FIXME: Check the sweep collector.
         assertEq(factory.feeCollector(), config.feeCollector);
-        // FIXME: Check the checkpoint rewarder.
+        assertEq(factory.sweepCollector(), config.sweepCollector);
+        assertEq(factory.checkpointRewarder(), config.checkpointRewarder);
         assertEq(
             factory.checkpointDurationResolution(),
             config.checkpointDurationResolution
@@ -1792,7 +1771,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 timeStretch: 0,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 governance: factory.hyperdriveGovernance(),
                 fees: IHyperdrive.Fees(0.01e18, 0.001e18, 0.15e18, 0.03e18),
@@ -2848,7 +2826,6 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -2908,7 +2885,6 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             timeStretch: 0,
             feeCollector: feeCollector,
             sweepCollector: sweepCollector,
-            // FIXME: Deploy a real checkpoint rewarder.
             checkpointRewarder: address(0),
             governance: factory.hyperdriveGovernance(),
             fees: IHyperdrive.Fees(0.01e18, 0.001e18, 0.15e18, 0.03e18),
@@ -3389,7 +3365,6 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -3586,7 +3561,6 @@ contract HyperdriveFactoryAddDeployerCoordinatorTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -3718,7 +3692,6 @@ contract HyperdriveFactoryRemoveDeployerCoordinatorTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,

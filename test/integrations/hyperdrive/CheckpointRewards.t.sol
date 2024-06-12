@@ -8,10 +8,6 @@ import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-// FIXME: Add tests for past checkpoints.
-//
-// FIXME: Add tests for reward amounts of zero. A good case for this is if the
-//        hyperdrive pool is removed from the registry.
 contract CheckpointRewardsTest is HyperdriveTest {
     using FixedPointMath for *;
     using HyperdriveUtils for *;

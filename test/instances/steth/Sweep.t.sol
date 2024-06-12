@@ -63,7 +63,6 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
             governance: alice,
             feeCollector: bob,
             sweepCollector: celine,
-            // FIXME: Deploy a real checkpoint rewarder.
             checkpointRewarder: address(0),
             fees: IHyperdrive.Fees(0, 0, 0, 0)
         });

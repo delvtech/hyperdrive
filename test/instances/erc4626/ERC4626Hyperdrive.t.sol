@@ -78,7 +78,6 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
@@ -149,7 +148,6 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             governance: alice,
             feeCollector: bob,
             sweepCollector: celine,
-            // FIXME: Deploy a real checkpoint rewarder.
             checkpointRewarder: address(0),
             fees: IHyperdrive.Fees(0, 0, 0, 0)
         });
@@ -333,7 +331,6 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 governance: factory.hyperdriveGovernance(),
                 feeCollector: factory.feeCollector(),
                 sweepCollector: factory.sweepCollector(),
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
             });
@@ -417,7 +414,6 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 governance: factory.hyperdriveGovernance(),
                 feeCollector: factory.feeCollector(),
                 sweepCollector: factory.sweepCollector(),
-                // FIXME: Deploy a real checkpoint rewarder.
                 checkpointRewarder: address(0),
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
             });
