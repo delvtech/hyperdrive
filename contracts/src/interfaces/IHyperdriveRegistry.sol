@@ -71,29 +71,29 @@ interface IHyperdriveRegistry {
         uint256 _endIndex
     ) external view returns (address[] memory);
 
-    /// @notice Gets the hyperdrive factory info for a factory.
+    /// @notice Gets the Hyperdrive factory info for a factory.
     /// @param _factory The factory.
-    /// @return The hyperdrive factory info.
+    /// @return The Hyperdrive factory info.
     function getFactoryInfo(
         address _factory
     ) external view returns (FactoryInfo memory);
 
-    /// @notice Gets the hyperdrive factory info for a list of factories.
+    /// @notice Gets the Hyperdrive factory info for a list of factories.
     /// @param __factories The list of factories.
     /// @return The hyperdrive factory info.
     function getFactoryInfo(
         address[] calldata __factories
     ) external view returns (FactoryInfo[] memory);
 
-    /// @notice Gets the hyperdrive factory info with associated metadata for a
+    /// @notice Gets the Hyperdrive factory info with associated metadata for a
     ///         factory.
     /// @param _factory The factory.
-    /// @return The hyperdrive factory info with associated metadata.
+    /// @return The Hyperdrive factory info with associated metadata.
     function getFactoryInfoWithMetadata(
         address _factory
     ) external view returns (FactoryInfoWithMetadata memory);
 
-    /// @notice Gets the hyperdrive factory info with associated metadata for a
+    /// @notice Gets the Hyperdrive factory info with associated metadata for a
     ///         list of factories.
     /// @param __factories The list of factories.
     /// @return The hyperdrive factory info with associated metadata.

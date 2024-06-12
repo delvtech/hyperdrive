@@ -3,7 +3,11 @@ pragma solidity 0.8.20;
 
 import { VmSafe } from "forge-std/Vm.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { IHyperdriveCheckpointRewarder } from "contracts/src/interfaces/IHyperdriveCheckpointRewarder.sol";
+import { IHyperdriveCheckpointSubrewarder } from "contracts/src/interfaces/IHyperdriveCheckpointSubrewarder.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveCheckpointRewarder } from "contracts/src/rewarder/HyperdriveCheckpointRewarder.sol";
+import { HyperdriveCheckpointSubrewarder } from "contracts/src/rewarder/HyperdriveCheckpointSubrewarder.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
@@ -26,6 +30,34 @@ contract CheckpointRewardsTest is HyperdriveTest {
         // Run HyperdriveTests's setUp.
         super.setUp();
 
+        // Instantiate the Hyperdrive checkpoint rewarder, subrewarder, and the
+        // wallet that will fund the subrewarder. This subrewarder will pay out
+        // its rewards in the base token.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        checkpointRewarder = IHyperdriveCheckpointRewarder(
+            new HyperdriveCheckpointRewarder(
+                "HyperdriveCheckpointRewarder",
+                IHyperdriveCheckpointSubrewarder(address(0))
+            )
+        );
+        IHyperdriveCheckpointSubrewarder checkpointSubrewarder = IHyperdriveCheckpointSubrewarder(
+                new HyperdriveCheckpointSubrewarder(
+                    "HyperdriveCheckpointSubrewarder",
+                    address(checkpointRewarder),
+                    rewardSource,
+                    registry,
+                    IERC20(address(baseToken)),
+                    10e18,
+                    1e18
+                )
+            );
+        checkpointRewarder.updateSubrewarder(checkpointSubrewarder);
+        vm.stopPrank();
+        vm.startPrank(rewardSource);
+        baseToken.mint(rewardSource, 1_000_000e18);
+        baseToken.approve(address(checkpointSubrewarder), 1_000_000e18);
+
         // Sanity check the checkpoint subrewarder to make sure that the minter
         // and trader amounts are different.
         assertTrue(
@@ -33,7 +65,8 @@ contract CheckpointRewardsTest is HyperdriveTest {
                 checkpointRewarder.subrewarder().traderRewardAmount()
         );
 
-        // Initialize the Hyperdrive instance.
+        // Deploy and initialize the Hyperdrive instance.
+        deploy(alice, testConfig(0.05e18, POSITION_DURATION));
         initialize(alice, 0.05e18, 100_000_000e18);
 
         // Advance a checkpoint so that we are in a fresh checkpoint.

@@ -90,36 +90,31 @@ contract HyperdriveCheckpointSubrewarder is IHyperdriveCheckpointSubrewarder {
         _;
     }
 
-    /// @notice Allows the admin to transfer the admin role.
-    /// @param _admin The new admin address.
+    /// @inheritdoc IHyperdriveCheckpointSubrewarder
     function updateAdmin(address _admin) external onlyAdmin {
         admin = _admin;
         emit AdminUpdated(_admin);
     }
 
-    /// @notice Allows the admin to update the source.
-    /// @param _source The new source.
+    /// @inheritdoc IHyperdriveCheckpointSubrewarder
     function updateSource(address _source) external onlyAdmin {
         source = _source;
         emit SourceUpdated(_source);
     }
 
-    /// @notice Allows the admin to update the reward token.
-    /// @param _rewardToken The new reward token.
+    /// @inheritdoc IHyperdriveCheckpointSubrewarder
     function updateRewardToken(IERC20 _rewardToken) external onlyAdmin {
         rewardToken = _rewardToken;
         emit RewardTokenUpdated(_rewardToken);
     }
 
-    /// @notice Allows the admin to update the registry.
-    /// @param _registry The new registry.
+    /// @inheritdoc IHyperdriveCheckpointSubrewarder
     function updateRegistry(IHyperdriveRegistry _registry) external onlyAdmin {
         registry = _registry;
         emit RegistryUpdated(_registry);
     }
 
-    /// @notice Allows the admin to update the minter reward amount.
-    /// @param _minterRewardAmount The new minter reward amount.
+    /// @inheritdoc IHyperdriveCheckpointSubrewarder
     function updateMinterRewardAmount(
         uint256 _minterRewardAmount
     ) external onlyAdmin {
@@ -127,8 +122,7 @@ contract HyperdriveCheckpointSubrewarder is IHyperdriveCheckpointSubrewarder {
         emit MinterRewardAmountUpdated(_minterRewardAmount);
     }
 
-    /// @notice Allows the admin to update the trader reward amount.
-    /// @param _traderRewardAmount The new trader reward amount.
+    /// @inheritdoc IHyperdriveCheckpointSubrewarder
     function updateTraderRewardAmount(
         uint256 _traderRewardAmount
     ) external onlyAdmin {
@@ -136,14 +130,7 @@ contract HyperdriveCheckpointSubrewarder is IHyperdriveCheckpointSubrewarder {
         emit TraderRewardAmountUpdated(_traderRewardAmount);
     }
 
-    /// @notice Processes a checkpoint reward.
-    /// @param _instance The instance that submitted the claim.
-    /// @param _claimant The address that is claiming the checkpoint reward.
-    /// @param _checkpointTime The time of the checkpoint being submitted.
-    /// @param _isTrader A boolean indicating whether or not the checkpoint was
-    ///        minted by a trader or by someone calling checkpoint directly.
-    /// @return The reward token.
-    /// @return The reward amount.
+    /// @inheritdoc IHyperdriveCheckpointSubrewarder
     function processReward(
         address _instance,
         address _claimant,

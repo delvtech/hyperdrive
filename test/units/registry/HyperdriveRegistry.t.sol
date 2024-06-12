@@ -43,6 +43,12 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         // Run HyperdriveTests's setUp.
         super.setUp();
 
+        // Instantiate the Hyperdrive registry. This ensures that we are testing
+        // against a fresh state.
+        vm.stopPrank();
+        vm.startPrank(registrar);
+        registry = new HyperdriveRegistry(NAME);
+
         // Deploy a base token.
         baseToken = new ERC20Mintable(
             "Base",

@@ -8,7 +8,7 @@ import { VERSION } from "../libraries/Constants.sol";
 
 /// @author DELV
 /// @notice A checkpoint rewarder that is controlled by an admin and delegates
-///         it's reward functionality to a subrewarder.
+///         its reward functionality to a subrewarder.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
@@ -45,15 +45,13 @@ contract HyperdriveCheckpointRewarder is IHyperdriveCheckpointRewarder {
         _;
     }
 
-    /// @notice Allows the admin to transfer the admin role.
-    /// @param _admin The new admin address.
+    /// @inheritdoc IHyperdriveCheckpointRewarder
     function updateAdmin(address _admin) external onlyAdmin {
         admin = _admin;
         emit AdminUpdated(_admin);
     }
 
-    /// @notice Allows the admin to update the subrewarder.
-    /// @param _subrewarder The subrewarder that processes checkpoint rewards.
+    /// @inheritdoc IHyperdriveCheckpointRewarder
     function updateSubrewarder(
         IHyperdriveCheckpointSubrewarder _subrewarder
     ) external onlyAdmin {
@@ -61,11 +59,7 @@ contract HyperdriveCheckpointRewarder is IHyperdriveCheckpointRewarder {
         emit SubrewarderUpdated(_subrewarder);
     }
 
-    /// @notice Claims a checkpoint reward.
-    /// @param _claimant The address that is claiming the checkpoint reward.
-    /// @param _checkpointTime The time of the checkpoint that was minted.
-    /// @param _isTrader A boolean indicating whether or not the checkpoint was
-    ///        minted by a trader or by someone calling checkpoint directly.
+    /// @inheritdoc IHyperdriveCheckpointRewarder
     function claimCheckpointReward(
         address _claimant,
         uint256 _checkpointTime,

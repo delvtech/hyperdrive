@@ -10,10 +10,12 @@ import { HyperdriveRegistry } from "contracts/src/factory/HyperdriveRegistry.sol
 import { HyperdriveCheckpointRewarder } from "contracts/src/rewarder/HyperdriveCheckpointRewarder.sol";
 import { HyperdriveCheckpointSubrewarder } from "contracts/src/rewarder/HyperdriveCheckpointSubrewarder.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { BaseTest } from "test/utils/BaseTest.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-contract HyperdriveCheckpointSubrewarderTest is BaseTest {
+contract HyperdriveCheckpointSubrewarderTest is HyperdriveTest {
+    using HyperdriveUtils for *;
     using Lib for *;
 
     event AdminUpdated(address indexed admin);
@@ -34,28 +36,8 @@ contract HyperdriveCheckpointSubrewarderTest is BaseTest {
     ERC20Mintable internal token;
 
     function setUp() public override {
-        // Run BaseTests's setUp.
+        // Run HyperdriveTests's setUp.
         super.setUp();
-
-        // Deploy the registry.
-        vm.stopPrank();
-        vm.startPrank(alice);
-        IHyperdriveGovernedRegistry registry = IHyperdriveGovernedRegistry(
-            new HyperdriveRegistry("HyperdriveRegistry")
-        );
-        address[] memory instances = new address[](3);
-        uint128[] memory data = new uint128[](3);
-        address[] memory factories = new address[](3);
-        instances[0] = address(0xdeadbeef);
-        instances[1] = address(0xbeefbabe);
-        instances[2] = address(0xdecaf);
-        data[0] = 1;
-        data[1] = 1;
-        data[2] = 1;
-        factories[0] = address(0);
-        factories[1] = address(0);
-        factories[2] = address(0);
-        registry.setInstanceInfo(instances, data, factories);
 
         // Deploy a mintable reward token.
         token = new ERC20Mintable(
@@ -243,8 +225,14 @@ contract HyperdriveCheckpointSubrewarderTest is BaseTest {
         // that isn't the rewarder.
         vm.stopPrank();
         vm.startPrank(celine);
+        uint256 checkpointTime = hyperdrive.latestCheckpoint();
         vm.expectRevert(IHyperdriveCheckpointSubrewarder.Unauthorized.selector);
-        subrewarder.processReward(address(0xdeadbeef), celine, 0, true);
+        subrewarder.processReward(
+            address(hyperdrive),
+            celine,
+            checkpointTime,
+            true
+        );
     }
 
     function test_processReward_failure_underfundedSource() external {
@@ -260,8 +248,14 @@ contract HyperdriveCheckpointSubrewarderTest is BaseTest {
         // sufficient balance for the reward.
         vm.stopPrank();
         vm.startPrank(address(subrewarder.rewarder()));
+        uint256 checkpointTime = hyperdrive.latestCheckpoint();
         vm.expectRevert();
-        subrewarder.processReward(address(0xdeadbeef), celine, 0, false);
+        subrewarder.processReward(
+            address(hyperdrive),
+            celine,
+            checkpointTime,
+            false
+        );
     }
 
     function test_processReward_success_unregisteredInstance() external {
@@ -270,14 +264,25 @@ contract HyperdriveCheckpointSubrewarderTest is BaseTest {
         uint256 sourceBalanceBefore = token.balanceOf(subrewarder.source());
         uint256 claimantBalanceBefore = token.balanceOf(celine);
 
+        // Unregister the Hyperdrive instance.
+        vm.stopPrank();
+        vm.startPrank(registry.admin());
+        address[] memory instances = new address[](1);
+        uint128[] memory data = new uint128[](1);
+        address[] memory factories = new address[](1);
+        instances[0] = address(hyperdrive);
+        data[0] = 0;
+        factories[0] = address(0);
+        registry.setInstanceInfo(instances, data, factories);
+
         // Ensure that `processReward` succeeds without any tokens being
         // transferred if the instance hasn't been registered in the registry.
         vm.stopPrank();
         vm.startPrank(address(subrewarder.rewarder()));
         (IERC20 rewardToken, uint256 rewardAmount) = subrewarder.processReward(
-            address(0xdead),
+            address(hyperdrive),
             celine,
-            0,
+            hyperdrive.latestCheckpoint(),
             false
         );
         assertEq(address(rewardToken), address(subrewarder.rewardToken()));
@@ -299,9 +304,9 @@ contract HyperdriveCheckpointSubrewarderTest is BaseTest {
         vm.stopPrank();
         vm.startPrank(address(subrewarder.rewarder()));
         (IERC20 rewardToken, uint256 rewardAmount) = subrewarder.processReward(
-            address(0xdeadbeef),
+            address(hyperdrive),
             celine,
-            0,
+            hyperdrive.latestCheckpoint(),
             false
         );
         assertEq(address(rewardToken), address(subrewarder.rewardToken()));
@@ -326,9 +331,9 @@ contract HyperdriveCheckpointSubrewarderTest is BaseTest {
         vm.stopPrank();
         vm.startPrank(address(subrewarder.rewarder()));
         (IERC20 rewardToken, uint256 rewardAmount) = subrewarder.processReward(
-            address(0xdeadbeef),
+            address(hyperdrive),
             celine,
-            0,
+            hyperdrive.latestCheckpoint(),
             true
         );
         assertEq(address(rewardToken), address(subrewarder.rewardToken()));

@@ -30,8 +30,9 @@ interface IHyperdriveCheckpointSubrewarder {
     /// @param _admin The new admin address.
     function updateAdmin(address _admin) external;
 
-    /// @notice Allows the admin to update the source.
-    /// @param _source The new source.
+    /// @notice Allows the admin to update the source address that supplies the
+    ///         rewards.
+    /// @param _source The new source address that will supply the rewards.
     function updateSource(address _source) external;
 
     /// @notice Allows the admin to update the reward token.

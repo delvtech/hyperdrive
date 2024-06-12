@@ -6,7 +6,6 @@ import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveCheckpointRewarder } from "contracts/src/interfaces/IHyperdriveCheckpointRewarder.sol";
-import { IHyperdriveCheckpointSubrewarder } from "contracts/src/interfaces/IHyperdriveCheckpointSubrewarder.sol";
 import { IHyperdriveEvents } from "contracts/src/interfaces/IHyperdriveEvents.sol";
 import { IHyperdriveGovernedRegistry } from "contracts/src/interfaces/IHyperdriveGovernedRegistry.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -16,8 +15,6 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { LPMath } from "contracts/src/libraries/LPMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveRegistry } from "contracts/src/factory/HyperdriveRegistry.sol";
-import { HyperdriveCheckpointRewarder } from "contracts/src/rewarder/HyperdriveCheckpointRewarder.sol";
-import { HyperdriveCheckpointSubrewarder } from "contracts/src/rewarder/HyperdriveCheckpointSubrewarder.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockHyperdrive, MockHyperdriveTarget0, MockHyperdriveTarget1 } from "contracts/test/MockHyperdrive.sol";
@@ -33,7 +30,8 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
     ERC20ForwarderFactory internal forwarderFactory;
     ERC20Mintable internal baseToken;
     IHyperdriveGovernedRegistry internal registry;
-    IHyperdriveCheckpointRewarder internal checkpointRewarder;
+    IHyperdriveCheckpointRewarder internal checkpointRewarder =
+        IHyperdriveCheckpointRewarder(address(0));
     IHyperdrive internal hyperdrive;
 
     uint256 internal constant INITIAL_SHARE_PRICE = ONE;
@@ -64,34 +62,6 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         vm.stopPrank();
         vm.startPrank(registrar);
         registry = new HyperdriveRegistry("HyperdriveRegistry");
-
-        // Instantiate the Hyperdrive checkpoint rewarder, subrewarder, and the
-        // wallet that will fund the subrewarder. This subrewarder will pay out
-        // its rewards in the base token.
-        vm.stopPrank();
-        vm.startPrank(alice);
-        checkpointRewarder = IHyperdriveCheckpointRewarder(
-            new HyperdriveCheckpointRewarder(
-                "HyperdriveCheckpointRewarder",
-                IHyperdriveCheckpointSubrewarder(address(0))
-            )
-        );
-        IHyperdriveCheckpointSubrewarder checkpointSubrewarder = IHyperdriveCheckpointSubrewarder(
-                new HyperdriveCheckpointSubrewarder(
-                    "HyperdriveCheckpointSubrewarder",
-                    address(checkpointRewarder),
-                    rewardSource,
-                    registry,
-                    IERC20(address(baseToken)),
-                    10e18,
-                    1e18
-                )
-            );
-        checkpointRewarder.updateSubrewarder(checkpointSubrewarder);
-        vm.stopPrank();
-        vm.startPrank(rewardSource);
-        baseToken.mint(rewardSource, 1_000_000e18);
-        baseToken.approve(address(checkpointSubrewarder), 1_000_000e18);
 
         // Instantiate Hyperdrive.
         IHyperdrive.PoolConfig memory config = testConfig(
