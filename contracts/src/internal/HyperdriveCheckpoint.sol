@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { ExcessivelySafeCall } from "nomad/ExcessivelySafeCall.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveCheckpointRewarder } from "../interfaces/IHyperdriveCheckpointRewarder.sol";
 import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
@@ -23,6 +24,7 @@ abstract contract HyperdriveCheckpoint is
     HyperdriveLong,
     HyperdriveShort
 {
+    using ExcessivelySafeCall for address;
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;
@@ -329,10 +331,14 @@ abstract contract HyperdriveCheckpoint is
         //
         // NOTE: We do this in a low-level call and ignore the status to ensure
         // that the checkpoint will be minted regardless of whether or not the
-        // call succeeds.
+        // call succeeds. Furthermore, we use the `ExcessivelySafeCall` library
+        // to prevent returndata bombing.
         if (_checkpointRewarder != address(0)) {
             bool isTrader = _isTrader; // avoid stack-too-deep
-            (bool _success, ) = _checkpointRewarder.call(
+            (bool _success, ) = _checkpointRewarder.excessivelySafeCall(
+                gasleft(),
+                0, // value of 0
+                1024, // max copy of 1 kb
                 abi.encodeCall(
                     IHyperdriveCheckpointRewarder.claimCheckpointReward,
                     (msg.sender, checkpointTime, isTrader)
