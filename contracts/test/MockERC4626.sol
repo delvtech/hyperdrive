@@ -150,7 +150,13 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
     }
 
     function totalAssets() public view override returns (uint256) {
-        return asset.balanceOf(address(this)) + _getAccruedInterest();
+        return
+            asset.balanceOf(address(this)) +
+            _getAccruedInterest(block.timestamp);
+    }
+
+    function totalAssets(uint256 timestamp) public view returns (uint256) {
+        return asset.balanceOf(address(this)) + _getAccruedInterest(timestamp);
     }
 
     /// Mock ///
@@ -178,14 +184,16 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
     }
 
     function _accrue() internal {
-        uint256 interest = _getAccruedInterest();
+        uint256 interest = _getAccruedInterest(block.timestamp);
         if (interest > 0) {
             ERC20Mintable(address(asset)).mint(interest);
         }
         _lastUpdated = block.timestamp;
     }
 
-    function _getAccruedInterest() internal view returns (uint256) {
+    function _getAccruedInterest(
+        uint256 timestamp
+    ) internal view returns (uint256) {
         // If the rate is zero, no interest has accrued.
         if (_rate == 0) {
             return 0;
@@ -194,14 +202,12 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
         // If the block timestamp is less than last updated, the accrual
         // calculation will underflow. This can occur when using anvil's state
         // snapshots.
-        if (block.timestamp < _lastUpdated) {
+        if (timestamp < _lastUpdated) {
             return 0;
         }
 
         // base_balance = base_balance * (1 + r * t)
-        uint256 timeElapsed = (block.timestamp - _lastUpdated).divDown(
-            365 days
-        );
+        uint256 timeElapsed = (timestamp - _lastUpdated).divDown(365 days);
         uint256 accrued = asset.balanceOf(address(this)).mulDown(
             _rate.mulDown(timeElapsed)
         );
