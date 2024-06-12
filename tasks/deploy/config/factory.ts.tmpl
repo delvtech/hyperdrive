@@ -19,6 +19,7 @@ export const ${NETWORK_NAME}_FACTORY: HyperdriveFactoryConfig = {
             defaultPausers: ["$GOV_ADDRESS"],
             feeCollector: "$GOV_ADDRESS",
             sweepCollector: "$GOV_ADDRESS",
+            checkpointRewarder: "$CHECKPOINT_REWARDER_ADDRESS",
             checkpointDurationResolution: parseDuration(
                 "$CHECKPOINT_DURATION_RESOLUTION_HOURS hours",
             ),

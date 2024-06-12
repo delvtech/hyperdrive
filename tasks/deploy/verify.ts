@@ -44,6 +44,38 @@ task(
             ],
         });
 
+        // loop through all checkpoint rewarders
+        for (let r of hyperdriveConfig.checkpointRewarders ?? []) {
+            // resolve the constructor args
+            let constructorArguments = await evaluateValueOrHREFn(
+                r.constructorArguments,
+                hre,
+            );
+
+            // verify the checkpoint rewarder
+            console.log(`verifying ${r.name}...`);
+            await run("verify:verify", {
+                address: hyperdriveDeploy.deployments.byName(r.name).address,
+                constructorArguments,
+            });
+        }
+
+        // loop through all checkpoint subrewarders
+        for (let s of hyperdriveConfig.checkpointSubrewarders ?? []) {
+            // resolve the constructor args
+            let constructorArguments = await evaluateValueOrHREFn(
+                s.constructorArguments,
+                hre,
+            );
+
+            // verify the checkpoint subrewarder
+            console.log(`verifying ${s.name}...`);
+            await run("verify:verify", {
+                address: hyperdriveDeploy.deployments.byName(s.name).address,
+                constructorArguments,
+            });
+        }
+
         // loop through all factories
         for (let f of hyperdriveConfig.factories ?? []) {
             // resolve the constructor args

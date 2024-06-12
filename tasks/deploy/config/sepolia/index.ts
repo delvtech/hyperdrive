@@ -1,3 +1,5 @@
+export * from "./checkpoint-rewarder";
+export * from "./checkpoint-subrewarder";
 export * from "./dai-14day";
 export * from "./dai-30day";
 export * from "./erc4626-coordinator";

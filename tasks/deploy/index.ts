@@ -1,3 +1,5 @@
+export * from "./checkpoint-rewarder";
+export * from "./checkpoint-subrewarder";
 export * from "./coordinator";
 export * from "./factory";
 export * from "./hyperdrive";
