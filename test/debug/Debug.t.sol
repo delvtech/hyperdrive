@@ -2,7 +2,8 @@
 pragma solidity 0.8.20;
 
 import { console2 as console } from "forge-std/console2.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveCore } from "contracts/src/interfaces/IHyperdriveCore.sol";
+import { IMultiTokenCore } from "contracts/src/interfaces/IMultiTokenCore.sol";
 import { ETH } from "contracts/src/libraries/Constants.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
 import { EtchingUtils } from "test/utils/EtchingUtils.sol";
@@ -14,7 +15,7 @@ import { Lib } from "test/utils/Lib.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract Debugging is BaseTest, EtchingUtils {
+contract Debug is BaseTest, EtchingUtils {
     using Lib for *;
 
     /// @dev A minimal Ethereum transaction.
@@ -68,10 +69,25 @@ contract Debugging is BaseTest, EtchingUtils {
     /// @param _tx The transaction to debug.
     function debug(Transaction memory _tx) internal {
         // Etch the hyperdrive instance to add console logs.
-        etchHyperdrive(_tx.to);
+        (string memory name, string memory version) = etchHyperdrive(_tx.to);
 
-        // Log a preamble.
-        console.log("[test_debug] Sending the debugging call...");
+        // Log a preamble with the Hyperdrive name, version, and the function
+        // that will be called.
+        console.log(
+            "[test_debug] Found instance named %s at version %s",
+            name,
+            version
+        );
+        (string memory targetName, bool wasRecognized) = getTargetName(
+            _tx.data
+        );
+        if (wasRecognized) {
+            console.log('[test_debug] Simulating a call to "%s"', targetName);
+        } else {
+            console.log(
+                "[test_debug] Simulating a call to an unrecognized function"
+            );
+        }
 
         // Debugging the transaction.
         vm.startPrank(_tx.from);
@@ -91,6 +107,72 @@ contract Debugging is BaseTest, EtchingUtils {
                 vm.toString(returndata)
             );
         }
+    }
+
+    /// @dev Gets the name of the function that was called with the provided
+    ///      calldata.
+    /// @param _data The transaction calldata.
+    /// @return The name of the function that was called.
+    /// @return A flag indicating whether or not the target name was
+    ///         successfully found.
+    function getTargetName(
+        bytes memory _data
+    ) internal returns (string memory, bool) {
+        // Attempt to match the selector to one of the functions in the
+        // Hyperdrive interface. If the selector doesn't match any of the
+
+        // functions, we return a failure flag indicating that.
+        bytes4 selector = bytes4(_data);
+        if (selector == IHyperdriveCore.openLong.selector) {
+            return ("openLong", true);
+        } else if (selector == IHyperdriveCore.openShort.selector) {
+            return ("openShort", true);
+        } else if (selector == IHyperdriveCore.closeLong.selector) {
+            return ("closeLong", true);
+        } else if (selector == IHyperdriveCore.closeShort.selector) {
+            return ("closeShort", true);
+        } else if (selector == IHyperdriveCore.initialize.selector) {
+            return ("initialize", true);
+        } else if (selector == IHyperdriveCore.addLiquidity.selector) {
+            return ("addLiquidity", true);
+        } else if (selector == IHyperdriveCore.removeLiquidity.selector) {
+            return ("removeLiquidity", true);
+        } else if (
+            selector == IHyperdriveCore.redeemWithdrawalShares.selector
+        ) {
+            return ("redeemWithdrawalShares", true);
+        } else if (selector == IHyperdriveCore.checkpoint.selector) {
+            return ("checkpoint", true);
+        } else if (selector == IHyperdriveCore.collectGovernanceFee.selector) {
+            return ("collectGovernanceFee", true);
+        } else if (selector == IHyperdriveCore.pause.selector) {
+            return ("pause", true);
+        } else if (selector == IHyperdriveCore.setFeeCollector.selector) {
+            return ("setFeeCollector", true);
+        } else if (selector == IHyperdriveCore.setSweepCollector.selector) {
+            return ("setSweepCollector", true);
+        } else if (selector == IHyperdriveCore.setGovernance.selector) {
+            return ("setGovernance", true);
+        } else if (selector == IHyperdriveCore.setPauser.selector) {
+            return ("setPauser", true);
+        } else if (selector == IHyperdriveCore.sweep.selector) {
+            return ("sweep", true);
+        } else if (selector == IMultiTokenCore.transferFrom.selector) {
+            return ("transferFrom", true);
+        } else if (selector == IMultiTokenCore.transferFromBridge.selector) {
+            return ("transferFromBridge", true);
+        } else if (selector == IMultiTokenCore.setApproval.selector) {
+            return ("setApproval", true);
+        } else if (selector == IMultiTokenCore.setApprovalBridge.selector) {
+            return ("setApprovalBridge", true);
+        } else if (selector == IMultiTokenCore.setApprovalForAll.selector) {
+            return ("setApprovalForAll", true);
+        } else if (selector == IMultiTokenCore.batchTransferFrom.selector) {
+            return ("batchTransferFrom", true);
+        } else if (selector == IMultiTokenCore.permitForAll.selector) {
+            return ("permitForAll", true);
+        }
+        return ("", false);
     }
 
     /// @dev Gets a transaction on a specified chain.
