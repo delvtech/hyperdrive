@@ -1,14 +1,28 @@
 # Debugging
 
 This folder contains a testing utility that can be used to debug Hyperdrive
-transactions on the sepolia testnet. To use this tool, update the constants in
-`test/debug/Debugging.t.sol` with the values from the transaction you'd like to
-debug. In particular, you'll need to set the fork block, the hyperdrive address,
-the transaction value, and the transaction calldata. Once you've done this, you
-can run the following command to run the debugging tool:
+transactions on the sepolia testnet. The debugging tools rely on an RPC URL
+that is provided by the `DEBUG_RPC_URL` environment variable. This tool supports
+two different modes:
+
+- Transaction Mode: In this mode, you provide a transaction hash with the
+  `TX_HASH` environment variable. The transaction specified by this environment
+  variable will be simulated exactly as it was executed. For this to work, the
+  `TX_HASH` value must specify a transaction that was mined on the chain
+  specified by `DEBUG_RPC_URL`. This mode is preferred for mined transactions.
+- Simulation Mode: In this mode, you provide a block height with the `BLOCK`
+  environment variable and transaction details including the `FROM` address, the
+  `TO` address, the amount of `VALUE` to send, and the `DATA` to send. All of
+  these environment variables must be set for this mode to work properly. This
+  mode will execute the specified transaction at the specified block height on
+  the forked chain. This mode can be used when a transaction hasn't been mined
+  or to simulate internal calls.
+
+The environment variables can be put in the `.env` file for convenience or passed
+manually. Here is an example of running the script in transaction mode:
 
 ```
-forge test -vv --match-test "test_debug"
+DEBUG=true DEBUG_RPC_URL=http://localhost:8545 TX_HASH=0x278d43d20d134fcfcd92c05d02b33cee1855de8ecae20a3c4ca47e1647e171a7 forge test -vv --match-test "test_debug"
 ```
 
 To get more insight into what went wrong (or right) during the transaction

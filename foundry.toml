@@ -21,11 +21,8 @@ remappings = [
 ]
 # gas limit - max u64
 gas_limit = "18446744073709551615"
-# Allows the scripts to write the addresses to a file.
-fs_permissions = [
-  { access = "write", path = "./artifacts/script_addresses.json" },
-  { access = "write", path = "./test/Generated.t.sol" },
-]
+# allows the ffi to be used
+ffi = true
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
 
 [profile.production]

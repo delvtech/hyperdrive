@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { console2 as console } from "forge-std/console2.sol";
 import { Test } from "forge-std/Test.sol";
 import { ERC4626Hyperdrive } from "contracts/src/instances/erc4626/ERC4626Hyperdrive.sol";
 import { ERC4626Target0 } from "contracts/src/instances/erc4626/ERC4626Target0.sol";
@@ -52,7 +53,15 @@ contract EtchingUtils is Test {
         IHyperdrive hyperdrive = IHyperdrive(_hyperdrive);
         if (!hyperdrive.version().eq(VERSION)) {
             revert(
-                "EtchingUtils: Version mismatch. Consider checking out a different tag."
+                vm.replace(
+                    vm.replace(
+                        "EtchingUtils: The checked-out version is %0 but the target version is %1. Consider checking out the target version",
+                        "%0",
+                        VERSION
+                    ),
+                    "%1",
+                    hyperdrive.version()
+                )
             );
         }
 
