@@ -73,14 +73,14 @@ interface IHyperdriveRegistry {
 
     /// @notice Gets the Hyperdrive factory info for a factory.
     /// @param _factory The factory.
-    /// @return The Hyperdrive factory info.
+    /// @return The factory info.
     function getFactoryInfo(
         address _factory
     ) external view returns (FactoryInfo memory);
 
     /// @notice Gets the Hyperdrive factory info for a list of factories.
     /// @param __factories The list of factories.
-    /// @return The hyperdrive factory info.
+    /// @return The list of factory info.
     function getFactoryInfo(
         address[] calldata __factories
     ) external view returns (FactoryInfo[] memory);
@@ -88,7 +88,7 @@ interface IHyperdriveRegistry {
     /// @notice Gets the Hyperdrive factory info with associated metadata for a
     ///         factory.
     /// @param _factory The factory.
-    /// @return The Hyperdrive factory info with associated metadata.
+    /// @return The factory info with associated metadata.
     function getFactoryInfoWithMetadata(
         address _factory
     ) external view returns (FactoryInfoWithMetadata memory);
@@ -96,7 +96,7 @@ interface IHyperdriveRegistry {
     /// @notice Gets the Hyperdrive factory info with associated metadata for a
     ///         list of factories.
     /// @param __factories The list of factories.
-    /// @return The hyperdrive factory info with associated metadata.
+    /// @return The list of factory info with associated metadata.
     function getFactoryInfoWithMetadata(
         address[] calldata __factories
     ) external view returns (FactoryInfoWithMetadata[] memory);
@@ -129,7 +129,7 @@ interface IHyperdriveRegistry {
 
     /// @notice Gets the instance info for a list of instances.
     /// @param __instances The list of instances.
-    /// @return The instance info.
+    /// @return The list of instance info.
     function getInstanceInfo(
         address[] calldata __instances
     ) external view returns (InstanceInfo[] memory);
@@ -144,7 +144,7 @@ interface IHyperdriveRegistry {
     /// @notice Gets the instance info with associated metadata for a list of
     ///         instances.
     /// @param __instances The list of instances.
-    /// @return The instance info with associated metadata.
+    /// @return The list of instance info with associated metadata.
     function getInstanceInfoWithMetadata(
         address[] calldata __instances
     ) external view returns (InstanceInfoWithMetadata[] memory);

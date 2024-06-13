@@ -335,7 +335,7 @@ abstract contract HyperdriveCheckpoint is
         // to prevent returndata bombing.
         if (_checkpointRewarder != address(0)) {
             bool isTrader = _isTrader; // avoid stack-too-deep
-            (bool _success, ) = _checkpointRewarder.excessivelySafeCall(
+            _checkpointRewarder.excessivelySafeCall(
                 gasleft(),
                 0, // value of 0
                 1024, // max copy of 1 kb
@@ -344,8 +344,6 @@ abstract contract HyperdriveCheckpoint is
                     (msg.sender, checkpointTime, isTrader)
                 )
             );
-            // NOTE: Avoid unused local variable warning.
-            _success;
         }
 
         return checkpointVaultSharePrice;
