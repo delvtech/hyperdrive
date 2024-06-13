@@ -22,7 +22,7 @@ The environment variables can be put in the `.env` file for convenience or passe
 manually. Here is an example of running the script in transaction mode:
 
 ```
-DEBUG=true DEBUG_RPC_URL=http://localhost:8545 TX_HASH=0x278d43d20d134fcfcd92c05d02b33cee1855de8ecae20a3c4ca47e1647e171a7 forge test -vv --match-test "test_debug"
+DEBUG_RPC_URL=http://localhost:8545 TX_HASH=0x278d43d20d134fcfcd92c05d02b33cee1855de8ecae20a3c4ca47e1647e171a7 ./scripts/debug.sh
 ```
 
 To get more insight into what went wrong (or right) during the transaction
