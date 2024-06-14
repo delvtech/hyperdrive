@@ -120,7 +120,6 @@ contract Debug is BaseTest, EtchingUtils {
     ) internal pure returns (string memory, bool) {
         // Attempt to match the selector to one of the functions in the
         // Hyperdrive interface. If the selector doesn't match any of the
-
         // functions, we return a failure flag indicating that.
         bytes4 selector = bytes4(_data);
         if (selector == IHyperdriveCore.openLong.selector) {
