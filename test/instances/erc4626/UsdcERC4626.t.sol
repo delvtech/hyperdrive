@@ -74,6 +74,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
+                checkpointRewarder: address(checkpointRewarder),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,

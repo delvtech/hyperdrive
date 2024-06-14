@@ -14,7 +14,7 @@ contract AdminTest is HyperdriveTest {
     }
 
     function test_pause_success() external {
-        // Ensure that an authorized pauser can pause the contract.
+        // Ensure that an authorized pauser can change the pause status.
         vm.stopPrank();
         vm.startPrank(pauser);
         vm.expectEmit(true, true, true, true);
@@ -22,7 +22,17 @@ contract AdminTest is HyperdriveTest {
         hyperdrive.pause(true);
 
         // Ensure that the pause status was updated.
-        assert(hyperdrive.getMarketState().isPaused);
+        assertTrue(hyperdrive.getMarketState().isPaused);
+
+        // Ensure that governance can change the pause status.
+        vm.stopPrank();
+        vm.startPrank(hyperdrive.getPoolConfig().governance);
+        vm.expectEmit(true, true, true, true);
+        emit PauseStatusUpdated(false);
+        hyperdrive.pause(false);
+
+        // Ensure that the pause status was updated.
+        assertFalse(hyperdrive.getMarketState().isPaused);
     }
 
     function test_setFeeCollector_failure_unauthorized() external {
@@ -69,6 +79,32 @@ contract AdminTest is HyperdriveTest {
 
         // Ensure that the governance address was updated.
         assertEq(hyperdrive.getPoolConfig().sweepCollector, newSweepCollector);
+    }
+
+    function test_setCheckpointRewarder_failure_unauthorized() external {
+        // Ensure that an unauthorized user cannot set the checkpoint rewarder
+        // address.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        hyperdrive.setCheckpointRewarder(alice);
+    }
+
+    function test_setCheckpointRewarder_success() external {
+        address newCheckpointRewarder = alice;
+
+        // Ensure that governance can set the checkpoint rewarder address.
+        vm.stopPrank();
+        vm.startPrank(hyperdrive.getPoolConfig().governance);
+        vm.expectEmit(true, true, true, true);
+        emit CheckpointRewarderUpdated(newCheckpointRewarder);
+        hyperdrive.setCheckpointRewarder(newCheckpointRewarder);
+
+        // Ensure that the governance address was updated.
+        assertEq(
+            hyperdrive.getPoolConfig().checkpointRewarder,
+            newCheckpointRewarder
+        );
     }
 
     function test_setGovernance_failure_unauthorized() external {

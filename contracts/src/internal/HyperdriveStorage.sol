@@ -84,14 +84,17 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
 
     /// Admin ///
 
+    /// @dev The address that can pause the contract.
+    address internal _governance;
+
     /// @dev The address which collects governance fees.
     address internal _feeCollector;
 
     /// @dev The address which collects swept tokens.
     address internal _sweepCollector;
 
-    /// @dev The address that can pause the contract.
-    address internal _governance;
+    /// @dev The address that will reward checkpoint minters.
+    address internal _checkpointRewarder;
 
     /// @dev Governance fees that haven't been collected yet denominated in shares.
     uint256 internal _governanceFeesAccrued;
@@ -177,9 +180,11 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
         _linkerFactory = _config.linkerFactory;
         _linkerCodeHash = _config.linkerCodeHash;
 
-        // Initialize governance, the fee collector, and the sweep collector.
+        // Initialize governance, the fee collector, the sweep collector, and
+        // the checkpoint rewarder.
         _governance = _config.governance;
         _feeCollector = _config.feeCollector;
         _sweepCollector = _config.sweepCollector;
+        _checkpointRewarder = _config.checkpointRewarder;
     }
 }

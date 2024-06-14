@@ -70,6 +70,12 @@ abstract contract HyperdriveTarget0 is
         _setSweepCollector(_who);
     }
 
+    /// @dev Allows governance to transfer the checkpoint rewarder.
+    /// @param _checkpointRewarder The new checkpoint rewarder.
+    function setCheckpointRewarder(address _checkpointRewarder) external {
+        _setCheckpointRewarder(_checkpointRewarder);
+    }
+
     /// @notice Allows governance to change governance.
     /// @param _who The new governance address.
     function setGovernance(address _who) external {
@@ -305,6 +311,7 @@ abstract contract HyperdriveTarget0 is
                     governance: _governance,
                     feeCollector: _feeCollector,
                     sweepCollector: _sweepCollector,
+                    checkpointRewarder: _checkpointRewarder,
                     fees: IHyperdrive.Fees(
                         _curveFee,
                         _flatFee,

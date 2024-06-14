@@ -46,6 +46,7 @@ contract DummyHyperdrive is Hyperdrive, MockHyperdriveBase {
                 governance: address(0),
                 feeCollector: address(0),
                 sweepCollector: address(0),
+                checkpointRewarder: address(0),
                 fees: IHyperdrive.Fees({
                     curve: 0,
                     flat: 0,

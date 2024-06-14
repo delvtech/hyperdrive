@@ -23,6 +23,9 @@ export const ANVIL_FACTORY: HyperdriveFactoryConfig = {
             defaultPausers: [env.ADMIN as Address],
             feeCollector: env.ADMIN as Address,
             sweepCollector: env.ADMIN as Address,
+            checkpointRewarder: hre.hyperdriveDeploy.deployments.byName(
+                "CHECKPOINT_REWARDER",
+            ).address,
             checkpointDurationResolution: parseDuration(
                 `${env.FACTORY_CHECKPOINT_DURATION!} hours` as any,
             ),

@@ -103,6 +103,9 @@ export const SEPOLIA_DAI_30DAY: HyperdriveInstanceConfig<"ERC4626"> = {
             governance: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
             feeCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
             sweepCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
+            checkpointRewarder: hre.hyperdriveDeploy.deployments.byName(
+                "CHECKPOINT_REWARDER",
+            ).address,
             ...(await getLinkerDetails(
                 hre,
                 hre.hyperdriveDeploy.deployments.byName("FACTORY").address,

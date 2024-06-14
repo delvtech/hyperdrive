@@ -234,6 +234,7 @@ abstract contract InstanceTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: celine,
                 sweepCollector: sweepCollector,
+                checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -281,6 +282,7 @@ abstract contract InstanceTest is HyperdriveTest {
             governance: factory.hyperdriveGovernance(),
             feeCollector: factory.feeCollector(),
             sweepCollector: factory.sweepCollector(),
+            checkpointRewarder: address(0),
             fees: IHyperdrive.Fees({
                 curve: 0,
                 flat: 0,

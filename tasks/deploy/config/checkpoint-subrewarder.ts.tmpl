@@ -1,0 +1,15 @@
+import { HyperdriveCheckpointSubrewarderConfig } from "../../lib";
+
+export const ${NETWORK_NAME}_CHECKPOINT_SUBREWARDER: HyperdriveCheckpointSubrewarderConfig =
+    {
+        name: "${NETWORK_NAME}_CHECKPOINT_SUBREWARDER",
+        constructorArguments: async (hre) => [
+            "${NAME}",
+            "${REWARDER_ADDRESS}",
+            "${SOURCE_ADDRESS}",
+            "${REGISTRY_ADDRESS}",
+            "${REWARD_TOKEN_ADDRESS}",
+            parseEther("${MINTER_REWARDER_AMOUNT}"),
+            parseEther("${TRADER_REWARDER_AMOUNT}"),
+        ],
+    };

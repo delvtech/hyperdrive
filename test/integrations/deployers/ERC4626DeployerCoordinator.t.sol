@@ -64,6 +64,7 @@ contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {
                     hyperdriveGovernance: bob,
                     feeCollector: feeCollector,
                     sweepCollector: sweepCollector,
+                    checkpointRewarder: address(0),
                     defaultPausers: new address[](0),
                     checkpointDurationResolution: 1 hours,
                     minCheckpointDuration: 8 hours,

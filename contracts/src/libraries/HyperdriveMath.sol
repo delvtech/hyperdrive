@@ -17,6 +17,17 @@ library HyperdriveMath {
     using FixedPointMath for int256;
     using SafeCast for uint256;
 
+    /// @dev Calculates the checkpoint time of a given timestamp.
+    /// @param _timestamp The timestamp to use to calculate the checkpoint time.
+    /// @param _checkpointDuration The checkpoint duration.
+    /// @return The checkpoint time.
+    function calculateCheckpointTime(
+        uint256 _timestamp,
+        uint256 _checkpointDuration
+    ) internal pure returns (uint256) {
+        return _timestamp - (_timestamp % _checkpointDuration);
+    }
+
     /// @dev Calculates the time stretch parameter for the YieldSpace curve.
     ///      This parameter modifies the curvature in order to support a larger
     ///      or smaller range of APRs. The lower the time stretch, the flatter

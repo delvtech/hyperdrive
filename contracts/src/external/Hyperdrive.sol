@@ -256,6 +256,11 @@ abstract contract Hyperdrive is
     }
 
     /// @inheritdoc IHyperdriveCore
+    function setCheckpointRewarder(address) external {
+        _delegate(target0);
+    }
+
+    /// @inheritdoc IHyperdriveCore
     function setGovernance(address) external {
         _delegate(target0);
     }

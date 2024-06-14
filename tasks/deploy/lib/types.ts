@@ -81,6 +81,40 @@ export type ExtractValueOrHREFn<T extends ValueOrHREFn<unknown>> =
 export type ContractName = ArtifactsMap[keyof ArtifactsMap]["contractName"];
 
 /**
+ * Constructor argument types for the HyperdriveCheckpointRewarder.
+ */
+export type CheckpointRewarderConstructorArgs = ContractConstructorArgs<
+    ArtifactsMap["HyperdriveCheckpointRewarder"]["abi"]
+>;
+
+/**
+ * Configuration for a `HyperdriveCheckpointRewarder` instance.
+ */
+export type HyperdriveCheckpointRewarderConfig = {
+    name: string;
+    constructorArguments: ValueOrHREFn<CheckpointRewarderConstructorArgs>;
+    prepare?: HREFn;
+    setup?: HREFn;
+};
+
+/**
+ * Constructor argument types for the HyperdriveCheckpointSubrewarder.
+ */
+export type CheckpointSubrewarderConstructorArgs = ContractConstructorArgs<
+    ArtifactsMap["HyperdriveCheckpointSubrewarder"]["abi"]
+>;
+
+/**
+ * Configuration for a `HyperdriveCheckpointSubrewarder` instance.
+ */
+export type HyperdriveCheckpointSubrewarderConfig = {
+    name: string;
+    constructorArguments: ValueOrHREFn<CheckpointSubrewarderConstructorArgs>;
+    prepare?: HREFn;
+    setup?: HREFn;
+};
+
+/**
  * Constructor argument types for the HyperdriveFactory.
  */
 export type FactoryConstructorArgs = ContractConstructorArgs<
@@ -183,6 +217,8 @@ export type HyperdriveInstanceConfig<T extends InstancePrefix<ContractName>> = {
  * Unified description of `Hyperdrive` contract deployments for a network.
  */
 export type HyperdriveConfig = {
+    checkpointRewarders: HyperdriveCheckpointRewarderConfig[];
+    checkpointSubrewarders: HyperdriveCheckpointSubrewarderConfig[];
     factories: HyperdriveFactoryConfig[];
     coordinators: HyperdriveCoordinatorConfig<
         CoordinatorPrefix<ContractName>

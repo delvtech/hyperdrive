@@ -19,6 +19,8 @@ contract BaseTest is Test {
     address sweepCollector;
     address governance;
     address pauser;
+    address registrar;
+    address rewardSource;
 
     error WhaleBalanceExceeded();
     error WhaleIsContract();
@@ -43,6 +45,8 @@ contract BaseTest is Test {
         sweepCollector = createUser("sweepCollector");
         governance = createUser("governance");
         pauser = createUser("pauser");
+        registrar = createUser("registrar");
+        rewardSource = createUser("rewardSource");
 
         __init__ = block.timestamp;
     }

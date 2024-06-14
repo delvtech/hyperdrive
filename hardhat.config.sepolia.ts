@@ -7,6 +7,8 @@ import { HardhatUserConfig } from "hardhat/config";
 import baseConfig from "./hardhat.config";
 import "./tasks";
 import {
+    SEPOLIA_CHECKPOINT_REWARDER,
+    SEPOLIA_CHECKPOINT_SUBREWARDER,
     SEPOLIA_DAI_14DAY,
     SEPOLIA_DAI_30DAY,
     SEPOLIA_ERC4626_COORDINATOR,
@@ -39,6 +41,8 @@ const config: HardhatUserConfig = {
                 },
             ],
             hyperdriveDeploy: {
+                checkpointRewarders: [SEPOLIA_CHECKPOINT_REWARDER],
+                checkpointSubrewarders: [SEPOLIA_CHECKPOINT_SUBREWARDER],
                 factories: [SEPOLIA_FACTORY],
                 coordinators: [
                     SEPOLIA_ERC4626_COORDINATOR,
@@ -72,6 +76,8 @@ const config: HardhatUserConfig = {
                 },
             },
             hyperdriveDeploy: {
+                checkpointRewarders: [SEPOLIA_CHECKPOINT_REWARDER],
+                checkpointSubrewarders: [SEPOLIA_CHECKPOINT_SUBREWARDER],
                 factories: [SEPOLIA_FACTORY],
                 coordinators: [
                     SEPOLIA_ERC4626_COORDINATOR,

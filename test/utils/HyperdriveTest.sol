@@ -5,13 +5,16 @@ import { VmSafe } from "forge-std/Vm.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveCheckpointRewarder } from "contracts/src/interfaces/IHyperdriveCheckpointRewarder.sol";
 import { IHyperdriveEvents } from "contracts/src/interfaces/IHyperdriveEvents.sol";
+import { IHyperdriveGovernedRegistry } from "contracts/src/interfaces/IHyperdriveGovernedRegistry.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ETH } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { LPMath } from "contracts/src/libraries/LPMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
+import { HyperdriveRegistry } from "contracts/src/factory/HyperdriveRegistry.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockHyperdrive, MockHyperdriveTarget0, MockHyperdriveTarget1 } from "contracts/test/MockHyperdrive.sol";
@@ -24,9 +27,12 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
 
-    ERC20ForwarderFactory forwarderFactory;
-    ERC20Mintable baseToken;
-    IHyperdrive hyperdrive;
+    ERC20ForwarderFactory internal forwarderFactory;
+    ERC20Mintable internal baseToken;
+    IHyperdriveGovernedRegistry internal registry;
+    IHyperdriveCheckpointRewarder internal checkpointRewarder =
+        IHyperdriveCheckpointRewarder(address(0));
+    IHyperdrive internal hyperdrive;
 
     uint256 internal constant INITIAL_SHARE_PRICE = ONE;
     uint256 internal constant MINIMUM_SHARE_RESERVES = ONE;
@@ -52,6 +58,11 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         // Instantiate the forwarder factory.
         forwarderFactory = new ERC20ForwarderFactory();
 
+        // Instantiate the Hyperdrive registry.
+        vm.stopPrank();
+        vm.startPrank(registrar);
+        registry = new HyperdriveRegistry("HyperdriveRegistry");
+
         // Instantiate Hyperdrive.
         IHyperdrive.PoolConfig memory config = testConfig(
             0.05e18,
@@ -75,9 +86,21 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         address deployer,
         IHyperdrive.PoolConfig memory _config
     ) internal {
+        // Deploy the Hyperdrive instance.
         vm.stopPrank();
         vm.startPrank(deployer);
         hyperdrive = IHyperdrive(address(new MockHyperdrive(_config)));
+
+        // Register the new instance.
+        vm.stopPrank();
+        vm.startPrank(registrar);
+        address[] memory instances = new address[](1);
+        uint128[] memory data = new uint128[](1);
+        address[] memory factories = new address[](1);
+        instances[0] = address(hyperdrive);
+        data[0] = 1;
+        factories[0] = address(0);
+        registry.setInstanceInfo(instances, data, factories);
     }
 
     function deploy(
@@ -88,6 +111,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         uint256 governanceLPFee,
         uint256 governanceZombieFee
     ) internal {
+        // Deploy the Hyperdrive instance.
         deploy(
             deployer,
             apr,
@@ -108,6 +132,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         uint256 governanceLPFee,
         uint256 governanceZombieFee
     ) internal {
+        // Deploy the Hyperdrive instance.
         IHyperdrive.PoolConfig memory config = testConfig(
             apr,
             POSITION_DURATION
@@ -141,6 +166,8 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         _config.timeStretch = _deployConfig.timeStretch;
         _config.governance = _deployConfig.governance;
         _config.feeCollector = _deployConfig.feeCollector;
+        _config.sweepCollector = _deployConfig.sweepCollector;
+        _config.checkpointRewarder = _deployConfig.checkpointRewarder;
         _config.fees = _deployConfig.fees;
         _config.initialVaultSharePrice = ONE;
     }
@@ -174,6 +201,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 governance: governance,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
+                checkpointRewarder: address(checkpointRewarder),
                 fees: fees
             });
     }

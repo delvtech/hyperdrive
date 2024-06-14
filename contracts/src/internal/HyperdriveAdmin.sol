@@ -61,7 +61,7 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
     /// @param _status True to pause all deposits and false to unpause them.
     function _pause(bool _status) internal {
         // Ensure that the sender is authorized to pause the contract.
-        if (!_pausers[msg.sender]) {
+        if (!_pausers[msg.sender] && msg.sender != _governance) {
             revert IHyperdrive.Unauthorized();
         }
 
@@ -94,6 +94,19 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
         // Update the sweep collector address and emit an event.
         _sweepCollector = _who;
         emit SweepCollectorUpdated(_who);
+    }
+
+    /// @dev Allows governance to transfer the checkpoint rewarder.
+    /// @param _newCheckpointRewarder The new checkpoint rewarder.
+    function _setCheckpointRewarder(address _newCheckpointRewarder) internal {
+        // Ensure that the sender is governance.
+        if (msg.sender != _governance) {
+            revert IHyperdrive.Unauthorized();
+        }
+
+        // Update the checkpoint rewarder address and emit an event.
+        _checkpointRewarder = _newCheckpointRewarder;
+        emit CheckpointRewarderUpdated(_checkpointRewarder);
     }
 
     /// @dev Allows governance to transfer the governance role.

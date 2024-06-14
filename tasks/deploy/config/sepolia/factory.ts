@@ -23,6 +23,9 @@ export const SEPOLIA_FACTORY: HyperdriveFactoryConfig = {
             ],
             feeCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
             sweepCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
+            checkpointRewarder: hre.hyperdriveDeploy.deployments.byName(
+                "CHECKPOINT_REWARDER",
+            ).address,
             checkpointDurationResolution: parseDuration("8 hours"),
             minCheckpointDuration: parseDuration("24 hours"),
             maxCheckpointDuration: parseDuration("24 hours"),

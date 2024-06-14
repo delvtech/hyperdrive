@@ -78,6 +78,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 hyperdriveGovernance: bob,
                 feeCollector: feeCollector,
                 sweepCollector: sweepCollector,
+                checkpointRewarder: address(0),
                 defaultPausers: defaults,
                 checkpointDurationResolution: 1 hours,
                 minCheckpointDuration: 8 hours,
@@ -147,6 +148,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             governance: alice,
             feeCollector: bob,
             sweepCollector: celine,
+            checkpointRewarder: address(0),
             fees: IHyperdrive.Fees(0, 0, 0, 0)
         });
         address target0 = address(new ERC4626Target0(config));
@@ -329,6 +331,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 governance: factory.hyperdriveGovernance(),
                 feeCollector: factory.feeCollector(),
                 sweepCollector: factory.sweepCollector(),
+                checkpointRewarder: address(0),
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
             });
         dai.approve(address(deployerCoordinator), type(uint256).max);
@@ -411,6 +414,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 governance: factory.hyperdriveGovernance(),
                 feeCollector: factory.feeCollector(),
                 sweepCollector: factory.sweepCollector(),
+                checkpointRewarder: address(0),
                 fees: IHyperdrive.Fees(0, 0, 0, 0)
             });
         dai.approve(address(deployerCoordinator), type(uint256).max);

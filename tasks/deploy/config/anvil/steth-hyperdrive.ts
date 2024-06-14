@@ -73,6 +73,9 @@ export const ANVIL_STETH_HYPERDRIVE: HyperdriveInstanceConfig<"StETH"> = {
             governance: env.ADMIN! as Address,
             feeCollector: env.ADMIN! as Address,
             sweepCollector: env.ADMIN! as Address,
+            checkpointRewarder: hre.hyperdriveDeploy.deployments.byName(
+                "CHECKPOINT_REWARDER",
+            ).address,
             ...(await getLinkerDetails(
                 hre,
                 hre.hyperdriveDeploy.deployments.byName("FACTORY").address,

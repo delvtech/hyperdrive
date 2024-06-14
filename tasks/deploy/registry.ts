@@ -9,7 +9,7 @@ export type DeployRegistryParams = HyperdriveDeployNamedTaskParams;
 HyperdriveDeployBaseTask(
     subtask(
         "deploy:registry",
-        "deploys the hyperdrive factory to the configured chain",
+        "deploys the hyperdrive registry to the configured chain",
     ),
 ).setAction(
     async ({ name, ...rest }: DeployRegistryParams, { hyperdriveDeploy }) => {

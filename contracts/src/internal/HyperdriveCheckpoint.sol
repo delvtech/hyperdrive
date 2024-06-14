@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { ExcessivelySafeCall } from "nomad/ExcessivelySafeCall.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IHyperdriveCheckpointRewarder } from "../interfaces/IHyperdriveCheckpointRewarder.sol";
 import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
@@ -22,6 +24,7 @@ abstract contract HyperdriveCheckpoint is
     HyperdriveLong,
     HyperdriveShort
 {
+    using ExcessivelySafeCall for address;
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;
@@ -61,7 +64,12 @@ abstract contract HyperdriveCheckpoint is
         }
 
         // Apply the checkpoint.
-        _applyCheckpoint(_checkpointTime, vaultSharePrice, _maxIterations);
+        _applyCheckpoint(
+            _checkpointTime,
+            vaultSharePrice,
+            _maxIterations,
+            false
+        );
     }
 
     /// @dev Creates a new checkpoint if necessary.
@@ -71,11 +79,14 @@ abstract contract HyperdriveCheckpoint is
     ///        method component of `_distributeExcessIdleSafe`. This defaults to
     ///        `LPMath.SHARE_PROCEEDS_MAX_ITERATIONS` if the specified value is
     ///        smaller than the constant.
+    /// @param _isTrader A boolean indicating whether or not the checkpoint was
+    ///        minted by a trader or by someone calling checkpoint directly.
     /// @return The opening vault share price of the checkpoint.
     function _applyCheckpoint(
         uint256 _checkpointTime,
         uint256 _vaultSharePrice,
-        uint256 _maxIterations
+        uint256 _maxIterations,
+        bool _isTrader
     ) internal override returns (uint256) {
         // Return early if the checkpoint has already been updated.
         IHyperdrive.Checkpoint storage checkpoint = _checkpoints[
@@ -297,7 +308,8 @@ abstract contract HyperdriveCheckpoint is
             // distribute excess idle calculation fails, we proceed with the
             // calculation since checkpoints should be minted regardless of
             // whether idle could be distributed.
-            _distributeExcessIdleSafe(vaultSharePrice, _maxIterations);
+            uint256 maxIterations = _maxIterations; // avoid stack-too-deep
+            _distributeExcessIdleSafe(vaultSharePrice, maxIterations);
         }
 
         // Emit an event about the checkpoint creation that includes the LP
@@ -314,6 +326,25 @@ abstract contract HyperdriveCheckpoint is
             maturedLongsAmount,
             lpSharePrice
         );
+
+        // Claim the checkpoint reward on behalf of the sender.
+        //
+        // NOTE: We do this in a low-level call and ignore the status to ensure
+        // that the checkpoint will be minted regardless of whether or not the
+        // call succeeds. Furthermore, we use the `ExcessivelySafeCall` library
+        // to prevent returndata bombing.
+        if (_checkpointRewarder != address(0)) {
+            bool isTrader = _isTrader; // avoid stack-too-deep
+            _checkpointRewarder.excessivelySafeCall(
+                gasleft(),
+                0, // value of 0
+                1024, // max copy of 1 kb
+                abi.encodeCall(
+                    IHyperdriveCheckpointRewarder.claimCheckpointReward,
+                    (msg.sender, checkpointTime, isTrader)
+                )
+            );
+        }
 
         return checkpointVaultSharePrice;
     }

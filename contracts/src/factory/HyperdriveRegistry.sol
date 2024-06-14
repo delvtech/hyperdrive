@@ -196,12 +196,43 @@ contract HyperdriveRegistry is
 
     /// @inheritdoc IHyperdriveRegistry
     function getFactoryInfo(
+        address _factory
+    ) external view override returns (FactoryInfo memory info) {
+        return FactoryInfo({ data: _factoryInfo[_factory].data });
+    }
+
+    /// @inheritdoc IHyperdriveRegistry
+    function getFactoryInfo(
         address[] calldata __factories
     ) external view override returns (FactoryInfo[] memory info) {
         info = new FactoryInfo[](__factories.length);
         for (uint256 i = 0; i < __factories.length; i++) {
+            info[i] = FactoryInfo({ data: _factoryInfo[__factories[i]].data });
+        }
+        return info;
+    }
+
+    /// @inheritdoc IHyperdriveRegistry
+    function getFactoryInfoWithMetadata(
+        address _factory
+    ) external view override returns (FactoryInfoWithMetadata memory info) {
+        IHyperdriveFactory factory = IHyperdriveFactory(_factory);
+        return
+            FactoryInfoWithMetadata({
+                data: _factoryInfo[_factory].data,
+                name: factory.name(),
+                version: factory.version()
+            });
+    }
+
+    /// @inheritdoc IHyperdriveRegistry
+    function getFactoryInfoWithMetadata(
+        address[] calldata __factories
+    ) external view override returns (FactoryInfoWithMetadata[] memory info) {
+        info = new FactoryInfoWithMetadata[](__factories.length);
+        for (uint256 i = 0; i < __factories.length; i++) {
             IHyperdriveFactory factory = IHyperdriveFactory(__factories[i]);
-            info[i] = FactoryInfo({
+            info[i] = FactoryInfoWithMetadata({
                 data: _factoryInfo[__factories[i]].data,
                 name: factory.name(),
                 version: factory.version()
@@ -246,12 +277,51 @@ contract HyperdriveRegistry is
 
     /// @inheritdoc IHyperdriveRegistry
     function getInstanceInfo(
+        address _instance
+    ) external view override returns (InstanceInfo memory info) {
+        return
+            InstanceInfo({
+                data: _instanceInfo[_instance].data,
+                factory: _instanceInfo[_instance].factory
+            });
+    }
+
+    /// @inheritdoc IHyperdriveRegistry
+    function getInstanceInfo(
         address[] calldata __instances
     ) external view override returns (InstanceInfo[] memory info) {
         info = new InstanceInfo[](__instances.length);
         for (uint256 i = 0; i < __instances.length; i++) {
-            IHyperdrive instance = IHyperdrive(__instances[i]);
             info[i] = InstanceInfo({
+                data: _instanceInfo[__instances[i]].data,
+                factory: _instanceInfo[__instances[i]].factory
+            });
+        }
+        return info;
+    }
+
+    /// @inheritdoc IHyperdriveRegistry
+    function getInstanceInfoWithMetadata(
+        address _instance
+    ) external view override returns (InstanceInfoWithMetadata memory info) {
+        IHyperdrive instance = IHyperdrive(_instance);
+        return
+            InstanceInfoWithMetadata({
+                data: _instanceInfo[_instance].data,
+                factory: _instanceInfo[_instance].factory,
+                name: instance.name(),
+                version: instance.version()
+            });
+    }
+
+    /// @inheritdoc IHyperdriveRegistry
+    function getInstanceInfoWithMetadata(
+        address[] calldata __instances
+    ) external view override returns (InstanceInfoWithMetadata[] memory info) {
+        info = new InstanceInfoWithMetadata[](__instances.length);
+        for (uint256 i = 0; i < __instances.length; i++) {
+            IHyperdrive instance = IHyperdrive(__instances[i]);
+            info[i] = InstanceInfoWithMetadata({
                 data: _instanceInfo[__instances[i]].data,
                 factory: _instanceInfo[__instances[i]].factory,
                 name: instance.name(),

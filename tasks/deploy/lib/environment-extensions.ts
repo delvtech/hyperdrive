@@ -68,6 +68,22 @@ declare module "hardhat/types/runtime" {
                 args: ContractConstructorArgs<ArtifactsMap[T]["abi"]>,
                 options?: HyperdriveDeployRuntimeOptions,
             ) => Promise<GetContractReturnType<ArtifactsMap[T]["abi"]>>;
+            deployCheckpointRewarder: (
+                name: string,
+                options?: HyperdriveDeployRuntimeOptions,
+            ) => Promise<
+                GetContractReturnType<
+                    ArtifactsMap["HyperdriveCheckpointRewarder"]["abi"]
+                >
+            >;
+            deployCheckpointSubrewarder: (
+                name: string,
+                options?: HyperdriveDeployRuntimeOptions,
+            ) => Promise<
+                GetContractReturnType<
+                    ArtifactsMap["HyperdriveCheckpointSubrewarder"]["abi"]
+                >
+            >;
             deployFactory: (
                 name: string,
                 options?: HyperdriveDeployRuntimeOptions,
@@ -133,6 +149,85 @@ extendEnvironment((hre) => {
             ArtifactsMap[typeof contract]["abi"]
         >;
     };
+
+    let deployCheckpointRewarder: typeof hre.hyperdriveDeploy.deployCheckpointRewarder =
+        async (name, options) => {
+            let checkpointRewarderConfig = config?.checkpointRewarders?.find(
+                (r) => r.name === name,
+            );
+            if (!checkpointRewarderConfig) {
+                throw new Error(
+                    `no checkpoint rewarder deploy configuration found for ${name}`,
+                );
+            }
+
+            // run prepare function if present
+            if (
+                !deployments.byNameSafe(name) &&
+                checkpointRewarderConfig.prepare
+            ) {
+                console.log(`running prepare for ${name} ...`);
+                await checkpointRewarderConfig.prepare(hre, options ?? {});
+            }
+
+            // deploy the checkpoint rewarder
+            let checkpointRewarder = await ensureDeployed(
+                name,
+                "HyperdriveCheckpointRewarder",
+                await evaluateValueOrHREFn(
+                    checkpointRewarderConfig.constructorArguments,
+                    hre,
+                    options,
+                ),
+                options,
+            );
+
+            // run the setup function if present
+            if (checkpointRewarderConfig.setup) {
+                console.log(` - running setup function for ${name}`);
+                await checkpointRewarderConfig.setup(hre, options ?? {});
+            }
+            return checkpointRewarder;
+        };
+
+    let deployCheckpointSubrewarder: typeof hre.hyperdriveDeploy.deployCheckpointSubrewarder =
+        async (name, options) => {
+            let checkpointSubrewarderConfig =
+                config?.checkpointSubrewarders?.find((r) => r.name === name);
+            if (!checkpointSubrewarderConfig) {
+                throw new Error(
+                    `no checkpoint subrewarder deploy configuration found for ${name}`,
+                );
+            }
+
+            // run prepare function if present
+            if (
+                !deployments.byNameSafe(name) &&
+                checkpointSubrewarderConfig.prepare
+            ) {
+                console.log(`running prepare for ${name} ...`);
+                await checkpointSubrewarderConfig.prepare(hre, options ?? {});
+            }
+
+            // deploy the checkpoint subrewarder
+            let checkpointSubrewarder = await ensureDeployed(
+                name,
+                "HyperdriveCheckpointSubrewarder",
+                await evaluateValueOrHREFn(
+                    checkpointSubrewarderConfig.constructorArguments,
+                    hre,
+                    options,
+                ),
+                options,
+            );
+
+            // run the setup function if present
+            if (checkpointSubrewarderConfig.setup) {
+                console.log(` - running setup function for ${name}`);
+                await checkpointSubrewarderConfig.setup(hre, options ?? {});
+            }
+            return checkpointSubrewarder;
+        };
 
     let deployFactory: typeof hre.hyperdriveDeploy.deployFactory = async (
         name,
@@ -497,6 +592,8 @@ extendEnvironment((hre) => {
     hre.hyperdriveDeploy = {
         deployments,
         ensureDeployed,
+        deployCheckpointRewarder,
+        deployCheckpointSubrewarder,
         deployFactory,
         deployCoordinator: deployCoordinator as any,
         deployInstance: deployInstance as any,

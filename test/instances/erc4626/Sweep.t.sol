@@ -63,6 +63,7 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
             governance: alice,
             feeCollector: bob,
             sweepCollector: celine,
+            checkpointRewarder: address(0),
             fees: IHyperdrive.Fees(0, 0, 0, 0)
         });
         vm.warp(3 * config.positionDuration);

@@ -1,0 +1,9 @@
+import { HyperdriveCheckpointRewarderConfig } from "../../lib";
+
+export const ${NETWORK_NAME}_CHECKPOINT_REWARDER: HyperdriveCheckpointRewarderConfig = {
+    name: "${NETWORK_NAME}_CHECKPOINT_REWARDER",
+    constructorArguments: [
+        "${NAME}",
+        "${SUBREWARDER_ADDRESS}",
+    ],
+};

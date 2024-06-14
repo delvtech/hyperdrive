@@ -30,6 +30,10 @@ interface IHyperdriveFactory {
     ///         updated.
     event SweepCollectorUpdated(address indexed newSweepCollector);
 
+    /// @notice Emitted when the checkpoint rewarder used in new deployments is
+    ///         updated.
+    event CheckpointRewarderUpdated(address indexed newCheckpointRewarder);
+
     /// @notice Emitted when the factory's governance is updated.
     event GovernanceUpdated(address indexed governance);
 
@@ -261,6 +265,10 @@ interface IHyperdriveFactory {
     /// @param _sweepCollector The new sweep collector address.
     function updateSweepCollector(address _sweepCollector) external;
 
+    /// @notice Allows governance to change the checkpoint rewarder address.
+    /// @param _checkpointRewarder The new checkpoint rewarder address.
+    function updateCheckpointRewarder(address _checkpointRewarder) external;
+
     /// @notice Allows governance to change the checkpoint duration resolution.
     /// @param _checkpointDurationResolution The new checkpoint duration
     ///        resolution.
@@ -420,6 +428,11 @@ interface IHyperdriveFactory {
     /// @notice Returns the sweep collector used when new instances are deployed.
     /// @return The factory's sweep collector.
     function sweepCollector() external view returns (address);
+
+    /// @notice Returns the checkpoint rewarder used when new instances are
+    ///         deployed.
+    /// @return The factory's checkpoint rewarder.
+    function checkpointRewarder() external view returns (address);
 
     /// @notice Returns the resolution for the checkpoint duration. Every
     ///         checkpoint duration must be a multiple of this resolution.

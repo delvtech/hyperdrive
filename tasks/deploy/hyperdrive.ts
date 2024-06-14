@@ -1,7 +1,8 @@
 import { task } from "hardhat/config";
-import { DeployFactoryParams } from "./factory";
-
+import { DeployCheckpointRewarderParams } from "./checkpoint-rewarder";
+import { DeployCheckpointSubrewarderParams } from "./checkpoint-subrewarder";
 import { DeployCoordinatorParams } from "./coordinator";
+import { DeployFactoryParams } from "./factory";
 import { DeployInstanceParams } from "./instance";
 import {
     HyperdriveDeployBaseTask,
@@ -30,6 +31,20 @@ HyperdriveDeployBaseTask(
         if (!hyperdriveDeploy) {
             console.log("no config found for network");
             return;
+        }
+
+        for (let r of hyperdriveDeploy.checkpointRewarders ?? []) {
+            await run("deploy:checkpoint-rewarder", {
+                name: r.name,
+                ...rest,
+            } as DeployCheckpointRewarderParams);
+        }
+
+        for (let s of hyperdriveDeploy.checkpointSubrewarders ?? []) {
+            await run("deploy:checkpoint-subrewarder", {
+                name: s.name,
+                ...rest,
+            } as DeployCheckpointSubrewarderParams);
         }
 
         for (let f of hyperdriveDeploy.factories ?? []) {
