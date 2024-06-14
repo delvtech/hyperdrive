@@ -27,8 +27,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
     using Lib for *;
 
     string internal constant HYPERDRIVE_NAME = "Hyperdrive";
-    string internal constant COORDINATOR_NAME = "HyperdriveDeployerCoordinator";
-    string internal constant REGISTRY_NAME = "HyperdriveRegistry";
+    string internal constant NAME = "HyperdriveRegistry";
     uint256 internal constant FIXED_RATE = 0.05e18;
 
     event FactoryInfoUpdated(address indexed factory, uint256 indexed data);

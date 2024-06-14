@@ -5,11 +5,14 @@ import { IHyperdrive } from "./IHyperdrive.sol";
 import { IMultiTokenRead } from "./IMultiTokenRead.sol";
 
 interface IHyperdriveRead is IMultiTokenRead {
-    /// @notice Gets the instance's name.
+    /// @notice Gets the name of the instance.
     /// @return The instance's name.
     function name() external view returns (string memory);
 
-    /// @notice Gets the instance's kind.
+    /// @notice Gets the kind of instance that was deployed. All deployed
+    ///         versions of a contract have the same kind, so this can be used
+    ///         to determine the contract's implementation. An example of a
+    ///         contract kind is `ERC4626Hyperdrive.
     /// @return The instance's kind.
     function kind() external pure returns (string memory);
 

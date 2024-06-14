@@ -15,6 +15,9 @@ import { StETHBase } from "./StETHBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract StETHTarget0 is HyperdriveTarget0, StETHBase {
+    /// @dev The instance's kind.
+    string internal constant KIND = "StETHHyperdrive";
+
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
     constructor(
@@ -26,7 +29,7 @@ contract StETHTarget0 is HyperdriveTarget0, StETHBase {
     /// @notice Returns the instance's kind.
     /// @return The instance's kind.
     function kind() external pure override returns (string memory) {
-        _revert(abi.encode(STETH_HYPERDRIVE_KIND));
+        _revert(abi.encode(KIND));
     }
 
     /// @notice Returns the MultiToken's decimals.

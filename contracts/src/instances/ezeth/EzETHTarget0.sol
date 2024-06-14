@@ -33,10 +33,10 @@ contract EzETHTarget0 is HyperdriveTarget0, EzETHBase {
 
     /// Extras ///
 
-    /// @notice Returns the instance's kind.
+    /// @notice Gets the instance's kind.
     /// @return The instance's kind.
     function kind() external pure override returns (string memory) {
-        _revert(abi.encode(EZETH_HYPERDRIVE_KIND));
+        _revert(abi.encode(KIND));
     }
 
     /// @notice Returns the Renzo contract.

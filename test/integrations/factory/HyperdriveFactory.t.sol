@@ -34,7 +34,6 @@ import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
 string constant HYPERDRIVE_NAME = "Hyperdrive";
-string constant COORDINATOR_NAME = "HyperdriveDeployerCoordinator";
 
 contract HyperdriveFactoryTest is HyperdriveTest {
     using FixedPointMath for *;
@@ -2749,7 +2748,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             )
         );
         assertEq(hyperdrive.name(), HYPERDRIVE_NAME);
-        assertEq(hyperdrive.kind(), "StETHHyperdrive");
+        assertEq(hyperdrive.kind(), "ERC4626Hyperdrive");
         assertEq(hyperdrive.version(), VERSION);
         IHyperdrive.PoolConfig memory config_ = hyperdrive.getPoolConfig();
         assertEq(address(config_.baseToken), address(ETH));
