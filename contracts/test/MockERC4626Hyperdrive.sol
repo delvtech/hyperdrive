@@ -13,7 +13,16 @@ contract MockERC4626Hyperdrive is ERC4626Hyperdrive {
         address _target1,
         address _target2,
         address _target3
-    ) ERC4626Hyperdrive(_config, _target0, _target1, _target2, _target3) {}
+    )
+        ERC4626Hyperdrive(
+            "MockERC4626Hyperdrive",
+            _config,
+            _target0,
+            _target1,
+            _target2,
+            _target3
+        )
+    {}
 
     function deposit(
         uint256 _amount,

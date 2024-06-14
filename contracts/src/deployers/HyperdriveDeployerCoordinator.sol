@@ -109,12 +109,14 @@ abstract contract HyperdriveDeployerCoordinator is
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @dev This can only be deployed by the associated factory.
     /// @param _deploymentId The ID of the deployment.
+    /// @param __name The name of the Hyperdrive pool.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     /// @param _extraData The extra data that contains the pool and sweep targets.
     /// @param _salt The create2 salt used to deploy Hyperdrive.
     /// @return The address of the newly deployed Hyperdrive instance.
     function deployHyperdrive(
         bytes32 _deploymentId,
+        string memory __name,
         IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory _extraData,
         bytes32 _salt
@@ -167,6 +169,7 @@ abstract contract HyperdriveDeployerCoordinator is
         bytes32 salt = _salt; // Avoid stack too deep error
         address hyperdrive = IHyperdriveCoreDeployer(coreDeployer)
             .deployHyperdrive(
+                __name,
                 config,
                 _extraData,
                 deployment.target0,

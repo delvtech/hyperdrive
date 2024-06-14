@@ -158,6 +158,9 @@ contract EtchingUtils is Test {
         // Etch the hyperdrive contract.
         {
             ERC4626Hyperdrive template = new ERC4626Hyperdrive(
+                // NOTE: The name is in storage, so it doesn't matter how we
+                // etch it.
+                "",
                 hyperdrive.getPoolConfig(),
                 hyperdrive.target0(),
                 hyperdrive.target1(),
@@ -227,6 +230,9 @@ contract EtchingUtils is Test {
         // Etch the hyperdrive contract.
         {
             EzETHHyperdrive template = new EzETHHyperdrive(
+                // NOTE: The name is in storage, so it doesn't matter how we
+                // etch it.
+                "",
                 hyperdrive.getPoolConfig(),
                 hyperdrive.target0(),
                 hyperdrive.target1(),
@@ -278,6 +284,9 @@ contract EtchingUtils is Test {
         // Etch the hyperdrive contract.
         {
             LsETHHyperdrive template = new LsETHHyperdrive(
+                // NOTE: The name is in storage, so it doesn't matter how we
+                // etch it.
+                "",
                 hyperdrive.getPoolConfig(),
                 hyperdrive.target0(),
                 hyperdrive.target1(),
@@ -336,6 +345,9 @@ contract EtchingUtils is Test {
         // Etch the hyperdrive contract.
         {
             RETHHyperdrive template = new RETHHyperdrive(
+                // NOTE: The name is in storage, so it doesn't matter how we
+                // etch it.
+                "",
                 hyperdrive.getPoolConfig(),
                 hyperdrive.target0(),
                 hyperdrive.target1(),
@@ -400,6 +412,9 @@ contract EtchingUtils is Test {
         // Etch the hyperdrive contract.
         {
             StETHHyperdrive template = new StETHHyperdrive(
+                // NOTE: The name is in storage, so it doesn't matter how we
+                // etch it.
+                "",
                 hyperdrive.getPoolConfig(),
                 hyperdrive.target0(),
                 hyperdrive.target1(),

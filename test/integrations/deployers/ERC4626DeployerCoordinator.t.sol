@@ -128,6 +128,7 @@ contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {
         IHyperdrive hyperdrive = IHyperdrive(
             coordinator.deployHyperdrive(
                 DEPLOYMENT_ID,
+                HYPERDRIVE_NAME,
                 config,
                 new bytes(0),
                 SALT
@@ -180,6 +181,7 @@ contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {
         IHyperdrive hyperdrive = IHyperdrive(
             coordinator.deployHyperdrive(
                 DEPLOYMENT_ID,
+                HYPERDRIVE_NAME,
                 config,
                 new bytes(0),
                 SALT

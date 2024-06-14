@@ -170,6 +170,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         hyperdrive = factory.deployAndInitialize(
             bytes32(uint256(0xbeefbabe)),
             deployerCoordinator,
+            "Hyperdrive",
             config,
             new bytes(0),
             contribution,

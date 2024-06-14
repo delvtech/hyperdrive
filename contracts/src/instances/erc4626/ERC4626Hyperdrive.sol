@@ -57,18 +57,20 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
     using SafeERC20 for ERC20;
 
     /// @notice Instantiates Hyperdrive with a ERC4626 vault as the yield source.
+    /// @param __name The pool's name.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _target0 The target0 address.
     /// @param _target1 The target1 address.
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
     constructor(
+        string memory __name,
         IHyperdrive.PoolConfig memory _config,
         address _target0,
         address _target1,
         address _target2,
         address _target3
-    ) Hyperdrive(_config, _target0, _target1, _target2, _target3) {
+    ) Hyperdrive(__name, _config, _target0, _target1, _target2, _target3) {
         // Approve the base token with 1 wei. This ensures that all of the
         // subsequent approvals will be writing to a dirty storage slot.
         ERC20(address(_config.baseToken)).forceApprove(

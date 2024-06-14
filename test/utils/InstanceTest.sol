@@ -42,6 +42,9 @@ abstract contract InstanceTest is HyperdriveTest {
         bool enableShareWithdraws;
     }
 
+    // The name of the Hyperdrive pool.
+    string internal constant NAME = "Hyperdrive";
+
     // Fixed rate used to configure market.
     uint256 internal constant FIXED_RATE = 0.05e18;
 
@@ -197,6 +200,7 @@ abstract contract InstanceTest is HyperdriveTest {
         }(
             deploymentId,
             deployerCoordinator,
+            NAME,
             poolConfig,
             new bytes(0),
             contribution,
@@ -1271,6 +1275,7 @@ contract NonPayableDeployer {
     function deployAndInitialize(
         HyperdriveFactory _factory,
         bytes32 _deploymentId,
+        string memory __name,
         address _deployerCoordinator,
         IHyperdrive.PoolDeployConfig memory _config,
         bytes memory _extraData,
@@ -1283,6 +1288,7 @@ contract NonPayableDeployer {
         _factory.deployAndInitialize{ value: msg.value }(
             _deploymentId,
             _deployerCoordinator,
+            __name,
             _config,
             _extraData,
             _contribution,

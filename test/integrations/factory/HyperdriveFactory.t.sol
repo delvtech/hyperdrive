@@ -33,6 +33,8 @@ import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
+string constant HYPERDRIVE_NAME = "Hyperdrive";
+
 contract HyperdriveFactoryTest is HyperdriveTest {
     using FixedPointMath for *;
     using Lib for *;
@@ -1796,6 +1798,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 address(0xdeadbeef),
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -1825,6 +1828,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -1855,6 +1859,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -1883,6 +1888,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -1913,6 +1919,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -1943,6 +1950,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -1971,6 +1979,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -1999,6 +2008,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2027,6 +2037,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2052,6 +2063,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2076,6 +2088,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2103,6 +2116,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2129,6 +2143,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2156,6 +2171,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2186,6 +2202,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2212,6 +2229,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2239,6 +2257,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2267,6 +2286,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2293,6 +2313,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2467,6 +2488,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2493,6 +2515,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2521,6 +2544,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2549,6 +2573,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2575,6 +2600,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2601,6 +2627,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2627,6 +2654,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2653,6 +2681,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2679,6 +2708,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2701,6 +2731,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.deployAndInitialize{ value: 10_000e18 }(
                 deploymentId,
                 deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 extraData,
                 10_000e18,
@@ -2714,6 +2745,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 deploymentId
             )
         );
+        assertEq(hyperdrive.name(), HYPERDRIVE_NAME);
+        assertEq(hyperdrive.kind(), "ERC4626Hyperdrive");
+        assertEq(hyperdrive.version(), VERSION);
         IHyperdrive.PoolConfig memory config_ = hyperdrive.getPoolConfig();
         assertEq(address(config_.baseToken), address(ETH));
         assertEq(address(config_.vaultSharesToken), address(lido));
@@ -2966,6 +3000,7 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
         IHyperdrive hyperdrive = factory.deployAndInitialize(
             deploymentId,
             deployerCoordinator,
+            HYPERDRIVE_NAME,
             config,
             new bytes(0),
             CONTRIBUTION,
@@ -3075,6 +3110,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
         IHyperdrive hyperdrive1 = factory.deployAndInitialize(
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
+            HYPERDRIVE_NAME,
             config,
             new bytes(0),
             CONTRIBUTION,
@@ -3144,6 +3180,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
         IHyperdrive hyperdrive2 = factory.deployAndInitialize(
             bytes32(uint256(0xdead)),
             deployerCoordinator1,
+            HYPERDRIVE_NAME,
             config,
             new bytes(0),
             CONTRIBUTION,
@@ -3221,6 +3258,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
         IHyperdrive hyperdrive3 = factory.deployAndInitialize(
             bytes32(uint256(0xbeef)),
             deployerCoordinator,
+            HYPERDRIVE_NAME,
             config,
             new bytes(0),
             CONTRIBUTION,

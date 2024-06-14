@@ -32,6 +32,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
     using FixedPointMath for *;
     using Lib for *;
 
+    string internal constant NAME = "Hyperdrive";
+
     HyperdriveFactory factory;
 
     address deployerCoordinator;
@@ -356,6 +358,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         hyperdrive = factory.deployAndInitialize(
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
+            NAME,
             config,
             new bytes(0),
             contribution,
@@ -439,6 +442,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         hyperdrive = factory.deployAndInitialize(
             bytes32(uint256(0xdead)),
             deployerCoordinator,
+            NAME,
             config,
             new bytes(0),
             contribution,

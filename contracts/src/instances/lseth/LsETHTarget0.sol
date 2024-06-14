@@ -14,8 +14,8 @@ import { LsETHBase } from "./LsETHBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract LsETHTarget0 is HyperdriveTarget0, LsETHBase {
-    /// @dev The instance's name.
-    string internal constant NAME = "LsETHHyperdrive";
+    /// @dev The instance's kind.
+    string internal constant KIND = "LsETHHyperdrive";
 
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
@@ -25,10 +25,10 @@ contract LsETHTarget0 is HyperdriveTarget0, LsETHBase {
 
     /// Getters ///
 
-    /// @notice Returns the instance's name.
-    /// @return The instance's name.
-    function name() external pure override returns (string memory) {
-        _revert(abi.encode(NAME));
+    /// @notice Gets the instance's kind.
+    /// @return The instance's kind.
+    function kind() external pure override returns (string memory) {
+        _revert(abi.encode(KIND));
     }
 
     /// @notice Returns the MultiToken's decimals.

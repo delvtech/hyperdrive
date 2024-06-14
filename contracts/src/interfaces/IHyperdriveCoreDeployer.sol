@@ -5,6 +5,7 @@ import { IHyperdrive } from "./IHyperdrive.sol";
 
 interface IHyperdriveCoreDeployer {
     /// @notice Deploys a Hyperdrive instance with the given parameters.
+    /// @param __name The name of the Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _extraData The extra data containing implementation specific data.
     /// @param _target0 The target0 address.
@@ -14,6 +15,7 @@ interface IHyperdriveCoreDeployer {
     /// @param _salt The create2 salt used in the deployment.
     /// @return The address of the newly deployed Hyperdrive instance.
     function deployHyperdrive(
+        string memory __name,
         IHyperdrive.PoolConfig memory _config,
         bytes memory _extraData,
         address _target0,

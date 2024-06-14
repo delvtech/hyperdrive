@@ -25,6 +25,8 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     using FixedPointMath for *;
     using Lib for *;
 
+    string internal constant NAME = "Hyperdrive";
+
     address deployerCoordinator;
     address coreDeployer;
     address target0Deployer;
@@ -151,6 +153,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         hyperdrive = factory.deployAndInitialize(
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
+            NAME,
             config,
             new bytes(0),
             contribution,
@@ -228,6 +231,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         hyperdrive = factory.deployAndInitialize(
             bytes32(uint256(0xbeef)),
             deployerCoordinator,
+            NAME,
             config,
             new bytes(0),
             contribution,

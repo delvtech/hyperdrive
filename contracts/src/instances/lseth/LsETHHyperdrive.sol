@@ -53,16 +53,18 @@ import { LsETHBase } from "./LsETHBase.sol";
 ///                    particular legal or regulatory significance.
 contract LsETHHyperdrive is Hyperdrive, LsETHBase {
     /// @notice Instantiates Hyperdrive with LsETH as the yield source.
+    /// @param __name The pool's name.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _target0 The target0 address.
     /// @param _target1 The target1 address.
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
     constructor(
+        string memory __name,
         IHyperdrive.PoolConfig memory _config,
         address _target0,
         address _target1,
         address _target2,
         address _target3
-    ) Hyperdrive(_config, _target0, _target1, _target2, _target3) {}
+    ) Hyperdrive(__name, _config, _target0, _target1, _target2, _target3) {}
 }

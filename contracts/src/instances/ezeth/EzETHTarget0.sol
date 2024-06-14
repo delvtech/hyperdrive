@@ -19,8 +19,8 @@ import { EzETHBase } from "./EzETHBase.sol";
 contract EzETHTarget0 is HyperdriveTarget0, EzETHBase {
     using SafeERC20 for ERC20;
 
-    /// @dev The instance's name.
-    string internal constant NAME = "EzETHHyperdrive";
+    /// @dev The instance's kind.
+    string internal constant KIND = "EzETHHyperdrive";
 
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
@@ -32,10 +32,10 @@ contract EzETHTarget0 is HyperdriveTarget0, EzETHBase {
 
     /// Extras ///
 
-    /// @notice Returns the instance's name.
-    /// @return The instance's name.
-    function name() external pure override returns (string memory) {
-        _revert(abi.encode(NAME));
+    /// @notice Gets the instance's kind.
+    /// @return The instance's kind.
+    function kind() external pure override returns (string memory) {
+        _revert(abi.encode(KIND));
     }
 
     /// @notice Returns the Renzo contract.

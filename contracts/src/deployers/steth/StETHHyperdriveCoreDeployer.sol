@@ -13,6 +13,7 @@ import { StETHHyperdrive } from "../../instances/steth/StETHHyperdrive.sol";
 ///                    particular legal or regulatory significance.
 contract StETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     /// @notice Deploys a Hyperdrive instance with the given parameters.
+    /// @param __name The name of the Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _target0 The target0 address.
     /// @param _target1 The target1 address.
@@ -21,6 +22,7 @@ contract StETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     /// @param _salt The create2 salt used in the deployment.
     /// @return The address of the newly deployed StETHHyperdrive instance.
     function deployHyperdrive(
+        string memory __name,
         IHyperdrive.PoolConfig memory _config,
         bytes memory, // unused extra data
         address _target0,
@@ -35,7 +37,7 @@ contract StETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
                 // front-running of deployments.
                 new StETHHyperdrive{
                     salt: keccak256(abi.encode(msg.sender, _salt))
-                }(_config, _target0, _target1, _target2, _target3)
+                }(__name, _config, _target0, _target1, _target2, _target3)
             )
         );
     }

@@ -17,6 +17,7 @@ contract MockHyperdriveDeployer is IHyperdriveDeployerCoordinator {
 
     function deployHyperdrive(
         bytes32 _deploymentId,
+        string memory,
         IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory,
         bytes32

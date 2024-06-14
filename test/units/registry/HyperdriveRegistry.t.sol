@@ -26,6 +26,7 @@ import { Lib } from "test/utils/Lib.sol";
 contract HyperdriveRegistryTest is HyperdriveTest {
     using Lib for *;
 
+    string internal constant HYPERDRIVE_NAME = "Hyperdrive";
     string internal constant NAME = "HyperdriveRegistry";
     uint256 internal constant FIXED_RATE = 0.05e18;
 
@@ -192,6 +193,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
             _factory.deployAndInitialize(
                 bytes32(_seed),
                 _deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 new bytes(0),
                 contribution,
