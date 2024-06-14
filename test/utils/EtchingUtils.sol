@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { console2 as console } from "forge-std/console2.sol";
 import { Test } from "forge-std/Test.sol";
 import { ERC4626Hyperdrive } from "contracts/src/instances/erc4626/ERC4626Hyperdrive.sol";
 import { ERC4626Target0 } from "contracts/src/instances/erc4626/ERC4626Target0.sol";
@@ -82,7 +81,7 @@ contract EtchingUtils is Test {
         } else if (name.eq("StETHHyperdrive")) {
             etchStETHHyperdrive(_hyperdrive);
         } else {
-            revert("EtchingUtils: Unrecognized Hyperdrive implemenation.");
+            revert("EtchingUtils: Unrecognized Hyperdrive implementation.");
         }
 
         return (name, version);

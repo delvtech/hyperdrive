@@ -117,7 +117,7 @@ contract Debug is BaseTest, EtchingUtils {
     ///         successfully found.
     function getTargetName(
         bytes memory _data
-    ) internal returns (string memory, bool) {
+    ) internal pure returns (string memory, bool) {
         // Attempt to match the selector to one of the functions in the
         // Hyperdrive interface. If the selector doesn't match any of the
 
