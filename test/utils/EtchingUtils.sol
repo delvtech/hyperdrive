@@ -42,7 +42,9 @@ import { Lib } from "test/utils/Lib.sol";
 contract EtchingUtils is Test {
     using Lib for *;
 
-    function etchHyperdrive(address _hyperdrive) internal {
+    function etchHyperdrive(
+        address _hyperdrive
+    ) internal returns (string memory, string memory) {
         // Ensure that the contract is deployed.
         if (address(_hyperdrive).code.length == 0) {
             revert("EtchingUtils: Empty deployment");
@@ -50,27 +52,39 @@ contract EtchingUtils is Test {
 
         // Ensure that the contract's version matches.
         IHyperdrive hyperdrive = IHyperdrive(_hyperdrive);
+        string memory version = hyperdrive.version();
         if (!hyperdrive.version().eq(VERSION)) {
             revert(
-                "EtchingUtils: Version mismatch. Consider checking out a different tag."
+                vm.replace(
+                    vm.replace(
+                        "EtchingUtils: The checked-out version is %0 but the target version is %1. Consider checking out the target version",
+                        "%0",
+                        VERSION
+                    ),
+                    "%1",
+                    version
+                )
             );
         }
 
         // Using the name, decide which type of Hyperdrive instance needs to
         // be etched.
-        if (hyperdrive.name().eq("ERC4626Hyperdrive")) {
+        string memory name = hyperdrive.name();
+        if (name.eq("ERC4626Hyperdrive")) {
             etchERC4626Hyperdrive(_hyperdrive);
-        } else if (hyperdrive.name().eq("EzETHHyperdrive")) {
+        } else if (name.eq("EzETHHyperdrive")) {
             etchEzETHHyperdrive(_hyperdrive);
-        } else if (hyperdrive.name().eq("LsETHHyperdrive")) {
+        } else if (name.eq("LsETHHyperdrive")) {
             etchLsETHHyperdrive(_hyperdrive);
-        } else if (hyperdrive.name().eq("RETHHyperdrive")) {
+        } else if (name.eq("RETHHyperdrive")) {
             etchRETHHyperdrive(_hyperdrive);
-        } else if (hyperdrive.name().eq("StETHHyperdrive")) {
+        } else if (name.eq("StETHHyperdrive")) {
             etchStETHHyperdrive(_hyperdrive);
         } else {
-            revert("EtchingUtils: Unrecognized deployment");
+            revert("EtchingUtils: Unrecognized Hyperdrive implementation.");
         }
+
+        return (name, version);
     }
 
     function etchERC4626Hyperdrive(address _hyperdrive) internal {
