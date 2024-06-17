@@ -118,7 +118,7 @@ contract CircuitBreakerTest is HyperdriveTest {
                 timeStretchFixedRate,
                 POSITION_DURATION
             );
-            config.circuitBreakerDelta = 1e18;
+            config.circuitBreakerDelta = 0.01e18; // 1% circuit breaker delta
             deploy(alice, config);
             uint256 contribution = 10_000_000e18;
             initialize(alice, fixedRate, contribution);
@@ -131,7 +131,10 @@ contract CircuitBreakerTest is HyperdriveTest {
             openLong(bob, longSize);
 
             // Advance time to near the end of the current checkpoint.
-            advanceTime(0.99e18, 0);
+            advanceTime(CHECKPOINT_DURATION.mulDown(0.99e18), 0);
+
+            // Open a small trade to update the weighted spot price.
+            openShort(bob, MINIMUM_TRANSACTION_AMOUNT);
 
             // Add liquidity should revert because the weighted spot apr
             // is greater than the delta and the spot apr is less than
