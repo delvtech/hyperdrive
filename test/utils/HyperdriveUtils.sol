@@ -1233,7 +1233,7 @@ library HyperdriveUtils {
         }
 
         // Calculate the pool's solvency after opening the short.
-        uint256 tradeFees = (calculateShortCurveFee(
+        uint256 totalCurveFee = (calculateShortCurveFee(
             _shortAmount,
             _spotPrice,
             _params.curveFee
@@ -1244,10 +1244,10 @@ library HyperdriveUtils {
                 _params.curveFee,
                 _params.governanceLPFee
             )).divUp(_params.vaultSharePrice);
-        if (shareAmount < tradeFees) {
+        if (shareAmount < totalCurveFee) {
             return (0, false);
         }
-        uint256 shareReservesDelta = shareAmount - tradeFees;
+        uint256 shareReservesDelta = shareAmount - totalCurveFee;
         if (_params.shareReserves < shareReservesDelta) {
             return (0, false);
         }
