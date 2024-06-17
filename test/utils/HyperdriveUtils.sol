@@ -1233,7 +1233,6 @@ library HyperdriveUtils {
         }
 
         // Calculate the pool's solvency after opening the short.
-
         uint256 tradeFees = (calculateShortCurveFee(
             _shortAmount,
             _spotPrice,
@@ -1255,7 +1254,6 @@ library HyperdriveUtils {
         }
 
         uint256 shareReserves = _params.shareReserves - tradeDelta;
-
         uint256 exposure = (_params.longExposure -
             uint256(_checkpointExposure.max(0))).divDown(
                 _params.vaultSharePrice
