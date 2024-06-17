@@ -261,6 +261,100 @@ contract CircuitBreakerTest is HyperdriveTest {
         assertFalse(actualSpotPrice == weightedSpotPriceBefore);
     }
 
+    function test_weighted_average_spot_price_instantaneous_long() external {
+        // Ensure a feasible fixed rate.
+        uint256 fixedRate = 0.05e18;
+
+        // Ensure a feasible time stretch fixed rate.
+        uint256 timeStretchFixedRate = fixedRate;
+
+        // Deploy the pool and initialize the market
+        IHyperdrive.PoolConfig memory config = testConfig(
+            timeStretchFixedRate,
+            POSITION_DURATION
+        );
+        config.circuitBreakerDelta = 1e18;
+        deploy(alice, config);
+        uint256 contribution = 10_000_000e18;
+        initialize(alice, fixedRate, contribution);
+
+        // Get the current weighted spot price.
+        uint256 weightedSpotPriceBefore = hyperdrive
+            .getCheckpoint(HyperdriveUtils.latestCheckpoint(hyperdrive))
+            .weightedSpotPrice;
+
+        // Open a large long in the same block.
+        openLong(alice, hyperdrive.calculateMaxLong());
+        uint256 spotPriceAfterLong = hyperdrive.calculateSpotPrice();
+
+        // Ensure that the weighted spot price is equal to the previous weighted
+        // spot price.
+        uint256 weightedSpotPriceAfter = hyperdrive
+            .getCheckpoint(HyperdriveUtils.latestCheckpoint(hyperdrive))
+            .weightedSpotPrice;
+        assertEq(weightedSpotPriceAfter, weightedSpotPriceBefore);
+
+        // A checkpoint passes.
+        advanceTimeWithCheckpoints2(CHECKPOINT_DURATION, 0);
+
+        // Ensure that the weighted spot price from the previous checkpoint is
+        // equal to the spot price after opening the long.
+        weightedSpotPriceAfter = hyperdrive
+            .getCheckpoint(
+                HyperdriveUtils.latestCheckpoint(hyperdrive) -
+                    CHECKPOINT_DURATION
+            )
+            .weightedSpotPrice;
+        assertEq(weightedSpotPriceAfter, spotPriceAfterLong);
+    }
+
+    function test_weighted_average_spot_price_instantaneous_short() external {
+        // Ensure a feasible fixed rate.
+        uint256 fixedRate = 0.05e18;
+
+        // Ensure a feasible time stretch fixed rate.
+        uint256 timeStretchFixedRate = fixedRate;
+
+        // Deploy the pool and initialize the market
+        IHyperdrive.PoolConfig memory config = testConfig(
+            timeStretchFixedRate,
+            POSITION_DURATION
+        );
+        config.circuitBreakerDelta = 1e18;
+        deploy(alice, config);
+        uint256 contribution = 10_000_000e18;
+        initialize(alice, fixedRate, contribution);
+
+        // Get the current weighted spot price.
+        uint256 weightedSpotPriceBefore = hyperdrive
+            .getCheckpoint(HyperdriveUtils.latestCheckpoint(hyperdrive))
+            .weightedSpotPrice;
+
+        // Open a large short in the same block.
+        openShort(alice, hyperdrive.calculateMaxShort());
+        uint256 spotPriceAfterShort = hyperdrive.calculateSpotPrice();
+
+        // Ensure that the weighted spot price is equal to the previous weighted
+        // spot price.
+        uint256 weightedSpotPriceAfter = hyperdrive
+            .getCheckpoint(HyperdriveUtils.latestCheckpoint(hyperdrive))
+            .weightedSpotPrice;
+        assertEq(weightedSpotPriceAfter, weightedSpotPriceBefore);
+
+        // A checkpoint passes.
+        advanceTimeWithCheckpoints2(CHECKPOINT_DURATION, 0);
+
+        // Ensure that the weighted spot price from the previous checkpoint is
+        // equal to the spot price after opening the short.
+        weightedSpotPriceAfter = hyperdrive
+            .getCheckpoint(
+                HyperdriveUtils.latestCheckpoint(hyperdrive) -
+                    CHECKPOINT_DURATION
+            )
+            .weightedSpotPrice;
+        assertEq(weightedSpotPriceAfter, spotPriceAfterShort);
+    }
+
     /// forge-config: default.fuzz.runs = 1000
     function test_weighted_average_skipped_checkpoint() external {
         uint256 fixedRate = 0.035e18;
