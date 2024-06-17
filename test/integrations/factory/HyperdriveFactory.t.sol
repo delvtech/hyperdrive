@@ -2748,7 +2748,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             )
         );
         assertEq(hyperdrive.name(), HYPERDRIVE_NAME);
-        assertEq(hyperdrive.kind(), "ERC4626Hyperdrive");
+        assertEq(hyperdrive.kind(), "StETHHyperdrive");
         assertEq(hyperdrive.version(), VERSION);
         IHyperdrive.PoolConfig memory config_ = hyperdrive.getPoolConfig();
         assertEq(address(config_.baseToken), address(ETH));

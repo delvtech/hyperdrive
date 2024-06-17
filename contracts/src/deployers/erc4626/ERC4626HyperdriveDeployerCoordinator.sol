@@ -19,9 +19,11 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     using SafeERC20 for ERC20;
 
-    /// @notice The deployer coordinator's kind.
-    string public constant override kind =
-        ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
+    // FIXME: This is really the kind.
+    //
+    /// @notice The deployer coordinator's name.
+    string public constant override name =
+        "ERC4626HyperdriveDeployerCoordinator";
 
     /// @notice Instantiates the deployer coordinator.
     /// @param _name The deployer coordinator's name.

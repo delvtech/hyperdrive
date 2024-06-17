@@ -43,9 +43,6 @@ abstract contract InstanceTest is HyperdriveTest {
         bool enableShareWithdraws;
     }
 
-    // The name of the Hyperdrive pool.
-    string internal constant NAME = "Hyperdrive";
-
     // Fixed rate used to configure market.
     uint256 internal constant FIXED_RATE = 0.05e18;
 
@@ -201,7 +198,7 @@ abstract contract InstanceTest is HyperdriveTest {
         }(
             deploymentId,
             deployerCoordinator,
-            NAME,
+            config.name,
             poolConfig,
             new bytes(0),
             contribution,
@@ -384,7 +381,8 @@ abstract contract InstanceTest is HyperdriveTest {
         assertEq(hyperdrive.name(), config.name);
         assertEq(
             IHyperdriveDeployerCoordinator(deployerCoordinator).name(),
-            string.concat(config.name, "DeployerCoordinator")
+            // FIXME: Update this when adding kind for the deployer coordinator
+            string.concat(config.kind, "DeployerCoordinator")
         );
     }
 
@@ -392,10 +390,7 @@ abstract contract InstanceTest is HyperdriveTest {
     ///      coordinator are correct.
     function test__kind() external view {
         assertEq(hyperdrive.kind(), config.kind);
-        assertEq(
-            IHyperdriveDeployerCoordinator(deployerCoordinator).kind(),
-            string.concat(config.kind, "DeployerCoordinator")
-        );
+        // FIXME: Test the deployer coordinator's kind.
     }
 
     /// @dev Tests that the versions of the Hyperdrive instance and deployer

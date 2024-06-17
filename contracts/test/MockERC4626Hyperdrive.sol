@@ -16,7 +16,7 @@ contract MockERC4626Hyperdrive is ERC4626Hyperdrive {
         address _target3
     )
         ERC4626Hyperdrive(
-            "MockERC4626Hyperdrive",
+            __name,
             _config,
             _target0,
             _target1,

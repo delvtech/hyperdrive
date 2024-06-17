@@ -21,9 +21,10 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     using SafeERC20 for ERC20;
     using FixedPointMath for uint256;
 
-    /// @notice The deployer coordinator's kind.
-    string public constant override kind =
-        EZETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
+    // FIXME: This is really the kind.
+    //
+    /// @notice The deployer coordinator's name.
+    string public constant override name = "EzETHHyperdriveDeployerCoordinator";
 
     /// @notice The Renzo contract.
     IRestakeManager public immutable restakeManager;

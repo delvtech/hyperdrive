@@ -159,7 +159,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         address target2 = address(new ERC4626Target2(config));
         address target3 = address(new ERC4626Target3(config));
         mockHyperdrive = new MockERC4626Hyperdrive(
-            HYPERDRIVE_NAME,
+            NAME,
             config,
             target0,
             target1,
@@ -187,22 +187,20 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
     }
 
     function test_erc4626_name() external view {
-        assertEq(IHyperdrive(address(mockHyperdrive)).name(), HYPERDRIVE_NAME);
+        assertEq(IHyperdrive(address(mockHyperdrive)).name(), NAME);
         assertEq(
             IHyperdriveDeployerCoordinator(deployerCoordinator).name(),
-            "HyperdriveDeployerCoordinator"
+            "ERC4626HyperdriveDeployerCoordinator"
         );
     }
 
+    // FIXME: Add kind for the deployer coordinator.
     function test_erc4626_kind() external view {
         assertEq(
             IHyperdrive(address(mockHyperdrive)).kind(),
-            ERC4626_HYPERDRIVE_KIND
+            "ERC4626Hyperdrive"
         );
-        assertEq(
-            IHyperdriveDeployerCoordinator(deployerCoordinator).kind(),
-            ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND
-        );
+        // FIXME
     }
 
     function test_erc4626_version() external view {
