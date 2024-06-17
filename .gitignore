@@ -62,3 +62,6 @@ deployments/
 
 # etherscan debugging
 etherscan_requests/
+
+# todos
+TODO.md
