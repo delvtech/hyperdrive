@@ -476,8 +476,9 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // Calculate the effect that opening the short should have on the pool's
         // reserves as well as the amount of shares the trader receives from
         // selling the shorted bonds at the market price.
+        uint256 effectiveShareReserves = _effectiveShareReserves();
         shareReservesDelta = HyperdriveMath.calculateOpenShort(
-            _effectiveShareReserves(),
+            effectiveShareReserves,
             _marketState.bondReserves,
             _bondAmount,
             _timeStretch,
@@ -498,7 +499,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         uint256 curveFee;
         uint256 governanceCurveFee;
         spotPrice = HyperdriveMath.calculateSpotPrice(
-            _effectiveShareReserves(),
+            effectiveShareReserves,
             _marketState.bondReserves,
             _initialVaultSharePrice,
             _timeStretch
@@ -536,6 +537,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // price to equal the open vault share price. This ensures that shorts
         // don't benefit from negative interest that accrued during the current
         // checkpoint.
+        uint256 vaultSharePrice = _vaultSharePrice; // avoid stack-too-deep
         baseDeposit = HyperdriveMath
             .calculateShortProceedsUp(
                 _bondAmount,
@@ -544,8 +546,8 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
                 // this in their deposit.
                 shareReservesDelta - governanceCurveFee,
                 _openVaultSharePrice,
-                _vaultSharePrice.max(_openVaultSharePrice),
-                _vaultSharePrice,
+                vaultSharePrice.max(_openVaultSharePrice),
+                vaultSharePrice,
                 _flatFee
             )
             .mulUp(_vaultSharePrice);
@@ -584,6 +586,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         // reserves as well as the amount of shares the trader pays to buy the
         // bonds that they shorted back at the market price.
         uint256 shareCurveDelta;
+        uint256 effectiveShareReserves = _effectiveShareReserves();
         {
             // Calculate the effect that closing the short should have on the
             // pool's reserves as well as the amount of shares the trader needs
@@ -593,24 +596,26 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             // to ensure that opening/closing a position doesn't result in
             // immediate profit.
             uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
+            uint256 bondAmount = _bondAmount; // Avoid stack too deep.
+            uint256 vaultSharePrice = _vaultSharePrice; // Avoid stack too deep.
             (
                 shareCurveDelta,
                 bondReservesDelta,
                 shareReservesDelta
             ) = HyperdriveMath.calculateCloseShort(
-                _effectiveShareReserves(),
+                effectiveShareReserves,
                 _marketState.bondReserves,
-                _bondAmount,
+                bondAmount,
                 timeRemaining,
                 _timeStretch,
-                _vaultSharePrice,
+                vaultSharePrice,
                 _initialVaultSharePrice
             );
 
             // Ensure that the trader didn't purchase bonds at a negative interest
             // rate after accounting for fees.
             spotPrice = HyperdriveMath.calculateSpotPrice(
-                _effectiveShareReserves(),
+                effectiveShareReserves,
                 _marketState.bondReserves,
                 _initialVaultSharePrice,
                 _timeStretch
@@ -631,8 +636,6 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             // Calculate the fees charged to the user (curveFee and
             // flatFee) and the portion of those fees that are paid to
             // governance (totalGovernanceFee).
-            uint256 bondAmount = _bondAmount; // Avoid stack too deep.
-            uint256 vaultSharePrice = _vaultSharePrice; // Avoid stack too deep.
             uint256 curveFee;
             uint256 flatFee;
             uint256 governanceCurveFee;
@@ -685,12 +688,13 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             // negative interest. Similarly, the governance fee is included in
             // the share payment. The LPs don't receive the governance fee, but
             // the short is responsible for paying it.
+            uint256 vaultSharePrice = _vaultSharePrice; // Avoid stack too deep.
             shareProceeds = HyperdriveMath.calculateShortProceedsDown(
                 _bondAmount,
                 shareReservesDelta,
                 openVaultSharePrice,
                 closeVaultSharePrice,
-                _vaultSharePrice,
+                vaultSharePrice,
                 _flatFee
             );
 
@@ -702,7 +706,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             // Ensure that the ending spot price is less than 1.
             if (
                 HyperdriveMath.calculateSpotPrice(
-                    _effectiveShareReserves() + shareCurveDelta,
+                    effectiveShareReserves + shareCurveDelta,
                     _marketState.bondReserves - bondReservesDelta,
                     _initialVaultSharePrice,
                     _timeStretch
