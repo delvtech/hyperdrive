@@ -1247,13 +1247,11 @@ library HyperdriveUtils {
         if (shareAmount < tradeFees) {
             return (0, false);
         }
-
-        uint256 tradeDelta = shareAmount - tradeFees;
-        if (_params.shareReserves < tradeDelta) {
+        uint256 shareReservesDelta = shareAmount - tradeFees;
+        if (_params.shareReserves < shareReservesDelta) {
             return (0, false);
         }
-
-        uint256 shareReserves = _params.shareReserves - tradeDelta;
+        uint256 shareReserves = _params.shareReserves - shareReservesDelta;
         uint256 exposure = (_params.longExposure -
             uint256(_checkpointExposure.max(0))).divDown(
                 _params.vaultSharePrice
