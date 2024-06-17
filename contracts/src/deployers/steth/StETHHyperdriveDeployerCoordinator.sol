@@ -17,6 +17,8 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     using FixedPointMath for uint256;
 
+    // FIXME: This is really the kind.
+    //
     /// @notice The deployer coordinator's name.
     string public constant override name = "StETHHyperdriveDeployerCoordinator";
 

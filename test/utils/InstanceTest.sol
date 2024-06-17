@@ -30,6 +30,7 @@ abstract contract InstanceTest is HyperdriveTest {
     /// @dev Configuration for the Instance testing suite.
     struct InstanceTestConfig {
         string name;
+        string kind;
         address[] whaleAccounts;
         IERC20 baseToken;
         IERC20 vaultSharesToken;
@@ -41,9 +42,6 @@ abstract contract InstanceTest is HyperdriveTest {
         bool enableBaseWithdraws;
         bool enableShareWithdraws;
     }
-
-    // The name of the Hyperdrive pool.
-    string internal constant NAME = "Hyperdrive";
 
     // Fixed rate used to configure market.
     uint256 internal constant FIXED_RATE = 0.05e18;
@@ -200,7 +198,7 @@ abstract contract InstanceTest is HyperdriveTest {
         }(
             deploymentId,
             deployerCoordinator,
-            NAME,
+            config.name,
             poolConfig,
             new bytes(0),
             contribution,
@@ -380,22 +378,28 @@ abstract contract InstanceTest is HyperdriveTest {
     /// @dev Tests that the names of the Hyperdrive instance and deployer
     ///      coordinator are correct.
     function test__name() external view {
-        assert(hyperdrive.name().eq(config.name));
-        assert(
-            IHyperdriveDeployerCoordinator(deployerCoordinator).name().eq(
-                string.concat(config.name, "DeployerCoordinator")
-            )
+        assertEq(hyperdrive.name(), config.name);
+        assertEq(
+            IHyperdriveDeployerCoordinator(deployerCoordinator).name(),
+            // FIXME: Update this when adding kind for the deployer coordinator
+            string.concat(config.kind, "DeployerCoordinator")
         );
+    }
+
+    /// @dev Tests that the kinds of the Hyperdrive instance and deployer
+    ///      coordinator are correct.
+    function test__kind() external view {
+        assertEq(hyperdrive.kind(), config.kind);
+        // FIXME: Test the deployer coordinator's kind.
     }
 
     /// @dev Tests that the versions of the Hyperdrive instance and deployer
     ///      coordinator are correct.
     function test__version() external view {
-        assert(hyperdrive.version().eq(VERSION));
-        assert(
-            IHyperdriveDeployerCoordinator(deployerCoordinator).version().eq(
-                VERSION
-            )
+        assertEq(hyperdrive.version(), VERSION);
+        assertEq(
+            IHyperdriveDeployerCoordinator(deployerCoordinator).version(),
+            VERSION
         );
     }
 
