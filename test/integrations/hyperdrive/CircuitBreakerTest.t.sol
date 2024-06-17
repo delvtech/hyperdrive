@@ -103,6 +103,54 @@ contract CircuitBreakerTest is HyperdriveTest {
                 })
             );
         }
+
+        // This test ensures that the circuit breaker won't be effected by
+        // changes to the spot rate in the current checkpoint.
+        {
+            // Ensure a feasible fixed rate.
+            uint256 fixedRate = 0.05e18;
+
+            // Ensure a feasible time stretch fixed rate.
+            uint256 timeStretchFixedRate = fixedRate;
+
+            // Deploy the pool and initialize the market
+            IHyperdrive.PoolConfig memory config = testConfig(
+                timeStretchFixedRate,
+                POSITION_DURATION
+            );
+            config.circuitBreakerDelta = 1e18;
+            deploy(alice, config);
+            uint256 contribution = 10_000_000e18;
+            initialize(alice, fixedRate, contribution);
+
+            // Advance a checkpoint.
+            advanceTimeWithCheckpoints2(CHECKPOINT_DURATION, 0);
+
+            // Open a max long position.
+            uint256 longSize = hyperdrive.calculateMaxLong();
+            openLong(bob, longSize);
+
+            // Advance time to near the end of the current checkpoint.
+            advanceTime(0.99e18, 0);
+
+            // Add liquidity should revert because the weighted spot apr
+            // is greater than the delta and the spot apr is less than
+            // the weighted minus the spot apr
+            baseToken.mint(contribution);
+            baseToken.approve(address(hyperdrive), contribution);
+            vm.expectRevert(IHyperdrive.CircuitBreakerTriggered.selector);
+            hyperdrive.addLiquidity(
+                contribution,
+                0, // min lp share price of 0
+                0, // min spot rate of 0
+                type(uint256).max, // max spot rate of uint256 max
+                IHyperdrive.Options({
+                    destination: bob,
+                    asBase: false,
+                    extraData: new bytes(0) // unused
+                })
+            );
+        }
     }
 
     function test_weighted_average_spot_price_short() external {
