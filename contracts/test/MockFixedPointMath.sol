@@ -75,9 +75,4 @@ contract MockFixedPointMath {
         );
         return result;
     }
-
-    function abs(int256 a) external pure returns (int256) {
-        int256 result = FixedPointMath.abs(a);
-        return result;
-    }
 }

@@ -314,12 +314,4 @@ contract FixedPointMathTest is Test {
         uint256 result = mockFixedPointMath.pow(x, 0);
         assertEq(result, 1e18);
     }
-
-    function test_abs() public {
-        // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-
-        assertEq(mockFixedPointMath.abs(1e18), 1e18);
-        assertEq(mockFixedPointMath.abs(-1e18), 1e18);
-    }
 }
