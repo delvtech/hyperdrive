@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { SignedMath } from "openzeppelin/utils/math/SignedMath.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { HyperdriveMath } from "./HyperdriveMath.sol";
@@ -16,6 +17,7 @@ import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 library LPMath {
     using FixedPointMath for *;
     using SafeCast for uint256;
+    using SignedMath for int256;
 
     /// @dev The maximum number of iterations for the share proceeds calculation.
     uint256 internal constant SHARE_PROCEEDS_MAX_ITERATIONS = 4;

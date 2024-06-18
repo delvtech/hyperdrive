@@ -453,8 +453,9 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
     {
         // Calculate the effect that opening the long should have on the pool's
         // reserves as well as the amount of bond the trader receives.
+        uint256 effectiveShareReserves = _effectiveShareReserves();
         bondReservesDelta = HyperdriveMath.calculateOpenLong(
-            _effectiveShareReserves(),
+            effectiveShareReserves,
             _marketState.bondReserves,
             _shareAmount, // amountIn
             _timeStretch,
@@ -465,7 +466,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         // Ensure that the trader didn't purchase bonds at a negative interest
         // rate after accounting for fees.
         spotPrice = HyperdriveMath.calculateSpotPrice(
-            _effectiveShareReserves(),
+            effectiveShareReserves,
             _marketState.bondReserves,
             _initialVaultSharePrice,
             _timeStretch
@@ -528,7 +529,7 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         // since the `pow` function is known to not be monotonic.
         if (
             HyperdriveMath.calculateSpotPrice(
-                _effectiveShareReserves() + shareReservesDelta,
+                effectiveShareReserves + shareReservesDelta,
                 _marketState.bondReserves - bondReservesDelta,
                 _initialVaultSharePrice,
                 _timeStretch
@@ -583,15 +584,18 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             // NOTE: We calculate the time remaining from the latest checkpoint
             // to ensure that opening/closing a position doesn't result in
             // immediate profit.
+            uint256 effectiveShareReserves = _effectiveShareReserves();
             uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
+            uint256 vaultSharePrice = _vaultSharePrice; // avoid stack-too-deep
+            uint256 bondAmount = _bondAmount; // avoid stack-too-deep
             (shareCurveDelta, bondReservesDelta, shareProceeds) = HyperdriveMath
                 .calculateCloseLong(
-                    _effectiveShareReserves(),
+                    effectiveShareReserves,
                     _marketState.bondReserves,
-                    _bondAmount,
+                    bondAmount,
                     timeRemaining,
                     _timeStretch,
-                    _vaultSharePrice,
+                    vaultSharePrice,
                     _initialVaultSharePrice
                 );
 
@@ -602,19 +606,18 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             uint256 governanceCurveFee;
             uint256 flatFee;
             spotPrice = HyperdriveMath.calculateSpotPrice(
-                _effectiveShareReserves(),
+                effectiveShareReserves,
                 _marketState.bondReserves,
                 _initialVaultSharePrice,
                 _timeStretch
             );
-            uint256 vaultSharePrice = _vaultSharePrice; // avoid stack-too-deep
             (
                 curveFee, // shares
                 flatFee, // shares
                 governanceCurveFee, // shares
                 totalGovernanceFee // shares
             ) = _calculateFeesGivenBonds(
-                _bondAmount,
+                bondAmount,
                 timeRemaining,
                 spotPrice,
                 vaultSharePrice
