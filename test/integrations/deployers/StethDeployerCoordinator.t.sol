@@ -90,6 +90,7 @@ contract StethDeployerCoordinatorTest is DeployerCoordinatorTest {
 
         // Deploy the coordinator.
         coordinator = new MockHyperdriveDeployerCoordinator(
+            COORDINATOR_NAME,
             factory,
             address(new StETHHyperdriveCoreDeployer()),
             address(new StETHTarget0Deployer()),

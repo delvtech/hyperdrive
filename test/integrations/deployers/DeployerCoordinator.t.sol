@@ -14,12 +14,13 @@ import { MockERC4626 } from "contracts/test/MockERC4626.sol";
 import { Lib } from "test/utils/Lib.sol";
 
 contract MockHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
-    string public constant override name = "MockHyperdriveDeployerCoordinator";
+    string public constant override kind = "MockHyperdriveDeployerCoordinator";
 
     bool internal _checkMessageValueStatus = true;
     bool internal _checkPoolConfigStatus = true;
 
     constructor(
+        string memory _name,
         address _factory,
         address _coreDeployer,
         address _target0Deployer,
@@ -28,6 +29,7 @@ contract MockHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _target3Deployer
     )
         HyperdriveDeployerCoordinator(
+            _name,
             _factory,
             _coreDeployer,
             _target0Deployer,
@@ -101,6 +103,7 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
     bytes32 constant DEPLOYMENT_ID = bytes32(uint256(0xdeadbeef));
     bytes32 constant SALT = bytes32(uint256(0xdecafc0ffee));
     string internal constant HYPERDRIVE_NAME = "Hyperdrive";
+    string internal constant COORDINATOR_NAME = "HyperdriveDeployerCoordinator";
 
     IHyperdrive.PoolDeployConfig internal config;
 

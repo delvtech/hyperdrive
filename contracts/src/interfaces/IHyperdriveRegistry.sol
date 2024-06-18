@@ -48,6 +48,10 @@ interface IHyperdriveRegistry {
     /// @return The registry's name.
     function name() external view returns (string memory);
 
+    /// @notice Gets the registry's kind.
+    /// @return The registry's kind.
+    function kind() external pure returns (string memory);
+
     /// @notice Gets the registry's version.
     /// @return The registry's version.
     function version() external pure returns (string memory);

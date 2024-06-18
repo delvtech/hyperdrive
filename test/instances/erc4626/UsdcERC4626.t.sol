@@ -113,6 +113,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         target3Deployer = address(new ERC4626Target3Deployer());
         deployerCoordinator = address(
             new ERC4626HyperdriveDeployerCoordinator(
+                "HyperdriveDeployerCoordinator",
                 address(factory),
                 coreDeployer,
                 target0Deployer,

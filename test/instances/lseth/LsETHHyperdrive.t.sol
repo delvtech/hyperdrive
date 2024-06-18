@@ -82,6 +82,7 @@ contract LsETHHyperdriveTest is InstanceTest {
         return
             address(
                 new LsETHHyperdriveDeployerCoordinator(
+                    string.concat(__testConfig.name, "DeployerCoordinator"),
                     _factory,
                     address(new LsETHHyperdriveCoreDeployer()),
                     address(new LsETHTarget0Deployer()),

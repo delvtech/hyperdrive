@@ -242,10 +242,7 @@ abstract contract HyperdriveTarget0 is
         _revert(abi.encode(_name));
     }
 
-    /// @notice Gets the kind of instance that was deployed. All deployed
-    ///         versions of a contract have the same kind, so this can be used
-    ///         to determine the contract's implementation. An example of a
-    ///         contract kind is `ERC4626Hyperdrive.
+    /// @notice Gets the instance's kind.
     /// @return The instance's kind.
     function kind() external pure virtual returns (string memory);
 

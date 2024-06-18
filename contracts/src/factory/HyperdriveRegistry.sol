@@ -5,7 +5,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveFactory } from "../interfaces/IHyperdriveFactory.sol";
 import { IHyperdriveGovernedRegistry } from "../interfaces/IHyperdriveGovernedRegistry.sol";
 import { IHyperdriveRegistry } from "../interfaces/IHyperdriveRegistry.sol";
-import { VERSION } from "../libraries/Constants.sol";
+import { HYPERDRIVE_REGISTRY_KIND, VERSION } from "../libraries/Constants.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
 
 /// @author DELV
@@ -25,6 +25,9 @@ contract HyperdriveRegistry is
 
     /// @notice The registry's name.
     string public name;
+
+    /// @notice The registry's kind.
+    string public constant kind = HYPERDRIVE_REGISTRY_KIND;
 
     /// @notice The registry's version.
     string public constant version = VERSION;

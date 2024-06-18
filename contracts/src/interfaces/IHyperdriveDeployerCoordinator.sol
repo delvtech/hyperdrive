@@ -92,7 +92,11 @@ interface IHyperdriveDeployerCoordinator {
 
     /// @notice Returns the deployer coordinator's name.
     /// @return The deployer coordinator's name.
-    function name() external pure returns (string memory);
+    function name() external view returns (string memory);
+
+    /// @notice Returns the deployer coordinator's kind.
+    /// @return The deployer coordinator's kind.
+    function kind() external pure returns (string memory);
 
     /// @notice Returns the deployer coordinator's version.
     /// @return The deployer coordinator's version.

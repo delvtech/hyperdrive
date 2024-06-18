@@ -94,6 +94,7 @@ contract StETHHyperdriveTest is InstanceTest {
         return
             address(
                 new StETHHyperdriveDeployerCoordinator(
+                    string.concat(__testConfig.name, "DeployerCoordinator"),
                     _factory,
                     address(new StETHHyperdriveCoreDeployer()),
                     address(new StETHTarget0Deployer()),

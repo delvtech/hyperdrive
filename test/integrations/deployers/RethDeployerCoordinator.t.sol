@@ -90,6 +90,7 @@ contract RethDeployerCoordinatorTest is DeployerCoordinatorTest {
 
         // Deploy the coordinator.
         coordinator = new MockHyperdriveDeployerCoordinator(
+            COORDINATOR_NAME,
             factory,
             address(new RETHHyperdriveCoreDeployer()),
             address(new RETHTarget0Deployer()),

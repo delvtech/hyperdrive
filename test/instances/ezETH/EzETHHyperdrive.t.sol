@@ -127,6 +127,7 @@ contract EzETHHyperdriveTest is InstanceTest {
         return
             address(
                 new EzETHHyperdriveDeployerCoordinator(
+                    string.concat(__testConfig.name, "DeployerCoordinator"),
                     _factory,
                     address(new EzETHHyperdriveCoreDeployer(RESTAKE_MANAGER)),
                     address(new EzETHTarget0Deployer(RESTAKE_MANAGER)),

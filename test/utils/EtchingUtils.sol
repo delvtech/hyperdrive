@@ -30,7 +30,7 @@ import { StETHTarget3 } from "contracts/src/instances/steth/StETHTarget3.sol";
 import { IEzETHHyperdrive } from "contracts/src/interfaces/IEzETHHyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IRestakeManager } from "contracts/src/interfaces/IRenzo.sol";
-import { VERSION } from "contracts/src/libraries/Constants.sol";
+import { ERC4626_HYPERDRIVE_KIND, EZETH_HYPERDRIVE_KIND, LSETH_HYPERDRIVE_KIND, RETH_HYPERDRIVE_KIND, STETH_HYPERDRIVE_KIND, VERSION } from "contracts/src/libraries/Constants.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { EtchingVault } from "contracts/test/EtchingVault.sol";
 import { MockERC4626 } from "contracts/test/MockERC4626.sol";
@@ -44,7 +44,7 @@ contract EtchingUtils is Test {
 
     function etchHyperdrive(
         address _hyperdrive
-    ) internal returns (string memory, string memory) {
+    ) internal returns (string memory, string memory, string memory) {
         // Ensure that the contract is deployed.
         if (address(_hyperdrive).code.length == 0) {
             revert("EtchingUtils: Empty deployment");
@@ -69,22 +69,28 @@ contract EtchingUtils is Test {
 
         // Using the name, decide which type of Hyperdrive instance needs to
         // be etched.
-        string memory name = hyperdrive.name();
-        if (name.eq("ERC4626Hyperdrive")) {
+        string memory kind = hyperdrive.kind();
+        if (kind.eq(ERC4626_HYPERDRIVE_KIND)) {
             etchERC4626Hyperdrive(_hyperdrive);
-        } else if (name.eq("EzETHHyperdrive")) {
+        } else if (kind.eq(EZETH_HYPERDRIVE_KIND)) {
             etchEzETHHyperdrive(_hyperdrive);
-        } else if (name.eq("LsETHHyperdrive")) {
+        } else if (kind.eq(LSETH_HYPERDRIVE_KIND)) {
             etchLsETHHyperdrive(_hyperdrive);
-        } else if (name.eq("RETHHyperdrive")) {
+        } else if (kind.eq(RETH_HYPERDRIVE_KIND)) {
             etchRETHHyperdrive(_hyperdrive);
-        } else if (name.eq("StETHHyperdrive")) {
+        } else if (kind.eq(STETH_HYPERDRIVE_KIND)) {
             etchStETHHyperdrive(_hyperdrive);
         } else {
-            revert("EtchingUtils: Unrecognized Hyperdrive implementation.");
+            revert(
+                vm.replace(
+                    "EtchingUtils: Unrecognized Hyperdrive kind: %0.",
+                    "%0",
+                    kind
+                )
+            );
         }
 
-        return (name, version);
+        return (hyperdrive.name(), kind, version);
     }
 
     function etchERC4626Hyperdrive(address _hyperdrive) internal {

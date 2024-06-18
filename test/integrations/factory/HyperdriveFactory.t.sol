@@ -34,6 +34,7 @@ import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
 string constant HYPERDRIVE_NAME = "Hyperdrive";
+string constant COORDINATOR_NAME = "HyperdriveDeployerCoordinator";
 
 contract HyperdriveFactoryTest is HyperdriveTest {
     using FixedPointMath for *;
@@ -1746,6 +1747,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(factory.governance());
         address deployerCoordinator = address(
             new StETHHyperdriveDeployerCoordinator(
+                COORDINATOR_NAME,
                 address(factory),
                 address(new StETHHyperdriveCoreDeployer()),
                 address(new StETHTarget0Deployer()),
@@ -2897,6 +2899,7 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
         target3Deployer = address(new ERC4626Target3Deployer());
         deployerCoordinator = address(
             new ERC4626HyperdriveDeployerCoordinator(
+                COORDINATOR_NAME,
                 address(factory),
                 coreDeployer,
                 target0Deployer,
@@ -3055,6 +3058,7 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
         // implementations may have different logic.
         deployerCoordinator1 = address(
             new ERC4626HyperdriveDeployerCoordinator(
+                COORDINATOR_NAME,
                 address(factory),
                 address(new ERC4626HyperdriveCoreDeployer()),
                 address(new ERC4626Target0Deployer()),
@@ -3451,6 +3455,7 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
         for (uint256 i; i < numberOfDeployerCoordinators; i++) {
             deployerCoordinators[i] = address(
                 new ERC4626HyperdriveDeployerCoordinator(
+                    COORDINATOR_NAME,
                     address(factory),
                     address(new ERC4626HyperdriveCoreDeployer()),
                     address(new ERC4626Target0Deployer()),
@@ -3486,6 +3491,7 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
         for (uint256 i; i < numberOfDeployerCoordinators; i++) {
             deployerCoordinators[i] = address(
                 new ERC4626HyperdriveDeployerCoordinator(
+                    COORDINATOR_NAME,
                     address(factory),
                     address(new ERC4626HyperdriveCoreDeployer()),
                     address(new ERC4626Target0Deployer()),
@@ -3550,6 +3556,7 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
         for (uint256 i; i < numberOfDeployerCoordinators; i++) {
             deployerCoordinators[i] = address(
                 new ERC4626HyperdriveDeployerCoordinator(
+                    COORDINATOR_NAME,
                     address(factory),
                     address(new ERC4626HyperdriveCoreDeployer()),
                     address(new ERC4626Target0Deployer()),

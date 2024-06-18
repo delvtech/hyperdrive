@@ -27,7 +27,8 @@ contract HyperdriveRegistryTest is HyperdriveTest {
     using Lib for *;
 
     string internal constant HYPERDRIVE_NAME = "Hyperdrive";
-    string internal constant NAME = "HyperdriveRegistry";
+    string internal constant COORDINATOR_NAME = "HyperdriveDeployerCoordinator";
+    string internal constant REGISTRY_NAME = "HyperdriveRegistry";
     uint256 internal constant FIXED_RATE = 0.05e18;
 
     event FactoryInfoUpdated(address indexed factory, uint256 indexed data);
@@ -48,7 +49,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         // against a fresh state.
         vm.stopPrank();
         vm.startPrank(registrar);
-        registry = new HyperdriveRegistry(NAME);
+        registry = new HyperdriveRegistry(REGISTRY_NAME);
 
         // Deploy a base token.
         baseToken = new ERC20Mintable(
@@ -138,6 +139,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         address target3Deployer = address(new ERC4626Target3Deployer());
         address deployerCoordinator = address(
             new ERC4626HyperdriveDeployerCoordinator(
+                COORDINATOR_NAME,
                 address(factory),
                 coreDeployer,
                 target0Deployer,
@@ -211,11 +213,15 @@ contract HyperdriveRegistryTest is HyperdriveTest {
     /// Tests ///
 
     function test_name() public view {
-        assert(registry.name().eq(NAME));
+        assertEq(registry.name(), REGISTRY_NAME);
+    }
+
+    function test_kind() public view {
+        assertEq(registry.kind(), "HyperdriveRegistry");
     }
 
     function test_version() public view {
-        assert(registry.version().eq(VERSION));
+        assertEq(registry.version(), VERSION);
     }
 
     function test_updateAdmin_failure_onlyAdmin() public {

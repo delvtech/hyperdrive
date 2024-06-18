@@ -103,6 +103,7 @@ contract RETHHyperdriveTest is InstanceTest {
         return
             address(
                 new RETHHyperdriveDeployerCoordinator(
+                    string.concat(__testConfig.name, "DeployerCoordinator"),
                     _factory,
                     address(new RETHHyperdriveCoreDeployer()),
                     address(new RETHTarget0Deployer()),

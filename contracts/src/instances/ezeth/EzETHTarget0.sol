@@ -6,6 +6,7 @@ import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IRestakeManager, IRenzoOracle } from "../../interfaces/IRenzo.sol";
+import { EZETH_HYPERDRIVE_KIND } from "../../libraries/Constants.sol";
 import { EzETHBase } from "./EzETHBase.sol";
 
 /// @author DELV
@@ -35,7 +36,7 @@ contract EzETHTarget0 is HyperdriveTarget0, EzETHBase {
     /// @notice Gets the instance's kind.
     /// @return The instance's kind.
     function kind() external pure override returns (string memory) {
-        _revert(abi.encode(KIND));
+        _revert(abi.encode(EZETH_HYPERDRIVE_KIND));
     }
 
     /// @notice Returns the Renzo contract.
