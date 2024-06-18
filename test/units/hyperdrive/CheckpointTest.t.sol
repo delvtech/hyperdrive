@@ -96,6 +96,23 @@ contract CheckpointTest is HyperdriveTest {
         // Ensure that the pool's APR wasn't changed by the checkpoint.
         assertEq(HyperdriveUtils.calculateSpotAPR(hyperdrive), aprBefore);
 
+        // Ensure that the weighted spot price for the previous checkpoint and
+        // the minted checkpoint are equal to the current spot price.
+        assertEq(
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive
+                .getCheckpoint(
+                    hyperdrive.latestCheckpoint() - CHECKPOINT_DURATION
+                )
+                .weightedSpotPrice
+        );
+        assertEq(
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive
+                .getCheckpoint(hyperdrive.latestCheckpoint())
+                .weightedSpotPrice
+        );
+
         // Ensure that the checkpoint contains the latest share price.
         IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
             HyperdriveUtils.latestCheckpoint(hyperdrive)
@@ -133,6 +150,19 @@ contract CheckpointTest is HyperdriveTest {
         // Ensure that the pool's APR wasn't changed by the checkpoint.
         assertEq(HyperdriveUtils.calculateSpotAPR(hyperdrive), aprBefore);
 
+        // Ensure that the weighted spot price for the previous checkpoint and
+        // the minted checkpoint are equal to the current spot price.
+        assertEq(
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive
+                .getCheckpoint(checkpointTime - CHECKPOINT_DURATION)
+                .weightedSpotPrice
+        );
+        assertEq(
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive.getCheckpoint(checkpointTime).weightedSpotPrice
+        );
+
         // Ensure that the checkpoint contains the latest share price.
         IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
             checkpointTime
@@ -156,11 +186,13 @@ contract CheckpointTest is HyperdriveTest {
         vm.recordLogs();
 
         // Create a checkpoint.
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive), 0);
+        uint256 aprBefore = hyperdrive.calculateSpotAPR();
+        uint256 checkpointTime = hyperdrive.latestCheckpoint();
+        hyperdrive.checkpoint(checkpointTime, 0);
 
         // Ensure that the correct event was emitted.
         verifyCheckpointEvent(
-            HyperdriveUtils.latestCheckpoint(hyperdrive),
+            checkpointTime,
             hyperdrive.getPoolInfo().vaultSharePrice,
             hyperdrive.getPoolInfo().vaultSharePrice,
             shortAmount,
@@ -168,17 +200,26 @@ contract CheckpointTest is HyperdriveTest {
             hyperdrive.getPoolInfo().lpSharePrice
         );
 
-        // TODO: This should be either removed or uncommented when we decide
-        // whether or not the flat+curve invariant should have an impact on
-        // the market rate.
-        //
         // Ensure that the pool's APR wasn't changed by the checkpoint.
-        // assertEq(calculateSpotAPR(hyperdrive), aprBefore);
+        assertEq(hyperdrive.calculateSpotAPR(), aprBefore);
+
+        // Ensure that the weighted spot price for the previous checkpoint and
+        // the minted checkpoint are equal to the current spot price.
+        assertEq(
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive
+                .getCheckpoint(checkpointTime - CHECKPOINT_DURATION)
+                .weightedSpotPrice
+        );
+        assertEq(
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive.getCheckpoint(checkpointTime).weightedSpotPrice
+        );
 
         // Ensure that the checkpoint contains the share price prior to the
         // share price update.
         IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
-            HyperdriveUtils.latestCheckpoint(hyperdrive)
+            checkpointTime
         );
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         assertEq(checkpoint.vaultSharePrice, poolInfo.vaultSharePrice);
@@ -216,11 +257,12 @@ contract CheckpointTest is HyperdriveTest {
 
         // The checkpoint that will close Bob and Celine's positions is
         // retroactively minted.
-        hyperdrive.checkpoint(maturityTime, 0);
+        uint256 checkpointTime = maturityTime;
+        hyperdrive.checkpoint(checkpointTime, 0);
 
         // Ensure that the correct event was emitted.
         verifyCheckpointEvent(
-            maturityTime,
+            checkpointTime,
             hyperdrive
                 .getCheckpoint(maturityTime + CHECKPOINT_DURATION)
                 .vaultSharePrice,
@@ -230,10 +272,23 @@ contract CheckpointTest is HyperdriveTest {
             hyperdrive.getPoolInfo().lpSharePrice
         );
 
+        // Ensure that the weighted spot price for the previous checkpoint and
+        // the minted checkpoint are equal to the current spot price.
+        assertEq(
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive
+                .getCheckpoint(checkpointTime - CHECKPOINT_DURATION)
+                .weightedSpotPrice
+        );
+        assertEq(
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive.getCheckpoint(checkpointTime).weightedSpotPrice
+        );
+
         // Ensure that the created checkpoint contains the share price of the
         // next checkpoint.
         assertEq(
-            hyperdrive.getCheckpoint(maturityTime).vaultSharePrice,
+            hyperdrive.getCheckpoint(checkpointTime).vaultSharePrice,
             hyperdrive
                 .getCheckpoint(maturityTime + CHECKPOINT_DURATION)
                 .vaultSharePrice
@@ -271,16 +326,32 @@ contract CheckpointTest is HyperdriveTest {
         vm.recordLogs();
 
         // Alice opens a long. This should also mint a checkpoint.
+        uint256 spotPriceBeforeLong = hyperdrive.calculateSpotPrice();
+        uint256 checkpointTime = hyperdrive.latestCheckpoint();
         openLong(alice, 10_000_000e18);
 
         // Ensure that the correct event was emitted.
         verifyCheckpointEvent(
-            hyperdrive.latestCheckpoint(),
+            checkpointTime,
             hyperdrive.getPoolInfo().vaultSharePrice,
             hyperdrive.getPoolInfo().vaultSharePrice,
             0,
             0,
             hyperdrive.getPoolInfo().lpSharePrice
+        );
+
+        // Ensure that the weighted spot price for the previous checkpoint and
+        // the minted checkpoint are equal to the spot price from before the
+        // long was opened.
+        assertEq(
+            spotPriceBeforeLong,
+            hyperdrive
+                .getCheckpoint(checkpointTime - CHECKPOINT_DURATION)
+                .weightedSpotPrice
+        );
+        assertEq(
+            spotPriceBeforeLong,
+            hyperdrive.getCheckpoint(checkpointTime).weightedSpotPrice
         );
 
         // Ensure that the checkpoint share price was updated.
@@ -306,16 +377,32 @@ contract CheckpointTest is HyperdriveTest {
         vm.recordLogs();
 
         // Alice opens a short. This should also mint a checkpoint.
+        uint256 spotPriceBeforeShort = hyperdrive.calculateSpotPrice();
+        uint256 checkpointTime = hyperdrive.latestCheckpoint();
         openShort(alice, 10_000_000e18);
 
         // Ensure that the correct event was emitted.
         verifyCheckpointEvent(
-            hyperdrive.latestCheckpoint(),
+            checkpointTime,
             hyperdrive.getPoolInfo().vaultSharePrice,
             hyperdrive.getPoolInfo().vaultSharePrice,
             0,
             0,
             hyperdrive.getPoolInfo().lpSharePrice
+        );
+
+        // Ensure that the weighted spot price for the previous checkpoint and
+        // the minted checkpoint are equal to the spot price from before the
+        // short was opened.
+        assertEq(
+            spotPriceBeforeShort,
+            hyperdrive
+                .getCheckpoint(checkpointTime - CHECKPOINT_DURATION)
+                .weightedSpotPrice
+        );
+        assertEq(
+            spotPriceBeforeShort,
+            hyperdrive.getCheckpoint(checkpointTime).weightedSpotPrice
         );
 
         // Ensure that the checkpoint share price was updated.
@@ -341,16 +428,30 @@ contract CheckpointTest is HyperdriveTest {
         vm.recordLogs();
 
         // Alice adds liquidity. This should also mint a checkpoint.
+        uint256 checkpointTime = hyperdrive.latestCheckpoint();
         addLiquidity(alice, 10_000_000e18);
 
         // Ensure that the correct event was emitted.
         verifyCheckpointEvent(
-            hyperdrive.latestCheckpoint(),
+            checkpointTime,
             hyperdrive.getPoolInfo().vaultSharePrice,
             hyperdrive.getPoolInfo().vaultSharePrice,
             0,
             0,
             hyperdrive.getPoolInfo().lpSharePrice
+        );
+
+        // Ensure that the weighted spot price for the previous checkpoint and
+        // the minted checkpoint are equal to the current spot price.
+        assertEq(
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive
+                .getCheckpoint(checkpointTime - CHECKPOINT_DURATION)
+                .weightedSpotPrice
+        );
+        assertEq(
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive.getCheckpoint(checkpointTime).weightedSpotPrice
         );
 
         // Ensure that the checkpoint share price was updated.
@@ -376,16 +477,30 @@ contract CheckpointTest is HyperdriveTest {
         vm.recordLogs();
 
         // Alice removes liquidity. This should also mint a checkpoint.
+        uint256 checkpointTime = hyperdrive.latestCheckpoint();
         removeLiquidity(alice, lpShares);
 
         // Ensure that the correct event was emitted.
         verifyCheckpointEvent(
-            hyperdrive.latestCheckpoint(),
+            checkpointTime,
             hyperdrive.getPoolInfo().vaultSharePrice,
             hyperdrive.getPoolInfo().vaultSharePrice,
             0,
             0,
             hyperdrive.getPoolInfo().lpSharePrice
+        );
+
+        // Ensure that the weighted spot price for the previous checkpoint and
+        // the minted checkpoint are equal to the current spot price.
+        assertEq(
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive
+                .getCheckpoint(checkpointTime - CHECKPOINT_DURATION)
+                .weightedSpotPrice
+        );
+        assertEq(
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive.getCheckpoint(checkpointTime).weightedSpotPrice
         );
 
         // Ensure that the checkpoint share price was updated.
@@ -415,16 +530,30 @@ contract CheckpointTest is HyperdriveTest {
         vm.recordLogs();
 
         // Alice redeems her withdrawal shares. This should also mint a checkpoint.
+        uint256 checkpointTime = hyperdrive.latestCheckpoint();
         redeemWithdrawalShares(alice, withdrawalShares);
 
         // Ensure that the correct event was emitted.
         verifyCheckpointEvent(
-            hyperdrive.latestCheckpoint(),
+            checkpointTime,
             hyperdrive.getPoolInfo().vaultSharePrice,
             hyperdrive.getPoolInfo().vaultSharePrice,
             shortAmount,
             0,
             hyperdrive.getPoolInfo().lpSharePrice
+        );
+
+        // Ensure that the weighted spot price for the previous checkpoint and
+        // the minted checkpoint are equal to the current spot price.
+        assertEq(
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive
+                .getCheckpoint(checkpointTime - CHECKPOINT_DURATION)
+                .weightedSpotPrice
+        );
+        assertEq(
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive.getCheckpoint(checkpointTime).weightedSpotPrice
         );
 
         // Ensure that the checkpoint share price was updated.
@@ -451,16 +580,31 @@ contract CheckpointTest is HyperdriveTest {
         vm.recordLogs();
 
         // Bob closes his long. This should also mint a checkpoint.
+        uint256 spotPriceBeforeLong = hyperdrive.calculateSpotPrice();
+        uint256 checkpointTime = hyperdrive.latestCheckpoint();
         closeLong(bob, maturityTime, longAmount);
 
         // Ensure that the correct event was emitted.
         verifyCheckpointEvent(
-            hyperdrive.latestCheckpoint(),
+            checkpointTime,
             hyperdrive.getPoolInfo().vaultSharePrice,
             hyperdrive.getPoolInfo().vaultSharePrice,
             0,
             0,
             hyperdrive.getPoolInfo().lpSharePrice
+        );
+
+        // Ensure that the weighted spot price for the previous checkpoint is
+        // non-zero and the minted checkpoint is equal to the spot price from
+        // before closing the long.
+        assertFalse(
+            hyperdrive
+                .getCheckpoint(checkpointTime - CHECKPOINT_DURATION)
+                .weightedSpotPrice == 0
+        );
+        assertEq(
+            spotPriceBeforeLong,
+            hyperdrive.getCheckpoint(checkpointTime).weightedSpotPrice
         );
 
         // Ensure that the checkpoint share price was updated.
@@ -494,11 +638,12 @@ contract CheckpointTest is HyperdriveTest {
         // Bob closes his long. Instead of minting the latest checkpoint, this
         // should mint a past checkpoint. The checkpoint's share price should be
         // the share price of the next checkpoint.
+        uint256 checkpointTime = maturityTime;
         closeLong(bob, maturityTime, longAmount);
 
         // Ensure that the correct event was emitted.
         verifyCheckpointEvent(
-            maturityTime,
+            checkpointTime,
             hyperdrive
                 .getCheckpoint(maturityTime + CHECKPOINT_DURATION)
                 .vaultSharePrice,
@@ -508,9 +653,22 @@ contract CheckpointTest is HyperdriveTest {
             hyperdrive.getPoolInfo().lpSharePrice
         );
 
+        // Ensure that the weighted spot price for the previous checkpoint and
+        // the minted checkpoint are equal to the current spot price.
+        assertEq(
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive
+                .getCheckpoint(checkpointTime - CHECKPOINT_DURATION)
+                .weightedSpotPrice
+        );
+        assertEq(
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive.getCheckpoint(checkpointTime).weightedSpotPrice
+        );
+
         // Ensure that the checkpoint share price was updated.
         assertEq(
-            hyperdrive.getCheckpoint(maturityTime).vaultSharePrice,
+            hyperdrive.getCheckpoint(checkpointTime).vaultSharePrice,
             hyperdrive
                 .getCheckpoint(maturityTime + CHECKPOINT_DURATION)
                 .vaultSharePrice
@@ -532,16 +690,31 @@ contract CheckpointTest is HyperdriveTest {
         vm.recordLogs();
 
         // Bob closes his short. This should also mint a checkpoint.
+        uint256 spotPriceBeforeShort = hyperdrive.calculateSpotPrice();
+        uint256 checkpointTime = hyperdrive.latestCheckpoint();
         closeShort(bob, maturityTime, shortAmount);
 
         // Ensure that the correct event was emitted.
         verifyCheckpointEvent(
-            hyperdrive.latestCheckpoint(),
+            checkpointTime,
             hyperdrive.getPoolInfo().vaultSharePrice,
             hyperdrive.getPoolInfo().vaultSharePrice,
             0,
             0,
             hyperdrive.getPoolInfo().lpSharePrice
+        );
+
+        // Ensure that the weighted spot price for the previous checkpoint is
+        // non-zero and the minted checkpoint is equal to the spot price from
+        // before closing the short.
+        assertFalse(
+            hyperdrive
+                .getCheckpoint(checkpointTime - CHECKPOINT_DURATION)
+                .weightedSpotPrice == 0
+        );
+        assertEq(
+            spotPriceBeforeShort,
+            hyperdrive.getCheckpoint(checkpointTime).weightedSpotPrice
         );
 
         // Ensure that the checkpoint share price was updated.
@@ -577,11 +750,12 @@ contract CheckpointTest is HyperdriveTest {
         // Bob closes his short. Instead of minting the latest checkpoint, this
         // should mint a past checkpoint. The checkpoint's share price should be
         // the share price of the next checkpoint.
+        uint256 checkpointTime = maturityTime;
         closeShort(bob, maturityTime, shortAmount);
 
         // Ensure that the correct event was emitted.
         verifyCheckpointEvent(
-            maturityTime,
+            checkpointTime,
             hyperdrive
                 .getCheckpoint(maturityTime + CHECKPOINT_DURATION)
                 .vaultSharePrice,
@@ -591,9 +765,22 @@ contract CheckpointTest is HyperdriveTest {
             hyperdrive.getPoolInfo().lpSharePrice
         );
 
+        // Ensure that the weighted spot price for the previous checkpoint and
+        // the minted checkpoint are equal to the current spot price.
+        assertEq(
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive
+                .getCheckpoint(checkpointTime - CHECKPOINT_DURATION)
+                .weightedSpotPrice
+        );
+        assertEq(
+            hyperdrive.calculateSpotPrice(),
+            hyperdrive.getCheckpoint(checkpointTime).weightedSpotPrice
+        );
+
         // Ensure that the checkpoint share price was updated.
         assertEq(
-            hyperdrive.getCheckpoint(maturityTime).vaultSharePrice,
+            hyperdrive.getCheckpoint(checkpointTime).vaultSharePrice,
             hyperdrive
                 .getCheckpoint(maturityTime + CHECKPOINT_DURATION)
                 .vaultSharePrice

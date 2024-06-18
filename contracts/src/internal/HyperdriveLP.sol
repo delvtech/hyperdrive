@@ -203,14 +203,16 @@ abstract contract HyperdriveLP is
         // Ensure that the spot APR is close enough to the previous weighted
         // spot price to fall within the tolerance.
         {
-            uint256 weightedSpotAPR = HyperdriveMath.calculateAPRFromPrice(
-                _checkpoints[latestCheckpoint].weightedSpotPrice,
-                _positionDuration
-            );
+            uint256 previousWeightedSpotAPR = HyperdriveMath
+                .calculateAPRFromPrice(
+                    _checkpoints[latestCheckpoint - _checkpointDuration]
+                        .weightedSpotPrice,
+                    _positionDuration
+                );
             if (
-                apr > weightedSpotAPR + _circuitBreakerDelta ||
-                (weightedSpotAPR > _circuitBreakerDelta &&
-                    apr < weightedSpotAPR - _circuitBreakerDelta)
+                apr > previousWeightedSpotAPR + _circuitBreakerDelta ||
+                (previousWeightedSpotAPR > _circuitBreakerDelta &&
+                    apr < previousWeightedSpotAPR - _circuitBreakerDelta)
             ) {
                 revert IHyperdrive.CircuitBreakerTriggered();
             }

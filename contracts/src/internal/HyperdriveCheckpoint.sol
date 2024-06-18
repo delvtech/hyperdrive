@@ -107,46 +107,38 @@ abstract contract HyperdriveCheckpoint is
         uint256 checkpointVaultSharePrice;
         uint256 checkpointWeightedSpotPrice;
         uint256 latestCheckpoint = _latestCheckpoint();
-        if (_checkpointTime == latestCheckpoint) {
-            checkpointVaultSharePrice = _vaultSharePrice;
-            checkpointWeightedSpotPrice = HyperdriveMath.calculateSpotPrice(
-                _effectiveShareReserves(),
-                _marketState.bondReserves,
-                _initialVaultSharePrice,
-                _timeStretch
-            );
-        } else {
-            for (
-                uint256 time = _checkpointTime + _checkpointDuration;
-                ;
-                time += _checkpointDuration
-            ) {
-                // If the time is the latest checkpoint, we use the vault share
-                // price and the current spot price.
-                if (time == latestCheckpoint) {
-                    checkpointVaultSharePrice = _vaultSharePrice;
-                    checkpointWeightedSpotPrice = HyperdriveMath
-                        .calculateSpotPrice(
-                            _effectiveShareReserves(),
-                            _marketState.bondReserves,
-                            _initialVaultSharePrice,
-                            _timeStretch
-                        );
-                    break;
-                }
-
+        {
+            uint256 nextCheckpointTime = _checkpointTime + _checkpointDuration;
+            for (; nextCheckpointTime < latestCheckpoint; ) {
                 // If the time isn't the latest checkpoint, we check to see if
                 // the checkpoint's vault share price is non-zero. If it is,
                 // that is the vault share price that we'll use to create the
                 // new checkpoint. We'll use the corresponding weighted spot
                 // price to instantiate the weighted spot price for the new
                 // checkpoint.
-                checkpointVaultSharePrice = _checkpoints[time].vaultSharePrice;
-                if (checkpointVaultSharePrice != 0) {
-                    checkpointWeightedSpotPrice = _checkpoints[time]
-                        .weightedSpotPrice;
+                uint256 futureVaultSharePrice = _checkpoints[nextCheckpointTime]
+                    .vaultSharePrice;
+                if (futureVaultSharePrice != 0) {
+                    checkpointVaultSharePrice = futureVaultSharePrice;
+                    checkpointWeightedSpotPrice = _checkpoints[
+                        nextCheckpointTime
+                    ].weightedSpotPrice;
                     break;
                 }
+
+                // Update the next checkpoint time.
+                unchecked {
+                    nextCheckpointTime += _checkpointDuration;
+                }
+            }
+            if (checkpointVaultSharePrice == 0) {
+                checkpointVaultSharePrice = _vaultSharePrice;
+                checkpointWeightedSpotPrice = HyperdriveMath.calculateSpotPrice(
+                    _effectiveShareReserves(),
+                    _marketState.bondReserves,
+                    _initialVaultSharePrice,
+                    _timeStretch
+                );
             }
         }
 
