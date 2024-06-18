@@ -201,7 +201,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             ERC4626_HYPERDRIVE_KIND
         );
         assertEq(
-            IHyperdriveDeployerCoordinator(deployerCoordinator).name(),
+            IHyperdriveDeployerCoordinator(deployerCoordinator).kind(),
             ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND
         );
     }
