@@ -1,30 +1,36 @@
 import { Address, parseEther } from "viem";
 import { HyperdriveFactoryConfig, parseDuration } from "../../lib";
+import { SEPOLIA_CHECKPOINT_REWARDER_NAME } from "./checkpoint-rewarder";
+
+export const SEPOLIA_FACTORY_NAME = "FACTORY";
+export const SEPOLIA_FACTORY_FORWARDER_NAME = "FACTORY_FORWARDER";
+export const SEPOLIA_FACTORY_GOVERNANCE_ADDRESS =
+    "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b";
 
 export const SEPOLIA_FACTORY: HyperdriveFactoryConfig = {
-    name: "FACTORY",
+    name: SEPOLIA_FACTORY_NAME,
     prepare: async (hre, options) => {
         await hre.hyperdriveDeploy.ensureDeployed(
-            "FACTORY_FORWARDER",
+            SEPOLIA_FACTORY_FORWARDER_NAME,
             "ERC20ForwarderFactory",
-            [],
+            [SEPOLIA_FACTORY_FORWARDER_NAME],
             options,
         );
     },
     constructorArguments: async (hre) => [
         {
-            governance: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
+            governance: SEPOLIA_FACTORY_GOVERNANCE_ADDRESS,
             deployerCoordinatorManager: (await hre.getNamedAccounts())[
                 "deployer"
             ] as Address,
-            hyperdriveGovernance: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
+            hyperdriveGovernance: SEPOLIA_FACTORY_GOVERNANCE_ADDRESS,
             defaultPausers: [
                 (await hre.getNamedAccounts())["deployer"] as Address,
             ],
-            feeCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
-            sweepCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
+            feeCollector: SEPOLIA_FACTORY_GOVERNANCE_ADDRESS,
+            sweepCollector: SEPOLIA_FACTORY_GOVERNANCE_ADDRESS,
             checkpointRewarder: hre.hyperdriveDeploy.deployments.byName(
-                "CHECKPOINT_REWARDER",
+                SEPOLIA_CHECKPOINT_REWARDER_NAME,
             ).address,
             checkpointDurationResolution: parseDuration("8 hours"),
             minCheckpointDuration: parseDuration("24 hours"),
@@ -49,17 +55,18 @@ export const SEPOLIA_FACTORY: HyperdriveFactoryConfig = {
                 governanceLP: parseEther("0.15"),
                 governanceZombie: parseEther("0.03"),
             },
-            linkerFactory:
-                hre.hyperdriveDeploy.deployments.byName("FACTORY_FORWARDER")
-                    .address,
+            linkerFactory: hre.hyperdriveDeploy.deployments.byName(
+                SEPOLIA_FACTORY_FORWARDER_NAME,
+            ).address,
             linkerCodeHash: await (
                 await hre.viem.getContractAt(
                     "ERC20ForwarderFactory",
-                    hre.hyperdriveDeploy.deployments.byName("FACTORY_FORWARDER")
-                        .address,
+                    hre.hyperdriveDeploy.deployments.byName(
+                        SEPOLIA_FACTORY_FORWARDER_NAME,
+                    ).address,
                 )
             ).read.ERC20LINK_HASH(),
         },
-        "FACTORY",
+        SEPOLIA_FACTORY_NAME,
     ],
 };

@@ -1,24 +1,22 @@
-import { parseEther, toFunctionSelector } from "viem";
+import { Address, parseEther, toFunctionSelector } from "viem";
 import { HyperdriveCoordinatorConfig } from "../../lib";
+import { SEPOLIA_FACTORY_NAME } from "./factory";
+
+export const SEPOLIA_RETH_COORDINATOR_NAME = "RETH_COORDINATOR";
 
 export const SEPOLIA_RETH_COORDINATOR: HyperdriveCoordinatorConfig<"RETH"> = {
-    name: "RETH_COORDINATOR",
+    name: SEPOLIA_RETH_COORDINATOR_NAME,
     prefix: "RETH",
     factoryAddress: async (hre) =>
-        hre.hyperdriveDeploy.deployments.byName("FACTORY").address,
+        hre.hyperdriveDeploy.deployments.byName(SEPOLIA_FACTORY_NAME).address,
     targetCount: 4,
     prepare: async (hre, options) => {
         let pc = await hre.viem.getPublicClient();
-        let deployer = (await hre.getNamedAccounts())["deployer"];
+        let deployer = (await hre.getNamedAccounts())["deployer"] as Address;
         let vaultSharesToken = await hre.hyperdriveDeploy.ensureDeployed(
             "RETH",
             "MockRocketPool",
-            [
-                parseEther("0.035"),
-                "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
-                true,
-                parseEther("500"),
-            ],
+            [parseEther("0.035"), deployer, true, parseEther("500")],
             options,
         );
         // allow minting by the public

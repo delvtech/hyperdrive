@@ -33,37 +33,6 @@ let DEFAULT_PK =
 const config: HardhatUserConfig = {
     ...baseConfig,
     networks: {
-        hardhat: {
-            accounts: [
-                {
-                    privateKey: env.PRIVATE_KEY ?? DEFAULT_PK,
-                    balance: "1000000000000000000",
-                },
-            ],
-            hyperdriveDeploy: {
-                checkpointRewarders: [SEPOLIA_CHECKPOINT_REWARDER],
-                checkpointSubrewarders: [SEPOLIA_CHECKPOINT_SUBREWARDER],
-                factories: [SEPOLIA_FACTORY],
-                coordinators: [
-                    SEPOLIA_ERC4626_COORDINATOR,
-                    SEPOLIA_STETH_COORDINATOR,
-                    SEPOLIA_RETH_COORDINATOR,
-                    SEPOLIA_EZETH_COORDINATOR,
-                ],
-                instances: [
-                    SEPOLIA_DAI_14DAY,
-                    SEPOLIA_DAI_30DAY,
-                    SEPOLIA_EZETH_14DAY,
-                    SEPOLIA_EZETH_30DAY,
-                    SEPOLIA_MORPHO_DAI_14DAY,
-                    SEPOLIA_MORPHO_DAI_30DAY,
-                    SEPOLIA_RETH_14DAY,
-                    SEPOLIA_RETH_30DAY,
-                    SEPOLIA_STETH_14DAY,
-                    SEPOLIA_STETH_30DAY,
-                ],
-            },
-        },
         sepolia: {
             live: true,
             chainId: 11155111,
@@ -78,38 +47,6 @@ const config: HardhatUserConfig = {
             hyperdriveDeploy: {
                 checkpointRewarders: [SEPOLIA_CHECKPOINT_REWARDER],
                 checkpointSubrewarders: [SEPOLIA_CHECKPOINT_SUBREWARDER],
-                factories: [SEPOLIA_FACTORY],
-                coordinators: [
-                    SEPOLIA_ERC4626_COORDINATOR,
-                    SEPOLIA_STETH_COORDINATOR,
-                    SEPOLIA_RETH_COORDINATOR,
-                    SEPOLIA_EZETH_COORDINATOR,
-                ],
-                instances: [
-                    SEPOLIA_DAI_14DAY,
-                    SEPOLIA_DAI_30DAY,
-                    SEPOLIA_EZETH_14DAY,
-                    SEPOLIA_EZETH_30DAY,
-                    SEPOLIA_MORPHO_DAI_14DAY,
-                    SEPOLIA_MORPHO_DAI_30DAY,
-                    SEPOLIA_RETH_14DAY,
-                    SEPOLIA_RETH_30DAY,
-                    SEPOLIA_STETH_14DAY,
-                    SEPOLIA_STETH_30DAY,
-                ],
-            },
-        },
-        base_sepolia: {
-            live: true,
-            accounts: [env.DEPLOYER_PRIVATE_KEY ?? DEFAULT_PK],
-            url: env.BASE_SEPOLIA_RPC_URL ?? "",
-            verify: {
-                etherscan: {
-                    apiKey: env.ETHERSCAN_BASE_API_KEY ?? "",
-                    apiUrl: "https://api-sepolia.basescan.org",
-                },
-            },
-            hyperdriveDeploy: {
                 factories: [SEPOLIA_FACTORY],
                 coordinators: [
                     SEPOLIA_ERC4626_COORDINATOR,

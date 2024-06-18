@@ -208,7 +208,7 @@ export type HyperdriveInstanceConfig<T extends InstancePrefix<ContractName>> = {
     fixedAPR: bigint;
     timestretchAPR: bigint;
     poolDeployConfig: ValueOrHREFn<DeployTargetArguments[2]>;
-    options: ValueOrHREFn<DeployHyperdriveArguments[7]>;
+    options: ValueOrHREFn<DeployHyperdriveArguments[8]>;
     prepare?: HREFn;
     setup?: HREFn;
 };

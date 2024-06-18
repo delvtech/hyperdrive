@@ -1,4 +1,4 @@
-import { parseEther, toFunctionSelector } from "viem";
+import { Address, parseEther, toFunctionSelector } from "viem";
 import {
     HyperdriveInstanceConfig,
     getLinkerDetails,
@@ -6,25 +6,35 @@ import {
     parseDuration,
     toBytes32,
 } from "../../lib";
+import { SEPOLIA_CHECKPOINT_REWARDER_NAME } from "./checkpoint-rewarder";
+import { SEPOLIA_ERC4626_COORDINATOR_NAME } from "./erc4626-coordinator";
+import {
+    SEPOLIA_FACTORY_GOVERNANCE_ADDRESS,
+    SEPOLIA_FACTORY_NAME,
+} from "./factory";
+
+export const SEPOLIA_DAI_14DAY_NAME = "DAI_14_DAY";
 
 const CONTRIBUTION = parseEther("10000");
 
 export const SEPOLIA_DAI_14DAY: HyperdriveInstanceConfig<"ERC4626"> = {
-    name: "DAI_14_DAY",
+    name: SEPOLIA_DAI_14DAY_NAME,
     prefix: "ERC4626",
     coordinatorAddress: async (hre) =>
-        hre.hyperdriveDeploy.deployments.byName("ERC4626_COORDINATOR").address,
-    deploymentId: toBytes32("DAI_14_DAY"),
+        hre.hyperdriveDeploy.deployments.byName(
+            SEPOLIA_ERC4626_COORDINATOR_NAME,
+        ).address,
+    deploymentId: toBytes32(SEPOLIA_DAI_14DAY_NAME),
     salt: toBytes32("0x69420"),
     extraData: "0x",
     contribution: CONTRIBUTION,
     fixedAPR: parseEther("0.10"),
     timestretchAPR: parseEther("0.10"),
-    options: {
+    options: async (hre) => ({
         extraData: "0x",
         asBase: true,
-        destination: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
-    },
+        destination: (await hre.getNamedAccounts())["deployer"] as Address,
+    }),
     prepare: async (hre, options) => {
         let pc = await hre.viem.getPublicClient();
         let baseToken = await hre.hyperdriveDeploy.ensureDeployed(
@@ -34,7 +44,7 @@ export const SEPOLIA_DAI_14DAY: HyperdriveInstanceConfig<"ERC4626"> = {
                 "DAI",
                 "DAI",
                 18,
-                "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
+                (await hre.getNamedAccounts())["deployer"] as Address,
                 true,
                 parseEther("10000"),
             ],
@@ -48,7 +58,7 @@ export const SEPOLIA_DAI_14DAY: HyperdriveInstanceConfig<"ERC4626"> = {
                 "Savings DAI",
                 "SDAI",
                 parseEther("0.10"),
-                "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
+                (await hre.getNamedAccounts())["deployer"] as Address,
                 true,
                 parseEther("10000"),
             ],
@@ -100,15 +110,16 @@ export const SEPOLIA_DAI_14DAY: HyperdriveInstanceConfig<"ERC4626"> = {
             positionDuration: parseDuration("14 days"),
             checkpointDuration: parseDuration("1 day"),
             timeStretch: 0n,
-            governance: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
-            feeCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
-            sweepCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
+            governance: SEPOLIA_FACTORY_GOVERNANCE_ADDRESS,
+            feeCollector: SEPOLIA_FACTORY_GOVERNANCE_ADDRESS,
+            sweepCollector: SEPOLIA_FACTORY_GOVERNANCE_ADDRESS,
             checkpointRewarder: hre.hyperdriveDeploy.deployments.byName(
-                "CHECKPOINT_REWARDER",
+                SEPOLIA_CHECKPOINT_REWARDER_NAME,
             ).address,
             ...(await getLinkerDetails(
                 hre,
-                hre.hyperdriveDeploy.deployments.byName("FACTORY").address,
+                hre.hyperdriveDeploy.deployments.byName(SEPOLIA_FACTORY_NAME)
+                    .address,
             )),
             fees: {
                 curve: parseEther("0.01"),
