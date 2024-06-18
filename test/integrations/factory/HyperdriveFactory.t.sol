@@ -34,6 +34,7 @@ import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
 string constant HYPERDRIVE_NAME = "Hyperdrive";
+string constant COORDINATOR_NAME = "HyperdriveDeployerCoordinator";
 
 contract HyperdriveFactoryTest is HyperdriveTest {
     using FixedPointMath for *;

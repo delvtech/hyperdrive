@@ -10,23 +10,11 @@ string constant VERSION = "v1.0.12";
 /// @dev The number of targets that must be deployed for a full deployment.
 uint256 constant NUM_TARGETS = 4;
 
-/// @dev The kind of the ERC20 Forwarder.
-string constant ERC20_FORWARDER_KIND = "ERC20Forwarder";
-
-/// @dev The kind of the ERC20 Forwarder Factory.
-string constant ERC20_FORWARDER_FACTORY_KIND = "ERC20ForwarderFactory";
-
-/// @dev The kind of the Hyperdrive checkpoint rewarder.
-string constant HYPERDRIVE_CHECKPOINT_REWARDER_KIND = "HyperdriveCheckpointRewarder";
-
-/// @dev The kind of the Hyperdrive checkpoint subrewarder.
-string constant HYPERDRIVE_CHECKPOINT_SUBREWARDER_KIND = "HyperdriveCheckpointSubrewarder";
+/// @dev The kind of the Hyperdrive registry.
+string constant HYPERDRIVE_REGISTRY_KIND = "HyperdriveRegistry";
 
 /// @dev The kind of the Hyperdrive factory.
 string constant HYPERDRIVE_FACTORY_KIND = "HyperdriveFactory";
-
-/// @dev The kind of the Hyperdrive registry.
-string constant HYPERDRIVE_REGISTRY_KIND = "HyperdriveRegistry";
 
 /// @dev The kind of the ERC4626Hyperdrive deployer coordinator factory.
 string constant ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "ERC4626HyperdriveDeployerCoordinator";

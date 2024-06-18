@@ -20,10 +20,9 @@ contract LsETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     using SafeERC20 for ERC20;
     using FixedPointMath for uint256;
 
-    // FIXME: This is really the kind.
-    //
-    /// @notice The deployer coordinator's name.
-    string public constant override name = "LsETHHyperdriveDeployerCoordinator";
+    /// @notice The deployer coordinator's kind.
+    string public constant override kind =
+        LSETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
 
     /// @dev The LsETH contract.
     IRiverV1 internal immutable river;

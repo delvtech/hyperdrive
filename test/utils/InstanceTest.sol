@@ -381,8 +381,7 @@ abstract contract InstanceTest is HyperdriveTest {
         assertEq(hyperdrive.name(), config.name);
         assertEq(
             IHyperdriveDeployerCoordinator(deployerCoordinator).name(),
-            // FIXME: Update this when adding kind for the deployer coordinator
-            string.concat(config.kind, "DeployerCoordinator")
+            string.concat(config.name, "DeployerCoordinator")
         );
     }
 
@@ -390,7 +389,10 @@ abstract contract InstanceTest is HyperdriveTest {
     ///      coordinator are correct.
     function test__kind() external view {
         assertEq(hyperdrive.kind(), config.kind);
-        // FIXME: Test the deployer coordinator's kind.
+        assertEq(
+            IHyperdriveDeployerCoordinator(deployerCoordinator).kind(),
+            string.concat(config.kind, "DeployerCoordinator")
+        );
     }
 
     /// @dev Tests that the versions of the Hyperdrive instance and deployer

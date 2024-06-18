@@ -103,6 +103,7 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
     bytes32 constant DEPLOYMENT_ID = bytes32(uint256(0xdeadbeef));
     bytes32 constant SALT = bytes32(uint256(0xdecafc0ffee));
     string internal constant HYPERDRIVE_NAME = "Hyperdrive";
+    string internal constant COORDINATOR_NAME = "HyperdriveDeployerCoordinator";
 
     IHyperdrive.PoolDeployConfig internal config;
 

@@ -69,25 +69,18 @@ contract EtchingUtils is Test {
 
         // Using the name, decide which type of Hyperdrive instance needs to
         // be etched.
-        string memory kind = hyperdrive.kind();
-        if (kind.eq(ERC4626_HYPERDRIVE_KIND)) {
+        if (hyperdrive.kind().eq(ERC4626_HYPERDRIVE_KIND)) {
             etchERC4626Hyperdrive(_hyperdrive);
-        } else if (kind.eq(EZETH_HYPERDRIVE_KIND)) {
+        } else if (hyperdrive.kind().eq(EZETH_HYPERDRIVE_KIND)) {
             etchEzETHHyperdrive(_hyperdrive);
-        } else if (kind.eq(LSETH_HYPERDRIVE_KIND)) {
+        } else if (hyperdrive.kind().eq(LSETH_HYPERDRIVE_KIND)) {
             etchLsETHHyperdrive(_hyperdrive);
-        } else if (kind.eq(RETH_HYPERDRIVE_KIND)) {
+        } else if (hyperdrive.kind().eq(RETH_HYPERDRIVE_KIND)) {
             etchRETHHyperdrive(_hyperdrive);
-        } else if (kind.eq(STETH_HYPERDRIVE_KIND)) {
+        } else if (hyperdrive.kind().eq(STETH_HYPERDRIVE_KIND)) {
             etchStETHHyperdrive(_hyperdrive);
         } else {
-            revert(
-                vm.replace(
-                    "EtchingUtils: Unrecognized Hyperdrive kind: %0.",
-                    "%0",
-                    kind
-                )
-            );
+            revert("EtchingUtils: Unrecognized deployment kind.");
         }
 
         return (hyperdrive.name(), kind, version);

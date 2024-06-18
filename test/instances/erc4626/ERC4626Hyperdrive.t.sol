@@ -32,7 +32,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
     using FixedPointMath for *;
     using Lib for *;
 
-    string internal constant NAME = "Hyperdrive";
+    string internal constant HYPERDRIVE_NAME = "Hyperdrive";
+    string internal constant COORDINATOR_NAME = "HyperdriveDeployerCoordinator";
 
     HyperdriveFactory factory;
 
@@ -159,7 +160,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         address target2 = address(new ERC4626Target2(config));
         address target3 = address(new ERC4626Target3(config));
         mockHyperdrive = new MockERC4626Hyperdrive(
-            NAME,
+            HYPERDRIVE_NAME,
             config,
             target0,
             target1,
@@ -187,20 +188,22 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
     }
 
     function test_erc4626_name() external view {
-        assertEq(IHyperdrive(address(mockHyperdrive)).name(), NAME);
+        assertEq(IHyperdrive(address(mockHyperdrive)).name(), HYPERDRIVE_NAME);
         assertEq(
             IHyperdriveDeployerCoordinator(deployerCoordinator).name(),
-            "ERC4626HyperdriveDeployerCoordinator"
+            "HyperdriveDeployerCoordinator"
         );
     }
 
-    // FIXME: Add kind for the deployer coordinator.
     function test_erc4626_kind() external view {
         assertEq(
             IHyperdrive(address(mockHyperdrive)).kind(),
-            "ERC4626Hyperdrive"
+            ERC4626_HYPERDRIVE_KIND
         );
-        // FIXME
+        assertEq(
+            IHyperdriveDeployerCoordinator(deployerCoordinator).name(),
+            ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND
+        );
     }
 
     function test_erc4626_version() external view {
@@ -365,7 +368,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         hyperdrive = factory.deployAndInitialize(
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
-            NAME,
+            HYPERDRIVE_NAME,
             config,
             new bytes(0),
             contribution,
@@ -449,7 +452,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         hyperdrive = factory.deployAndInitialize(
             bytes32(uint256(0xdead)),
             deployerCoordinator,
-            NAME,
+            HYPERDRIVE_NAME,
             config,
             new bytes(0),
             contribution,
