@@ -24,7 +24,7 @@ contract CircuitBreakerTest is HyperdriveTest {
             // Ensure a feasible time stretch fixed rate.
             uint256 timeStretchFixedRate = fixedRate;
 
-            // Deploy the pool and initialize the market
+            // Deploy the pool and initialize the market.
             IHyperdrive.PoolConfig memory config = testConfig(
                 timeStretchFixedRate,
                 POSITION_DURATION
@@ -64,7 +64,7 @@ contract CircuitBreakerTest is HyperdriveTest {
             // Ensure a feasible time stretch fixed rate.
             uint256 timeStretchFixedRate = fixedRate;
 
-            // Deploy the pool and initialize the market
+            // Deploy the pool and initialize the market.
             IHyperdrive.PoolConfig memory config = testConfig(
                 timeStretchFixedRate,
                 POSITION_DURATION
@@ -87,7 +87,7 @@ contract CircuitBreakerTest is HyperdriveTest {
 
             // Add liquidity should revert because the weighted spot apr
             // is greater than the delta and the spot apr is less than
-            // the weighted minus the spot apr
+            // the weighted minus the spot apr.
             baseToken.mint(contribution);
             baseToken.approve(address(hyperdrive), contribution);
             vm.expectRevert(IHyperdrive.CircuitBreakerTriggered.selector);
@@ -104,7 +104,7 @@ contract CircuitBreakerTest is HyperdriveTest {
             );
         }
 
-        // This test ensures that the circuit breaker won't be effected by
+        // This test ensures that the circuit breaker won't be affected by
         // changes to the spot rate in the current checkpoint.
         {
             // Ensure a feasible fixed rate.
@@ -113,7 +113,7 @@ contract CircuitBreakerTest is HyperdriveTest {
             // Ensure a feasible time stretch fixed rate.
             uint256 timeStretchFixedRate = fixedRate;
 
-            // Deploy the pool and initialize the market
+            // Deploy the pool and initialize the market.
             IHyperdrive.PoolConfig memory config = testConfig(
                 timeStretchFixedRate,
                 POSITION_DURATION
@@ -138,7 +138,7 @@ contract CircuitBreakerTest is HyperdriveTest {
 
             // Add liquidity should revert because the weighted spot apr
             // is greater than the delta and the spot apr is less than
-            // the weighted minus the spot apr
+            // the weighted minus the spot apr.
             baseToken.mint(contribution);
             baseToken.approve(address(hyperdrive), contribution);
             vm.expectRevert(IHyperdrive.CircuitBreakerTriggered.selector);
@@ -271,7 +271,7 @@ contract CircuitBreakerTest is HyperdriveTest {
         // Ensure a feasible time stretch fixed rate.
         uint256 timeStretchFixedRate = fixedRate;
 
-        // Deploy the pool and initialize the market
+        // Deploy the pool and initialize the market.
         IHyperdrive.PoolConfig memory config = testConfig(
             timeStretchFixedRate,
             POSITION_DURATION
@@ -318,7 +318,7 @@ contract CircuitBreakerTest is HyperdriveTest {
         // Ensure a feasible time stretch fixed rate.
         uint256 timeStretchFixedRate = fixedRate;
 
-        // Deploy the pool and initialize the market
+        // Deploy the pool and initialize the market.
         IHyperdrive.PoolConfig memory config = testConfig(
             timeStretchFixedRate,
             POSITION_DURATION
