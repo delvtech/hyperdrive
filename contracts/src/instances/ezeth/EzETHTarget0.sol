@@ -33,7 +33,7 @@ contract EzETHTarget0 is HyperdriveTarget0, EzETHBase {
 
     /// Extras ///
 
-    /// @notice Gets the instance's kind.
+    /// @notice Returns the instance's kind.
     /// @return The instance's kind.
     function kind() external pure override returns (string memory) {
         _revert(abi.encode(EZETH_HYPERDRIVE_KIND));
@@ -45,7 +45,7 @@ contract EzETHTarget0 is HyperdriveTarget0, EzETHBase {
         _revert(abi.encode(_restakeManager));
     }
 
-    /// @notice Gets the RenzoOracle contract.
+    /// @notice Returns the RenzoOracle contract.
     /// @return The RenzoOracle contract.
     function renzoOracle() external view returns (IRenzoOracle) {
         _revert(abi.encode(_renzoOracle));

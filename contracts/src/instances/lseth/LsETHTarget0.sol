@@ -23,7 +23,7 @@ contract LsETHTarget0 is HyperdriveTarget0, LsETHBase {
 
     /// Getters ///
 
-    /// @notice Gets the instance's kind.
+    /// @notice Returns the instance's kind.
     /// @return The instance's kind.
     function kind() external pure override returns (string memory) {
         _revert(abi.encode(LSETH_HYPERDRIVE_KIND));
