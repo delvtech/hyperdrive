@@ -6,6 +6,7 @@ import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
+import { ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
@@ -18,11 +19,12 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     using SafeERC20 for ERC20;
 
-    /// @notice The deployer coordinator's name.
-    string public constant override name =
-        "ERC4626HyperdriveDeployerCoordinator";
+    /// @notice The deployer coordinator's kind.
+    string public constant override kind =
+        ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
 
     /// @notice Instantiates the deployer coordinator.
+    /// @param _name The deployer coordinator's name.
     /// @param _factory The factory that this deployer will be registered with.
     /// @param _coreDeployer The core deployer.
     /// @param _target0Deployer The target0 deployer.
@@ -30,6 +32,7 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
     constructor(
+        string memory _name,
         address _factory,
         address _coreDeployer,
         address _target0Deployer,
@@ -38,6 +41,7 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _target3Deployer
     )
         HyperdriveDeployerCoordinator(
+            _name,
             _factory,
             _coreDeployer,
             _target0Deployer,

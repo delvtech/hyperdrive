@@ -56,7 +56,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         );
 
         // Instantiate the forwarder factory.
-        forwarderFactory = new ERC20ForwarderFactory();
+        forwarderFactory = new ERC20ForwarderFactory("ForwarderFactory");
 
         // Instantiate the Hyperdrive registry.
         vm.stopPrank();
@@ -962,6 +962,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
     event Deployed(
         address indexed deployerCoordinator,
         address hyperdrive,
+        string name,
         IHyperdrive.PoolDeployConfig config,
         bytes extraData
     );
@@ -997,13 +998,15 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
             // Verify the event data.
             (
                 address eventHyperdrive,
+                string memory eventName,
                 IHyperdrive.PoolDeployConfig memory eventConfig,
                 bytes memory eventExtraData
             ) = abi.decode(
                     filteredLogs[0].data,
-                    (address, IHyperdrive.PoolDeployConfig, bytes)
+                    (address, string, IHyperdrive.PoolDeployConfig, bytes)
                 );
             assertEq(eventHyperdrive, address(_hyperdrive));
+            assertEq(eventName, _hyperdrive.name());
 
             IHyperdrive.PoolConfig memory poolConfig = _hyperdrive
                 .getPoolConfig();

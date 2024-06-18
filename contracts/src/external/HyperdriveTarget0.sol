@@ -238,7 +238,13 @@ abstract contract HyperdriveTarget0 is
 
     /// @notice Gets the instance's name.
     /// @return The instance's name.
-    function name() external pure virtual returns (string memory);
+    function name() external view returns (string memory) {
+        _revert(abi.encode(_name));
+    }
+
+    /// @notice Gets the instance's kind.
+    /// @return The instance's kind.
+    function kind() external pure virtual returns (string memory);
 
     /// @notice Gets the instance's version.
     /// @return The instance's version.

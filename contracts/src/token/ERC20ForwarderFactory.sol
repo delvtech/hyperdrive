@@ -4,6 +4,7 @@ pragma solidity 0.8.20;
 import { IERC20Forwarder } from "../interfaces/IERC20Forwarder.sol";
 import { IERC20ForwarderFactory } from "../interfaces/IERC20ForwarderFactory.sol";
 import { IMultiToken } from "../interfaces/IMultiToken.sol";
+import { ERC20_FORWARDER_FACTORY_KIND, VERSION } from "../libraries/Constants.sol";
 import { ERC20Forwarder } from "./ERC20Forwarder.sol";
 
 /// @author DELV
@@ -18,6 +19,15 @@ import { ERC20Forwarder } from "./ERC20Forwarder.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ERC20ForwarderFactory is IERC20ForwarderFactory {
+    /// @notice The ERC20 forwarder factory's name.
+    string public name;
+
+    /// @notice The ERC20 forwarder factory's kind.
+    string public constant kind = ERC20_FORWARDER_FACTORY_KIND;
+
+    /// @notice The ERC20 forwarder factory's version.
+    string public constant version = VERSION;
+
     /// @notice The transient MultiToken addressed used in deployment.
     IMultiToken private _token = IMultiToken(address(1));
 
@@ -27,6 +37,12 @@ contract ERC20ForwarderFactory is IERC20ForwarderFactory {
     /// @notice The hash of the bytecode of the ERC20 forwarder contract.
     bytes32 public constant ERC20LINK_HASH =
         keccak256(type(ERC20Forwarder).creationCode);
+
+    /// @notice Initializes the ERC20 forwarder factory.
+    /// @param _name The name of the ERC20 forwarder factory.
+    constructor(string memory _name) {
+        name = _name;
+    }
 
     /// @notice Uses create2 to deploy a forwarder at a predictable address as
     ///         part of our ERC20 multitoken implementation.

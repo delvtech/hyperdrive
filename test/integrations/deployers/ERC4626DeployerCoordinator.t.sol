@@ -98,6 +98,7 @@ contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {
 
         // Deploy the coordinator.
         coordinator = new MockHyperdriveDeployerCoordinator(
+            COORDINATOR_NAME,
             factory,
             address(new ERC4626HyperdriveCoreDeployer()),
             address(new ERC4626Target0Deployer()),
@@ -128,6 +129,7 @@ contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {
         IHyperdrive hyperdrive = IHyperdrive(
             coordinator.deployHyperdrive(
                 DEPLOYMENT_ID,
+                HYPERDRIVE_NAME,
                 config,
                 new bytes(0),
                 SALT
@@ -180,6 +182,7 @@ contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {
         IHyperdrive hyperdrive = IHyperdrive(
             coordinator.deployHyperdrive(
                 DEPLOYMENT_ID,
+                HYPERDRIVE_NAME,
                 config,
                 new bytes(0),
                 SALT

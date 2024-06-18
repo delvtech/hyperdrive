@@ -25,6 +25,9 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     using FixedPointMath for *;
     using Lib for *;
 
+    string internal constant HYPERDRIVE_NAME = "Hyperdrive";
+    string internal constant COORDINATOR_NAME = "HyperdriveDeployerCoordinator";
+
     address deployerCoordinator;
     address coreDeployer;
     address target0Deployer;
@@ -49,7 +52,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         // Deploy the ERC4626Hyperdrive factory and deployer.
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
-        forwarderFactory = new ERC20ForwarderFactory();
+        forwarderFactory = new ERC20ForwarderFactory("ForwarderFactory");
         factory = new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -96,6 +99,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         target3Deployer = address(new ERC4626Target3Deployer());
         deployerCoordinator = address(
             new ERC4626HyperdriveDeployerCoordinator(
+                COORDINATOR_NAME,
                 address(factory),
                 coreDeployer,
                 target0Deployer,
@@ -151,6 +155,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         hyperdrive = factory.deployAndInitialize(
             bytes32(uint256(0xdeadbeef)),
             deployerCoordinator,
+            HYPERDRIVE_NAME,
             config,
             new bytes(0),
             contribution,
@@ -228,6 +233,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         hyperdrive = factory.deployAndInitialize(
             bytes32(uint256(0xbeef)),
             deployerCoordinator,
+            HYPERDRIVE_NAME,
             config,
             new bytes(0),
             contribution,

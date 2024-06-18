@@ -10,6 +10,7 @@ interface IHyperdriveFactory {
     event Deployed(
         address indexed deployerCoordinator,
         address hyperdrive,
+        string name,
         IHyperdrive.PoolDeployConfig config,
         bytes extraData
     );
@@ -343,6 +344,7 @@ interface IHyperdriveFactory {
     /// @param _deploymentId The deployment ID to use when deploying the pool.
     /// @param _deployerCoordinator The deployer coordinator to use in this
     ///        deployment.
+    /// @param __name The name of the Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _extraData The extra data that contains data necessary for the
     ///        specific deployer.
@@ -355,6 +357,7 @@ interface IHyperdriveFactory {
     function deployAndInitialize(
         bytes32 _deploymentId,
         address _deployerCoordinator,
+        string memory __name,
         IHyperdrive.PoolDeployConfig memory _config,
         bytes memory _extraData,
         uint256 _contribution,
@@ -392,6 +395,10 @@ interface IHyperdriveFactory {
     /// @notice Gets the factory's name.
     /// @return The factory's name.
     function name() external view returns (string memory);
+
+    /// @notice Gets the factory's kind.
+    /// @return The factory's kind.
+    function kind() external pure returns (string memory);
 
     /// @notice Gets the factory's version.
     /// @return The factory's version.

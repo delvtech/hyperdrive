@@ -26,7 +26,9 @@ import { Lib } from "test/utils/Lib.sol";
 contract HyperdriveRegistryTest is HyperdriveTest {
     using Lib for *;
 
-    string internal constant NAME = "HyperdriveRegistry";
+    string internal constant HYPERDRIVE_NAME = "Hyperdrive";
+    string internal constant COORDINATOR_NAME = "HyperdriveDeployerCoordinator";
+    string internal constant REGISTRY_NAME = "HyperdriveRegistry";
     uint256 internal constant FIXED_RATE = 0.05e18;
 
     event FactoryInfoUpdated(address indexed factory, uint256 indexed data);
@@ -47,7 +49,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         // against a fresh state.
         vm.stopPrank();
         vm.startPrank(registrar);
-        registry = new HyperdriveRegistry(NAME);
+        registry = new HyperdriveRegistry(REGISTRY_NAME);
 
         // Deploy a base token.
         baseToken = new ERC20Mintable(
@@ -137,6 +139,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         address target3Deployer = address(new ERC4626Target3Deployer());
         address deployerCoordinator = address(
             new ERC4626HyperdriveDeployerCoordinator(
+                COORDINATOR_NAME,
                 address(factory),
                 coreDeployer,
                 target0Deployer,
@@ -192,6 +195,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
             _factory.deployAndInitialize(
                 bytes32(_seed),
                 _deployerCoordinator,
+                HYPERDRIVE_NAME,
                 config,
                 new bytes(0),
                 contribution,
@@ -209,11 +213,15 @@ contract HyperdriveRegistryTest is HyperdriveTest {
     /// Tests ///
 
     function test_name() public view {
-        assert(registry.name().eq(NAME));
+        assertEq(registry.name(), REGISTRY_NAME);
+    }
+
+    function test_kind() public view {
+        assertEq(registry.kind(), "HyperdriveRegistry");
     }
 
     function test_version() public view {
-        assert(registry.version().eq(VERSION));
+        assertEq(registry.version(), VERSION);
     }
 
     function test_updateAdmin_failure_onlyAdmin() public {
@@ -383,9 +391,8 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         // Ensure that the list wasn't updated and that the mapping wasn't
         // updated.
         assertEq(registry.getNumberOfFactories(), 0);
-        IHyperdriveRegistry.FactoryInfo[] memory info = registry.getFactoryInfo(
-            factories
-        );
+        IHyperdriveRegistry.FactoryInfo[] memory info = registry
+            .getFactoryInfos(factories);
         assertEq(info[0].data, 0);
 
         // Ensure that no events were emitted.
@@ -445,9 +452,8 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         assertEq(registry.getFactoryAtIndex(0), factories[2]);
         assertEq(registry.getFactoryAtIndex(1), factories[1]);
         assertEq(registry.getFactoryAtIndex(2), factories[3]);
-        IHyperdriveRegistry.FactoryInfo[] memory info = registry.getFactoryInfo(
-            factories
-        );
+        IHyperdriveRegistry.FactoryInfo[] memory info = registry
+            .getFactoryInfos(factories);
         for (uint256 i = 0; i < factories.length; i++) {
             assertEq(info[i].data, data[i]);
         }
@@ -827,7 +833,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         // updated.
         assertEq(registry.getNumberOfInstances(), 0);
         IHyperdriveRegistry.InstanceInfo[] memory info = registry
-            .getInstanceInfo(instances);
+            .getInstanceInfos(instances);
         assertEq(info[0].data, 0);
         assertEq(info[0].factory, address(0));
 
@@ -912,7 +918,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         assertEq(registry.getInstanceAtIndex(1), instances[1]);
         assertEq(registry.getInstanceAtIndex(2), instances[3]);
         IHyperdriveRegistry.InstanceInfo[] memory info = registry
-            .getInstanceInfo(instances);
+            .getInstanceInfos(instances);
         for (uint256 i = 0; i < instances.length; i++) {
             assertEq(info[i].data, data[i]);
             assertEq(info[i].factory, factories[i]);
@@ -937,9 +943,8 @@ contract HyperdriveRegistryTest is HyperdriveTest {
     ) internal {
         // Ensure that the factories haven't been registered.
         uint256 factoryCountBefore = registry.getNumberOfFactories();
-        IHyperdriveRegistry.FactoryInfo[] memory info = registry.getFactoryInfo(
-            _factories
-        );
+        IHyperdriveRegistry.FactoryInfo[] memory info = registry
+            .getFactoryInfos(_factories);
         for (uint256 i = 0; i < _factories.length; i++) {
             assertEq(info[i].data, 0);
         }
@@ -959,9 +964,9 @@ contract HyperdriveRegistryTest is HyperdriveTest {
             factoryCountBefore + _factories.length
         );
         assertTrue(factories.eq(_factories));
-        info = registry.getFactoryInfo(_factories);
+        info = registry.getFactoryInfos(_factories);
         IHyperdriveRegistry.FactoryInfoWithMetadata[]
-            memory infoWithMetadata = registry.getFactoryInfoWithMetadata(
+            memory infoWithMetadata = registry.getFactoryInfosWithMetadata(
                 _factories
             );
         for (uint256 i = 0; i < _factories.length; i++) {
@@ -1012,11 +1017,10 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         // Ensure that the factories are still registered in the list and that
         // the associated data has been updated correctly in the mapping.
         assertEq(registry.getNumberOfFactories(), factoryCountBefore);
-        IHyperdriveRegistry.FactoryInfo[] memory info = registry.getFactoryInfo(
-            _factories
-        );
+        IHyperdriveRegistry.FactoryInfo[] memory info = registry
+            .getFactoryInfos(_factories);
         IHyperdriveRegistry.FactoryInfoWithMetadata[]
-            memory infoWithMetadata = registry.getFactoryInfoWithMetadata(
+            memory infoWithMetadata = registry.getFactoryInfosWithMetadata(
                 _factories
             );
         for (uint256 i = 0; i < _factories.length; i++) {
@@ -1069,11 +1073,10 @@ contract HyperdriveRegistryTest is HyperdriveTest {
             registry.getNumberOfFactories(),
             factoryCountBefore - _factories.length
         );
-        IHyperdriveRegistry.FactoryInfo[] memory info = registry.getFactoryInfo(
-            _factories
-        );
+        IHyperdriveRegistry.FactoryInfo[] memory info = registry
+            .getFactoryInfos(_factories);
         IHyperdriveRegistry.FactoryInfoWithMetadata[]
-            memory infoWithMetadata = registry.getFactoryInfoWithMetadata(
+            memory infoWithMetadata = registry.getFactoryInfosWithMetadata(
                 _factories
             );
         for (uint256 i = 0; i < _factories.length; i++) {
@@ -1105,7 +1108,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         // Ensure that the instances haven't been registered.
         uint256 instanceCountBefore = registry.getNumberOfInstances();
         IHyperdriveRegistry.InstanceInfo[] memory info = registry
-            .getInstanceInfo(_instances);
+            .getInstanceInfos(_instances);
         for (uint256 i = 0; i < _instances.length; i++) {
             assertEq(info[i].data, 0);
             assertEq(info[i].factory, address(0));
@@ -1126,9 +1129,9 @@ contract HyperdriveRegistryTest is HyperdriveTest {
             instanceCountBefore + _instances.length
         );
         assertTrue(instances.eq(_instances));
-        info = registry.getInstanceInfo(_instances);
+        info = registry.getInstanceInfos(_instances);
         IHyperdriveRegistry.InstanceInfoWithMetadata[]
-            memory infoWithMetadata = registry.getInstanceInfoWithMetadata(
+            memory infoWithMetadata = registry.getInstanceInfosWithMetadata(
                 _instances
             );
         for (uint256 i = 0; i < _instances.length; i++) {
@@ -1189,9 +1192,9 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         // mapping.
         assertEq(registry.getNumberOfInstances(), instanceCountBefore);
         IHyperdriveRegistry.InstanceInfo[] memory info = registry
-            .getInstanceInfo(_instances);
+            .getInstanceInfos(_instances);
         IHyperdriveRegistry.InstanceInfoWithMetadata[]
-            memory infoWithMetadata = registry.getInstanceInfoWithMetadata(
+            memory infoWithMetadata = registry.getInstanceInfosWithMetadata(
                 _instances
             );
         for (uint256 i = 0; i < _instances.length; i++) {
@@ -1254,9 +1257,9 @@ contract HyperdriveRegistryTest is HyperdriveTest {
             instanceCountBefore - _instances.length
         );
         IHyperdriveRegistry.InstanceInfo[] memory info = registry
-            .getInstanceInfo(_instances);
+            .getInstanceInfos(_instances);
         IHyperdriveRegistry.InstanceInfoWithMetadata[]
-            memory infoWithMetadata = registry.getInstanceInfoWithMetadata(
+            memory infoWithMetadata = registry.getInstanceInfosWithMetadata(
                 _instances
             );
         for (uint256 i = 0; i < _instances.length; i++) {

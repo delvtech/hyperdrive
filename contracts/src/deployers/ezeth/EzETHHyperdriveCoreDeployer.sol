@@ -23,6 +23,7 @@ contract EzETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     }
 
     /// @notice Deploys a Hyperdrive instance with the given parameters.
+    /// @param __name The name of the Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param target0 The target0 address.
     /// @param target1 The target1 address.
@@ -31,6 +32,7 @@ contract EzETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     /// @param _salt The create2 salt used in the deployment.
     /// @return The address of the newly deployed EzETHHyperdrive instance.
     function deployHyperdrive(
+        string memory __name,
         IHyperdrive.PoolConfig memory _config,
         bytes memory, // unused extra data
         address target0,
@@ -44,7 +46,15 @@ contract EzETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
             // front-running of deployments.
             new EzETHHyperdrive{
                 salt: keccak256(abi.encode(msg.sender, _salt))
-            }(_config, target0, target1, target2, target3, restakeManager)
+            }(
+                __name,
+                _config,
+                target0,
+                target1,
+                target2,
+                target3,
+                restakeManager
+            )
         );
         return hyperdrive;
     }

@@ -15,6 +15,11 @@ import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 abstract contract HyperdriveStorage is ReentrancyGuard {
     using FixedPointMath for uint256;
 
+    /// Metadata ///
+
+    /// @dev The instance's name.
+    string internal _name;
+
     /// Tokens ///
 
     /// @dev The base asset.

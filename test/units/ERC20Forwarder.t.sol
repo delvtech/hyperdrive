@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import { IERC20Forwarder } from "contracts/src/interfaces/IERC20Forwarder.sol";
 import { IMultiToken } from "contracts/src/interfaces/IMultiToken.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
+import { ERC20_FORWARDER_KIND, ERC20_FORWARDER_FACTORY_KIND, VERSION } from "contracts/src/libraries/Constants.sol";
 import { ERC20Forwarder } from "contracts/src/token/ERC20Forwarder.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { MockAssetId } from "contracts/test/MockAssetId.sol";
@@ -14,7 +15,7 @@ import { Lib } from "test/utils/Lib.sol";
 contract ERC20ForwarderFactoryTest is HyperdriveTest {
     using Lib for *;
 
-    IERC20Forwarder forwarder;
+    IERC20Forwarder internal forwarder;
 
     bytes32 public constant PERMIT_TYPEHASH =
         keccak256(
@@ -27,6 +28,12 @@ contract ERC20ForwarderFactoryTest is HyperdriveTest {
         // Deploy the forwarder
         vm.startPrank(deployer);
 
+        // Ensure that the forwarder factory has the correct metadata.
+        assertEq(forwarderFactory.name(), "ForwarderFactory");
+        assertEq(forwarderFactory.kind(), ERC20_FORWARDER_FACTORY_KIND);
+        assertEq(forwarderFactory.version(), VERSION);
+
+        // Create a forwarder.
         forwarder = forwarderFactory.create(
             IMultiToken(address(hyperdrive)),
             9
@@ -72,6 +79,8 @@ contract ERC20ForwarderFactoryTest is HyperdriveTest {
         // Test that the name and symbol are correct.
         assertEq(forwarder.name(), expectedName);
         assertEq(forwarder.symbol(), expectedSymbol);
+        assertEq(forwarder.kind(), ERC20_FORWARDER_KIND);
+        assertEq(forwarder.version(), VERSION);
     }
 
     function testForwarderERC20() public {

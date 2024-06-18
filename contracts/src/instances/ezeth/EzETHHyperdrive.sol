@@ -54,6 +54,7 @@ import { EzETHBase } from "./EzETHBase.sol";
 ///                    particular legal or regulatory significance.
 contract EzETHHyperdrive is Hyperdrive, EzETHBase {
     /// @notice Instantiates Hyperdrive with ezETH as the yield source.
+    /// @param __name The pool's name.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _target0 The target0 address.
     /// @param _target1 The target1 address.
@@ -61,6 +62,7 @@ contract EzETHHyperdrive is Hyperdrive, EzETHBase {
     /// @param _target3 The target3 address.
     /// @param _restakeManager The Renzo contract.
     constructor(
+        string memory __name,
         IHyperdrive.PoolConfig memory _config,
         address _target0,
         address _target1,
@@ -68,7 +70,7 @@ contract EzETHHyperdrive is Hyperdrive, EzETHBase {
         address _target3,
         IRestakeManager _restakeManager
     )
-        Hyperdrive(_config, _target0, _target1, _target2, _target3)
+        Hyperdrive(__name, _config, _target0, _target1, _target2, _target3)
         EzETHBase(_restakeManager)
     {}
 }

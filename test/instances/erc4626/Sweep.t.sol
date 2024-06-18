@@ -70,6 +70,7 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
         hyperdrive = IHyperdrive(
             address(
                 new ERC4626Hyperdrive(
+                    "Hyperdrive",
                     config,
                     address(new ERC4626Target0(config)),
                     address(new ERC4626Target1(config)),

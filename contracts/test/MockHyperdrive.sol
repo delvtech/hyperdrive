@@ -273,6 +273,7 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
         IHyperdrive.PoolConfig memory _config
     )
         Hyperdrive(
+            "MockHyperdrive",
             _config,
             address(new MockHyperdriveTarget0(_config)),
             address(new MockHyperdriveTarget1(_config)),
@@ -446,11 +447,17 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
 }
 
 contract MockHyperdriveTarget0 is HyperdriveTarget0, MockHyperdriveBase {
-    string public constant override name = "MockHyperdrive";
+    string internal constant KIND = "MockHyperdrive";
 
     constructor(
         IHyperdrive.PoolConfig memory _config
     ) HyperdriveTarget0(_config) {}
+
+    /// Metadata ///
+
+    function kind() external pure override returns (string memory) {
+        _revert(abi.encode(KIND));
+    }
 
     /// Mocks ///
 

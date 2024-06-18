@@ -5,7 +5,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveFactory } from "../interfaces/IHyperdriveFactory.sol";
 import { IHyperdriveGovernedRegistry } from "../interfaces/IHyperdriveGovernedRegistry.sol";
 import { IHyperdriveRegistry } from "../interfaces/IHyperdriveRegistry.sol";
-import { VERSION } from "../libraries/Constants.sol";
+import { HYPERDRIVE_REGISTRY_KIND, VERSION } from "../libraries/Constants.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
 
 /// @author DELV
@@ -25,6 +25,9 @@ contract HyperdriveRegistry is
 
     /// @notice The registry's name.
     string public name;
+
+    /// @notice The registry's kind.
+    string public constant kind = HYPERDRIVE_REGISTRY_KIND;
 
     /// @notice The registry's version.
     string public constant version = VERSION;
@@ -202,7 +205,7 @@ contract HyperdriveRegistry is
     }
 
     /// @inheritdoc IHyperdriveRegistry
-    function getFactoryInfo(
+    function getFactoryInfos(
         address[] calldata __factories
     ) external view override returns (FactoryInfo[] memory info) {
         info = new FactoryInfo[](__factories.length);
@@ -221,12 +224,13 @@ contract HyperdriveRegistry is
             FactoryInfoWithMetadata({
                 data: _factoryInfo[_factory].data,
                 name: factory.name(),
+                kind: factory.kind(),
                 version: factory.version()
             });
     }
 
     /// @inheritdoc IHyperdriveRegistry
-    function getFactoryInfoWithMetadata(
+    function getFactoryInfosWithMetadata(
         address[] calldata __factories
     ) external view override returns (FactoryInfoWithMetadata[] memory info) {
         info = new FactoryInfoWithMetadata[](__factories.length);
@@ -235,6 +239,7 @@ contract HyperdriveRegistry is
             info[i] = FactoryInfoWithMetadata({
                 data: _factoryInfo[__factories[i]].data,
                 name: factory.name(),
+                kind: factory.kind(),
                 version: factory.version()
             });
         }
@@ -287,7 +292,7 @@ contract HyperdriveRegistry is
     }
 
     /// @inheritdoc IHyperdriveRegistry
-    function getInstanceInfo(
+    function getInstanceInfos(
         address[] calldata __instances
     ) external view override returns (InstanceInfo[] memory info) {
         info = new InstanceInfo[](__instances.length);
@@ -310,12 +315,13 @@ contract HyperdriveRegistry is
                 data: _instanceInfo[_instance].data,
                 factory: _instanceInfo[_instance].factory,
                 name: instance.name(),
+                kind: instance.kind(),
                 version: instance.version()
             });
     }
 
     /// @inheritdoc IHyperdriveRegistry
-    function getInstanceInfoWithMetadata(
+    function getInstanceInfosWithMetadata(
         address[] calldata __instances
     ) external view override returns (InstanceInfoWithMetadata[] memory info) {
         info = new InstanceInfoWithMetadata[](__instances.length);
@@ -325,6 +331,7 @@ contract HyperdriveRegistry is
                 data: _instanceInfo[__instances[i]].data,
                 factory: _instanceInfo[__instances[i]].factory,
                 name: instance.name(),
+                kind: instance.kind(),
                 version: instance.version()
             });
         }

@@ -91,18 +91,27 @@ abstract contract Hyperdrive is
         );
 
     /// @notice Instantiates a Hyperdrive pool.
+    /// @param __name The pool's name.
     /// @param _config The configuration of the pool.
     /// @param _target0 The target0 address.
     /// @param _target1 The target1 address.
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
     constructor(
+        string memory __name,
         IHyperdrive.PoolConfig memory _config,
         address _target0,
         address _target1,
         address _target2,
         address _target3
     ) HyperdriveStorage(_config) {
+        // NOTE: This is initialized here rather than in `HyperdriveStorage` to
+        // avoid needing to set the name in all of the target contracts. Since
+        // this is a storage value, it will still be accessible.
+        //
+        // Initialize the pool's name.
+        _name = __name;
+
         // Initialize the target contracts.
         target0 = _target0;
         target1 = _target1;

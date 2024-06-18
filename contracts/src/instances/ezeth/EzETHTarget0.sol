@@ -6,6 +6,7 @@ import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IRestakeManager, IRenzoOracle } from "../../interfaces/IRenzo.sol";
+import { EZETH_HYPERDRIVE_KIND } from "../../libraries/Constants.sol";
 import { EzETHBase } from "./EzETHBase.sol";
 
 /// @author DELV
@@ -19,8 +20,8 @@ import { EzETHBase } from "./EzETHBase.sol";
 contract EzETHTarget0 is HyperdriveTarget0, EzETHBase {
     using SafeERC20 for ERC20;
 
-    /// @dev The instance's name.
-    string internal constant NAME = "EzETHHyperdrive";
+    /// @dev The instance's kind.
+    string internal constant KIND = "EzETHHyperdrive";
 
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
@@ -32,10 +33,10 @@ contract EzETHTarget0 is HyperdriveTarget0, EzETHBase {
 
     /// Extras ///
 
-    /// @notice Returns the instance's name.
-    /// @return The instance's name.
-    function name() external pure override returns (string memory) {
-        _revert(abi.encode(NAME));
+    /// @notice Returns the instance's kind.
+    /// @return The instance's kind.
+    function kind() external pure override returns (string memory) {
+        _revert(abi.encode(EZETH_HYPERDRIVE_KIND));
     }
 
     /// @notice Returns the Renzo contract.
@@ -44,7 +45,7 @@ contract EzETHTarget0 is HyperdriveTarget0, EzETHBase {
         _revert(abi.encode(_restakeManager));
     }
 
-    /// @notice Gets the RenzoOracle contract.
+    /// @notice Returns the RenzoOracle contract.
     /// @return The RenzoOracle contract.
     function renzoOracle() external view returns (IRenzoOracle) {
         _revert(abi.encode(_renzoOracle));

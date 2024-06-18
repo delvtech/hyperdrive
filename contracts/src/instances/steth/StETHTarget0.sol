@@ -3,6 +3,7 @@ pragma solidity 0.8.20;
 
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { STETH_HYPERDRIVE_KIND } from "../../libraries/Constants.sol";
 import { StETHBase } from "./StETHBase.sol";
 
 /// @author DELV
@@ -14,9 +15,6 @@ import { StETHBase } from "./StETHBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract StETHTarget0 is HyperdriveTarget0, StETHBase {
-    /// @dev The instance's name.
-    string internal constant NAME = "StETHHyperdrive";
-
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
     constructor(
@@ -25,10 +23,10 @@ contract StETHTarget0 is HyperdriveTarget0, StETHBase {
 
     /// Getters ///
 
-    /// @notice Returns the instance's name.
-    /// @return The instance's name.
-    function name() external pure override returns (string memory) {
-        _revert(abi.encode(NAME));
+    /// @notice Returns the instance's kind.
+    /// @return The instance's kind.
+    function kind() external pure override returns (string memory) {
+        _revert(abi.encode(STETH_HYPERDRIVE_KIND));
     }
 
     /// @notice Returns the MultiToken's decimals.

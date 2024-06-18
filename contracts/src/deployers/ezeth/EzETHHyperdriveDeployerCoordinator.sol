@@ -7,7 +7,7 @@ import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IRestakeManager, IRenzoOracle } from "../../interfaces/IRenzo.sol";
-import { ETH } from "../../libraries/Constants.sol";
+import { ETH, EZETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
@@ -21,8 +21,9 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     using SafeERC20 for ERC20;
     using FixedPointMath for uint256;
 
-    /// @notice The deployer coordinator's name.
-    string public constant override name = "EzETHHyperdriveDeployerCoordinator";
+    /// @notice The deployer coordinator's kind.
+    string public constant override kind =
+        EZETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
 
     /// @notice The Renzo contract.
     IRestakeManager public immutable restakeManager;
@@ -34,6 +35,7 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     IERC20 public immutable ezETH;
 
     /// @notice Instantiates the deployer coordinator.
+    /// @param _name The deployer coordinator's name.
     /// @param _factory The factory that this deployer will be registered with.
     /// @param _coreDeployer The core deployer.
     /// @param _target0Deployer The target0 deployer.
@@ -42,6 +44,7 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target3Deployer The target3 deployer.
     /// @param _restakeManager The Renzo contract.
     constructor(
+        string memory _name,
         address _factory,
         address _coreDeployer,
         address _target0Deployer,
@@ -51,6 +54,7 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         IRestakeManager _restakeManager
     )
         HyperdriveDeployerCoordinator(
+            _name,
             _factory,
             _coreDeployer,
             _target0Deployer,

@@ -8,12 +8,22 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 // so that we can test the `ERC4626Hyperdrive` contract in isolation.
 contract MockERC4626Hyperdrive is ERC4626Hyperdrive {
     constructor(
+        string memory __name,
         IHyperdrive.PoolConfig memory _config,
         address _target0,
         address _target1,
         address _target2,
         address _target3
-    ) ERC4626Hyperdrive(_config, _target0, _target1, _target2, _target3) {}
+    )
+        ERC4626Hyperdrive(
+            __name,
+            _config,
+            _target0,
+            _target1,
+            _target2,
+            _target3
+        )
+    {}
 
     function deposit(
         uint256 _amount,

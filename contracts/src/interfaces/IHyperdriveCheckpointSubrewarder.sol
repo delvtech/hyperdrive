@@ -70,6 +70,10 @@ interface IHyperdriveCheckpointSubrewarder {
     /// @return The subrewarder's name.
     function name() external view returns (string memory);
 
+    /// @notice Gets the subrewarder's kind.
+    /// @return The subrewarder's kind.
+    function kind() external pure returns (string memory);
+
     /// @notice Gets the subrewarder's version.
     /// @return The subrewarder's version.
     function version() external pure returns (string memory);

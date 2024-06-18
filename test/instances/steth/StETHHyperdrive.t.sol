@@ -42,6 +42,7 @@ contract StETHHyperdriveTest is InstanceTest {
     // The configuration for the Instance testing suite.
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig(
+            "Hyperdrive",
             "StETHHyperdrive",
             whaleAccounts,
             IERC20(ETH),
@@ -93,6 +94,7 @@ contract StETHHyperdriveTest is InstanceTest {
         return
             address(
                 new StETHHyperdriveDeployerCoordinator(
+                    string.concat(__testConfig.name, "DeployerCoordinator"),
                     _factory,
                     address(new StETHHyperdriveCoreDeployer()),
                     address(new StETHTarget0Deployer()),

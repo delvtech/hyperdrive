@@ -30,6 +30,7 @@ abstract contract InstanceTest is HyperdriveTest {
     /// @dev Configuration for the Instance testing suite.
     struct InstanceTestConfig {
         string name;
+        string kind;
         address[] whaleAccounts;
         IERC20 baseToken;
         IERC20 vaultSharesToken;
@@ -197,6 +198,7 @@ abstract contract InstanceTest is HyperdriveTest {
         }(
             deploymentId,
             deployerCoordinator,
+            config.name,
             poolConfig,
             new bytes(0),
             contribution,
@@ -226,7 +228,7 @@ abstract contract InstanceTest is HyperdriveTest {
         vm.startPrank(deployer);
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
-        forwarderFactory = new ERC20ForwarderFactory();
+        forwarderFactory = new ERC20ForwarderFactory("ForwarderFactory");
         factory = new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -376,22 +378,30 @@ abstract contract InstanceTest is HyperdriveTest {
     /// @dev Tests that the names of the Hyperdrive instance and deployer
     ///      coordinator are correct.
     function test__name() external view {
-        assert(hyperdrive.name().eq(config.name));
-        assert(
-            IHyperdriveDeployerCoordinator(deployerCoordinator).name().eq(
-                string.concat(config.name, "DeployerCoordinator")
-            )
+        assertEq(hyperdrive.name(), config.name);
+        assertEq(
+            IHyperdriveDeployerCoordinator(deployerCoordinator).name(),
+            string.concat(config.name, "DeployerCoordinator")
+        );
+    }
+
+    /// @dev Tests that the kinds of the Hyperdrive instance and deployer
+    ///      coordinator are correct.
+    function test__kind() external view {
+        assertEq(hyperdrive.kind(), config.kind);
+        assertEq(
+            IHyperdriveDeployerCoordinator(deployerCoordinator).kind(),
+            string.concat(config.kind, "DeployerCoordinator")
         );
     }
 
     /// @dev Tests that the versions of the Hyperdrive instance and deployer
     ///      coordinator are correct.
     function test__version() external view {
-        assert(hyperdrive.version().eq(VERSION));
-        assert(
-            IHyperdriveDeployerCoordinator(deployerCoordinator).version().eq(
-                VERSION
-            )
+        assertEq(hyperdrive.version(), VERSION);
+        assertEq(
+            IHyperdriveDeployerCoordinator(deployerCoordinator).version(),
+            VERSION
         );
     }
 
@@ -1271,6 +1281,7 @@ contract NonPayableDeployer {
     function deployAndInitialize(
         HyperdriveFactory _factory,
         bytes32 _deploymentId,
+        string memory __name,
         address _deployerCoordinator,
         IHyperdrive.PoolDeployConfig memory _config,
         bytes memory _extraData,
@@ -1283,6 +1294,7 @@ contract NonPayableDeployer {
         _factory.deployAndInitialize{ value: msg.value }(
             _deploymentId,
             _deployerCoordinator,
+            __name,
             _config,
             _extraData,
             _contribution,

@@ -28,6 +28,7 @@ contract DummyProvider {
 contract DummyHyperdrive is Hyperdrive, MockHyperdriveBase {
     constructor()
         Hyperdrive(
+            "DummyHyperdrive",
             IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(0)),
                 vaultSharesToken: IERC20(address(0)),

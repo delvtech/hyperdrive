@@ -60,6 +60,7 @@ contract EzETHHyperdriveTest is InstanceTest {
     // The configuration for the Instance testing suite.
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig(
+            "Hyperdrive",
             "EzETHHyperdrive",
             whaleAccounts,
             IERC20(ETH),
@@ -126,6 +127,7 @@ contract EzETHHyperdriveTest is InstanceTest {
         return
             address(
                 new EzETHHyperdriveDeployerCoordinator(
+                    string.concat(__testConfig.name, "DeployerCoordinator"),
                     _factory,
                     address(new EzETHHyperdriveCoreDeployer(RESTAKE_MANAGER)),
                     address(new EzETHTarget0Deployer(RESTAKE_MANAGER)),

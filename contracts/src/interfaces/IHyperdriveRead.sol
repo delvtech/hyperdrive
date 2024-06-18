@@ -7,7 +7,11 @@ import { IMultiTokenRead } from "./IMultiTokenRead.sol";
 interface IHyperdriveRead is IMultiTokenRead {
     /// @notice Gets the instance's name.
     /// @return The instance's name.
-    function name() external pure returns (string memory);
+    function name() external view returns (string memory);
+
+    /// @notice Gets the instance's kind.
+    /// @return The instance's kind.
+    function kind() external pure returns (string memory);
 
     /// @notice Gets the instance's version.
     /// @return The instance's version.

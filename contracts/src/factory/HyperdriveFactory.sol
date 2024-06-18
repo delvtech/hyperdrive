@@ -5,7 +5,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IHyperdriveFactory } from "../interfaces/IHyperdriveFactory.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
-import { VERSION } from "../libraries/Constants.sol";
+import { HYPERDRIVE_FACTORY_KIND, VERSION } from "../libraries/Constants.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 
 /// @author DELV
@@ -20,6 +20,9 @@ contract HyperdriveFactory is IHyperdriveFactory {
 
     /// @notice The factory's name.
     string public name;
+
+    /// @notice The factory's kind.
+    string public constant kind = HYPERDRIVE_FACTORY_KIND;
 
     /// @notice The factory's version.
     string public constant version = VERSION;
@@ -730,6 +733,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
     /// @param _deploymentId The deployment ID to use when deploying the pool.
     /// @param _deployerCoordinator The deployer coordinator to use in this
     ///        deployment.
+    /// @param __name The name of the Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _extraData The extra data that contains data necessary for the
     ///        specific deployer.
@@ -742,6 +746,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
     function deployAndInitialize(
         bytes32 _deploymentId,
         address _deployerCoordinator,
+        string memory __name,
         IHyperdrive.PoolDeployConfig memory _config,
         bytes memory _extraData,
         uint256 _contribution,
@@ -767,6 +772,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
                     // NOTE: We hash the deployer's address into the deployment ID
                     // to prevent their deployment from being front-run.
                     keccak256(abi.encode(msg.sender, _deploymentId)),
+                    __name,
                     _config,
                     _extraData,
                     _salt
@@ -782,6 +788,7 @@ contract HyperdriveFactory is IHyperdriveFactory {
         emit Deployed(
             _deployerCoordinator,
             address(hyperdrive),
+            __name,
             _config,
             _extraData
         );

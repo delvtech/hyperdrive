@@ -47,6 +47,7 @@ contract LsETHHyperdriveTest is InstanceTest {
     // The configuration for the Instance testing suite.
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig(
+            "Hyperdrive",
             "LsETHHyperdrive",
             whaleAccounts,
             IERC20(ETH),
@@ -81,6 +82,7 @@ contract LsETHHyperdriveTest is InstanceTest {
         return
             address(
                 new LsETHHyperdriveDeployerCoordinator(
+                    string.concat(__testConfig.name, "DeployerCoordinator"),
                     _factory,
                     address(new LsETHHyperdriveCoreDeployer()),
                     address(new LsETHTarget0Deployer()),

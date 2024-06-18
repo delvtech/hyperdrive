@@ -4,7 +4,7 @@ pragma solidity 0.8.20;
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { ILido } from "../../interfaces/ILido.sol";
-import { ETH } from "../../libraries/Constants.sol";
+import { ETH, STETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
@@ -17,13 +17,15 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     using FixedPointMath for uint256;
 
-    /// @notice The deployer coordinator's name.
-    string public constant override name = "StETHHyperdriveDeployerCoordinator";
+    /// @notice The deployer coordinator's kind.
+    string public constant override kind =
+        STETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
 
     /// @notice The Lido contract.
     ILido public immutable lido;
 
     /// @notice Instantiates the deployer coordinator.
+    /// @param _name The deployer coordinator's name.
     /// @param _factory The factory that this deployer will be registered with.
     /// @param _coreDeployer The core deployer.
     /// @param _target0Deployer The target0 deployer.
@@ -32,6 +34,7 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target3Deployer The target3 deployer.
     /// @param _lido The Lido contract.
     constructor(
+        string memory _name,
         address _factory,
         address _coreDeployer,
         address _target0Deployer,
@@ -41,6 +44,7 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         ILido _lido
     )
         HyperdriveDeployerCoordinator(
+            _name,
             _factory,
             _coreDeployer,
             _target0Deployer,

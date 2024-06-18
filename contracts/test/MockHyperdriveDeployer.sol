@@ -11,12 +11,15 @@ import { MockHyperdrive } from "./MockHyperdrive.sol";
 contract MockHyperdriveDeployer is IHyperdriveDeployerCoordinator {
     string public constant name = "MockHyperdriveDeployer";
 
+    string public constant kind = "MockHyperdriveDeployer";
+
     string public constant version = VERSION;
 
     mapping(address => mapping(bytes32 => address)) internal _deployments;
 
     function deployHyperdrive(
         bytes32 _deploymentId,
+        string memory,
         IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory,
         bytes32

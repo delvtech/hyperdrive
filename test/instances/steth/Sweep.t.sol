@@ -19,6 +19,8 @@ import { BaseTest } from "test/utils/BaseTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
 contract SweepTest is BaseTest, IHyperdriveEvents {
+    string internal constant NAME = "Hyperdrive";
+
     ForwardingToken lidoForwarder;
     ERC20Mintable sweepable;
 
@@ -70,6 +72,7 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
         hyperdrive = IHyperdrive(
             address(
                 new StETHHyperdrive(
+                    NAME,
                     config,
                     address(new StETHTarget0(config)),
                     address(new StETHTarget1(config)),

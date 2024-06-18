@@ -6,7 +6,7 @@ import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IRiverV1 } from "../../interfaces/IRiverV1.sol";
-import { ETH } from "../../libraries/Constants.sol";
+import { ETH, LSETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
@@ -20,13 +20,15 @@ contract LsETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     using SafeERC20 for ERC20;
     using FixedPointMath for uint256;
 
-    /// @notice The deployer coordinator's name.
-    string public constant override name = "LsETHHyperdriveDeployerCoordinator";
+    /// @notice The deployer coordinator's kind.
+    string public constant override kind =
+        LSETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
 
     /// @dev The LsETH contract.
     IRiverV1 internal immutable river;
 
     /// @notice Instantiates the deployer coordinator.
+    /// @param _name The deployer coordinator's name.
     /// @param _factory The factory that this deployer will be registered with.
     /// @param _coreDeployer The core deployer.
     /// @param _target0Deployer The target0 deployer.
@@ -35,6 +37,7 @@ contract LsETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target3Deployer The target3 deployer.
     /// @param _river The LsETH contract.
     constructor(
+        string memory _name,
         address _factory,
         address _coreDeployer,
         address _target0Deployer,
@@ -44,6 +47,7 @@ contract LsETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         IRiverV1 _river
     )
         HyperdriveDeployerCoordinator(
+            _name,
             _factory,
             _coreDeployer,
             _target0Deployer,

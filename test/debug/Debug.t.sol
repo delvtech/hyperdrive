@@ -69,13 +69,18 @@ contract Debug is BaseTest, EtchingUtils {
     /// @param _tx The transaction to debug.
     function debug(Transaction memory _tx) internal {
         // Etch the hyperdrive instance to add console logs.
-        (string memory name, string memory version) = etchHyperdrive(_tx.to);
+        (
+            string memory name,
+            string memory kind,
+            string memory version
+        ) = etchHyperdrive(_tx.to);
 
         // Log a preamble with the Hyperdrive name, version, and the function
         // that will be called.
         console.log(
-            "[test_debug] Found instance named %s at version %s",
+            "[test_debug] Found instance named %s of kind %s at version %s",
             name,
+            kind,
             version
         );
         (string memory targetName, bool wasRecognized) = getTargetName(

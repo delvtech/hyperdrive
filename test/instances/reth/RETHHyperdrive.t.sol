@@ -51,6 +51,7 @@ contract RETHHyperdriveTest is InstanceTest {
     // The configuration for the Instance testing suite.
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig(
+            "Hyperdrive",
             "RETHHyperdrive",
             whaleAccounts,
             IERC20(ETH),
@@ -102,6 +103,7 @@ contract RETHHyperdriveTest is InstanceTest {
         return
             address(
                 new RETHHyperdriveDeployerCoordinator(
+                    string.concat(__testConfig.name, "DeployerCoordinator"),
                     _factory,
                     address(new RETHHyperdriveCoreDeployer()),
                     address(new RETHTarget0Deployer()),
