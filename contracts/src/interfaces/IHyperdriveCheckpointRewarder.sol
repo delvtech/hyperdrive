@@ -47,12 +47,16 @@ interface IHyperdriveCheckpointRewarder {
         bool _isTrader
     ) external;
 
-    /// @notice Gets the subrewarder's name.
-    /// @return The subrewarder's name.
+    /// @notice Gets the rewarder's name.
+    /// @return The rewarder's name.
     function name() external view returns (string memory);
 
-    /// @notice Gets the subrewarder's version.
-    /// @return The subrewarder's version.
+    /// @notice Gets the rewarder's kind.
+    /// @return The rewarder's kind.
+    function kind() external pure returns (string memory);
+
+    /// @notice Gets the rewarder's version.
+    /// @return The rewarder's version.
     function version() external pure returns (string memory);
 
     /// @notice Returns the admin address that updates the rewarder's

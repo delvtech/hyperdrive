@@ -396,6 +396,10 @@ interface IHyperdriveFactory {
     /// @return The factory's name.
     function name() external view returns (string memory);
 
+    /// @notice Gets the factory's kind.
+    /// @return The factory's kind.
+    function kind() external pure returns (string memory);
+
     /// @notice Gets the factory's version.
     /// @return The factory's version.
     function version() external pure returns (string memory);

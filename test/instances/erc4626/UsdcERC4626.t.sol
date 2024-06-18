@@ -66,7 +66,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         // Deploy the Hyperdrive factory and deployer coordinator.
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
-        forwarderFactory = new ERC20ForwarderFactory();
+        forwarderFactory = new ERC20ForwarderFactory("ForwarderFactory");
         factory = new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,

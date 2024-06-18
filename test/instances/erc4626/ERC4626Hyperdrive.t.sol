@@ -73,7 +73,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         );
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
-        forwarderFactory = new ERC20ForwarderFactory();
+        forwarderFactory = new ERC20ForwarderFactory("ForwarderFactory");
         factory = new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
@@ -201,7 +201,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             ERC4626_HYPERDRIVE_KIND
         );
         assertEq(
-            IHyperdriveDeployerCoordinator(deployerCoordinator).name(),
+            IHyperdriveDeployerCoordinator(deployerCoordinator).kind(),
             ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND
         );
     }

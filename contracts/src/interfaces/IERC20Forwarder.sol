@@ -48,6 +48,17 @@ interface IERC20Forwarder is IERC20 {
         bytes32 s
     ) external;
 
+    /// Getters ///
+
+    /// @notice Gets the ERC20 forwarder's name.
+    function name() external view returns (string memory);
+
+    /// @notice Gets the ERC20 forwarder's kind.
+    function kind() external pure returns (string memory);
+
+    /// @notice Gets the ERC20 forwarder's version.
+    function version() external pure returns (string memory);
+
     /// @notice Gets a user's nonce for permit.
     /// @param user The user's address.
     /// @return The nonce.

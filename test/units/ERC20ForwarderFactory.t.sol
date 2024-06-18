@@ -13,6 +13,8 @@ import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
 
 contract DummyForwarderFactory is ERC20ForwarderFactory {
+    constructor() ERC20ForwarderFactory("ForwarderFactory") {}
+
     function getForwarder(
         IMultiToken, // unused
         uint256 // unused

@@ -4,6 +4,7 @@ pragma solidity 0.8.20;
 import { IERC20Forwarder } from "../interfaces/IERC20Forwarder.sol";
 import { IERC20ForwarderFactory } from "../interfaces/IERC20ForwarderFactory.sol";
 import { IMultiToken } from "../interfaces/IMultiToken.sol";
+import { ERC20_FORWARDER_KIND, VERSION } from "../libraries/Constants.sol";
 
 /// @author DELV
 /// @title ERC20Forwarder
@@ -18,6 +19,12 @@ import { IMultiToken } from "../interfaces/IMultiToken.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ERC20Forwarder is IERC20Forwarder {
+    /// @notice The ERC20 forwarder's kind.
+    string public constant kind = ERC20_FORWARDER_KIND;
+
+    /// @notice The ERC20 forwarder's version.
+    string public constant version = VERSION;
+
     /// @notice The target token ID that this ERC20 interface forwards to.
     IMultiToken public immutable token;
 

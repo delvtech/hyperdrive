@@ -17,6 +17,8 @@ interface IHyperdriveRegistry {
         uint256 data;
         /// @dev The factory's name.
         string name;
+        /// @dev The factory's kind.
+        string kind;
         /// @dev The factory's version.
         string version;
     }
@@ -40,6 +42,8 @@ interface IHyperdriveRegistry {
         address factory;
         /// @dev The instance's name.
         string name;
+        /// @dev The instance's kind.
+        string kind;
         /// @dev The instance's version.
         string version;
     }
@@ -85,7 +89,7 @@ interface IHyperdriveRegistry {
     /// @notice Gets the Hyperdrive factory info for a list of factories.
     /// @param __factories The list of factories.
     /// @return The list of factory info.
-    function getFactoryInfo(
+    function getFactoryInfos(
         address[] calldata __factories
     ) external view returns (FactoryInfo[] memory);
 
@@ -101,7 +105,7 @@ interface IHyperdriveRegistry {
     ///         list of factories.
     /// @param __factories The list of factories.
     /// @return The list of factory info with associated metadata.
-    function getFactoryInfoWithMetadata(
+    function getFactoryInfosWithMetadata(
         address[] calldata __factories
     ) external view returns (FactoryInfoWithMetadata[] memory);
 
@@ -134,7 +138,7 @@ interface IHyperdriveRegistry {
     /// @notice Gets the instance info for a list of instances.
     /// @param __instances The list of instances.
     /// @return The list of instance info.
-    function getInstanceInfo(
+    function getInstanceInfos(
         address[] calldata __instances
     ) external view returns (InstanceInfo[] memory);
 
@@ -149,7 +153,7 @@ interface IHyperdriveRegistry {
     ///         instances.
     /// @param __instances The list of instances.
     /// @return The list of instance info with associated metadata.
-    function getInstanceInfoWithMetadata(
+    function getInstanceInfosWithMetadata(
         address[] calldata __instances
     ) external view returns (InstanceInfoWithMetadata[] memory);
 }

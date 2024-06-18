@@ -6,6 +6,7 @@ import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdriveCheckpointSubrewarder } from "contracts/src/interfaces/IHyperdriveCheckpointSubrewarder.sol";
 import { IHyperdriveRegistry } from "contracts/src/interfaces/IHyperdriveRegistry.sol";
 import { IHyperdriveGovernedRegistry } from "contracts/src/interfaces/IHyperdriveGovernedRegistry.sol";
+import { HYPERDRIVE_CHECKPOINT_SUBREWARDER_KIND, VERSION } from "contracts/src/libraries/Constants.sol";
 import { HyperdriveRegistry } from "contracts/src/factory/HyperdriveRegistry.sol";
 import { HyperdriveCheckpointRewarder } from "contracts/src/rewarder/HyperdriveCheckpointRewarder.sol";
 import { HyperdriveCheckpointSubrewarder } from "contracts/src/rewarder/HyperdriveCheckpointSubrewarder.sol";
@@ -72,7 +73,9 @@ contract HyperdriveCheckpointSubrewarderTest is HyperdriveTest {
         token.approve(address(subrewarder), 100e18);
 
         // Ensure that the admin and name were set correctly.
-        assertTrue(subrewarder.name().eq(NAME));
+        assertEq(subrewarder.name(), NAME);
+        assertEq(subrewarder.kind(), HYPERDRIVE_CHECKPOINT_SUBREWARDER_KIND);
+        assertEq(subrewarder.version(), VERSION);
         assertEq(subrewarder.admin(), alice);
         assertEq(subrewarder.rewarder(), bob);
         assertEq(subrewarder.source(), source);

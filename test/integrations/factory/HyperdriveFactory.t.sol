@@ -22,7 +22,7 @@ import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperd
 import { IHyperdriveFactory } from "contracts/src/interfaces/IHyperdriveFactory.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { ETH, VERSION } from "contracts/src/libraries/Constants.sol";
+import { ETH, HYPERDRIVE_FACTORY_KIND, VERSION } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
@@ -769,8 +769,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 linkerCodeHash: bytes32(uint256(0xdeadbabe))
             });
         factory = new HyperdriveFactory(config, NAME);
-        assert(factory.name().eq(NAME));
-        assert(factory.version().eq(VERSION));
+        assertEq(factory.name(), NAME);
+        assertEq(factory.kind(), HYPERDRIVE_FACTORY_KIND);
+        assertEq(factory.version(), VERSION);
         assertEq(factory.governance(), config.governance);
         assertEq(
             factory.deployerCoordinatorManager(),
@@ -2854,7 +2855,7 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
         // Deploy the ERC4626Hyperdrive factory and deployer.
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
-        forwarderFactory = new ERC20ForwarderFactory();
+        forwarderFactory = new ERC20ForwarderFactory("ForwarderFactory");
         factory = new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,

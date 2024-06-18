@@ -56,7 +56,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         );
 
         // Instantiate the forwarder factory.
-        forwarderFactory = new ERC20ForwarderFactory();
+        forwarderFactory = new ERC20ForwarderFactory("ForwarderFactory");
 
         // Instantiate the Hyperdrive registry.
         vm.stopPrank();

@@ -4,7 +4,7 @@ pragma solidity 0.8.20;
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdriveCheckpointRewarder } from "../interfaces/IHyperdriveCheckpointRewarder.sol";
 import { IHyperdriveCheckpointSubrewarder } from "../interfaces/IHyperdriveCheckpointSubrewarder.sol";
-import { VERSION } from "../libraries/Constants.sol";
+import { HYPERDRIVE_CHECKPOINT_REWARDER_KIND, VERSION } from "../libraries/Constants.sol";
 
 /// @author DELV
 /// @notice A checkpoint rewarder that is controlled by an admin and delegates
@@ -15,6 +15,9 @@ import { VERSION } from "../libraries/Constants.sol";
 contract HyperdriveCheckpointRewarder is IHyperdriveCheckpointRewarder {
     /// @notice The checkpoint rewarder's name.
     string public name;
+
+    /// @notice The checkpoint rewarder's kind.
+    string public constant kind = HYPERDRIVE_CHECKPOINT_REWARDER_KIND;
 
     /// @notice The checkpoint rewarder's version.
     string public constant version = VERSION;

@@ -8,7 +8,7 @@ import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveCheckpointSubrewarder } from "../interfaces/IHyperdriveCheckpointSubrewarder.sol";
 import { IHyperdriveRegistry } from "../interfaces/IHyperdriveRegistry.sol";
-import { VERSION } from "../libraries/Constants.sol";
+import { HYPERDRIVE_CHECKPOINT_SUBREWARDER_KIND, VERSION } from "../libraries/Constants.sol";
 
 /// @author DELV
 /// @notice A checkpoint subrewarder that pays a fixed amount for checkpoints
@@ -21,6 +21,9 @@ contract HyperdriveCheckpointSubrewarder is IHyperdriveCheckpointSubrewarder {
 
     /// @notice The checkpoint subrewarder's name.
     string public name;
+
+    /// @notice The checkpoint subrewarder's kind.
+    string public constant kind = HYPERDRIVE_CHECKPOINT_SUBREWARDER_KIND;
 
     /// @notice The checkpoint subrewarder's version.
     string public constant version = VERSION;

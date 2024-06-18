@@ -5,6 +5,7 @@ import { VmSafe } from "forge-std/Vm.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdriveCheckpointRewarder } from "contracts/src/interfaces/IHyperdriveCheckpointRewarder.sol";
 import { IHyperdriveCheckpointSubrewarder } from "contracts/src/interfaces/IHyperdriveCheckpointSubrewarder.sol";
+import { HYPERDRIVE_CHECKPOINT_REWARDER_KIND, VERSION } from "contracts/src/libraries/Constants.sol";
 import { HyperdriveCheckpointRewarder } from "contracts/src/rewarder/HyperdriveCheckpointRewarder.sol";
 import { HyperdriveCheckpointSubrewarder } from "contracts/src/rewarder/HyperdriveCheckpointSubrewarder.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
@@ -80,7 +81,9 @@ contract HyperdriveCheckpointRewarderTest is BaseTest {
 
         // Ensure that the admin and name were set correctly.
         assertEq(rewarder.admin(), alice);
-        assertTrue(rewarder.name().eq(NAME));
+        assertEq(rewarder.name(), NAME);
+        assertEq(rewarder.kind(), HYPERDRIVE_CHECKPOINT_REWARDER_KIND);
+        assertEq(rewarder.version(), VERSION);
     }
 
     function test_updateAdmin_failure_onlyAdmin() external {

@@ -5,7 +5,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IHyperdriveFactory } from "../interfaces/IHyperdriveFactory.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
-import { VERSION } from "../libraries/Constants.sol";
+import { HYPERDRIVE_FACTORY_KIND, VERSION } from "../libraries/Constants.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 
 /// @author DELV
@@ -20,6 +20,9 @@ contract HyperdriveFactory is IHyperdriveFactory {
 
     /// @notice The factory's name.
     string public name;
+
+    /// @notice The factory's kind.
+    string public constant kind = HYPERDRIVE_FACTORY_KIND;
 
     /// @notice The factory's version.
     string public constant version = VERSION;

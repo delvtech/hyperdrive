@@ -22,6 +22,17 @@ interface IERC20ForwarderFactory {
         uint256 _tokenId
     ) external returns (IERC20Forwarder);
 
+    /// Getters ///
+
+    /// @notice Gets the ERC20 forwarder factory's name.
+    function name() external view returns (string memory);
+
+    /// @notice Gets the ERC20 forwarder factory's kind.
+    function kind() external pure returns (string memory);
+
+    /// @notice Gets the ERC20 forwarder factory's version.
+    function version() external pure returns (string memory);
+
     /// @notice Gets the MultiToken and token ID that should be targeted by the
     ///         calling forwarder.
     /// @return The target MultiToken.
