@@ -9,7 +9,7 @@ export const ANVIL_FACTORY: HyperdriveFactoryConfig = {
         await hre.hyperdriveDeploy.ensureDeployed(
             "FACTORY_FORWARDER",
             "ERC20ForwarderFactory",
-            [],
+            ["FACTORY_FORWARDER"],
             options,
         );
     },
