@@ -21,7 +21,7 @@ contract ERC4626Target0 is HyperdriveTarget0, ERC4626Base {
         IHyperdrive.PoolConfig memory _config
     ) HyperdriveTarget0(_config) {}
 
-    /// @notice Gets the instance's kind.
+    /// @notice Returns the instance's kind.
     /// @return The instance's kind.
     function kind() external pure override returns (string memory) {
         _revert(abi.encode(ERC4626_HYPERDRIVE_KIND));

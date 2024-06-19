@@ -62,7 +62,7 @@ abstract contract HyperdriveDeployerCoordinator is
     /// @notice The contract used to deploy new instances of HyperdriveTarget3.
     address public immutable target3Deployer;
 
-    /// @notice The coordinator's name.
+    /// @notice The deployer coordinator's name.
     string public override name;
 
     /// @notice A mapping from deployment ID to deployment.
