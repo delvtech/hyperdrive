@@ -88,7 +88,7 @@ task(
             console.log(`verifying ${f.name} linker factory...`);
             await run("verify:verify", {
                 address: constructorArguments[0].linkerFactory,
-                constructorArguments: [],
+                constructorArguments: ["FACTORY_FORWARDER"],
             });
 
             // verify the factory

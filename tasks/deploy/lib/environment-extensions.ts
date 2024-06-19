@@ -10,7 +10,7 @@ import "hardhat/types/runtime";
 import { ConfigurableTaskDefinition } from "hardhat/types/runtime";
 import { Address, ContractConstructorArgs, isHex } from "viem";
 import { Deployments } from "./deployments";
-import { evaluateValueOrHREFn } from "./utils";
+import { evaluateValueOrHREFn, toBytes32 } from "./utils";
 
 /**
  * Options accepted by all Hyperdrive deploy tasks
@@ -403,6 +403,7 @@ extendEnvironment((hre) => {
 
         // Deploy the coordinator
         let args = [
+            toBytes32(coordinatorConfig.name),
             factoryAddress,
             coreDeployer.address,
             ...targets,
@@ -561,6 +562,7 @@ extendEnvironment((hre) => {
         let args = [
             deploymentId,
             coordinatorAddress,
+            toBytes32(instanceConfig.name),
             poolDeployConfig,
             extraData,
             instanceConfig.contribution,

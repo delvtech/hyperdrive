@@ -1,4 +1,4 @@
-import { parseEther } from "viem";
+import { Address, parseEther } from "viem";
 import {
     HyperdriveInstanceConfig,
     getLinkerDetails,
@@ -6,25 +6,33 @@ import {
     parseDuration,
     toBytes32,
 } from "../../lib";
+import { SEPOLIA_CHECKPOINT_REWARDER_NAME } from "./checkpoint-rewarder";
+import {
+    SEPOLIA_FACTORY_GOVERNANCE_ADDRESS,
+    SEPOLIA_FACTORY_NAME,
+} from "./factory";
+import { SEPOLIA_RETH_COORDINATOR_NAME } from "./reth-coordinator";
 
+export const SEPOLIA_RETH_14DAY_NAME = "RETH_14_DAY";
 const CONTRIBUTION = parseEther("500");
 
 export const SEPOLIA_RETH_14DAY: HyperdriveInstanceConfig<"RETH"> = {
-    name: "RETH_14_DAY",
+    name: SEPOLIA_RETH_14DAY_NAME,
     prefix: "RETH",
     coordinatorAddress: async (hre) =>
-        hre.hyperdriveDeploy.deployments.byName("RETH_COORDINATOR").address,
-    deploymentId: toBytes32("RETH_14_DAY"),
+        hre.hyperdriveDeploy.deployments.byName(SEPOLIA_RETH_COORDINATOR_NAME)
+            .address,
+    deploymentId: toBytes32(SEPOLIA_RETH_14DAY_NAME),
     salt: toBytes32("0x666"),
     extraData: "0x",
     contribution: CONTRIBUTION,
     fixedAPR: parseEther("0.05"),
     timestretchAPR: parseEther("0.05"),
-    options: {
-        destination: "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
-        asBase: false,
+    options: async (hre) => ({
         extraData: "0x",
-    },
+        asBase: false,
+        destination: (await hre.getNamedAccounts())["deployer"] as Address,
+    }),
     prepare: async (hre) => {
         let vaultSharesToken = await hre.viem.getContractAt(
             "MockRocketPool",
@@ -52,15 +60,16 @@ export const SEPOLIA_RETH_14DAY: HyperdriveInstanceConfig<"RETH"> = {
             positionDuration: parseDuration("14 days"),
             checkpointDuration: parseDuration("1 day"),
             timeStretch: 0n,
-            governance: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
-            feeCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
-            sweepCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
+            governance: SEPOLIA_FACTORY_GOVERNANCE_ADDRESS,
+            feeCollector: SEPOLIA_FACTORY_GOVERNANCE_ADDRESS,
+            sweepCollector: SEPOLIA_FACTORY_GOVERNANCE_ADDRESS,
             checkpointRewarder: hre.hyperdriveDeploy.deployments.byName(
-                "CHECKPOINT_REWARDER",
+                SEPOLIA_CHECKPOINT_REWARDER_NAME,
             ).address,
             ...(await getLinkerDetails(
                 hre,
-                hre.hyperdriveDeploy.deployments.byName("FACTORY").address,
+                hre.hyperdriveDeploy.deployments.byName(SEPOLIA_FACTORY_NAME)
+                    .address,
             )),
             fees: {
                 curve: parseEther("0.01"),

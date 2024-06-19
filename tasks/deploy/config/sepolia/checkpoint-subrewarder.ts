@@ -1,11 +1,14 @@
-import { parseEther } from "viem";
+import { Address, parseEther } from "viem";
 import { HyperdriveCheckpointSubrewarderConfig } from "../../lib";
+import { SEPOLIA_CHECKPOINT_REWARDER_NAME } from "./checkpoint-rewarder";
+
+export const SEPOLIA_CHECKPOINT_SUBREWARDER_NAME = "CHECKPOINT_SUBREWARDER";
 
 const FUNDING = parseEther("10000");
 
 export const SEPOLIA_CHECKPOINT_SUBREWARDER: HyperdriveCheckpointSubrewarderConfig =
     {
-        name: "CHECKPOINT_SUBREWARDER",
+        name: SEPOLIA_CHECKPOINT_SUBREWARDER_NAME,
         prepare: async (hre, options) => {
             // Deploy the base token.
             await hre.hyperdriveDeploy.ensureDeployed(
@@ -15,7 +18,7 @@ export const SEPOLIA_CHECKPOINT_SUBREWARDER: HyperdriveCheckpointSubrewarderConf
                     "DAI",
                     "DAI",
                     18,
-                    "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
+                    (await hre.getNamedAccounts())["deployer"] as Address,
                     true,
                     parseEther("10000"),
                 ],
@@ -23,11 +26,14 @@ export const SEPOLIA_CHECKPOINT_SUBREWARDER: HyperdriveCheckpointSubrewarderConf
             );
         },
         constructorArguments: async (hre) => [
-            "CHECKPOINT_SUBREWARDER",
-            hre.hyperdriveDeploy.deployments.byName("CHECKPOINT_REWARDER")
-                .address,
-            "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
-            hre.hyperdriveDeploy.deployments.byName("SEPOLIA_REGISTRY").address,
+            SEPOLIA_CHECKPOINT_SUBREWARDER_NAME,
+            hre.hyperdriveDeploy.deployments.byName(
+                SEPOLIA_CHECKPOINT_REWARDER_NAME,
+            ).address,
+            (await hre.getNamedAccounts())["deployer"] as Address,
+            hre.hyperdriveDeploy.deployments.byName(
+                `${hre.network.name.toUpperCase()}_REGISTRY`,
+            ).address,
             hre.hyperdriveDeploy.deployments.byName("DAI").address,
             parseEther("1"),
             parseEther("1"),
@@ -42,7 +48,7 @@ export const SEPOLIA_CHECKPOINT_SUBREWARDER: HyperdriveCheckpointSubrewarderConf
             );
             let tx = await rewarder.write.updateSubrewarder([
                 hre.hyperdriveDeploy.deployments.byName(
-                    "CHECKPOINT_SUBREWARDER",
+                    SEPOLIA_CHECKPOINT_SUBREWARDER_NAME,
                 ).address,
             ]);
             await pc.waitForTransactionReceipt({ hash: tx });
@@ -60,7 +66,7 @@ export const SEPOLIA_CHECKPOINT_SUBREWARDER: HyperdriveCheckpointSubrewarderConf
             // approve the subrewarder for the contribution
             tx = await baseToken.write.approve([
                 hre.hyperdriveDeploy.deployments.byName(
-                    "CHECKPOINT_SUBREWARDER",
+                    SEPOLIA_CHECKPOINT_SUBREWARDER_NAME,
                 ).address,
                 FUNDING,
             ]);
