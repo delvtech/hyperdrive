@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { stdError } from "forge-std/StdError.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -34,6 +37,136 @@ contract LPWithdrawalTest is HyperdriveTest {
             POSITION_DURATION
         );
         deploy(deployer, config);
+    }
+
+    function test_example() external {
+        uint256[] memory timeStretches = new uint256[](7);
+        timeStretches[0] = 0.03e18;
+        timeStretches[1] = 0.05e18;
+        timeStretches[2] = 0.1e18;
+        timeStretches[3] = 0.2e18;
+        timeStretches[4] = 0.3e18;
+        timeStretches[5] = 0.4e18;
+        timeStretches[6] = 0.5e18;
+        uint256[] memory fixedRates = new uint256[](7);
+        fixedRates[0] = 0.01e18;
+        fixedRates[1] = 0.05e18;
+        fixedRates[2] = 0.1e18;
+        fixedRates[3] = 0.2e18;
+        fixedRates[4] = 0.3e18;
+        fixedRates[5] = 0.4e18;
+        fixedRates[6] = 0.5e18;
+        for (uint256 i = 0; i < timeStretches.length; i++) {
+            for (uint256 j = 0; j < fixedRates.length; j++) {
+                uint256 apr = fixedRates[j];
+                uint256 contribution = 1_000_000e18;
+                IHyperdrive.PoolConfig memory config = testConfig(
+                    timeStretches[i],
+                    POSITION_DURATION
+                );
+                config.circuitBreakerDelta = type(uint128).max;
+                deploy(alice, config);
+                vm.stopPrank();
+                vm.startPrank(alice);
+                baseToken.mint(contribution);
+                baseToken.approve(address(hyperdrive), contribution);
+                try
+                    hyperdrive.initialize(
+                        contribution,
+                        apr,
+                        IHyperdrive.Options({
+                            destination: alice,
+                            asBase: true,
+                            extraData: new bytes(0)
+                        })
+                    )
+                {
+                    // alice opens max long
+                    openLong(alice, hyperdrive.calculateMaxLong());
+
+                    // the term passes
+                    advanceTime(POSITION_DURATION, 0);
+
+                    // alice opens a max short
+                    openShort(alice, hyperdrive.calculateMaxShort());
+
+                    // alice adds liquidity
+                    addLiquidity(alice, 10_000_000e18);
+
+                    // alice opens a max long.
+                    openLong(alice, hyperdrive.calculateMaxLong());
+                    uint256 endingSpotRate = hyperdrive.calculateSpotAPR();
+                    if (endingSpotRate > 1e4) {
+                        console.log(
+                            "time stretch apr = %s",
+                            timeStretches[i].toString(18)
+                        );
+                        console.log(
+                            "fixed apr = %s",
+                            fixedRates[j].toString(18)
+                        );
+                        console.log(
+                            "ending spot rate = %s",
+                            endingSpotRate.toString(18)
+                        );
+                        console.log("");
+                    }
+                } catch (bytes memory) {}
+            }
+        }
+    }
+
+    function test_example2() external {
+        uint256 timeStretchAPR = 0.4e18;
+        uint256 fixedAPR = 0.05e18;
+        uint256 contribution = 100_000e18;
+        IHyperdrive.PoolConfig memory config = testConfig(
+            timeStretchAPR,
+            POSITION_DURATION
+        );
+        config.circuitBreakerDelta = type(uint128).max;
+        deploy(alice, config);
+        vm.stopPrank();
+        vm.startPrank(alice);
+        baseToken.mint(contribution);
+        baseToken.approve(address(hyperdrive), contribution);
+        try
+            hyperdrive.initialize(
+                contribution,
+                fixedAPR,
+                IHyperdrive.Options({
+                    destination: alice,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            )
+        {
+            // alice opens a max short
+            openShort(alice, hyperdrive.calculateMaxShort());
+
+            // the term passes
+            advanceTime(POSITION_DURATION, 0);
+
+            // alice opens max long
+            openLong(alice, hyperdrive.calculateMaxLong());
+
+            // the term passes
+            advanceTime(POSITION_DURATION, 0);
+
+            // alice opens a max short
+            openShort(alice, hyperdrive.calculateMaxShort());
+
+            // alice adds liquidity
+            addLiquidity(alice, 100_000_000e18);
+
+            // alice opens a max long.
+            openLong(alice, hyperdrive.calculateMaxLong());
+            uint256 endingSpotRate = hyperdrive.calculateSpotAPR();
+            console.log("time stretch apr = %s", timeStretchAPR.toString(18));
+            console.log("fixed apr = %s", fixedAPR.toString(18));
+            console.log("ending spot rate = %s", endingSpotRate.toString(18));
+            console.log("");
+        } catch (bytes memory) {}
     }
 
     // This test is designed to ensure that a single LP receives all of the
