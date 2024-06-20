@@ -105,6 +105,7 @@ export const SEPOLIA_DAI_14DAY: HyperdriveInstanceConfig<"ERC4626"> = {
             vaultSharesToken:
                 hre.hyperdriveDeploy.deployments.byName("SDAI").address,
             circuitBreakerDelta: parseEther("0.6"),
+            circuitBreakerAPR: parseEther("2"),
             minimumShareReserves: parseEther("10"),
             minimumTransactionAmount: parseEther("0.001"),
             positionDuration: parseDuration("14 days"),

@@ -51,6 +51,7 @@ export const MAINNET_FORK_DAI_30DAY: HyperdriveInstanceConfig<"ERC4626"> = {
             baseToken: MAINNET_DAI_ADDRESS,
             vaultSharesToken: MAINNET_SDAI_ADDRESS,
             circuitBreakerDelta: parseEther("0.6"),
+            circuitBreakerAPR: parseEther("2"),
             minimumShareReserves: parseEther("10"),
             minimumTransactionAmount: parseEther("0.001"),
             positionDuration: parseDuration("30 days"),

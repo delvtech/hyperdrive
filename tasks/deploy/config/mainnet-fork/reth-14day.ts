@@ -47,6 +47,7 @@ export const MAINNET_FORK_RETH_14DAY: HyperdriveInstanceConfig<"RETH"> = {
             baseToken: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
             vaultSharesToken: MAINNET_RETH_ADDRESS,
             circuitBreakerDelta: parseEther("0.6"),
+            circuitBreakerAPR: parseEther("2"),
             minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),
             positionDuration: parseDuration("14 days"),

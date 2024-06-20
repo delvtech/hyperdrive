@@ -32,6 +32,8 @@ export const MAINNET_FORK_FACTORY: HyperdriveFactoryConfig = {
             maxTimeStretchAPR: parseEther("0.6"),
             minCircuitBreakerDelta: parseEther("0.5"),
             maxCircuitBreakerDelta: parseEther("1"),
+            minCircuitBreakerAPR: parseEther("0.5"),
+            maxCircuitBreakerAPR: parseEther("2"),
             minFees: {
                 curve: parseEther("0.001"),
                 flat: parseEther("0.0001"),

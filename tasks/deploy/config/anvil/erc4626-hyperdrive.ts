@@ -97,6 +97,9 @@ export const ANVIL_ERC4626_HYPERDRIVE: HyperdriveInstanceConfig<"ERC4626"> = {
             circuitBreakerDelta: parseEther(
                 env.ERC4626_HYPERDRIVE_CIRCUIT_BREAKER_DELTA!,
             ),
+            circuitBreakerAPR: parseEther(
+                env.ERC4626_HYPERDRIVE_CIRCUIT_BREAKER_APR!,
+            ),
             minimumShareReserves: parseEther(
                 env.ERC4626_HYPERDRIVE_MINIMUM_SHARE_RESERVES!,
             ),

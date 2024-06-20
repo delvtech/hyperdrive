@@ -257,7 +257,7 @@ contract AddLiquidityTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         uint256 apr = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        uint256 lpShares = initialize(alice, apr, contribution);
+        initialize(alice, apr, contribution);
 
         // A max short is opened.
         openShort(bob, hyperdrive.calculateMaxShort());

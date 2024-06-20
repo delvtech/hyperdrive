@@ -58,6 +58,7 @@ export const SEPOLIA_EZETH_14DAY: HyperdriveInstanceConfig<"EzETH"> = {
             vaultSharesToken:
                 hre.hyperdriveDeploy.deployments.byName("EZETH").address,
             circuitBreakerDelta: parseEther("0.6"),
+            circuitBreakerAPR: parseEther("2"),
             minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),
             positionDuration: parseDuration("14 days"),

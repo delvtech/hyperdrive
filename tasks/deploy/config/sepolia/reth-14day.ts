@@ -55,6 +55,7 @@ export const SEPOLIA_RETH_14DAY: HyperdriveInstanceConfig<"RETH"> = {
             vaultSharesToken:
                 hre.hyperdriveDeploy.deployments.byName("RETH").address,
             circuitBreakerDelta: parseEther("0.6"),
+            circuitBreakerAPR: parseEther("2"),
             minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),
             positionDuration: parseDuration("14 days"),
