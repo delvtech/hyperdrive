@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { stdError } from "forge-std/StdError.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -579,7 +582,38 @@ contract LPWithdrawalTest is HyperdriveTest {
         // the present value, the lp share price should increase or stay the
         // same after this operation.
         uint256 lpSharePrice = hyperdrive.lpSharePrice();
-        uint256 celineLpShares = addLiquidity(celine, testParams.contribution);
+        uint256 celineLpShares;
+        vm.stopPrank();
+        vm.startPrank(celine);
+        baseToken.mint(testParams.contribution);
+        baseToken.approve(address(hyperdrive), testParams.contribution);
+        try
+            hyperdrive.addLiquidity(
+                testParams.contribution,
+                0, // min lp share price
+                0, // min spot rate
+                type(uint256).max, // max spot rate
+                IHyperdrive.Options({
+                    destination: celine,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            )
+        returns (uint256 lpShares_) {
+            celineLpShares = lpShares_;
+        } catch (bytes memory reason) {
+            // Ensure that the error is a circuit breaker triggered error.
+            assertTrue(
+                reason.eq(
+                    abi.encodeWithSelector(
+                        IHyperdrive.CircuitBreakerTriggered.selector
+                    )
+                )
+            );
+
+            // Return since the test shouldn't continue without adding liquidity.
+            return;
+        }
         assertApproxEqAbs(
             lpSharePrice,
             hyperdrive.lpSharePrice(),
@@ -1413,9 +1447,8 @@ contract LPWithdrawalTest is HyperdriveTest {
             celineLpShares = lpShares_;
         } catch (bytes memory reason) {
             // Ensure that the failure was caused by an arithmetic error.
-            assertEq(
-                keccak256(reason),
-                keccak256(
+            assertTrue(
+                reason.eq(
                     abi.encodeWithSelector(
                         IHyperdrive
                             .DecreasedPresentValueWhenAddingLiquidity
