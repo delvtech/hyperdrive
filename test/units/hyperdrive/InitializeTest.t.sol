@@ -139,6 +139,35 @@ contract InitializeTest is HyperdriveTest {
         );
     }
 
+    function test_initialize_failure_circuit_breaker_apr() external {
+        // Deploy the pool with a relatively low circuit breaker APR.
+        IHyperdrive.PoolConfig memory config = testConfig(
+            0.05e18,
+            POSITION_DURATION
+        );
+        config.circuitBreakerAPR = 0.2e18;
+        deploy(alice, config);
+
+        // Attempt to initialize the pool with an APR higher than the circuit
+        // breaker APR. This should fail.
+        uint256 fixedRate = 0.5e18;
+        uint256 contribution = 1000.0e18;
+        vm.stopPrank();
+        vm.startPrank(bob);
+        baseToken.mint(contribution);
+        baseToken.approve(address(hyperdrive), contribution);
+        vm.expectRevert(IHyperdrive.CircuitBreakerTriggered.selector);
+        hyperdrive.initialize(
+            contribution,
+            fixedRate,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
     function test_initialize_small_position_durations(
         uint256 initialVaultSharePrice,
         uint256 checkpointDuration,

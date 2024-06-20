@@ -245,6 +245,42 @@ contract AddLiquidityTest is HyperdriveTest {
         );
     }
 
+    function test_add_liquidity_failure_circuit_breaker_triggered() external {
+        // Deploy the pool with a relatively low circuit breaker APR.
+        IHyperdrive.PoolConfig memory config = testConfig(
+            0.05e18,
+            POSITION_DURATION
+        );
+        config.circuitBreakerAPR = 0.2e18;
+        deploy(alice, config);
+
+        // Initialize the pool with a large amount of capital.
+        uint256 apr = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        uint256 lpShares = initialize(alice, apr, contribution);
+
+        // A max short is opened.
+        openShort(bob, hyperdrive.calculateMaxShort());
+
+        // Alice attempts to add liquidity.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        baseToken.mint(contribution);
+        baseToken.approve(address(hyperdrive), contribution);
+        vm.expectRevert(IHyperdrive.CircuitBreakerTriggered.selector);
+        hyperdrive.addLiquidity(
+            contribution,
+            0,
+            0,
+            type(uint256).max,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
     function test_add_liquidity_identical_lp_shares() external {
         uint256 apr = 0.05e18;
 

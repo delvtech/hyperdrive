@@ -125,6 +125,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         config.linkerFactory = factory.linkerFactory();
         config.linkerCodeHash = factory.linkerCodeHash();
         config.timeStretch = 0;
+        config.circuitBreakerAPR = 1.5e18;
         uint256 contribution = 7_500e18;
         vm.stopPrank();
         vm.startPrank(alice);
@@ -209,6 +210,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         config.minimumShareReserves = hyperdrive
             .getPoolConfig()
             .minimumShareReserves;
+        config.circuitBreakerAPR = hyperdrive.getPoolConfig().circuitBreakerAPR;
         uint256 contribution = 10_000 * 10 ** decimals;
         underlyingToken.approve(
             address(deployerCoordinator),

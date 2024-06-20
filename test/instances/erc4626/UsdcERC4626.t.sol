@@ -141,6 +141,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         config.vaultSharesToken = token;
         config.minimumTransactionAmount = 1e6;
         config.minimumShareReserves = 1e6;
+        config.circuitBreakerAPR = 1.5e18;
         uint256 contribution = 7_500e6;
         vm.stopPrank();
         vm.startPrank(alice);

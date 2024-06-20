@@ -50,6 +50,11 @@ abstract contract HyperdriveLP is
             revert IHyperdrive.PoolAlreadyInitialized();
         }
 
+        // Ensure that the APR is less than or equal to the circuit breaker APR.
+        if (_apr > _circuitBreakerAPR) {
+            revert IHyperdrive.CircuitBreakerTriggered();
+        }
+
         // Deposit the users contribution and get the amount of shares that
         // their contribution was worth.
         (uint256 shareContribution, uint256 vaultSharePrice) = _deposit(
@@ -200,7 +205,7 @@ abstract contract HyperdriveLP is
             true
         );
 
-        // Ensure that the spot APR is close enough to the previous weighted
+        // Ensure that the spot APR is less than the circuit close enough to the previous weighted
         // spot price to fall within the tolerance.
         {
             uint256 previousWeightedSpotAPR = HyperdriveMath
@@ -210,6 +215,7 @@ abstract contract HyperdriveLP is
                     _positionDuration
                 );
             if (
+                apr > _circuitBreakerAPR ||
                 apr > previousWeightedSpotAPR + _circuitBreakerDelta ||
                 (previousWeightedSpotAPR > _circuitBreakerDelta &&
                     apr < previousWeightedSpotAPR - _circuitBreakerDelta)

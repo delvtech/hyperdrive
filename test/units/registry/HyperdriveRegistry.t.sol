@@ -109,7 +109,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
                         // NOTE: This is a high max circuit breaker APR to
                         // ensure that trading during tests isn't impeded by the
                         // circuit breaker.
-                        maxCircuitBreakerAPR: 2e18,
+                        maxCircuitBreakerAPR: 1000e18,
                         minFixedAPR: 0.001e18,
                         maxFixedAPR: 0.5e18,
                         minTimeStretchAPR: 0.005e18,
