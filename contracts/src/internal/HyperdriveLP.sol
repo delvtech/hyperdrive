@@ -104,6 +104,25 @@ abstract contract HyperdriveLP is
             revert IHyperdrive.InvalidEffectiveShareReserves();
         }
 
+        // Check to see whether or not the initial liquidity will result in
+        // invalid price discovery. If the spot price can't be brought to one,
+        // we fail to avoid dangerous pool states.
+        if (
+            !LPMath.verifyPriceDiscovery(
+                shareReserves,
+                shareAdjustment,
+                bondReserves,
+                _minimumShareReserves,
+                vaultSharePrice,
+                vaultSharePrice,
+                _timeStretch,
+                0,
+                0
+            )
+        ) {
+            revert IHyperdrive.CircuitBreakerTriggered();
+        }
+
         // Initialize the reserves.
         _marketState.shareReserves = shareReserves.toUint128();
         _marketState.shareAdjustment = shareAdjustment.toInt128();
@@ -201,68 +220,24 @@ abstract contract HyperdriveLP is
             true
         );
 
-        // FIXME: Encapsulate this in the LPMath.
-        //
         // FIXME: Evaluate rounding.
-        //
-        // FIXME: We should also check this in `initialize` to be consistent.
-        //
         // Check to see whether or not adding this liquidity will result in
         // worsened price discovery. If the spot price can't be brought to one,
         // we fail to avoid dangerous pool states.
-        {
-            // Calculate the share payment and bond proceeds of opening the
-            // largest possible long on the YieldSpace curve. This does not
-            // include fees.
-            uint256 effectiveShareReserves = _effectiveShareReserves();
-            uint256 bondReserves = _marketState.bondReserves;
-            (uint256 maxSharePayment, bool success_) = YieldSpaceMath
-                .calculateMaxBuySharesInSafe(
-                    effectiveShareReserves,
-                    bondReserves,
-                    ONE - _timeStretch,
-                    vaultSharePrice,
-                    _initialVaultSharePrice
-                );
-            if (!success_) {
-                revert IHyperdrive.CircuitBreakerTriggered();
-            }
-            uint256 maxBondProceeds;
-            (maxBondProceeds, success_) = YieldSpaceMath
-                .calculateMaxBuyBondsOutSafe(
-                    effectiveShareReserves,
-                    bondReserves,
-                    ONE - _timeStretch,
-                    vaultSharePrice,
-                    _initialVaultSharePrice
-                );
-            if (!success_) {
-                revert IHyperdrive.CircuitBreakerTriggered();
-            }
-
-            // Calculate the pool's solvency after opening the max long. This
-            // doesn't account for fees, which is fine since this will be more
-            // conservative.
-            uint256 shareReserves = _marketState.shareReserves +
-                maxSharePayment;
-            int256 checkpointExposure = _nonNettedLongs(
-                latestCheckpoint + _positionDuration
-            );
-            uint256 longExposure = _calculateLongExposure(
-                _marketState.longExposure,
-                checkpointExposure,
-                checkpointExposure + maxBondProceeds.toInt256()
-            );
-
-            // If the pool isn't solvent after opening the max long, then we
-            // prevent the liquidity from being added since it will cause issues
-            // with price discovery.
-            if (
-                shareReserves.mulDown(vaultSharePrice) <
-                longExposure + _minimumShareReserves.mulUp(vaultSharePrice)
-            ) {
-                revert IHyperdrive.CircuitBreakerTriggered();
-            }
+        if (
+            !LPMath.verifyPriceDiscovery(
+                _marketState.shareReserves,
+                _marketState.shareAdjustment,
+                _marketState.bondReserves,
+                _minimumShareReserves,
+                _initialVaultSharePrice,
+                vaultSharePrice,
+                _timeStretch,
+                _nonNettedLongs(latestCheckpoint + _positionDuration),
+                _marketState.longExposure
+            )
+        ) {
+            revert IHyperdrive.CircuitBreakerTriggered();
         }
 
         // Ensure that the spot APR is close enough to the previous weighted

@@ -127,6 +127,98 @@ library LPMath {
         );
     }
 
+    /// @dev Calculates the global long exposure after an update is made to
+    ///      a checkpoint exposure.
+    /// @param _longExposure The global long exposure.
+    /// @param _before The checkpoint long exposure before the update.
+    /// @param _after The checkpoint long exposure after the update.
+    /// @return The updated global long exposure.
+    function calculateLongExposure(
+        uint256 _longExposure,
+        int256 _before,
+        int256 _after
+    ) internal pure returns (uint256) {
+        // The global long exposure is the sum of the non-netted longs in each
+        // checkpoint. To update this value, we subtract the current value
+        // (`_before.max(0)`) and add the new value (`_after.max(0)`).
+        int256 delta = FixedPointMath.max(_after, 0) -
+            FixedPointMath.max(_before, 0);
+        if (delta > 0) {
+            _longExposure += uint256(delta);
+        } else if (delta < 0) {
+            _longExposure -= uint256(-delta);
+        }
+
+        return _longExposure;
+    }
+
+    function verifyPriceDiscovery(
+        uint256 _shareReserves,
+        int256 _shareAdjustment,
+        uint256 _bondReserves,
+        uint256 _minimumShareReserves,
+        uint256 _initialVaultSharePrice,
+        uint256 _vaultSharePrice,
+        uint256 _timeStretch,
+        int256 _checkpointExposure,
+        uint256 _longExposure
+    ) external pure returns (bool) {
+        // Calculate the share payment and bond proceeds of opening the
+        // largest possible long on the YieldSpace curve. This does not
+        // include fees.
+        (uint256 effectiveShareReserves, bool success) = HyperdriveMath
+            .calculateEffectiveShareReservesSafe(
+                _shareReserves,
+                _shareAdjustment
+            );
+        if (!success) {
+            return false;
+        }
+        uint256 maxSharePayment;
+        (maxSharePayment, success) = YieldSpaceMath.calculateMaxBuySharesInSafe(
+            effectiveShareReserves,
+            _bondReserves,
+            ONE - _timeStretch,
+            _vaultSharePrice,
+            _initialVaultSharePrice
+        );
+        if (!success) {
+            return false;
+        }
+        uint256 maxBondProceeds;
+        (maxBondProceeds, success) = YieldSpaceMath.calculateMaxBuyBondsOutSafe(
+            effectiveShareReserves,
+            _bondReserves,
+            ONE - _timeStretch,
+            _vaultSharePrice,
+            _initialVaultSharePrice
+        );
+        if (!success) {
+            return false;
+        }
+
+        // Calculate the pool's solvency after opening the max long. This
+        // doesn't account for fees, which is fine since this will be more
+        // conservative.
+        uint256 shareReserves = _shareReserves + maxSharePayment;
+        uint256 longExposure = calculateLongExposure(
+            _longExposure,
+            _checkpointExposure,
+            _checkpointExposure + maxBondProceeds.toInt256()
+        );
+
+        // If the pool isn't solvent after opening the max long, then we
+        // prevent the liquidity from being added since it will cause issues
+        // with price discovery.
+        if (
+            shareReserves.mulDown(_vaultSharePrice) <
+            longExposure + _minimumShareReserves.mulUp(_vaultSharePrice)
+        ) {
+            return false;
+        }
+        return true;
+    }
+
     /// @dev Calculates the new share reserves, share adjustment, and bond
     ///      reserves after liquidity is added or removed from the pool. This
     ///      update is made in such a way that the pool's spot price remains
