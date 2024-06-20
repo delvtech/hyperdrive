@@ -439,19 +439,39 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
                 _minimumShareReserves.mulUp(_vaultSharePrice);
     }
 
-    /// @dev Updates the global long exposure.
-    /// @param _before The long exposure before the update.
-    /// @param _after The long exposure after the update.
-    function _updateLongExposure(int256 _before, int256 _after) internal {
+    /// @dev Calculates the global long exposure after an update is made to
+    ///      a checkpoint exposure.
+    /// @param _longExposure The global long exposure.
+    /// @param _before The checkpoint long exposure before the update.
+    /// @param _after The checkpoint long exposure after the update.
+    /// @return The updated global long exposure.
+    function _calculateLongExposure(
+        uint256 _longExposure,
+        int256 _before,
+        int256 _after
+    ) internal pure returns (uint256) {
         // The global long exposure is the sum of the non-netted longs in each
         // checkpoint. To update this value, we subtract the current value
         // (`_before.max(0)`) and add the new value (`_after.max(0)`).
-        int128 delta = (_after.max(0) - _before.max(0)).toInt128();
+        int256 delta = _after.max(0) - _before.max(0);
         if (delta > 0) {
-            _marketState.longExposure += uint128(delta);
+            _longExposure += uint256(delta);
         } else if (delta < 0) {
-            _marketState.longExposure -= uint128(-delta);
+            _longExposure -= uint256(-delta);
         }
+
+        return _longExposure;
+    }
+
+    /// @dev Updates the global long exposure.
+    /// @param _before The checkpoint long exposure before the update.
+    /// @param _after The checkpoint long exposure after the update.
+    function _updateLongExposure(int256 _before, int256 _after) internal {
+        _marketState.longExposure = _calculateLongExposure(
+            _marketState.longExposure,
+            _before,
+            _after
+        ).toUint128();
     }
 
     /// @dev Update the weighted spot price from a specified checkpoint. The

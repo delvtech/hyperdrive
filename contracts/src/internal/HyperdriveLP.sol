@@ -4,7 +4,8 @@ pragma solidity 0.8.20;
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { AssetId } from "../libraries/AssetId.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
+import { YieldSpaceMath } from "../libraries/YieldSpaceMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 import { LPMath } from "../libraries/LPMath.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
@@ -199,6 +200,70 @@ abstract contract HyperdriveLP is
             LPMath.SHARE_PROCEEDS_MAX_ITERATIONS,
             true
         );
+
+        // FIXME: Encapsulate this in the LPMath.
+        //
+        // FIXME: Evaluate rounding.
+        //
+        // FIXME: We should also check this in `initialize` to be consistent.
+        //
+        // Check to see whether or not adding this liquidity will result in
+        // worsened price discovery. If the spot price can't be brought to one,
+        // we fail to avoid dangerous pool states.
+        {
+            // Calculate the share payment and bond proceeds of opening the
+            // largest possible long on the YieldSpace curve. This does not
+            // include fees.
+            uint256 effectiveShareReserves = _effectiveShareReserves();
+            uint256 bondReserves = _marketState.bondReserves;
+            (uint256 maxSharePayment, bool success_) = YieldSpaceMath
+                .calculateMaxBuySharesInSafe(
+                    effectiveShareReserves,
+                    bondReserves,
+                    ONE - _timeStretch,
+                    vaultSharePrice,
+                    _initialVaultSharePrice
+                );
+            if (!success_) {
+                revert IHyperdrive.CircuitBreakerTriggered();
+            }
+            uint256 maxBondProceeds;
+            (maxBondProceeds, success_) = YieldSpaceMath
+                .calculateMaxBuyBondsOutSafe(
+                    effectiveShareReserves,
+                    bondReserves,
+                    ONE - _timeStretch,
+                    vaultSharePrice,
+                    _initialVaultSharePrice
+                );
+            if (!success_) {
+                revert IHyperdrive.CircuitBreakerTriggered();
+            }
+
+            // Calculate the pool's solvency after opening the max long. This
+            // doesn't account for fees, which is fine since this will be more
+            // conservative.
+            uint256 shareReserves = _marketState.shareReserves +
+                maxSharePayment;
+            int256 checkpointExposure = _nonNettedLongs(
+                latestCheckpoint + _positionDuration
+            );
+            uint256 longExposure = _calculateLongExposure(
+                _marketState.longExposure,
+                checkpointExposure,
+                checkpointExposure + maxBondProceeds.toInt256()
+            );
+
+            // If the pool isn't solvent after opening the max long, then we
+            // prevent the liquidity from being added since it will cause issues
+            // with price discovery.
+            if (
+                shareReserves.mulDown(vaultSharePrice) <
+                longExposure + _minimumShareReserves.mulUp(vaultSharePrice)
+            ) {
+                revert IHyperdrive.CircuitBreakerTriggered();
+            }
+        }
 
         // Ensure that the spot APR is close enough to the previous weighted
         // spot price to fall within the tolerance.
