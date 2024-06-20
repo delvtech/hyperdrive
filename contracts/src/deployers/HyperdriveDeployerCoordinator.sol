@@ -481,6 +481,7 @@ abstract contract HyperdriveDeployerCoordinator is
         _config.minimumTransactionAmount = _deployConfig
             .minimumTransactionAmount;
         _config.circuitBreakerDelta = _deployConfig.circuitBreakerDelta;
+        _config.circuitBreakerAPR = _deployConfig.circuitBreakerAPR;
         _config.positionDuration = _deployConfig.positionDuration;
         _config.checkpointDuration = _deployConfig.checkpointDuration;
         _config.timeStretch = _deployConfig.timeStretch;

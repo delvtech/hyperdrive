@@ -247,6 +247,10 @@ abstract contract InstanceTest is HyperdriveTest {
                 // NOTE: This is a high max circuit breaker delta to ensure that
                 // trading during tests isn't impeded by the circuit breaker.
                 maxCircuitBreakerDelta: 2e18,
+                minCircuitBreakerAPR: 0.15e18,
+                // NOTE: This is a high max circuit breaker APR to ensure that
+                // trading during tests isn't impeded by the circuit breaker.
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.005e18,
@@ -278,6 +282,7 @@ abstract contract InstanceTest is HyperdriveTest {
             minimumShareReserves: 1e15,
             minimumTransactionAmount: config.minTransactionAmount,
             circuitBreakerDelta: 2e18,
+            circuitBreakerAPR: 2e18,
             positionDuration: config.positionDuration,
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: 0,

@@ -73,6 +73,10 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
     ///      LPs from sandwich attacks.
     uint256 internal immutable _circuitBreakerDelta;
 
+    /// @dev The maximum APR at which to add liquidity. This prevents price
+    ///      discovery issues from manifesting in the pool.
+    uint256 internal immutable _circuitBreakerAPR;
+
     /// @dev The state of the market. This includes the reserves, buffers, and
     ///      other data used to price trades and maintain solvency.
     IHyperdrive.MarketState internal _marketState;
@@ -168,6 +172,10 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
         // LP to add liquidity. This mitigates the possibility of LP sandwich
         // attacks by making them economically infeasible to pull off.
         _circuitBreakerDelta = _config.circuitBreakerDelta;
+
+        // Initialize the circuit breaker APR. This is the maximum APR at which
+        // LPs can add liquidity. This protects against price discovery issues.
+        _circuitBreakerAPR = _config.circuitBreakerAPR;
 
         // Initialize the time configurations. There must be at least one
         // checkpoint per term to avoid having a position duration of zero.

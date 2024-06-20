@@ -92,6 +92,14 @@ contract HyperdriveFactory is IHyperdriveFactory {
     ///         new deployments.
     uint256 public maxCircuitBreakerDelta;
 
+    /// @notice The minimum circuit breaker APR that can be used by new
+    ///         deployments.
+    uint256 public minCircuitBreakerAPR;
+
+    /// @notice The maximum circuit breaker APR that can be used by new
+    ///         deployments.
+    uint256 public maxCircuitBreakerAPR;
+
     /// @notice The minimum fixed APR that can be used by new deployments.
     uint256 public minFixedAPR;
 
@@ -148,6 +156,12 @@ contract HyperdriveFactory is IHyperdriveFactory {
         /// @dev The maximum circuit breaker delta that can be used in new
         ///      deployments.
         uint256 maxCircuitBreakerDelta;
+        /// @dev The minimum circuit breaker APR that can be used in new
+        ///      deployments.
+        uint256 minCircuitBreakerAPR;
+        /// @dev The maximum circuit breaker APR that can be used in new
+        ///      deployments.
+        uint256 maxCircuitBreakerAPR;
         /// @dev The minimum fixed APR that can be used in new deployments.
         uint256 minFixedAPR;
         /// @dev The maximum fixed APR that can be used in new deployments.
@@ -272,6 +286,17 @@ contract HyperdriveFactory is IHyperdriveFactory {
         }
         minCircuitBreakerDelta = _factoryConfig.minCircuitBreakerDelta;
         maxCircuitBreakerDelta = _factoryConfig.maxCircuitBreakerDelta;
+
+        // Ensure that the minimum circuit breaker APR is greater than or
+        // equal to the maximum circuit breaker APR.
+        if (
+            _factoryConfig.minCircuitBreakerAPR >
+            _factoryConfig.maxCircuitBreakerAPR
+        ) {
+            revert IHyperdriveFactory.InvalidCircuitBreakerAPR();
+        }
+        minCircuitBreakerAPR = _factoryConfig.minCircuitBreakerAPR;
+        maxCircuitBreakerAPR = _factoryConfig.maxCircuitBreakerAPR;
 
         // Ensure that the minimum fixed APR is less than or equal to the
         // maximum fixed APR.
@@ -561,10 +586,8 @@ contract HyperdriveFactory is IHyperdriveFactory {
     function updateMinCircuitBreakerDelta(
         uint256 _minCircuitBreakerDelta
     ) external onlyGovernance {
-        // Ensure that the minimum position duration is greater than or equal
-        // to the maximum checkpoint duration and is a multiple of the
-        // checkpoint duration resolution. Also ensure that the minimum position
-        // duration is less than or equal to the maximum position duration.
+        // Ensure that the minimum circuit breaker delta is less than or
+        // equal to the maximum circuit breaker delta.
         if (_minCircuitBreakerDelta > maxCircuitBreakerDelta) {
             revert IHyperdriveFactory.InvalidMinCircuitBreakerDelta();
         }
@@ -572,6 +595,38 @@ contract HyperdriveFactory is IHyperdriveFactory {
         // Update the minimum circuit breaker delta and emit an event.
         minCircuitBreakerDelta = _minCircuitBreakerDelta;
         emit MinCircuitBreakerDeltaUpdated(_minCircuitBreakerDelta);
+    }
+
+    /// @notice Allows governance to update the maximum circuit breaker APR.
+    /// @param _maxCircuitBreakerAPR The new maximum circuit breaker APR.
+    function updateMaxCircuitBreakerAPR(
+        uint256 _maxCircuitBreakerAPR
+    ) external onlyGovernance {
+        // Ensure that the maximum circuit breaker APR is greater than or
+        // equal to the minimum circuit breaker APR.
+        if (_maxCircuitBreakerAPR < minCircuitBreakerAPR) {
+            revert IHyperdriveFactory.InvalidMaxCircuitBreakerAPR();
+        }
+
+        // Update the maximum circuit breaker APR and emit an event.
+        maxCircuitBreakerAPR = _maxCircuitBreakerAPR;
+        emit MaxCircuitBreakerAPRUpdated(_maxCircuitBreakerAPR);
+    }
+
+    /// @notice Allows governance to update the minimum circuit breaker APR.
+    /// @param _minCircuitBreakerAPR The new minimum circuit breaker APR.
+    function updateMinCircuitBreakerAPR(
+        uint256 _minCircuitBreakerAPR
+    ) external onlyGovernance {
+        // Ensure that the minimum circuit breaker APR is less than or
+        // equal to the maximum circuit breaker APR.
+        if (_minCircuitBreakerAPR > maxCircuitBreakerAPR) {
+            revert IHyperdriveFactory.InvalidMinCircuitBreakerAPR();
+        }
+
+        // Update the minimum circuit breaker APR and emit an event.
+        minCircuitBreakerAPR = _minCircuitBreakerAPR;
+        emit MinCircuitBreakerAPRUpdated(_minCircuitBreakerAPR);
     }
 
     /// @notice Allows governance to update the maximum fixed APR.
@@ -1033,6 +1088,15 @@ contract HyperdriveFactory is IHyperdriveFactory {
             _config.circuitBreakerDelta > maxCircuitBreakerDelta
         ) {
             revert IHyperdriveFactory.InvalidCircuitBreakerDelta();
+        }
+
+        // Ensure that the specified circuit breaker APR is within the minimum
+        // and maximum circuit breaker APRs.
+        if (
+            _config.circuitBreakerAPR < minCircuitBreakerAPR ||
+            _config.circuitBreakerAPR > maxCircuitBreakerAPR
+        ) {
+            revert IHyperdriveFactory.InvalidCircuitBreakerAPR();
         }
 
         // Ensure that the specified fees are within the minimum and maximum

@@ -311,6 +311,7 @@ abstract contract HyperdriveTarget0 is
                     minimumShareReserves: _minimumShareReserves,
                     minimumTransactionAmount: _minimumTransactionAmount,
                     circuitBreakerDelta: _circuitBreakerDelta,
+                    circuitBreakerAPR: _circuitBreakerAPR,
                     positionDuration: _positionDuration,
                     checkpointDuration: _checkpointDuration,
                     timeStretch: _timeStretch,
