@@ -381,7 +381,7 @@ library YieldSpaceMath {
     ) internal pure returns (uint256, bool) {
         // We solve for the maximum buy using the constraint that the pool's
         // spot price can never exceed 1. We do this by noting that a spot price
-        // of 1, ((mu * ze) / y) ** tau = 1, implies that mu * ze = y. This
+        // of 1, ((mu * ze') / y') ** tau = 1, implies that mu * ze' = y'. This
         // simplifies YieldSpace to:
         //
         // k = ((c / mu) + 1) * (mu * ze') ** (1 - tau),
