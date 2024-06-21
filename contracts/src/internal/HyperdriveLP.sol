@@ -113,7 +113,7 @@ abstract contract HyperdriveLP is
                 shareAdjustment,
                 bondReserves,
                 _minimumShareReserves,
-                vaultSharePrice,
+                _initialVaultSharePrice,
                 vaultSharePrice,
                 _timeStretch,
                 0,
