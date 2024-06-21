@@ -7,6 +7,9 @@ import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { HyperdriveMath } from "./HyperdriveMath.sol";
 import { SafeCast } from "./SafeCast.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
+import { Lib } from "test/utils/Lib.sol";
+
+import "forge-std/console2.sol";
 
 /// @author DELV
 /// @title LPMath
@@ -18,6 +21,7 @@ library LPMath {
     using FixedPointMath for *;
     using SafeCast for uint256;
     using SignedMath for int256;
+    using Lib for *;
 
     /// @dev The maximum number of iterations for the share proceeds calculation.
     uint256 internal constant SHARE_PROCEEDS_MAX_ITERATIONS = 4;
@@ -166,6 +170,7 @@ library LPMath {
         // Calculate the share payment and bond proceeds of opening the
         // largest possible long on the YieldSpace curve. This does not
         // include fees.
+        console2.log("1");
         (uint256 effectiveShareReserves, bool success) = HyperdriveMath
             .calculateEffectiveShareReservesSafe(
                 _shareReserves,
@@ -174,7 +179,13 @@ library LPMath {
         if (!success) {
             return false;
         }
+        console2.log("2");
         uint256 maxSharePayment;
+        console2.log("effectiveShareReserves", effectiveShareReserves.toString(18));
+        console2.log("bondReserves", _bondReserves.toString(18));
+        console2.log("ONE - _timeStretch", (ONE - _timeStretch).toString(18));
+        console2.log("_vaultSharePrice", _vaultSharePrice.toString(18));
+        console2.log("_initialVaultSharePrice", _initialVaultSharePrice.toString(18));
         (maxSharePayment, success) = YieldSpaceMath.calculateMaxBuySharesInSafe(
             effectiveShareReserves,
             _bondReserves,
@@ -185,6 +196,7 @@ library LPMath {
         if (!success) {
             return false;
         }
+        console2.log("3");
         uint256 maxBondProceeds;
         (maxBondProceeds, success) = YieldSpaceMath.calculateMaxBuyBondsOutSafe(
             effectiveShareReserves,
@@ -200,6 +212,7 @@ library LPMath {
         // Calculate the pool's solvency after opening the max long. This
         // doesn't account for fees, which is fine since this will be more
         // conservative.
+        console2.log("4");
         uint256 shareReserves = _shareReserves + maxSharePayment;
         uint256 longExposure = calculateLongExposure(
             _longExposure,
@@ -216,6 +229,7 @@ library LPMath {
         ) {
             return false;
         }
+        console2.log("5");
         return true;
     }
 

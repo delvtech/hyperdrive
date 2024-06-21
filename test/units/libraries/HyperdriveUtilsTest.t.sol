@@ -8,6 +8,8 @@ import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
+import "forge-std/console2.sol";
+
 contract HyperdriveUtilsTest is HyperdriveTest {
     using FixedPointMath for *;
     using HyperdriveUtils for *;
@@ -23,11 +25,12 @@ contract HyperdriveUtilsTest is HyperdriveTest {
         vm.warp(50 * 365 days);
 
         // Normalize the fuzzing parameters to a reasonable range.
-        apr = apr.normalizeToRange(0.05e18, .1e18);
+        apr = apr.normalizeToRange(0.05e18, .5e18);
         positionDuration = positionDuration.normalizeToRange(
             1 days,
-            10 * 365 days
+            5*365 days
         );
+        console2.log("positionDuration:", (positionDuration/365 days));
 
         // Deploy and initialize a pool with the target APR and a position
         // duration of 1 year.
