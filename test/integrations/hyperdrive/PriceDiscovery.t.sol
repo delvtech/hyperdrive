@@ -253,7 +253,7 @@ contract PriceDiscoveryTest is HyperdriveTest {
                 initialContribution >=
                 addLiquidityContribution1 + addLiquidityContribution2
             ) {
-                assertGe(highSpotRate, fixedAPR); // use the rule of thumb that the high spot rate should be at least 4x the fixed APR
+                assertGe(highSpotRate, fixedAPR);
             }
         } else if (initError.length == 0 && addLiquidityError.length > 0) {
             // Verify that error is CircuitBreakerTriggered IHyperdrive.MinimumTransactionAmount
