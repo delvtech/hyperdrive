@@ -220,10 +220,13 @@ library LPMath {
 
         // If the pool isn't solvent after opening the max long, then we
         // prevent the liquidity from being added since it will cause issues
-        // with price discovery.
+        // with price discovery. We know that when: cz <= e_l + c * z_min
+        // is within some epilson of being true, the pool is still solvent,
+        // will have trouble price discovering back to 0%. We add an additional
+        // c * z_min to the right hand side to account for this epsilon.
         if (
             shareReserves.mulDown(_vaultSharePrice) <=
-            longExposure + _minimumShareReserves.mulUp(_vaultSharePrice) + ONE
+            longExposure + 2*_minimumShareReserves.mulUp(_vaultSharePrice)
         ) {
             return false;
         }

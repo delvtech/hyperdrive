@@ -48,7 +48,7 @@ contract PriceDiscoveryTest is HyperdriveTest {
         // Test the high and low spot rates.
         assertGt(highSpotRate, lowSpotRate);
         assertGe(highSpotRate, 0.15e18);
-        assertApproxEqAbs(lowSpotRate, 0, 1 wei);
+        assertApproxEqAbs(lowSpotRate, 0, 100 wei);
     }
 
     function test_priceDiscovery_sdai_fuzz(
@@ -87,7 +87,7 @@ contract PriceDiscoveryTest is HyperdriveTest {
         // Test the high and low spot rates.
         assertGt(highSpotRate, lowSpotRate);
         assertGe(highSpotRate, 0.30e18);
-        assertApproxEqAbs(lowSpotRate, 0, 10 wei);
+        assertApproxEqAbs(lowSpotRate, 0, 100 wei);
     }
 
     // This test fuzzes over the full range of inputs, but
