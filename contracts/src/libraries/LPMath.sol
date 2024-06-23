@@ -7,7 +7,6 @@ import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { HyperdriveMath } from "./HyperdriveMath.sol";
 import { SafeCast } from "./SafeCast.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
-import { Lib } from "test/utils/Lib.sol";
 
 /// @author DELV
 /// @title LPMath
@@ -19,7 +18,6 @@ library LPMath {
     using FixedPointMath for *;
     using SafeCast for uint256;
     using SignedMath for int256;
-    using Lib for *;
 
     /// @dev The maximum number of iterations for the share proceeds calculation.
     uint256 internal constant SHARE_PROCEEDS_MAX_ITERATIONS = 4;
