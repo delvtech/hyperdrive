@@ -9,8 +9,6 @@ import { SafeCast } from "./SafeCast.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-import "forge-std/console2.sol";
-
 /// @author DELV
 /// @title LPMath
 /// @notice Math for the Hyperdrive LP system.
@@ -156,6 +154,17 @@ library LPMath {
         return _longExposure;
     }
 
+    /// @dev Verifies that the price discovery process is valid.
+    /// @param _shareReserves The share reserves.
+    /// @param _shareAdjustment The share adjustment.
+    /// @param _bondReserves The bond reserves.
+    /// @param _minimumShareReserves The minimum share reserves.
+    /// @param _initialVaultSharePrice The initial vault share price.
+    /// @param _vaultSharePrice The vault share price.
+    /// @param _timeStretch The time stretch.
+    /// @param _checkpointExposure The checkpoint exposure.
+    /// @param _longExposure The global long exposure.
+    /// @return A flag indicating if the price discovery is valid.
     function verifyPriceDiscovery(
         uint256 _shareReserves,
         int256 _shareAdjustment,
@@ -170,7 +179,6 @@ library LPMath {
         // Calculate the share payment and bond proceeds of opening the
         // largest possible long on the YieldSpace curve. This does not
         // include fees.
-        console2.log("1");
         (uint256 effectiveShareReserves, bool success) = HyperdriveMath
             .calculateEffectiveShareReservesSafe(
                 _shareReserves,
@@ -179,13 +187,7 @@ library LPMath {
         if (!success) {
             return false;
         }
-        console2.log("2");
         uint256 maxSharePayment;
-        console2.log("effectiveShareReserves", effectiveShareReserves.toString(18));
-        console2.log("bondReserves", _bondReserves.toString(18));
-        console2.log("ONE - _timeStretch", (ONE - _timeStretch).toString(18));
-        console2.log("_vaultSharePrice", _vaultSharePrice.toString(18));
-        console2.log("_initialVaultSharePrice", _initialVaultSharePrice.toString(18));
         (maxSharePayment, success) = YieldSpaceMath.calculateMaxBuySharesInSafe(
             effectiveShareReserves,
             _bondReserves,
@@ -196,7 +198,6 @@ library LPMath {
         if (!success) {
             return false;
         }
-        console2.log("3");
         uint256 maxBondProceeds;
         (maxBondProceeds, success) = YieldSpaceMath.calculateMaxBuyBondsOutSafe(
             effectiveShareReserves,
@@ -212,7 +213,6 @@ library LPMath {
         // Calculate the pool's solvency after opening the max long. This
         // doesn't account for fees, which is fine since this will be more
         // conservative.
-        console2.log("4");
         uint256 shareReserves = _shareReserves + maxSharePayment;
         uint256 longExposure = calculateLongExposure(
             _longExposure,
@@ -224,12 +224,11 @@ library LPMath {
         // prevent the liquidity from being added since it will cause issues
         // with price discovery.
         if (
-            shareReserves.mulDown(_vaultSharePrice) <
-            longExposure + _minimumShareReserves.mulUp(_vaultSharePrice)
+            shareReserves.mulDown(_vaultSharePrice) <=
+            longExposure + _minimumShareReserves.mulUp(_vaultSharePrice) + ONE
         ) {
             return false;
         }
-        console2.log("5");
         return true;
     }
 

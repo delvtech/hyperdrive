@@ -220,26 +220,6 @@ abstract contract HyperdriveLP is
             true
         );
 
-        // FIXME: Evaluate rounding.
-        // Check to see whether or not adding this liquidity will result in
-        // worsened price discovery. If the spot price can't be brought to one,
-        // we fail to avoid dangerous pool states.
-        if (
-            !LPMath.verifyPriceDiscovery(
-                _marketState.shareReserves,
-                _marketState.shareAdjustment,
-                _marketState.bondReserves,
-                _minimumShareReserves,
-                _initialVaultSharePrice,
-                vaultSharePrice,
-                _timeStretch,
-                _nonNettedLongs(latestCheckpoint + _positionDuration),
-                _marketState.longExposure
-            )
-        ) {
-            revert IHyperdrive.CircuitBreakerTriggered();
-        }
-
         // Ensure that the spot APR is close enough to the previous weighted
         // spot price to fall within the tolerance.
         {
@@ -330,6 +310,26 @@ abstract contract HyperdriveLP is
         bool success = _distributeExcessIdleSafe(vaultSharePrice);
         if (!success) {
             revert IHyperdrive.DistributeExcessIdleFailed();
+        }
+
+        // Check to see whether or not adding this liquidity will result in
+        // worsened price discovery. If the spot price can't be brought to one,
+        // we fail to avoid dangerous pool states.
+        uint256 _latestCheckpoint = latestCheckpoint; // avoid stack-too-deep
+        if (
+            !LPMath.verifyPriceDiscovery(
+                _marketState.shareReserves,
+                _marketState.shareAdjustment,
+                _marketState.bondReserves,
+                _minimumShareReserves,
+                _initialVaultSharePrice,
+                vaultSharePrice,
+                _timeStretch,
+                _nonNettedLongs(_latestCheckpoint + _positionDuration),
+                _marketState.longExposure
+            )
+        ) {
+            revert IHyperdrive.CircuitBreakerTriggered();
         }
 
         // Emit an AddLiquidity event.

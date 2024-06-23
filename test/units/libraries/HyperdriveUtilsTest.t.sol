@@ -28,9 +28,9 @@ contract HyperdriveUtilsTest is HyperdriveTest {
         apr = apr.normalizeToRange(0.05e18, .5e18);
         positionDuration = positionDuration.normalizeToRange(
             1 days,
-            5*365 days
+            5 * 365 days
         );
-        console2.log("positionDuration:", (positionDuration/365 days));
+        console2.log("positionDuration:", (positionDuration / 365 days));
 
         // Deploy and initialize a pool with the target APR and a position
         // duration of 1 year.
