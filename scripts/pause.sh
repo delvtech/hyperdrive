@@ -3,7 +3,7 @@
 # This script will pause all instances that have data = 1.
 # NOTE: User must have MAINNET_RPC_URL, PAUSER_ADDRESS, and PAUSER_KEY set in .env file.
 #
-# Example usage: bash scripts/pause.sh
+# Example usage: bash scripts/pause.sh <REGISTRY_ADDRESS>
 
 source .env
 
@@ -11,7 +11,7 @@ source .env
 RPC_URL=$MAINNET_RPC_URL
 
 # Hyperdrive Registry contract address
-HYPERDRIVE_REGISTRY_ADDRESS="0x03f6554299acf544ac646305800f57db544b837a"
+HYPERDRIVE_REGISTRY_ADDRESS=$1
 
 # Get the total number of instances
 total_instances=$(cast call $HYPERDRIVE_REGISTRY_ADDRESS "getNumberOfInstances()(uint256)" --rpc-url $RPC_URL)
