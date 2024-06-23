@@ -193,9 +193,7 @@ library LPMath {
             _vaultSharePrice,
             _initialVaultSharePrice
         );
-        if (!success) {
-            return false;
-        }
+
         uint256 maxBondProceeds;
         (maxBondProceeds, success) = YieldSpaceMath.calculateMaxBuyBondsOutSafe(
             effectiveShareReserves,
@@ -204,8 +202,11 @@ library LPMath {
             _vaultSharePrice,
             _initialVaultSharePrice
         );
-        if (!success) {
-            return false;
+
+        // If one fails they should both be zero.
+        if (maxSharePayment == 0 || maxBondProceeds == 0) {
+            maxSharePayment = 0;
+            maxBondProceeds = 0;
         }
 
         // Calculate the pool's solvency after opening the max long. This
@@ -226,7 +227,7 @@ library LPMath {
         // c * z_min to the right hand side to account for this epsilon.
         if (
             shareReserves.mulDown(_vaultSharePrice) <=
-            longExposure + 2*_minimumShareReserves.mulUp(_vaultSharePrice)
+            longExposure + 2 * _minimumShareReserves.mulUp(_vaultSharePrice)
         ) {
             return false;
         }

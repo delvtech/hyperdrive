@@ -13,44 +13,26 @@ contract PriceDiscoveryTest is HyperdriveTest {
     using HyperdriveUtils for *;
     using Lib for *;
 
-    // TODO: This test is showing how addLiquidity fails at the end and shouldnt
-    function test_crossCheckpoint_shortLong(
-        // uint256 fixedAPR,
-        // uint256 initialContribution,
-        // uint256 addLiquidityContribution1,
-        // uint256 addLiquidityContribution2
+    function test_solvency_at_0_apr(
+        uint256 fixedAPR,
+        uint256 initialContribution,
+        uint256 addLiquidityContribution
     ) external {
-
-        uint256 fixedAPR = 0;
-        uint256 timeStretchAPR = 0;
-        uint256 initialContribution = 0;
-        uint256 addLiquidityContribution1 = 0;
-        uint256 addLiquidityContribution2 = 305733475098282716389687;
         uint256 minimumShareReserves = 10e18;
 
         // Normalize the fuzzing parameters to a reasonable range.
         fixedAPR = fixedAPR.normalizeToRange(0.01e18, 2e18);
-        timeStretchAPR = fixedAPR / 4;
+        uint256 timeStretchAPR = fixedAPR / 4;
         timeStretchAPR = timeStretchAPR.max(0.01e18);
         timeStretchAPR = timeStretchAPR.min(0.3e18);
         initialContribution = initialContribution.normalizeToRange(
             10_000e18,
             100_000_000e18
         );
-        addLiquidityContribution1 = addLiquidityContribution1.normalizeToRange(
+        addLiquidityContribution = addLiquidityContribution.normalizeToRange(
             1e18,
             100_000_000e18
         );
-        addLiquidityContribution2 = addLiquidityContribution2.normalizeToRange(
-            1e18,
-            100_000_000e18
-        );
-
-        console2.log("fixedAPR:", fixedAPR.toString(18));
-        console2.log("timeStretchAPR:", timeStretchAPR.toString(18));
-        console2.log("initialContribution:", initialContribution.toString(18));
-        console2.log("addLiquidityContribution1:", addLiquidityContribution1.toString(18));
-        console2.log("addLiquidityContribution2:", addLiquidityContribution2.toString(18));
 
         // Configure the pool.
         IHyperdrive.PoolConfig memory config = testConfig(
@@ -73,23 +55,21 @@ contract PriceDiscoveryTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
-        
-        // Alice opens a max short, adds liquidity, and opens a max long.
-        openShort(alice, hyperdrive.calculateMaxShort());
-        addLiquidity(alice, addLiquidityContribution1);
+
+        // Alice opens a max long.
         openLong(alice, hyperdrive.calculateMaxLong());
-{
-        console2.log("1");
+        assertApproxEqAbs(hyperdrive.calculateSpotAPR(), 0, 100 wei);
+
+        // Alice adds liquidity again
+        addLiquidity(alice, addLiquidityContribution);
+
         uint256 sharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
         uint256 shareReserves = hyperdrive.getPoolInfo().shareReserves;
         uint256 longExposure = hyperdrive.getPoolInfo().longExposure;
-        console2.log("longExposure:", longExposure.toString(18));
-        int256 solvency = int256(shareReserves.mulDown(sharePrice)) - int256(longExposure) - int256(2*minimumShareReserves.mulDown(sharePrice));
-        console2.log("solvency:", solvency.toString(18));
-}
-
-        // Alice adds liquidity.
-        addLiquidity(alice, addLiquidityContribution2);
+        int256 solvency = int256(shareReserves.mulDown(sharePrice)) -
+            int256(longExposure) -
+            int256(2 * minimumShareReserves.mulDown(sharePrice));
+        assertTrue(solvency > 0);
     }
 
     function test_priceDiscovery_steth_fuzz(
@@ -128,7 +108,7 @@ contract PriceDiscoveryTest is HyperdriveTest {
 
         // Test the high and low spot rates.
         assertGt(highSpotRate, lowSpotRate);
-        assertGe(highSpotRate, 4*fixedAPR);
+        assertGe(highSpotRate, 4 * fixedAPR);
         assertApproxEqAbs(lowSpotRate, 0, 100 wei);
     }
 
@@ -168,7 +148,7 @@ contract PriceDiscoveryTest is HyperdriveTest {
 
         // Test the high and low spot rates.
         assertGt(highSpotRate, lowSpotRate);
-        assertGe(highSpotRate, 4*fixedAPR);
+        assertGe(highSpotRate, 4 * fixedAPR);
         assertApproxEqAbs(lowSpotRate, 0, 100 wei);
     }
 
@@ -203,7 +183,7 @@ contract PriceDiscoveryTest is HyperdriveTest {
 
         // Get the high and low spot rates.
         // Note: This test fuzzes over a larger fixedAPR range and
-        // as a result some large APRs cause maxShort to fail. As a 
+        // as a result some large APRs cause maxShort to fail. As a
         // result, we pass in a maxShortLimiter of 99% to avoid this.
         (
             uint256 highSpotRate,
@@ -443,7 +423,10 @@ contract PriceDiscoveryTest is HyperdriveTest {
             )
         {
             // Alice opens a max short.
-            openShort(alice, hyperdrive.calculateMaxShort().mulDown(maxShortLimiter));
+            openShort(
+                alice,
+                hyperdrive.calculateMaxShort().mulDown(maxShortLimiter)
+            );
 
             // Alice adds liquidity.
             vm.stopPrank();
