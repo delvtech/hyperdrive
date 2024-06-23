@@ -6,7 +6,6 @@ import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol"
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
-import "forge-std/console2.sol";
 
 contract PriceDiscoveryTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -70,6 +69,79 @@ contract PriceDiscoveryTest is HyperdriveTest {
             int256(longExposure) -
             int256(2 * minimumShareReserves.mulDown(sharePrice));
         assertTrue(solvency > 0);
+    }
+
+    function test_solvency_cross_checkpoint_long_short(
+        uint256 fixedAPR,
+        uint256 initialContribution,
+        uint256 addLiquidityContribution,
+        bool longFirst
+    ) external {
+        uint256 minimumShareReserves = 10e18;
+
+        // Normalize the fuzzing parameters to a reasonable range.
+        fixedAPR = fixedAPR.normalizeToRange(0.01e18, 2e18);
+        uint256 timeStretchAPR = fixedAPR / 4;
+        timeStretchAPR = timeStretchAPR.max(0.01e18);
+        timeStretchAPR = timeStretchAPR.min(0.3e18);
+        initialContribution = initialContribution.normalizeToRange(
+            10_000e18,
+            100_000_000e18
+        );
+        addLiquidityContribution = addLiquidityContribution.normalizeToRange(
+            1e18,
+            100_000_000e18
+        );
+
+        // Configure the pool.
+        IHyperdrive.PoolConfig memory config = testConfig(
+            timeStretchAPR,
+            POSITION_DURATION
+        );
+        config.circuitBreakerDelta = type(uint128).max;
+        config.minimumShareReserves = minimumShareReserves;
+        deploy(alice, config);
+        vm.stopPrank();
+        vm.startPrank(alice);
+        baseToken.mint(initialContribution);
+        baseToken.approve(address(hyperdrive), initialContribution);
+        hyperdrive.initialize(
+            initialContribution,
+            fixedAPR,
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+
+        // Alice opens a max long or a max short.
+        if (longFirst) {
+            openLong(alice, hyperdrive.calculateMaxLong());
+        } else {
+            openShort(alice, hyperdrive.calculateMaxShort());
+        }
+
+        // The checkpoint passes.
+        advanceTime(CHECKPOINT_DURATION, 0);
+
+        // Alice opens a max long or a max short.
+        if (longFirst) {
+            openShort(alice, hyperdrive.calculateMaxShort());
+        } else {
+            openLong(alice, hyperdrive.calculateMaxLong());
+        }
+
+        // Alice adds liquidity again
+        addLiquidity(alice, addLiquidityContribution);
+
+        uint256 sharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
+        uint256 shareReserves = hyperdrive.getPoolInfo().shareReserves;
+        uint256 longExposure = hyperdrive.getPoolInfo().longExposure;
+        int256 solvency = int256(shareReserves.mulDown(sharePrice)) -
+            int256(longExposure) -
+            int256(minimumShareReserves.mulDown(sharePrice));
+        assertTrue(solvency >= 0);
     }
 
     function test_priceDiscovery_steth_fuzz(
