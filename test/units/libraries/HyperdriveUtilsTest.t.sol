@@ -8,8 +8,6 @@ import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-import "forge-std/console2.sol";
-
 contract HyperdriveUtilsTest is HyperdriveTest {
     using FixedPointMath for *;
     using HyperdriveUtils for *;
