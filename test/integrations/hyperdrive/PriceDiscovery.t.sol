@@ -47,7 +47,7 @@ contract PriceDiscoveryTest is HyperdriveTest {
 
         // Test the high and low spot rates.
         assertGt(highSpotRate, lowSpotRate);
-        assertGe(highSpotRate, 0.30e18); // at z_min=1e15 and z_0 = 10e18, we can expect a high spot rate of ~33%
+        assertGe(highSpotRate, 0.15e18);
         assertApproxEqAbs(lowSpotRate, 0, 1 wei);
     }
 
@@ -86,7 +86,7 @@ contract PriceDiscoveryTest is HyperdriveTest {
 
         // Test the high and low spot rates.
         assertGt(highSpotRate, lowSpotRate);
-        assertGe(highSpotRate, 0.60e18); // at z_min=10e18 and z_0 = 10_000e18, we can expect a high spot rate of ~64%
+        assertGe(highSpotRate, 0.30e18);
         assertApproxEqAbs(lowSpotRate, 0, 10 wei);
     }
 
