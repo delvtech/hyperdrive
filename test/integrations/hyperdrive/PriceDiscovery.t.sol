@@ -339,7 +339,7 @@ contract PriceDiscoveryTest is HyperdriveTest {
     // This test fuzzes over the partial range of inputs, but
     // verifies that the low spot rate is approximately 0 and
     // that the high spot rate >= initial rate.
-    function test_priceDiscovery_parial_range_fuzz(
+    function test_priceDiscovery_partial_range_fuzz(
         uint256 fixedAPR,
         uint256 timeStretchAPR,
         uint256 initialContribution,
