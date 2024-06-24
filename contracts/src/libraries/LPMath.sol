@@ -152,7 +152,18 @@ library LPMath {
         return _longExposure;
     }
 
-    /// @dev Verifies that the price discovery process is valid.
+    /// @dev Verifies that the price discovery is valid after liquidity is added
+    ///      by checking if the pool is solvent after opening the largest long
+    ///      possible on the curve and ensuring that the pool is still solvent.
+    /// @param _shareReserves
+    /// @param _shareAdjustment
+    /// @param _bondReserves
+    /// @param _minimumShareReserves
+    /// @param _initialVaultSharePrice
+    /// @param _vaultSharePrice
+    /// @param _timeStretch
+    /// @param _checkpointExposure
+    /// @param _longExposure
     /// @param _shareReserves The share reserves.
     /// @param _shareAdjustment The share adjustment.
     /// @param _bondReserves The bond reserves.
