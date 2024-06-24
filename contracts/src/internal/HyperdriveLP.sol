@@ -106,7 +106,7 @@ abstract contract HyperdriveLP is
 
         // Check to see whether or not the initial liquidity will result in
         // invalid price discovery. If the spot price can't be brought to one,
-        // we fail to avoid dangerous pool states.
+        // we revert to avoid dangerous pool states.
         if (
             !LPMath.verifyPriceDiscovery(
                 shareReserves,
@@ -314,7 +314,7 @@ abstract contract HyperdriveLP is
 
         // Check to see whether or not adding this liquidity will result in
         // worsened price discovery. If the spot price can't be brought to one,
-        // we fail to avoid dangerous pool states.
+        // we revert to avoid dangerous pool states.
         uint256 _latestCheckpoint = latestCheckpoint; // avoid stack-too-deep
         if (
             !LPMath.verifyPriceDiscovery(
