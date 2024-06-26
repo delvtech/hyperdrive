@@ -386,7 +386,7 @@ extendEnvironment((hre) => {
                 abi: targetArtifact.abi,
                 bytecode: targetBytecode as `0x${string}`,
                 args: extraArgs ?? [],
-                gas: 5_000_000n,
+                gas: 6_000_000n,
             });
             let receipt = await pc.waitForTransactionReceipt({ hash: tx });
             let address = receipt.contractAddress!;
