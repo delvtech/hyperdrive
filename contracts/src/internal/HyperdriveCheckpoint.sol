@@ -330,7 +330,7 @@ abstract contract HyperdriveCheckpoint is
             _checkpointRewarder.excessivelySafeCall(
                 gasleft(),
                 0, // value of 0
-                1024, // max copy of 1 kb
+                0, // max copy of 0 bytes
                 abi.encodeCall(
                     IHyperdriveCheckpointRewarder.claimCheckpointReward,
                     (msg.sender, checkpointTime, isTrader)

@@ -1,38 +1,58 @@
-import { Address, parseEther } from "viem";
+import { Address, parseEther, zeroAddress } from "viem";
 import { HyperdriveFactoryConfig, parseDuration } from "../../lib";
 
+// FIXME: Double-check this.
+//
+// The name of the factory.
+export const MAINNET_FACTORY_NAME = "ElementDAO Hyperdrive Factory";
+
+// FIXME: Double-check this.
+//
+// The name of the forwarder factory.
+export const MAINNET_FACTORY_FORWARDER_NAME =
+    "ElementDAO ERC20 Factory Forwarder";
+
 export const MAINNET_FACTORY: HyperdriveFactoryConfig = {
-    name: "FACTORY",
+    name: MAINNET_FACTORY_NAME,
     prepare: async (hre, options) => {
         await hre.hyperdriveDeploy.ensureDeployed(
-            "FACTORY_FORWARDER",
+            MAINNET_FACTORY_FORWARDER_NAME,
             "ERC20ForwarderFactory",
-            ["ERC20 Forwarder Factory"],
+            [MAINNET_FACTORY_FORWARDER_NAME],
             options,
         );
     },
-    // FIXME: Update this configuration.
+    // FIXME: Double-check this.
     constructorArguments: async (hre) => [
         {
-            governance: process.env.ADMIN! as `0x${string}`,
-            deployerCoordinatorManager: process.env.ADMIN! as `0x${string}`,
-            hyperdriveGovernance: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
+            governance: (await hre.getNamedAccounts())["deployer"] as Address,
+            deployerCoordinatorManager: (await hre.getNamedAccounts())[
+                "deployer"
+            ] as Address,
+            hyperdriveGovernance: (await hre.getNamedAccounts())[
+                "deployer"
+            ] as Address,
+            // FIXME: Add the pauser address.
             defaultPausers: [
                 (await hre.getNamedAccounts())["deployer"] as Address,
+                (await hre.getNamedAccounts())["pauser"] as Address,
             ],
-            feeCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
-            sweepCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
-            checkpointDurationResolution: parseDuration("8 hours"),
+            feeCollector: zeroAddress,
+            sweepCollector: zeroAddress,
+            checkpointRewarder: zeroAddress,
+            checkpointDurationResolution: parseDuration("1 hours"),
             minCheckpointDuration: parseDuration("24 hours"),
             maxCheckpointDuration: parseDuration("24 hours"),
             minPositionDuration: parseDuration("7 days"),
-            maxPositionDuration: parseDuration("365 days"),
-            minFixedAPR: parseEther("0.01"),
-            maxFixedAPR: parseEther("0.6"),
-            minTimeStretchAPR: parseEther("0.01"),
-            maxTimeStretchAPR: parseEther("0.6"),
-            minCircuitBreakerDelta: parseEther("0.5"),
-            maxCircuitBreakerDelta: parseEther("1"),
+            maxPositionDuration: parseDuration("730 days"),
+            minFixedAPR: parseEther("0.005"),
+            maxFixedAPR: parseEther("0.5"),
+            minTimeStretchAPR: parseEther("0.005"),
+            // FIXME: Double-check (this is way too high before the price
+            // discovery fix lands + DELV has the admin credentials).
+            maxTimeStretchAPR: parseEther("0.5"),
+            minCircuitBreakerDelta: parseEther("0.01"),
+            maxCircuitBreakerDelta: parseEther("0.2"),
             minFees: {
                 curve: parseEther("0.001"),
                 flat: parseEther("0.0001"),
@@ -45,17 +65,18 @@ export const MAINNET_FACTORY: HyperdriveFactoryConfig = {
                 governanceLP: parseEther("0.15"),
                 governanceZombie: parseEther("0.03"),
             },
-            linkerFactory:
-                hre.hyperdriveDeploy.deployments.byName("FACTORY_FORWARDER")
-                    .address,
+            linkerFactory: hre.hyperdriveDeploy.deployments.byName(
+                MAINNET_FACTORY_FORWARDER_NAME,
+            ).address,
             linkerCodeHash: await (
                 await hre.viem.getContractAt(
                     "ERC20ForwarderFactory",
-                    hre.hyperdriveDeploy.deployments.byName("FACTORY_FORWARDER")
-                        .address,
+                    hre.hyperdriveDeploy.deployments.byName(
+                        MAINNET_FACTORY_FORWARDER_NAME,
+                    ).address,
                 )
             ).read.ERC20LINK_HASH(),
         },
-        "Hyperdrive Factory",
+        MAINNET_FACTORY_NAME,
     ],
 };

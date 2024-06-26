@@ -23,7 +23,8 @@ HyperdriveDeployBaseTask(
 
         // deploy the registry
         await run("deploy:registry", {
-            name: `${network.name.toUpperCase()}_REGISTRY`,
+            // TODO: Generalize this.
+            name: "ElementDAO Hyperdrive Registry",
             ...rest,
         });
 

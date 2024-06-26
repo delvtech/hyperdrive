@@ -1,9 +1,11 @@
 import { HyperdriveCoordinatorConfig } from "../../lib";
 
-// FIXME: What will the name of this contract be?
+// FIXME: Double-check this.
+export const MAINNET_ERC4626_COORDINATOR_NAME =
+    "ElementDAO ERC4626 Hyperdrive Deployer Coordinator";
 export const MAINNET_ERC4626_COORDINATOR: HyperdriveCoordinatorConfig<"ERC4626"> =
     {
-        name: "ERC4626_COORDINATOR",
+        name: MAINNET_ERC4626_COORDINATOR_NAME,
         prefix: "ERC4626",
         targetCount: 4,
         factoryAddress: async (hre) =>
