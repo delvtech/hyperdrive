@@ -52,7 +52,18 @@ contract EtchingUtils is Test {
 
         // Ensure that the contract's version matches.
         IHyperdrive hyperdrive = IHyperdrive(_hyperdrive);
-        string memory version = hyperdrive.version();
+        string memory version;
+        try hyperdrive.version() returns (string memory version_) {
+            version = version_;
+        } catch {
+            revert(
+                vm.replace(
+                    "EtchingUtils: Can't read version of target address %0.",
+                    "%0",
+                    vm.toString(_hyperdrive)
+                )
+            );
+        }
         if (!hyperdrive.version().eq(VERSION)) {
             revert(
                 vm.replace(

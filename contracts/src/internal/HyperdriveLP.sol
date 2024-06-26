@@ -173,36 +173,55 @@ abstract contract HyperdriveLP is
             revert IHyperdrive.MinimumTransactionAmount();
         }
 
-        // Enforce the slippage guard.
-        uint256 apr = HyperdriveMath.calculateSpotAPR(
-            _effectiveShareReserves(),
-            _marketState.bondReserves,
-            _initialVaultSharePrice,
-            _positionDuration,
-            _timeStretch
-        );
-        if (apr < _minApr || apr > _maxApr) {
-            revert IHyperdrive.InvalidApr();
-        }
-
-        // Deposit for the user, this call also transfers from them
-        (uint256 shareContribution, uint256 vaultSharePrice) = _deposit(
-            _contribution,
-            _options
-        );
-
-        // Perform a checkpoint.
-        uint256 latestCheckpoint = _latestCheckpoint();
-        _applyCheckpoint(
-            latestCheckpoint,
-            vaultSharePrice,
-            LPMath.SHARE_PROCEEDS_MAX_ITERATIONS,
-            true
-        );
-
-        // Ensure that the spot APR is close enough to the previous weighted
-        // spot price to fall within the tolerance.
+        // Perform several actions that must be executed before adding liquidity
+        // like enforcing slippage guards, depositing, and checkpointing.
+        uint256 shareContribution;
+        uint256 vaultSharePrice;
         {
+            // Enforce the slippage guard.
+            uint256 effectiveShareReserves = _effectiveShareReserves();
+            uint256 bondReserves = _marketState.bondReserves;
+            uint256 apr = HyperdriveMath.calculateSpotAPR(
+                effectiveShareReserves,
+                bondReserves,
+                _initialVaultSharePrice,
+                _positionDuration,
+                _timeStretch
+            );
+            if (apr < _minApr || apr > _maxApr) {
+                revert IHyperdrive.InvalidApr();
+            }
+
+            // Deposit for the user, this call also transfers from them
+            (shareContribution, vaultSharePrice) = _deposit(
+                _contribution,
+                _options
+            );
+
+            // Perform a checkpoint.
+            uint256 latestCheckpoint = _latestCheckpoint();
+            _applyCheckpoint(
+                latestCheckpoint,
+                vaultSharePrice,
+                LPMath.SHARE_PROCEEDS_MAX_ITERATIONS,
+                true
+            );
+
+            // Update the weighted spot price.
+            uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+                effectiveShareReserves,
+                bondReserves,
+                _initialVaultSharePrice,
+                _timeStretch
+            );
+            _updateWeightedSpotPrice(
+                latestCheckpoint,
+                block.timestamp,
+                spotPrice
+            );
+
+            // Ensure that the spot APR is close enough to the previous weighted
+            // spot price to fall within the tolerance.
             uint256 previousWeightedSpotAPR = HyperdriveMath
                 .calculateAPRFromPrice(
                     _checkpoints[latestCheckpoint - _checkpointDuration]
@@ -343,12 +362,22 @@ abstract contract HyperdriveLP is
 
         // Perform a checkpoint.
         uint256 vaultSharePrice = _pricePerVaultShare();
+        uint256 latestCheckpoint = _latestCheckpoint();
         _applyCheckpoint(
-            _latestCheckpoint(),
+            latestCheckpoint,
             vaultSharePrice,
             LPMath.SHARE_PROCEEDS_MAX_ITERATIONS,
             true
         );
+
+        // Update the weighted spot price.
+        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+            _effectiveShareReserves(),
+            _marketState.bondReserves,
+            _initialVaultSharePrice,
+            _timeStretch
+        );
+        _updateWeightedSpotPrice(latestCheckpoint, block.timestamp, spotPrice);
 
         // Burn the LP's shares.
         _burn(AssetId._LP_ASSET_ID, msg.sender, _lpShares);
@@ -376,16 +405,17 @@ abstract contract HyperdriveLP is
         // price as zero. This ensures that the system's liveness isn't impacted
         // by temporarily being unable to calculate the present value.
         (uint256 lpSharePrice, ) = _calculateLPSharePriceSafe(vaultSharePrice);
+        IHyperdrive.Options memory options = _options; // avoid stack-too-deep
         emit RemoveLiquidity(
             msg.sender, // provider
-            _options.destination, // destination
+            options.destination, // destination
             _lpShares,
             proceeds,
             vaultSharePrice,
-            _options.asBase,
+            options.asBase,
             uint256(withdrawalShares),
             lpSharePrice,
-            _options.extraData
+            options.extraData
         );
 
         return (proceeds, withdrawalShares);
@@ -420,12 +450,22 @@ abstract contract HyperdriveLP is
 
         // Perform a checkpoint.
         uint256 vaultSharePrice = _pricePerVaultShare();
+        uint256 latestCheckpoint = _latestCheckpoint();
         _applyCheckpoint(
-            _latestCheckpoint(),
+            latestCheckpoint,
             vaultSharePrice,
             LPMath.SHARE_PROCEEDS_MAX_ITERATIONS,
             true
         );
+
+        // Update the weighted spot price.
+        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+            _effectiveShareReserves(),
+            _marketState.bondReserves,
+            _initialVaultSharePrice,
+            _timeStretch
+        );
+        _updateWeightedSpotPrice(latestCheckpoint, block.timestamp, spotPrice);
 
         // Redeem as many of the withdrawal shares as possible.
         (proceeds, withdrawalSharesRedeemed) = _redeemWithdrawalSharesInternal(
