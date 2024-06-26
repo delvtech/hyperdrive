@@ -562,7 +562,7 @@ extendEnvironment((hre) => {
         let args = [
             deploymentId,
             coordinatorAddress,
-            toBytes32(instanceConfig.name),
+            instanceConfig.name,
             poolDeployConfig,
             extraData,
             instanceConfig.contribution,

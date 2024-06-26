@@ -1,19 +1,23 @@
-import { parseEther } from "viem";
+import { Address, formatEther, parseEther } from "viem";
 import {
     HyperdriveCheckpointSubrewarderConfig,
     MAINNET_DAI_ADDRESS,
 } from "../../lib";
+import { MAINNET_FORK_CHECKPOINT_REWARDER_NAME } from "./checkpoint-rewarder";
+
+const MAINNET_FORK_CHECKPOINT_SUBREWARDER_NAME = "CHECKPOINT_SUBREWARDER";
 
 const FUNDING = parseEther("10000");
 
 export const MAINNET_FORK_CHECKPOINT_SUBREWARDER: HyperdriveCheckpointSubrewarderConfig =
     {
-        name: "CHECKPOINT_SUBREWARDER",
+        name: MAINNET_FORK_CHECKPOINT_SUBREWARDER_NAME,
         constructorArguments: async (hre) => [
-            "CHECKPOINT_SUBREWARDER",
-            hre.hyperdriveDeploy.deployments.byName("CHECKPOINT_REWARDER")
-                .address,
-            "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
+            MAINNET_FORK_CHECKPOINT_SUBREWARDER_NAME,
+            hre.hyperdriveDeploy.deployments.byName(
+                MAINNET_FORK_CHECKPOINT_REWARDER_NAME,
+            ).address,
+            (await hre.getNamedAccounts())["deployer"] as Address,
             hre.hyperdriveDeploy.deployments.byName("MAINNET_FORK_REGISTRY")
                 .address,
             MAINNET_DAI_ADDRESS,
@@ -25,12 +29,13 @@ export const MAINNET_FORK_CHECKPOINT_SUBREWARDER: HyperdriveCheckpointSubrewarde
             let pc = await hre.viem.getPublicClient();
             let rewarder = await hre.viem.getContractAt(
                 "HyperdriveCheckpointRewarder",
-                hre.hyperdriveDeploy.deployments.byName("CHECKPOINT_REWARDER")
-                    .address,
+                hre.hyperdriveDeploy.deployments.byName(
+                    MAINNET_FORK_CHECKPOINT_REWARDER_NAME,
+                ).address,
             );
             let tx = await rewarder.write.updateSubrewarder([
                 hre.hyperdriveDeploy.deployments.byName(
-                    "CHECKPOINT_SUBREWARDER",
+                    MAINNET_FORK_CHECKPOINT_SUBREWARDER_NAME,
                 ).address,
             ]);
             await pc.waitForTransactionReceipt({ hash: tx });
@@ -42,13 +47,15 @@ export const MAINNET_FORK_CHECKPOINT_SUBREWARDER: HyperdriveCheckpointSubrewarde
             );
 
             // mint some tokens for checkpoint rewards
-            tx = await baseToken.write.mint([FUNDING]);
-            await pc.waitForTransactionReceipt({ hash: tx });
+            await hre.run("fork:mint-dai", {
+                amount: formatEther(FUNDING),
+                address: (await hre.getNamedAccounts())["deployer"],
+            });
 
             // approve the subrewarder for the contribution
             tx = await baseToken.write.approve([
                 hre.hyperdriveDeploy.deployments.byName(
-                    "CHECKPOINT_SUBREWARDER",
+                    MAINNET_FORK_CHECKPOINT_SUBREWARDER_NAME,
                 ).address,
                 FUNDING,
             ]);
