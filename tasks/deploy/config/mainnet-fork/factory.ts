@@ -1,26 +1,37 @@
 import { Address, parseEther } from "viem";
 import { HyperdriveFactoryConfig, parseDuration } from "../../lib";
+import { MAINNET_FORK_CHECKPOINT_REWARDER_NAME } from "./checkpoint-rewarder";
+
+export const MAINNET_FORK_FACTORY_NAME = "FACTORY";
+export const MAINNET_FORK_FACTORY_FORWARDER_NAME = "FACTORY_FORWARDER";
+export const MAINNET_FORK_FACTORY_GOVERNANCE_ADDRESS =
+    "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b";
 
 export const MAINNET_FORK_FACTORY: HyperdriveFactoryConfig = {
-    name: "FACTORY",
+    name: MAINNET_FORK_FACTORY_NAME,
     prepare: async (hre, options) => {
         await hre.hyperdriveDeploy.ensureDeployed(
-            "FACTORY_FORWARDER",
+            MAINNET_FORK_FACTORY_FORWARDER_NAME,
             "ERC20ForwarderFactory",
-            ["FACTORY_FORWARDER"],
+            [MAINNET_FORK_FACTORY_FORWARDER_NAME],
             options,
         );
     },
     constructorArguments: async (hre) => [
         {
-            governance: process.env.ADMIN! as `0x${string}`,
-            deployerCoordinatorManager: process.env.ADMIN! as `0x${string}`,
-            hyperdriveGovernance: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
+            governance: MAINNET_FORK_FACTORY_GOVERNANCE_ADDRESS,
+            deployerCoordinatorManager: (await hre.getNamedAccounts())[
+                "deployer"
+            ] as Address,
+            hyperdriveGovernance: MAINNET_FORK_FACTORY_GOVERNANCE_ADDRESS,
             defaultPausers: [
                 (await hre.getNamedAccounts())["deployer"] as Address,
             ],
-            feeCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
-            sweepCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
+            feeCollector: MAINNET_FORK_FACTORY_GOVERNANCE_ADDRESS,
+            sweepCollector: MAINNET_FORK_FACTORY_GOVERNANCE_ADDRESS,
+            checkpointRewarder: hre.hyperdriveDeploy.deployments.byName(
+                MAINNET_FORK_CHECKPOINT_REWARDER_NAME,
+            ).address,
             checkpointDurationResolution: parseDuration("8 hours"),
             minCheckpointDuration: parseDuration("24 hours"),
             maxCheckpointDuration: parseDuration("24 hours"),
@@ -44,17 +55,18 @@ export const MAINNET_FORK_FACTORY: HyperdriveFactoryConfig = {
                 governanceLP: parseEther("0.15"),
                 governanceZombie: parseEther("0.03"),
             },
-            linkerFactory:
-                hre.hyperdriveDeploy.deployments.byName("FACTORY_FORWARDER")
-                    .address,
+            linkerFactory: hre.hyperdriveDeploy.deployments.byName(
+                MAINNET_FORK_FACTORY_FORWARDER_NAME,
+            ).address,
             linkerCodeHash: await (
                 await hre.viem.getContractAt(
                     "ERC20ForwarderFactory",
-                    hre.hyperdriveDeploy.deployments.byName("FACTORY_FORWARDER")
-                        .address,
+                    hre.hyperdriveDeploy.deployments.byName(
+                        MAINNET_FORK_FACTORY_FORWARDER_NAME,
+                    ).address,
                 )
             ).read.ERC20LINK_HASH(),
         },
-        "FACTORY",
+        MAINNET_FORK_FACTORY_NAME,
     ],
 };

@@ -7,15 +7,24 @@ import {
     parseDuration,
     toBytes32,
 } from "../../lib";
+import { MAINNET_FORK_CHECKPOINT_REWARDER_NAME } from "./checkpoint-rewarder";
+import {
+    MAINNET_FORK_FACTORY_GOVERNANCE_ADDRESS,
+    MAINNET_FORK_FACTORY_NAME,
+} from "./factory";
+import { MAINNET_FORK_STETH_COORDINATOR_NAME } from "./steth-coordinator";
 
+export const MAINNET_FORK_STETH_30DAY_NAME = "STETH_30_DAY";
 const CONTRIBUTION = parseEther("500");
 
 export const MAINNET_FORK_STETH_30DAY: HyperdriveInstanceConfig<"StETH"> = {
-    name: "STETH_30_DAY",
+    name: MAINNET_FORK_STETH_30DAY_NAME,
     prefix: "StETH",
     coordinatorAddress: async (hre) =>
-        hre.hyperdriveDeploy.deployments.byName("STETH_COORDINATOR").address,
-    deploymentId: toBytes32("STETH_30_DAY"),
+        hre.hyperdriveDeploy.deployments.byName(
+            MAINNET_FORK_STETH_COORDINATOR_NAME,
+        ).address,
+    deploymentId: toBytes32(MAINNET_FORK_STETH_30DAY_NAME),
     salt: toBytes32("0xababe"),
     extraData: "0x",
     contribution: CONTRIBUTION,
@@ -27,11 +36,6 @@ export const MAINNET_FORK_STETH_30DAY: HyperdriveInstanceConfig<"StETH"> = {
         extraData: "0x",
     },
     prepare: async (hre) => {
-        // mint steth
-        await hre.run("fork:mint-steth", {
-            amount: formatEther(CONTRIBUTION),
-            address: (await hre.getNamedAccounts())["deployer"],
-        });
         let vaultSharesToken = await hre.viem.getContractAt(
             "MockLido",
             MAINNET_STETH_ADDRESS,
@@ -39,11 +43,17 @@ export const MAINNET_FORK_STETH_30DAY: HyperdriveInstanceConfig<"StETH"> = {
         let pc = await hre.viem.getPublicClient();
         // approve the coordinator
         let tx = await vaultSharesToken.write.approve([
-            hre.hyperdriveDeploy.deployments.byName("STETH_COORDINATOR")
-                .address,
+            hre.hyperdriveDeploy.deployments.byName(
+                MAINNET_FORK_STETH_COORDINATOR_NAME,
+            ).address,
             await vaultSharesToken.read.getPooledEthByShares([CONTRIBUTION]),
         ]);
         await pc.waitForTransactionReceipt({ hash: tx });
+        // mint steth
+        await hre.run("fork:mint-steth", {
+            amount: formatEther(CONTRIBUTION),
+            address: (await hre.getNamedAccounts())["deployer"],
+        });
     },
     poolDeployConfig: async (hre) => {
         return {
@@ -55,12 +65,17 @@ export const MAINNET_FORK_STETH_30DAY: HyperdriveInstanceConfig<"StETH"> = {
             positionDuration: parseDuration("30 days"),
             checkpointDuration: parseDuration("1 day"),
             timeStretch: 0n,
-            governance: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
-            feeCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
-            sweepCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
+            governance: MAINNET_FORK_FACTORY_GOVERNANCE_ADDRESS,
+            feeCollector: MAINNET_FORK_FACTORY_GOVERNANCE_ADDRESS,
+            sweepCollector: MAINNET_FORK_FACTORY_GOVERNANCE_ADDRESS,
+            checkpointRewarder: hre.hyperdriveDeploy.deployments.byName(
+                MAINNET_FORK_CHECKPOINT_REWARDER_NAME,
+            ).address,
             ...(await getLinkerDetails(
                 hre,
-                hre.hyperdriveDeploy.deployments.byName("FACTORY").address,
+                hre.hyperdriveDeploy.deployments.byName(
+                    MAINNET_FORK_FACTORY_NAME,
+                ).address,
             )),
             fees: {
                 curve: parseEther("0.01"),

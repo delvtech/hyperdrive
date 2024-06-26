@@ -7,15 +7,24 @@ import {
     toBytes32,
 } from "../../lib";
 import { MAINNET_DAI_ADDRESS, MAINNET_SDAI_ADDRESS } from "../../lib/constants";
+import { MAINNET_FORK_CHECKPOINT_REWARDER_NAME } from "./checkpoint-rewarder";
+import { MAINNET_FORK_ERC4626_COORDINATOR_NAME } from "./erc4626-coordinator";
+import {
+    MAINNET_FORK_FACTORY_GOVERNANCE_ADDRESS,
+    MAINNET_FORK_FACTORY_NAME,
+} from "./factory";
 
+export const MAINNET_FORK_DAI_30DAY_NAME = "DAI_30_DAY";
 const CONTRIBUTION = parseEther("10000");
 
 export const MAINNET_FORK_DAI_30DAY: HyperdriveInstanceConfig<"ERC4626"> = {
-    name: "DAI_30_DAY",
+    name: MAINNET_FORK_DAI_30DAY_NAME,
     prefix: "ERC4626",
     coordinatorAddress: async (hre) =>
-        hre.hyperdriveDeploy.deployments.byName("ERC4626_COORDINATOR").address,
-    deploymentId: toBytes32("DAI_30_DAY"),
+        hre.hyperdriveDeploy.deployments.byName(
+            MAINNET_FORK_ERC4626_COORDINATOR_NAME,
+        ).address,
+    deploymentId: toBytes32(MAINNET_FORK_DAI_30DAY_NAME),
     salt: toBytes32("0x69420"),
     extraData: "0x",
     contribution: CONTRIBUTION,
@@ -26,7 +35,6 @@ export const MAINNET_FORK_DAI_30DAY: HyperdriveInstanceConfig<"ERC4626"> = {
         asBase: true,
         destination: process.env.ADMIN! as `0x${string}`,
     },
-
     // Prepare to deploy the contract by setting approvals and minting sufficient
     // tokens for the contribution.
     prepare: async (hre) => {
@@ -35,8 +43,9 @@ export const MAINNET_FORK_DAI_30DAY: HyperdriveInstanceConfig<"ERC4626"> = {
             MAINNET_DAI_ADDRESS,
         );
         let tx = await baseToken.write.approve([
-            hre.hyperdriveDeploy.deployments.byName("ERC4626_COORDINATOR")
-                .address,
+            hre.hyperdriveDeploy.deployments.byName(
+                MAINNET_FORK_ERC4626_COORDINATOR_NAME,
+            ).address,
             CONTRIBUTION,
         ]);
         let pc = await hre.viem.getPublicClient();
@@ -56,12 +65,17 @@ export const MAINNET_FORK_DAI_30DAY: HyperdriveInstanceConfig<"ERC4626"> = {
             positionDuration: parseDuration("30 days"),
             checkpointDuration: parseDuration("1 day"),
             timeStretch: 0n,
-            governance: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
-            feeCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
-            sweepCollector: "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b",
+            governance: MAINNET_FORK_FACTORY_GOVERNANCE_ADDRESS,
+            feeCollector: MAINNET_FORK_FACTORY_GOVERNANCE_ADDRESS,
+            sweepCollector: MAINNET_FORK_FACTORY_GOVERNANCE_ADDRESS,
+            checkpointRewarder: hre.hyperdriveDeploy.deployments.byName(
+                MAINNET_FORK_CHECKPOINT_REWARDER_NAME,
+            ).address,
             ...(await getLinkerDetails(
                 hre,
-                hre.hyperdriveDeploy.deployments.byName("FACTORY").address,
+                hre.hyperdriveDeploy.deployments.byName(
+                    MAINNET_FORK_FACTORY_NAME,
+                ).address,
             )),
             fees: {
                 curve: parseEther("0.01"),

@@ -43,8 +43,9 @@ export const SEPOLIA_CHECKPOINT_SUBREWARDER: HyperdriveCheckpointSubrewarderConf
             let pc = await hre.viem.getPublicClient();
             let rewarder = await hre.viem.getContractAt(
                 "HyperdriveCheckpointRewarder",
-                hre.hyperdriveDeploy.deployments.byName("CHECKPOINT_REWARDER")
-                    .address,
+                hre.hyperdriveDeploy.deployments.byName(
+                    SEPOLIA_CHECKPOINT_REWARDER_NAME,
+                ).address,
             );
             let tx = await rewarder.write.updateSubrewarder([
                 hre.hyperdriveDeploy.deployments.byName(

@@ -1,3 +1,5 @@
+import { task } from "hardhat/config";
+import { DeployCheckpointRewarderParams } from "./checkpoint-rewarder";
 import {
     HyperdriveDeployBaseTask,
     HyperdriveDeployNamedTaskParams,

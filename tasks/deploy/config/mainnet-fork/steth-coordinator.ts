@@ -1,5 +1,6 @@
 import { HyperdriveCoordinatorConfig, MAINNET_STETH_ADDRESS } from "../../lib";
 
+export const MAINNET_FORK_STETH_COORDINATOR_NAME = "STETH_COORDINATOR";
 export const MAINNET_FORK_STETH_COORDINATOR: HyperdriveCoordinatorConfig<"StETH"> =
     {
         name: "STETH_COORDINATOR",

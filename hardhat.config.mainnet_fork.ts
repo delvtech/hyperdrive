@@ -7,6 +7,8 @@ import { HardhatUserConfig } from "hardhat/config";
 import baseConfig from "./hardhat.config";
 import "./tasks";
 import {
+    MAINNET_FORK_CHECKPOINT_REWARDER,
+    MAINNET_FORK_CHECKPOINT_SUBREWARDER,
     MAINNET_FORK_DAI_14DAY,
     MAINNET_FORK_DAI_30DAY,
     MAINNET_FORK_ERC4626_COORDINATOR,
@@ -31,6 +33,8 @@ const config: HardhatUserConfig = {
             url: env.HYPERDRIVE_ETHEREUM_URL ?? "http://anvil:8545",
             accounts: [env.DEPLOYER_PRIVATE_KEY ?? DEFAULT_PK],
             hyperdriveDeploy: {
+                checkpointRewarders: [MAINNET_FORK_CHECKPOINT_REWARDER],
+                checkpointSubrewarders: [MAINNET_FORK_CHECKPOINT_SUBREWARDER],
                 factories: [MAINNET_FORK_FACTORY],
                 coordinators: [
                     MAINNET_FORK_ERC4626_COORDINATOR,
