@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+import { Lib } from "test/utils/Lib.sol";
+
 import { SignedMath } from "openzeppelin/utils/math/SignedMath.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath, ONE } from "./FixedPointMath.sol";
@@ -15,6 +19,9 @@ import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 library LPMath {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for *;
     using SafeCast for uint256;
     using SignedMath for int256;
@@ -155,15 +162,6 @@ library LPMath {
     /// @dev Verifies that the price discovery is valid after liquidity is added
     ///      by checking if the pool is solvent after opening the largest long
     ///      possible on the curve and ensuring that the pool is still solvent.
-    /// @param _shareReserves
-    /// @param _shareAdjustment
-    /// @param _bondReserves
-    /// @param _minimumShareReserves
-    /// @param _initialVaultSharePrice
-    /// @param _vaultSharePrice
-    /// @param _timeStretch
-    /// @param _checkpointExposure
-    /// @param _longExposure
     /// @param _shareReserves The share reserves.
     /// @param _shareAdjustment The share adjustment.
     /// @param _bondReserves The bond reserves.
@@ -236,9 +234,18 @@ library LPMath {
         // is within some epilson of being true, the pool is still solvent,
         // will have trouble price discovering back to 0%. We add an additional
         // c * z_min to the right hand side to account for this epsilon.
+        uint256 minimumShareReserves = _minimumShareReserves;
+        uint256 vaultSharePrice = _vaultSharePrice;
+        console.log(
+            "solvency = %s",
+            (int256(shareReserves.mulDown(vaultSharePrice)) -
+                int256(
+                    (longExposure + minimumShareReserves.mulUp(vaultSharePrice))
+                )).toString(18)
+        );
         if (
             shareReserves.mulDown(_vaultSharePrice) <=
-            longExposure + 2 * _minimumShareReserves.mulUp(_vaultSharePrice)
+            longExposure + 2 * minimumShareReserves.mulUp(vaultSharePrice)
         ) {
             return false;
         }

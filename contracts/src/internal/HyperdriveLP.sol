@@ -220,6 +220,19 @@ abstract contract HyperdriveLP is
             true
         );
 
+        // FIXME: Remove this.
+        LPMath.verifyPriceDiscovery(
+            _marketState.shareReserves,
+            _marketState.shareAdjustment,
+            _marketState.bondReserves,
+            _minimumShareReserves,
+            _initialVaultSharePrice,
+            vaultSharePrice,
+            _timeStretch,
+            _nonNettedLongs(latestCheckpoint + _positionDuration),
+            _marketState.longExposure
+        );
+
         // Ensure that the spot APR is close enough to the previous weighted
         // spot price to fall within the tolerance.
         {

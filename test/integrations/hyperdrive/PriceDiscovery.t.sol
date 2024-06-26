@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+import { Lib } from "test/utils/Lib.sol";
+
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
@@ -11,6 +15,47 @@ contract PriceDiscoveryTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for *;
     using Lib for *;
+
+    function test_example() external {
+        // Deploy and initialize the pool.
+        IHyperdrive.PoolConfig memory config = testConfig(
+            0.05e18,
+            POSITION_DURATION
+        );
+        config.circuitBreakerDelta = type(uint128).max;
+        config.minimumShareReserves = 10e18;
+        deploy(alice, config);
+        initialize(alice, 0.05e18, 100_000e18);
+
+        // Open a long.
+        openLong(alice, hyperdrive.calculateMaxLong().mulDown(0.9e18));
+
+        // Advance the checkpoint.
+        advanceTime(CHECKPOINT_DURATION, 0);
+
+        // Open a short.
+        openShort(alice, hyperdrive.calculateMaxShort().mulDown(0.9e18));
+
+        // Advance the checkpoint.
+        advanceTime(CHECKPOINT_DURATION, 0);
+
+        // Open a long.
+        openLong(alice, hyperdrive.calculateMaxLong());
+
+        // Advance the checkpoint.
+        advanceTime(CHECKPOINT_DURATION, 0);
+
+        // Open a short.
+        openShort(alice, hyperdrive.calculateMaxShort());
+
+        // Advance the checkpoint.
+        advanceTime(CHECKPOINT_DURATION, 0);
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
+
+        // Add liquidity.
+        console.log("solvency = %s", hyperdrive.solvency().toString(18));
+        addLiquidity(alice, 100e18);
+    }
 
     function test_solvency_at_0_apr(
         uint256 fixedAPR,
