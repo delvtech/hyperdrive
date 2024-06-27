@@ -29,7 +29,8 @@ export const ANVIL_CHECKPOINT_SUBREWARDER: HyperdriveCheckpointSubrewarderConfig
             hre.hyperdriveDeploy.deployments.byName("CHECKPOINT_REWARDER")
                 .address,
             "0xd94a3A0BfC798b98a700a785D5C610E8a2d5DBD8",
-            hre.hyperdriveDeploy.deployments.byName("ANVIL_REGISTRY").address,
+            hre.hyperdriveDeploy.deployments.byName("DELV Hyperdrive Registry")
+                .address,
             hre.hyperdriveDeploy.deployments.byName("BASE_TOKEN").address,
             parseEther("1"),
             parseEther("1"),

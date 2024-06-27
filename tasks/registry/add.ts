@@ -35,7 +35,7 @@ HyperdriveDeployNamedTask(
             let factoryAddress = deployments.byName("FACTORY")
                 .address as Address;
             const registryAddress = deployments.byName(
-                network.name.toUpperCase() + "_REGISTRY",
+                "DELV Hyperdrive Registry",
             ).address as `0x${string}`;
             const registryContract = await viem.getContractAt(
                 "IHyperdriveGovernedRegistry",

@@ -1,5 +1,8 @@
 import { Address } from "viem";
 
+export const ETH_ADDRESS =
+    "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" as Address;
+
 export const MAINNET_DAI_ADDRESS =
     "0x6b175474e89094c44da98b954eedeac495271d0f" as Address;
 
@@ -23,3 +26,5 @@ export const MAINNET_STETH_WHALE =
 
 export const MAINNET_RETH_WHALE =
     "0x1bee69b7dfffa4e2d53c2a2df135c388ad25dcd2" as Address;
+
+export const SIX_MONTHS = "182 days";
