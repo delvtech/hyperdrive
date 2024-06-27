@@ -24,7 +24,7 @@ HyperdriveDeployBaseTask(
         // deploy the registry
         await run("deploy:registry", {
             // TODO: Generalize this.
-            name: "ElementDAO Hyperdrive Registry",
+            name: "DELV Hyperdrive Registry",
             ...rest,
         });
 
