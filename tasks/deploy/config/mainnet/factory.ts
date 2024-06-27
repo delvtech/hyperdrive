@@ -1,13 +1,9 @@
 import { Address, parseEther, zeroAddress } from "viem";
 import { HyperdriveFactoryConfig, parseDuration } from "../../lib";
 
-// FIXME: Double-check this.
-//
 // The name of the factory.
 export const MAINNET_FACTORY_NAME = "ElementDAO Hyperdrive Factory";
 
-// FIXME: Double-check this.
-//
 // The name of the forwarder factory.
 export const MAINNET_FACTORY_FORWARDER_NAME =
     "ElementDAO ERC20 Factory Forwarder";
@@ -22,7 +18,6 @@ export const MAINNET_FACTORY: HyperdriveFactoryConfig = {
             options,
         );
     },
-    // FIXME: Double-check this.
     constructorArguments: async (hre) => [
         {
             governance: (await hre.getNamedAccounts())["deployer"] as Address,
@@ -32,7 +27,6 @@ export const MAINNET_FACTORY: HyperdriveFactoryConfig = {
             hyperdriveGovernance: (await hre.getNamedAccounts())[
                 "deployer"
             ] as Address,
-            // FIXME: Add the pauser address.
             defaultPausers: [
                 (await hre.getNamedAccounts())["deployer"] as Address,
                 (await hre.getNamedAccounts())["pauser"] as Address,
@@ -46,11 +40,9 @@ export const MAINNET_FACTORY: HyperdriveFactoryConfig = {
             minPositionDuration: parseDuration("7 days"),
             maxPositionDuration: parseDuration("730 days"),
             minFixedAPR: parseEther("0.005"),
-            maxFixedAPR: parseEther("0.5"),
+            maxFixedAPR: parseEther("0.1"),
             minTimeStretchAPR: parseEther("0.005"),
-            // FIXME: Double-check (this is way too high before the price
-            // discovery fix lands + DELV has the admin credentials).
-            maxTimeStretchAPR: parseEther("0.5"),
+            maxTimeStretchAPR: parseEther("0.1"),
             minCircuitBreakerDelta: parseEther("0.01"),
             maxCircuitBreakerDelta: parseEther("0.2"),
             minFees: {

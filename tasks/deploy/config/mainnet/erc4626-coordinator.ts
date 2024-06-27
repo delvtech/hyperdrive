@@ -1,6 +1,6 @@
 import { HyperdriveCoordinatorConfig } from "../../lib";
+import { MAINNET_FACTORY_NAME } from "./factory";
 
-// FIXME: Double-check this.
 export const MAINNET_ERC4626_COORDINATOR_NAME =
     "ElementDAO ERC4626 Hyperdrive Deployer Coordinator";
 export const MAINNET_ERC4626_COORDINATOR: HyperdriveCoordinatorConfig<"ERC4626"> =
@@ -9,5 +9,6 @@ export const MAINNET_ERC4626_COORDINATOR: HyperdriveCoordinatorConfig<"ERC4626">
         prefix: "ERC4626",
         targetCount: 4,
         factoryAddress: async (hre) =>
-            hre.hyperdriveDeploy.deployments.byName("FACTORY").address,
+            hre.hyperdriveDeploy.deployments.byName(MAINNET_FACTORY_NAME)
+                .address,
     };

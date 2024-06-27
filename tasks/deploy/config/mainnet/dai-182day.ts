@@ -1,4 +1,4 @@
-import { Address, parseEther, zeroAddress } from "viem";
+import { Address, keccak256, parseEther, toBytes, zeroAddress } from "viem";
 import {
     HyperdriveInstanceConfig,
     getLinkerDetails,
@@ -14,12 +14,11 @@ import {
 import { MAINNET_ERC4626_COORDINATOR_NAME } from "./erc4626-coordinator";
 import { MAINNET_FACTORY_NAME } from "./factory";
 
-// FIXME: Double-check this.
 // The name of the pool.
-export const MAINNET_DAI_182DAY_NAME = "ElementDAO 182 day sDAI Hyperdrive";
+export const MAINNET_DAI_182DAY_NAME = "ElementDAO 182 Day sDAI Hyperdrive";
 
 // The initial contribution of the pool.
-const CONTRIBUTION = parseEther("100e18");
+const CONTRIBUTION = parseEther("100");
 
 export const MAINNET_DAI_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     name: MAINNET_DAI_182DAY_NAME,
@@ -28,21 +27,18 @@ export const MAINNET_DAI_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
         hre.hyperdriveDeploy.deployments.byName(
             MAINNET_ERC4626_COORDINATOR_NAME,
         ).address,
-    deploymentId: toBytes32(MAINNET_DAI_182DAY_NAME),
+    deploymentId: keccak256(toBytes(MAINNET_DAI_182DAY_NAME)),
     salt: toBytes32("0x69420"),
     extraData: "0x",
     contribution: CONTRIBUTION,
-    // FIXME: Double-check this one more time
     fixedAPR: parseEther("0.08"),
-    // FIXME: Double-check this one more time
     timestretchAPR: parseEther("0.05"),
     options: async (hre) => ({
         extraData: "0x",
         asBase: true,
         destination: (await hre.getNamedAccounts())["deployer"] as Address,
     }),
-    // Prepare to deploy the contract by setting approvals and minting sufficient
-    // tokens for the contribution.
+    // Prepare to deploy the contract by setting approvals.
     prepare: async (hre) => {
         let baseToken = await hre.viem.getContractAt(
             "contracts/src/interfaces/IERC20.sol:IERC20",
@@ -58,7 +54,6 @@ export const MAINNET_DAI_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
         await pc.waitForTransactionReceipt({ hash: tx });
     },
     poolDeployConfig: async (hre) => {
-        // FIXME: Re-check this.
         return {
             baseToken: MAINNET_DAI_ADDRESS,
             vaultSharesToken: MAINNET_SDAI_ADDRESS,

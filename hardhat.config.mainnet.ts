@@ -18,17 +18,9 @@ const { env } = process;
 
 const config: HardhatUserConfig = {
     ...baseConfig,
-    namedAccounts: {
-        deployer: {
-            "1": 0,
-        },
-        pauser: {
-            "1": 1,
-        },
-    },
     networks: {
-        mainnet_fork: {
-            live: false,
+        mainnet: {
+            live: true,
             url: env.HYPERDRIVE_ETHEREUM_URL!,
             accounts: [env.DEPLOYER_PRIVATE_KEY!, env.PAUSER_PRIVATE_KEY!],
             hyperdriveDeploy: {

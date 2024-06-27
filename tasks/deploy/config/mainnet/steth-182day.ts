@@ -1,4 +1,4 @@
-import { Address, parseEther, zeroAddress } from "viem";
+import { Address, keccak256, parseEther, toBytes, zeroAddress } from "viem";
 import {
     ETH_ADDRESS,
     HyperdriveInstanceConfig,
@@ -12,13 +12,11 @@ import {
 import { MAINNET_FACTORY_NAME } from "./factory";
 import { MAINNET_STETH_COORDINATOR_NAME } from "./steth-coordinator";
 
-// FIXME: Double-check this.
-//
 // The name of the pool.
-export const MAINNET_STETH_182DAY_NAME = "ElementDAO 182 day stETH Hyperdrive";
+export const MAINNET_STETH_182DAY_NAME = "ElementDAO 182 Day stETH Hyperdrive";
 
 // The initial contribution of the pool.
-const CONTRIBUTION = parseEther("0.1");
+const CONTRIBUTION = parseEther("0.01");
 
 export const MAINNET_STETH_182DAY: HyperdriveInstanceConfig<"StETH"> = {
     name: MAINNET_STETH_182DAY_NAME,
@@ -26,13 +24,11 @@ export const MAINNET_STETH_182DAY: HyperdriveInstanceConfig<"StETH"> = {
     coordinatorAddress: async (hre) =>
         hre.hyperdriveDeploy.deployments.byName(MAINNET_STETH_COORDINATOR_NAME)
             .address,
-    deploymentId: toBytes32(MAINNET_STETH_182DAY_NAME),
+    deploymentId: keccak256(toBytes(MAINNET_STETH_182DAY_NAME)),
     salt: toBytes32("0xababe"),
     extraData: "0x",
     contribution: CONTRIBUTION,
-    // FIXME: Double-check this.
-    fixedAPR: parseEther("0.03"),
-    // FIXME: Double-check this.
+    fixedAPR: parseEther("0.0314"),
     timestretchAPR: parseEther("0.035"),
     options: async (hre) => ({
         asBase: false,
@@ -55,7 +51,6 @@ export const MAINNET_STETH_182DAY: HyperdriveInstanceConfig<"StETH"> = {
         await pc.waitForTransactionReceipt({ hash: tx });
     },
     poolDeployConfig: async (hre) => {
-        // FIXME: Double-check this.
         return {
             baseToken: ETH_ADDRESS,
             vaultSharesToken: MAINNET_STETH_ADDRESS,
