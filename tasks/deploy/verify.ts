@@ -37,11 +37,9 @@ task(
         // Verify the registry.
         await run("verify:verify", {
             address: hyperdriveDeploy.deployments.byName(
-                `${hre.network.name.toUpperCase()}_REGISTRY`,
+                "DELV Hyperdrive Registry",
             ).address,
-            constructorArguments: [
-                `${hre.network.name.toUpperCase()}_REGISTRY`,
-            ],
+            constructorArguments: ["DELV Hyperdrive Registry"],
         });
 
         // loop through all checkpoint rewarders
@@ -88,6 +86,7 @@ task(
             console.log(`verifying ${f.name} linker factory...`);
             await run("verify:verify", {
                 address: constructorArguments[0].linkerFactory,
+                // TODO: Update this.
                 constructorArguments: ["FACTORY_FORWARDER"],
             });
 
