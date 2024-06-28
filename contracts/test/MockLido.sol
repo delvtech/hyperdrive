@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
+import { Authority } from "solmate/auth/Auth.sol";
 import { MultiRolesAuthority } from "solmate/auth/authorities/MultiRolesAuthority.sol";
 import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
-import { ERC20Mintable } from "./ERC20Mintable.sol";
 
 /// @author DELV
 /// @title MockLido
@@ -14,16 +15,31 @@ import { ERC20Mintable } from "./ERC20Mintable.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract MockLido is MultiRolesAuthority, ERC20Mintable {
+contract MockLido is MultiRolesAuthority, ERC20 {
     using FixedPointMath for uint256;
+
+    // Admin State
+    bool public immutable isCompetitionMode;
+    uint256 public maxMintAmount;
+    mapping(address => bool) public isUnrestricted;
 
     // Interest State
     uint256 internal _rate;
     uint256 internal _lastUpdated;
 
     // Lido State
-    uint256 totalPooledEther;
-    uint256 totalShares;
+    uint256 internal totalPooledEther;
+    uint256 internal totalShares;
+
+    // The shares that each account owns.
+    mapping(address => uint256) public sharesOf;
+
+    // Emitted when shares are transferred.
+    event TransferShares(
+        address indexed from,
+        address indexed to,
+        uint256 sharesValue
+    );
 
     constructor(
         uint256 _initialRate,
@@ -31,20 +47,140 @@ contract MockLido is MultiRolesAuthority, ERC20Mintable {
         bool _isCompetitionMode,
         uint256 _maxMintAmount
     )
-        ERC20Mintable(
-            "Liquid staked Ether 2.0",
-            "stETH",
-            18,
-            _admin,
-            _isCompetitionMode,
-            _maxMintAmount
-        )
+        ERC20("Liquid staked Ether 2.0", "stETH")
+        MultiRolesAuthority(_admin, Authority(address(address(this))))
     {
+        // Store the initial rate and the last updated time.
         _rate = _initialRate;
         _lastUpdated = block.timestamp;
+
+        // Update the admin settings.
+        isCompetitionMode = _isCompetitionMode;
+        maxMintAmount = _maxMintAmount;
     }
 
-    /// Overrides ///
+    /// Admin ///
+
+    modifier requiresAuthDuringCompetition() {
+        if (isCompetitionMode) {
+            require(
+                isAuthorized(msg.sender, msg.sig),
+                "MockLido: not authorized"
+            );
+        }
+        _;
+    }
+
+    function mint(uint256 _amount) external requiresAuthDuringCompetition {
+        _mintShares(msg.sender, _amount);
+    }
+
+    function mint(
+        address _recipient,
+        uint256 _amount
+    ) external requiresAuthDuringCompetition {
+        _mintShares(_recipient, _amount);
+    }
+
+    function _mintShares(address _recipient, uint256 _amount) internal {
+        // If the sender is restricted, ensure that the mint amount is less than
+        // the maximum.
+        if (!isUnrestricted[msg.sender]) {
+            require(_amount <= maxMintAmount, "MockLido: Invalid mint amount");
+        }
+
+        // Credit shares to the recipient.
+        uint256 sharesAmount;
+        if (getTotalShares() == 0) {
+            sharesAmount = _amount;
+        } else {
+            sharesAmount = getSharesByPooledEth(_amount);
+        }
+        sharesOf[_recipient] += sharesAmount;
+
+        // Update the Lido state.
+        totalPooledEther += _amount;
+        totalShares += sharesAmount;
+    }
+
+    function burn(uint256 amount) external requiresAuthDuringCompetition {
+        _burnShares(msg.sender, amount);
+    }
+
+    function burn(
+        address _target,
+        uint256 _amount
+    ) external requiresAuthDuringCompetition {
+        _burnShares(_target, _amount);
+    }
+
+    function _burnShares(address _target, uint256 _amount) internal {
+        // Debit shares from the recipient.
+        uint256 sharesAmount = getSharesByPooledEth(_amount);
+        sharesOf[_target] -= sharesAmount;
+
+        // Update the Lido state.
+        totalPooledEther -= _amount;
+        totalShares -= sharesAmount;
+    }
+
+    function setMaxMintAmount(
+        uint256 _maxMintAmount
+    ) external requiresAuthDuringCompetition {
+        maxMintAmount = _maxMintAmount;
+    }
+
+    function setUnrestrictedMintStatus(
+        address _target,
+        bool _status
+    ) external requiresAuthDuringCompetition {
+        isUnrestricted[_target] = _status;
+    }
+
+    /// ERC20 Functions ///
+
+    function balanceOf(address _owner) public view override returns (uint256) {
+        return getPooledEthByShares(sharesOf[_owner]);
+    }
+
+    function transfer(
+        address _recipient,
+        uint256 _amount
+    ) public override returns (bool) {
+        // Accrue interest.
+        _accrue();
+
+        // Transfer the tokens.
+        uint256 sharesAmount = getSharesByPooledEth(_amount);
+        _transferShares(_recipient, sharesAmount);
+
+        // Emit the transfer events.
+        emit Transfer(msg.sender, _recipient, _amount);
+        emit TransferShares(msg.sender, _recipient, sharesAmount);
+
+        return true;
+    }
+
+    function transferFrom(
+        address _sender,
+        address _recipient,
+        uint256 _amount
+    ) public override returns (bool) {
+        // Accrue interest.
+        _accrue();
+
+        // Transfer the tokens.
+        uint256 sharesAmount = getSharesByPooledEth(_amount);
+        _transferSharesFrom(_sender, _recipient, sharesAmount);
+
+        // Emit the transfer events.
+        emit Transfer(msg.sender, _recipient, _amount);
+        emit TransferShares(msg.sender, _recipient, sharesAmount);
+
+        return true;
+    }
+
+    /// stETH Functions ///
 
     function submit(address) external payable returns (uint256) {
         // Accrue interest.
@@ -54,7 +190,7 @@ contract MockLido is MultiRolesAuthority, ERC20Mintable {
         if (getTotalShares() == 0) {
             totalShares = msg.value;
             totalPooledEther = msg.value;
-            _mint(msg.sender, msg.value);
+            sharesOf[msg.sender] += msg.value;
             return msg.value;
         }
 
@@ -68,8 +204,8 @@ contract MockLido is MultiRolesAuthority, ERC20Mintable {
         totalPooledEther += msg.value;
         totalShares += shares;
 
-        // Mint the stETH tokens to the user.
-        _mint(msg.sender, msg.value);
+        // Mint shares to the user.
+        sharesOf[msg.sender] += shares;
 
         return shares;
     }
@@ -77,20 +213,31 @@ contract MockLido is MultiRolesAuthority, ERC20Mintable {
     function transferShares(
         address _recipient,
         uint256 _sharesAmount
-    ) external returns (uint256) {
+    ) public returns (uint256) {
         // Accrue interest.
         _accrue();
 
-        // Calculate the amount of tokens that should be transferred.
-        uint256 tokenAmount = _sharesAmount.mulDivDown(
-            getTotalPooledEther(),
-            getTotalShares()
-        );
+        // Transfer the shares.
+        uint256 tokenAmount = _transferShares(_recipient, _sharesAmount);
 
-        // Transfer the tokens to the user.
-        transfer(_recipient, tokenAmount);
+        // Emit the transfer events.
+        emit Transfer(msg.sender, _recipient, tokenAmount);
+        emit TransferShares(msg.sender, _recipient, _sharesAmount);
 
-        return tokenAmount;
+        return getPooledEthByShares(_sharesAmount);
+    }
+
+    function _transferShares(
+        address _recipient,
+        uint256 _sharesAmount
+    ) internal returns (uint256) {
+        // Debit shares from the sender.
+        sharesOf[msg.sender] -= _sharesAmount;
+
+        // Credit shares to the recipient.
+        sharesOf[_recipient] += _sharesAmount;
+
+        return getPooledEthByShares(_sharesAmount);
     }
 
     function transferSharesFrom(
@@ -101,27 +248,47 @@ contract MockLido is MultiRolesAuthority, ERC20Mintable {
         // Accrue interest.
         _accrue();
 
-        // Calculate the amount of tokens that should be transferred.
-        uint256 tokenAmount = _sharesAmount.mulDivDown(
-            getTotalPooledEther(),
-            getTotalShares()
+        // Transfer the shares.
+        uint256 tokenAmount = _transferSharesFrom(
+            _sender,
+            _recipient,
+            _sharesAmount
         );
 
-        // Transfer the tokens to the user.
-        transferFrom(_sender, _recipient, tokenAmount);
+        // Emit the transfer events.
+        emit Transfer(_sender, _recipient, tokenAmount);
+        emit TransferShares(_sender, _recipient, _sharesAmount);
+
+        return tokenAmount;
+    }
+
+    function _transferSharesFrom(
+        address _sender,
+        address _recipient,
+        uint256 _sharesAmount
+    ) internal returns (uint256) {
+        // Reduce the allowance.
+        uint256 tokenAmount = getPooledEthByShares(_sharesAmount);
+        _spendAllowance(_sender, msg.sender, tokenAmount);
+
+        // Debit shares from the sender.
+        sharesOf[_sender] -= _sharesAmount;
+
+        // Credit shares to the recipient.
+        sharesOf[_recipient] += _sharesAmount;
 
         return tokenAmount;
     }
 
     function getSharesByPooledEth(
         uint256 _ethAmount
-    ) external view returns (uint256) {
+    ) public view returns (uint256) {
         return _ethAmount.mulDivDown(getTotalShares(), getTotalPooledEther());
     }
 
     function getPooledEthByShares(
         uint256 _sharesAmount
-    ) external view returns (uint256) {
+    ) public view returns (uint256) {
         return
             _sharesAmount.mulDivDown(getTotalPooledEther(), getTotalShares());
     }
@@ -136,11 +303,6 @@ contract MockLido is MultiRolesAuthority, ERC20Mintable {
 
     function getTotalShares() public view returns (uint256) {
         return totalShares;
-    }
-
-    function sharesOf(address _account) external view returns (uint256) {
-        uint256 tokenBalance = balanceOf[_account];
-        return tokenBalance.mulDivDown(getTotalShares(), getTotalPooledEther());
     }
 
     /// Mock ///
