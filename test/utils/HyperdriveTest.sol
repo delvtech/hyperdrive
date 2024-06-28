@@ -38,6 +38,9 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
     uint256 internal constant MINIMUM_SHARE_RESERVES = ONE;
     uint256 internal constant MINIMUM_TRANSACTION_AMOUNT = 0.001e18;
     uint256 internal constant CIRCUIT_BREAKER_DELTA = 2e18;
+    // NOTE: Using a comically large circuit breaker APR to allow testing
+    // extreme cases.
+    uint256 internal constant CIRCUIT_BREAKER_APR = 1000e18;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
     uint256 internal constant POSITION_DURATION = 365 days;
 
@@ -161,6 +164,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         _config.minimumTransactionAmount = _deployConfig
             .minimumTransactionAmount;
         _config.circuitBreakerDelta = _deployConfig.circuitBreakerDelta;
+        _config.circuitBreakerAPR = _deployConfig.circuitBreakerAPR;
         _config.positionDuration = _deployConfig.positionDuration;
         _config.checkpointDuration = _deployConfig.checkpointDuration;
         _config.timeStretch = _deployConfig.timeStretch;
@@ -192,6 +196,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 minimumShareReserves: MINIMUM_SHARE_RESERVES,
                 minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
                 circuitBreakerDelta: CIRCUIT_BREAKER_DELTA,
+                circuitBreakerAPR: CIRCUIT_BREAKER_APR,
                 positionDuration: positionDuration,
                 checkpointDuration: CHECKPOINT_DURATION,
                 timeStretch: HyperdriveMath.calculateTimeStretch(

@@ -57,6 +57,7 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
             minimumShareReserves: ONE,
             minimumTransactionAmount: 0.001e18,
             circuitBreakerDelta: 1e18,
+            circuitBreakerAPR: 1e18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: HyperdriveMath.calculateTimeStretch(0.01e18, 365 days),

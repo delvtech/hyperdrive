@@ -65,6 +65,8 @@ contract RethDeployerCoordinatorTest is DeployerCoordinatorTest {
                     maxPositionDuration: 10 * 365 days,
                     minCircuitBreakerDelta: 0.15e18,
                     maxCircuitBreakerDelta: 0.6e18,
+                    minCircuitBreakerAPR: 0.15e18,
+                    maxCircuitBreakerAPR: 2e18,
                     minFixedAPR: 0.001e18,
                     maxFixedAPR: 0.5e18,
                     minTimeStretchAPR: 0.005e18,

@@ -76,6 +76,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
     event MinCircuitBreakerDeltaUpdated(uint256 newMinCircuitBreakerDelta);
 
+    event MaxCircuitBreakerAPRUpdated(uint256 newMaxCircuitBreakerAPR);
+
+    event MinCircuitBreakerAPRUpdated(uint256 newMinCircuitBreakerAPR);
+
     event MaxFixedAPRUpdated(uint256 newMaxFixedAPR);
 
     event MinFixedAPRUpdated(uint256 newMinFixedAPR);
@@ -112,6 +116,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.005e18,
@@ -159,6 +165,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -193,6 +201,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -227,6 +237,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -261,6 +273,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -292,6 +306,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -324,6 +340,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -355,6 +373,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxPositionDuration: 6 days,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -387,6 +407,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days + 30 minutes,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -419,6 +441,42 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.7e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
+                minFixedAPR: 0.001e18,
+                maxFixedAPR: 0.5e18,
+                minTimeStretchAPR: 0.01e18,
+                maxTimeStretchAPR: 0.5e18,
+                minFees: IHyperdrive.Fees(0, 0, 0, 0),
+                maxFees: IHyperdrive.Fees(ONE, ONE, ONE, ONE),
+                linkerFactory: address(0),
+                linkerCodeHash: bytes32(0)
+            }),
+            NAME
+        );
+
+        // Ensure that the factory can't be constructed with a minimum
+        // circuit breaker APR that is greater than the maximum circuit
+        // breaker APR.
+        vm.expectRevert(IHyperdriveFactory.InvalidCircuitBreakerAPR.selector);
+        new HyperdriveFactory(
+            HyperdriveFactory.FactoryConfig({
+                governance: alice,
+                deployerCoordinatorManager: celine,
+                hyperdriveGovernance: bob,
+                feeCollector: feeCollector,
+                sweepCollector: sweepCollector,
+                checkpointRewarder: address(0),
+                defaultPausers: defaults,
+                checkpointDurationResolution: 1 hours,
+                minCheckpointDuration: 8 hours,
+                maxCheckpointDuration: 1 days,
+                minPositionDuration: 7 days,
+                maxPositionDuration: 10 * 365 days,
+                minCircuitBreakerDelta: 0.15e18,
+                maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 2.5e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -450,6 +508,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.1e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.6e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -481,6 +541,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.1e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.6e18,
@@ -512,6 +574,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -543,6 +607,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -574,6 +640,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -605,6 +673,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -636,6 +706,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -667,6 +739,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -698,6 +772,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -729,6 +805,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -759,6 +837,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -799,6 +879,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             factory.maxCircuitBreakerDelta(),
             config.maxCircuitBreakerDelta
         );
+        assertEq(factory.minCircuitBreakerAPR(), config.minCircuitBreakerAPR);
+        assertEq(factory.maxCircuitBreakerAPR(), config.maxCircuitBreakerAPR);
         assertEq(factory.minTimeStretchAPR(), config.minTimeStretchAPR);
         assertEq(factory.maxTimeStretchAPR(), config.maxTimeStretchAPR);
         assertEq(
@@ -1295,6 +1377,66 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         assertEq(factory.minCircuitBreakerDelta(), newMinCircuitBreakerDelta);
     }
 
+    function test_updateMaxCircuitBreakerAPR() external {
+        uint256 newMaxCircuitBreakerAPR = 2e18;
+
+        // Ensure that the max circuit breaker APR can't be updated by someone
+        // other than the current governance.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
+        factory.updateMaxCircuitBreakerAPR(newMaxCircuitBreakerAPR);
+
+        // Ensure that the max circuit breaker APR can't be set to a value
+        // less than the min circuit breaker APR.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        uint256 minCircuitBreakerAPR = factory.minCircuitBreakerAPR();
+        vm.expectRevert(
+            IHyperdriveFactory.InvalidMaxCircuitBreakerAPR.selector
+        );
+        factory.updateMaxCircuitBreakerAPR(minCircuitBreakerAPR - 1);
+
+        // Ensure that the max circuit breaker APR was updated successfully
+        // and that the correct event was emitted.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        vm.expectEmit(true, true, true, true);
+        emit MaxCircuitBreakerAPRUpdated(newMaxCircuitBreakerAPR);
+        factory.updateMaxCircuitBreakerAPR(newMaxCircuitBreakerAPR);
+        assertEq(factory.maxCircuitBreakerAPR(), newMaxCircuitBreakerAPR);
+    }
+
+    function test_updateMinCircuitBreakerAPR() external {
+        uint256 newMinCircuitBreakerAPR = 0.15e18;
+
+        // Ensure that the min circuit breaker APR can't be updated by someone
+        // other than the current governance.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdriveFactory.Unauthorized.selector);
+        factory.updateMinCircuitBreakerAPR(newMinCircuitBreakerAPR);
+
+        // Ensure that the min circuit breaker APR can't be set to a value
+        // greater than the max circuit breaker APR.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        uint256 maxCircuitBreakerAPR = factory.maxCircuitBreakerAPR();
+        vm.expectRevert(
+            IHyperdriveFactory.InvalidMinCircuitBreakerAPR.selector
+        );
+        factory.updateMinCircuitBreakerAPR(maxCircuitBreakerAPR + 1);
+
+        // Ensure that the min circuit breaker APR was updated successfully
+        // and that the correct event was emitted.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        vm.expectEmit(true, true, true, true);
+        emit MinCircuitBreakerAPRUpdated(newMinCircuitBreakerAPR);
+        factory.updateMinCircuitBreakerAPR(newMinCircuitBreakerAPR);
+        assertEq(factory.minCircuitBreakerAPR(), newMinCircuitBreakerAPR);
+    }
+
     function test_updateMaxFixedAPR() external {
         uint256 newMaxFixedAPR = 0.25e18;
 
@@ -1771,6 +1913,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 minimumShareReserves: 1e15,
                 minimumTransactionAmount: 1e15,
                 circuitBreakerDelta: 0.45e18,
+                circuitBreakerAPR: 1.5e18,
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
                 timeStretch: 0,
@@ -1999,6 +2142,35 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         }
 
         // Ensure than an instance can't be deployed with a circuit breaker
+        // delta that is greater than the maximum circuit breaker delta.
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 oldCircuitBreakerDelta = config.circuitBreakerDelta;
+            config.circuitBreakerDelta = factory.maxCircuitBreakerDelta() + 1;
+            vm.expectRevert(
+                IHyperdriveFactory.InvalidCircuitBreakerDelta.selector
+            );
+            factory.deployAndInitialize(
+                deploymentId,
+                deployerCoordinator,
+                HYPERDRIVE_NAME,
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.05e18,
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
+                deploymentId
+            );
+            config.circuitBreakerDelta = oldCircuitBreakerDelta;
+        }
+
+        // Ensure than an instance can't be deployed with a circuit breaker
         // delta that is less than the minimum circuit breaker delta.
         {
             vm.stopPrank();
@@ -2028,14 +2200,14 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         }
 
         // Ensure than an instance can't be deployed with a circuit breaker
-        // delta that is greater than the maximum circuit breaker delta.
+        // APR that is greater than the maximum circuit breaker APR.
         {
             vm.stopPrank();
             vm.startPrank(bob);
-            uint256 oldCircuitBreakerDelta = config.circuitBreakerDelta;
-            config.circuitBreakerDelta = factory.maxCircuitBreakerDelta() + 1;
+            uint256 oldCircuitBreakerAPR = config.circuitBreakerAPR;
+            config.circuitBreakerAPR = factory.maxCircuitBreakerAPR() + 1;
             vm.expectRevert(
-                IHyperdriveFactory.InvalidCircuitBreakerDelta.selector
+                IHyperdriveFactory.InvalidCircuitBreakerAPR.selector
             );
             factory.deployAndInitialize(
                 deploymentId,
@@ -2053,7 +2225,36 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 }),
                 deploymentId
             );
-            config.circuitBreakerDelta = oldCircuitBreakerDelta;
+            config.circuitBreakerAPR = oldCircuitBreakerAPR;
+        }
+
+        // Ensure than an instance can't be deployed with a circuit breaker
+        // APR that is less than the minimum circuit breaker APR.
+        {
+            vm.stopPrank();
+            vm.startPrank(bob);
+            uint256 oldCircuitBreakerAPR = config.circuitBreakerAPR;
+            config.circuitBreakerAPR = factory.minCircuitBreakerAPR() - 1;
+            vm.expectRevert(
+                IHyperdriveFactory.InvalidCircuitBreakerAPR.selector
+            );
+            factory.deployAndInitialize(
+                deploymentId,
+                deployerCoordinator,
+                HYPERDRIVE_NAME,
+                config,
+                extraData,
+                10_000e18,
+                0.02e18,
+                0.05e18,
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: bob,
+                    extraData: new bytes(0)
+                }),
+                deploymentId
+            );
+            config.circuitBreakerAPR = oldCircuitBreakerAPR;
         }
 
         // Ensure than an instance can't be deployed with a fixed APR less than
@@ -2766,6 +2967,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             config.minimumTransactionAmount
         );
         assertEq(config_.circuitBreakerDelta, config.circuitBreakerDelta);
+        assertEq(config_.circuitBreakerAPR, config.circuitBreakerAPR);
         assertEq(config_.positionDuration, config.positionDuration);
         assertEq(config_.checkpointDuration, config.checkpointDuration);
         assertEq(
@@ -2872,6 +3074,8 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -2918,6 +3122,7 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
             minimumShareReserves: 1e18,
             minimumTransactionAmount: 1e15,
             circuitBreakerDelta: 0.45e18,
+            circuitBreakerAPR: 1.5e18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: 0,
@@ -3417,6 +3622,8 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -3616,6 +3823,8 @@ contract HyperdriveFactoryAddDeployerCoordinatorTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,
@@ -3747,6 +3956,8 @@ contract HyperdriveFactoryRemoveDeployerCoordinatorTest is HyperdriveTest {
                 maxPositionDuration: 10 * 365 days,
                 minCircuitBreakerDelta: 0.15e18,
                 maxCircuitBreakerDelta: 0.6e18,
+                minCircuitBreakerAPR: 0.15e18,
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.01e18,

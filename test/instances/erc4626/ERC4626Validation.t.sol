@@ -71,6 +71,10 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
                 // NOTE: This is a high max circuit breaker delta to ensure that
                 // trading during tests isn't impeded by the circuit breaker.
                 maxCircuitBreakerDelta: 2e18,
+                minCircuitBreakerAPR: 0.15e18,
+                // NOTE: This is a high max circuit breaker APR to ensure that
+                // trading during tests isn't impeded by the circuit breaker.
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.005e18,
@@ -121,6 +125,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         config.linkerFactory = factory.linkerFactory();
         config.linkerCodeHash = factory.linkerCodeHash();
         config.timeStretch = 0;
+        config.circuitBreakerAPR = 1.5e18;
         uint256 contribution = 7_500e18;
         vm.stopPrank();
         vm.startPrank(alice);
@@ -205,6 +210,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         config.minimumShareReserves = hyperdrive
             .getPoolConfig()
             .minimumShareReserves;
+        config.circuitBreakerAPR = hyperdrive.getPoolConfig().circuitBreakerAPR;
         uint256 contribution = 10_000 * 10 ** decimals;
         underlyingToken.approve(
             address(deployerCoordinator),

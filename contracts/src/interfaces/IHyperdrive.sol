@@ -94,6 +94,9 @@ interface IHyperdrive is
         ///      APR and the current spot APR for an LP to add liquidity. This
         ///      protects LPs from sandwich attacks.
         uint256 circuitBreakerDelta;
+        /// @dev The maximum APR at which to add liquidity. This prevents price
+        ///      discovery issues from manifesting in the pool.
+        uint256 circuitBreakerAPR;
         /// @dev The duration of a position prior to maturity.
         uint256 positionDuration;
         /// @dev The duration of a checkpoint.
@@ -133,6 +136,9 @@ interface IHyperdrive is
         ///      APR and the current spot APR for an LP to add liquidity. This
         ///      protects LPs from sandwich attacks.
         uint256 circuitBreakerDelta;
+        /// @dev The maximum APR at which to add liquidity. This prevents price
+        ///      discovery issues from manifesting in the pool.
+        uint256 circuitBreakerAPR;
         /// @dev The duration of a position prior to maturity.
         uint256 positionDuration;
         /// @dev The duration of a checkpoint.

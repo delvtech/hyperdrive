@@ -78,6 +78,12 @@ interface IHyperdriveFactory {
     /// @notice Emitted when the minimum circuit breaker delta is updated.
     event MinCircuitBreakerDeltaUpdated(uint256 newMinCircuitBreakerDelta);
 
+    /// @notice Emitted when the maximum circuit breaker APR is updated.
+    event MaxCircuitBreakerAPRUpdated(uint256 newMaxCircuitBreakerAPR);
+
+    /// @notice Emitted when the minimum circuit breaker APR is updated.
+    event MinCircuitBreakerAPRUpdated(uint256 newMinCircuitBreakerAPR);
+
     /// @notice Emitted when the maximum fixed APR is updated.
     event MaxFixedAPRUpdated(uint256 newMaxFixedAPR);
 
@@ -199,6 +205,21 @@ interface IHyperdriveFactory {
     ///         the minimum and maximum circuit breaker delta.
     error InvalidCircuitBreakerDelta();
 
+    /// @notice Thrown when governance attempts to set the maximum circuit
+    ///         breaker APR to a value that is less than the minimum
+    ///         circuit breaker APR.
+    error InvalidMaxCircuitBreakerAPR();
+
+    /// @notice Thrown when governance attempts to set the minimum circuit
+    ///         breaker APR to a value that is greater than the maximum
+    ///         circuit breaker APR.
+    error InvalidMinCircuitBreakerAPR();
+
+    /// @notice Thrown when the circuit breaker APR passed to
+    ///         `deployAndInitialize` doesn't fall within the range specified by
+    ///         the minimum and maximum circuit breaker APR.
+    error InvalidCircuitBreakerAPR();
+
     /// @notice Thrown when governance attempts to set the maximum fixed APR to
     ///         a value that is smaller than the minimum fixed APR.
     error InvalidMaxFixedAPR();
@@ -296,6 +317,26 @@ interface IHyperdriveFactory {
     /// @notice Allows governance to update the minimum position duration.
     /// @param _minPositionDuration The new minimum position duration.
     function updateMinPositionDuration(uint256 _minPositionDuration) external;
+
+    /// @notice Allows governance to update the maximum circuit breaker delta.
+    /// @param _maxCircuitBreakerDelta The new maximum circuit breaker delta.
+    function updateMaxCircuitBreakerDelta(
+        uint256 _maxCircuitBreakerDelta
+    ) external;
+
+    /// @notice Allows governance to update the minimum circuit breaker delta.
+    /// @param _minCircuitBreakerDelta The new minimum circuit breaker delta.
+    function updateMinCircuitBreakerDelta(
+        uint256 _minCircuitBreakerDelta
+    ) external;
+
+    /// @notice Allows governance to update the maximum circuit breaker APR.
+    /// @param _maxCircuitBreakerAPR The new maximum circuit breaker APR.
+    function updateMaxCircuitBreakerAPR(uint256 _maxCircuitBreakerAPR) external;
+
+    /// @notice Allows governance to update the minimum circuit breaker APR.
+    /// @param _minCircuitBreakerAPR The new minimum circuit breaker APR.
+    function updateMinCircuitBreakerAPR(uint256 _minCircuitBreakerAPR) external;
 
     /// @notice Allows governance to update the maximum fixed APR.
     /// @param _maxFixedAPR The new maximum fixed APR.

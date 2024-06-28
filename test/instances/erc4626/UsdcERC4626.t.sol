@@ -85,6 +85,10 @@ contract UsdcERC4626 is ERC4626ValidationTest {
                 // NOTE: This is a high max circuit breaker delta to ensure that
                 // trading during tests isn't impeded by the circuit breaker.
                 maxCircuitBreakerDelta: 2e18,
+                minCircuitBreakerAPR: 0.15e18,
+                // NOTE: This is a high max circuit breaker APR to ensure that
+                // trading during tests isn't impeded by the circuit breaker.
+                maxCircuitBreakerAPR: 2e18,
                 minFixedAPR: 0.001e18,
                 maxFixedAPR: 0.5e18,
                 minTimeStretchAPR: 0.005e18,
@@ -137,6 +141,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         config.vaultSharesToken = token;
         config.minimumTransactionAmount = 1e6;
         config.minimumShareReserves = 1e6;
+        config.circuitBreakerAPR = 1.5e18;
         uint256 contribution = 7_500e6;
         vm.stopPrank();
         vm.startPrank(alice);

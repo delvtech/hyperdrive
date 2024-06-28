@@ -47,6 +47,12 @@ export const ANVIL_FACTORY: HyperdriveFactoryConfig = {
             maxCircuitBreakerDelta: parseEther(
                 env.FACTORY_MAX_CIRCUIT_BREAKER_DELTA!,
             ),
+            minCircuitBreakerAPR: parseEther(
+                env.FACTORY_MIN_CIRCUIT_BREAKER_APR!,
+            ),
+            maxCircuitBreakerAPR: parseEther(
+                env.FACTORY_MAX_CIRCUIT_BREAKER_APR!,
+            ),
             minFixedAPR: parseEther(env.FACTORY_MIN_FIXED_APR!),
             maxFixedAPR: parseEther(env.FACTORY_MAX_FIXED_APR!),
             minTimeStretchAPR: parseEther(env.FACTORY_MIN_TIME_STRETCH_APR!),

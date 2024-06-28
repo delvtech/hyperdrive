@@ -57,6 +57,9 @@ export const ANVIL_STETH_HYPERDRIVE: HyperdriveInstanceConfig<"StETH"> = {
             circuitBreakerDelta: parseEther(
                 env.STETH_HYPERDRIVE_CIRCUIT_BREAKER_DELTA!,
             ),
+            circuitBreakerAPR: parseEther(
+                env.STETH_HYPERDRIVE_CIRCUIT_BREAKER_APR!,
+            ),
             minimumShareReserves: parseEther(
                 env.STETH_HYPERDRIVE_MINIMUM_SHARE_RESERVES!,
             ),

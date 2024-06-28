@@ -69,6 +69,7 @@ export const SEPOLIA_MORPHO_DAI_30DAY: HyperdriveInstanceConfig<"ERC4626"> = {
             baseToken: hre.hyperdriveDeploy.deployments.byName("DAI").address,
             vaultSharesToken: "0x80191B6a6A8E2026209fB5d1e4e9CC9A73029511",
             circuitBreakerDelta: parseEther("0.6"),
+            circuitBreakerAPR: parseEther("2"),
             minimumShareReserves: parseEther("10"),
             minimumTransactionAmount: parseEther("0.001"),
             positionDuration: parseDuration("30 days"),
