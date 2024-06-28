@@ -208,14 +208,12 @@ contract LeakyLido is MockLido {
         address to,
         uint256 amount
     ) external returns (bool) {
-        balanceOf[from] -= amount;
+        // Transfer the shares.
+        uint256 sharesAmount = getSharesByPooledEth(amount);
+        sharesOf[from] -= sharesAmount;
+        sharesOf[to] += sharesAmount;
 
-        // Cannot overflow because the sum of all user
-        // balances can't exceed the max uint256 value.
-        unchecked {
-            balanceOf[to] += amount;
-        }
-
+        // Emit an event.
         emit Transfer(from, to, amount);
 
         return true;
