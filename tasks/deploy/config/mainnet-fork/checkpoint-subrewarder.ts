@@ -18,7 +18,7 @@ export const MAINNET_FORK_CHECKPOINT_SUBREWARDER: HyperdriveCheckpointSubrewarde
                 MAINNET_FORK_CHECKPOINT_REWARDER_NAME,
             ).address,
             (await hre.getNamedAccounts())["deployer"] as Address,
-            hre.hyperdriveDeploy.deployments.byName("MAINNET_FORK_REGISTRY")
+            hre.hyperdriveDeploy.deployments.byName("DELV Hyperdrive Registry")
                 .address,
             MAINNET_DAI_ADDRESS,
             parseEther("1"),
