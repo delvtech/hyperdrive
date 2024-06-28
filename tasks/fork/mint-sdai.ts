@@ -27,6 +27,19 @@ HyperdriveDeployBaseTask(
             { address, amount }: Required<MintSDAIParams>,
             { viem, artifacts },
         ) => {
+            let contract = await viem.getContractAt(
+                "solmate/tokens/ERC20.sol:ERC20",
+                MAINNET_SDAI_ADDRESS,
+            );
+            let balance = await contract.read.balanceOf([MAINNET_SDAI_WHALE]);
+            if (balance < parseEther(amount)) {
+                console.log(
+                    "ERROR: insufficient funds in SDAI whale account, skipping...",
+                );
+                return;
+            }
+
+            let pc = await viem.getPublicClient();
             let transferData = encodeFunctionData({
                 abi: (await artifacts.readArtifact("ERC20Mintable")).abi,
                 functionName: "transfer",
@@ -45,7 +58,6 @@ HyperdriveDeployBaseTask(
                 to: MAINNET_SDAI_ADDRESS,
                 data: transferData,
             });
-            let pc = await viem.getPublicClient();
             await pc.waitForTransactionReceipt({ hash: tx });
         },
     );

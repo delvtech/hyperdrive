@@ -21,7 +21,7 @@ HyperdriveDeployBaseTask(
     .addOptionalParam(
         "rate",
         "rate to set for all underlying vaults (scaled to 1e18)",
-        "0.05",
+        "0.03",
         types.string,
     )
     .setAction(async ({ rate }, { viem }) => {

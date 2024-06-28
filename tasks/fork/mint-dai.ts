@@ -25,6 +25,18 @@ HyperdriveDeployBaseTask(
             { address, amount }: Required<MintDAIParams>,
             { viem, artifacts },
         ) => {
+            let contract = await viem.getContractAt(
+                "solmate/tokens/ERC20.sol:ERC20",
+                MAINNET_DAI_ADDRESS,
+            );
+            let balance = await contract.read.balanceOf([MAINNET_DAI_WHALE]);
+            if (balance < parseEther(amount)) {
+                console.log(
+                    "ERROR: insufficient funds in DAI whale account, skipping...",
+                );
+                return;
+            }
+
             let transferData = encodeFunctionData({
                 abi: (
                     await artifacts.readArtifact(
