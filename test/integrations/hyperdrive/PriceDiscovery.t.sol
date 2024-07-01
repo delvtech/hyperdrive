@@ -53,7 +53,6 @@ contract PriceDiscoveryTest is HyperdriveTest {
         hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
         // Add liquidity.
-        console.log("solvency = %s", hyperdrive.solvency().toString(18));
         addLiquidity(alice, 100e18);
     }
 

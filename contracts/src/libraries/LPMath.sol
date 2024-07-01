@@ -202,7 +202,6 @@ library LPMath {
             _vaultSharePrice,
             _initialVaultSharePrice
         );
-
         uint256 maxBondProceeds;
         (maxBondProceeds, success) = YieldSpaceMath.calculateMaxBuyBondsOutSafe(
             effectiveShareReserves,
@@ -219,8 +218,8 @@ library LPMath {
         }
 
         // Calculate the pool's solvency after opening the max long. This
-        // doesn't account for fees, which is fine since this will be more
-        // conservative.
+        // doesn't account for fees, which is fine since this check is more
+        // conservative without fees.
         uint256 shareReserves = _shareReserves + maxSharePayment;
         uint256 longExposure = calculateLongExposure(
             _longExposure,
@@ -228,6 +227,9 @@ library LPMath {
             _checkpointExposure + maxBondProceeds.toInt256()
         );
 
+        // FIXME: This comment is confusing, and I don't completely understand
+        // this code. What fails if I remove it?
+        //
         // If the pool isn't solvent after opening the max long, then we
         // prevent the liquidity from being added since it will cause issues
         // with price discovery. We know that when: cz <= e_l + c * z_min
@@ -245,7 +247,7 @@ library LPMath {
         );
         if (
             shareReserves.mulDown(_vaultSharePrice) <=
-            longExposure + 2 * minimumShareReserves.mulUp(vaultSharePrice)
+            longExposure + minimumShareReserves.mulUp(vaultSharePrice)
         ) {
             return false;
         }
