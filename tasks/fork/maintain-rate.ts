@@ -44,8 +44,7 @@ HyperdriveDeployBaseTask(
                 }))!,
             );
             let stethBalanceIncrease =
-                (stethCurrentBalance * BigInt(interval)) /
-                (365n * 24n * rateFraction);
+                stethCurrentBalance / (365n * 24n * rateFraction);
             await tc.setStorageAt({
                 address: MAINNET_STETH_ADDRESS,
                 index: slot,
@@ -63,8 +62,7 @@ HyperdriveDeployBaseTask(
                 address: MAINNET_RETH_ADDRESS,
             });
             let rethBalanceIncrease =
-                (rethCurrentBalance * BigInt(interval)) /
-                (365n * 24n * rateFraction);
+                rethCurrentBalance / (365n * 24n * rateFraction);
             await tc.setBalance({
                 address: MAINNET_RETH_ADDRESS,
                 value: rethCurrentBalance + rateFraction,
