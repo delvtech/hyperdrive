@@ -589,6 +589,15 @@ extendEnvironment((hre) => {
         console.log(` - Saving ${name}_${prefix}Hyperdrive`);
         deployments.add(name, `${prefix}Hyperdrive`, address);
 
+        // NOTE: There's a bug in hardhat that results in receiving a garbage address for Target0.
+        //       Because of this, we need to retrieve the correct address from the Hyperdrive instance once deployed.
+        await deployments.add(
+            `${name}_${prefix}Target0`,
+            `${prefix}Target0`,
+            await (
+                await hre.viem.getContractAt("IHyperdrive", address)
+            ).read.target0(),
+        );
         return hre.viem.getContractAt(`${prefix}Hyperdrive` as string, address);
     };
     hre.hyperdriveDeploy = {
