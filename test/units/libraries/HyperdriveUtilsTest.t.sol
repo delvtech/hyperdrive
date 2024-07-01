@@ -23,10 +23,10 @@ contract HyperdriveUtilsTest is HyperdriveTest {
         vm.warp(50 * 365 days);
 
         // Normalize the fuzzing parameters to a reasonable range.
-        apr = apr.normalizeToRange(0.001e18, 10e18);
+        apr = apr.normalizeToRange(0.01e18, .5e18);
         positionDuration = positionDuration.normalizeToRange(
             1 days,
-            10 * 365 days
+            2 * 365 days
         );
 
         // Deploy and initialize a pool with the target APR and a position

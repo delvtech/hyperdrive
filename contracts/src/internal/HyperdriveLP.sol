@@ -4,7 +4,8 @@ pragma solidity 0.8.20;
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { AssetId } from "../libraries/AssetId.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
+import { YieldSpaceMath } from "../libraries/YieldSpaceMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 import { LPMath } from "../libraries/LPMath.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
@@ -101,6 +102,25 @@ abstract contract HyperdriveLP is
             ) < _minimumShareReserves
         ) {
             revert IHyperdrive.InvalidEffectiveShareReserves();
+        }
+
+        // Check to see whether or not the initial liquidity will result in
+        // invalid price discovery. If the spot price can't be brought to one,
+        // we revert to avoid dangerous pool states.
+        if (
+            !LPMath.verifyPriceDiscovery(
+                shareReserves,
+                shareAdjustment,
+                bondReserves,
+                _minimumShareReserves,
+                _initialVaultSharePrice,
+                vaultSharePrice,
+                _timeStretch,
+                0,
+                0
+            )
+        ) {
+            revert IHyperdrive.CircuitBreakerTriggered();
         }
 
         // Initialize the reserves.
@@ -200,6 +220,19 @@ abstract contract HyperdriveLP is
             true
         );
 
+        // FIXME: Remove this.
+        LPMath.verifyPriceDiscovery(
+            _marketState.shareReserves,
+            _marketState.shareAdjustment,
+            _marketState.bondReserves,
+            _minimumShareReserves,
+            _initialVaultSharePrice,
+            vaultSharePrice,
+            _timeStretch,
+            _nonNettedLongs(latestCheckpoint + _positionDuration),
+            _marketState.longExposure
+        );
+
         // Ensure that the spot APR is close enough to the previous weighted
         // spot price to fall within the tolerance.
         {
@@ -290,6 +323,26 @@ abstract contract HyperdriveLP is
         bool success = _distributeExcessIdleSafe(vaultSharePrice);
         if (!success) {
             revert IHyperdrive.DistributeExcessIdleFailed();
+        }
+
+        // Check to see whether or not adding this liquidity will result in
+        // worsened price discovery. If the spot price can't be brought to one,
+        // we revert to avoid dangerous pool states.
+        uint256 _latestCheckpoint = latestCheckpoint; // avoid stack-too-deep
+        if (
+            !LPMath.verifyPriceDiscovery(
+                _marketState.shareReserves,
+                _marketState.shareAdjustment,
+                _marketState.bondReserves,
+                _minimumShareReserves,
+                _initialVaultSharePrice,
+                vaultSharePrice,
+                _timeStretch,
+                _nonNettedLongs(_latestCheckpoint + _positionDuration),
+                _marketState.longExposure
+            )
+        ) {
+            revert IHyperdrive.CircuitBreakerTriggered();
         }
 
         // Emit an AddLiquidity event.
