@@ -295,7 +295,7 @@ abstract contract HyperdriveLP is
         // Emit an AddLiquidity event.
         uint256 lpSharePrice = lpTotalSupply == 0
             ? 0 // NOTE: We always round the LP share price down for consistency.
-            : startingPresentValue.divDown(lpTotalSupply);
+            : startingPresentValue.mulDivDown(vaultSharePrice, lpTotalSupply);
         IHyperdrive.Options calldata options = _options; // avoid stack-too-deep
         emit AddLiquidity(
             options.destination,
