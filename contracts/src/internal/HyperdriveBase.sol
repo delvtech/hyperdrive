@@ -661,12 +661,7 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
             return (0, false);
         }
 
-        // NOTE: Round down to underestimate the LP share price.
-        //
-        // Calculate the present value in base and the LP total supply.
-        uint256 presentValue = _vaultSharePrice > 0
-            ? presentValueShares.mulDown(_vaultSharePrice)
-            : 0;
+        // Calculate the LP total supply.
         uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
             _totalSupply[AssetId._WITHDRAWAL_SHARE_ASSET_ID] -
             _withdrawPool.readyToWithdraw;
@@ -680,7 +675,9 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         // NOTE: Round down to underestimate the LP share price.
         //
         // Calculate the LP share price.
-        uint256 lpSharePrice = presentValue.divDown(lpTotalSupply);
+        uint256 lpSharePrice = _vaultSharePrice > 0
+            ? presentValueShares.mulDivDown(_vaultSharePrice, lpTotalSupply)
+            : 0;
 
         return (lpSharePrice, true);
     }
