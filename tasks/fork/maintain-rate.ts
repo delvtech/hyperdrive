@@ -1,5 +1,5 @@
 import { task, types } from "hardhat/config";
-import { keccak256, toHex } from "viem";
+import { keccak256, parseEther, toHex } from "viem";
 import {
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
@@ -10,6 +10,7 @@ import { sleep } from "./lib";
 
 export type MaintainRateParams = HyperdriveDeployBaseTaskParams & {
     rate: string;
+    interval: number;
 };
 
 HyperdriveDeployBaseTask(
@@ -30,7 +31,7 @@ HyperdriveDeployBaseTask(
         1,
         types.int,
     )
-    .setAction(async ({ rate, interval }, { viem }) => {
+    .setAction(async ({ rate, interval }: MaintainRateParams, { viem }) => {
         let tc = await viem.getTestClient({
             mode: "anvil",
         });
@@ -48,7 +49,10 @@ HyperdriveDeployBaseTask(
                 }))!,
             );
             let stethBalanceIncrease =
-                (stethCurrentBalance * BigInt(interval) * rate) / (365n * 24n);
+                (stethCurrentBalance *
+                    BigInt(interval) *
+                    (parseEther(rate) / BigInt(1e18))) /
+                (365n * 24n);
             await tc.setStorageAt({
                 address: MAINNET_STETH_ADDRESS,
                 index: slot,
@@ -66,7 +70,10 @@ HyperdriveDeployBaseTask(
                 address: MAINNET_RETH_ADDRESS,
             });
             let rethBalanceIncrease =
-                (rethCurrentBalance * BigInt(interval) * rate) / (365n * 24n);
+                (rethCurrentBalance *
+                    BigInt(interval) *
+                    (parseEther(rate) / BigInt(1e18))) /
+                (365n * 24n);
             await tc.setBalance({
                 address: MAINNET_RETH_ADDRESS,
                 value: rethCurrentBalance + rethBalanceIncrease,
