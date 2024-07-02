@@ -24,6 +24,10 @@ provide base assets. The fact that LPs don't need to mint bonds to provide
 liquidity improves the capital efficiency and UX of providing liquidity to
 fixed-rate markets.
 
+# Deployed Contracts
+
+The addresses for all of the deployed Hyperdrive contracts can be found [here](./deployments.json);
+
 # Resources
 
 The [Hyperdrive docs](https://docs-delv.gitbook.io/hyperdrive) include documentation
@@ -87,7 +91,7 @@ provider URLs.
 
 ## Build
 
-To build the smart contracts, run: 
+To build the smart contracts, run:
 
 ```sh
 make build
