@@ -49,9 +49,8 @@ HyperdriveDeployBaseTask(
                 }))!,
             );
             let stethBalanceIncrease =
-                (stethCurrentBalance *
-                    BigInt(interval) *
-                    (parseEther(rate) / BigInt(1e18))) /
+                (stethCurrentBalance * BigInt(interval) * parseEther(rate)) /
+                BigInt(1e18) /
                 (365n * 24n);
             await tc.setStorageAt({
                 address: MAINNET_STETH_ADDRESS,
@@ -70,9 +69,8 @@ HyperdriveDeployBaseTask(
                 address: MAINNET_RETH_ADDRESS,
             });
             let rethBalanceIncrease =
-                (rethCurrentBalance *
-                    BigInt(interval) *
-                    (parseEther(rate) / BigInt(1e18))) /
+                (rethCurrentBalance * BigInt(interval) * parseEther(rate)) /
+                BigInt(1e18) /
                 (365n * 24n);
             await tc.setBalance({
                 address: MAINNET_RETH_ADDRESS,
