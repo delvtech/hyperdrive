@@ -1,5 +1,5 @@
 import { task, types } from "hardhat/config";
-import { keccak256, parseEther, toHex } from "viem";
+import { keccak256, toHex } from "viem";
 import {
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
@@ -24,13 +24,17 @@ HyperdriveDeployBaseTask(
         "0.03",
         types.string,
     )
-    .setAction(async ({ rate }, { viem }) => {
+    .addOptionalParam(
+        "interval",
+        "time in hours between balance updates",
+        1,
+        types.int,
+    )
+    .setAction(async ({ rate, interval }, { viem }) => {
         let tc = await viem.getTestClient({
             mode: "anvil",
         });
         let pc = await viem.getPublicClient();
-        let interval = 60; // minutes
-        let rateFraction = parseEther("1") / parseEther(rate);
         // Every hour, increase the balance of each vault by an amount proportional to the annual rate.
         while (true) {
             console.log("increasing balance of underlying vaults...");
@@ -44,7 +48,7 @@ HyperdriveDeployBaseTask(
                 }))!,
             );
             let stethBalanceIncrease =
-                stethCurrentBalance / (365n * 24n * rateFraction);
+                (stethCurrentBalance * BigInt(interval) * rate) / (365n * 24n);
             await tc.setStorageAt({
                 address: MAINNET_STETH_ADDRESS,
                 index: slot,
@@ -57,19 +61,20 @@ HyperdriveDeployBaseTask(
             });
             console.log(`steth balance increased by ${stethBalanceIncrease}`);
 
-            // For RETH, send ETH to the RocketTokenRETH contract.
+            // For RETH, update the ETH balance of the RocketTokenRETH contract.
             let rethCurrentBalance = await pc.getBalance({
                 address: MAINNET_RETH_ADDRESS,
             });
             let rethBalanceIncrease =
-                rethCurrentBalance / (365n * 24n * rateFraction);
+                (rethCurrentBalance * BigInt(interval) * rate) / (365n * 24n);
             await tc.setBalance({
                 address: MAINNET_RETH_ADDRESS,
-                value: rethCurrentBalance + rateFraction,
+                value: rethCurrentBalance + rethBalanceIncrease,
             });
             console.log(`reth balance increased by ${rethBalanceIncrease}`);
 
             // For SDAI, nothing needs to be done so long as the underlying `rho` value is not recalculated.
-            await sleep(interval);
+
+            await sleep(interval * 60);
         }
     });
