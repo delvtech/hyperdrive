@@ -3,11 +3,18 @@ import { HyperdriveFactoryConfig, parseDuration } from "../../lib";
 
 let { env } = process;
 
+// The name of the factory.
+export const ANVIL_FACTORY_NAME = "ElementDAO Hyperdrive Factory";
+
+// The name of the forwarder factory.
+export const ANVIL_FACTORY_FORWARDER_NAME =
+    "ElementDAO ERC20 Factory Forwarder";
+
 export const ANVIL_FACTORY: HyperdriveFactoryConfig = {
-    name: "FACTORY",
+    name: ANVIL_FACTORY_NAME,
     prepare: async (hre, options) => {
         await hre.hyperdriveDeploy.ensureDeployed(
-            "FACTORY_FORWARDER",
+            ANVIL_FACTORY_FORWARDER_NAME,
             "ERC20ForwarderFactory",
             ["FACTORY_FORWARDER"],
             options,
@@ -67,17 +74,18 @@ export const ANVIL_FACTORY: HyperdriveFactoryConfig = {
                     env.FACTORY_MAX_GOVERNANCE_ZOMBIE_FEE!,
                 ),
             },
-            linkerFactory:
-                hre.hyperdriveDeploy.deployments.byName("FACTORY_FORWARDER")
-                    .address,
+            linkerFactory: hre.hyperdriveDeploy.deployments.byName(
+                ANVIL_FACTORY_FORWARDER_NAME,
+            ).address,
             linkerCodeHash: await (
                 await hre.viem.getContractAt(
                     "ERC20ForwarderFactory",
-                    hre.hyperdriveDeploy.deployments.byName("FACTORY_FORWARDER")
-                        .address,
+                    hre.hyperdriveDeploy.deployments.byName(
+                        ANVIL_FACTORY_FORWARDER_NAME,
+                    ).address,
                 )
             ).read.ERC20LINK_HASH(),
         },
-        "FACTORY",
+        ANVIL_FACTORY_NAME,
     ],
 };

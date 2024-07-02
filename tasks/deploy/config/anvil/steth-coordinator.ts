@@ -1,5 +1,6 @@
 import { Address, maxUint256, parseEther, zeroAddress } from "viem";
 import { HyperdriveCoordinatorConfig } from "../../lib";
+import { ANVIL_FACTORY_NAME } from "./factory";
 
 let { env } = process;
 
@@ -7,7 +8,7 @@ export const ANVIL_STETH_COORDINATOR: HyperdriveCoordinatorConfig<"StETH"> = {
     name: "STETH_COORDINATOR",
     prefix: "StETH",
     factoryAddress: async (hre) =>
-        hre.hyperdriveDeploy.deployments.byName("FACTORY").address,
+        hre.hyperdriveDeploy.deployments.byName(ANVIL_FACTORY_NAME).address,
     targetCount: 4,
     // Prepare for deploying the coordinator by ensuring the StETH token
     // is deployed, initialized with an ETH balance, and that ownership is

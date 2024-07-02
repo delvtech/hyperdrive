@@ -6,6 +6,7 @@ import {
     parseDuration,
     toBytes32,
 } from "../../lib";
+import { ANVIL_FACTORY_NAME } from "./factory";
 
 let { env } = process;
 
@@ -118,7 +119,8 @@ export const ANVIL_ERC4626_HYPERDRIVE: HyperdriveInstanceConfig<"ERC4626"> = {
             ).address,
             ...(await getLinkerDetails(
                 hre,
-                hre.hyperdriveDeploy.deployments.byName("FACTORY").address,
+                hre.hyperdriveDeploy.deployments.byName(ANVIL_FACTORY_NAME)
+                    .address,
             )),
             fees: {
                 curve: parseEther(env.ERC4626_HYPERDRIVE_CURVE_FEE!),
