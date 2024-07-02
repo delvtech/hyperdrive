@@ -31,9 +31,8 @@ export const SEPOLIA_CHECKPOINT_SUBREWARDER: HyperdriveCheckpointSubrewarderConf
                 SEPOLIA_CHECKPOINT_REWARDER_NAME,
             ).address,
             (await hre.getNamedAccounts())["deployer"] as Address,
-            hre.hyperdriveDeploy.deployments.byName(
-                `${hre.network.name.toUpperCase()}_REGISTRY`,
-            ).address,
+            hre.hyperdriveDeploy.deployments.byName(`DELV Hyperdrive Registry`)
+                .address,
             hre.hyperdriveDeploy.deployments.byName("DAI").address,
             parseEther("1"),
             parseEther("1"),
