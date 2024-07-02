@@ -1,5 +1,5 @@
 import { task, types } from "hardhat/config";
-import { keccak256, toHex } from "viem";
+import { keccak256, parseEther, toHex } from "viem";
 import {
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
