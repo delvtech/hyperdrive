@@ -1,4 +1,5 @@
 import { HyperdriveCoordinatorConfig } from "../../lib";
+import { ANVIL_FACTORY_NAME } from "./factory";
 
 export const ANVIL_ERC4626_COORDINATOR: HyperdriveCoordinatorConfig<"ERC4626"> =
     {
@@ -6,5 +7,5 @@ export const ANVIL_ERC4626_COORDINATOR: HyperdriveCoordinatorConfig<"ERC4626"> =
         prefix: "ERC4626",
         targetCount: 4,
         factoryAddress: async (hre) =>
-            hre.hyperdriveDeploy.deployments.byName("FACTORY").address,
+            hre.hyperdriveDeploy.deployments.byName(ANVIL_FACTORY_NAME).address,
     };

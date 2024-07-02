@@ -375,5 +375,137 @@
             "address": "0x51C054F75b2c4b53E8E5114430C3ded4572473D8",
             "timestamp": "2024-06-19T02:08:03.413Z"
         }
+    },
+    "mainnet": {
+        "DELV Hyperdrive Registry": {
+            "contract": "HyperdriveRegistry",
+            "address": "0xbe082293b646cb619a638d29e8eff7cf2f46aa3a",
+            "timestamp": "2024-06-27T04:20:02.960Z"
+        },
+        "ElementDAO ERC20 Factory Forwarder": {
+            "contract": "ERC20ForwarderFactory",
+            "address": "0x08b40647714ac1e5742633fc2d83c20d61a199d2",
+            "timestamp": "2024-06-27T04:20:16.400Z"
+        },
+        "ElementDAO Hyperdrive Factory": {
+            "contract": "HyperdriveFactory",
+            "address": "0xf95b98256edb861be389b9807f6656e8be2dc488",
+            "timestamp": "2024-06-27T04:20:26.178Z"
+        },
+        "LPMath": {
+            "contract": "LPMath",
+            "address": "0xdf5d682404b0611f46f2626d9d5a37eb6a6fd27d",
+            "timestamp": "2024-06-27T04:20:40.013Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626HyperdriveCoreDeployer": {
+            "contract": "ERC4626HyperdriveCoreDeployer",
+            "address": "0xd9bdabb0f87e46af44063d251eb07edfe260d9f1",
+            "timestamp": "2024-06-27T04:20:49.416Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target0Deployer": {
+            "contract": "ERC4626Target0Deployer",
+            "address": "0x2bbf0716fb1ac91169b0dbecff232c7bf1b7e701",
+            "timestamp": "2024-06-27T04:21:02.853Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target1Deployer": {
+            "contract": "ERC4626Target1Deployer",
+            "address": "0x068d5258f54b462de4240547dca0f1fce6382426",
+            "timestamp": "2024-06-27T04:21:16.020Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target2Deployer": {
+            "contract": "ERC4626Target2Deployer",
+            "address": "0x0fb305a458b1008faee03147b700b3975bea03fd",
+            "timestamp": "2024-06-27T04:21:29.398Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target3Deployer": {
+            "contract": "ERC4626Target3Deployer",
+            "address": "0xd8ee8f39c42ee9b005582e4dc0d530c7de6f1471",
+            "timestamp": "2024-06-27T04:21:38.990Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator": {
+            "contract": "ERC4626HyperdriveDeployerCoordinator",
+            "address": "0xb2f17302ed12fe72d883fcc2b66f1b844fbb7964",
+            "timestamp": "2024-06-27T04:21:52.756Z"
+        },
+        "ElementDAO stETH Hyperdrive Deployer Coordinator_StETHHyperdriveCoreDeployer": {
+            "contract": "StETHHyperdriveCoreDeployer",
+            "address": "0xe8dc5073b02d062388db8e50762a8c9a1c823540",
+            "timestamp": "2024-06-27T04:22:15.757Z"
+        },
+        "ElementDAO stETH Hyperdrive Deployer Coordinator_StETHTarget0Deployer": {
+            "contract": "StETHTarget0Deployer",
+            "address": "0xe0da47a1a6ceb80bb945652cb96a821fa5d91327",
+            "timestamp": "2024-06-27T04:22:28.988Z"
+        },
+        "ElementDAO stETH Hyperdrive Deployer Coordinator_StETHTarget1Deployer": {
+            "contract": "StETHTarget1Deployer",
+            "address": "0x279c0504575639131be082923c21289d553d7c08",
+            "timestamp": "2024-06-27T04:22:38.569Z"
+        },
+        "ElementDAO stETH Hyperdrive Deployer Coordinator_StETHTarget2Deployer": {
+            "contract": "StETHTarget2Deployer",
+            "address": "0xca76fd3033fa9f754c05844773d79c193ad784b5",
+            "timestamp": "2024-06-27T04:22:52.282Z"
+        },
+        "ElementDAO stETH Hyperdrive Deployer Coordinator_StETHTarget3Deployer": {
+            "contract": "StETHTarget3Deployer",
+            "address": "0xb274f4fcc2b391e0dfabfbe7b7c130447018f6ea",
+            "timestamp": "2024-06-27T04:23:01.876Z"
+        },
+        "ElementDAO stETH Hyperdrive Deployer Coordinator": {
+            "contract": "StETHHyperdriveDeployerCoordinator",
+            "address": "0x23dd1c32c7f14deca77d4b0f1b818fa181465239",
+            "timestamp": "2024-06-27T04:23:15.156Z"
+        },
+        "ElementDAO 182 Day sDAI Hyperdrive_ERC4626Target0": {
+            "contract": "ERC4626Target0",
+            "address": "0xD52688318f8Dd75a08A708e1a2FcB8A7B8419461",
+            "timestamp": "2024-06-27T04:23:51.874Z"
+        },
+        "ElementDAO 182 Day sDAI Hyperdrive_ERC4626Target1": {
+            "contract": "ERC4626Target1",
+            "address": "0xb024D78b3c33bEe494c3802BB3c82969b5e67881",
+            "timestamp": "2024-06-27T04:24:05.349Z"
+        },
+        "ElementDAO 182 Day sDAI Hyperdrive_ERC4626Target2": {
+            "contract": "ERC4626Target2",
+            "address": "0x97926F0C898AdBC2fB4246C64403C2947408D6DA",
+            "timestamp": "2024-06-27T04:24:14.823Z"
+        },
+        "ElementDAO 182 Day sDAI Hyperdrive_ERC4626Target3": {
+            "contract": "ERC4626Target3",
+            "address": "0x2964ad2Bb498BB0f4Da19bf74287A522F78ef953",
+            "timestamp": "2024-06-27T04:24:28.138Z"
+        },
+        "ElementDAO 182 Day sDAI Hyperdrive": {
+            "contract": "ERC4626Hyperdrive",
+            "address": "0x324395D5d835F84a02A75Aa26814f6fD22F25698",
+            "timestamp": "2024-06-27T04:24:41.380Z"
+        },
+        "ElementDAO 182 Day stETH Hyperdrive_StETHTarget0": {
+            "contract": "StETHTarget0",
+            "address": "0x1d9bAada79d2c8b9DA96438d3054c2C689132F7b",
+            "timestamp": "2024-06-27T04:25:04.515Z"
+        },
+        "ElementDAO 182 Day stETH Hyperdrive_StETHTarget1": {
+            "contract": "StETHTarget1",
+            "address": "0x8C7F97820db3B84EE57E1c45fa6445019D5Aaf37",
+            "timestamp": "2024-06-27T04:25:13.824Z"
+        },
+        "ElementDAO 182 Day stETH Hyperdrive_StETHTarget2": {
+            "contract": "StETHTarget2",
+            "address": "0xb30736fA300e8673e7dF91F6dcd999B460e5585c",
+            "timestamp": "2024-06-27T04:25:27.252Z"
+        },
+        "ElementDAO 182 Day stETH Hyperdrive_StETHTarget3": {
+            "contract": "StETHTarget3",
+            "address": "0xC409e9FAf2f6cFc7A9C90cCC63F0450c66fDc8aA",
+            "timestamp": "2024-06-27T04:25:40.590Z"
+        },
+        "ElementDAO 182 Day stETH Hyperdrive": {
+            "contract": "StETHHyperdrive",
+            "address": "0xd7e470043241C10970953Bd8374ee6238e77D735",
+            "timestamp": "2024-06-27T04:25:49.821Z"
+        }
     }
 }

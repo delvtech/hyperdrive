@@ -37,11 +37,9 @@ task(
         // Verify the registry.
         await run("verify:verify", {
             address: hyperdriveDeploy.deployments.byName(
-                `${hre.network.name.toUpperCase()}_REGISTRY`,
+                "DELV Hyperdrive Registry",
             ).address,
-            constructorArguments: [
-                `${hre.network.name.toUpperCase()}_REGISTRY`,
-            ],
+            constructorArguments: ["DELV Hyperdrive Registry"],
         });
 
         // loop through all checkpoint rewarders
@@ -88,7 +86,7 @@ task(
             console.log(`verifying ${f.name} linker factory...`);
             await run("verify:verify", {
                 address: constructorArguments[0].linkerFactory,
-                constructorArguments: ["FACTORY_FORWARDER"],
+                constructorArguments: ["ElementDAO ERC20 Factory Forwarder"],
             });
 
             // verify the factory
@@ -151,6 +149,7 @@ task(
             await run("verify:verify", {
                 address: hyperdriveDeploy.deployments.byName(c.name).address,
                 constructorArguments: [
+                    c.name,
                     await evaluateValueOrHREFn(c.factoryAddress, hre, {}),
                     coreAddress,
                     ...targets,
@@ -235,6 +234,7 @@ task(
                 instance.address,
             );
             let args = [
+                i.name,
                 poolConfig,
                 await ihyperdrive.read.target0(),
                 await ihyperdrive.read.target1(),
