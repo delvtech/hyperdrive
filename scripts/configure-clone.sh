@@ -12,8 +12,6 @@ do
   echo " - funding ${address} steth..."
   npx hardhat fork:mint-steth --address ${address} --amount 1000 --network clone --config hardhat.config.clone.ts
   echo " - funding ${address} reth..."
-  npx hardhat fork:mint-reth --address ${address} --amount 1000 --network clone --config hardhat.config.clone.ts
-  echo " - funding ${address} dai..."
   npx hardhat fork:mint-dai --address ${address} --amount 20000 --network clone --config hardhat.config.clone.ts
   echo " - funding ${address} sdai..."
   npx hardhat fork:mint-sdai --address ${address} --amount 20000 --network clone --config hardhat.config.clone.ts
@@ -26,5 +24,5 @@ cat ./deployments.json | jq '.mainnet | {
   }' >./artifacts/addresses.json
 
 # Copy the deployed mainnet contracts to the 'clone' network section in the `deployments.local.json` file.
-combined=$(jq -s '{"clone": .[0].sepolia} * .[1] | .' deployments.json deployments.local.json)
+combined=$(jq -s '{"clone": .[0].mainnet} * .[1] | .' deployments.json deployments.local.json)
 echo $combined > deployments.local.json
