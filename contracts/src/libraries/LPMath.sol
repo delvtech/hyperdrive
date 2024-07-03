@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-import { Lib } from "test/utils/Lib.sol";
-
 import { SignedMath } from "openzeppelin/utils/math/SignedMath.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath, ONE } from "./FixedPointMath.sol";
@@ -19,9 +15,6 @@ import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 library LPMath {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for *;
     using SafeCast for uint256;
     using SignedMath for int256;
@@ -157,101 +150,6 @@ library LPMath {
         }
 
         return _longExposure;
-    }
-
-    /// @dev Verifies that the price discovery is valid after liquidity is added
-    ///      by checking if the pool is solvent after opening the largest long
-    ///      possible on the curve and ensuring that the pool is still solvent.
-    /// @param _shareReserves The share reserves.
-    /// @param _shareAdjustment The share adjustment.
-    /// @param _bondReserves The bond reserves.
-    /// @param _minimumShareReserves The minimum share reserves.
-    /// @param _initialVaultSharePrice The initial vault share price.
-    /// @param _vaultSharePrice The vault share price.
-    /// @param _timeStretch The time stretch.
-    /// @param _checkpointExposure The checkpoint exposure.
-    /// @param _longExposure The global long exposure.
-    /// @return A flag indicating if the price discovery is valid.
-    function verifyPriceDiscovery(
-        uint256 _shareReserves,
-        int256 _shareAdjustment,
-        uint256 _bondReserves,
-        uint256 _minimumShareReserves,
-        uint256 _initialVaultSharePrice,
-        uint256 _vaultSharePrice,
-        uint256 _timeStretch,
-        int256 _checkpointExposure,
-        uint256 _longExposure
-    ) external pure returns (bool) {
-        // Calculate the share payment and bond proceeds of opening the
-        // largest possible long on the YieldSpace curve. This does not
-        // include fees.
-        (uint256 effectiveShareReserves, bool success) = HyperdriveMath
-            .calculateEffectiveShareReservesSafe(
-                _shareReserves,
-                _shareAdjustment
-            );
-        if (!success) {
-            return false;
-        }
-        uint256 maxSharePayment;
-        (maxSharePayment, success) = YieldSpaceMath.calculateMaxBuySharesInSafe(
-            effectiveShareReserves,
-            _bondReserves,
-            ONE - _timeStretch,
-            _vaultSharePrice,
-            _initialVaultSharePrice
-        );
-        uint256 maxBondProceeds;
-        (maxBondProceeds, success) = YieldSpaceMath.calculateMaxBuyBondsOutSafe(
-            effectiveShareReserves,
-            _bondReserves,
-            ONE - _timeStretch,
-            _vaultSharePrice,
-            _initialVaultSharePrice
-        );
-
-        // If one fails they should both be zero.
-        if (maxSharePayment == 0 || maxBondProceeds == 0) {
-            maxSharePayment = 0;
-            maxBondProceeds = 0;
-        }
-
-        // Calculate the pool's solvency after opening the max long. This
-        // doesn't account for fees, which is fine since this check is more
-        // conservative without fees.
-        uint256 shareReserves = _shareReserves + maxSharePayment;
-        uint256 longExposure = calculateLongExposure(
-            _longExposure,
-            _checkpointExposure,
-            _checkpointExposure + maxBondProceeds.toInt256()
-        );
-
-        // FIXME: This comment is confusing, and I don't completely understand
-        // this code. What fails if I remove it?
-        //
-        // If the pool isn't solvent after opening the max long, then we
-        // prevent the liquidity from being added since it will cause issues
-        // with price discovery. We know that when: cz <= e_l + c * z_min
-        // is within some epilson of being true, the pool is still solvent,
-        // will have trouble price discovering back to 0%. We add an additional
-        // c * z_min to the right hand side to account for this epsilon.
-        uint256 minimumShareReserves = _minimumShareReserves;
-        uint256 vaultSharePrice = _vaultSharePrice;
-        console.log(
-            "solvency = %s",
-            (int256(shareReserves.mulDown(vaultSharePrice)) -
-                int256(
-                    (longExposure + minimumShareReserves.mulUp(vaultSharePrice))
-                )).toString(18)
-        );
-        if (
-            shareReserves.mulDown(_vaultSharePrice) <=
-            longExposure + minimumShareReserves.mulUp(vaultSharePrice)
-        ) {
-            return false;
-        }
-        return true;
     }
 
     /// @dev Calculates the new share reserves, share adjustment, and bond

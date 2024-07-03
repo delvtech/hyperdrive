@@ -485,43 +485,18 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
             Errors.throwInsufficientLiquidityError();
         }
 
-        // Calculate the fees charged to the user (curveFee) and the portion
-        // of those fees that are paid to governance (governanceCurveFee).
+        // Calculate the fees paid to open the long and apply these fees to the
+        // reserves deltas.
         (
-            uint256 curveFee, // bonds
-            uint256 governanceCurveFee // bonds
-        ) = _calculateFeesGivenShares(
-                _shareAmount,
-                spotPrice,
-                _vaultSharePrice
-            );
-
-        // Calculate the impact of the curve fee on the bond reserves. The curve
-        // fee benefits the LPs by causing less bonds to be deducted from the
-        // bond reserves.
-        bondReservesDelta -= curveFee;
-
-        // NOTE: Round down to underestimate the governance fee.
-        //
-        // Calculate the fees owed to governance in shares. Open longs are
-        // calculated entirely on the curve so the curve fee is the total
-        // governance fee. In order to convert it to shares we need to multiply
-        // it by the spot price and divide it by the vault share price:
-        //
-        // shares = (bonds * base/bonds) / (base/shares)
-        // shares = bonds * shares/bonds
-        // shares = shares
-        totalGovernanceFee = governanceCurveFee.mulDivDown(
-            spotPrice,
-            _vaultSharePrice
+            shareReservesDelta,
+            bondReservesDelta,
+            totalGovernanceFee
+        ) = _calculateOpenLongFees(
+            _shareAmount,
+            bondReservesDelta,
+            _vaultSharePrice,
+            spotPrice
         );
-
-        // Calculate the number of shares to add to the shareReserves.
-        // shareReservesDelta, _shareAmount and totalGovernanceFee
-        // are all denominated in shares:
-        //
-        // shares = shares - shares
-        shareReservesDelta = _shareAmount - totalGovernanceFee;
 
         // Ensure that the ending spot price is less than or equal to one.
         // Despite the fact that the earlier negative interest check should
