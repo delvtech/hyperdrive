@@ -718,9 +718,10 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
                 _initialVaultSharePrice
             );
         (uint256 maxBondProceeds, ) = YieldSpaceMath
-            .calculateMaxBuyBondsOutSafe(
+            .calculateBondsOutGivenSharesInDownSafe(
                 effectiveShareReserves,
                 _bondReserves,
+                maxSharePayment,
                 ONE - _timeStretch,
                 _vaultSharePrice,
                 _initialVaultSharePrice

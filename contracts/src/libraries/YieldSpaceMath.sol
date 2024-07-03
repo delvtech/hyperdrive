@@ -40,7 +40,7 @@ library YieldSpaceMath {
     /// @param t The time elapsed since the term's start.
     /// @param c The vault share price.
     /// @param mu The initial vault share price.
-    /// @return The amount of bonds the trader receives.
+    /// @return result The amount of bonds the trader receives.
     function calculateBondsOutGivenSharesInDown(
         uint256 ze,
         uint256 y,
@@ -48,7 +48,41 @@ library YieldSpaceMath {
         uint256 t,
         uint256 c,
         uint256 mu
-    ) internal pure returns (uint256) {
+    ) internal pure returns (uint256 result) {
+        bool success;
+        (result, success) = calculateBondsOutGivenSharesInDownSafe(
+            ze,
+            y,
+            dz,
+            t,
+            c,
+            mu
+        );
+        if (!success) {
+            Errors.throwInsufficientLiquidityError();
+        }
+    }
+
+    /// @dev Calculates the amount of bonds a user will receive from the pool by
+    ///      providing a specified amount of shares. This function returns a
+    ///      success flag instead of reverting. We underestimate the amount
+    ///      of bonds out.
+    /// @param ze The effective share reserves.
+    /// @param y The bond reserves.
+    /// @param dz The amount of shares paid to the pool.
+    /// @param t The time elapsed since the term's start.
+    /// @param c The vault share price.
+    /// @param mu The initial vault share price.
+    /// @return The amount of bonds the trader receives.
+    /// @return A flag indicating if the calculation succeeded.
+    function calculateBondsOutGivenSharesInDownSafe(
+        uint256 ze,
+        uint256 y,
+        uint256 dz,
+        uint256 t,
+        uint256 c,
+        uint256 mu
+    ) internal pure returns (uint256, bool) {
         // NOTE: We round k up to make the rhs of the equation larger.
         //
         // k = (c / µ) * (µ * ze)^(1 - t) + y^(1 - t)
@@ -63,7 +97,7 @@ library YieldSpaceMath {
 
         // If k < ze, we have no choice but to revert.
         if (k < ze) {
-            Errors.throwInsufficientLiquidityError();
+            return (0, false);
         }
 
         // NOTE: We round _y up to make the rhs of the equation larger.
@@ -83,12 +117,12 @@ library YieldSpaceMath {
 
         // If y < _y, we have no choice but to revert.
         if (y < _y) {
-            Errors.throwInsufficientLiquidityError();
+            return (0, false);
         }
 
         // Δy = y - (k - (c / µ) * (µ * (ze + dz))^(1 - t))^(1 / (1 - t))
         unchecked {
-            return y - _y;
+            return (y - _y, true);
         }
     }
 
