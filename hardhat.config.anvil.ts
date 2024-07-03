@@ -14,7 +14,7 @@ import {
     ANVIL_FACTORY,
     ANVIL_STETH_COORDINATOR,
     ANVIL_STETH_HYPERDRIVE,
-} from "./tasks/deploy/config/";
+} from "./tasks/deploy/config/anvil";
 
 const { env } = process;
 let DEFAULT_PK =
