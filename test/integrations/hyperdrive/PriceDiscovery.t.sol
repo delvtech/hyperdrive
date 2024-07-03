@@ -75,6 +75,8 @@ contract PriceDiscoveryTest is HyperdriveTest {
         uint256 fixedAPR,
         uint256 initialContribution,
         uint256 addLiquidityContribution,
+        uint256 longAmount,
+        uint256 shortAmount,
         bool longFirst
     ) external {
         uint256 minimumShareReserves = 10e18;
@@ -117,9 +119,17 @@ contract PriceDiscoveryTest is HyperdriveTest {
 
         // Alice opens a max long or a max short.
         if (longFirst) {
-            openLong(alice, hyperdrive.calculateMaxLong());
+            longAmount = longAmount.normalizeToRange(
+                2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+                hyperdrive.calculateMaxLong()
+            );
+            openLong(alice, longAmount);
         } else {
-            openShort(alice, hyperdrive.calculateMaxShort());
+            shortAmount = shortAmount.normalizeToRange(
+                2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+                hyperdrive.calculateMaxShort()
+            );
+            openShort(alice, shortAmount);
         }
 
         // The checkpoint passes.
@@ -127,21 +137,24 @@ contract PriceDiscoveryTest is HyperdriveTest {
 
         // Alice opens a max long or a max short.
         if (longFirst) {
-            openShort(alice, hyperdrive.calculateMaxShort());
+            shortAmount = shortAmount.normalizeToRange(
+                2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+                hyperdrive.calculateMaxShort()
+            );
+            openShort(alice, shortAmount);
         } else {
-            openLong(alice, hyperdrive.calculateMaxLong());
+            longAmount = longAmount.normalizeToRange(
+                2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+                hyperdrive.calculateMaxLong()
+            );
+            openLong(alice, longAmount);
         }
 
         // Alice adds liquidity again
         addLiquidity(alice, addLiquidityContribution);
 
-        uint256 sharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
-        uint256 shareReserves = hyperdrive.getPoolInfo().shareReserves;
-        uint256 longExposure = hyperdrive.getPoolInfo().longExposure;
-        int256 solvency = int256(shareReserves.mulDown(sharePrice)) -
-            int256(longExposure) -
-            int256(minimumShareReserves.mulDown(sharePrice));
-        assertTrue(solvency >= 0);
+        // Ensure that the ending solvency isn't negative.
+        assertTrue(hyperdrive.solvency() >= 0);
     }
 
     function test_priceDiscovery_steth_fuzz(
