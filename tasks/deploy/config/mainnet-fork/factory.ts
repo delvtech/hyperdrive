@@ -2,8 +2,9 @@ import { Address, parseEther } from "viem";
 import { HyperdriveFactoryConfig, parseDuration } from "../../lib";
 import { MAINNET_FORK_CHECKPOINT_REWARDER_NAME } from "./checkpoint-rewarder";
 
-export const MAINNET_FORK_FACTORY_NAME = "FACTORY";
-export const MAINNET_FORK_FACTORY_FORWARDER_NAME = "FACTORY_FORWARDER";
+export const MAINNET_FORK_FACTORY_NAME = "ElementDAO Hyperdrive Factory";
+export const MAINNET_FORK_FACTORY_FORWARDER_NAME =
+    "ElementDAO ERC20 Factory Forwarder";
 export const MAINNET_FORK_FACTORY_GOVERNANCE_ADDRESS =
     "0xc187a246Ee5A4Fe4395a8f6C0f9F2AA3A5a06e9b";
 
