@@ -680,47 +680,51 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
     /// @dev Calculates the pool's solvency if a long is opened that brings the
     ///      rate to 0%. This is the maximum possible long that can be opened on
     ///      the YieldSpace curve.
-    /// @param __latestCheckpoint The latest checkpoint time.
+    /// @param _shareReserves The pool's share reserves.
+    /// @param _shareAdjustment The pool's share adjustment.
+    /// @param _bondReserves The pool's bond reserves.
     /// @param _vaultSharePrice The vault share price.
+    /// @param _longExposure The pool's long exposure.
+    /// @param _checkpointExposure The pool's checkpoint exposure.
     /// @return The solvency after opening the max long.
     /// @return A flag indicating whether or not the calculation succeeded.
     function _calculateSolvencyAfterMaxLongSafe(
-        uint256 __latestCheckpoint,
-        uint256 _vaultSharePrice
+        uint256 _shareReserves,
+        int256 _shareAdjustment,
+        uint256 _bondReserves,
+        uint256 _vaultSharePrice,
+        uint256 _longExposure,
+        int256 _checkpointExposure
     ) internal view returns (int256, bool) {
-        // FIXME: Clean this up. Do we need the success boolean?
-        //
         // Calculate the share payment and bond proceeds of opening the largest
         // possible long on the YieldSpace curve. This does not include fees.
-        // These calculations fail when the max long is zero, and we ignore
-        // these failures since we can proceed with the calculation assuming
-        // that the max long amount is zero.
-        uint256 shareReserves = _marketState.shareReserves;
-        uint256 bondReserves = _marketState.bondReserves;
+        // These calculations fail when the max long is close to zero, and we
+        // ignore these failures since we can proceed with the calculation in
+        // this case.
         (uint256 effectiveShareReserves, bool success) = HyperdriveMath
             .calculateEffectiveShareReservesSafe(
-                _marketState.shareReserves,
-                _marketState.shareAdjustment
+                _shareReserves,
+                _shareAdjustment
             );
         if (!success) {
             return (0, false);
         }
-        uint256 maxSharePayment;
-        (maxSharePayment, success) = YieldSpaceMath.calculateMaxBuySharesInSafe(
-            effectiveShareReserves,
-            bondReserves,
-            ONE - _timeStretch,
-            _vaultSharePrice,
-            _initialVaultSharePrice
-        );
-        uint256 maxBondProceeds;
-        (maxBondProceeds, success) = YieldSpaceMath.calculateMaxBuyBondsOutSafe(
-            effectiveShareReserves,
-            bondReserves,
-            ONE - _timeStretch,
-            _vaultSharePrice,
-            _initialVaultSharePrice
-        );
+        (uint256 maxSharePayment, ) = YieldSpaceMath
+            .calculateMaxBuySharesInSafe(
+                effectiveShareReserves,
+                _bondReserves,
+                ONE - _timeStretch,
+                _vaultSharePrice,
+                _initialVaultSharePrice
+            );
+        (uint256 maxBondProceeds, ) = YieldSpaceMath
+            .calculateMaxBuyBondsOutSafe(
+                effectiveShareReserves,
+                _bondReserves,
+                ONE - _timeStretch,
+                _vaultSharePrice,
+                _initialVaultSharePrice
+            );
 
         // If one of the max share payment or max bond proceeds calculations
         // fail or return zero, the max long amount is zero plus or minus a few
@@ -735,7 +739,7 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         // them here.
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
             effectiveShareReserves,
-            bondReserves,
+            _bondReserves,
             _initialVaultSharePrice,
             _timeStretch
         );
@@ -747,18 +751,12 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         );
 
         // Calculate the pool's solvency after opening the max long.
-        shareReserves += maxSharePayment;
-        int256 checkpointExposure = _nonNettedLongs(
-            __latestCheckpoint + _positionDuration
-        );
+        uint256 shareReserves = _shareReserves + maxSharePayment;
         uint256 longExposure = LPMath.calculateLongExposure(
-            _marketState.longExposure,
-            checkpointExposure,
-            checkpointExposure + maxBondProceeds.toInt256()
+            _longExposure,
+            _checkpointExposure,
+            _checkpointExposure + maxBondProceeds.toInt256()
         );
-
-        // Calculate the pool's solvency after opening the maximum possible long
-        // on the YieldSpace curve.
         uint256 vaultSharePrice = _vaultSharePrice;
         return (
             shareReserves.mulDown(vaultSharePrice).toInt256() -
