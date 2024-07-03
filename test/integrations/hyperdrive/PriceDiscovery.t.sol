@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-import { Lib } from "test/utils/Lib.sol";
-
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
@@ -15,46 +11,6 @@ contract PriceDiscoveryTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for *;
     using Lib for *;
-
-    function test_example() external {
-        // Deploy and initialize the pool.
-        IHyperdrive.PoolConfig memory config = testConfig(
-            0.05e18,
-            POSITION_DURATION
-        );
-        config.circuitBreakerDelta = type(uint128).max;
-        config.minimumShareReserves = 10e18;
-        deploy(alice, config);
-        initialize(alice, 0.05e18, 100_000e18);
-
-        // Open a long.
-        openLong(alice, hyperdrive.calculateMaxLong().mulDown(0.9e18));
-
-        // Advance the checkpoint.
-        advanceTime(CHECKPOINT_DURATION, 0);
-
-        // Open a short.
-        openShort(alice, hyperdrive.calculateMaxShort().mulDown(0.9e18));
-
-        // Advance the checkpoint.
-        advanceTime(CHECKPOINT_DURATION, 0);
-
-        // Open a long.
-        openLong(alice, hyperdrive.calculateMaxLong());
-
-        // Advance the checkpoint.
-        advanceTime(CHECKPOINT_DURATION, 0);
-
-        // Open a short.
-        openShort(alice, hyperdrive.calculateMaxShort());
-
-        // Advance the checkpoint.
-        advanceTime(CHECKPOINT_DURATION, 0);
-        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
-
-        // Add liquidity.
-        addLiquidity(alice, 100e18);
-    }
 
     function test_solvency_at_0_apr(
         uint256 fixedAPR,
@@ -609,5 +565,96 @@ contract PriceDiscoveryTest is HyperdriveTest {
         } catch (bytes memory data) {
             initError = data;
         }
+    }
+
+    // This edge case demonstrates that an LP can add liquidity if the
+    // additional liquidity improves price discovery even when price discovery
+    // has been partially compromised by trading.
+    function test_priceDiscovery_successEdgeCase() external {
+        // Deploy and initialize the pool.
+        IHyperdrive.PoolConfig memory config = testConfig(
+            0.05e18,
+            POSITION_DURATION
+        );
+        config.circuitBreakerDelta = type(uint128).max;
+        config.minimumShareReserves = 10e18;
+        deploy(alice, config);
+        initialize(alice, 0.05e18, 100_000e18);
+
+        // Open a long.
+        openLong(alice, hyperdrive.calculateMaxLong().mulDown(0.9e18));
+
+        // Advance the checkpoint.
+        advanceTime(CHECKPOINT_DURATION, 0);
+
+        // Open a short.
+        openShort(alice, hyperdrive.calculateMaxShort().mulDown(0.9e18));
+
+        // Advance the checkpoint.
+        advanceTime(CHECKPOINT_DURATION, 0);
+
+        // Open a long.
+        openLong(alice, hyperdrive.calculateMaxLong());
+
+        // Advance the checkpoint.
+        advanceTime(CHECKPOINT_DURATION, 0);
+
+        // Open a short.
+        openShort(alice, hyperdrive.calculateMaxShort());
+
+        // Advance the checkpoint.
+        advanceTime(CHECKPOINT_DURATION, 0);
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
+
+        // Add liquidity.
+        addLiquidity(alice, 100e18);
+    }
+
+    // This edge case demonstrates that an LP can't add liquidity if the
+    // additional liquidity makes price discovery worse. This demonstrates an
+    // extreme example of how to hinder price discovery if the price discvoery
+    // checks are removed from `addLiquidity`.
+    function test_priceDiscovery_failureEdgeCase() external {
+        // Alice deploys and initializes the pool.
+        uint256 timeStretchAPR = 0.2e18;
+        uint256 fixedAPR = 0.05e18;
+        uint256 contribution = 100_000e18;
+        IHyperdrive.PoolConfig memory config = testConfig(
+            timeStretchAPR,
+            POSITION_DURATION
+        );
+        config.circuitBreakerDelta = type(uint128).max;
+        deploy(alice, config);
+        initialize(alice, fixedAPR, contribution);
+
+        // Alice opens a max short
+        openShort(alice, hyperdrive.calculateMaxShort());
+        addLiquidity(alice, contribution);
+        openLong(alice, hyperdrive.calculateMaxLong());
+
+        // The term passes.
+        advanceTime(POSITION_DURATION, 0);
+
+        // Alice opens a max short.
+        openShort(alice, hyperdrive.calculateMaxShort());
+
+        // Alice adds liquidity.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        contribution = 1_000_000e18;
+        baseToken.mint(contribution);
+        baseToken.approve(address(hyperdrive), contribution);
+        vm.expectRevert(IHyperdrive.CircuitBreakerTriggered.selector);
+        hyperdrive.addLiquidity(
+            contribution,
+            0,
+            0,
+            type(uint256).max,
+            IHyperdrive.Options({
+                asBase: true,
+                destination: alice,
+                extraData: new bytes(0)
+            })
+        );
     }
 }
