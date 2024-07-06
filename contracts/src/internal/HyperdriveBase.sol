@@ -736,15 +736,16 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         }
 
         // Apply the fees from opening a long to the max share payment and bond
-        // proceeds. Fees can impact solvency, so it's important to account for
-        // them here.
+        // proceeds. Fees applied to the share payment hurt solvency and fees
+        // applied to the bond proceeds make the pool more solvent. To be
+        // conservative, we only apply the fee to the share payment.
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
             effectiveShareReserves,
             _bondReserves,
             _initialVaultSharePrice,
             _timeStretch
         );
-        (maxSharePayment, maxBondProceeds, ) = _calculateOpenLongFees(
+        (maxSharePayment, , ) = _calculateOpenLongFees(
             maxSharePayment,
             maxBondProceeds,
             _vaultSharePrice,

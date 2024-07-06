@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
 
+// FIXME: Add fees to more of the tests.
 contract PriceDiscoveryTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for *;
@@ -181,7 +185,7 @@ contract PriceDiscoveryTest is HyperdriveTest {
         );
 
         // Get the high and low spot rates.
-        (uint256 highSpotRate, uint256 lowSpotRate, , ) = _test_priceDiscovery(
+        TestPriceDiscoveryResult memory result = _test_priceDiscovery(
             timeStretchAPR,
             fixedAPR,
             minimumShareReserves,
@@ -192,9 +196,9 @@ contract PriceDiscoveryTest is HyperdriveTest {
         );
 
         // Test the high and low spot rates.
-        assertGt(highSpotRate, lowSpotRate);
-        assertGe(highSpotRate, 4 * fixedAPR);
-        assertApproxEqAbs(lowSpotRate, 0, 100 wei);
+        assertGt(result.highSpotRateAfter, result.lowSpotRateAfter);
+        assertGe(result.highSpotRateAfter, 4 * fixedAPR);
+        assertLe(result.lowSpotRateAfter, result.lowSpotRateBefore);
     }
 
     function test_priceDiscovery_sdai_fuzz(
@@ -221,7 +225,7 @@ contract PriceDiscoveryTest is HyperdriveTest {
         );
 
         // Get the high and low spot rates.
-        (uint256 highSpotRate, uint256 lowSpotRate, , ) = _test_priceDiscovery(
+        TestPriceDiscoveryResult memory result = _test_priceDiscovery(
             timeStretchAPR,
             fixedAPR,
             minimumShareReserves,
@@ -232,9 +236,9 @@ contract PriceDiscoveryTest is HyperdriveTest {
         );
 
         // Test the high and low spot rates.
-        assertGt(highSpotRate, lowSpotRate);
-        assertGe(highSpotRate, 4 * fixedAPR);
-        assertApproxEqAbs(lowSpotRate, 0, 100 wei);
+        assertGt(result.highSpotRateAfter, result.lowSpotRateAfter);
+        assertGe(result.highSpotRateAfter, 4 * fixedAPR);
+        assertLe(result.lowSpotRateAfter, result.lowSpotRateBefore);
     }
 
     // This test fuzzes over the full range of inputs, but
@@ -270,28 +274,27 @@ contract PriceDiscoveryTest is HyperdriveTest {
         // Note: This test fuzzes over a larger fixedAPR range and
         // as a result some large APRs cause maxShort to fail. As a
         // result, we pass in a maxShortLimiter of 99% to avoid this.
-        (
-            uint256 highSpotRate,
-            uint256 lowSpotRate,
-            bytes memory initError,
-            bytes memory addLiquidityError
-        ) = _test_priceDiscovery(
-                fixedAPR,
-                timeStretchAPR,
-                minimumShareReserves,
-                initialContribution,
-                addLiquidityContribution1,
-                addLiquidityContribution2,
-                0.99e18
-            );
-        if (initError.length == 0 && addLiquidityError.length == 0) {
+        TestPriceDiscoveryResult memory result = _test_priceDiscovery(
+            fixedAPR,
+            timeStretchAPR,
+            minimumShareReserves,
+            initialContribution,
+            addLiquidityContribution1,
+            addLiquidityContribution2,
+            0.99e18
+        );
+        if (
+            result.initError.length == 0 && result.addLiquidityError.length == 0
+        ) {
             // Test the high and low spot rates.
-            assertGt(highSpotRate, lowSpotRate);
-            assertApproxEqAbs(lowSpotRate, 0, 100 wei);
-        } else if (initError.length == 0 && addLiquidityError.length > 0) {
+            assertGt(result.highSpotRateAfter, result.lowSpotRateAfter);
+            assertLe(result.lowSpotRateAfter, result.lowSpotRateBefore);
+        } else if (
+            result.initError.length == 0 && result.addLiquidityError.length > 0
+        ) {
             // Verify that error is CircuitBreakerTriggered IHyperdrive.MinimumTransactionAmount.
             if (
-                keccak256(abi.encodePacked(addLiquidityError)) ==
+                keccak256(abi.encodePacked(result.addLiquidityError)) ==
                 keccak256(
                     abi.encodePacked(
                         IHyperdrive.CircuitBreakerTriggered.selector
@@ -301,7 +304,7 @@ contract PriceDiscoveryTest is HyperdriveTest {
                 // The circuit breaker was triggered as intended.
                 assertTrue(true);
             } else if (
-                keccak256(abi.encodePacked(addLiquidityError)) ==
+                keccak256(abi.encodePacked(result.addLiquidityError)) ==
                 keccak256(
                     abi.encodePacked(
                         IHyperdrive.MinimumTransactionAmount.selector
@@ -311,7 +314,7 @@ contract PriceDiscoveryTest is HyperdriveTest {
                 // The minimum transaction amount was triggered bc the contribution was so low compared to the existing lp shares.
                 assertTrue(true);
             } else if (
-                keccak256(abi.encodePacked(addLiquidityError)) ==
+                keccak256(abi.encodePacked(result.addLiquidityError)) ==
                 keccak256(
                     abi.encodePacked(
                         IHyperdrive
@@ -323,7 +326,7 @@ contract PriceDiscoveryTest is HyperdriveTest {
                 // The present value decreased when adding liquidity.
                 assertTrue(true);
             } else if (
-                keccak256(abi.encodePacked(addLiquidityError)) ==
+                keccak256(abi.encodePacked(result.addLiquidityError)) ==
                 keccak256(
                     abi.encodePacked(IHyperdrive.InvalidPresentValue.selector)
                 )
@@ -333,10 +336,12 @@ contract PriceDiscoveryTest is HyperdriveTest {
             } else {
                 assertTrue(false);
             }
-        } else if (initError.length > 0 && addLiquidityError.length == 0) {
+        } else if (
+            result.initError.length > 0 && result.addLiquidityError.length == 0
+        ) {
             // Verify that error is InvalidEffectiveShareReserves due to mismatched fixedAPR and timeStretchAPR.
             assertEq(
-                string(abi.encodePacked(initError)),
+                string(abi.encodePacked(result.initError)),
                 string(
                     abi.encodePacked(
                         IHyperdrive.InvalidEffectiveShareReserves.selector
@@ -349,6 +354,8 @@ contract PriceDiscoveryTest is HyperdriveTest {
         }
     }
 
+    // FIXME: Make this test work with fees.
+    //
     // This test fuzzes over the partial range of inputs, but
     // verifies that the low spot rate is approximately 0 and
     // that the high spot rate >= initial rate.
@@ -380,24 +387,21 @@ contract PriceDiscoveryTest is HyperdriveTest {
         );
 
         // Get the high and low spot rates.
-        (
-            uint256 highSpotRate,
-            uint256 lowSpotRate,
-            bytes memory initError,
-            bytes memory addLiquidityError
-        ) = _test_priceDiscovery(
-                fixedAPR,
-                timeStretchAPR,
-                minimumShareReserves,
-                initialContribution,
-                addLiquidityContribution1,
-                addLiquidityContribution2,
-                1e18
-            );
-        if (initError.length == 0 && addLiquidityError.length == 0) {
+        TestPriceDiscoveryResult memory result = _test_priceDiscovery(
+            fixedAPR,
+            timeStretchAPR,
+            minimumShareReserves,
+            initialContribution,
+            addLiquidityContribution1,
+            addLiquidityContribution2,
+            1e18
+        );
+        if (
+            result.initError.length == 0 && result.addLiquidityError.length == 0
+        ) {
             // Test the high and low spot rates.
-            assertGt(highSpotRate, lowSpotRate);
-            assertApproxEqAbs(lowSpotRate, 0, 100 wei);
+            assertGt(result.highSpotRateAfter, result.lowSpotRateAfter);
+            assertLe(result.lowSpotRateAfter, result.lowSpotRateBefore);
 
             // Only test this rule of thumb if the initial contribution is large enough to support
             // high rate discovery after the LP messes with the rate by adding liquidity at a high rate.
@@ -405,12 +409,14 @@ contract PriceDiscoveryTest is HyperdriveTest {
                 initialContribution >=
                 addLiquidityContribution1 + addLiquidityContribution2
             ) {
-                assertGe(highSpotRate, fixedAPR);
+                assertGe(result.highSpotRateAfter, fixedAPR);
             }
-        } else if (initError.length == 0 && addLiquidityError.length > 0) {
+        } else if (
+            result.initError.length == 0 && result.addLiquidityError.length > 0
+        ) {
             // Verify that error is CircuitBreakerTriggered IHyperdrive.MinimumTransactionAmount.
             if (
-                keccak256(abi.encodePacked(addLiquidityError)) ==
+                keccak256(abi.encodePacked(result.addLiquidityError)) ==
                 keccak256(
                     abi.encodePacked(
                         IHyperdrive.CircuitBreakerTriggered.selector
@@ -420,7 +426,7 @@ contract PriceDiscoveryTest is HyperdriveTest {
                 // The circuit breaker was triggered as intended.
                 assertTrue(true);
             } else if (
-                keccak256(abi.encodePacked(addLiquidityError)) ==
+                keccak256(abi.encodePacked(result.addLiquidityError)) ==
                 keccak256(
                     abi.encodePacked(
                         IHyperdrive.MinimumTransactionAmount.selector
@@ -430,7 +436,7 @@ contract PriceDiscoveryTest is HyperdriveTest {
                 // The minimum transaction amount was triggered bc the contribution was so low compared to the existing lp shares.
                 assertTrue(true);
             } else if (
-                keccak256(abi.encodePacked(addLiquidityError)) ==
+                keccak256(abi.encodePacked(result.addLiquidityError)) ==
                 keccak256(
                     abi.encodePacked(
                         IHyperdrive
@@ -442,7 +448,7 @@ contract PriceDiscoveryTest is HyperdriveTest {
                 // The present value decreased when adding liquidity.
                 assertTrue(true);
             } else if (
-                keccak256(abi.encodePacked(addLiquidityError)) ==
+                keccak256(abi.encodePacked(result.addLiquidityError)) ==
                 keccak256(
                     abi.encodePacked(IHyperdrive.InvalidPresentValue.selector)
                 )
@@ -452,10 +458,12 @@ contract PriceDiscoveryTest is HyperdriveTest {
             } else {
                 assertTrue(false);
             }
-        } else if (initError.length > 0 && addLiquidityError.length == 0) {
+        } else if (
+            result.initError.length > 0 && result.addLiquidityError.length == 0
+        ) {
             // Verify that error is InvalidEffectiveShareReserves due to mismatched fixedAPR and timeStretchAPR.
             assertEq(
-                string(abi.encodePacked(initError)),
+                string(abi.encodePacked(result.initError)),
                 string(
                     abi.encodePacked(
                         IHyperdrive.InvalidEffectiveShareReserves.selector
@@ -468,6 +476,14 @@ contract PriceDiscoveryTest is HyperdriveTest {
         }
     }
 
+    struct TestPriceDiscoveryResult {
+        uint256 lowSpotRateBefore;
+        uint256 highSpotRateAfter;
+        uint256 lowSpotRateAfter;
+        bytes initError;
+        bytes addLiquidityError;
+    }
+
     function _test_priceDiscovery(
         uint256 fixedAPR,
         uint256 timeStretchAPR,
@@ -476,22 +492,21 @@ contract PriceDiscoveryTest is HyperdriveTest {
         uint256 addLiquidityContribution1,
         uint256 addLiquidityContribution2,
         uint256 maxShortLimiter
-    )
-        internal
-        returns (
-            uint256 highSpotRate,
-            uint256 lowSpotRate,
-            bytes memory initError,
-            bytes memory addLiquidityError
-        )
-    {
+    ) internal returns (TestPriceDiscoveryResult memory result) {
+        // Deploy the pool.
         IHyperdrive.PoolConfig memory config = testConfig(
             timeStretchAPR,
             POSITION_DURATION
         );
+        config.fees.curve = 0.01e18;
+        config.fees.flat = 0.0005e18;
+        config.fees.governanceLP = 0.15e18;
         config.circuitBreakerDelta = type(uint128).max;
         config.minimumShareReserves = minimumShareReserves;
         deploy(alice, config);
+
+        // Initialize the pool and calculate the low and high rates after
+        // initialization.
         vm.stopPrank();
         vm.startPrank(alice);
         baseToken.mint(initialContribution);
@@ -507,20 +522,76 @@ contract PriceDiscoveryTest is HyperdriveTest {
                 })
             )
         {
+            // NOTE: We do this so that the max long before and after are
+            // comparable since the max long is effected by fees.
+            //
             // Alice opens a max short.
             openShort(
                 alice,
                 hyperdrive.calculateMaxShort().mulDown(maxShortLimiter)
             );
 
-            // Alice adds liquidity.
+            // Alice opens a max long.
+            uint256 maxLong = hyperdrive.calculateMaxLong() -
+                hyperdrive.getPoolConfig().minimumTransactionAmount;
+            openLong(alice, maxLong);
+            result.lowSpotRateBefore = hyperdrive.calculateSpotAPR();
+        } catch (bytes memory data) {
+            result.initError = data;
+            return result;
+        }
+
+        // Deploy and initialize a pool with the same parameters.
+        deploy(alice, config);
+        initialize(alice, fixedAPR, initialContribution);
+
+        // Alice opens a max short.
+        openShort(
+            alice,
+            hyperdrive.calculateMaxShort().mulDown(maxShortLimiter)
+        );
+
+        // Alice adds liquidity.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        baseToken.mint(addLiquidityContribution1);
+        baseToken.approve(address(hyperdrive), addLiquidityContribution1);
+        try
+            hyperdrive.addLiquidity(
+                addLiquidityContribution1,
+                0, // min lp share price
+                0, // min spot rate
+                type(uint256).max, // max spot rate
+                IHyperdrive.Options({
+                    destination: alice,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            )
+        {
+            openLong(
+                alice,
+                hyperdrive.calculateMaxLong() -
+                    hyperdrive.getPoolConfig().minimumTransactionAmount
+            );
+
+            // The term passes.
+            advanceTime(POSITION_DURATION, 0);
+
+            // Alice opens a max short again.
+            openShort(
+                alice,
+                hyperdrive.calculateMaxShort().mulDown(maxShortLimiter)
+            );
+
+            // Alice adds liquidity again.
             vm.stopPrank();
             vm.startPrank(alice);
-            baseToken.mint(addLiquidityContribution1);
-            baseToken.approve(address(hyperdrive), addLiquidityContribution1);
+            baseToken.mint(addLiquidityContribution2);
+            baseToken.approve(address(hyperdrive), addLiquidityContribution2);
             try
                 hyperdrive.addLiquidity(
-                    addLiquidityContribution1,
+                    addLiquidityContribution2,
                     0, // min lp share price
                     0, // min spot rate
                     type(uint256).max, // max spot rate
@@ -531,52 +602,18 @@ contract PriceDiscoveryTest is HyperdriveTest {
                     })
                 )
             {
-                openLong(alice, hyperdrive.calculateMaxLong());
+                result.highSpotRateAfter = hyperdrive.calculateSpotAPR();
 
-                // The term passes.
-                advanceTime(POSITION_DURATION, 0);
-
-                // Alice opens a max short again.
-                openShort(
-                    alice,
-                    hyperdrive.calculateMaxShort().mulDown(maxShortLimiter)
-                );
-
-                // Alice adds liquidity again.
-                vm.stopPrank();
-                vm.startPrank(alice);
-                baseToken.mint(addLiquidityContribution2);
-                baseToken.approve(
-                    address(hyperdrive),
-                    addLiquidityContribution2
-                );
-                try
-                    hyperdrive.addLiquidity(
-                        addLiquidityContribution2,
-                        0, // min lp share price
-                        0, // min spot rate
-                        type(uint256).max, // max spot rate
-                        IHyperdrive.Options({
-                            destination: alice,
-                            asBase: true,
-                            extraData: new bytes(0)
-                        })
-                    )
-                {
-                    highSpotRate = hyperdrive.calculateSpotAPR();
-
-                    // Alice opens a max long again.
-                    uint256 maxLong = hyperdrive.calculateMaxLong();
-                    openLong(alice, maxLong);
-                    lowSpotRate = hyperdrive.calculateSpotAPR();
-                } catch (bytes memory data) {
-                    addLiquidityError = data;
-                }
+                // Alice opens a max long again.
+                uint256 maxLong = hyperdrive.calculateMaxLong() -
+                    hyperdrive.getPoolConfig().minimumTransactionAmount;
+                openLong(alice, maxLong);
+                result.lowSpotRateAfter = hyperdrive.calculateSpotAPR();
             } catch (bytes memory data) {
-                addLiquidityError = data;
+                result.addLiquidityError = data;
             }
         } catch (bytes memory data) {
-            initError = data;
+            result.addLiquidityError = data;
         }
     }
 
