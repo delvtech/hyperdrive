@@ -1,16 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-// FIXME: Add fees to more of the tests.
 contract PriceDiscoveryTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for *;
@@ -192,7 +188,7 @@ contract PriceDiscoveryTest is HyperdriveTest {
             initialContribution,
             addLiquidityContribution1,
             addLiquidityContribution2,
-            1e18
+            0.99e18
         );
 
         // Test the high and low spot rates.
@@ -232,7 +228,7 @@ contract PriceDiscoveryTest is HyperdriveTest {
             initialContribution,
             addLiquidityContribution1,
             addLiquidityContribution2,
-            1e18
+            0.99e18
         );
 
         // Test the high and low spot rates.
@@ -354,8 +350,6 @@ contract PriceDiscoveryTest is HyperdriveTest {
         }
     }
 
-    // FIXME: Make this test work with fees.
-    //
     // This test fuzzes over the partial range of inputs, but
     // verifies that the low spot rate is approximately 0 and
     // that the high spot rate >= initial rate.
@@ -394,7 +388,7 @@ contract PriceDiscoveryTest is HyperdriveTest {
             initialContribution,
             addLiquidityContribution1,
             addLiquidityContribution2,
-            1e18
+            0.99e18
         );
         if (
             result.initError.length == 0 && result.addLiquidityError.length == 0
