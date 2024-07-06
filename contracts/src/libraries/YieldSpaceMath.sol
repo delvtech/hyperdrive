@@ -95,7 +95,8 @@ library YieldSpaceMath {
         //  (c / µ) * (µ * (ze + dz))^(1 - t)
         ze = c.mulDivDown(ze, mu);
 
-        // If k < ze, we have no choice but to revert.
+        // If k < ze, we return a failure flag since the calculation would have
+        // underflowed.
         if (k < ze) {
             return (0, false);
         }
@@ -115,7 +116,8 @@ library YieldSpaceMath {
             _y = _y.pow(ONE.divDown(t));
         }
 
-        // If y < _y, we have no choice but to revert.
+        // If y < _y, we return a failure flag since the calculation would have
+        // underflowed.
         if (y < _y) {
             return (0, false);
         }

@@ -107,7 +107,6 @@ abstract contract HyperdriveLP is
         // Check to see whether or not the initial liquidity will result in
         // invalid price discovery. If the spot price can't be brought to one,
         // we revert to avoid dangerous pool states.
-        uint256 latestCheckpoint = _latestCheckpoint();
         (
             int256 solvencyAfterMaxLong,
             bool success
@@ -140,7 +139,7 @@ abstract contract HyperdriveLP is
 
         // Create an initial checkpoint.
         _applyCheckpoint(
-            latestCheckpoint,
+            _latestCheckpoint(),
             vaultSharePrice,
             LPMath.SHARE_PROCEEDS_MAX_ITERATIONS,
             true
