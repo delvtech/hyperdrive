@@ -2,13 +2,12 @@
 pragma solidity 0.8.20;
 
 import { IPool } from "aave/interfaces/IPool.sol";
-import { WadRayMath } from "aave/protocol/libraries/math/WadRayMath.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import { IERC4626 } from "../../interfaces/IERC4626.sol";
 import { IAToken } from "../../interfaces/IAToken.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
+import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title AaveBase
@@ -20,23 +19,20 @@ import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract AaveBase is HyperdriveBase {
+    using FixedPointMath for uint256;
     using SafeERC20 for ERC20;
-    using WadRayMath for uint256;
 
     /// @dev The Aave vault that is this instance's yield source.
     IPool internal immutable _vault;
 
     /// @notice Instantiates the AaveHyperdrive base contract.
     constructor() {
-        // FIXME: This belongs in the deployer coordinator.
-        //
-        // If the base token isn't equal to the vault's underlying asset address,
-        // then this pool is configured improperly.
-
         // Initialize the Aave vault immutable.
         _vault = IAToken(address(_vaultSharesToken)).POOL();
 
-        // FIXME: Should we do the Aave approval here?
+        // Approve the Aave vault with 1 wei. This ensures that all of the
+        // subsequent approvals will be writing to a dirty storage slot.
+        ERC20(address(_baseToken)).forceApprove(address(_vault), 1);
     }
 
     //
@@ -88,11 +84,8 @@ abstract contract AaveBase is HyperdriveBase {
         ERC20(address(_vaultSharesToken)).safeTransferFrom(
             msg.sender,
             address(this),
-            // FIXME: How will rounding effect this? Will this ever fail? Fuzz
-            // this with lots of amounts and a non-trivial index to ensure that
-            // we don't run into problems.
-            //
-            // NOTE: Convert the share amount to base.
+            // NOTE: The AToken interface transfers in base, so we have to
+            // convert the share amount to a base amount.
             _convertToBase(_shareAmount)
         );
     }
@@ -143,11 +136,6 @@ abstract contract AaveBase is HyperdriveBase {
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
-        // FIXME: Instead of using their rayDiv math, it would be better to use
-        //        mulDivDown manually. This would ensure that we are rounding
-        //        down always and that we don't need to introduce a new
-        //        dependency.
-        //
         // Aave's AToken accounting calls shares "scaled tokens." We can convert
         // from scaled tokens to aTokens with the formula:
         //
@@ -155,9 +143,14 @@ abstract contract AaveBase is HyperdriveBase {
         //
         // `rayMul` computes a 27 decimal fixed point multiplication and
         // `_underlyingAsset` is the base token address.
+        //
+        // NOTE: We use `mulDivDown` with 27 decimals of precision to compute
+        // the calculation to ensure that we are always rounding down since
+        // `rayDiv` will round up in some cases.
         return
-            _shareAmount.rayMul(
-                _vault.getReserveNormalizedIncome(address(_baseToken))
+            _shareAmount.mulDivDown(
+                _vault.getReserveNormalizedIncome(address(_baseToken)),
+                1e27
             );
     }
 
@@ -167,20 +160,22 @@ abstract contract AaveBase is HyperdriveBase {
     function _convertToShares(
         uint256 _baseAmount
     ) internal view override returns (uint256) {
-        // FIXME: Instead of using their rayDiv math, it would be better to use
-        //        mulDivDown manually. This would ensure that we are rounding
-        //        down always and that we don't need to introduce a new
-        //        dependency.
-        //
         // Aave's AToken accounting calls shares "scaled tokens." We can convert
         // from aTokens to scaled tokens with the formula:
         //
-        // scaledToken = aToken.rayDiv(POOL.getReserveNormalizedIncome(_underlyingAsset))
+        // scaledToken = aToken.rayDiv(
+        //     POOL.getReserveNormalizedIncome(_underlyingAsset)
+        // )
         //
         // `rayDiv` computes a 27 decimal fixed point division and
         // `_underlyingAsset` is the base token address.
+        //
+        // NOTE: We use `mulDivDown` with 27 decimals of precision to compute
+        // the calculation to ensure that we are always rounding down since
+        // `rayDiv` will round up in some cases.
         return
-            _baseAmount.rayDiv(
+            _baseAmount.mulDivDown(
+                1e27,
                 _vault.getReserveNormalizedIncome(address(_baseToken))
             );
     }

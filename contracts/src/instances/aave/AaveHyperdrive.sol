@@ -71,14 +71,5 @@ contract AaveHyperdrive is Hyperdrive, AaveBase {
         address _target1,
         address _target2,
         address _target3
-    ) Hyperdrive(__name, _config, _target0, _target1, _target2, _target3) {
-        // FIXME: Do we need to do this?
-
-        // Approve the base token with 1 wei. This ensures that all of the
-        // subsequent approvals will be writing to a dirty storage slot.
-        ERC20(address(_config.baseToken)).forceApprove(
-            address(_config.vaultSharesToken),
-            1
-        );
-    }
+    ) Hyperdrive(__name, _config, _target0, _target1, _target2, _target3) {}
 }

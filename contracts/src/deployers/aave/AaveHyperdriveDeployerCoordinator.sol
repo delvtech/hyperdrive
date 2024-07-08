@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { IPool } from "aave/interfaces/IPool.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import { IAToken } from "../../interfaces/IAToken.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { AAVE_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
+import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
@@ -17,6 +20,7 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract AaveHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+    using FixedPointMath for uint256;
     using SafeERC20 for ERC20;
 
     /// @notice The deployer coordinator's kind.
@@ -70,21 +74,24 @@ contract AaveHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         // If base is the deposit asset, the initialization will be paid in the
         // base token.
         address token;
+        address baseToken = _hyperdrive.baseToken();
         if (_options.asBase) {
-            token = _hyperdrive.baseToken();
+            token = baseToken;
         }
         // Otherwise, the initialization will be paid in vault shares.
         else {
+            // The token is the vault shares token.
             token = _hyperdrive.vaultSharesToken();
+
+            // AToken transfers are in base, so we need to convert from
+            // shares to base.
+            _contribution = _convertToBase(baseToken, token, _contribution);
         }
 
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC20 example provided.
         // Take custody of the contribution and approve Hyperdrive to pull the
         // tokens.
         ERC20(token).safeTransferFrom(_lp, address(this), _contribution);
         ERC20(token).forceApprove(address(_hyperdrive), _contribution);
-        // ****************************************************************
 
         return value;
     }
@@ -104,31 +111,93 @@ contract AaveHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig);
 
-        // Ensure that the minimum share reserves are equal to 1e15. This value
-        // has been tested to prevent arithmetic overflows in the
-        // `_updateLiquidity` function when the share reserves are as high as
-        // 200 million.
-        if (_deployConfig.minimumShareReserves != 1e15) {
+        // Ensure that the vault shares token address is non-zero.
+        if (address(_deployConfig.vaultSharesToken) == address(0)) {
+            revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
+        }
+
+        // Ensure that the base token address is properly configured.
+        if (
+            address(_deployConfig.baseToken) !=
+            IAToken(address(_deployConfig.vaultSharesToken))
+                .UNDERLYING_ASSET_ADDRESS()
+        ) {
+            revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
+        }
+
+        // Ensure that the minimum share reserves are large enough to meet the
+        // minimum requirements for safety.
+        //
+        // NOTE: Some pools may require larger minimum share reserves to be
+        // considered safe. This is just a sanity check.
+        if (
+            _deployConfig.minimumShareReserves <
+            10 ** (_deployConfig.baseToken.decimals() - 4)
+        ) {
             revert IHyperdriveDeployerCoordinator.InvalidMinimumShareReserves();
         }
 
-        // Ensure that the minimum transaction amount are equal to 1e15. This
-        // value has been tested to prevent precision issues.
-        if (_deployConfig.minimumTransactionAmount != 1e15) {
+        // Ensure that the minimum transaction amount is large enough to meet
+        // the minimum requirements for safety.
+        //
+        // NOTE: Some pools may require larger minimum transaction amounts to be
+        // considered safe. This is just a sanity check.
+        if (
+            _deployConfig.minimumTransactionAmount <
+            10 ** (_deployConfig.baseToken.decimals() - 4)
+        ) {
             revert IHyperdriveDeployerCoordinator
                 .InvalidMinimumTransactionAmount();
         }
     }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
+    /// @param _deployConfig The deploy config that will be used to deploy the
+    ///        pool.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
-        IHyperdrive.PoolDeployConfig memory, // unused _deployConfig
+        IHyperdrive.PoolDeployConfig memory _deployConfig, // unused _deployConfig
         bytes memory // unused _extraData
-    ) internal pure override returns (uint256) {
-        // ****************************************************************
-        // FIXME:  Implement this for new instances.
-        return ONE;
-        // ****************************************************************
+    ) internal view override returns (uint256) {
+        // We calculate the vault share price by converting 1e18 vault shares to
+        // aTokens.
+        return
+            _convertToBase(
+                address(_deployConfig.baseToken),
+                address(_deployConfig.vaultSharesToken),
+                ONE
+            );
+    }
+
+    /// @dev Convert an amount of vault shares to an amount of base.
+    /// @param _baseToken The base token.
+    /// @param _vaultSharesToken The vault shares token.
+    /// @param _shareAmount The vault shares amount.
+    /// @return The base amount.
+    function _convertToBase(
+        address _baseToken,
+        address _vaultSharesToken,
+        uint256 _shareAmount
+    ) internal view returns (uint256) {
+        // Aave's AToken accounting calls shares "scaled tokens." We can convert
+        // from scaled tokens to aTokens with the formula:
+        //
+        // aToken = scaledToken.rayMul(
+        //     POOL.getReserveNormalizedIncome(_underlyingAsset)
+        // )
+        //
+        // `rayMul` computes a 27 decimal fixed point multiplication and
+        // `_underlyingAsset` is the base token address.
+        //
+        // NOTE: We use `mulDivDown` with 27 decimals of precision to compute
+        // the calculation to ensure that we are always rounding down since
+        // `rayDiv` will round up in some cases.
+        return
+            _shareAmount.mulDivDown(
+                IAToken(_vaultSharesToken).POOL().getReserveNormalizedIncome(
+                    _baseToken
+                ),
+                1e27
+            );
     }
 }
