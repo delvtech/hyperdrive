@@ -3,9 +3,7 @@ pragma solidity 0.8.20;
 
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import { IAave } from "../../interfaces/IAave.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { IAaveHyperdrive } from "../../interfaces/IAaveHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { AAVE_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";

@@ -37,7 +37,7 @@ contract AaveHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
                 // front-running of deployments.
                 new AaveHyperdrive{
                     salt: keccak256(abi.encode(msg.sender, _salt))
-                }(_config, _target0, _target1, _target2, _target3)
+                }(__name, _config, _target0, _target1, _target2, _target3)
             )
         );
     }

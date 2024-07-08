@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IAToken } from "aave/interfaces/IAToken.sol";
 import { WadRayMath } from "aave/protocol/libraries/math/WadRayMath.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
-import { IAave } from "../../interfaces/IAave.sol";
+import { IAToken } from "../../interfaces/IAToken.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 
@@ -22,6 +21,10 @@ import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 abstract contract AaveBase is HyperdriveBase {
     using SafeERC20 for ERC20;
     using WadRayMath for uint256;
+
+    // FIXME: Cache the POOL address.
+    //
+    // FIXME: Verify on construction that _baseToken == IAToken(address(_vaultSharesToken)).UNDERLYING_ASSET_ADDRESS()
 
     /// Yield Source ///
 
@@ -128,23 +131,6 @@ abstract contract AaveBase is HyperdriveBase {
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
-        // FIXME: To convert from shares to base, we're really converting from
-        //        scaled amounts to amounts. We have that:
-        //
-        //        totalSupply = scaledTotalSupply.rayMul(index)
-        //
-        //        and
-        //
-        //        amount = scaledAmount.rayMul(index)
-        //
-        //        so
-        //
-        //        amount = scaledAmount.rayMul(totalSupply.rayDiv(scaledTotalSupply))
-
-        // FIXME: Cache the POOL address.
-        //
-        // FIXME: Verify on construction that _baseToken == IAToken(address(_vaultSharesToken)).UNDERLYING_ASSET_ADDRESS()
-
         // Aave's AToken accounting calls shares "scaled tokens." We can convert
         // from scaled tokens to aTokens with the formula:
         //
@@ -152,12 +138,11 @@ abstract contract AaveBase is HyperdriveBase {
         //
         // `rayMul` computes a 27 decimal fixed point multiplication and
         // `_underlyingAsset` is the base token address.
-        IAToken vaultSharesToken = IAToken(address(_vaultSharesToken));
         return
             _shareAmount.rayMul(
-                vaultSharesToken.POOL().getReserveNormalizedIncome(
-                    address(_baseToken)
-                )
+                IAToken(address(_vaultSharesToken))
+                    .POOL()
+                    .getReserveNormalizedIncome(address(_baseToken))
             );
     }
 
@@ -167,11 +152,19 @@ abstract contract AaveBase is HyperdriveBase {
     function _convertToShares(
         uint256 _baseAmount
     ) internal view override returns (uint256) {
-        // ****************************************************************
-        // FIXME: Implement this for new instances.
+        // Aave's AToken accounting calls shares "scaled tokens." We can convert
+        // from aTokens to scaled tokens with the formula:
+        //
+        // scaledToken = aToken.rayDiv(POOL.getReserveNormalizedIncome(_underlyingAsset))
+        //
+        // `rayDiv` computes a 27 decimal fixed point division and
+        // `_underlyingAsset` is the base token address.
         return
-            IERC4626(address(_vaultSharesToken)).convertToShares(_baseAmount);
-        // ****************************************************************
+            _baseAmount.rayDiv(
+                IAToken(address(_vaultSharesToken))
+                    .POOL()
+                    .getReserveNormalizedIncome(address(_baseToken))
+            );
     }
 
     /// @dev Gets the total amount of shares held by the pool in the yield

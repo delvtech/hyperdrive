@@ -2,7 +2,6 @@
 pragma solidity 0.8.20;
 
 import { AaveTarget2 } from "../../instances/aave/AaveTarget2.sol";
-import { IAave } from "../../interfaces/IAave.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDeployer.sol";
 
