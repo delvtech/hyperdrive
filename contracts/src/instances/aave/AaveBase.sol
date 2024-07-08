@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { IPool } from "aave/interfaces/IPool.sol";
 import { WadRayMath } from "aave/protocol/libraries/math/WadRayMath.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
@@ -22,10 +23,23 @@ abstract contract AaveBase is HyperdriveBase {
     using SafeERC20 for ERC20;
     using WadRayMath for uint256;
 
-    // FIXME: Cache the POOL address.
-    //
-    // FIXME: Verify on construction that _baseToken == IAToken(address(_vaultSharesToken)).UNDERLYING_ASSET_ADDRESS()
+    /// @dev The Aave vault that is this instance's yield source.
+    IPool internal immutable _vault;
 
+    /// @notice Instantiates the AaveHyperdrive base contract.
+    constructor() {
+        // FIXME: This belongs in the deployer coordinator.
+        //
+        // If the base token isn't equal to the vault's underlying asset address,
+        // then this pool is configured improperly.
+
+        // Initialize the Aave vault immutable.
+        _vault = IAToken(address(_vaultSharesToken)).POOL();
+
+        // FIXME: Should we do the Aave approval here?
+    }
+
+    //
     /// Yield Source ///
 
     /// @dev Accepts a deposit from the user in base.
@@ -37,8 +51,6 @@ abstract contract AaveBase is HyperdriveBase {
         uint256 _baseAmount,
         bytes calldata // unused
     ) internal override returns (uint256, uint256) {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC4626 example provided.
         // Take custody of the deposit in base.
         ERC20(address(_baseToken)).safeTransferFrom(
             msg.sender,
@@ -55,13 +67,15 @@ abstract contract AaveBase is HyperdriveBase {
             address(_vaultSharesToken),
             _baseAmount + 1
         );
-        uint256 sharesMinted = IERC4626(address(_vaultSharesToken)).deposit(
-            _baseAmount,
-            address(this)
+        _vault.supply(
+            address(_baseToken), // asset
+            _baseAmount, // amount
+            address(this), // onBehalfOf
+            // FIXME: We should make a referral code
+            0 // referralCode
         );
 
-        return (sharesMinted, 0);
-        // ****************************************************************
+        return (_convertToShares(_baseAmount), 0);
     }
 
     /// @dev Process a deposit in vault shares.
@@ -70,15 +84,17 @@ abstract contract AaveBase is HyperdriveBase {
         uint256 _shareAmount,
         bytes calldata // unused _extraData
     ) internal override {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC20 example provided.
         // Take custody of the deposit in vault shares.
         ERC20(address(_vaultSharesToken)).safeTransferFrom(
             msg.sender,
             address(this),
-            _shareAmount
+            // FIXME: How will rounding effect this? Will this ever fail? Fuzz
+            // this with lots of amounts and a non-trivial index to ensure that
+            // we don't run into problems.
+            //
+            // NOTE: Convert the share amount to base.
+            _convertToBase(_shareAmount)
         );
-        // ****************************************************************
     }
 
     /// @dev Process a withdrawal in base and send the proceeds to the
@@ -140,9 +156,7 @@ abstract contract AaveBase is HyperdriveBase {
         // `_underlyingAsset` is the base token address.
         return
             _shareAmount.rayMul(
-                IAToken(address(_vaultSharesToken))
-                    .POOL()
-                    .getReserveNormalizedIncome(address(_baseToken))
+                _vault.getReserveNormalizedIncome(address(_baseToken))
             );
     }
 
@@ -161,9 +175,7 @@ abstract contract AaveBase is HyperdriveBase {
         // `_underlyingAsset` is the base token address.
         return
             _baseAmount.rayDiv(
-                IAToken(address(_vaultSharesToken))
-                    .POOL()
-                    .getReserveNormalizedIncome(address(_baseToken))
+                _vault.getReserveNormalizedIncome(address(_baseToken))
             );
     }
 
