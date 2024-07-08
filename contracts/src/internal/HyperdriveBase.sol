@@ -7,6 +7,7 @@ import { AssetId } from "../libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 import { LPMath } from "../libraries/LPMath.sol";
+import { YieldSpaceMath } from "../libraries/YieldSpaceMath.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 
@@ -440,18 +441,12 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
     }
 
     /// @dev Updates the global long exposure.
-    /// @param _before The long exposure before the update.
-    /// @param _after The long exposure after the update.
+    /// @param _before The checkpoint long exposure before the update.
+    /// @param _after The checkpoint long exposure after the update.
     function _updateLongExposure(int256 _before, int256 _after) internal {
-        // The global long exposure is the sum of the non-netted longs in each
-        // checkpoint. To update this value, we subtract the current value
-        // (`_before.max(0)`) and add the new value (`_after.max(0)`).
-        int128 delta = (_after.max(0) - _before.max(0)).toInt128();
-        if (delta > 0) {
-            _marketState.longExposure += uint128(delta);
-        } else if (delta < 0) {
-            _marketState.longExposure -= uint128(-delta);
-        }
+        _marketState.longExposure = LPMath
+            .calculateLongExposure(_marketState.longExposure, _before, _after)
+            .toUint128();
     }
 
     /// @dev Update the weighted spot price from a specified checkpoint. The
@@ -680,6 +675,153 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
             : 0;
 
         return (lpSharePrice, true);
+    }
+
+    /// @dev Calculates the pool's solvency if a long is opened that brings the
+    ///      rate to 0%. This is the maximum possible long that can be opened on
+    ///      the YieldSpace curve.
+    /// @param _shareReserves The pool's share reserves.
+    /// @param _shareAdjustment The pool's share adjustment.
+    /// @param _bondReserves The pool's bond reserves.
+    /// @param _vaultSharePrice The vault share price.
+    /// @param _longExposure The pool's long exposure.
+    /// @param _checkpointExposure The pool's checkpoint exposure.
+    /// @return The solvency after opening the max long.
+    /// @return A flag indicating whether or not the calculation succeeded.
+    function _calculateSolvencyAfterMaxLongSafe(
+        uint256 _shareReserves,
+        int256 _shareAdjustment,
+        uint256 _bondReserves,
+        uint256 _vaultSharePrice,
+        uint256 _longExposure,
+        int256 _checkpointExposure
+    ) internal view returns (int256, bool) {
+        // Calculate the share payment and bond proceeds of opening the largest
+        // possible long on the YieldSpace curve. This does not include fees.
+        // These calculations fail when the max long is close to zero, and we
+        // ignore these failures since we can proceed with the calculation in
+        // this case.
+        (uint256 effectiveShareReserves, bool success) = HyperdriveMath
+            .calculateEffectiveShareReservesSafe(
+                _shareReserves,
+                _shareAdjustment
+            );
+        if (!success) {
+            return (0, false);
+        }
+        (uint256 maxSharePayment, ) = YieldSpaceMath
+            .calculateMaxBuySharesInSafe(
+                effectiveShareReserves,
+                _bondReserves,
+                ONE - _timeStretch,
+                _vaultSharePrice,
+                _initialVaultSharePrice
+            );
+        (uint256 maxBondProceeds, ) = YieldSpaceMath
+            .calculateBondsOutGivenSharesInDownSafe(
+                effectiveShareReserves,
+                _bondReserves,
+                maxSharePayment,
+                ONE - _timeStretch,
+                _vaultSharePrice,
+                _initialVaultSharePrice
+            );
+
+        // If one of the max share payment or max bond proceeds calculations
+        // fail or return zero, the max long amount is zero plus or minus a few
+        // wei.
+        if (maxSharePayment == 0 || maxBondProceeds == 0) {
+            maxSharePayment = 0;
+            maxBondProceeds = 0;
+        }
+
+        // Apply the fees from opening a long to the max share payment and bond
+        // proceeds. Fees applied to the share payment hurt solvency and fees
+        // applied to the bond proceeds make the pool more solvent. To be
+        // conservative, we only apply the fee to the share payment.
+        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+            effectiveShareReserves,
+            _bondReserves,
+            _initialVaultSharePrice,
+            _timeStretch
+        );
+        (maxSharePayment, , ) = _calculateOpenLongFees(
+            maxSharePayment,
+            maxBondProceeds,
+            _vaultSharePrice,
+            spotPrice
+        );
+
+        // Calculate the pool's solvency after opening the max long.
+        uint256 shareReserves = _shareReserves + maxSharePayment;
+        uint256 longExposure = LPMath.calculateLongExposure(
+            _longExposure,
+            _checkpointExposure,
+            _checkpointExposure + maxBondProceeds.toInt256()
+        );
+        uint256 vaultSharePrice = _vaultSharePrice;
+        return (
+            shareReserves.mulDown(vaultSharePrice).toInt256() -
+                longExposure.toInt256() -
+                _minimumShareReserves.mulUp(vaultSharePrice).toInt256(),
+            true
+        );
+    }
+
+    /// @dev Calculates the share reserves delta, the bond reserves delta, and
+    ///      the total governance fee after opening a long.
+    /// @param _shareReservesDelta The change in the share reserves without fees.
+    /// @param _bondReservesDelta The change in the bond reserves without fees.
+    /// @param _vaultSharePrice The current vault share price.
+    /// @param _spotPrice The current spot price.
+    /// @return The change in the share reserves with fees.
+    /// @return The change in the bond reserves with fees.
+    /// @return The governance fee in shares.
+    function _calculateOpenLongFees(
+        uint256 _shareReservesDelta,
+        uint256 _bondReservesDelta,
+        uint256 _vaultSharePrice,
+        uint256 _spotPrice
+    ) internal view returns (uint256, uint256, uint256) {
+        // Calculate the fees charged to the user (curveFee) and the portion
+        // of those fees that are paid to governance (governanceCurveFee).
+        (
+            uint256 curveFee, // bonds
+            uint256 governanceCurveFee // bonds
+        ) = _calculateFeesGivenShares(
+                _shareReservesDelta,
+                _spotPrice,
+                _vaultSharePrice
+            );
+
+        // Calculate the impact of the curve fee on the bond reserves. The curve
+        // fee benefits the LPs by causing less bonds to be deducted from the
+        // bond reserves.
+        _bondReservesDelta -= curveFee;
+
+        // NOTE: Round down to underestimate the governance fee.
+        //
+        // Calculate the fees owed to governance in shares. Open longs are
+        // calculated entirely on the curve so the curve fee is the total
+        // governance fee. In order to convert it to shares we need to multiply
+        // it by the spot price and divide it by the vault share price:
+        //
+        // shares = (bonds * base/bonds) / (base/shares)
+        // shares = bonds * shares/bonds
+        // shares = shares
+        uint256 totalGovernanceFee = governanceCurveFee.mulDivDown(
+            _spotPrice,
+            _vaultSharePrice
+        );
+
+        // Calculate the number of shares to add to the shareReserves.
+        // shareReservesDelta, _shareAmount and totalGovernanceFee
+        // are all denominated in shares:
+        //
+        // shares = shares - shares
+        _shareReservesDelta -= totalGovernanceFee;
+
+        return (_shareReservesDelta, _bondReservesDelta, totalGovernanceFee);
     }
 
     /// @dev Calculates the fees that go to the LPs and governance.

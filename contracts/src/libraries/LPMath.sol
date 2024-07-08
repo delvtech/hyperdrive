@@ -127,6 +127,31 @@ library LPMath {
         );
     }
 
+    /// @dev Calculates the global long exposure after an update is made to
+    ///      a checkpoint exposure.
+    /// @param _longExposure The global long exposure.
+    /// @param _before The checkpoint long exposure before the update.
+    /// @param _after The checkpoint long exposure after the update.
+    /// @return The updated global long exposure.
+    function calculateLongExposure(
+        uint256 _longExposure,
+        int256 _before,
+        int256 _after
+    ) internal pure returns (uint256) {
+        // The global long exposure is the sum of the non-netted longs in each
+        // checkpoint. To update this value, we subtract the current value
+        // (`_before.max(0)`) and add the new value (`_after.max(0)`).
+        int256 delta = FixedPointMath.max(_after, 0) -
+            FixedPointMath.max(_before, 0);
+        if (delta > 0) {
+            _longExposure += uint256(delta);
+        } else if (delta < 0) {
+            _longExposure -= uint256(-delta);
+        }
+
+        return _longExposure;
+    }
+
     /// @dev Calculates the new share reserves, share adjustment, and bond
     ///      reserves after liquidity is added or removed from the pool. This
     ///      update is made in such a way that the pool's spot price remains

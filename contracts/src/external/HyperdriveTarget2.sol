@@ -30,6 +30,23 @@ abstract contract HyperdriveTarget2 is
         IHyperdrive.PoolConfig memory _config
     ) HyperdriveStorage(_config) {}
 
+    /// LPs ///
+
+    /// @notice Allows the first LP to initialize the market with a target APR.
+    /// @param _contribution The amount of capital to supply. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
+    /// @param _apr The target APR.
+    /// @param _options The options that configure how the operation is settled.
+    /// @return The initial number of LP shares created.
+    function initialize(
+        uint256 _contribution,
+        uint256 _apr,
+        IHyperdrive.Options calldata _options
+    ) external payable returns (uint256) {
+        return _initialize(_contribution, _apr, _options);
+    }
+
     /// Shorts ///
 
     /// @notice Opens a short position.

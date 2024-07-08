@@ -23,6 +23,7 @@ abstract contract HyperdriveLP is
     HyperdriveMultiToken
 {
     using FixedPointMath for uint256;
+    using FixedPointMath for int256;
     using LPMath for LPMath.PresentValueParams;
     using SafeCast for int256;
     using SafeCast for uint256;
@@ -103,6 +104,24 @@ abstract contract HyperdriveLP is
             revert IHyperdrive.InvalidEffectiveShareReserves();
         }
 
+        // Check to see whether or not the initial liquidity will result in
+        // invalid price discovery. If the spot price can't be brought to one,
+        // we revert to avoid dangerous pool states.
+        (
+            int256 solvencyAfterMaxLong,
+            bool success
+        ) = _calculateSolvencyAfterMaxLongSafe(
+                shareReserves,
+                shareAdjustment,
+                bondReserves,
+                vaultSharePrice,
+                0,
+                0
+            );
+        if (!success || solvencyAfterMaxLong < 0) {
+            revert IHyperdrive.CircuitBreakerTriggered();
+        }
+
         // Initialize the reserves.
         _marketState.shareReserves = shareReserves.toUint128();
         _marketState.shareAdjustment = shareAdjustment.toInt128();
@@ -127,14 +146,17 @@ abstract contract HyperdriveLP is
         );
 
         // Emit an Initialize event.
+        uint256 contribution = _contribution; // avoid stack-too-deep
+        uint256 apr = _apr; // avoid stack-too-deep
+        IHyperdrive.Options calldata options = _options; // avoid stack-too-deep
         emit Initialize(
-            _options.destination,
+            options.destination,
             lpShares,
-            _contribution,
+            contribution,
             vaultSharePrice,
-            _options.asBase,
-            _apr,
-            _options.extraData
+            options.asBase,
+            apr,
+            options.extraData
         );
 
         return lpShares;
@@ -200,8 +222,28 @@ abstract contract HyperdriveLP is
             true
         );
 
+        // Calculate the solvency after opening a max long before applying the
+        // add liquidity updates. This is a benchmark for the pool's current
+        // price discovery. Adding liquidity should not negatively impact price
+        // discovery.
+        (
+            int256 solvencyAfterMaxLongBefore,
+            bool success
+        ) = _calculateSolvencyAfterMaxLongSafe(
+                _marketState.shareReserves,
+                _marketState.shareAdjustment,
+                _marketState.bondReserves,
+                vaultSharePrice,
+                _marketState.longExposure,
+                _nonNettedLongs(latestCheckpoint + _positionDuration)
+            );
+        if (!success) {
+            revert IHyperdrive.CircuitBreakerTriggered();
+        }
+
         // Ensure that the spot APR is close enough to the previous weighted
         // spot price to fall within the tolerance.
+        uint256 contribution = _contribution; // avoid stack-too-deep
         {
             uint256 previousWeightedSpotAPR = HyperdriveMath
                 .calculateAPRFromPrice(
@@ -275,7 +317,6 @@ abstract contract HyperdriveLP is
         // NOTE: Round down to make the check more conservative.
         //
         // Enforce the minimum LP share price slippage guard.
-        uint256 contribution = _contribution; // avoid stack-too-deep
         if (contribution.divDown(lpShares) < _minLpSharePrice) {
             revert IHyperdrive.OutputLimit();
         }
@@ -287,21 +328,47 @@ abstract contract HyperdriveLP is
         // excess idle calculation fails, we revert to avoid allowing the system
         // to enter an unhealthy state. A failure indicates that the present
         // value can't be calculated.
-        bool success = _distributeExcessIdleSafe(vaultSharePrice);
+        success = _distributeExcessIdleSafe(vaultSharePrice);
         if (!success) {
             revert IHyperdrive.DistributeExcessIdleFailed();
+        }
+
+        // Check to see whether or not adding this liquidity will result in
+        // worsened price discovery. If the spot price can't be brought to one
+        // and price discovery worsened after adding liquidity, we revert to
+        // avoid dangerous pool states.
+        uint256 latestCheckpoint_ = latestCheckpoint; // avoid stack-too-deep
+        uint256 lpShares_ = lpShares; // avoid stack-too-deep
+        IHyperdrive.Options calldata options = _options; // avoid stack-too-deep
+        uint256 vaultSharePrice_ = vaultSharePrice; // avoid stack-too-deep
+        int256 solvencyAfterMaxLongAfter;
+        (
+            solvencyAfterMaxLongAfter,
+            success
+        ) = _calculateSolvencyAfterMaxLongSafe(
+            _marketState.shareReserves,
+            _marketState.shareAdjustment,
+            _marketState.bondReserves,
+            vaultSharePrice_,
+            _marketState.longExposure,
+            _nonNettedLongs(latestCheckpoint_ + _positionDuration)
+        );
+        if (
+            !success ||
+            solvencyAfterMaxLongAfter < solvencyAfterMaxLongBefore.min(0)
+        ) {
+            revert IHyperdrive.CircuitBreakerTriggered();
         }
 
         // Emit an AddLiquidity event.
         uint256 lpSharePrice = lpTotalSupply == 0
             ? 0 // NOTE: We always round the LP share price down for consistency.
-            : startingPresentValue.mulDivDown(vaultSharePrice, lpTotalSupply);
-        IHyperdrive.Options calldata options = _options; // avoid stack-too-deep
+            : startingPresentValue.mulDivDown(vaultSharePrice_, lpTotalSupply);
         emit AddLiquidity(
             options.destination,
-            lpShares,
+            lpShares_,
             contribution,
-            vaultSharePrice,
+            vaultSharePrice_,
             options.asBase,
             lpSharePrice,
             options.extraData

@@ -40,7 +40,7 @@ library YieldSpaceMath {
     /// @param t The time elapsed since the term's start.
     /// @param c The vault share price.
     /// @param mu The initial vault share price.
-    /// @return The amount of bonds the trader receives.
+    /// @return result The amount of bonds the trader receives.
     function calculateBondsOutGivenSharesInDown(
         uint256 ze,
         uint256 y,
@@ -48,7 +48,41 @@ library YieldSpaceMath {
         uint256 t,
         uint256 c,
         uint256 mu
-    ) internal pure returns (uint256) {
+    ) internal pure returns (uint256 result) {
+        bool success;
+        (result, success) = calculateBondsOutGivenSharesInDownSafe(
+            ze,
+            y,
+            dz,
+            t,
+            c,
+            mu
+        );
+        if (!success) {
+            Errors.throwInsufficientLiquidityError();
+        }
+    }
+
+    /// @dev Calculates the amount of bonds a user will receive from the pool by
+    ///      providing a specified amount of shares. This function returns a
+    ///      success flag instead of reverting. We underestimate the amount
+    ///      of bonds out.
+    /// @param ze The effective share reserves.
+    /// @param y The bond reserves.
+    /// @param dz The amount of shares paid to the pool.
+    /// @param t The time elapsed since the term's start.
+    /// @param c The vault share price.
+    /// @param mu The initial vault share price.
+    /// @return The amount of bonds the trader receives.
+    /// @return A flag indicating if the calculation succeeded.
+    function calculateBondsOutGivenSharesInDownSafe(
+        uint256 ze,
+        uint256 y,
+        uint256 dz,
+        uint256 t,
+        uint256 c,
+        uint256 mu
+    ) internal pure returns (uint256, bool) {
         // NOTE: We round k up to make the rhs of the equation larger.
         //
         // k = (c / µ) * (µ * ze)^(1 - t) + y^(1 - t)
@@ -61,9 +95,10 @@ library YieldSpaceMath {
         //  (c / µ) * (µ * (ze + dz))^(1 - t)
         ze = c.mulDivDown(ze, mu);
 
-        // If k < ze, we have no choice but to revert.
+        // If k < ze, we return a failure flag since the calculation would have
+        // underflowed.
         if (k < ze) {
-            Errors.throwInsufficientLiquidityError();
+            return (0, false);
         }
 
         // NOTE: We round _y up to make the rhs of the equation larger.
@@ -81,14 +116,15 @@ library YieldSpaceMath {
             _y = _y.pow(ONE.divDown(t));
         }
 
-        // If y < _y, we have no choice but to revert.
+        // If y < _y, we return a failure flag since the calculation would have
+        // underflowed.
         if (y < _y) {
-            Errors.throwInsufficientLiquidityError();
+            return (0, false);
         }
 
         // Δy = y - (k - (c / µ) * (µ * (ze + dz))^(1 - t))^(1 / (1 - t))
         unchecked {
-            return y - _y;
+            return (y - _y, true);
         }
     }
 
@@ -381,7 +417,7 @@ library YieldSpaceMath {
     ) internal pure returns (uint256, bool) {
         // We solve for the maximum buy using the constraint that the pool's
         // spot price can never exceed 1. We do this by noting that a spot price
-        // of 1, ((mu * ze) / y) ** tau = 1, implies that mu * ze = y. This
+        // of 1, ((mu * ze') / y') ** tau = 1, implies that mu * ze' = y'. This
         // simplifies YieldSpace to:
         //
         // k = ((c / mu) + 1) * (mu * ze') ** (1 - tau),
