@@ -41,7 +41,6 @@ deployer_templates = [
     TemplatePathInfo("deployers/Target1Deployer.sol.jinja", "Target1Deployer", "deployers"),
     TemplatePathInfo("deployers/Target2Deployer.sol.jinja", "Target2Deployer", "deployers"),
     TemplatePathInfo("deployers/Target3Deployer.sol.jinja", "Target3Deployer", "deployers"),
-    TemplatePathInfo("deployers/Target4Deployer.sol.jinja", "Target4Deployer", "deployers"),
 ]
 
 instance_templates = [
@@ -51,7 +50,6 @@ instance_templates = [
     TemplatePathInfo("instances/Target1.sol.jinja", "Target1", "instances"),
     TemplatePathInfo("instances/Target2.sol.jinja", "Target2", "instances"),
     TemplatePathInfo("instances/Target3.sol.jinja", "Target3", "instances"),
-    TemplatePathInfo("instances/Target4.sol.jinja", "Target4", "instances"),
 ]
 
 interface_templates = [

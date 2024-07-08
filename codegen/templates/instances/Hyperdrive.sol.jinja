@@ -63,17 +63,18 @@ contract {{ name.capitalized }}Hyperdrive is Hyperdrive, {{ name.capitalized }}B
     /// @param _target1 The target1 address.
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
-    /// @param _target4 The target4 address.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         address _target0,
         address _target1,
         address _target2,
-        address _target3,
-        address _target4
+        address _target3
     )
-        Hyperdrive(_config, _target0, _target1, _target2, _target3, _target4)
+        Hyperdrive(_config, _target0, _target1, _target2, _target3)
     {
+        // ****************************************************************
+        // FIXME: Implement this for new instances. ERC4626 example provided.
+
         // Approve the base token with 1 wei. This ensures that all of the
         // subsequent approvals will be writing to a dirty storage slot.
         ERC20(address(_config.baseToken)).forceApprove(

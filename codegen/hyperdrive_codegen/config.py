@@ -10,6 +10,7 @@ class Name(BaseModel):
     """Holds different versions of the instance name."""
 
     capitalized: str
+    uppercase: str
     lowercase: str
     camelcase: str
 

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { IAToken } from "aave/interfaces/IAToken.sol";
+import { WadRayMath } from "aave/protocol/libraries/math/WadRayMath.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
@@ -19,6 +21,7 @@ import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 ///                    particular legal or regulatory significance.
 abstract contract AaveBase is HyperdriveBase {
     using SafeERC20 for ERC20;
+    using WadRayMath for uint256;
 
     /// Yield Source ///
 
@@ -125,11 +128,37 @@ abstract contract AaveBase is HyperdriveBase {
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
-        // ****************************************************************
-        // FIXME: Implement this for new instances.
+        // FIXME: To convert from shares to base, we're really converting from
+        //        scaled amounts to amounts. We have that:
+        //
+        //        totalSupply = scaledTotalSupply.rayMul(index)
+        //
+        //        and
+        //
+        //        amount = scaledAmount.rayMul(index)
+        //
+        //        so
+        //
+        //        amount = scaledAmount.rayMul(totalSupply.rayDiv(scaledTotalSupply))
+
+        // FIXME: Cache the POOL address.
+        //
+        // FIXME: Verify on construction that _baseToken == IAToken(address(_vaultSharesToken)).UNDERLYING_ASSET_ADDRESS()
+
+        // Aave's AToken accounting calls shares "scaled tokens." We can convert
+        // from scaled tokens to aTokens with the formula:
+        //
+        // aToken = scaledToken.rayMul(POOL.getReserveNormalizedIncome(_underlyingAsset))
+        //
+        // `rayMul` computes a 27 decimal fixed point multiplication and
+        // `_underlyingAsset` is the base token address.
+        IAToken vaultSharesToken = IAToken(address(_vaultSharesToken));
         return
-            IERC4626(address(_vaultSharesToken)).convertToAssets(_shareAmount);
-        // ****************************************************************
+            _shareAmount.rayMul(
+                vaultSharesToken.POOL().getReserveNormalizedIncome(
+                    address(_baseToken)
+                )
+            );
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.

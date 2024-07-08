@@ -12,12 +12,13 @@ test = 'test'
 cache = true
 # The cache directory if enabled
 cache_path = 'forge-cache'
-# Enables or disables the optimizer
+# Import statement remappings
 remappings = [
+  'aave=lib/aave-v3-core/contracts',
   'forge-std=lib/forge-std/src',
+  'nomad=lib/ExcessivelySafeCall/src',
   'openzeppelin=lib/openzeppelin-contracts/contracts',
   'solmate=lib/solmate/src',
-  'nomad=lib/ExcessivelySafeCall/src',
 ]
 # gas limit - max u64
 gas_limit = "18446744073709551615"

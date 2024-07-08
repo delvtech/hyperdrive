@@ -3,6 +3,7 @@ pragma solidity 0.8.20;
 
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { AAVE_HYPERDRIVE_KIND } from "../../libraries/Constants.sol";
 import { AaveBase } from "./AaveBase.sol";
 
 /// @author DELV
@@ -19,4 +20,10 @@ contract AaveTarget0 is HyperdriveTarget0, AaveBase {
     constructor(
         IHyperdrive.PoolConfig memory _config
     ) HyperdriveTarget0(_config) {}
+
+    /// @notice Returns the instance's kind.
+    /// @return The instance's kind.
+    function kind() external pure override returns (string memory) {
+        _revert(abi.encode(AAVE_HYPERDRIVE_KIND));
+    }
 }
