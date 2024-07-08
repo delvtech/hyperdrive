@@ -99,7 +99,6 @@ abstract contract AaveBase is HyperdriveBase {
 
     /// @dev Process a withdrawal in base and send the proceeds to the
     ///      destination.
-
     /// @param _shareAmount The amount of vault shares to withdraw.
     /// @param _destination The destination of the withdrawal.
     /// @return amountWithdrawn The amount of base withdrawn.
@@ -108,18 +107,16 @@ abstract contract AaveBase is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override returns (uint256 amountWithdrawn) {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC4626 example provided.
-        // Redeem from the yield source and transfer the
-        // resulting base to the destination address.
-        amountWithdrawn = IERC4626(address(_vaultSharesToken)).redeem(
-            _shareAmount,
-            _destination,
-            address(this)
+        // Withdraw assets from the Aave vault to the destination.
+        amountWithdrawn = _vault.withdraw(
+            address(_baseToken), // asset
+            // NOTE: Withdrawals are processed in base, so we have to convert
+            // the share amount to a base amount.
+            _convertToBase(_shareAmount), // amount
+            _destination // onBehalfOf
         );
 
         return amountWithdrawn;
-        // ****************************************************************
     }
 
     /// @dev Process a withdrawal in vault shares and send the proceeds to the
@@ -131,14 +128,13 @@ abstract contract AaveBase is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC20 example provided.
         // Transfer vault shares to the destination.
         ERC20(address(_vaultSharesToken)).safeTransfer(
             _destination,
-            _shareAmount
+            // NOTE: The AToken interface transfers in base, so we have to
+            // convert the share amount to a base amount.
+            _convertToBase(_shareAmount)
         );
-        // ****************************************************************
     }
 
     /// @dev Convert an amount of vault shares to an amount of base.
@@ -147,6 +143,11 @@ abstract contract AaveBase is HyperdriveBase {
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
+        // FIXME: Instead of using their rayDiv math, it would be better to use
+        //        mulDivDown manually. This would ensure that we are rounding
+        //        down always and that we don't need to introduce a new
+        //        dependency.
+        //
         // Aave's AToken accounting calls shares "scaled tokens." We can convert
         // from scaled tokens to aTokens with the formula:
         //
@@ -166,6 +167,11 @@ abstract contract AaveBase is HyperdriveBase {
     function _convertToShares(
         uint256 _baseAmount
     ) internal view override returns (uint256) {
+        // FIXME: Instead of using their rayDiv math, it would be better to use
+        //        mulDivDown manually. This would ensure that we are rounding
+        //        down always and that we don't need to introduce a new
+        //        dependency.
+        //
         // Aave's AToken accounting calls shares "scaled tokens." We can convert
         // from aTokens to scaled tokens with the formula:
         //
