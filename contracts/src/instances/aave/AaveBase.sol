@@ -80,8 +80,11 @@ abstract contract AaveBase is HyperdriveBase {
         uint256 _shareAmount,
         bytes calldata // unused _extraData
     ) internal override {
+        // NOTE: We don't need to use `safeTransfer` since ATokens are
+        // standard-compliant.
+        //
         // Take custody of the deposit in vault shares.
-        ERC20(address(_vaultSharesToken)).safeTransferFrom(
+        _vaultSharesToken.transferFrom(
             msg.sender,
             address(this),
             // NOTE: The AToken interface transfers in base, so we have to
@@ -121,8 +124,11 @@ abstract contract AaveBase is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override {
+        // NOTE: We don't need to use `safeTransfer` since ATokens are
+        // standard-compliant.
+        //
         // Transfer vault shares to the destination.
-        ERC20(address(_vaultSharesToken)).safeTransfer(
+        _vaultSharesToken.transfer(
             _destination,
             // NOTE: The AToken interface transfers in base, so we have to
             // convert the share amount to a base amount.
@@ -147,11 +153,7 @@ abstract contract AaveBase is HyperdriveBase {
         // NOTE: We use `mulDivDown` with 27 decimals of precision to compute
         // the calculation to ensure that we are always rounding down since
         // `rayDiv` will round up in some cases.
-        return
-            _shareAmount.mulDivDown(
-                _vault.getReserveNormalizedIncome(address(_baseToken)),
-                1e27
-            );
+        return _shareAmount.mulDivDown(_getReserveNormalizedIncome(), 1e27);
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
@@ -173,11 +175,7 @@ abstract contract AaveBase is HyperdriveBase {
         // NOTE: We use `mulDivDown` with 27 decimals of precision to compute
         // the calculation to ensure that we are always rounding down since
         // `rayDiv` will round up in some cases.
-        return
-            _baseAmount.mulDivDown(
-                1e27,
-                _vault.getReserveNormalizedIncome(address(_baseToken))
-            );
+        return _baseAmount.mulDivDown(1e27, _getReserveNormalizedIncome());
     }
 
     /// @dev Gets the total amount of shares held by the pool in the yield
@@ -198,5 +196,12 @@ abstract contract AaveBase is HyperdriveBase {
         if (msg.value != 0) {
             revert IHyperdrive.NotPayable();
         }
+    }
+
+    /// @dev Gets the Aave vault's reserve normalized income. This helper is
+    ///      used to reduce the code size.
+    /// @return The Aave vault's reserve normalized income.
+    function _getReserveNormalizedIncome() internal view returns (uint256) {
+        return _vault.getReserveNormalizedIncome(address(_baseToken));
     }
 }
