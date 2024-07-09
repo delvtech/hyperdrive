@@ -16,8 +16,8 @@ const config: HardhatUserConfig = {
     networks: {
         clone: {
             live: false,
-            url: env.HYPERDRIVE_ETHEREUM_URL ?? "http://127.0.0.1:8545",
-            accounts: [env.PRIVATE_KEY ?? DEFAULT_PK],
+            url: env.HYPERDRIVE_ETHEREUM_URL ?? "http://anvil:8545",
+            accounts: [env.DEPLOYER_PRIVATE_KEY ?? DEFAULT_PK],
         },
     },
 };
