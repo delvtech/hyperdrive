@@ -353,7 +353,7 @@ contract StETHHyperdriveTest is InstanceTest {
         assertEq(address(bob).balance, ethBalanceBefore);
     }
 
-    function test_attack_long_steth() external {
+    function test_round_trip_long() external {
         // Get some balance information before the deposit.
         LIDO.sharesOf(address(hyperdrive));
 
