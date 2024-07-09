@@ -7,6 +7,7 @@ import { ERC4626Target0Deployer } from "contracts/src/deployers/erc4626/ERC4626T
 import { ERC4626Target1Deployer } from "contracts/src/deployers/erc4626/ERC4626Target1Deployer.sol";
 import { ERC4626Target2Deployer } from "contracts/src/deployers/erc4626/ERC4626Target2Deployer.sol";
 import { ERC4626Target3Deployer } from "contracts/src/deployers/erc4626/ERC4626Target3Deployer.sol";
+import { ERC4626Target4Deployer } from "contracts/src/deployers/erc4626/ERC4626Target4Deployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
@@ -111,6 +112,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         target1Deployer = address(new ERC4626Target1Deployer());
         target2Deployer = address(new ERC4626Target2Deployer());
         target3Deployer = address(new ERC4626Target3Deployer());
+        target4Deployer = address(new ERC4626Target4Deployer());
         deployerCoordinator = address(
             new ERC4626HyperdriveDeployerCoordinator(
                 "HyperdriveDeployerCoordinator",
@@ -119,7 +121,8 @@ contract UsdcERC4626 is ERC4626ValidationTest {
                 target0Deployer,
                 target1Deployer,
                 target2Deployer,
-                target3Deployer
+                target3Deployer,
+                target4Deployer
             )
         );
 

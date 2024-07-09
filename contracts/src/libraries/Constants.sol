@@ -8,7 +8,7 @@ address constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 string constant VERSION = "v1.0.14";
 
 /// @dev The number of targets that must be deployed for a full deployment.
-uint256 constant NUM_TARGETS = 4;
+uint256 constant NUM_TARGETS = 5;
 
 /// @dev The kind of the ERC20 Forwarder.
 string constant ERC20_FORWARDER_KIND = "ERC20Forwarder";

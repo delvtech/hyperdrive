@@ -31,6 +31,7 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target1Deployer The target1 deployer.
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
+    /// @param _target4Deployer The target4 deployer.
     constructor(
         string memory _name,
         address _factory,
@@ -38,7 +39,8 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _target0Deployer,
         address _target1Deployer,
         address _target2Deployer,
-        address _target3Deployer
+        address _target3Deployer,
+        address _target4Deployer
     )
         HyperdriveDeployerCoordinator(
             _name,
@@ -47,7 +49,8 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _target0Deployer,
             _target1Deployer,
             _target2Deployer,
-            _target3Deployer
+            _target3Deployer,
+            _target4Deployer
         )
     {}
 

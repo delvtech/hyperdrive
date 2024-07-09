@@ -4,7 +4,6 @@ pragma solidity 0.8.20;
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
-import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { AaveBase } from "./AaveBase.sol";
 
@@ -64,12 +63,24 @@ contract AaveHyperdrive is Hyperdrive, AaveBase {
     /// @param _target1 The target1 address.
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
+    /// @param _target4 The target4 address.
     constructor(
         string memory __name,
         IHyperdrive.PoolConfig memory _config,
         address _target0,
         address _target1,
         address _target2,
-        address _target3
-    ) Hyperdrive(__name, _config, _target0, _target1, _target2, _target3) {}
+        address _target3,
+        address _target4
+    )
+        Hyperdrive(
+            __name,
+            _config,
+            _target0,
+            _target1,
+            _target2,
+            _target3,
+            _target4
+        )
+    {}
 }

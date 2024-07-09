@@ -10,6 +10,7 @@ import { ERC4626Target0Deployer } from "contracts/src/deployers/erc4626/ERC4626T
 import { ERC4626Target1Deployer } from "contracts/src/deployers/erc4626/ERC4626Target1Deployer.sol";
 import { ERC4626Target2Deployer } from "contracts/src/deployers/erc4626/ERC4626Target2Deployer.sol";
 import { ERC4626Target3Deployer } from "contracts/src/deployers/erc4626/ERC4626Target3Deployer.sol";
+import { ERC4626Target4Deployer } from "contracts/src/deployers/erc4626/ERC4626Target4Deployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
@@ -104,7 +105,8 @@ contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {
             address(new ERC4626Target0Deployer()),
             address(new ERC4626Target1Deployer()),
             address(new ERC4626Target2Deployer()),
-            address(new ERC4626Target3Deployer())
+            address(new ERC4626Target3Deployer()),
+            address(new ERC4626Target4Deployer())
         );
 
         // Start a prank as the factory address. This is the default address

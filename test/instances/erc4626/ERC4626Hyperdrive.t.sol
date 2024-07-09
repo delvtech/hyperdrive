@@ -7,11 +7,13 @@ import { ERC4626Target0Deployer } from "contracts/src/deployers/erc4626/ERC4626T
 import { ERC4626Target1Deployer } from "contracts/src/deployers/erc4626/ERC4626Target1Deployer.sol";
 import { ERC4626Target2Deployer } from "contracts/src/deployers/erc4626/ERC4626Target2Deployer.sol";
 import { ERC4626Target3Deployer } from "contracts/src/deployers/erc4626/ERC4626Target3Deployer.sol";
+import { ERC4626Target4Deployer } from "contracts/src/deployers/erc4626/ERC4626Target4Deployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { ERC4626Target0 } from "contracts/src/instances/erc4626/ERC4626Target0.sol";
 import { ERC4626Target1 } from "contracts/src/instances/erc4626/ERC4626Target1.sol";
 import { ERC4626Target2 } from "contracts/src/instances/erc4626/ERC4626Target2.sol";
 import { ERC4626Target3 } from "contracts/src/instances/erc4626/ERC4626Target3.sol";
+import { ERC4626Target4 } from "contracts/src/instances/erc4626/ERC4626Target4.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -35,21 +37,21 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
     string internal constant HYPERDRIVE_NAME = "Hyperdrive";
     string internal constant COORDINATOR_NAME = "HyperdriveDeployerCoordinator";
 
-    HyperdriveFactory factory;
+    HyperdriveFactory internal factory;
 
-    address deployerCoordinator;
-    address coreDeployer;
-    address target0Deployer;
-    address target1Deployer;
-    address target2Deployer;
-    address target3Deployer;
-    address target4Deployer;
-    address target5Deployer;
+    address internal deployerCoordinator;
+    address internal coreDeployer;
+    address internal target0Deployer;
+    address internal target1Deployer;
+    address internal target2Deployer;
+    address internal target3Deployer;
+    address internal target4Deployer;
 
-    IERC20 dai = IERC20(address(0x6B175474E89094C44Da98b954EedeAC495271d0F));
-    IERC4626 pool;
-    uint256 aliceShares;
-    MockERC4626Hyperdrive mockHyperdrive;
+    IERC20 internal dai =
+        IERC20(address(0x6B175474E89094C44Da98b954EedeAC495271d0F));
+    IERC4626 internal pool;
+    uint256 internal aliceShares;
+    MockERC4626Hyperdrive internal mockHyperdrive;
 
     function setUp() public override __mainnet_fork(16_685_972) {
         alice = createUser("alice");
@@ -118,6 +120,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         target1Deployer = address(new ERC4626Target1Deployer());
         target2Deployer = address(new ERC4626Target2Deployer());
         target3Deployer = address(new ERC4626Target3Deployer());
+        target4Deployer = address(new ERC4626Target4Deployer());
         deployerCoordinator = address(
             new ERC4626HyperdriveDeployerCoordinator(
                 COORDINATOR_NAME,
@@ -126,7 +129,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                 target0Deployer,
                 target1Deployer,
                 target2Deployer,
-                target3Deployer
+                target3Deployer,
+                target4Deployer
             )
         );
 
@@ -159,13 +163,15 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         address target1 = address(new ERC4626Target1(config));
         address target2 = address(new ERC4626Target2(config));
         address target3 = address(new ERC4626Target3(config));
+        address target4 = address(new ERC4626Target4(config));
         mockHyperdrive = new MockERC4626Hyperdrive(
             HYPERDRIVE_NAME,
             config,
             target0,
             target1,
             target2,
-            target3
+            target3,
+            target4
         );
 
         vm.stopPrank();

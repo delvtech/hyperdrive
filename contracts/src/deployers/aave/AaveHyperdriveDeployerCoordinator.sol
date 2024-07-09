@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IPool } from "aave/interfaces/IPool.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IAToken } from "../../interfaces/IAToken.sol";
@@ -35,6 +34,7 @@ contract AaveHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target1Deployer The target1 deployer.
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
+    /// @param _target4Deployer The target4 deployer.
     constructor(
         string memory _name,
         address _factory,
@@ -42,7 +42,8 @@ contract AaveHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _target0Deployer,
         address _target1Deployer,
         address _target2Deployer,
-        address _target3Deployer
+        address _target3Deployer,
+        address _target4Deployer
     )
         HyperdriveDeployerCoordinator(
             _name,
@@ -51,7 +52,8 @@ contract AaveHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _target0Deployer,
             _target1Deployer,
             _target2Deployer,
-            _target3Deployer
+            _target3Deployer,
+            _target4Deployer
         )
     {}
 
