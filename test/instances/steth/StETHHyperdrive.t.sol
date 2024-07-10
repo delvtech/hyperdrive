@@ -45,6 +45,7 @@ contract StETHHyperdriveTest is InstanceTest {
         InstanceTestConfig(
             "Hyperdrive",
             "StETHHyperdrive",
+            new address[](0),
             whaleAccounts,
             IERC20(ETH),
             IERC20(LIDO),

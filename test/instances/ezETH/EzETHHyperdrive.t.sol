@@ -63,6 +63,7 @@ contract EzETHHyperdriveTest is InstanceTest {
         InstanceTestConfig(
             "Hyperdrive",
             "EzETHHyperdrive",
+            new address[](0),
             whaleAccounts,
             IERC20(ETH),
             IERC20(EZETH),

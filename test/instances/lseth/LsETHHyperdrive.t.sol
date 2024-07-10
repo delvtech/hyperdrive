@@ -50,6 +50,7 @@ contract LsETHHyperdriveTest is InstanceTest {
         InstanceTestConfig(
             "Hyperdrive",
             "LsETHHyperdrive",
+            new address[](0),
             whaleAccounts,
             IERC20(ETH),
             IERC20(RIVER),

@@ -31,7 +31,8 @@ abstract contract InstanceTest is HyperdriveTest {
     struct InstanceTestConfig {
         string name;
         string kind;
-        address[] whaleAccounts;
+        address[] baseTokenWhaleAccounts;
+        address[] vaultSharesTokenWhaleAccounts;
         IERC20 baseToken;
         IERC20 vaultSharesToken;
         uint256 shareTolerance;
@@ -91,11 +92,23 @@ abstract contract InstanceTest is HyperdriveTest {
         address[] memory accounts = new address[](2);
         accounts[0] = alice;
         accounts[1] = bob;
-        for (uint256 i = 0; i < config.whaleAccounts.length; i++) {
+        for (uint256 i = 0; i < config.baseTokenWhaleAccounts.length; i++) {
+            fundAccounts(
+                address(hyperdrive),
+                config.baseToken,
+                config.baseTokenWhaleAccounts[i],
+                accounts
+            );
+        }
+        for (
+            uint256 i = 0;
+            i < config.vaultSharesTokenWhaleAccounts.length;
+            i++
+        ) {
             fundAccounts(
                 address(hyperdrive),
                 config.vaultSharesToken,
-                config.whaleAccounts[i],
+                config.vaultSharesTokenWhaleAccounts[i],
                 accounts
             );
         }

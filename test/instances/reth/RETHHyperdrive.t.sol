@@ -54,6 +54,7 @@ contract RETHHyperdriveTest is InstanceTest {
         InstanceTestConfig(
             "Hyperdrive",
             "RETHHyperdrive",
+            new address[](0),
             whaleAccounts,
             IERC20(ETH),
             IERC20(rocketTokenRETH),
