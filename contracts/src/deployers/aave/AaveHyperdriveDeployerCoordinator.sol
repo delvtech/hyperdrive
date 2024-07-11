@@ -72,7 +72,7 @@ contract AaveHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _lp,
         uint256 _contribution,
         IHyperdrive.Options memory _options
-    ) internal override returns (uint256 value) {
+    ) internal override returns (uint256) {
         // If base is the deposit asset, the initialization will be paid in the
         // base token.
         address token;
@@ -95,7 +95,8 @@ contract AaveHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         ERC20(token).safeTransferFrom(_lp, address(this), _contribution);
         ERC20(token).forceApprove(address(_hyperdrive), _contribution);
 
-        return value;
+        // This yield source isn't payable, so we should always send 0 value.
+        return 0;
     }
 
     /// @dev Prevents the contract from receiving ether.

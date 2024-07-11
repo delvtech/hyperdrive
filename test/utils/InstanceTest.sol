@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
@@ -182,6 +185,7 @@ abstract contract InstanceTest is HyperdriveTest {
         }
 
         // Alice gives approval to the deployer coordinator to fund the market.
+        config.baseToken.approve(deployerCoordinator, 100_000e18);
         config.vaultSharesToken.approve(deployerCoordinator, 100_000e18);
 
         // We expect the deployAndInitialize to fail with an
@@ -424,7 +428,7 @@ abstract contract InstanceTest is HyperdriveTest {
         uint256 aliceBalanceBefore = address(alice).balance;
 
         // Contribution in terms of base.
-        uint256 contribution = 5_000e18;
+        uint256 contribution = 1_000e18;
 
         // Contribution in terms of shares.
         uint256 contributionShares = convertToShares(contribution);
@@ -496,7 +500,7 @@ abstract contract InstanceTest is HyperdriveTest {
         uint256 aliceBalanceBefore = address(alice).balance;
 
         // Contribution in terms of base.
-        uint256 contribution = 5_000e18;
+        uint256 contribution = 1_000e18;
 
         // Contribution in terms of shares.
         uint256 contributionShares = convertToShares(contribution);
@@ -682,6 +686,12 @@ abstract contract InstanceTest is HyperdriveTest {
         }
 
         // Bob opens a long by depositing the base token.
+        if (!isBaseETH) {
+            IERC20(hyperdrive.baseToken()).approve(
+                address(hyperdrive),
+                basePaid
+            );
+        }
         (uint256 maturityTime, uint256 bondAmount) = hyperdrive.openLong{
             value: isBaseETH ? basePaid : 0
         }(
@@ -912,6 +922,11 @@ abstract contract InstanceTest is HyperdriveTest {
                 isBaseETH
                     ? IHyperdrive.NotPayable.selector
                     : IHyperdrive.UnsupportedToken.selector
+            );
+        } else if (!isBaseETH) {
+            IERC20(hyperdrive.baseToken()).approve(
+                address(hyperdrive),
+                shortAmount
             );
         }
         (uint256 maturityTime, uint256 basePaid) = hyperdrive.openShort{

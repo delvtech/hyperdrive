@@ -63,7 +63,7 @@ abstract contract AaveBase is HyperdriveBase {
         // the vault ends with an approval of 1 wei. This makes future
         // approvals cheaper by keeping the storage slot warm.
         ERC20(address(_baseToken)).forceApprove(
-            address(_vaultSharesToken),
+            address(_vault),
             _baseAmount + 1
         );
         _vault.supply(
