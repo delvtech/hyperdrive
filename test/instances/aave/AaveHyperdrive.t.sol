@@ -223,13 +223,15 @@ contract AaveHyperdriveTest is InstanceTest {
             // Ensure that the shares balances were updated correctly.
             assertApproxEqAbs(
                 convertToShares(AWETH.balanceOf(address(hyperdrive))),
-                hyperdriveBalancesBefore.sharesBalance + amountPaid,
-                1
+                hyperdriveBalancesBefore.sharesBalance +
+                    convertToShares(amountPaid),
+                2
             );
             assertApproxEqAbs(
                 convertToShares(AWETH.balanceOf(trader)),
-                traderBalancesBefore.sharesBalance - amountPaid,
-                1
+                traderBalancesBefore.sharesBalance -
+                    convertToShares(amountPaid),
+                2
             );
         }
     }
