@@ -182,7 +182,9 @@ abstract contract InstanceTest is HyperdriveTest {
         }
 
         // Alice gives approval to the deployer coordinator to fund the market.
-        config.baseToken.approve(deployerCoordinator, 100_000e18);
+        if (config.enableBaseDeposits && !isBaseETH) {
+            config.baseToken.approve(deployerCoordinator, 100_000e18);
+        }
         config.vaultSharesToken.approve(deployerCoordinator, 100_000e18);
 
         // We expect the deployAndInitialize to fail with an
