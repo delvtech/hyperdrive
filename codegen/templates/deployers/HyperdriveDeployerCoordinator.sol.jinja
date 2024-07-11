@@ -33,6 +33,7 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
     /// @param _target1Deployer The target1 deployer.
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
+    /// @param _target4Deployer The target4 deployer.
     constructor(
         string memory _name,
         address _factory,
@@ -40,7 +41,8 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
         address _target0Deployer,
         address _target1Deployer,
         address _target2Deployer,
-        address _target3Deployer
+        address _target3Deployer,
+        address _target4Deployer
     )
         HyperdriveDeployerCoordinator(
             _name,

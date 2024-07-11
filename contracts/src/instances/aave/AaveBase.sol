@@ -9,9 +9,6 @@ import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
 
-// FIXME: Should we support Aave pools that have ETH as underlying? Do some
-// research on whether or not this is needed.
-//
 /// @author DELV
 /// @title AaveBase
 /// @notice The base contract for the Aave Hyperdrive implementation.
@@ -70,7 +67,7 @@ abstract contract AaveBase is HyperdriveBase {
             address(_baseToken), // asset
             _baseAmount, // amount
             address(this), // onBehalfOf
-            // FIXME: We should make a referral code
+            // NOTE: Aave's referral program is inactive.
             0 // referralCode
         );
 

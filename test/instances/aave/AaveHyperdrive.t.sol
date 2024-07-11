@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-
 import { IPool } from "aave/interfaces/IPool.sol";
 import { DataTypes } from "aave/protocol/libraries/types/DataTypes.sol";
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
@@ -28,7 +25,6 @@ import { InstanceTest } from "test/utils/InstanceTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-// FIXME: Dig deeper into whether or not we need support for ETH.
 contract AaveHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using Lib for *;
@@ -61,8 +57,7 @@ contract AaveHyperdriveTest is InstanceTest {
             vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
             baseToken: WETH,
             vaultSharesToken: IERC20(address(AWETH)),
-            // FIXME: Can this be lower? Higher?
-            shareTolerance: 1e5,
+            shareTolerance: 1e3,
             minTransactionAmount: 1e15,
             positionDuration: POSITION_DURATION,
             enableBaseDeposits: true,
@@ -362,140 +357,97 @@ contract AaveHyperdriveTest is InstanceTest {
 
     /// Long ///
 
-    // FIXME
-    //
-    // // FIXME: Ensure that opening a long fails if ETH is passed with asBase as
-    // //        true or false.
-    // function test_open_long_nonpayable() external {
-    //     vm.startPrank(bob);
+    function test_open_long_nonpayable() external {
+        vm.startPrank(bob);
 
-    //     // FIXME
-    //     //
-    //     // Ensure that Bob receives a refund on the excess ETH that he sent
-    //     // when opening a long with "asBase" set to true.
-    //     uint256 ethBalanceBefore = address(bob).balance;
-    //     hyperdrive.openLong{ value: 2e18 }(
-    //         1e18,
-    //         0,
-    //         0,
-    //         IHyperdrive.Options({
-    //             destination: bob,
-    //             asBase: true,
-    //             extraData: new bytes(0)
-    //         })
-    //     );
-    //     assertEq(address(bob).balance, ethBalanceBefore - 1e18);
+        // Ensure that sending ETH to `openLong` fails.
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
+        hyperdrive.openLong{ value: 2e18 }(
+            1e18,
+            0,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
 
-    //     // FIXME
-    //     //
-    //     // Ensure that Bob receives a  refund when he opens a long with "asBase"
-    //     // set to false and sends ether to the contract.
-    //     ethBalanceBefore = address(bob).balance;
-    //     hyperdrive.openLong{ value: 0.5e18 }(
-    //         1e18,
-    //         0,
-    //         0,
-    //         IHyperdrive.Options({
-    //             destination: bob,
-    //             asBase: false,
-    //             extraData: new bytes(0)
-    //         })
-    //     );
-    //     assertEq(address(bob).balance, ethBalanceBefore);
-    // }
+        // Ensure that sending ETH to `openShort` fails.
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
+        hyperdrive.openLong{ value: 0.5e18 }(
+            1e18,
+            0,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: false,
+                extraData: new bytes(0)
+            })
+        );
+    }
 
     /// Short ///
 
-    // FIXME
-    //
-    // // FIXME: Ensure that opening a short fails if ETH is passed with asBase as
-    // //        true or false.
-    // function test_open_short_nonpayable() external {
-    //     vm.startPrank(bob);
+    function test_open_short_nonpayable() external {
+        vm.startPrank(bob);
 
-    //     // FIXME
-    //     //
-    //     // Ensure that Bob receives a refund on the excess ETH that he sent
-    //     // when opening a short with "asBase" set to true.
-    //     uint256 ethBalanceBefore = address(bob).balance;
-    //     (, uint256 basePaid) = hyperdrive.openShort{ value: 2e18 }(
-    //         1e18,
-    //         1e18,
-    //         0,
-    //         IHyperdrive.Options({
-    //             destination: bob,
-    //             asBase: true,
-    //             extraData: new bytes(0)
-    //         })
-    //     );
-    //     assertEq(address(bob).balance, ethBalanceBefore - basePaid);
+        // Ensure that sending ETH to `openLong` fails.
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
+        hyperdrive.openShort{ value: 2e18 }(
+            1e18,
+            1e18,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
 
-    //     // FIXME
-    //     //
-    //     // Ensure that Bob receives a refund when he opens a short with "asBase"
-    //     // set to false and sends ether to the contract.
-    //     ethBalanceBefore = address(bob).balance;
-    //     hyperdrive.openShort{ value: 0.5e18 }(
-    //         1e18,
-    //         1e18,
-    //         0,
-    //         IHyperdrive.Options({
-    //             destination: bob,
-    //             asBase: false,
-    //             extraData: new bytes(0)
-    //         })
-    //     );
-    //     assertEq(address(bob).balance, ethBalanceBefore);
-    // }
+        // Ensure that Bob receives a refund when he opens a short with "asBase"
+        // set to false and sends ether to the contract.
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
+        hyperdrive.openShort{ value: 0.5e18 }(
+            1e18,
+            1e18,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: false,
+                extraData: new bytes(0)
+            })
+        );
+    }
 
-    // FIXME
-    //
-    // // FIXME: Add a comment explaining what this test is for.
-    // function test_round_trip_long() external {
-    //     // FIXME
-    //     //
-    //     // Get some balance information before the deposit.
-    //     LIDO.sharesOf(address(hyperdrive));
+    function test_round_trip_long() external {
+        // Bob opens a long with base.
+        uint256 basePaid = HyperdriveUtils.calculateMaxLong(hyperdrive);
+        IERC20(hyperdrive.baseToken()).approve(address(hyperdrive), basePaid);
+        (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
 
-    //     // FIXME
-    //     //
-    //     // Bob opens a long by depositing ETH.
-    //     uint256 basePaid = HyperdriveUtils.calculateMaxLong(hyperdrive);
-    //     (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
+        // Get some balance information before the withdrawal.
+        uint256 totalSupplyBefore = AWETH.totalSupply();
+        uint256 scaledTotalSupplyBefore = AWETH.scaledTotalSupply();
+        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
+        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
+            address(hyperdrive)
+        );
 
-    //     // FIXME
-    //     //
-    //     // Get some balance information before the withdrawal.
-    //     uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
-    //     uint256 totalSharesBefore = LIDO.getTotalShares();
-    //     AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-    //     AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-    //         address(hyperdrive)
-    //     );
+        // Bob closes his long with shares as the target asset.
+        uint256 shareProceeds = closeLong(bob, maturityTime, longAmount, false);
+        uint256 baseProceeds = convertToBase(shareProceeds);
 
-    //     // FIXME
-    //     //
-    //     // Bob closes his long with stETH as the target asset.
-    //     uint256 shareProceeds = closeLong(bob, maturityTime, longAmount, false);
-    //     uint256 baseProceeds = shareProceeds.mulDivDown(
-    //         LIDO.getTotalPooledEther(),
-    //         LIDO.getTotalShares()
-    //     );
-
-    //     // FIXME
-    //     //
-    //     // Ensure that Lido's aggregates and the token balances were updated
-    //     // correctly during the trade.
-    //     verifyWithdrawal(
-    //         bob,
-    //         baseProceeds,
-    //         false,
-    //         totalPooledEtherBefore,
-    //         totalSharesBefore,
-    //         bobBalancesBefore,
-    //         hyperdriveBalancesBefore
-    //     );
-    // }
+        verifyWithdrawal(
+            bob,
+            baseProceeds,
+            false,
+            totalSupplyBefore,
+            scaledTotalSupplyBefore,
+            bobBalancesBefore,
+            hyperdriveBalancesBefore
+        );
+    }
 
     /// Helpers ///
 
