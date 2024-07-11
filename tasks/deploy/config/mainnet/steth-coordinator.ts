@@ -8,6 +8,6 @@ export const MAINNET_STETH_COORDINATOR: HyperdriveCoordinatorConfig<"StETH"> = {
     prefix: "StETH",
     factoryAddress: async (hre) =>
         hre.hyperdriveDeploy.deployments.byName(MAINNET_FACTORY_NAME).address,
-    targetCount: 4,
+    targetCount: 5,
     token: MAINNET_STETH_ADDRESS,
 };

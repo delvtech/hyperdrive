@@ -9,6 +9,6 @@ export const MAINNET_FORK_RETH_COORDINATOR: HyperdriveCoordinatorConfig<"RETH"> 
         factoryAddress: async (hre) =>
             hre.hyperdriveDeploy.deployments.byName(MAINNET_FORK_FACTORY_NAME)
                 .address,
-        targetCount: 4,
+        targetCount: 5,
         token: MAINNET_RETH_ADDRESS,
     };
