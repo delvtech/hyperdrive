@@ -22,7 +22,7 @@ import {
     SEPOLIA_STETH_14DAY,
     SEPOLIA_STETH_30DAY,
     SEPOLIA_STETH_COORDINATOR,
-} from "./tasks/deploy/config/";
+} from "./tasks/deploy/config/sepolia";
 
 const { env } = process;
 let DEFAULT_PK =
