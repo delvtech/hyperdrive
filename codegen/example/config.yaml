@@ -4,22 +4,22 @@
 name:
   # Capitalized version of the name to be used i.e. for contract names, file
   # names, and comments.
-  capitalized: "TestETH"
+  capitalized: "MorphoBlue"
 
   # All upper case name to be used for constants.
-  uppercase: "TEST_ETH"
+  uppercase: "MORPHO_BLUE"
 
   # All lower case name to be used for directories.
-  lowercase: "testeth"
+  lowercase: "morpho-blue"
 
   # Camel case name to be used i.e. for variables.
-  camelcase: "testEth"
+  camelcase: "morphoBlue"
 
 # Configuration parameters for the hyperdrive instance.
 contract:
   # If the contract is payable in Ether.  If it is, then logic should be added
   # to accept Ether, and deposit into the vault to obtain vault shares.
-  payable: true
+  payable: false
 
   # If the contract can accept base to convert to valut shares on behalf of the
   # user.

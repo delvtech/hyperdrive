@@ -6,7 +6,7 @@ import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { {{ name.capitalized }}Base } from "./{{ name.capitalized }}Base.sol";
+import { MorphoBlueBase } from "./MorphoBlueBase.sol";
 
 ///      ______  __                           _________      _____
 ///      ___  / / /____  ___________________________  /_________(_)__   ______
@@ -49,15 +49,15 @@ import { {{ name.capitalized }}Base } from "./{{ name.capitalized }}Base.sol";
 /// SSSSSSSS                                                                SSSSSSSS
 ///
 /// @author DELV
-/// @title {{ name.capitalized }}Hyperdrive
-/// @notice A Hyperdrive instance that uses a {{ name.capitalized }} vault as the yield source.
+/// @title MorphoBlueHyperdrive
+/// @notice A Hyperdrive instance that uses a MorphoBlue vault as the yield source.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract {{ name.capitalized }}Hyperdrive is Hyperdrive, {{ name.capitalized }}Base {
+contract MorphoBlueHyperdrive is Hyperdrive, MorphoBlueBase {
     using SafeERC20 for ERC20;
 
-    /// @notice Instantiates Hyperdrive with a {{ name.capitalized }} vault as the yield source.
+    /// @notice Instantiates Hyperdrive with a MorphoBlue vault as the yield source.
     /// @param __name The pool's name.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _target0 The target0 address.
