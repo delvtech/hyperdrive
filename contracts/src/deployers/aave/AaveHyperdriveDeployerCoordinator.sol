@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { IPool } from "aave/interfaces/IPool.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import { AaveConversions } from "../../instances/aave/AaveConversions.sol";
+import { IAaveHyperdriveDeployerCoordinator } from "../../interfaces/IAaveHyperdriveDeployerCoordinator.sol";
 import { IAToken } from "../../interfaces/IAToken.sol";
+import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { AAVE_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
@@ -18,13 +22,20 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract AaveHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+contract AaveHyperdriveDeployerCoordinator is
+    HyperdriveDeployerCoordinator,
+    IAaveHyperdriveDeployerCoordinator
+{
     using FixedPointMath for uint256;
     using SafeERC20 for ERC20;
 
     /// @notice The deployer coordinator's kind.
-    string public constant override kind =
-        AAVE_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
+    string
+        public constant
+        override(
+            HyperdriveDeployerCoordinator,
+            IHyperdriveDeployerCoordinator
+        ) kind = AAVE_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
 
     /// @notice Instantiates the deployer coordinator.
     /// @param _name The deployer coordinator's name.
@@ -87,7 +98,11 @@ contract AaveHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
 
             // AToken transfers are in base, so we need to convert from
             // shares to base.
-            _contribution = _convertToBase(baseToken, token, _contribution);
+            _contribution = convertToBase(
+                IERC20(baseToken),
+                IAToken(token).POOL(),
+                _contribution
+            );
         }
 
         // Take custody of the contribution and approve Hyperdrive to pull the
@@ -97,6 +112,32 @@ contract AaveHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
 
         // This yield source isn't payable, so we should always send 0 value.
         return 0;
+    }
+
+    /// @notice Convert an amount of vault shares to an amount of base.
+    /// @param _baseToken The base token.
+    /// @param _vault The Aave vault.
+    /// @param _shareAmount The vault shares amount.
+    /// @return The base amount.
+    function convertToBase(
+        IERC20 _baseToken,
+        IPool _vault,
+        uint256 _shareAmount
+    ) public view returns (uint256) {
+        return AaveConversions.convertToBase(_baseToken, _vault, _shareAmount);
+    }
+
+    /// @notice Convert an amount of base to an amount of vault shares.
+    /// @param _baseToken The base token.
+    /// @param _vault The Aave vault.
+    /// @param _baseAmount The base amount.
+    /// @return The base amount.
+    function convertToShares(
+        IERC20 _baseToken,
+        IPool _vault,
+        uint256 _baseAmount
+    ) public view returns (uint256) {
+        return AaveConversions.convertToShares(_baseToken, _vault, _baseAmount);
     }
 
     /// @dev We override the message value check since this integration is
@@ -166,42 +207,10 @@ contract AaveHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         // We calculate the vault share price by converting 1e18 vault shares to
         // aTokens.
         return
-            _convertToBase(
-                address(_deployConfig.baseToken),
-                address(_deployConfig.vaultSharesToken),
+            convertToBase(
+                _deployConfig.baseToken,
+                IAToken(address(_deployConfig.vaultSharesToken)).POOL(),
                 ONE
-            );
-    }
-
-    /// @dev Convert an amount of vault shares to an amount of base.
-    /// @param _baseToken The base token.
-    /// @param _vaultSharesToken The vault shares token.
-    /// @param _shareAmount The vault shares amount.
-    /// @return The base amount.
-    function _convertToBase(
-        address _baseToken,
-        address _vaultSharesToken,
-        uint256 _shareAmount
-    ) internal view returns (uint256) {
-        // Aave's AToken accounting calls shares "scaled tokens." We can convert
-        // from scaled tokens to aTokens with the formula:
-        //
-        // aToken = scaledToken.rayMul(
-        //     POOL.getReserveNormalizedIncome(_underlyingAsset)
-        // )
-        //
-        // `rayMul` computes a 27 decimal fixed point multiplication and
-        // `_underlyingAsset` is the base token address.
-        //
-        // NOTE: We use `mulDivDown` with 27 decimals of precision to compute
-        // the calculation to ensure that we are always rounding down since
-        // `rayDiv` will round up in some cases.
-        return
-            _shareAmount.mulDivDown(
-                IAToken(_vaultSharesToken).POOL().getReserveNormalizedIncome(
-                    _baseToken
-                ),
-                1e27
             );
     }
 }

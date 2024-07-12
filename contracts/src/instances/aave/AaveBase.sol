@@ -8,6 +8,7 @@ import { IAToken } from "../../interfaces/IAToken.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
+import { AaveConversions } from "./AaveConversions.sol";
 
 /// @author DELV
 /// @title AaveBase
@@ -35,7 +36,6 @@ abstract contract AaveBase is HyperdriveBase {
         ERC20(address(_baseToken)).forceApprove(address(_vault), 1);
     }
 
-    //
     /// Yield Source ///
 
     /// @dev Accepts a deposit from the user in base.
@@ -142,18 +142,7 @@ abstract contract AaveBase is HyperdriveBase {
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
-        // Aave's AToken accounting calls shares "scaled tokens." We can convert
-        // from scaled tokens to aTokens with the formula:
-        //
-        // aToken = scaledToken.rayMul(POOL.getReserveNormalizedIncome(_underlyingAsset))
-        //
-        // `rayMul` computes a 27 decimal fixed point multiplication and
-        // `_underlyingAsset` is the base token address.
-        //
-        // NOTE: We use `mulDivDown` with 27 decimals of precision to compute
-        // the calculation to ensure that we are always rounding down since
-        // `rayDiv` will round up in some cases.
-        return _shareAmount.mulDivDown(_getReserveNormalizedIncome(), 1e27);
+        return AaveConversions.convertToBase(_baseToken, _vault, _shareAmount);
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
@@ -162,20 +151,7 @@ abstract contract AaveBase is HyperdriveBase {
     function _convertToShares(
         uint256 _baseAmount
     ) internal view override returns (uint256) {
-        // Aave's AToken accounting calls shares "scaled tokens." We can convert
-        // from aTokens to scaled tokens with the formula:
-        //
-        // scaledToken = aToken.rayDiv(
-        //     POOL.getReserveNormalizedIncome(_underlyingAsset)
-        // )
-        //
-        // `rayDiv` computes a 27 decimal fixed point division and
-        // `_underlyingAsset` is the base token address.
-        //
-        // NOTE: We use `mulDivDown` with 27 decimals of precision to compute
-        // the calculation to ensure that we are always rounding down since
-        // `rayDiv` will round up in some cases.
-        return _baseAmount.mulDivDown(1e27, _getReserveNormalizedIncome());
+        return AaveConversions.convertToShares(_baseToken, _vault, _baseAmount);
     }
 
     /// @dev Gets the total amount of shares held by the pool in the yield
@@ -196,12 +172,5 @@ abstract contract AaveBase is HyperdriveBase {
         if (msg.value != 0) {
             revert IHyperdrive.NotPayable();
         }
-    }
-
-    /// @dev Gets the Aave vault's reserve normalized income. This helper is
-    ///      used to reduce the code size.
-    /// @return The Aave vault's reserve normalized income.
-    function _getReserveNormalizedIncome() internal view returns (uint256) {
-        return _vault.getReserveNormalizedIncome(address(_baseToken));
     }
 }

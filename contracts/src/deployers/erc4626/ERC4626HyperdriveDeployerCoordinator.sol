@@ -3,7 +3,10 @@ pragma solidity 0.8.20;
 
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import { ERC4626Conversions } from "../../instances/erc4626/ERC4626Conversions.sol";
+import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
+import { IERC4626HyperdriveDeployerCoordinator } from "../../interfaces/IERC4626HyperdriveDeployerCoordinator.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
@@ -16,12 +19,19 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+contract ERC4626HyperdriveDeployerCoordinator is
+    HyperdriveDeployerCoordinator,
+    IERC4626HyperdriveDeployerCoordinator
+{
     using SafeERC20 for ERC20;
 
     /// @notice The deployer coordinator's kind.
-    string public constant override kind =
-        ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
+    string
+        public constant
+        override(
+            HyperdriveDeployerCoordinator,
+            IHyperdriveDeployerCoordinator
+        ) kind = ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
 
     /// @notice Instantiates the deployer coordinator.
     /// @param _name The deployer coordinator's name.
@@ -90,6 +100,30 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         return 0;
     }
 
+    /// @notice Convert an amount of vault shares to an amount of base.
+    /// @param _vaultSharesToken The vault shares asset.
+    /// @param _shareAmount The vault shares amount.
+    /// @return The base amount.
+    function convertToBase(
+        IERC20 _vaultSharesToken,
+        uint256 _shareAmount
+    ) public view returns (uint256) {
+        return
+            ERC4626Conversions.convertToBase(_vaultSharesToken, _shareAmount);
+    }
+
+    /// @notice Convert an amount of base to an amount of vault shares.
+    /// @param _vaultSharesToken The vault shares asset.
+    /// @param _baseAmount The base amount.
+    /// @return The base amount.
+    function convertToShares(
+        IERC20 _vaultSharesToken,
+        uint256 _baseAmount
+    ) public view returns (uint256) {
+        return
+            ERC4626Conversions.convertToShares(_vaultSharesToken, _baseAmount);
+    }
+
     /// @dev We override the message value check since this integration is
     ///      not payable.
     function _checkMessageValue() internal view override {
@@ -153,10 +187,6 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory // unused extra data
     ) internal view override returns (uint256) {
-        // Return the vault's current share price.
-        return
-            IERC4626(address(_deployConfig.vaultSharesToken)).convertToAssets(
-                ONE
-            );
+        return convertToBase(_deployConfig.vaultSharesToken, ONE);
     }
 }

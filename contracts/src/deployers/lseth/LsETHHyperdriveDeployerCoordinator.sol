@@ -3,8 +3,11 @@ pragma solidity 0.8.20;
 
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import { LsETHConversions } from "../../instances/lseth/LsETHConversions.sol";
+import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
+import { ILsETHHyperdriveDeployerCoordinator } from "../../interfaces/ILsETHHyperdriveDeployerCoordinator.sol";
 import { IRiverV1 } from "../../interfaces/IRiverV1.sol";
 import { ETH, LSETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
@@ -16,13 +19,20 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract LsETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+contract LsETHHyperdriveDeployerCoordinator is
+    HyperdriveDeployerCoordinator,
+    ILsETHHyperdriveDeployerCoordinator
+{
     using SafeERC20 for ERC20;
     using FixedPointMath for uint256;
 
     /// @notice The deployer coordinator's kind.
-    string public constant override kind =
-        LSETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
+    string
+        public constant
+        override(
+            HyperdriveDeployerCoordinator,
+            IHyperdriveDeployerCoordinator
+        ) kind = LSETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
 
     /// @dev The LsETH contract.
     IRiverV1 internal immutable river;
@@ -96,6 +106,28 @@ contract LsETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         return 0;
     }
 
+    /// @notice Convert an amount of vault shares to an amount of base.
+    /// @param _vaultSharesToken The vault shares asset.
+    /// @param _shareAmount The vault shares amount.
+    /// @return The base amount.
+    function convertToBase(
+        IERC20 _vaultSharesToken,
+        uint256 _shareAmount
+    ) public view returns (uint256) {
+        return LsETHConversions.convertToBase(_vaultSharesToken, _shareAmount);
+    }
+
+    /// @notice Convert an amount of base to an amount of vault shares.
+    /// @param _vaultSharesToken The vault shares asset.
+    /// @param _baseAmount The base amount.
+    /// @return The base amount.
+    function convertToShares(
+        IERC20 _vaultSharesToken,
+        uint256 _baseAmount
+    ) public view returns (uint256) {
+        return LsETHConversions.convertToShares(_vaultSharesToken, _baseAmount);
+    }
+
     /// @dev We override the message value check since this integration is
     ///      not payable.
     function _checkMessageValue() internal view override {
@@ -139,12 +171,12 @@ contract LsETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
+    /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
-        IHyperdrive.PoolDeployConfig memory, // unused pool deploy config
+        IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory // unused extra data
     ) internal view override returns (uint256) {
-        // Return LsETH's current vault share price.
-        return river.underlyingBalanceFromShares(ONE);
+        return convertToBase(_deployConfig.vaultSharesToken, ONE);
     }
 }
