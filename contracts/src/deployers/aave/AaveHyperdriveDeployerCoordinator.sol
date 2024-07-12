@@ -99,7 +99,8 @@ contract AaveHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         return 0;
     }
 
-    /// @dev Prevents the contract from receiving ether.
+    /// @dev We override the message value check since this integration is
+    ///      not payable.
     function _checkMessageValue() internal view override {
         if (msg.value != 0) {
             revert IHyperdriveDeployerCoordinator.NotPayable();
@@ -135,7 +136,7 @@ contract AaveHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         // considered safe. This is just a sanity check.
         if (
             _deployConfig.minimumShareReserves <
-            10 ** (_deployConfig.baseToken.decimals() - 4)
+            10 ** (_deployConfig.baseToken.decimals() - 3)
         ) {
             revert IHyperdriveDeployerCoordinator.InvalidMinimumShareReserves();
         }
@@ -147,7 +148,7 @@ contract AaveHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         // considered safe. This is just a sanity check.
         if (
             _deployConfig.minimumTransactionAmount <
-            10 ** (_deployConfig.baseToken.decimals() - 4)
+            10 ** (_deployConfig.baseToken.decimals() - 3)
         ) {
             revert IHyperdriveDeployerCoordinator
                 .InvalidMinimumTransactionAmount();

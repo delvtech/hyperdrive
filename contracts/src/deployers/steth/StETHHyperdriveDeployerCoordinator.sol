@@ -99,7 +99,8 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         return value;
     }
 
-    /// @dev Allows the contract to receive ether.
+    /// @dev We override the message value check since this integration is
+    ///      payable.
     function _checkMessageValue() internal view override {}
 
     /// @notice Checks the pool configuration to ensure that it is valid.

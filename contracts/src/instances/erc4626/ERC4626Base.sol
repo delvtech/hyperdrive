@@ -105,8 +105,8 @@ abstract contract ERC4626Base is HyperdriveBase {
         );
     }
 
-    /// @dev Ensure that ether wasn't sent because ERC4626 vaults don't support
-    ///      deposits of ether.
+    /// @dev We override the message value check since this integration is
+    ///      not payable.
     function _checkMessageValue() internal view override {
         if (msg.value != 0) {
             revert IHyperdrive.NotPayable();

@@ -136,10 +136,12 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
     }
 
 {% if contract.payable %}
-    /// @dev Allows the contract to receive ether.
+    /// @dev We override the message value check since this integration is
+    ///      payable.
     function _checkMessageValue() internal view override {}
 {% else %}
-    /// @dev Prevents the contract from receiving ether.
+    /// @dev We override the message value check since this integration is
+    ///      not payable.
     function _checkMessageValue() internal view override {
         if (msg.value != 0) {
             revert IHyperdriveDeployerCoordinator.NotPayable();

@@ -100,7 +100,8 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         return 0;
     }
 
-    /// @dev Disallows the contract to receive ether, when opening positions.
+    /// @dev We override the message value check since this integration is
+    ///      not payable.
     function _checkMessageValue() internal view override {
         if (msg.value != 0) {
             revert IHyperdrive.NotPayable();
