@@ -26,7 +26,7 @@ fixed-rate markets.
 
 # Deployed Contracts
 
-The addresses for all of the deployed Hyperdrive contracts can be found [here](./deployments.json).
+The addresses for all of the DELV approved deployed Hyperdrive contracts can be found [here](https://app.hyperdrive.box/chainlog).
 
 # Resources
 
