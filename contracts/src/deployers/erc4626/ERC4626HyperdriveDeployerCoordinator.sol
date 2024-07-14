@@ -115,7 +115,7 @@ contract ERC4626HyperdriveDeployerCoordinator is
     /// @notice Convert an amount of base to an amount of vault shares.
     /// @param _vaultSharesToken The vault shares asset.
     /// @param _baseAmount The base amount.
-    /// @return The base amount.
+    /// @return The vault shares amount.
     function convertToShares(
         IERC20 _vaultSharesToken,
         uint256 _baseAmount
