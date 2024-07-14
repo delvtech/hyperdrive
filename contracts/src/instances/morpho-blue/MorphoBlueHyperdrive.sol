@@ -84,6 +84,8 @@ contract MorphoBlueHyperdrive is Hyperdrive, MorphoBlueBase {
             _target4
         )
     {
+        // FIXME: Should we do this here or in the base contract?
+        //
         // ****************************************************************
         // FIXME: Implement this for new instances. ERC4626 example provided.
 

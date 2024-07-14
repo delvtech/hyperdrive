@@ -20,6 +20,21 @@ import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 abstract contract MorphoBlueBase is HyperdriveBase {
     using SafeERC20 for ERC20;
 
+    // FIXME: There are a few interesting things about this integration. First,
+    // shares aren't actually a token. Second, their is only one pool (similar
+    // to Aave). Third, the total supply doesn't contain the share price, and
+    // we'll need to make use of MorphoBalancesLib to compute the expected share
+    // price after accruing interest.
+    //
+    // FIXME: I can bang out this integration with the following steps.
+    //
+    // 1. [ ] Implement the share price mechanism using MorphoBalancesLib.
+    // 2. [ ] Add the deposit function with base.
+    //     - Think about the supply and borrow assets. Is interest paid in the
+    //       borrow or supply asset? If it's in the borrow asset, we won't be
+    //       able to easily support these markets.
+    // 3. [ ] Add the withdrawal function with base.
+
     /// Yield Source ///
 
     /// @dev Accepts a deposit from the user in base.
