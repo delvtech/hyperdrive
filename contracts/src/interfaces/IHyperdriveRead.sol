@@ -85,4 +85,18 @@ interface IHyperdriveRead is IMultiTokenRead {
     function load(
         uint256[] calldata _slots
     ) external view returns (bytes32[] memory);
+
+    /// @notice Convert an amount of vault shares to an amount of base.
+    /// @param _shareAmount The vault shares amount.
+    /// @return baseAmount The base amount.
+    function convertToBase(
+        uint256 _shareAmount
+    ) external view returns (uint256);
+
+    /// @notice Convert an amount of base to an amount of vault shares.
+    /// @param _baseAmount The base amount.
+    /// @return shareAmount The vault shares amount.
+    function convertToShares(
+        uint256 _baseAmount
+    ) external view returns (uint256);
 }

@@ -6,6 +6,9 @@ name:
   # names, and comments.
   capitalized: "TestETH"
 
+  # All upper case name to be used for constants.
+  uppercase: "TEST_ETH"
+
   # All lower case name to be used for directories.
   lowercase: "testeth"
 

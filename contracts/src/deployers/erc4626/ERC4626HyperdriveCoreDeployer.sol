@@ -19,6 +19,7 @@ contract ERC4626HyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     /// @param _target1 The target1 address.
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
+    /// @param _target4 The target4 address.
     /// @param _salt The create2 salt used in the deployment.
     /// @return The address of the newly deployed ERC4626Hyperdrive instance.
     function deployHyperdrive(
@@ -29,6 +30,7 @@ contract ERC4626HyperdriveCoreDeployer is IHyperdriveCoreDeployer {
         address _target1,
         address _target2,
         address _target3,
+        address _target4,
         bytes32 _salt
     ) external returns (address) {
         address hyperdrive = address(
@@ -36,7 +38,7 @@ contract ERC4626HyperdriveCoreDeployer is IHyperdriveCoreDeployer {
             // front-running of deployments.
             new ERC4626Hyperdrive{
                 salt: keccak256(abi.encode(msg.sender, _salt))
-            }(__name, _config, _target0, _target1, _target2, _target3)
+            }(__name, _config, _target0, _target1, _target2, _target3, _target4)
         );
         return hyperdrive;
     }

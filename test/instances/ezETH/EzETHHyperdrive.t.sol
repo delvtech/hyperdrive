@@ -8,6 +8,7 @@ import { EzETHTarget0Deployer } from "contracts/src/deployers/ezeth/EzETHTarget0
 import { EzETHTarget1Deployer } from "contracts/src/deployers/ezeth/EzETHTarget1Deployer.sol";
 import { EzETHTarget2Deployer } from "contracts/src/deployers/ezeth/EzETHTarget2Deployer.sol";
 import { EzETHTarget3Deployer } from "contracts/src/deployers/ezeth/EzETHTarget3Deployer.sol";
+import { EzETHTarget4Deployer } from "contracts/src/deployers/ezeth/EzETHTarget4Deployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -62,6 +63,7 @@ contract EzETHHyperdriveTest is InstanceTest {
         InstanceTestConfig(
             "Hyperdrive",
             "EzETHHyperdrive",
+            new address[](0),
             whaleAccounts,
             IERC20(ETH),
             IERC20(EZETH),
@@ -134,6 +136,7 @@ contract EzETHHyperdriveTest is InstanceTest {
                     address(new EzETHTarget1Deployer(RESTAKE_MANAGER)),
                     address(new EzETHTarget2Deployer(RESTAKE_MANAGER)),
                     address(new EzETHTarget3Deployer(RESTAKE_MANAGER)),
+                    address(new EzETHTarget4Deployer(RESTAKE_MANAGER)),
                     RESTAKE_MANAGER
                 )
             );

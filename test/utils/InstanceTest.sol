@@ -31,7 +31,8 @@ abstract contract InstanceTest is HyperdriveTest {
     struct InstanceTestConfig {
         string name;
         string kind;
-        address[] whaleAccounts;
+        address[] baseTokenWhaleAccounts;
+        address[] vaultSharesTokenWhaleAccounts;
         IERC20 baseToken;
         IERC20 vaultSharesToken;
         uint256 shareTolerance;
@@ -91,11 +92,23 @@ abstract contract InstanceTest is HyperdriveTest {
         address[] memory accounts = new address[](2);
         accounts[0] = alice;
         accounts[1] = bob;
-        for (uint256 i = 0; i < config.whaleAccounts.length; i++) {
+        for (uint256 i = 0; i < config.baseTokenWhaleAccounts.length; i++) {
+            fundAccounts(
+                address(hyperdrive),
+                config.baseToken,
+                config.baseTokenWhaleAccounts[i],
+                accounts
+            );
+        }
+        for (
+            uint256 i = 0;
+            i < config.vaultSharesTokenWhaleAccounts.length;
+            i++
+        ) {
             fundAccounts(
                 address(hyperdrive),
                 config.vaultSharesToken,
-                config.whaleAccounts[i],
+                config.vaultSharesTokenWhaleAccounts[i],
                 accounts
             );
         }
@@ -169,6 +182,9 @@ abstract contract InstanceTest is HyperdriveTest {
         }
 
         // Alice gives approval to the deployer coordinator to fund the market.
+        if (config.enableBaseDeposits && !isBaseETH) {
+            config.baseToken.approve(deployerCoordinator, 100_000e18);
+        }
         config.vaultSharesToken.approve(deployerCoordinator, 100_000e18);
 
         // We expect the deployAndInitialize to fail with an
@@ -411,7 +427,7 @@ abstract contract InstanceTest is HyperdriveTest {
         uint256 aliceBalanceBefore = address(alice).balance;
 
         // Contribution in terms of base.
-        uint256 contribution = 5_000e18;
+        uint256 contribution = 1_000e18;
 
         // Contribution in terms of shares.
         uint256 contributionShares = convertToShares(contribution);
@@ -483,7 +499,7 @@ abstract contract InstanceTest is HyperdriveTest {
         uint256 aliceBalanceBefore = address(alice).balance;
 
         // Contribution in terms of base.
-        uint256 contribution = 5_000e18;
+        uint256 contribution = 1_000e18;
 
         // Contribution in terms of shares.
         uint256 contributionShares = convertToShares(contribution);
@@ -669,6 +685,12 @@ abstract contract InstanceTest is HyperdriveTest {
         }
 
         // Bob opens a long by depositing the base token.
+        if (!isBaseETH) {
+            IERC20(hyperdrive.baseToken()).approve(
+                address(hyperdrive),
+                basePaid
+            );
+        }
         (uint256 maturityTime, uint256 bondAmount) = hyperdrive.openLong{
             value: isBaseETH ? basePaid : 0
         }(
@@ -899,6 +921,11 @@ abstract contract InstanceTest is HyperdriveTest {
                 isBaseETH
                     ? IHyperdrive.NotPayable.selector
                     : IHyperdrive.UnsupportedToken.selector
+            );
+        } else if (!isBaseETH) {
+            IERC20(hyperdrive.baseToken()).approve(
+                address(hyperdrive),
+                shortAmount
             );
         }
         (uint256 maturityTime, uint256 basePaid) = hyperdrive.openShort{

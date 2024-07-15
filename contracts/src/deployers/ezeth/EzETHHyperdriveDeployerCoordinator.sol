@@ -3,7 +3,9 @@ pragma solidity 0.8.20;
 
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import { EzETHConversions } from "../../instances/ezeth/EzETHConversions.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
+import { IEzETHHyperdriveDeployerCoordinator } from "../../interfaces/IEzETHHyperdriveDeployerCoordinator.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IRestakeManager, IRenzoOracle } from "../../interfaces/IRenzo.sol";
@@ -17,13 +19,20 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 /// @notice The deployer coordinator for the EzETHHyperdrive implementation.
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+contract EzETHHyperdriveDeployerCoordinator is
+    HyperdriveDeployerCoordinator,
+    IEzETHHyperdriveDeployerCoordinator
+{
     using SafeERC20 for ERC20;
     using FixedPointMath for uint256;
 
     /// @notice The deployer coordinator's kind.
-    string public constant override kind =
-        EZETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
+    string
+        public constant
+        override(
+            HyperdriveDeployerCoordinator,
+            IHyperdriveDeployerCoordinator
+        ) kind = EZETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
 
     /// @notice The Renzo contract.
     IRestakeManager public immutable restakeManager;
@@ -42,6 +51,7 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target1Deployer The target1 deployer.
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
+    /// @param _target4Deployer The target4 deployer.
     /// @param _restakeManager The Renzo contract.
     constructor(
         string memory _name,
@@ -51,6 +61,7 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _target1Deployer,
         address _target2Deployer,
         address _target3Deployer,
+        address _target4Deployer,
         IRestakeManager _restakeManager
     )
         HyperdriveDeployerCoordinator(
@@ -60,7 +71,8 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _target0Deployer,
             _target1Deployer,
             _target2Deployer,
-            _target3Deployer
+            _target3Deployer,
+            _target4Deployer
         )
     {
         restakeManager = _restakeManager;
@@ -102,8 +114,50 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         return 0;
     }
 
-    /// @dev We override the message value check since this integration is not
-    ///      payable.
+    /// @notice Convert an amount of vault shares to an amount of base.
+    /// @param _renzoOracle The RenzoOracle contract.
+    /// @param _restakeManager The Renzo entrypoint contract.
+    /// @param _vaultSharesToken The vault shares asset.
+    /// @param _shareAmount The vault shares amount.
+    /// @return The base amount.
+    function convertToBase(
+        IRenzoOracle _renzoOracle,
+        IRestakeManager _restakeManager,
+        IERC20 _vaultSharesToken,
+        uint256 _shareAmount
+    ) public view returns (uint256) {
+        return
+            EzETHConversions.convertToBase(
+                _renzoOracle,
+                _restakeManager,
+                _vaultSharesToken,
+                _shareAmount
+            );
+    }
+
+    /// @notice Convert an amount of base to an amount of vault shares.
+    /// @param _renzoOracle The RenzoOracle contract.
+    /// @param _restakeManager The Renzo entrypoint contract.
+    /// @param _vaultSharesToken The vault shares asset.
+    /// @param _baseAmount The base amount.
+    /// @return The vault shares amount.
+    function convertToShares(
+        IRenzoOracle _renzoOracle,
+        IRestakeManager _restakeManager,
+        IERC20 _vaultSharesToken,
+        uint256 _baseAmount
+    ) public view returns (uint256) {
+        return
+            EzETHConversions.convertToShares(
+                _renzoOracle,
+                _restakeManager,
+                _vaultSharesToken,
+                _baseAmount
+            );
+    }
+
+    /// @dev We override the message value check since this integration is
+    ///      not payable.
     function _checkMessageValue() internal view override {
         if (msg.value != 0) {
             revert IHyperdrive.NotPayable();
@@ -145,17 +199,18 @@ contract EzETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
+    /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
-        IHyperdrive.PoolDeployConfig memory, // unused pool deploy config
+        IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory // unused extra data
     ) internal view override returns (uint256) {
-        // Get the total TVL priced in ETH from restakeManager
-        (, , uint256 totalTVL) = restakeManager.calculateTVLs();
-
-        // Get the total supply of the ezETH token
-        uint256 totalSupply = ezETH.totalSupply();
-
-        return renzoOracle.calculateRedeemAmount(ONE, totalSupply, totalTVL);
+        return
+            convertToBase(
+                renzoOracle,
+                restakeManager,
+                _deployConfig.vaultSharesToken,
+                ONE
+            );
     }
 }

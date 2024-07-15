@@ -9,7 +9,7 @@ export const ANVIL_STETH_COORDINATOR: HyperdriveCoordinatorConfig<"StETH"> = {
     prefix: "StETH",
     factoryAddress: async (hre) =>
         hre.hyperdriveDeploy.deployments.byName(ANVIL_FACTORY_NAME).address,
-    targetCount: 4,
+    targetCount: 5,
     // Prepare for deploying the coordinator by ensuring the StETH token
     // is deployed, initialized with an ETH balance, and that ownership is
     // transferred to the admin address.

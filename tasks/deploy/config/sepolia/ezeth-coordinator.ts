@@ -9,7 +9,7 @@ export const SEPOLIA_EZETH_COORDINATOR: HyperdriveCoordinatorConfig<"EzETH"> = {
     prefix: "EzETH",
     factoryAddress: async (hre) =>
         hre.hyperdriveDeploy.deployments.byName(SEPOLIA_FACTORY_NAME).address,
-    targetCount: 4,
+    targetCount: 5,
     extraConstructorArgs: async (hre) => [
         hre.hyperdriveDeploy.deployments.byName("EZETH").address,
     ],

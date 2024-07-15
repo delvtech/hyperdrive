@@ -6,6 +6,7 @@ import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
+import { ERC4626Conversions } from "./ERC4626Conversions.sol";
 
 /// @author DELV
 /// @title ERC4626Base
@@ -105,8 +106,8 @@ abstract contract ERC4626Base is HyperdriveBase {
         );
     }
 
-    /// @dev Ensure that ether wasn't sent because ERC4626 vaults don't support
-    ///      deposits of ether.
+    /// @dev We override the message value check since this integration is
+    ///      not payable.
     function _checkMessageValue() internal view override {
         if (msg.value != 0) {
             revert IHyperdrive.NotPayable();
@@ -120,7 +121,7 @@ abstract contract ERC4626Base is HyperdriveBase {
         uint256 _shareAmount
     ) internal view override returns (uint256) {
         return
-            IERC4626(address(_vaultSharesToken)).convertToAssets(_shareAmount);
+            ERC4626Conversions.convertToBase(_vaultSharesToken, _shareAmount);
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
@@ -130,7 +131,7 @@ abstract contract ERC4626Base is HyperdriveBase {
         uint256 _baseAmount
     ) internal view override returns (uint256) {
         return
-            IERC4626(address(_vaultSharesToken)).convertToShares(_baseAmount);
+            ERC4626Conversions.convertToShares(_vaultSharesToken, _baseAmount);
     }
 
     /// @dev Gets the total amount of shares held by the pool in the yield

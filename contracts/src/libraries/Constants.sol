@@ -8,7 +8,7 @@ address constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 string constant VERSION = "v1.0.14";
 
 /// @dev The number of targets that must be deployed for a full deployment.
-uint256 constant NUM_TARGETS = 4;
+uint256 constant NUM_TARGETS = 5;
 
 /// @dev The kind of the ERC20 Forwarder.
 string constant ERC20_FORWARDER_KIND = "ERC20Forwarder";
@@ -28,6 +28,9 @@ string constant HYPERDRIVE_FACTORY_KIND = "HyperdriveFactory";
 /// @dev The kind of the Hyperdrive registry.
 string constant HYPERDRIVE_REGISTRY_KIND = "HyperdriveRegistry";
 
+/// @dev The kind of the AaveHyperdrive deployer coordinator factory.
+string constant AAVE_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "AaveHyperdriveDeployerCoordinator";
+
 /// @dev The kind of the ERC4626Hyperdrive deployer coordinator factory.
 string constant ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "ERC4626HyperdriveDeployerCoordinator";
 
@@ -42,6 +45,9 @@ string constant RETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "RETHHyperdriveDeplo
 
 /// @dev The kind of the StETHHyperdrive deployer coordinator factory.
 string constant STETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "StETHHyperdriveDeployerCoordinator";
+
+/// @dev The kind of AaveHyperdrive.
+string constant AAVE_HYPERDRIVE_KIND = "AaveHyperdrive";
 
 /// @dev The kind of ERC4626Hyperdrive.
 string constant ERC4626_HYPERDRIVE_KIND = "ERC4626Hyperdrive";

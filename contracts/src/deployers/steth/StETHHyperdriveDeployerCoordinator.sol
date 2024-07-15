@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { StETHConversions } from "../../instances/steth/StETHConversions.sol";
+import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { ILido } from "../../interfaces/ILido.sol";
+import { IStETHHyperdriveDeployerCoordinator } from "../../interfaces/IStETHHyperdriveDeployerCoordinator.sol";
 import { ETH, STETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
@@ -14,12 +17,19 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+contract StETHHyperdriveDeployerCoordinator is
+    HyperdriveDeployerCoordinator,
+    IStETHHyperdriveDeployerCoordinator
+{
     using FixedPointMath for uint256;
 
     /// @notice The deployer coordinator's kind.
-    string public constant override kind =
-        STETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
+    string
+        public constant
+        override(
+            HyperdriveDeployerCoordinator,
+            IHyperdriveDeployerCoordinator
+        ) kind = STETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
 
     /// @notice The Lido contract.
     ILido public immutable lido;
@@ -32,6 +42,7 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target1Deployer The target1 deployer.
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
+    /// @param _target4Deployer The target4 deployer.
     /// @param _lido The Lido contract.
     constructor(
         string memory _name,
@@ -41,6 +52,7 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _target1Deployer,
         address _target2Deployer,
         address _target3Deployer,
+        address _target4Deployer,
         ILido _lido
     )
         HyperdriveDeployerCoordinator(
@@ -50,7 +62,8 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _target0Deployer,
             _target1Deployer,
             _target2Deployer,
-            _target3Deployer
+            _target3Deployer,
+            _target4Deployer
         )
     {
         lido = _lido;
@@ -96,7 +109,30 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         return value;
     }
 
-    /// @dev Allows the contract to receive ether.
+    /// @notice Convert an amount of vault shares to an amount of base.
+    /// @param _vaultSharesToken The vault shares asset.
+    /// @param _shareAmount The vault shares amount.
+    /// @return The base amount.
+    function convertToBase(
+        IERC20 _vaultSharesToken,
+        uint256 _shareAmount
+    ) public view returns (uint256) {
+        return StETHConversions.convertToBase(_vaultSharesToken, _shareAmount);
+    }
+
+    /// @notice Convert an amount of base to an amount of vault shares.
+    /// @param _vaultSharesToken The vault shares asset.
+    /// @param _baseAmount The base amount.
+    /// @return The vault shares amount.
+    function convertToShares(
+        IERC20 _vaultSharesToken,
+        uint256 _baseAmount
+    ) public view returns (uint256) {
+        return StETHConversions.convertToShares(_vaultSharesToken, _baseAmount);
+    }
+
+    /// @dev We override the message value check since this integration is
+    ///      payable.
     function _checkMessageValue() internal view override {}
 
     /// @notice Checks the pool configuration to ensure that it is valid.
@@ -134,12 +170,12 @@ contract StETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
+    /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
-        IHyperdrive.PoolDeployConfig memory, // unused pool deploy config
+        IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory // unused extra data
     ) internal view override returns (uint256) {
-        // Return stETH's current vault share price.
-        return lido.getPooledEthByShares(ONE);
+        return convertToBase(_deployConfig.vaultSharesToken, ONE);
     }
 }

@@ -42,6 +42,8 @@ abstract contract HyperdriveDeployerCoordinator is
         address target2;
         /// @dev The address of the HyperdriveTarget3 contract.
         address target3;
+        /// @dev The address of the HyperdriveTarget4 contract.
+        address target4;
     }
 
     /// @notice The factory that this deployer will be registered with.
@@ -62,6 +64,9 @@ abstract contract HyperdriveDeployerCoordinator is
     /// @notice The contract used to deploy new instances of HyperdriveTarget3.
     address public immutable target3Deployer;
 
+    /// @notice The contract used to deploy new instances of HyperdriveTarget4.
+    address public immutable target4Deployer;
+
     /// @notice The deployer coordinator's name.
     string public override name;
 
@@ -75,6 +80,8 @@ abstract contract HyperdriveDeployerCoordinator is
     /// @param _target0Deployer The target0 deployer.
     /// @param _target1Deployer The target1 deployer.
     /// @param _target2Deployer The target2 deployer.
+    /// @param _target3Deployer The target3 deployer.
+    /// @param _target4Deployer The target4 deployer.
     constructor(
         string memory _name,
         address _factory,
@@ -82,7 +89,8 @@ abstract contract HyperdriveDeployerCoordinator is
         address _target0Deployer,
         address _target1Deployer,
         address _target2Deployer,
-        address _target3Deployer
+        address _target3Deployer,
+        address _target4Deployer
     ) {
         name = _name;
         factory = _factory;
@@ -91,6 +99,7 @@ abstract contract HyperdriveDeployerCoordinator is
         target1Deployer = _target1Deployer;
         target2Deployer = _target2Deployer;
         target3Deployer = _target3Deployer;
+        target4Deployer = _target4Deployer;
     }
 
     /// @dev Ensures that the contract is being called by the associated
@@ -144,7 +153,8 @@ abstract contract HyperdriveDeployerCoordinator is
             deployment.target0 == address(0) ||
             deployment.target1 == address(0) ||
             deployment.target2 == address(0) ||
-            deployment.target3 == address(0)
+            deployment.target3 == address(0) ||
+            deployment.target4 == address(0)
         ) {
             revert IHyperdriveDeployerCoordinator.IncompleteDeployment();
         }
@@ -182,6 +192,7 @@ abstract contract HyperdriveDeployerCoordinator is
                 deployment.target1,
                 deployment.target2,
                 deployment.target3,
+                deployment.target4,
                 // NOTE: We hash the deployment ID with the salt to prevent the
                 // front-running of deployments.
                 keccak256(abi.encode(deploymentId, salt))
@@ -319,6 +330,16 @@ abstract contract HyperdriveDeployerCoordinator is
                 keccak256(abi.encode(msg.sender, _deploymentId, _salt))
             );
             deployment.target3 = target;
+        } else if (_targetIndex == 4) {
+            if (deployment.target4 != address(0)) {
+                revert IHyperdriveDeployerCoordinator.TargetAlreadyDeployed();
+            }
+            target = IHyperdriveTargetDeployer(target4Deployer).deployTarget(
+                config,
+                _extraData,
+                keccak256(abi.encode(msg.sender, _deploymentId, _salt))
+            );
+            deployment.target4 = target;
         } else {
             revert IHyperdriveDeployerCoordinator.InvalidTargetIndex();
         }

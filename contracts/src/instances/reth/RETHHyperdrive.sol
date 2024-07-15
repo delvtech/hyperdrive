@@ -59,12 +59,24 @@ contract RETHHyperdrive is Hyperdrive, RETHBase {
     /// @param _target1 The target1 address.
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
+    /// @param _target4 The target4 address.
     constructor(
         string memory __name,
         IHyperdrive.PoolConfig memory _config,
         address _target0,
         address _target1,
         address _target2,
-        address _target3
-    ) Hyperdrive(__name, _config, _target0, _target1, _target2, _target3) {}
+        address _target3,
+        address _target4
+    )
+        Hyperdrive(
+            __name,
+            _config,
+            _target0,
+            _target1,
+            _target2,
+            _target3,
+            _target4
+        )
+    {}
 }

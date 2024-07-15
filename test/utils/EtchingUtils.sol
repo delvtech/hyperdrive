@@ -7,26 +7,31 @@ import { ERC4626Target0 } from "contracts/src/instances/erc4626/ERC4626Target0.s
 import { ERC4626Target1 } from "contracts/src/instances/erc4626/ERC4626Target1.sol";
 import { ERC4626Target2 } from "contracts/src/instances/erc4626/ERC4626Target2.sol";
 import { ERC4626Target3 } from "contracts/src/instances/erc4626/ERC4626Target3.sol";
+import { ERC4626Target4 } from "contracts/src/instances/erc4626/ERC4626Target4.sol";
 import { EzETHHyperdrive } from "contracts/src/instances/ezeth/EzETHHyperdrive.sol";
 import { EzETHTarget0 } from "contracts/src/instances/ezeth/EzETHTarget0.sol";
 import { EzETHTarget1 } from "contracts/src/instances/ezeth/EzETHTarget1.sol";
 import { EzETHTarget2 } from "contracts/src/instances/ezeth/EzETHTarget2.sol";
 import { EzETHTarget3 } from "contracts/src/instances/ezeth/EzETHTarget3.sol";
+import { EzETHTarget4 } from "contracts/src/instances/ezeth/EzETHTarget4.sol";
 import { LsETHHyperdrive } from "contracts/src/instances/lseth/LsETHHyperdrive.sol";
 import { LsETHTarget0 } from "contracts/src/instances/lseth/LsETHTarget0.sol";
 import { LsETHTarget1 } from "contracts/src/instances/lseth/LsETHTarget1.sol";
 import { LsETHTarget2 } from "contracts/src/instances/lseth/LsETHTarget2.sol";
 import { LsETHTarget3 } from "contracts/src/instances/lseth/LsETHTarget3.sol";
+import { LsETHTarget4 } from "contracts/src/instances/lseth/LsETHTarget4.sol";
 import { RETHHyperdrive } from "contracts/src/instances/reth/RETHHyperdrive.sol";
 import { RETHTarget0 } from "contracts/src/instances/reth/RETHTarget0.sol";
 import { RETHTarget1 } from "contracts/src/instances/reth/RETHTarget1.sol";
 import { RETHTarget2 } from "contracts/src/instances/reth/RETHTarget2.sol";
 import { RETHTarget3 } from "contracts/src/instances/reth/RETHTarget3.sol";
+import { RETHTarget4 } from "contracts/src/instances/reth/RETHTarget4.sol";
 import { StETHHyperdrive } from "contracts/src/instances/steth/StETHHyperdrive.sol";
 import { StETHTarget0 } from "contracts/src/instances/steth/StETHTarget0.sol";
 import { StETHTarget1 } from "contracts/src/instances/steth/StETHTarget1.sol";
 import { StETHTarget2 } from "contracts/src/instances/steth/StETHTarget2.sol";
 import { StETHTarget3 } from "contracts/src/instances/steth/StETHTarget3.sol";
+import { StETHTarget4 } from "contracts/src/instances/steth/StETHTarget4.sol";
 import { IEzETHHyperdrive } from "contracts/src/interfaces/IEzETHHyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IRestakeManager } from "contracts/src/interfaces/IRenzo.sol";
@@ -161,6 +166,14 @@ contract EtchingUtils is Test {
             vm.etch(hyperdrive.target3(), address(template).code);
         }
 
+        // Etch the target4 contract.
+        {
+            ERC4626Target4 template = new ERC4626Target4(
+                hyperdrive.getPoolConfig()
+            );
+            vm.etch(hyperdrive.target4(), address(template).code);
+        }
+
         // Etch the hyperdrive contract.
         {
             ERC4626Hyperdrive template = new ERC4626Hyperdrive(
@@ -171,7 +184,8 @@ contract EtchingUtils is Test {
                 hyperdrive.target0(),
                 hyperdrive.target1(),
                 hyperdrive.target2(),
-                hyperdrive.target3()
+                hyperdrive.target3(),
+                hyperdrive.target4()
             );
             vm.etch(address(hyperdrive), address(template).code);
         }
@@ -233,6 +247,15 @@ contract EtchingUtils is Test {
             vm.etch(hyperdrive.target3(), address(template).code);
         }
 
+        // Etch the target4 contract.
+        {
+            EzETHTarget4 template = new EzETHTarget4(
+                hyperdrive.getPoolConfig(),
+                renzo
+            );
+            vm.etch(hyperdrive.target4(), address(template).code);
+        }
+
         // Etch the hyperdrive contract.
         {
             EzETHHyperdrive template = new EzETHHyperdrive(
@@ -244,6 +267,7 @@ contract EtchingUtils is Test {
                 hyperdrive.target1(),
                 hyperdrive.target2(),
                 hyperdrive.target3(),
+                hyperdrive.target4(),
                 renzo
             );
             vm.etch(address(hyperdrive), address(template).code);
@@ -287,6 +311,14 @@ contract EtchingUtils is Test {
             vm.etch(hyperdrive.target3(), address(template).code);
         }
 
+        // Etch the target4 contract.
+        {
+            LsETHTarget4 template = new LsETHTarget4(
+                hyperdrive.getPoolConfig()
+            );
+            vm.etch(hyperdrive.target4(), address(template).code);
+        }
+
         // Etch the hyperdrive contract.
         {
             LsETHHyperdrive template = new LsETHHyperdrive(
@@ -297,7 +329,8 @@ contract EtchingUtils is Test {
                 hyperdrive.target0(),
                 hyperdrive.target1(),
                 hyperdrive.target2(),
-                hyperdrive.target3()
+                hyperdrive.target3(),
+                hyperdrive.target4()
             );
             vm.etch(address(hyperdrive), address(template).code);
         }
@@ -348,6 +381,12 @@ contract EtchingUtils is Test {
             vm.etch(hyperdrive.target3(), address(template).code);
         }
 
+        // Etch the target4 contract.
+        {
+            RETHTarget4 template = new RETHTarget4(hyperdrive.getPoolConfig());
+            vm.etch(hyperdrive.target4(), address(template).code);
+        }
+
         // Etch the hyperdrive contract.
         {
             RETHHyperdrive template = new RETHHyperdrive(
@@ -358,7 +397,8 @@ contract EtchingUtils is Test {
                 hyperdrive.target0(),
                 hyperdrive.target1(),
                 hyperdrive.target2(),
-                hyperdrive.target3()
+                hyperdrive.target3(),
+                hyperdrive.target4()
             );
             vm.etch(address(hyperdrive), address(template).code);
         }
@@ -415,6 +455,14 @@ contract EtchingUtils is Test {
             vm.etch(hyperdrive.target3(), address(template).code);
         }
 
+        // Etch the target4 contract.
+        {
+            StETHTarget4 template = new StETHTarget4(
+                hyperdrive.getPoolConfig()
+            );
+            vm.etch(hyperdrive.target4(), address(template).code);
+        }
+
         // Etch the hyperdrive contract.
         {
             StETHHyperdrive template = new StETHHyperdrive(
@@ -425,7 +473,8 @@ contract EtchingUtils is Test {
                 hyperdrive.target0(),
                 hyperdrive.target1(),
                 hyperdrive.target2(),
-                hyperdrive.target3()
+                hyperdrive.target3(),
+                hyperdrive.target4()
             );
             vm.etch(address(hyperdrive), address(template).code);
         }

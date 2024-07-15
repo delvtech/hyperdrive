@@ -7,6 +7,7 @@ import { ERC4626Target0Deployer } from "contracts/src/deployers/erc4626/ERC4626T
 import { ERC4626Target1Deployer } from "contracts/src/deployers/erc4626/ERC4626Target1Deployer.sol";
 import { ERC4626Target2Deployer } from "contracts/src/deployers/erc4626/ERC4626Target2Deployer.sol";
 import { ERC4626Target3Deployer } from "contracts/src/deployers/erc4626/ERC4626Target3Deployer.sol";
+import { ERC4626Target4Deployer } from "contracts/src/deployers/erc4626/ERC4626Target4Deployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
@@ -28,19 +29,18 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     string internal constant HYPERDRIVE_NAME = "Hyperdrive";
     string internal constant COORDINATOR_NAME = "HyperdriveDeployerCoordinator";
 
-    address deployerCoordinator;
-    address coreDeployer;
-    address target0Deployer;
-    address target1Deployer;
-    address target2Deployer;
-    address target3Deployer;
-    address target4Deployer;
-    address target5Deployer;
+    address internal deployerCoordinator;
+    address internal coreDeployer;
+    address internal target0Deployer;
+    address internal target1Deployer;
+    address internal target2Deployer;
+    address internal target3Deployer;
+    address internal target4Deployer;
 
     HyperdriveFactory internal factory;
     IERC20 internal underlyingToken;
     IERC4626 internal token;
-    MockERC4626Hyperdrive hyperdriveInstance;
+    MockERC4626Hyperdrive internal hyperdriveInstance;
     uint8 internal decimals = 18;
     uint256 internal constant FIXED_RATE = 0.05e18;
 
@@ -97,6 +97,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         target1Deployer = address(new ERC4626Target1Deployer());
         target2Deployer = address(new ERC4626Target2Deployer());
         target3Deployer = address(new ERC4626Target3Deployer());
+        target4Deployer = address(new ERC4626Target4Deployer());
         deployerCoordinator = address(
             new ERC4626HyperdriveDeployerCoordinator(
                 COORDINATOR_NAME,
@@ -105,7 +106,8 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
                 target0Deployer,
                 target1Deployer,
                 target2Deployer,
-                target3Deployer
+                target3Deployer,
+                target4Deployer
             )
         );
 

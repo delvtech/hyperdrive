@@ -9,7 +9,7 @@ export const SEPOLIA_STETH_COORDINATOR: HyperdriveCoordinatorConfig<"StETH"> = {
     prefix: "StETH",
     factoryAddress: async (hre) =>
         hre.hyperdriveDeploy.deployments.byName(SEPOLIA_FACTORY_NAME).address,
-    targetCount: 4,
+    targetCount: 5,
     prepare: async (hre, options) => {
         let deployer = (await hre.getNamedAccounts())["deployer"];
         let pc = await hre.viem.getPublicClient();

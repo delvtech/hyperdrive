@@ -8,6 +8,7 @@ import { StETHTarget0Deployer } from "contracts/src/deployers/steth/StETHTarget0
 import { StETHTarget1Deployer } from "contracts/src/deployers/steth/StETHTarget1Deployer.sol";
 import { StETHTarget2Deployer } from "contracts/src/deployers/steth/StETHTarget2Deployer.sol";
 import { StETHTarget3Deployer } from "contracts/src/deployers/steth/StETHTarget3Deployer.sol";
+import { StETHTarget4Deployer } from "contracts/src/deployers/steth/StETHTarget4Deployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -44,6 +45,7 @@ contract StETHHyperdriveTest is InstanceTest {
         InstanceTestConfig(
             "Hyperdrive",
             "StETHHyperdrive",
+            new address[](0),
             whaleAccounts,
             IERC20(ETH),
             IERC20(LIDO),
@@ -101,6 +103,7 @@ contract StETHHyperdriveTest is InstanceTest {
                     address(new StETHTarget1Deployer()),
                     address(new StETHTarget2Deployer()),
                     address(new StETHTarget3Deployer()),
+                    address(new StETHTarget4Deployer()),
                     LIDO
                 )
             );
@@ -353,7 +356,7 @@ contract StETHHyperdriveTest is InstanceTest {
         assertEq(address(bob).balance, ethBalanceBefore);
     }
 
-    function test_attack_long_steth() external {
+    function test_round_trip_long() external {
         // Get some balance information before the deposit.
         LIDO.sharesOf(address(hyperdrive));
 

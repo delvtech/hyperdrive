@@ -7,6 +7,7 @@ import { I{{ name.capitalized }} } from "../../interfaces/I{{ name.capitalized }
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { I{{ name.capitalized }}Hyperdrive } from "../../interfaces/I{{ name.capitalized }}Hyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
+import { {{ name.uppercase }}_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
@@ -20,7 +21,12 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     using SafeERC20 for ERC20;
 
+    /// @notice The deployer coordinator's kind.
+    string public constant override kind =
+        {{ name.uppercase }}_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
+
     /// @notice Instantiates the deployer coordinator.
+    /// @param _name The deployer coordinator's name.
     /// @param _factory The factory that this deployer will be registered with.
     /// @param _coreDeployer The core deployer.
     /// @param _target0Deployer The target0 deployer.
@@ -29,6 +35,7 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
     /// @param _target3Deployer The target3 deployer.
     /// @param _target4Deployer The target4 deployer.
     constructor(
+        string memory _name,
         address _factory,
         address _coreDeployer,
         address _target0Deployer,
@@ -38,6 +45,7 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
         address _target4Deployer
     )
         HyperdriveDeployerCoordinator(
+            _name,
             _factory,
             _coreDeployer,
             _target0Deployer,
@@ -128,10 +136,12 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
     }
 
 {% if contract.payable %}
-    /// @dev Allows the contract to receive ether.
+    /// @dev We override the message value check since this integration is
+    ///      payable.
     function _checkMessageValue() internal view override {}
 {% else %}
-    /// @dev Prevents the contract from receiving ether.
+    /// @dev We override the message value check since this integration is
+    ///      not payable.
     function _checkMessageValue() internal view override {
         if (msg.value != 0) {
             revert IHyperdriveDeployerCoordinator.NotPayable();

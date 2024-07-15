@@ -4,6 +4,7 @@ pragma solidity 0.8.20;
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IRestakeManager, IRenzoOracle } from "../../interfaces/IRenzo.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
+import { EzETHConversions } from "./EzETHConversions.sol";
 
 /// @author DELV
 /// @title ezETH Base Contract
@@ -89,17 +90,12 @@ abstract contract EzETHBase is HyperdriveBase {
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
-        // Get the total TVL priced in ETH from restakeManager
-        (, , uint256 totalTVL) = _restakeManager.calculateTVLs();
-
-        // Get the total supply of the ezETH token
-        uint256 totalSupply = _vaultSharesToken.totalSupply();
-
         return
-            _renzoOracle.calculateRedeemAmount(
-                _shareAmount,
-                totalSupply,
-                totalTVL
+            EzETHConversions.convertToBase(
+                _renzoOracle,
+                _restakeManager,
+                _vaultSharesToken,
+                _shareAmount
             );
     }
 
@@ -109,17 +105,12 @@ abstract contract EzETHBase is HyperdriveBase {
     function _convertToShares(
         uint256 _baseAmount
     ) internal view override returns (uint256) {
-        // Get the total TVL priced in ETH from restakeManager
-        (, , uint256 totalTVL) = _restakeManager.calculateTVLs();
-
-        // Get the total supply of the ezETH token
-        uint256 totalSupply = _vaultSharesToken.totalSupply();
-
         return
-            _renzoOracle.calculateMintAmount(
-                totalTVL,
-                _baseAmount,
-                totalSupply
+            EzETHConversions.convertToShares(
+                _renzoOracle,
+                _restakeManager,
+                _vaultSharesToken,
+                _baseAmount
             );
     }
 
@@ -136,7 +127,7 @@ abstract contract EzETHBase is HyperdriveBase {
     }
 
     /// @dev We override the message value check since this integration is
-    ///      payable.
+    ///      not payable.
     function _checkMessageValue() internal view override {
         if (msg.value != 0) {
             revert IHyperdrive.NotPayable();

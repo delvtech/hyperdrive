@@ -3,8 +3,11 @@ pragma solidity 0.8.20;
 
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import { RETHConversions } from "../../instances/reth/RETHConversions.sol";
+import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
+import { IRETHHyperdriveDeployerCoordinator } from "../../interfaces/IRETHHyperdriveDeployerCoordinator.sol";
 import { IRocketTokenRETH } from "../../interfaces/IRocketTokenRETH.sol";
 import { ETH, RETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
@@ -16,13 +19,20 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+contract RETHHyperdriveDeployerCoordinator is
+    HyperdriveDeployerCoordinator,
+    IRETHHyperdriveDeployerCoordinator
+{
     using SafeERC20 for ERC20;
     using FixedPointMath for uint256;
 
     /// @notice The deployer coordinator's kind.
-    string public constant override kind =
-        RETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
+    string
+        public constant
+        override(
+            HyperdriveDeployerCoordinator,
+            IHyperdriveDeployerCoordinator
+        ) kind = RETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
 
     /// @dev The Rocket Token RETH contract.
     IRocketTokenRETH internal immutable rocketTokenReth;
@@ -35,6 +45,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target1Deployer The target1 deployer.
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
+    /// @param _target4Deployer The target4 deployer.
     /// @param _rocketTokenReth The rETH token contract.
     constructor(
         string memory _name,
@@ -44,6 +55,7 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _target1Deployer,
         address _target2Deployer,
         address _target3Deployer,
+        address _target4Deployer,
         IRocketTokenRETH _rocketTokenReth
     )
         HyperdriveDeployerCoordinator(
@@ -53,7 +65,8 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _target0Deployer,
             _target1Deployer,
             _target2Deployer,
-            _target3Deployer
+            _target3Deployer,
+            _target4Deployer
         )
     {
         rocketTokenReth = _rocketTokenReth;
@@ -97,7 +110,30 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         return 0;
     }
 
-    /// @dev Disallows the contract to receive ether, when opening positions.
+    /// @notice Convert an amount of vault shares to an amount of base.
+    /// @param _vaultSharesToken The vault shares asset.
+    /// @param _shareAmount The vault shares amount.
+    /// @return The base amount.
+    function convertToBase(
+        IERC20 _vaultSharesToken,
+        uint256 _shareAmount
+    ) public view returns (uint256) {
+        return RETHConversions.convertToBase(_vaultSharesToken, _shareAmount);
+    }
+
+    /// @notice Convert an amount of base to an amount of vault shares.
+    /// @param _vaultSharesToken The vault shares asset.
+    /// @param _baseAmount The base amount.
+    /// @return The vault shares amount.
+    function convertToShares(
+        IERC20 _vaultSharesToken,
+        uint256 _baseAmount
+    ) public view returns (uint256) {
+        return RETHConversions.convertToShares(_vaultSharesToken, _baseAmount);
+    }
+
+    /// @dev We override the message value check since this integration is
+    ///      not payable.
     function _checkMessageValue() internal view override {
         if (msg.value != 0) {
             revert IHyperdrive.NotPayable();
@@ -141,12 +177,12 @@ contract RETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
+    /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
-        IHyperdrive.PoolDeployConfig memory, // unused pool deploy config
+        IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory // unused extra data
     ) internal view override returns (uint256) {
-        // Returns the value of one RETH token in ETH.
-        return rocketTokenReth.getEthValue(ONE);
+        return convertToBase(_deployConfig.vaultSharesToken, ONE);
     }
 }

@@ -257,7 +257,7 @@ contract ExtremeInputs is HyperdriveTest {
 
         // Test some concrete values with the max long scenario.
         _updateLiquidity__scenario__maxLong(
-            10e6,
+            1e3,
             1e6,
             fixedRate,
             100_000_000_000e6,
@@ -275,7 +275,7 @@ contract ExtremeInputs is HyperdriveTest {
             1
         );
         _updateLiquidity__scenario__maxLong(
-            1e18,
+            1e15,
             1e6,
             fixedRate,
             10_000_000_000e18,
@@ -286,7 +286,7 @@ contract ExtremeInputs is HyperdriveTest {
 
         // Test some concrete values with the max short scenario.
         _updateLiquidity__scenario__maxShort(
-            10e6,
+            1e3,
             1e6,
             fixedRate,
             100_000_000_000e6,
@@ -304,7 +304,7 @@ contract ExtremeInputs is HyperdriveTest {
             1
         );
         _updateLiquidity__scenario__maxShort(
-            10e18,
+            1e15,
             1e6,
             fixedRate,
             100_000_000_000e18,
@@ -367,12 +367,12 @@ contract ExtremeInputs is HyperdriveTest {
     ) internal {
         uint256 fixedRate = 0.05e18;
 
-        // Validate the safe bounds for a minimum share reserves of 10e6 and
+        // Validate the safe bounds for a minimum share reserves of 1e3 and
         // a minimum transaction amount of 0.1e6. This
         // is a suitable default for USDC pools that supports pool total
         // supplies up to 100 billion USDC.
         {
-            uint256 minimumShareReserves = 10e6;
+            uint256 minimumShareReserves = 1e3;
             uint256 minimumTransactionAmount = 0.1e6;
 
             // Sample the contribution. We simulate the pool being deployed and
@@ -476,12 +476,12 @@ contract ExtremeInputs is HyperdriveTest {
             );
         }
 
-        // Validate the safe bounds for a minimum share reserves of 10e18 and
+        // Validate the safe bounds for a minimum share reserves of 1e15 and
         // a minimum transaction amount of 0.001e18 This
         // is a suitable default for DAI pools and pools with other stablecoins.
         // It supports pool total supplies up to 100 billion DAI.
         {
-            uint256 minimumShareReserves = 10e18;
+            uint256 minimumShareReserves = 1e15;
             uint256 minimumTransactionAmount = MINIMUM_TRANSACTION_AMOUNT;
 
             // Sample the contribution. We simulate the pool being deployed and

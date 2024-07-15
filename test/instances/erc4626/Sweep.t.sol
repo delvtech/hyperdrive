@@ -6,6 +6,7 @@ import { ERC4626Target0 } from "contracts/src/instances/erc4626/ERC4626Target0.s
 import { ERC4626Target1 } from "contracts/src/instances/erc4626/ERC4626Target1.sol";
 import { ERC4626Target2 } from "contracts/src/instances/erc4626/ERC4626Target2.sol";
 import { ERC4626Target3 } from "contracts/src/instances/erc4626/ERC4626Target3.sol";
+import { ERC4626Target4 } from "contracts/src/instances/erc4626/ERC4626Target4.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -75,7 +76,8 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
                     address(new ERC4626Target0(config)),
                     address(new ERC4626Target1(config)),
                     address(new ERC4626Target2(config)),
-                    address(new ERC4626Target3(config))
+                    address(new ERC4626Target3(config)),
+                    address(new ERC4626Target4(config))
                 )
             )
         );

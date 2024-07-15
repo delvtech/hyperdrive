@@ -3,7 +3,10 @@ pragma solidity 0.8.20;
 
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import { ERC4626Conversions } from "../../instances/erc4626/ERC4626Conversions.sol";
+import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
+import { IERC4626HyperdriveDeployerCoordinator } from "../../interfaces/IERC4626HyperdriveDeployerCoordinator.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
@@ -16,12 +19,19 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+contract ERC4626HyperdriveDeployerCoordinator is
+    HyperdriveDeployerCoordinator,
+    IERC4626HyperdriveDeployerCoordinator
+{
     using SafeERC20 for ERC20;
 
     /// @notice The deployer coordinator's kind.
-    string public constant override kind =
-        ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
+    string
+        public constant
+        override(
+            HyperdriveDeployerCoordinator,
+            IHyperdriveDeployerCoordinator
+        ) kind = ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
 
     /// @notice Instantiates the deployer coordinator.
     /// @param _name The deployer coordinator's name.
@@ -31,6 +41,7 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target1Deployer The target1 deployer.
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
+    /// @param _target4Deployer The target4 deployer.
     constructor(
         string memory _name,
         address _factory,
@@ -38,7 +49,8 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _target0Deployer,
         address _target1Deployer,
         address _target2Deployer,
-        address _target3Deployer
+        address _target3Deployer,
+        address _target4Deployer
     )
         HyperdriveDeployerCoordinator(
             _name,
@@ -47,7 +59,8 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _target0Deployer,
             _target1Deployer,
             _target2Deployer,
-            _target3Deployer
+            _target3Deployer,
+            _target4Deployer
         )
     {}
 
@@ -87,7 +100,32 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         return 0;
     }
 
-    /// @dev Prevents the contract from receiving ether.
+    /// @notice Convert an amount of vault shares to an amount of base.
+    /// @param _vaultSharesToken The vault shares asset.
+    /// @param _shareAmount The vault shares amount.
+    /// @return The base amount.
+    function convertToBase(
+        IERC20 _vaultSharesToken,
+        uint256 _shareAmount
+    ) public view returns (uint256) {
+        return
+            ERC4626Conversions.convertToBase(_vaultSharesToken, _shareAmount);
+    }
+
+    /// @notice Convert an amount of base to an amount of vault shares.
+    /// @param _vaultSharesToken The vault shares asset.
+    /// @param _baseAmount The base amount.
+    /// @return The vault shares amount.
+    function convertToShares(
+        IERC20 _vaultSharesToken,
+        uint256 _baseAmount
+    ) public view returns (uint256) {
+        return
+            ERC4626Conversions.convertToShares(_vaultSharesToken, _baseAmount);
+    }
+
+    /// @dev We override the message value check since this integration is
+    ///      not payable.
     function _checkMessageValue() internal view override {
         if (msg.value != 0) {
             revert IHyperdriveDeployerCoordinator.NotPayable();
@@ -122,7 +160,7 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         // considered safe. This is just a sanity check.
         if (
             _deployConfig.minimumShareReserves <
-            10 ** (_deployConfig.baseToken.decimals() - 4)
+            10 ** (_deployConfig.baseToken.decimals() - 3)
         ) {
             revert IHyperdriveDeployerCoordinator.InvalidMinimumShareReserves();
         }
@@ -134,7 +172,7 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         // considered safe. This is just a sanity check.
         if (
             _deployConfig.minimumTransactionAmount <
-            10 ** (_deployConfig.baseToken.decimals() - 4)
+            10 ** (_deployConfig.baseToken.decimals() - 3)
         ) {
             revert IHyperdriveDeployerCoordinator
                 .InvalidMinimumTransactionAmount();
@@ -149,10 +187,6 @@ contract ERC4626HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory // unused extra data
     ) internal view override returns (uint256) {
-        // Return the vault's current share price.
-        return
-            IERC4626(address(_deployConfig.vaultSharesToken)).convertToAssets(
-                ONE
-            );
+        return convertToBase(_deployConfig.vaultSharesToken, ONE);
     }
 }
