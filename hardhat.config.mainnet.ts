@@ -7,11 +7,11 @@ import { HardhatUserConfig } from "hardhat/config";
 import baseConfig from "./hardhat.config";
 import "./tasks";
 import {
-    MAINNET_DAI_182DAY,
-    MAINNET_ERC4626_COORDINATOR,
+    MAINNET_EZETH_182DAY,
+    MAINNET_EZETH_COORDINATOR,
     MAINNET_FACTORY,
-    MAINNET_STETH_182DAY,
-    MAINNET_STETH_COORDINATOR,
+    MAINNET_RETH_182DAY,
+    MAINNET_RETH_COORDINATOR,
 } from "./tasks/deploy/config/mainnet";
 
 const { env } = process;
@@ -26,10 +26,10 @@ const config: HardhatUserConfig = {
             hyperdriveDeploy: {
                 factories: [MAINNET_FACTORY],
                 coordinators: [
-                    MAINNET_ERC4626_COORDINATOR,
-                    MAINNET_STETH_COORDINATOR,
+                    MAINNET_EZETH_COORDINATOR,
+                    MAINNET_RETH_COORDINATOR,
                 ],
-                instances: [MAINNET_DAI_182DAY, MAINNET_STETH_182DAY],
+                instances: [MAINNET_EZETH_182DAY, MAINNET_RETH_182DAY],
                 checkpointRewarders: [],
                 checkpointSubrewarders: [],
             },
