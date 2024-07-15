@@ -88,13 +88,12 @@ contract LsETHHyperdriveDeployerCoordinator is
         uint256 _contribution,
         IHyperdrive.Options memory _options
     ) internal override returns (uint256) {
-        // Depositing as base is disallowed.
+        // Depositing with base is not supported.
         if (_options.asBase) {
             revert IHyperdrive.UnsupportedToken();
         }
 
-        // Transfer vault shares from the LP and approve the
-        // Hyperdrive pool.
+        // Transfer vault shares from the LP and approve the Hyperdrive pool.
         ERC20(address(river)).safeTransferFrom(
             _lp,
             address(this),

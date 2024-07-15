@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import { IMorphoBlue } from "../../interfaces/IMorphoBlue.sol";
+import { MorphoBlueConversions } from "../../instances/morpho-blue/MorphoBlueConversions.sol";
+import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IMorphoBlueHyperdrive } from "../../interfaces/IMorphoBlueHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
@@ -74,26 +76,78 @@ contract MorphoBlueHyperdriveDeployerCoordinator is
         uint256 _contribution,
         IHyperdrive.Options memory _options
     ) internal override returns (uint256 value) {
-        // If base is the deposit asset, the initialization will be paid in the
-        // base token.
-        address token;
-        if (_options.asBase) {
-            token = _hyperdrive.baseToken();
-        }
-        // Otherwise, the initialization will be paid in vault shares.
-        else {
-            token = _hyperdrive.vaultSharesToken();
+        // Depositing with shares is not supported.
+        if (!_options.asBase) {
+            revert IHyperdrive.UnsupportedToken();
         }
 
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC20 example provided.
-        // Take custody of the contribution and approve Hyperdrive to pull the
-        // tokens.
-        ERC20(token).safeTransferFrom(_lp, address(this), _contribution);
-        ERC20(token).forceApprove(address(_hyperdrive), _contribution);
-        // ****************************************************************
+        // Transfer base from the LP and approve the Hyperdrive pool.
+        ERC20 baseToken = ERC20(_hyperdrive.baseToken());
+        baseToken.safeTransferFrom(_lp, address(this), _contribution);
+        baseToken.forceApprove(address(_hyperdrive), _contribution);
 
-        return value;
+        // This yield source isn't payable, so we should always send 0 value.
+        return 0;
+    }
+
+    /// @notice Convert an amount of vault shares to an amount of base.
+    /// @param _baseToken The base token underlying the Aave vault.
+    /// @param _vault The Morpho Blue contract.
+    /// @param _baseToken The collateral token for this Morpho Blue market.
+    /// @param _oracle The oracle for this Morpho Blue market.
+    /// @param _irm The IRM for this Morpho Blue market.
+    /// @param _lltv The LLTV for this Morpho Blue market.
+    /// @param _shareAmount The vault shares amount.
+    /// @return The base amount.
+    function convertToBase(
+        IMorpho _vault,
+        IERC20 _baseToken,
+        address _collateralToken,
+        address _oracle,
+        address _irm,
+        uint256 _lltv,
+        uint256 _shareAmount
+    ) public view returns (uint256) {
+        return
+            MorphoBlueConversions.convertToBase(
+                _vault,
+                _baseToken,
+                _collateralToken,
+                _oracle,
+                _irm,
+                _lltv,
+                _shareAmount
+            );
+    }
+
+    /// @notice Convert an amount of base to an amount of vault shares.
+    /// @param _baseToken The base token underlying the Aave vault.
+    /// @param _vault The Morpho Blue contract.
+    /// @param _baseToken The collateral token for this Morpho Blue market.
+    /// @param _oracle The oracle for this Morpho Blue market.
+    /// @param _irm The IRM for this Morpho Blue market.
+    /// @param _lltv The LLTV for this Morpho Blue market.
+    /// @param _baseAmount The base amount.
+    /// @return The base amount.
+    function convertToShares(
+        IMorpho _vault,
+        IERC20 _baseToken,
+        address _collateralToken,
+        address _oracle,
+        address _irm,
+        uint256 _lltv,
+        uint256 _baseAmount
+    ) public view returns (uint256) {
+        return
+            MorphoBlueConversions.convertToShares(
+                _vault,
+                _baseToken,
+                _collateralToken,
+                _oracle,
+                _irm,
+                _lltv,
+                _baseAmount
+            );
     }
 
     /// @dev We override the message value check since this integration is
@@ -112,31 +166,66 @@ contract MorphoBlueHyperdriveDeployerCoordinator is
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig);
 
-        // Ensure that the minimum share reserves are equal to 1e15. This value
-        // has been tested to prevent arithmetic overflows in the
-        // `_updateLiquidity` function when the share reserves are as high as
-        // 200 million.
-        if (_deployConfig.minimumShareReserves != 1e15) {
+        // Ensure that the vault shares token address is zero. This makes it
+        // clear that there isn't a vault shares token backing the Morpho Blue
+        // integration.
+        if (address(_deployConfig.vaultSharesToken) != address(0)) {
+            revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
+        }
+
+        // Ensure that the base token address is properly configured.
+        if (address(_deployConfig.baseToken) == address(0)) {
+            revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
+        }
+
+        // Ensure that the minimum share reserves are large enough to meet the
+        // minimum requirements for safety.
+        //
+        // NOTE: Some pools may require larger minimum share reserves to be
+        // considered safe. This is just a sanity check.
+        if (
+            _deployConfig.minimumShareReserves <
+            10 ** (_deployConfig.baseToken.decimals() - 3)
+        ) {
             revert IHyperdriveDeployerCoordinator.InvalidMinimumShareReserves();
         }
 
-        // Ensure that the minimum transaction amount are equal to 1e15. This
-        // value has been tested to prevent precision issues.
-        if (_deployConfig.minimumTransactionAmount != 1e15) {
+        // Ensure that the minimum transaction amount is large enough to meet
+        // the minimum requirements for safety.
+        //
+        // NOTE: Some pools may require larger minimum transaction amounts to be
+        // considered safe. This is just a sanity check.
+        if (
+            _deployConfig.minimumTransactionAmount <
+            10 ** (_deployConfig.baseToken.decimals() - 3)
+        ) {
             revert IHyperdriveDeployerCoordinator
                 .InvalidMinimumTransactionAmount();
         }
     }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
+    /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
+    /// @param _extraData The extra data for the Morpho instance. This contains
+    ///        the market parameters that weren't specified in the config.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
-        IHyperdrive.PoolDeployConfig memory, // unused _deployConfig
-        bytes memory // unused _extraData
-    ) internal pure override returns (uint256) {
-        // ****************************************************************
-        // FIXME:  Implement this for new instances.
-        return ONE;
-        // ****************************************************************
+        IHyperdrive.PoolDeployConfig memory _deployConfig,
+        bytes memory _extraData
+    ) internal view override returns (uint256) {
+        IMorphoBlueHyperdrive.MorphoBlueParams memory params = abi.decode(
+            _extraData,
+            (IMorphoBlueHyperdrive.MorphoBlueParams)
+        );
+        return
+            convertToBase(
+                params.morpho,
+                _deployConfig.baseToken,
+                params.collateralToken,
+                params.oracle,
+                params.irm,
+                params.lltv,
+                ONE
+            );
     }
 }

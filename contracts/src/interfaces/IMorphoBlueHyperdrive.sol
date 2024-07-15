@@ -16,4 +16,20 @@ interface IMorphoBlueHyperdrive is IHyperdrive {
     /// @notice Gets the vault used as this pool's yield source.
     /// @return The compatible yield source.
     function vault() external view returns (address);
+
+    /// @notice Returns the collateral token for this Morpho Blue market.
+    /// @return The collateral token for this Morpho Blue market.
+    function collateralToken() external view returns (address);
+
+    /// @notice Returns the oracle for this Morpho Blue market.
+    /// @return The oracle for this Morpho Blue market.
+    function oracle() external view returns (address);
+
+    /// @notice Returns the IRM for this Morpho Blue market.
+    /// @return The IRM for this Morpho Blue market.
+    function irm() external view returns (address);
+
+    /// @notice Returns the LLTV for this Morpho Blue market.
+    /// @return The LLTV for this Morpho Blue market.
+    function lltv() external view returns (uint256);
 }

@@ -201,7 +201,7 @@ contract AaveHyperdriveDeployerCoordinator is
     ///        pool.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
-        IHyperdrive.PoolDeployConfig memory _deployConfig, // unused _deployConfig
+        IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory // unused _extraData
     ) internal view override returns (uint256) {
         // We calculate the vault share price by converting 1e18 vault shares to

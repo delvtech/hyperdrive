@@ -10,6 +10,7 @@ import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IMorphoBlueHyperdrive } from "../../interfaces/IMorphoBlueHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
+import { MorphoBlueConversions } from "./MorphoBlueConversions.sol";
 
 /// @author DELV
 /// @title MorphoBlueBase
@@ -26,8 +27,6 @@ abstract contract MorphoBlueBase is HyperdriveBase {
     using MorphoBalancesLib for IMorpho;
     using SharesMathLib for uint256;
 
-    // FIXME: Make getters for each of these immutables.
-
     /// @dev The Morpho Blue contract.
     IMorpho internal immutable _vault;
 
@@ -43,8 +42,6 @@ abstract contract MorphoBlueBase is HyperdriveBase {
     /// @dev The LLTV for this Morpho Blue market.
     uint256 internal immutable _lltv;
 
-    // FIXME: Check that the vault shares token zero.
-    //
     /// @notice Instantiates the MorphoBlueHyperdrive base contract.
     /// @param _params The Morpho Blue params.
     constructor(IMorphoBlueHyperdrive.MorphoBlueParams memory _params) {
@@ -160,19 +157,16 @@ abstract contract MorphoBlueBase is HyperdriveBase {
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
-        // Get the total supply assets and shares after interest accrues.
-        (uint256 totalSupplyAssets, uint256 totalSupplyShares, , ) = _vault
-            .expectedMarketBalances(
-                MarketParams({
-                    loanToken: address(_baseToken),
-                    collateralToken: _collateralToken,
-                    oracle: _oracle,
-                    irm: _irm,
-                    lltv: _lltv
-                })
+        return
+            MorphoBlueConversions.convertToBase(
+                _vault,
+                _baseToken,
+                _collateralToken,
+                _oracle,
+                _irm,
+                _lltv,
+                _shareAmount
             );
-
-        return _shareAmount.toAssetsDown(totalSupplyAssets, totalSupplyShares);
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
@@ -181,19 +175,16 @@ abstract contract MorphoBlueBase is HyperdriveBase {
     function _convertToShares(
         uint256 _baseAmount
     ) internal view override returns (uint256) {
-        // Get the total supply assets and shares after interest accrues.
-        (uint256 totalSupplyAssets, uint256 totalSupplyShares, , ) = _vault
-            .expectedMarketBalances(
-                MarketParams({
-                    loanToken: address(_baseToken),
-                    collateralToken: _collateralToken,
-                    oracle: _oracle,
-                    irm: _irm,
-                    lltv: _lltv
-                })
+        return
+            MorphoBlueConversions.convertToShares(
+                _vault,
+                _baseToken,
+                _collateralToken,
+                _oracle,
+                _irm,
+                _lltv,
+                _baseAmount
             );
-
-        return _baseAmount.toSharesDown(totalSupplyAssets, totalSupplyShares);
     }
 
     /// @dev Gets the total amount of shares held by the pool in the yield
