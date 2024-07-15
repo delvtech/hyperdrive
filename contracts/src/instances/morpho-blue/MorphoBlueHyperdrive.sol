@@ -6,6 +6,7 @@ import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IMorphoBlueHyperdrive } from "../../interfaces/IMorphoBlueHyperdrive.sol";
 import { MorphoBlueBase } from "./MorphoBlueBase.sol";
 
 ///      ______  __                           _________      _____
@@ -65,6 +66,7 @@ contract MorphoBlueHyperdrive is Hyperdrive, MorphoBlueBase {
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
     /// @param _target4 The target4 address.
+    /// @param _params The Morpho Blue params.
     constructor(
         string memory __name,
         IHyperdrive.PoolConfig memory _config,
@@ -73,11 +75,7 @@ contract MorphoBlueHyperdrive is Hyperdrive, MorphoBlueBase {
         address _target2,
         address _target3,
         address _target4,
-        IMorpho _morpho,
-        address __colleratalToken,
-        address __oracle,
-        address __irm,
-        uint256 __lltv
+        IMorphoBlueHyperdrive.MorphoBlueParams memory _params
     )
         Hyperdrive(
             __name,
@@ -88,6 +86,6 @@ contract MorphoBlueHyperdrive is Hyperdrive, MorphoBlueBase {
             _target3,
             _target4
         )
-        MorphoBlueBase(_morpho, __colleratalToken, __oracle, __irm, __lltv)
+        MorphoBlueBase(_params)
     {}
 }

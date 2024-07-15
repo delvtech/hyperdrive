@@ -7,8 +7,8 @@ import { SharesMathLib } from "morpho-blue/src/libraries/SharesMathLib.sol";
 import { MorphoBalancesLib } from "morpho-blue/src/libraries/periphery/MorphoBalancesLib.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import { IERC4626 } from "../../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IMorphoBlueHyperdrive } from "../../interfaces/IMorphoBlueHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 
 /// @author DELV
@@ -26,71 +26,38 @@ abstract contract MorphoBlueBase is HyperdriveBase {
     using MorphoBalancesLib for IMorpho;
     using SharesMathLib for uint256;
 
-    // FIXME: Make a getter for all of the immutables
+    // FIXME: Make getters for each of these immutables.
 
-    // FIXME: Natspec
+    /// @dev The Morpho Blue contract.
     IMorpho internal immutable _vault;
 
-    // FIXME: We need all of the morpho market parameters.
+    /// @dev The collateral token for this Morpho Blue market.
+    address internal immutable _collateralToken;
 
-    // FIXME: Natspec
-    address internal immutable _colleratalToken;
-
-    // FIXME: Natspec
+    /// @dev The oracle for this Morpho Blue market.
     address internal immutable _oracle;
 
-    // FIXME: Natspec
+    /// @dev The IRM for this Morpho Blue market.
     address internal immutable _irm;
 
-    // FIXME: Natspec
+    /// @dev The LLTV for this Morpho Blue market.
     uint256 internal immutable _lltv;
-
-    // FIXME: There are a few interesting things about this integration. First,
-    // shares aren't actually a token. Second, their is only one pool (similar
-    // to Aave). Third, the total supply doesn't contain the share price, and
-    // we'll need to make use of MorphoBalancesLib to compute the expected share
-    // price after accruing interest.
-    //
-    // FIXME: I can bang out this integration with the following steps.
-    //
-    // 1. [x] Which immutables do we need?
-    // 2. [ ] Implement the share price mechanism using MorphoBalancesLib.
-    // 3. [x] Add the deposit function with base.
-    //     - Think about the supply and borrow assets. Is interest paid in the
-    //       borrow or supply asset? If it's in the borrow asset, we won't be
-    //       able to easily support these markets.
-    // 4. [x] Add the withdrawal function with base.
 
     // FIXME: Check that the vault shares token zero.
     //
-    // FIXME: What should the vault shares token be? It isn't actually a token,
-    //        so hypothetically, we could use the morpho pool as the shares
-    //        token. Since the shares are stored in this contract, this is
-    //        technically right.
-    //
     /// @notice Instantiates the MorphoBlueHyperdrive base contract.
-    /// @param _morpho The Morpho Blue pool.
-    /// @param __colleratalToken The Morpho collateral token.
-    /// @param __oracle The Morpho oracle.
-    /// @param __irm The Morpho IRM.
-    /// @param __lltv The Morpho LLTV.
-    constructor(
-        IMorpho _morpho,
-        address __colleratalToken,
-        address __oracle,
-        address __irm,
-        uint256 __lltv
-    ) {
+    /// @param _params The Morpho Blue params.
+    constructor(IMorphoBlueHyperdrive.MorphoBlueParams memory _params) {
         // Initialize the Morpho vault immutable.
-        _vault = _morpho;
+        _vault = _params.morpho;
 
         // Initialize the market parameters immutables. We don't need an
         // immutable for the loan token because we set the base token to the
         // loan token.
-        _colleratalToken = __colleratalToken;
-        _oracle = __oracle;
-        _irm = __irm;
-        _lltv = __lltv;
+        _collateralToken = _params.collateralToken;
+        _oracle = _params.oracle;
+        _irm = _params.irm;
+        _lltv = _params.lltv;
 
         // Approve the Morpho vault with 1 wei. This ensures that all of the
         // subsequent approvals will be writing to a dirty storage slot.
@@ -129,7 +96,7 @@ abstract contract MorphoBlueBase is HyperdriveBase {
         (, uint256 sharesMinted) = _vault.supply(
             MarketParams({
                 loanToken: address(_baseToken),
-                collateralToken: _colleratalToken,
+                collateralToken: _collateralToken,
                 oracle: _oracle,
                 irm: _irm,
                 lltv: _lltv
@@ -164,7 +131,7 @@ abstract contract MorphoBlueBase is HyperdriveBase {
         (amountWithdrawn, ) = _vault.withdraw(
             MarketParams({
                 loanToken: address(_baseToken),
-                collateralToken: _colleratalToken,
+                collateralToken: _collateralToken,
                 oracle: _oracle,
                 irm: _irm,
                 lltv: _lltv
@@ -187,39 +154,25 @@ abstract contract MorphoBlueBase is HyperdriveBase {
         revert IHyperdrive.UnsupportedToken();
     }
 
-    // FIXME: Double check on this. Are they doing anything weird with fixed
-    // point math?
-    //
-    // FIXME: Can I add the supply and borrow assets together, or should I
-    //        update one of them?
-    //
     /// @dev Convert an amount of vault shares to an amount of base.
     /// @param _shareAmount The vault shares amount.
     /// @return The base amount.
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
-        // Get the total assets and shares after interest accrues.
-        (
-            uint256 totalSupplyAssets,
-            uint256 totalSupplyShares,
-            uint256 totalBorrowAssets,
-            uint256 totalBorrowShares
-        ) = _vault.expectedMarketBalances(
+        // Get the total supply assets and shares after interest accrues.
+        (uint256 totalSupplyAssets, uint256 totalSupplyShares, , ) = _vault
+            .expectedMarketBalances(
                 MarketParams({
                     loanToken: address(_baseToken),
-                    collateralToken: _colleratalToken,
+                    collateralToken: _collateralToken,
                     oracle: _oracle,
                     irm: _irm,
                     lltv: _lltv
                 })
             );
 
-        return
-            _shareAmount.toAssetsDown(
-                totalSupplyAssets + totalBorrowAssets,
-                totalSupplyShares + totalBorrowShares
-            );
+        return _shareAmount.toAssetsDown(totalSupplyAssets, totalSupplyShares);
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
@@ -228,27 +181,19 @@ abstract contract MorphoBlueBase is HyperdriveBase {
     function _convertToShares(
         uint256 _baseAmount
     ) internal view override returns (uint256) {
-        // Get the total assets and shares after interest accrues.
-        (
-            uint256 totalSupplyAssets,
-            uint256 totalSupplyShares,
-            uint256 totalBorrowAssets,
-            uint256 totalBorrowShares
-        ) = _vault.expectedMarketBalances(
+        // Get the total supply assets and shares after interest accrues.
+        (uint256 totalSupplyAssets, uint256 totalSupplyShares, , ) = _vault
+            .expectedMarketBalances(
                 MarketParams({
                     loanToken: address(_baseToken),
-                    collateralToken: _colleratalToken,
+                    collateralToken: _collateralToken,
                     oracle: _oracle,
                     irm: _irm,
                     lltv: _lltv
                 })
             );
 
-        return
-            _baseAmount.toSharesDown(
-                totalSupplyAssets + totalBorrowAssets,
-                totalSupplyShares + totalBorrowShares
-            );
+        return _baseAmount.toSharesDown(totalSupplyAssets, totalSupplyShares);
     }
 
     /// @dev Gets the total amount of shares held by the pool in the yield
@@ -265,7 +210,7 @@ abstract contract MorphoBlueBase is HyperdriveBase {
                 .position(
                     MarketParams({
                         loanToken: address(_baseToken),
-                        collateralToken: _colleratalToken,
+                        collateralToken: _collateralToken,
                         oracle: _oracle,
                         irm: _irm,
                         lltv: _lltv

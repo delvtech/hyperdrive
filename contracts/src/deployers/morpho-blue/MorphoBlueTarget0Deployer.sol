@@ -5,6 +5,7 @@ import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { MorphoBlueTarget0 } from "../../instances/morpho-blue/MorphoBlueTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDeployer.sol";
+import { IMorphoBlueHyperdrive } from "../../interfaces/IMorphoBlueHyperdrive.sol";
 
 /// @author DELV
 /// @title MorphoBlueTarget0Deployer
@@ -33,19 +34,17 @@ contract MorphoBlueTarget0Deployer is IHyperdriveTargetDeployer {
         bytes memory _extraData,
         bytes32 _salt
     ) external returns (address) {
-        (
-            address collateralToken,
-            address oracle,
-            address irm,
-            uint256 lltv
-        ) = abi.decode(_extraData, (address, address, address, uint256));
+        IMorphoBlueHyperdrive.MorphoBlueParams memory params = abi.decode(
+            _extraData,
+            (IMorphoBlueHyperdrive.MorphoBlueParams)
+        );
         return
             address(
                 // NOTE: We hash the sender with the salt to prevent the
                 // front-running of deployments.
                 new MorphoBlueTarget0{
                     salt: keccak256(abi.encode(msg.sender, _salt))
-                }(_config, morpho, collateralToken, oracle, irm, lltv)
+                }(_config, params)
             );
     }
 }

@@ -40,6 +40,14 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         uint256 _amount,
         IHyperdrive.Options calldata _options
     ) internal returns (uint256 sharesMinted, uint256 vaultSharePrice) {
+        // WARN: This logic doesn't account for slippage in the conversion
+        // from base to shares. If deposits to the yield source incur
+        // slippage, this logic will be incorrect.
+        //
+        // The amount of shares minted is equal to the input amount if the
+        // deposit asset is in shares.
+        sharesMinted = _amount;
+
         // Deposit with either base or shares depending on the provided options.
         uint256 refund;
         if (_options.asBase) {
@@ -55,13 +63,6 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
 
             // Process the deposit in shares.
             _depositWithShares(_amount, _options.extraData);
-
-            // WARN: This logic doesn't account for slippage in the conversion
-            // from base to shares. If deposits to the yield source incur
-            // slippage, this logic will be incorrect.
-            //
-            // The amount of shares minted is equal to the input amount.
-            sharesMinted = _amount;
         }
 
         // Calculate the vault share price.
@@ -107,6 +108,7 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         }
 
         // Withdraw in either base or shares depending on the provided options.
+        amountWithdrawn = _shares;
         if (_options.asBase) {
             // Process the withdrawal in base.
             amountWithdrawn = _withdrawWithBase(
@@ -121,7 +123,6 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
                 _options.destination,
                 _options.extraData
             );
-            amountWithdrawn = _shares;
         }
 
         return amountWithdrawn;

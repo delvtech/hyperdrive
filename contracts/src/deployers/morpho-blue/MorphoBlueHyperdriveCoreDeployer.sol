@@ -4,6 +4,7 @@ pragma solidity 0.8.20;
 import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveCoreDeployer } from "../../interfaces/IHyperdriveCoreDeployer.sol";
+import { IMorphoBlueHyperdrive } from "../../interfaces/IMorphoBlueHyperdrive.sol";
 import { MorphoBlueHyperdrive } from "../../instances/morpho-blue/MorphoBlueHyperdrive.sol";
 
 /// @author DELV
@@ -45,12 +46,10 @@ contract MorphoBlueHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
         address _target4,
         bytes32 _salt
     ) external returns (address) {
-        (
-            address collateralToken,
-            address oracle,
-            address irm,
-            uint256 lltv
-        ) = abi.decode(_extraData, (address, address, address, uint256));
+        IMorphoBlueHyperdrive.MorphoBlueParams memory params = abi.decode(
+            _extraData,
+            (IMorphoBlueHyperdrive.MorphoBlueParams)
+        );
         return (
             address(
                 // NOTE: We hash the sender with the salt to prevent the
@@ -65,11 +64,7 @@ contract MorphoBlueHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
                     _target2,
                     _target3,
                     _target4,
-                    morpho,
-                    collateralToken,
-                    oracle,
-                    irm,
-                    lltv
+                    params
                 )
             )
         );

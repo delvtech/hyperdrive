@@ -4,6 +4,7 @@ pragma solidity 0.8.20;
 import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { HyperdriveTarget2 } from "../../external/HyperdriveTarget2.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IMorphoBlueHyperdrive } from "../../interfaces/IMorphoBlueHyperdrive.sol";
 import { MorphoBlueBase } from "./MorphoBlueBase.sol";
 
 /// @author DELV
@@ -17,20 +18,9 @@ import { MorphoBlueBase } from "./MorphoBlueBase.sol";
 contract MorphoBlueTarget2 is HyperdriveTarget2, MorphoBlueBase {
     /// @notice Initializes the target2 contract.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _morpho The Morpho Blue pool.
-    /// @param __colleratalToken The Morpho collateral token.
-    /// @param __oracle The Morpho oracle.
-    /// @param __irm The Morpho IRM.
-    /// @param __lltv The Morpho LLTV.
+    /// @param _params The Morpho Blue params.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        IMorpho _morpho,
-        address __colleratalToken,
-        address __oracle,
-        address __irm,
-        uint256 __lltv
-    )
-        HyperdriveTarget2(_config)
-        MorphoBlueBase(_morpho, __colleratalToken, __oracle, __irm, __lltv)
-    {}
+        IMorphoBlueHyperdrive.MorphoBlueParams memory _params
+    ) HyperdriveTarget2(_config) MorphoBlueBase(_params) {}
 }
