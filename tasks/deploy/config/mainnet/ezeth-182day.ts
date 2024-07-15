@@ -28,12 +28,8 @@ export const MAINNET_EZETH_182DAY: HyperdriveInstanceConfig<"EzETH"> = {
     salt: toBytes32("0xababe"),
     extraData: "0x",
     contribution: CONTRIBUTION,
-    // FIXME: Update this.
     fixedAPR: parseEther("0.09"),
-    // FIXME: Update this.
     timestretchAPR: parseEther("0.1"),
-    // FIXME: It's probably easier to do this with asBase as true. I'll probably
-    // need to update the deployment script logic though.
     options: async (hre) => ({
         asBase: false,
         extraData: "0x",
@@ -58,7 +54,6 @@ export const MAINNET_EZETH_182DAY: HyperdriveInstanceConfig<"EzETH"> = {
         return {
             baseToken: ETH_ADDRESS,
             vaultSharesToken: MAINNET_EZETH_182DAY,
-            // FIXME: Update this.
             circuitBreakerDelta: parseEther("0.1"),
             minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),
