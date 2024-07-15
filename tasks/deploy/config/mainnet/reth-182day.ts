@@ -46,7 +46,7 @@ export const MAINNET_RETH_182DAY: HyperdriveInstanceConfig<"RETH"> = {
             hre.hyperdriveDeploy.deployments.byName(
                 MAINNET_RETH_COORDINATOR_NAME,
             ).address,
-            await vaultSharesToken.read.getRethValue([CONTRIBUTION]),
+            CONTRIBUTION,
         ]);
         await pc.waitForTransactionReceipt({ hash: tx });
     },

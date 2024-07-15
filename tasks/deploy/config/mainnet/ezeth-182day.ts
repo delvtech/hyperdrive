@@ -53,7 +53,7 @@ export const MAINNET_EZETH_182DAY: HyperdriveInstanceConfig<"EzETH"> = {
     poolDeployConfig: async (hre) => {
         return {
             baseToken: ETH_ADDRESS,
-            vaultSharesToken: MAINNET_EZETH_182DAY,
+            vaultSharesToken: MAINNET_EZETH_ADDRESS,
             circuitBreakerDelta: parseEther("0.1"),
             minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),

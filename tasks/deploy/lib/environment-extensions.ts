@@ -531,12 +531,12 @@ extendEnvironment((hre) => {
             let { result: address } = await factory.simulate.deployTarget(
                 args as any,
                 {
-                    gas: 5_000_000n,
+                    gas: 5_500_000n,
                     ...options.viemConfig,
                 },
             );
             let tx = await factory.write.deployTarget(args as any, {
-                gas: 5_000_000n,
+                gas: 5_500_000n,
                 ...(options.viemConfig as any),
             });
             await pc.waitForTransactionReceipt({
@@ -560,6 +560,11 @@ extendEnvironment((hre) => {
         }
 
         // prepare arguments
+        let deployOptions = await evaluateValueOrHREFn(
+            instanceConfig.options,
+            hre,
+            options,
+        );
         let args = [
             deploymentId,
             coordinatorAddress,
@@ -569,14 +574,17 @@ extendEnvironment((hre) => {
             instanceConfig.contribution,
             fixedAPR,
             timestretchAPR,
-            await evaluateValueOrHREFn(instanceConfig.options, hre, options),
+            deployOptions,
             salt,
         ];
 
         // Simulate and deploy
         console.log(`deploying ${name}_${prefix}Hyperdrive`);
         let value = 0n;
-        if (poolDeployConfig.baseToken === ETH_ADDRESS) {
+        if (
+            poolDeployConfig.baseToken === ETH_ADDRESS &&
+            deployOptions.asBase
+        ) {
             value = instanceConfig.contribution;
         }
         let { result: address } = await factory.simulate.deployAndInitialize(
