@@ -9,6 +9,7 @@ import "hardhat/types/config";
 import "hardhat/types/runtime";
 import { ConfigurableTaskDefinition } from "hardhat/types/runtime";
 import { Address, ContractConstructorArgs, isHex } from "viem";
+import { ETH_ADDRESS } from "./constants";
 import { Deployments } from "./deployments";
 import { evaluateValueOrHREFn } from "./utils";
 
@@ -574,14 +575,20 @@ extendEnvironment((hre) => {
 
         // Simulate and deploy
         console.log(`deploying ${name}_${prefix}Hyperdrive`);
+        let value = 0n;
+        if (poolDeployConfig.baseToken === ETH_ADDRESS) {
+            value = instanceConfig.contribution;
+        }
         let { result: address } = await factory.simulate.deployAndInitialize(
             args as any,
             {
                 gas: 5_000_000n,
+                value,
             },
         );
         let tx = await factory.write.deployAndInitialize(args as any, {
             gas: 5_000_000n,
+            value,
         });
         await pc.waitForTransactionReceipt({ hash: tx });
 
