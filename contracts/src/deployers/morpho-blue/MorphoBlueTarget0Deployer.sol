@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { MorphoBlueTarget0 } from "../../instances/morpho-blue/MorphoBlueTarget0.sol";
-import { IMorphoBlue } from "../../interfaces/IMorphoBlue.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDeployer.sol";
 
@@ -13,22 +13,39 @@ import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDep
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract MorphoBlueTarget0Deployer is IHyperdriveTargetDeployer {
+    /// @notice The Morpho Blue contract.
+    IMorpho public immutable morpho;
+
+    /// @notice Instantiates the core deployer.
+    /// @param _morpho The Morpho Blue contract.
+    constructor(IMorpho _morpho) {
+        morpho = _morpho;
+    }
+
     /// @notice Deploys a target0 instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _extraData The extra data for the Morpho instance. This contains
+    ///        the market parameters that weren't specified in the config.
     /// @param _salt The create2 salt used in the deployment.
     /// @return The address of the newly deployed MorphoBlueTarget0 instance.
     function deployTarget(
         IHyperdrive.PoolConfig memory _config,
-        bytes memory, // unused _extraData
+        bytes memory _extraData,
         bytes32 _salt
     ) external returns (address) {
+        (
+            address collateralToken,
+            address oracle,
+            address irm,
+            uint256 lltv
+        ) = abi.decode(_extraData, (address, address, address, uint256));
         return
             address(
                 // NOTE: We hash the sender with the salt to prevent the
                 // front-running of deployments.
                 new MorphoBlueTarget0{
                     salt: keccak256(abi.encode(msg.sender, _salt))
-                }(_config)
+                }(_config, morpho, collateralToken, oracle, irm, lltv)
             );
     }
 }

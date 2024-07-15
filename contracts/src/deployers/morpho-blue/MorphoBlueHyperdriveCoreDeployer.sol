@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveCoreDeployer } from "../../interfaces/IHyperdriveCoreDeployer.sol";
 import { MorphoBlueHyperdrive } from "../../instances/morpho-blue/MorphoBlueHyperdrive.sol";
@@ -12,9 +13,20 @@ import { MorphoBlueHyperdrive } from "../../instances/morpho-blue/MorphoBlueHype
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract MorphoBlueHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
+    /// @notice The Morpho Blue contract.
+    IMorpho public immutable morpho;
+
+    /// @notice Instantiates the core deployer.
+    /// @param _morpho The Morpho Blue contract.
+    constructor(IMorpho _morpho) {
+        morpho = _morpho;
+    }
+
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param __name The name of the Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _extraData The extra data for the Morpho instance. This contains
+    ///        the market parameters that weren't specified in the config.
     /// @param _target0 The target0 address.
     /// @param _target1 The target1 address.
     /// @param _target2 The target2 address.
@@ -25,7 +37,7 @@ contract MorphoBlueHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     function deployHyperdrive(
         string memory __name,
         IHyperdrive.PoolConfig memory _config,
-        bytes memory, // unused _extraData,
+        bytes memory _extraData,
         address _target0,
         address _target1,
         address _target2,
@@ -33,6 +45,12 @@ contract MorphoBlueHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
         address _target4,
         bytes32 _salt
     ) external returns (address) {
+        (
+            address collateralToken,
+            address oracle,
+            address irm,
+            uint256 lltv
+        ) = abi.decode(_extraData, (address, address, address, uint256));
         return (
             address(
                 // NOTE: We hash the sender with the salt to prevent the
@@ -46,7 +64,12 @@ contract MorphoBlueHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
                     _target1,
                     _target2,
                     _target3,
-                    _target4
+                    _target4,
+                    morpho,
+                    collateralToken,
+                    oracle,
+                    irm,
+                    lltv
                 )
             )
         );

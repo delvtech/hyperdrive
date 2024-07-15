@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
-import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { MorphoBlueBase } from "./MorphoBlueBase.sol";
 
@@ -72,7 +72,12 @@ contract MorphoBlueHyperdrive is Hyperdrive, MorphoBlueBase {
         address _target1,
         address _target2,
         address _target3,
-        address _target4
+        address _target4,
+        IMorpho _morpho,
+        address __colleratalToken,
+        address __oracle,
+        address __irm,
+        uint256 __lltv
     )
         Hyperdrive(
             __name,
@@ -83,17 +88,6 @@ contract MorphoBlueHyperdrive is Hyperdrive, MorphoBlueBase {
             _target3,
             _target4
         )
-    {
-        // FIXME: Should we do this here or in the base contract?
-        //
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC4626 example provided.
-
-        // Approve the base token with 1 wei. This ensures that all of the
-        // subsequent approvals will be writing to a dirty storage slot.
-        ERC20(address(_config.baseToken)).forceApprove(
-            address(_config.vaultSharesToken),
-            1
-        );
-    }
+        MorphoBlueBase(_morpho, __colleratalToken, __oracle, __irm, __lltv)
+    {}
 }
