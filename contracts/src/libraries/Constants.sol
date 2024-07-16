@@ -69,3 +69,6 @@ string constant RETH_HYPERDRIVE_KIND = "RETHHyperdrive";
 
 /// @dev The kind of StETHHyperdrive.
 string constant STETH_HYPERDRIVE_KIND = "StETHHyperdrive";
+
+/// @dev The kind of Everlong.
+string constant EVERLONG_KIND = "Everlong";
