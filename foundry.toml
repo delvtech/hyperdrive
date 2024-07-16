@@ -5,7 +5,7 @@ src = 'contracts'
 # The artifact directory
 out = 'out'
 # A list of paths to look for libraries in
-libs = ['node_modules', 'lib']
+libs = ['lib']
 # The test directory
 test = 'test'
 # Whether to cache builds or not
@@ -18,7 +18,8 @@ remappings = [
   'forge-std=lib/forge-std/src',
   'nomad=lib/ExcessivelySafeCall/src',
   'openzeppelin=lib/openzeppelin-contracts/contracts',
-  'solmate=lib/solmate/src',
+  'solady=lib/solady/src',
+  'solmate=lib/solmate/src'
 ]
 # gas limit - max u64
 gas_limit = "18446744073709551615"
