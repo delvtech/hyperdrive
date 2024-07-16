@@ -430,7 +430,7 @@ abstract contract HyperdriveTarget0 is
     function convertToBase(
         uint256 _shareAmount
     ) external view returns (uint256) {
-        return _convertToBase(_shareAmount);
+        _revert(abi.encode(_convertToBase(_shareAmount)));
     }
 
     /// @notice Convert an amount of base to an amount of vault shares.
@@ -439,7 +439,7 @@ abstract contract HyperdriveTarget0 is
     function convertToShares(
         uint256 _baseAmount
     ) external view returns (uint256) {
-        return _convertToShares(_baseAmount);
+        _revert(abi.encode(_convertToShares(_baseAmount)));
     }
 
     /// @notice Gets an account's balance of a sub-token.
