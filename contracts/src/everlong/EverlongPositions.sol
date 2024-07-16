@@ -5,8 +5,10 @@ import { IEverlongPositions } from "contracts/src/interfaces/IEverlongPositions.
 import { DoubleEndedQueue } from "openzeppelin/utils/structs/DoubleEndedQueue.sol";
 
 contract EverlongPositions is IEverlongPositions {
-    using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
+    using DoubleEndedQueue for *;
     DoubleEndedQueue.Bytes32Deque internal _positions;
+
+    constructor() {}
 
     /// @notice Gets the number of positions managed by the Everlong instance.
     /// @return The number of positions.

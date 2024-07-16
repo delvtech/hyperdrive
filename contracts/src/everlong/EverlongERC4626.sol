@@ -28,7 +28,7 @@ contract EverlongERC4626 is ERC4626 {
         string memory name_,
         string memory symbol_
     ) {
-        _underlying = underlying_;
+        _underlying = IHyperdrive(underlying_).vaultSharesToken();
 
         (bool success, uint8 result) = _tryGetAssetDecimals(underlying_);
         _decimals = success ? result : _DEFAULT_UNDERLYING_DECIMALS;
@@ -37,7 +37,7 @@ contract EverlongERC4626 is ERC4626 {
         _symbol = symbol_;
     }
 
-    /// @dev Address of the underlying Hyperdrive instance.
+    /// @dev Address of the underlying Hyperdrive instance's vaultSharesToken.
     ///
     /// - MUST be an ERC20 token contract.
     /// - MUST NOT revert.
