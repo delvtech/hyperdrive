@@ -75,6 +75,12 @@ contract LsETHHyperdriveTest is InstanceTest {
 
     /// Overrides ///
 
+    /// @dev Gets the extra data used to deploy Hyperdrive instances.
+    /// @return The extra data.
+    function getExtraData() internal pure override returns (bytes memory) {
+        return new bytes(0);
+    }
+
     /// @dev Deploys the LsETH deployer coordinator contract.
     /// @param _factory The address of the Hyperdrive factory contract.
     function deployCoordinator(

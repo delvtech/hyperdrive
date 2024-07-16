@@ -35,7 +35,7 @@ library MorphoBlueConversions {
         address _irm,
         uint256 _lltv,
         uint256 _shareAmount
-    ) internal view returns (uint256) {
+    ) external view returns (uint256) {
         // Get the total supply assets and shares after interest accrues.
         (
             uint256 totalSupplyAssets,
@@ -69,7 +69,7 @@ library MorphoBlueConversions {
         address _irm,
         uint256 _lltv,
         uint256 _baseAmount
-    ) internal view returns (uint256) {
+    ) external view returns (uint256) {
         // Get the total supply assets and shares after interest accrues.
         (
             uint256 totalSupplyAssets,

@@ -25,11 +25,12 @@ interface IMorphoBlueHyperdrive is IHyperdrive {
     /// @return The oracle for this Morpho Blue market.
     function oracle() external view returns (address);
 
-    /// @notice Returns the IRM for this Morpho Blue market.
-    /// @return The IRM for this Morpho Blue market.
+    /// @notice Returns the interest rate model for this Morpho Blue market.
+    /// @return The interest rate model for this Morpho Blue market.
     function irm() external view returns (address);
 
-    /// @notice Returns the LLTV for this Morpho Blue market.
-    /// @return The LLTV for this Morpho Blue market.
+    /// @notice Returns the liquidation loan to value ratio for this Morpho Blue
+    ///         market.
+    /// @return The liquiditation loan to value ratio for this Morpho Blue market.
     function lltv() external view returns (uint256);
 }

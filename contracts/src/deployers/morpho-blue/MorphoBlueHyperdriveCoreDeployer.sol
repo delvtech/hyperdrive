@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveCoreDeployer } from "../../interfaces/IHyperdriveCoreDeployer.sol";
 import { IMorphoBlueHyperdrive } from "../../interfaces/IMorphoBlueHyperdrive.sol";
@@ -14,15 +13,6 @@ import { MorphoBlueHyperdrive } from "../../instances/morpho-blue/MorphoBlueHype
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract MorphoBlueHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
-    /// @notice The Morpho Blue contract.
-    IMorpho public immutable morpho;
-
-    /// @notice Instantiates the core deployer.
-    /// @param _morpho The Morpho Blue contract.
-    constructor(IMorpho _morpho) {
-        morpho = _morpho;
-    }
-
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param __name The name of the Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
