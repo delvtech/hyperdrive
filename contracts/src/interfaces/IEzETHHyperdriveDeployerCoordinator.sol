@@ -26,7 +26,7 @@ interface IEzETHHyperdriveDeployerCoordinator is
     /// @param _restakeManager The Renzo entrypoint contract.
     /// @param _vaultSharesToken The vault shares asset.
     /// @param _baseAmount The base amount.
-    /// @return The base amount.
+    /// @return The vault shares amount.
     function convertToShares(
         IRenzoOracle _renzoOracle,
         IRestakeManager _restakeManager,

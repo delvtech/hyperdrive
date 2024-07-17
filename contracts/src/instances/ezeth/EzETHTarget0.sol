@@ -20,9 +20,6 @@ import { EzETHBase } from "./EzETHBase.sol";
 contract EzETHTarget0 is HyperdriveTarget0, EzETHBase {
     using SafeERC20 for ERC20;
 
-    /// @dev The instance's kind.
-    string internal constant KIND = "EzETHHyperdrive";
-
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _restakeManager The Renzo contract.

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { IPool } from "aave/interfaces/IPool.sol";
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { AAVE_HYPERDRIVE_KIND } from "../../libraries/Constants.sol";
@@ -25,5 +26,11 @@ contract AaveTarget0 is HyperdriveTarget0, AaveBase {
     /// @return The instance's kind.
     function kind() external pure override returns (string memory) {
         _revert(abi.encode(AAVE_HYPERDRIVE_KIND));
+    }
+
+    /// @notice Gets the Aave pool used as this pool's yield source.
+    /// @return The Aave pool.
+    function vault() external view returns (IPool) {
+        _revert(abi.encode(_vault));
     }
 }

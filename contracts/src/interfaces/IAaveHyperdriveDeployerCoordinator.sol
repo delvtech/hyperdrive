@@ -21,7 +21,7 @@ interface IAaveHyperdriveDeployerCoordinator is IHyperdriveDeployerCoordinator {
     /// @param _baseToken The base token.
     /// @param _vault The Aave vault.
     /// @param _baseAmount The base amount.
-    /// @return The base amount.
+    /// @return The vault shares amount.
     function convertToShares(
         IERC20 _baseToken,
         IPool _vault,
