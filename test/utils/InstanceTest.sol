@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
@@ -488,7 +491,6 @@ abstract contract InstanceTest is HyperdriveTest {
         // receive LP shares totaling the amount of shares that he contributed
         // minus the shares set aside for the minimum share reserves and the
         // zero address's initial LP contribution.
-        (uint256 totalAssets, uint256 totalShares) = getSupply();
         assertApproxEqAbs(
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
             hyperdrive.convertToShares(contribution) -
@@ -854,22 +856,40 @@ abstract contract InstanceTest is HyperdriveTest {
 
         // Calculate the maximum amount of basePaid we can test. The limit is
         // either the maximum long that Hyperdrive can open or the amount of the
-        // share token the trader has.
+        // base token the trader has.
         uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
-        uint256 maxShareAmount = bobBalancesBefore.sharesBalance;
 
-        // We normalize the basePaid variable within a valid range the market can support.
-        basePaid = basePaid.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            maxLongAmount > maxShareAmount ? maxShareAmount : maxLongAmount
-        );
+        // Open a long in either base or shares, depending on which asset is
+        // supported.
+        uint256 maturityTime;
+        uint256 longAmount;
+        if (config.enableBaseDeposits) {
+            // We normalize the basePaid variable within a valid range the market
+            // can support.
+            uint256 maxBaseAmount = bobBalancesBefore.baseBalance;
+            basePaid = basePaid.normalizeToRange(
+                2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+                maxLongAmount > maxBaseAmount ? maxBaseAmount : maxLongAmount
+            );
 
-        // Bob opens a long with the share token.
-        (uint256 maturityTime, uint256 longAmount) = openLong(
-            bob,
-            convertToShares(basePaid),
-            false
-        );
+            // Bob opens a long with the base token.
+            (maturityTime, longAmount) = openLong(bob, basePaid);
+        } else {
+            // We normalize the sharesPaid variable within a valid range the market
+            // can support.
+            uint256 maxSharesAmount = bobBalancesBefore.sharesBalance;
+            basePaid = basePaid.normalizeToRange(
+                2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+                maxLongAmount
+            );
+
+            // Bob opens a long with the share token.
+            (maturityTime, longAmount) = openLong(
+                bob,
+                convertToShares(basePaid).min(maxSharesAmount),
+                false
+            );
+        }
 
         // The term passes and some interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
@@ -1115,12 +1135,17 @@ abstract contract InstanceTest is HyperdriveTest {
             int256(FIXED_RATE)
         );
 
-        // Bob opens a short with the share token.
+        // Bob opens a short with the base token if base deposits are supported
+        // and the shares token if they aren't.
         shortAmount = shortAmount.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
-        (uint256 maturityTime, ) = openShort(bob, shortAmount, false);
+        (uint256 maturityTime, ) = openShort(
+            bob,
+            shortAmount,
+            config.enableBaseDeposits
+        );
 
         // The term passes and interest accrues.
         uint256 startingVaultSharePrice = hyperdrive
@@ -1260,10 +1285,14 @@ abstract contract InstanceTest is HyperdriveTest {
     /// Sweep ///
 
     function test_sweep_failure_directSweep() external {
-        vm.startPrank(factory.sweepCollector());
+        // Return early if the vault shares token is zero.
+        address vaultSharesToken = hyperdrive.vaultSharesToken();
+        if (vaultSharesToken == address(0)) {
+            return;
+        }
 
         // Fails to sweep the vault shares token.
-        address vaultSharesToken = hyperdrive.vaultSharesToken();
+        vm.startPrank(factory.sweepCollector());
         vm.expectRevert(IHyperdrive.SweepFailed.selector);
         hyperdrive.sweep(IERC20(vaultSharesToken));
     }
