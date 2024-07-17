@@ -4,19 +4,24 @@ pragma solidity 0.8.20;
 import { IEverlongPositions } from "../interfaces/IEverlongPositions.sol";
 import { DoubleEndedQueue } from "openzeppelin/utils/structs/DoubleEndedQueue.sol";
 
+/// @author DELV
+/// @title Everlong
+/// @notice Accounting for the Hyperdrive bond positions managed by Everlong.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
 contract EverlongPositions is IEverlongPositions {
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
+
+    // TODO: Reassess using a more tailored data structure.
     DoubleEndedQueue.Bytes32Deque internal _positions;
 
-    /// @notice Gets the number of positions managed by the Everlong instance.
-    /// @return The number of positions.
+    /// @inheritdoc IEverlongPositions
     function getNumberOfPositions() external view returns (uint256) {
         return _positions.length();
     }
 
-    /// @notice Gets the position at an index.
-    /// @param _index The index of the position.
-    /// @return The position.
+    /// @inheritdoc IEverlongPositions
     function getPositionAtIndex(
         uint256 _index
     ) external view returns (Position memory) {
@@ -27,7 +32,7 @@ contract EverlongPositions is IEverlongPositions {
         return position;
     }
 
-    /// @notice Rebalances positions managed by the Everlong instance if needed.
+    /// @inheritdoc IEverlongPositions
     function rebalance() external pure {
         revert("TODO");
     }

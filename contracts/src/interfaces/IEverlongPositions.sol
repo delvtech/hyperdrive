@@ -2,6 +2,8 @@
 pragma solidity 0.8.20;
 
 interface IEverlongPositions {
+    /// @dev Tracks the total amount of bonds managed by Everlong
+    ///      with the same maturityTime.
     struct Position {
         /// @dev Checkpoint time when the position matures.
         uint128 maturityTime;
@@ -10,6 +12,8 @@ interface IEverlongPositions {
     }
 
     /// @notice Emitted when a new position is added.
+    /// TODO: Include wording for distinct maturity times if appropriate.
+    /// TODO: Reconsider naming https://github.com/delvtech/hyperdrive/pull/1096#discussion_r1681337414
     event PositionAdded(
         uint128 indexed maturityTime,
         uint128 bondAmount,
@@ -17,13 +21,14 @@ interface IEverlongPositions {
     );
 
     /// @notice Emitted when an existing position's `bondAmount` is modified.
+    /// TODO: Reconsider naming https://github.com/delvtech/hyperdrive/pull/1096#discussion_r1681337414
     event PositionUpdated(
         uint128 indexed maturityTime,
         uint128 newBondAmount,
         uint256 index
     );
 
-    /// @notice Emitted when Everlong positions are rebalanced.
+    /// @notice Emitted when Everlong's underlying portfolio is rebalanced..
     event Rebalanced();
 
     /// @notice Gets the number of positions managed by the Everlong instance.
@@ -38,6 +43,6 @@ interface IEverlongPositions {
         uint256 _index
     ) external view returns (Position memory);
 
-    /// @notice Rebalances positions managed by the Everlong instance if needed.
+    /// @notice Rebalances the Everlong bond portfolio if needed.
     function rebalance() external;
 }
