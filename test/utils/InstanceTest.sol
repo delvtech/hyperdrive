@@ -130,7 +130,7 @@ abstract contract InstanceTest is HyperdriveTest {
 
         // If base deposits are supported, approve a large amount of shares for
         // Alice and Bob.
-        if (config.enableBaseDeposits) {
+        if (config.enableBaseDeposits && !isBaseETH) {
             config.baseToken.approve(address(hyperdrive), 100_000e18);
             vm.startPrank(bob);
             config.baseToken.approve(address(hyperdrive), 100_000e18);
