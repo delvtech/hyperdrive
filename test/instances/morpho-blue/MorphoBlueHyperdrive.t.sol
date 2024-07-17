@@ -378,7 +378,7 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         assertApproxEqAbs(
             hyperdriveSharesAfter,
             hyperdriveSharesBefore + basePaid.divDown(vaultSharePrice),
-            config.shareTolerance
+            __testConfig.shareTolerance
         );
     }
 
