@@ -122,11 +122,4 @@ contract EverlongERC4626 is ERC4626 {
     function _afterDeposit(uint256, uint256) internal override {
         // revert("TODO");
     }
-
-    /// @dev Reverts with the provided bytes. This is useful in getters used
-    ///      with the force-revert delegatecall pattern.
-    /// @param _bytes The bytes to revert with.
-    function _revert(bytes memory _bytes) internal pure {
-        revert IHyperdrive.ReturnData(_bytes);
-    }
 }
