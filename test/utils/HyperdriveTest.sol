@@ -41,8 +41,13 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
     uint256 internal constant POSITION_DURATION = 365 days;
 
-    function setUp() public virtual override {
-        super.setUp();
+    uint256 internal immutable afterSetUpSnapshot;
+
+    constructor() {
+        afterSetUpSnapshot = _setUpLogic();
+    }
+
+    function _setUpLogic() internal returns (uint256) {
         vm.startPrank(alice);
 
         // Instantiate the base token.
@@ -72,6 +77,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         vm.stopPrank();
         vm.startPrank(governance);
         hyperdrive.setPauser(pauser, true);
+        vm.stopPrank();
 
         // If this isn't a forked environment, advance time so that Hyperdrive
         // can look back more than a position duration. We assume that fork
@@ -80,6 +86,18 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         if (!isForked) {
             vm.warp(POSITION_DURATION * 3);
         }
+
+        return vm.snapshot();
+    }
+
+    function setUp() public virtual override {
+        super.setUp();
+
+        // Load evm state from right after setup logic has been run.
+        vm.revertTo(afterSetUpSnapshot);
+
+        // Run the setup logic.
+        // _setUpLogic();
     }
 
     function deploy(
