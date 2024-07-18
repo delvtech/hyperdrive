@@ -19,9 +19,9 @@ library MorphoBlueConversions {
     using SharesMathLib for uint256;
 
     /// @dev Convert an amount of vault shares to an amount of base.
-    /// @param _baseToken The base token underlying the Aave vault.
     /// @param _vault The Morpho Blue contract.
-    /// @param _baseToken The collateral token for this Morpho Blue market.
+    /// @param _baseToken The base token underlying the Morpho Blue vault.
+    /// @param _collateralToken The collateral token for this Morpho Blue market.
     /// @param _oracle The oracle for this Morpho Blue market.
     /// @param _irm The IRM for this Morpho Blue market.
     /// @param _lltv The LLTV for this Morpho Blue market.
@@ -53,9 +53,9 @@ library MorphoBlueConversions {
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
-    /// @param _baseToken The base token underlying the Aave vault.
-    /// @param _vault The Aave vault.
-    /// @param _baseToken The collateral token for this Morpho Blue market.
+    /// @param _vault The Morpho Blue vault.
+    /// @param _baseToken The base token underlying the Morpho Blue vault.
+    /// @param _collateralToken The collateral token for this Morpho Blue market.
     /// @param _oracle The oracle for this Morpho Blue market.
     /// @param _irm The IRM for this Morpho Blue market.
     /// @param _lltv The LLTV for this Morpho Blue market.
@@ -87,8 +87,9 @@ library MorphoBlueConversions {
     }
 
     /// @dev Gets the Morpho Blue supply balances after accruing interest.
-    /// @param _vault The Aave vault.
-    /// @param _baseToken The collateral token for this Morpho Blue market.
+    /// @param _vault The Morpho Blue vault.
+    /// @param _baseToken The base token underlying the Morpho Blue vault.
+    /// @param _collateralToken The collateral token for this Morpho Blue market.
     /// @param _oracle The oracle for this Morpho Blue market.
     /// @param _irm The IRM for this Morpho Blue market.
     /// @param _lltv The LLTV for this Morpho Blue market.

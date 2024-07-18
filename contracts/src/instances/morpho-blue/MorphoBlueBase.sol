@@ -67,13 +67,13 @@ abstract contract MorphoBlueBase is HyperdriveBase {
     /// @param _baseAmount The base amount to deposit.
     /// @param _extraData Additional data to pass to the Morpho vault. This
     ///        should be zero if it is unused.
-    /// @return The shares that were minted in the deposit.
-    /// @return The amount of ETH to refund. Since this yield source isn't
+    /// @return sharesMinted The shares that were minted in the deposit.
+    /// @return value The amount of ETH to refund. Since this yield source isn't
     ///         payable, this is always zero.
     function _depositWithBase(
         uint256 _baseAmount,
         bytes calldata _extraData
-    ) internal override returns (uint256, uint256) {
+    ) internal override returns (uint256 sharesMinted, uint256 value) {
         // Take custody of the deposit in base.
         ERC20(address(_baseToken)).safeTransferFrom(
             msg.sender,
@@ -90,7 +90,7 @@ abstract contract MorphoBlueBase is HyperdriveBase {
             address(_vault),
             _baseAmount + 1
         );
-        (, uint256 sharesMinted) = _vault.supply(
+        (, sharesMinted) = _vault.supply(
             MarketParams({
                 loanToken: address(_baseToken),
                 collateralToken: _collateralToken,
@@ -104,7 +104,9 @@ abstract contract MorphoBlueBase is HyperdriveBase {
             _extraData
         );
 
-        return (sharesMinted, 0);
+        // NOTE: Since this yield source isn't payable, the value must be zero.
+        value = 0;
+        return (sharesMinted, value);
     }
 
     /// @dev Deposits with shares are not supported for this integration.

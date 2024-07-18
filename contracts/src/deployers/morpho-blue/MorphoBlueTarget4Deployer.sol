@@ -18,7 +18,7 @@ contract MorphoBlueTarget4Deployer is IHyperdriveTargetDeployer {
     /// @param _extraData The extra data for the Morpho instance. This contains
     ///        the market parameters that weren't specified in the config.
     /// @param _salt The create2 salt used in the deployment.
-    /// @return The address of the newly deployed MorphoBlueTarget3 instance.
+    /// @return The address of the newly deployed MorphoBlueTarget4 instance.
     function deployTarget(
         IHyperdrive.PoolConfig memory _config,
         bytes memory _extraData,
