@@ -263,8 +263,8 @@ contract AaveHyperdriveTest is InstanceTest {
             assertEq(bob.balance, traderBalancesBefore.ETHBalance);
 
             // Ensure that the base balances Hyperdrive base balance doesn't
-            // change and that the trader's base balance decreased by the amount
-            // paid.
+            // change and that the trader's base balance increased by the base
+            // proceeds.
             assertApproxEqAbs(
                 WETH.balanceOf(address(hyperdrive)),
                 hyperdriveBalancesBefore.baseBalance,
