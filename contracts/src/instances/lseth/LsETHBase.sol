@@ -23,7 +23,7 @@ abstract contract LsETHBase is HyperdriveBase {
 
     /// Yield Source ///
 
-    /// @dev Deposits as base asset not supported for this integration.
+    /// @dev Deposits with base are not supported for this integration.
     function _depositWithBase(
         uint256, // unused
         bytes calldata // unused
@@ -45,7 +45,7 @@ abstract contract LsETHBase is HyperdriveBase {
         );
     }
 
-    /// @dev Withdrawals as base asset not supported for this integration.
+    /// @dev Withdrawals with base are not supported for this integration.
     function _withdrawWithBase(
         uint256, // unused
         address, // unused

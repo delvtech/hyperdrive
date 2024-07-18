@@ -1,41 +1,33 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IPool } from "aave/interfaces/IPool.sol";
+import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import { AaveConversions } from "../../instances/aave/AaveConversions.sol";
-import { IAaveHyperdriveDeployerCoordinator } from "../../interfaces/IAaveHyperdriveDeployerCoordinator.sol";
-import { IAToken } from "../../interfaces/IAToken.sol";
+import { MorphoBlueConversions } from "../../instances/morpho-blue/MorphoBlueConversions.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IMorphoBlueHyperdrive } from "../../interfaces/IMorphoBlueHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
-import { AAVE_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
-import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
+import { MORPHO_BLUE_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
 /// @author DELV
-/// @title AaveHyperdriveDeployerCoordinator
-/// @notice The deployer coordinator for the AaveHyperdrive
+/// @title MorphoBlueHyperdriveDeployerCoordinator
+/// @notice The deployer coordinator for the MorphoBlueHyperdrive
 ///         implementation.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract AaveHyperdriveDeployerCoordinator is
-    HyperdriveDeployerCoordinator,
-    IAaveHyperdriveDeployerCoordinator
+contract MorphoBlueHyperdriveDeployerCoordinator is
+    HyperdriveDeployerCoordinator
 {
-    using FixedPointMath for uint256;
     using SafeERC20 for ERC20;
 
     /// @notice The deployer coordinator's kind.
-    string
-        public constant
-        override(
-            HyperdriveDeployerCoordinator,
-            IHyperdriveDeployerCoordinator
-        ) kind = AAVE_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
+    string public constant override kind =
+        MORPHO_BLUE_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
 
     /// @notice Instantiates the deployer coordinator.
     /// @param _name The deployer coordinator's name.
@@ -83,61 +75,79 @@ contract AaveHyperdriveDeployerCoordinator is
         address _lp,
         uint256 _contribution,
         IHyperdrive.Options memory _options
-    ) internal override returns (uint256) {
-        // If base is the deposit asset, the initialization will be paid in the
-        // base token.
-        address token;
-        address baseToken = _hyperdrive.baseToken();
-        if (_options.asBase) {
-            token = baseToken;
-        }
-        // Otherwise, the initialization will be paid in vault shares.
-        else {
-            // The token is the vault shares token.
-            token = _hyperdrive.vaultSharesToken();
-
-            // AToken transfers are in base, so we need to convert from
-            // shares to base.
-            _contribution = convertToBase(
-                IERC20(baseToken),
-                IAToken(token).POOL(),
-                _contribution
-            );
+    ) internal override returns (uint256 value) {
+        // Depositing with shares is not supported.
+        if (!_options.asBase) {
+            revert IHyperdrive.UnsupportedToken();
         }
 
-        // Take custody of the contribution and approve Hyperdrive to pull the
-        // tokens.
-        ERC20(token).safeTransferFrom(_lp, address(this), _contribution);
-        ERC20(token).forceApprove(address(_hyperdrive), _contribution);
+        // Transfer base from the LP and approve the Hyperdrive pool.
+        ERC20 baseToken = ERC20(_hyperdrive.baseToken());
+        baseToken.safeTransferFrom(_lp, address(this), _contribution);
+        baseToken.forceApprove(address(_hyperdrive), _contribution);
 
         // This yield source isn't payable, so we should always send 0 value.
         return 0;
     }
 
     /// @notice Convert an amount of vault shares to an amount of base.
-    /// @param _baseToken The base token.
-    /// @param _vault The Aave vault.
+    /// @param _baseToken The base token underlying the Aave vault.
+    /// @param _vault The Morpho Blue contract.
+    /// @param _baseToken The collateral token for this Morpho Blue market.
+    /// @param _oracle The oracle for this Morpho Blue market.
+    /// @param _irm The IRM for this Morpho Blue market.
+    /// @param _lltv The LLTV for this Morpho Blue market.
     /// @param _shareAmount The vault shares amount.
     /// @return The base amount.
     function convertToBase(
+        IMorpho _vault,
         IERC20 _baseToken,
-        IPool _vault,
+        address _collateralToken,
+        address _oracle,
+        address _irm,
+        uint256 _lltv,
         uint256 _shareAmount
     ) public view returns (uint256) {
-        return AaveConversions.convertToBase(_baseToken, _vault, _shareAmount);
+        return
+            MorphoBlueConversions.convertToBase(
+                _vault,
+                _baseToken,
+                _collateralToken,
+                _oracle,
+                _irm,
+                _lltv,
+                _shareAmount
+            );
     }
 
     /// @notice Convert an amount of base to an amount of vault shares.
-    /// @param _baseToken The base token.
-    /// @param _vault The Aave vault.
+    /// @param _baseToken The base token underlying the Aave vault.
+    /// @param _vault The Morpho Blue contract.
+    /// @param _baseToken The collateral token for this Morpho Blue market.
+    /// @param _oracle The oracle for this Morpho Blue market.
+    /// @param _irm The IRM for this Morpho Blue market.
+    /// @param _lltv The LLTV for this Morpho Blue market.
     /// @param _baseAmount The base amount.
-    /// @return The vault shares amount.
+    /// @return The base amount.
     function convertToShares(
+        IMorpho _vault,
         IERC20 _baseToken,
-        IPool _vault,
+        address _collateralToken,
+        address _oracle,
+        address _irm,
+        uint256 _lltv,
         uint256 _baseAmount
     ) public view returns (uint256) {
-        return AaveConversions.convertToShares(_baseToken, _vault, _baseAmount);
+        return
+            MorphoBlueConversions.convertToShares(
+                _vault,
+                _baseToken,
+                _collateralToken,
+                _oracle,
+                _irm,
+                _lltv,
+                _baseAmount
+            );
     }
 
     /// @dev We override the message value check since this integration is
@@ -156,17 +166,15 @@ contract AaveHyperdriveDeployerCoordinator is
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig);
 
-        // Ensure that the vault shares token address is non-zero.
-        if (address(_deployConfig.vaultSharesToken) == address(0)) {
+        // Ensure that the vault shares token address is zero. This makes it
+        // clear that there isn't a vault shares token backing the Morpho Blue
+        // integration.
+        if (address(_deployConfig.vaultSharesToken) != address(0)) {
             revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
         }
 
         // Ensure that the base token address is properly configured.
-        if (
-            address(_deployConfig.baseToken) !=
-            IAToken(address(_deployConfig.vaultSharesToken))
-                .UNDERLYING_ASSET_ADDRESS()
-        ) {
+        if (address(_deployConfig.baseToken) == address(0)) {
             revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
         }
 
@@ -197,19 +205,26 @@ contract AaveHyperdriveDeployerCoordinator is
     }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
-    /// @param _deployConfig The deploy config that will be used to deploy the
-    ///        pool.
+    /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
+    /// @param _extraData The extra data for the Morpho instance. This contains
+    ///        the market parameters that weren't specified in the config.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
         IHyperdrive.PoolDeployConfig memory _deployConfig,
-        bytes memory // unused _extraData
+        bytes memory _extraData
     ) internal view override returns (uint256) {
-        // We calculate the vault share price by converting 1e18 vault shares to
-        // aTokens.
+        IMorphoBlueHyperdrive.MorphoBlueParams memory params = abi.decode(
+            _extraData,
+            (IMorphoBlueHyperdrive.MorphoBlueParams)
+        );
         return
             convertToBase(
+                params.morpho,
                 _deployConfig.baseToken,
-                IAToken(address(_deployConfig.vaultSharesToken)).POOL(),
+                params.collateralToken,
+                params.oracle,
+                params.irm,
+                params.lltv,
                 ONE
             );
     }

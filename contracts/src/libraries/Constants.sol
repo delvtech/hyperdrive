@@ -37,6 +37,9 @@ string constant ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "ERC4626Hyperdriv
 /// @dev The kind of the EzETHHyperdrive deployer coordinator factory.
 string constant EZETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "EzETHHyperdriveDeployerCoordinator";
 
+/// @dev The kind of the MorphoBlueHyperdrive deployer coordinator factory.
+string constant MORPHO_BLUE_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "MorphoBlueHyperdriveDeployerCoordinator";
+
 /// @dev The kind of the LsETHHyperdrive deployer coordinator factory.
 string constant LSETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "LsETHHyperdriveDeployerCoordinator";
 
@@ -57,6 +60,9 @@ string constant EZETH_HYPERDRIVE_KIND = "EzETHHyperdrive";
 
 /// @dev The kind of LsETHHyperdrive.
 string constant LSETH_HYPERDRIVE_KIND = "LsETHHyperdrive";
+
+/// @dev The kind of MorphoBlueHyperdrive.
+string constant MORPHO_BLUE_HYPERDRIVE_KIND = "MorphoBlueHyperdrive";
 
 /// @dev The kind of RETHHyperdrive.
 string constant RETH_HYPERDRIVE_KIND = "RETHHyperdrive";

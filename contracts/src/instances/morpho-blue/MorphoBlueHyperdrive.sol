@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
-import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { {{ name.capitalized }}Base } from "./{{ name.capitalized }}Base.sol";
+import { IMorphoBlueHyperdrive } from "../../interfaces/IMorphoBlueHyperdrive.sol";
+import { MorphoBlueBase } from "./MorphoBlueBase.sol";
 
 ///      ______  __                           _________      _____
 ///      ___  / / /____  ___________________________  /_________(_)__   ______
@@ -49,15 +50,15 @@ import { {{ name.capitalized }}Base } from "./{{ name.capitalized }}Base.sol";
 /// SSSSSSSS                                                                SSSSSSSS
 ///
 /// @author DELV
-/// @title {{ name.capitalized }}Hyperdrive
-/// @notice A Hyperdrive instance that uses a {{ name.capitalized }} vault as the yield source.
+/// @title MorphoBlueHyperdrive
+/// @notice A Hyperdrive instance that uses a MorphoBlue vault as the yield source.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract {{ name.capitalized }}Hyperdrive is Hyperdrive, {{ name.capitalized }}Base {
+contract MorphoBlueHyperdrive is Hyperdrive, MorphoBlueBase {
     using SafeERC20 for ERC20;
 
-    /// @notice Instantiates Hyperdrive with a {{ name.capitalized }} vault as the yield source.
+    /// @notice Instantiates Hyperdrive with a MorphoBlue vault as the yield source.
     /// @param __name The pool's name.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _target0 The target0 address.
@@ -65,6 +66,7 @@ contract {{ name.capitalized }}Hyperdrive is Hyperdrive, {{ name.capitalized }}B
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
     /// @param _target4 The target4 address.
+    /// @param _params The Morpho Blue params.
     constructor(
         string memory __name,
         IHyperdrive.PoolConfig memory _config,
@@ -72,7 +74,8 @@ contract {{ name.capitalized }}Hyperdrive is Hyperdrive, {{ name.capitalized }}B
         address _target1,
         address _target2,
         address _target3,
-        address _target4
+        address _target4,
+        IMorphoBlueHyperdrive.MorphoBlueParams memory _params
     )
         Hyperdrive(
             __name,
@@ -83,15 +86,6 @@ contract {{ name.capitalized }}Hyperdrive is Hyperdrive, {{ name.capitalized }}B
             _target3,
             _target4
         )
-    {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC4626 example provided.
-
-        // Approve the base token with 1 wei. This ensures that all of the
-        // subsequent approvals will be writing to a dirty storage slot.
-        ERC20(address(_config.baseToken)).forceApprove(
-            address(_config.vaultSharesToken),
-            1
-        );
-    }
+        MorphoBlueBase(_params)
+    {}
 }
