@@ -240,6 +240,7 @@ task(
                 await ihyperdrive.read.target1(),
                 await ihyperdrive.read.target2(),
                 await ihyperdrive.read.target3(),
+                await ihyperdrive.read.target4(),
             ];
             console.log("args", ...args.slice(1));
             console.log("targets", ...targets);
