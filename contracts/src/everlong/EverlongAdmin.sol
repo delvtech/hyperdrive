@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IEverlongAdmin } from "contracts/src/interfaces/IEverlongAdmin.sol";
+import { IEverlongAdmin } from "../interfaces/IEverlongAdmin.sol";
 
 /// @author DELV
 /// @title EverlongAdmin

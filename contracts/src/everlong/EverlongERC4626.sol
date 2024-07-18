@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { ERC4626 } from "solady/tokens/ERC4626.sol";
 import { VERSION } from "../libraries/Constants.sol";
 

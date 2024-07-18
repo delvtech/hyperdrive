@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IEverlongPositions } from "contracts/src/interfaces/IEverlongPositions.sol";
+import { IEverlongPositions } from "../interfaces/IEverlongPositions.sol";
 import { DoubleEndedQueue } from "openzeppelin/utils/structs/DoubleEndedQueue.sol";
 
 /// @author DELV
