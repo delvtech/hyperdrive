@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import { ERC4626HyperdriveCoreDeployer } from "contracts/src/deployers/erc4626/ERC4626HyperdriveCoreDeployer.sol";
 import { ERC4626HyperdriveDeployerCoordinator } from "contracts/src/deployers/erc4626/ERC4626HyperdriveDeployerCoordinator.sol";
@@ -30,27 +27,28 @@ import { Lib } from "test/utils/Lib.sol";
 
 // FIXME:
 //
-// 1. [ ] Check the share price at different points in time.
-// 2. [ ] How frequently does SUSDe accrue interest?
-//     - This is a page on Etherscan that shows interest accural: https://etherscan.io/address/0xf2fa332bd83149c66b09b45670bce64746c6b439#tokentxns. SUSDe accrues
-//       interest every 8 hours, and based on that page, it seems like they
-//       are very consistent about paying out this interest.
-// 3. [ ] How does the Ethena cooldown period impact us?
+// 1. [ ] Document the interest accrual mechanism.
+// 2. [ ] How does the Ethena cooldown period impact us?
 contract SUSDeHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
     using stdStorage for StdStorage;
 
+    /// The cooldown error thrown by SUSDe on withdraw.
+    error OperationNotAllowed();
+
+    // The staked USDe contract.
     IERC4626 internal constant SUSDE =
         IERC4626(0x9D39A5DE30e57443BfF2A8307A4256c8797A3497);
 
+    // The USDe contract.
     IERC20 internal constant USDE =
         IERC20(0x4c9EDD5852cd905f086C759E8383e09bff1E68B3);
 
     // Whale accounts.
     address internal USDE_TOKEN_WHALE =
-        address(0x9D39A5DE30e57443BfF2A8307A4256c8797A3497);
+        address(0x42862F48eAdE25661558AFE0A630b132038553D0);
     address[] internal baseTokenWhaleAccounts = [USDE_TOKEN_WHALE];
     address internal SUSDE_TOKEN_WHALE =
         address(0x4139cDC6345aFFbaC0692b43bed4D059Df3e6d65);
@@ -71,20 +69,24 @@ contract SUSDeHyperdriveTest is InstanceTest {
             positionDuration: POSITION_DURATION,
             enableBaseDeposits: true,
             enableShareDeposits: true,
-            enableBaseWithdraws: true,
-            enableShareWithdraws: true
+            enableBaseWithdraws: false,
+            enableShareWithdraws: true,
+            // NOTE: SUSDe currently has a cooldown on withdrawals which
+            // prevents users from withdrawing as base instantaneously. We still
+            // support withdrawing with base since the cooldown can be disabled
+            // in the future.
+            baseWithdrawError: abi.encodeWithSelector(
+                OperationNotAllowed.selector
+            )
         });
 
     /// @dev Instantiates the Instance testing suite with the configuration.
     constructor() InstanceTest(__testConfig) {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
-    function setUp() public override __mainnet_fork(20_276_503) {
+    function setUp() public override __mainnet_fork(20_335_384) {
         // Invoke the Instance testing suite setup.
         super.setUp();
-
-        // FIXME:
-        advanceTime(POSITION_DURATION, 0.5e18);
     }
 
     /// Overrides ///
@@ -111,7 +113,7 @@ contract SUSDeHyperdriveTest is InstanceTest {
         uint256 shareAmount
     ) internal view override returns (uint256) {
         return
-            ERC4626Conversions.convertToShares(
+            ERC4626Conversions.convertToBase(
                 IERC20(address(SUSDE)),
                 shareAmount
             );
@@ -712,7 +714,8 @@ contract SUSDeHyperdriveTest is InstanceTest {
 
     /// Helpers ///
 
-    // FIXME: Test this.
+    // Ethena accrues interest with the `transferInRewards` function. Interest
+    // accrues every 8 hours and vests over the course of the next 8 hours.
     function advanceTime(
         uint256 timeDelta,
         int256 variableRate
@@ -725,12 +728,10 @@ contract SUSDeHyperdriveTest is InstanceTest {
         // updating the USDe balance. We modify this in place to allow negative
         // interest accrual.
         (uint256 totalBase, ) = getSupply();
-        console.log("totalBase = %s", totalBase.toString(18));
         totalBase = variableRate >= 0
             ? totalBase + totalBase.mulDown(uint256(variableRate))
             : totalBase - totalBase.mulDown(uint256(-variableRate));
-        bytes32 balanceLocation = keccak256(abi.encode(address(hyperdrive), 2));
+        bytes32 balanceLocation = keccak256(abi.encode(address(SUSDE), 2));
         vm.store(address(USDE), bytes32(balanceLocation), bytes32(totalBase));
-        console.log("totalBase = %s", totalBase.toString(18));
     }
 }

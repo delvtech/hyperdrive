@@ -90,7 +90,10 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
             enableBaseDeposits: true,
             enableShareDeposits: false,
             enableBaseWithdraws: true,
-            enableShareWithdraws: false
+            enableShareWithdraws: false,
+            baseWithdrawError: abi.encodeWithSelector(
+                IHyperdrive.UnsupportedToken.selector
+            )
         });
 
     /// @dev Instantiates the Instance testing suite with the configuration.

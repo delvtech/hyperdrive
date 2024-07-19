@@ -63,7 +63,8 @@ contract AaveHyperdriveTest is InstanceTest {
             enableBaseDeposits: true,
             enableShareDeposits: true,
             enableBaseWithdraws: true,
-            enableShareWithdraws: true
+            enableShareWithdraws: true,
+            baseWithdrawError: new bytes(0)
         });
 
     /// @dev Instantiates the Instance testing suite with the configuration.

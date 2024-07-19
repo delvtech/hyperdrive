@@ -55,7 +55,8 @@ contract StETHHyperdriveTest is InstanceTest {
             true,
             true,
             false,
-            true
+            true,
+            abi.encodeWithSelector(IHyperdrive.UnsupportedToken.selector)
         );
 
     /// @dev Instantiates the Instance testing suite with the configuration.

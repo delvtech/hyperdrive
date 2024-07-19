@@ -64,7 +64,8 @@ contract RETHHyperdriveTest is InstanceTest {
             false,
             true,
             true,
-            true
+            true,
+            new bytes(0)
         );
 
     /// @dev Instantiates the Instance testing suite with the configuration.
