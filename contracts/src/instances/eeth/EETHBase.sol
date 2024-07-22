@@ -1,0 +1,168 @@
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity 0.8.20;
+
+import { ILiquidityPool } from "etherfi/src/interfaces/ILiquidityPool.sol";
+import { IeETH } from "etherfi/src/interfaces/IeETH.sol";
+import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
+
+/// @author DELV
+/// @title EETHBase
+/// @notice The base contract for the EETH Hyperdrive implementation.
+/// @dev This Hyperdrive implementation is designed to work with standard
+///      EETH vaults. Non-standard implementations may not work correctly
+///      and should be carefully checked.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
+abstract contract EETHBase is HyperdriveBase {
+
+    /// @dev The EtherFi liquidity pool.
+    ILiquidityPool internal immutable _liquidityPool;
+
+    /// @notice Instantiates the EETH Hyperdrive base contract.
+    /// @param __liquidityPool The EtherFi liquidity pool contract.
+    constructor(ILiquidityPool __liquidityPool) {
+        _liquidityPool = __liquidityPool;
+    }
+
+    /// Yield Source ///
+
+    /// @dev Accepts a deposit from the user in base.
+    /// @param _baseAmount The base amount to deposit.
+    /// @param _vaultSharesToken The vault shares token address.
+    /// @return The shares that were minted in the deposit.
+    /// @return The amount of ETH to refund. Since this yield source isn't
+    ///         payable, this is always zero.
+    function _depositWithBase(
+        uint256 _baseAmount,
+        address _vaultSharesToken,
+        bytes calldata // unused
+    ) internal override returns (uint256, uint256) {
+        // Ensure that sufficient ether was provided.
+        if (msg.value < _baseAmount) {
+            revert IHyperdrive.TransferFailed();
+        }
+
+        // If the user sent more ether than the amount specified, refund the
+        // excess ether.
+        unchecked {
+            refund = msg.value - _baseAmount;
+        }
+
+        // Deposit the base into the yield source.
+        sharesMinted = ILiquidityPool(address(_vaultSharesToken)).deposit{
+            value: _baseAmount
+        }(_feeCollector);
+
+        return (sharesMinted, refund);
+    }
+
+    /// @dev Process a deposit in vault shares.
+    /// @param _shareAmount The vault shares amount to deposit.
+    function _depositWithShares(
+        uint256 _shareAmount,
+        bytes calldata // unused _extraData
+    ) internal override {
+
+        // Convert the vault shares to base.
+        uint256 baseAmount = _convertToBase(_shareAmount);
+
+        // TODO: Will this earn etherfi points? Do we need a referral code?
+
+        // NOTE: The eETH transfer function converts from base to shares under 
+        // the hood using `sharesForAmount(_amount)`. This can be found here:
+        //   https://github.com/etherfi-protocol/smart-contracts/blob/master/src/LiquidityPool.sol#L574
+        // Take custody of the deposit in vault shares.
+        IeETH(address(_vaultSharesToken)).transferFrom(
+            msg.sender,
+            address(this),
+            baseAmount
+        );
+    }
+
+    /// @dev Process a withdrawal in base and send the proceeds to the
+    ///      destination.
+    /// @param _shareAmount The amount of vault shares to withdraw.
+    /// @param _destination The destination of the withdrawal.
+    /// @return amountWithdrawn The amount of base withdrawn.
+    function _withdrawWithBase(
+        uint256 _shareAmount,
+        address _destination,
+        bytes calldata // unused
+    ) internal override returns (uint256 amountWithdrawn) {
+        // eETH withdrawals aren't necessarily instantaneous. Users that want
+        // to withdraw can manage their withdrawal separately.
+        revert IHyperdrive.UnsupportedToken();
+    }
+
+    /// @dev Process a withdrawal in vault shares and send the proceeds to the
+    ///      destination.
+    /// @param _shareAmount The amount of vault shares to withdraw.
+    /// @param _destination The destination of the withdrawal.
+    function _withdrawWithShares(
+        uint256 _shareAmount,
+        address _destination,
+        bytes calldata // unused
+    ) internal override {
+        
+        // Convert the vault shares to base.
+        uint256 baseAmount = _convertToBase(_shareAmount);
+
+        // NOTE: The eETH transfer function converts from base to shares under
+        // the hood using `sharesForAmount(_amount)`.
+        // Transfer the stETH shares to the destination.
+        IeETH(address(_vaultSharesToken)).transfer(
+            _destination,
+            baseAmount
+        );
+
+    }
+
+    /// @dev Convert an amount of vault shares to an amount of base.
+    /// @param _shareAmount The vault shares amount.
+    /// @return The base amount.
+    function _convertToBase(
+        uint256 _shareAmount
+    ) internal view override returns (uint256) {
+        return
+            EETHConversions.convertToBase(
+                _liquidityPool,
+                _shareAmount
+            );
+    }
+
+    /// @dev Convert an amount of base to an amount of vault shares.
+    /// @param _baseAmount The base amount.
+    /// @return The vault shares amount.
+    function _convertToShares(
+        uint256 _baseAmount
+    ) internal view override returns (uint256) {
+        return
+            EETHConversions.convertToShares(
+                _liquidityPool,
+                _shareAmount
+            );
+    }
+
+    /// @dev Gets the total amount of shares held by the pool in the yield
+    ///      source.
+    /// @return shareAmount The total amount of shares.
+    function _totalShares()
+        internal
+        view
+        override
+        returns (uint256 shareAmount)
+    {
+        return _vaultSharesToken.balanceOf(address(this));
+    }
+
+
+    /// @dev We override the message value check since this integration is
+    ///      not payable.
+    function _checkMessageValue() internal view override {
+        if (msg.value != 0) {
+            revert IHyperdrive.NotPayable();
+        }
+    }
+}

@@ -49,6 +49,9 @@ string constant STETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "StETHHyperdriveDep
 /// @dev The kind of AaveHyperdrive.
 string constant AAVE_HYPERDRIVE_KIND = "AaveHyperdrive";
 
+/// @dev The kind of EETHHyperdrive.
+string constant EETH_HYPERDRIVE_KIND = "EETHHyperdrive";
+
 /// @dev The kind of ERC4626Hyperdrive.
 string constant ERC4626_HYPERDRIVE_KIND = "ERC4626Hyperdrive";
 
