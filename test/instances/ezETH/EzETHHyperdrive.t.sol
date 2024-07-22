@@ -93,6 +93,12 @@ contract EzETHHyperdriveTest is InstanceTest {
 
     /// Overrides ///
 
+    /// @dev Gets the extra data used to deploy Hyperdrive instances.
+    /// @return The extra data.
+    function getExtraData() internal pure override returns (bytes memory) {
+        return new bytes(0);
+    }
+
     /// @dev Converts base amount to the equivalent about in EzETH.
     function convertToShares(
         uint256 baseAmount
@@ -166,62 +172,35 @@ contract EzETHHyperdriveTest is InstanceTest {
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
     ) internal view override {
+        // Base deposits are not supported for this instance.
         if (asBase) {
-            // Ensure that the amount of pooled ether increased by the base paid.
-            (, uint256 totalPooledEther, ) = getSharePrice();
-            assertEq(totalPooledEther, totalBaseSupplyBefore + basePaid);
-
-            // Ensure that the ETH balances were updated correctly.
-            assertEq(
-                address(hyperdrive).balance,
-                hyperdriveBalancesBefore.ETHBalance
-            );
-            assertEq(bob.balance, traderBalancesBefore.ETHBalance - basePaid);
-
-            // Ensure ezETH shares were updated correctly.
-            assertEq(
-                EZETH.balanceOf(trader),
-                traderBalancesBefore.sharesBalance
-            );
-
-            // Ensure that the ezETH shares were updated correctly.
-            uint256 expectedShares = RENZO_ORACLE.calculateMintAmount(
-                totalBaseSupplyBefore,
-                basePaid,
-                totalSharesBefore
-            );
-            assertEq(EZETH.totalSupply(), totalSharesBefore + expectedShares);
-            assertEq(
-                EZETH.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.sharesBalance + expectedShares
-            );
-            assertEq(EZETH.balanceOf(bob), traderBalancesBefore.sharesBalance);
-        } else {
-            // Ensure that the amount of pooled ether stays the same.
-            (, uint256 totalPooledEther, ) = getSharePrice();
-            assertEq(totalPooledEther, totalBaseSupplyBefore);
-
-            // Ensure that the ETH balances were updated correctly.
-            assertEq(
-                address(hyperdrive).balance,
-                hyperdriveBalancesBefore.ETHBalance
-            );
-            assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-            // Ensure that the ezETH shares were updated correctly.
-            uint256 expectedShares = convertToShares(basePaid);
-            assertEq(EZETH.totalSupply(), totalSharesBefore);
-            assertApproxEqAbs(
-                EZETH.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.sharesBalance + expectedShares,
-                2 // Higher tolerance due to rounding when converting back into shares.
-            );
-            assertApproxEqAbs(
-                EZETH.balanceOf(trader),
-                traderBalancesBefore.sharesBalance - expectedShares,
-                2 // Higher tolerance due to rounding when converting back into shares.
-            );
+            revert IHyperdrive.UnsupportedToken();
         }
+
+        // Ensure that the amount of pooled ether stays the same.
+        (, uint256 totalPooledEther, ) = getSharePrice();
+        assertEq(totalPooledEther, totalBaseSupplyBefore);
+
+        // Ensure that the ETH balances were updated correctly.
+        assertEq(
+            address(hyperdrive).balance,
+            hyperdriveBalancesBefore.ETHBalance
+        );
+        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
+
+        // Ensure that the ezETH shares were updated correctly.
+        uint256 expectedShares = convertToShares(basePaid);
+        assertEq(EZETH.totalSupply(), totalSharesBefore);
+        assertApproxEqAbs(
+            EZETH.balanceOf(address(hyperdrive)),
+            hyperdriveBalancesBefore.sharesBalance + expectedShares,
+            2 // Higher tolerance due to rounding when converting back into shares.
+        );
+        assertApproxEqAbs(
+            EZETH.balanceOf(trader),
+            traderBalancesBefore.sharesBalance - expectedShares,
+            2 // Higher tolerance due to rounding when converting back into shares.
+        );
     }
 
     /// @dev Verifies that withdrawal accounting is correct when closing positions.

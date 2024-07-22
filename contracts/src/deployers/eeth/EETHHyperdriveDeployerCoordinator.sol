@@ -1,29 +1,34 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { IERC20 } from "../../interfaces/IERC20.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import { ITestETH } from "../../interfaces/ITestETH.sol";
+import { IeETH } from "etherfi/src/interfaces/IeETH.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { ITestETHHyperdrive } from "../../interfaces/ITestETHHyperdrive.sol";
+import { IEETHHyperdrive } from "../../interfaces/IEETHHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
-import { TEST_ETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
+import { EETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
+import { ILiquidityPool } from "etherfi/src/interfaces/ILiquidityPool.sol";
+import { EETHConversions } from "../../instances/eeth/EETHConversions.sol";
 
 /// @author DELV
-/// @title TestETHHyperdriveDeployerCoordinator
-/// @notice The deployer coordinator for the TestETHHyperdrive
+/// @title EETHHyperdriveDeployerCoordinator
+/// @notice The deployer coordinator for the EETHHyperdrive
 ///         implementation.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract TestETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
-    using SafeERC20 for ERC20;
+contract EETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+
+    /// @notice The Etherfi contract.
+    ILiquidityPool public immutable liquidityPool;
 
     /// @notice The deployer coordinator's kind.
     string public constant override kind =
-        TEST_ETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
+        EETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
 
     /// @notice Instantiates the deployer coordinator.
     /// @param _name The deployer coordinator's name.
@@ -34,6 +39,7 @@ contract TestETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
     /// @param _target4Deployer The target4 deployer.
+    /// @param _liquidityPool The liquidity pool contract.
     constructor(
         string memory _name,
         address _factory,
@@ -42,7 +48,8 @@ contract TestETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _target1Deployer,
         address _target2Deployer,
         address _target3Deployer,
-        address _target4Deployer
+        address _target4Deployer,
+        ILiquidityPool _liquidityPool
     )
         HyperdriveDeployerCoordinator(
             _name,
@@ -54,7 +61,9 @@ contract TestETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             _target3Deployer,
             _target4Deployer
         )
-    {}
+    {
+        liquidityPool = _liquidityPool;
+    }
 
     /// @dev Prepares the coordinator for initialization by drawing funds from
     ///      the LP, if necessary.
@@ -87,17 +96,41 @@ contract TestETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         // Otherwise, transfer vault shares from the LP and approve the
         // Hyperdrive pool.
         else {
-            // ****************************************************************
-            // FIXME: Implement this for new instances. ERC20 example provided.
-            // Take custody of the contribution and approve Hyperdrive to pull
-            // the tokens.
             address token = _hyperdrive.vaultSharesToken();
-            ERC20(token).safeTransferFrom(_lp, address(this), _contribution);
-            ERC20(token).forceApprove(address(_hyperdrive), _contribution);
-            // ****************************************************************
-        }
 
+            // Convert the vault shares to base.
+            uint256 baseContribution = convertToBase(IERC20(token),_contribution);
+
+            // NOTE: The eETH transferFrom function converts from base to shares under 
+            // the hood using `sharesForAmount(_amount)`.
+            IeETH(token).transferFrom(_lp, address(this), baseContribution);
+
+            //TODO: Should I check the return value and revert if it fails?
+            IeETH(token).approve(address(_hyperdrive), _contribution);
+        }
         return value;
+    }
+
+    /// @notice Convert an amount of vault shares to an amount of base.
+    /// @param _vaultSharesToken The vault shares asset.
+    /// @param _shareAmount The vault shares amount.
+    /// @return The base amount.
+    function convertToBase(
+        IERC20 _vaultSharesToken,
+        uint256 _shareAmount
+    ) public view returns (uint256) {
+        return EETHConversions.convertToBase(liquidityPool, _vaultSharesToken, _shareAmount);
+    }
+
+    /// @notice Convert an amount of base to an amount of vault shares.
+    /// @param _vaultSharesToken The vault shares asset.
+    /// @param _baseAmount The base amount.
+    /// @return The vault shares amount.
+    function convertToShares(
+        IERC20 _vaultSharesToken,
+        uint256 _baseAmount
+    ) public view returns (uint256) {
+        return EETHConversions.convertToShares(liquidityPool, _vaultSharesToken, _baseAmount);
     }
 
 
@@ -133,12 +166,9 @@ contract TestETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
-        IHyperdrive.PoolDeployConfig memory, // unused _deployConfig
-        bytes memory // unused _extraData
-    ) internal pure override returns (uint256) {
-        // ****************************************************************
-        // FIXME:  Implement this for new instances.
-        return ONE;
-        // ****************************************************************
+        IHyperdrive.PoolDeployConfig memory _deployConfig,
+        bytes memory // unused extra data
+    ) internal view override returns (uint256) {
+        return convertToBase(_deployConfig.vaultSharesToken, ONE);
     }
 }

@@ -5,6 +5,8 @@ import { ILiquidityPool } from "etherfi/src/interfaces/ILiquidityPool.sol";
 import { IeETH } from "etherfi/src/interfaces/IeETH.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
+import { EETHConversions } from "./EETHConversions.sol";
+
 
 /// @author DELV
 /// @title EETHBase
@@ -18,27 +20,25 @@ import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 abstract contract EETHBase is HyperdriveBase {
 
     /// @dev The EtherFi liquidity pool.
-    ILiquidityPool internal immutable _liquidityPool;
+    ILiquidityPool internal immutable liquidityPool;
 
     /// @notice Instantiates the EETH Hyperdrive base contract.
-    /// @param __liquidityPool The EtherFi liquidity pool contract.
-    constructor(ILiquidityPool __liquidityPool) {
-        _liquidityPool = __liquidityPool;
+    /// @param _liquidityPool The EtherFi liquidity pool contract.
+    constructor(ILiquidityPool _liquidityPool) {
+        liquidityPool = _liquidityPool;
     }
 
     /// Yield Source ///
 
     /// @dev Accepts a deposit from the user in base.
     /// @param _baseAmount The base amount to deposit.
-    /// @param _vaultSharesToken The vault shares token address.
-    /// @return The shares that were minted in the deposit.
-    /// @return The amount of ETH to refund. Since this yield source isn't
+    /// @return sharesMinted The shares that were minted in the deposit.
+    /// @return refund The amount of ETH to refund. Since this yield source isn't
     ///         payable, this is always zero.
     function _depositWithBase(
         uint256 _baseAmount,
-        address _vaultSharesToken,
         bytes calldata // unused
-    ) internal override returns (uint256, uint256) {
+    ) internal override returns (uint256 sharesMinted, uint256 refund) {
         // Ensure that sufficient ether was provided.
         if (msg.value < _baseAmount) {
             revert IHyperdrive.TransferFailed();
@@ -68,29 +68,26 @@ abstract contract EETHBase is HyperdriveBase {
         // Convert the vault shares to base.
         uint256 baseAmount = _convertToBase(_shareAmount);
 
-        // TODO: Will this earn etherfi points? Do we need a referral code?
-
-        // NOTE: The eETH transfer function converts from base to shares under 
-        // the hood using `sharesForAmount(_amount)`. This can be found here:
-        //   https://github.com/etherfi-protocol/smart-contracts/blob/master/src/LiquidityPool.sol#L574
+        // NOTE: The eETH transferFrom function converts from base to shares under 
+        // the hood using `sharesForAmount(_amount)`.
         // Take custody of the deposit in vault shares.
         IeETH(address(_vaultSharesToken)).transferFrom(
             msg.sender,
             address(this),
             baseAmount
         );
+
+        //TODO: Should I check the return value and revert if it fails?
+
     }
 
     /// @dev Process a withdrawal in base and send the proceeds to the
     ///      destination.
-    /// @param _shareAmount The amount of vault shares to withdraw.
-    /// @param _destination The destination of the withdrawal.
-    /// @return amountWithdrawn The amount of base withdrawn.
     function _withdrawWithBase(
-        uint256 _shareAmount,
-        address _destination,
+        uint256, // unused
+        address, // unused
         bytes calldata // unused
-    ) internal override returns (uint256 amountWithdrawn) {
+    ) internal pure override returns (uint256 ) {
         // eETH withdrawals aren't necessarily instantaneous. Users that want
         // to withdraw can manage their withdrawal separately.
         revert IHyperdrive.UnsupportedToken();
@@ -117,6 +114,8 @@ abstract contract EETHBase is HyperdriveBase {
             baseAmount
         );
 
+        //TODO: Should I check the return value and revert if it fails?
+
     }
 
     /// @dev Convert an amount of vault shares to an amount of base.
@@ -127,7 +126,8 @@ abstract contract EETHBase is HyperdriveBase {
     ) internal view override returns (uint256) {
         return
             EETHConversions.convertToBase(
-                _liquidityPool,
+                liquidityPool,
+                _vaultSharesToken,
                 _shareAmount
             );
     }
@@ -140,8 +140,9 @@ abstract contract EETHBase is HyperdriveBase {
     ) internal view override returns (uint256) {
         return
             EETHConversions.convertToShares(
-                _liquidityPool,
-                _shareAmount
+                liquidityPool,
+                _vaultSharesToken,
+                _baseAmount
             );
     }
 

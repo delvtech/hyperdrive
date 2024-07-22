@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { ILiquidityPool } from ".etherfi/src/interfaces/ILendingPool.sol";
-import { IeETH } from ".etherfi/src/interfaces/IeETH.sol";
+import { IERC20 } from "../../interfaces/IERC20.sol";
+import { ILiquidityPool } from "etherfi/src/interfaces/ILiquidityPool.sol";
+import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
+import { IeETH } from "etherfi/src/interfaces/IeETH.sol";
 
 /// @author DELV
 /// @title EETHConversions
@@ -11,6 +13,7 @@ import { IeETH } from ".etherfi/src/interfaces/IeETH.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 library EETHConversions {
+    using FixedPointMath for uint256;
     /// @dev Convert an amount of vault shares to an amount of base.
     /// @param _liquidityPool The Etherfi liquidity pool contract.
     /// @param _eETH The eETH contract.
@@ -18,10 +21,10 @@ library EETHConversions {
     /// @return The base amount.
     function convertToBase(
         ILiquidityPool _liquidityPool,
-        IeETH _eETH,
+        IERC20 _eETH,
         uint256 _shareAmount
     ) internal view returns (uint256) {
-        uint256 totalShares = eETH.totalShares();
+        uint256 totalShares = IeETH(address(_eETH)).totalShares();
         if (totalShares == 0) {
             return 0;
         }
@@ -30,7 +33,7 @@ library EETHConversions {
         // `amountForShare(uint256 _share)` found in the LiquidityPool
         //  contract.
         // NOTE: Round down so that the output is an underestimate.
-        return _share.mulDown(_liquidityPool.getTotalPooledEther())
+        return _shareAmount.mulDown(_liquidityPool.getTotalPooledEther())
                      .divDown(totalShares);
     }
 
@@ -41,7 +44,7 @@ library EETHConversions {
     /// @return The vault shares amount.
     function convertToShares(
         ILiquidityPool _liquidityPool,
-        IeETH _eETH,
+        IERC20 _eETH,
         uint256 _baseAmount
     ) internal view returns (uint256) {
         uint256 totalPooledEther = _liquidityPool.getTotalPooledEther();
@@ -53,7 +56,7 @@ library EETHConversions {
         // `sharesForAmount(uint256 _amount)` found in the LiquidityPool
         // contract.
         // NOTE: Round down so that the output is an underestimate.
-        return _baseAmount.mulDown(_eETH.totalShares())
+        return _baseAmount.mulDown(IeETH(address(_eETH)).totalShares())
                           .divDown(totalPooledEther);
     }
 }

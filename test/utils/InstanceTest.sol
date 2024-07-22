@@ -125,22 +125,46 @@ abstract contract InstanceTest is HyperdriveTest {
             DEFAULT_DEPLOYMENT_ID, // Deployment Id
             DEFAULT_DEPLOYMENT_SALT, // Deployment Salt
             contribution, // Contribution
-            false // asBase
+            !config.enableShareDeposits // asBase
         );
 
-        config.vaultSharesToken.approve(address(hyperdrive), 100_000e18);
-        vm.startPrank(bob);
-        config.vaultSharesToken.approve(address(hyperdrive), 100_000e18);
+        // If base deposits are supported, approve a large amount of shares for
+        // Alice and Bob.
+        if (config.enableBaseDeposits && !isBaseETH) {
+            config.baseToken.approve(address(hyperdrive), 100_000e18);
+            vm.startPrank(bob);
+            config.baseToken.approve(address(hyperdrive), 100_000e18);
+        }
+
+        // If share deposits are supported, approve a large amount of shares for
+        // Alice and Bob.
+        if (config.enableShareDeposits) {
+            config.vaultSharesToken.approve(address(hyperdrive), 100_000e18);
+            vm.startPrank(bob);
+            config.vaultSharesToken.approve(address(hyperdrive), 100_000e18);
+        }
 
         // Ensure that Alice received the correct amount of LP tokens. She should
         // receive LP shares totaling the amount of shares that she contributed
         // minus the shares set aside for the minimum share reserves and the
         // zero address's initial LP contribution.
-        assertApproxEqAbs(
-            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
-            contribution - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
-            config.shareTolerance
-        );
+        if (config.enableShareDeposits) {
+            assertApproxEqAbs(
+                hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
+                contribution -
+                    2 *
+                    hyperdrive.getPoolConfig().minimumShareReserves,
+                config.shareTolerance
+            );
+        } else {
+            assertApproxEqAbs(
+                hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
+                convertToShares(contribution) -
+                    2 *
+                    hyperdrive.getPoolConfig().minimumShareReserves,
+                config.shareTolerance
+            );
+        }
 
         // Start recording event logs.
         vm.recordLogs();
@@ -173,7 +197,7 @@ abstract contract InstanceTest is HyperdriveTest {
                 deploymentId,
                 deployerCoordinator,
                 poolConfig,
-                new bytes(0),
+                getExtraData(),
                 FIXED_RATE,
                 FIXED_RATE,
                 i,
@@ -182,10 +206,11 @@ abstract contract InstanceTest is HyperdriveTest {
         }
 
         // Alice gives approval to the deployer coordinator to fund the market.
-        if (config.enableBaseDeposits && !isBaseETH) {
+        if (asBase && !isBaseETH) {
             config.baseToken.approve(deployerCoordinator, 100_000e18);
+        } else if (!asBase) {
+            config.vaultSharesToken.approve(deployerCoordinator, 100_000e18);
         }
-        config.vaultSharesToken.approve(deployerCoordinator, 100_000e18);
 
         // We expect the deployAndInitialize to fail with an
         // UnsupportedToken error if depositing with base are not supported.
@@ -216,7 +241,7 @@ abstract contract InstanceTest is HyperdriveTest {
             deployerCoordinator,
             config.name,
             poolConfig,
-            new bytes(0),
+            getExtraData(),
             contribution,
             FIXED_RATE,
             FIXED_RATE,
@@ -318,6 +343,10 @@ abstract contract InstanceTest is HyperdriveTest {
     function deployCoordinator(
         address _factory
     ) internal virtual returns (address);
+
+    /// @dev Gets the extra data used to deploy Hyperdrive instances.
+    /// @return The extra data.
+    function getExtraData() internal view virtual returns (bytes memory);
 
     /// @dev A virtual function that converts an amount in terms of the base token
     ///      to equivalent amount in shares.
@@ -426,6 +455,11 @@ abstract contract InstanceTest is HyperdriveTest {
     function test__deployAndInitialize__asBase() external virtual {
         uint256 aliceBalanceBefore = address(alice).balance;
 
+        // Early termination if base deposits are not supported.
+        if (!config.enableBaseDeposits) {
+            return;
+        }
+
         // Contribution in terms of base.
         uint256 contribution = 1_000e18;
 
@@ -440,11 +474,6 @@ abstract contract InstanceTest is HyperdriveTest {
             contribution, // Contribution
             true // asBase
         );
-
-        // Early termination if base deposits are not supported.
-        if (!config.enableBaseDeposits) {
-            return;
-        }
 
         // If base deposits are enabled we verify some assertions.
         if (isBaseETH) {
@@ -461,9 +490,9 @@ abstract contract InstanceTest is HyperdriveTest {
         // zero address's initial LP contribution.
         assertApproxEqAbs(
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
-            contribution.divDown(
-                hyperdrive.getPoolConfig().initialVaultSharePrice
-            ) - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
+            hyperdrive.convertToShares(contribution) -
+                2 *
+                hyperdrive.getPoolConfig().minimumShareReserves,
             config.shareTolerance // Custom share tolerance per instance.
         );
 
@@ -488,7 +517,7 @@ abstract contract InstanceTest is HyperdriveTest {
             FIXED_RATE,
             true,
             hyperdrive.getPoolConfig().minimumShareReserves,
-            new bytes(0),
+            getExtraData(),
             config.shareTolerance
         );
     }
@@ -497,6 +526,11 @@ abstract contract InstanceTest is HyperdriveTest {
     ///      by the share token.
     function test__deployAndInitialize__asShares() external {
         uint256 aliceBalanceBefore = address(alice).balance;
+
+        // Early termination if share deposits are not supported.
+        if (!config.enableShareDeposits) {
+            return;
+        }
 
         // Contribution in terms of base.
         uint256 contribution = 1_000e18;
@@ -511,11 +545,6 @@ abstract contract InstanceTest is HyperdriveTest {
             contributionShares, // Contribution
             false // asBase
         );
-
-        // Early termination if share deposits are not supported.
-        if (!config.enableShareDeposits) {
-            return;
-        }
 
         // Ensure Alice's ETH balance remains the same.
         assertEq(address(alice).balance, aliceBalanceBefore);
@@ -562,6 +591,11 @@ abstract contract InstanceTest is HyperdriveTest {
     ///      share deposits are not supported.
     /// @param basePaid Amount in terms of base to open a long.
     function test_open_long_with_shares(uint256 basePaid) external {
+        // Early termination if share deposits are not supported.
+        if (!config.enableShareDeposits) {
+            return;
+        }
+
         // Get balance information before opening a long.
         (
             uint256 totalBaseSupplyBefore,
@@ -603,11 +637,6 @@ abstract contract InstanceTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
-
-        // Early termination if share deposits are not supported.
-        if (!config.enableShareDeposits) {
-            return;
-        }
 
         // Ensure that Bob received the correct amount of bonds.
         assertEq(
@@ -734,6 +763,11 @@ abstract contract InstanceTest is HyperdriveTest {
         uint256 basePaid,
         int256 variableRate
     ) external virtual {
+        // Early termination if share withdrawals are not supported.
+        if (!config.enableShareWithdraws) {
+            return;
+        }
+
         // Get Bob's account balances before opening the long.
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
 
@@ -819,22 +853,40 @@ abstract contract InstanceTest is HyperdriveTest {
 
         // Calculate the maximum amount of basePaid we can test. The limit is
         // either the maximum long that Hyperdrive can open or the amount of the
-        // share token the trader has.
+        // base token the trader has.
         uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
-        uint256 maxShareAmount = bobBalancesBefore.sharesBalance;
 
-        // We normalize the basePaid variable within a valid range the market can support.
-        basePaid = basePaid.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            maxLongAmount > maxShareAmount ? maxShareAmount : maxLongAmount
-        );
+        // Open a long in either base or shares, depending on which asset is
+        // supported.
+        uint256 maturityTime;
+        uint256 longAmount;
+        if (config.enableBaseDeposits) {
+            // We normalize the basePaid variable within a valid range the market
+            // can support.
+            uint256 maxBaseAmount = bobBalancesBefore.baseBalance;
+            basePaid = basePaid.normalizeToRange(
+                2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+                maxLongAmount > maxBaseAmount ? maxBaseAmount : maxLongAmount
+            );
 
-        // Bob opens a long with the share token.
-        (uint256 maturityTime, uint256 longAmount) = openLong(
-            bob,
-            convertToShares(basePaid),
-            false
-        );
+            // Bob opens a long with the base token.
+            (maturityTime, longAmount) = openLong(bob, basePaid);
+        } else {
+            // We normalize the sharesPaid variable within a valid range the market
+            // can support.
+            uint256 maxSharesAmount = bobBalancesBefore.sharesBalance;
+            basePaid = basePaid.normalizeToRange(
+                2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+                maxLongAmount
+            );
+
+            // Bob opens a long with the share token.
+            (maturityTime, longAmount) = openLong(
+                bob,
+                convertToShares(basePaid).min(maxSharesAmount),
+                false
+            );
+        }
 
         // The term passes and some interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
@@ -987,6 +1039,11 @@ abstract contract InstanceTest is HyperdriveTest {
     ///      base deposits are not supported.
     /// @param shortAmount Amount of bonds to short.
     function test_open_short_with_shares(uint256 shortAmount) external {
+        // Early termination if base deposits are not supported.
+        if (!config.enableShareDeposits) {
+            return;
+        }
+
         // Get some balance information before opening a short.
         (
             uint256 totalBaseSupplyBefore,
@@ -1020,11 +1077,6 @@ abstract contract InstanceTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
-
-        // Early termination if base deposits are not supported.
-        if (!config.enableShareDeposits) {
-            return;
-        }
 
         // Ensure that Bob received the correct amount of shorted bonds.
         assertEq(
@@ -1080,12 +1132,17 @@ abstract contract InstanceTest is HyperdriveTest {
             int256(FIXED_RATE)
         );
 
-        // Bob opens a short with the share token.
+        // Bob opens a short with the base token if base deposits are supported
+        // and the shares token if they aren't.
         shortAmount = shortAmount.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
-        (uint256 maturityTime, ) = openShort(bob, shortAmount, false);
+        (uint256 maturityTime, ) = openShort(
+            bob,
+            shortAmount,
+            config.enableBaseDeposits
+        );
 
         // The term passes and interest accrues.
         uint256 startingVaultSharePrice = hyperdrive
@@ -1131,7 +1188,6 @@ abstract contract InstanceTest is HyperdriveTest {
 
         // Convert proceeds to the base token and ensure the proper about of
         // interest was credited to Bob.
-        // uint256 baseProceeds = convertToBase(shareProceeds);
         assertLe(baseProceeds, expectedBaseProceeds + 10);
         assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 100);
 
@@ -1154,6 +1210,11 @@ abstract contract InstanceTest is HyperdriveTest {
         uint256 shortAmount,
         int256 variableRate
     ) external virtual {
+        // Early termination if share withdrawals are not supported.
+        if (!config.enableShareWithdraws) {
+            return;
+        }
+
         // Accrue interest for a term to ensure that the share price is greater
         // than one.
         advanceTime(
@@ -1200,11 +1261,6 @@ abstract contract InstanceTest is HyperdriveTest {
             false
         );
 
-        // Early termination if share withdraws are not supported.
-        if (!config.enableShareWithdraws) {
-            return;
-        }
-
         // Convert proceeds to the base token and ensure the proper about of
         // interest was credited to Bob.
         uint256 baseProceeds = convertToBase(shareProceeds);
@@ -1226,10 +1282,14 @@ abstract contract InstanceTest is HyperdriveTest {
     /// Sweep ///
 
     function test_sweep_failure_directSweep() external {
-        vm.startPrank(factory.sweepCollector());
+        // Return early if the vault shares token is zero.
+        address vaultSharesToken = hyperdrive.vaultSharesToken();
+        if (vaultSharesToken == address(0)) {
+            return;
+        }
 
         // Fails to sweep the vault shares token.
-        address vaultSharesToken = hyperdrive.vaultSharesToken();
+        vm.startPrank(factory.sweepCollector());
         vm.expectRevert(IHyperdrive.SweepFailed.selector);
         hyperdrive.sweep(IERC20(vaultSharesToken));
     }

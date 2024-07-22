@@ -77,6 +77,12 @@ contract AaveHyperdriveTest is InstanceTest {
 
     /// Overrides ///
 
+    /// @dev Gets the extra data used to deploy Hyperdrive instances.
+    /// @return The extra data.
+    function getExtraData() internal pure override returns (bytes memory) {
+        return new bytes(0);
+    }
+
     /// @dev Converts base amount to the equivalent about in shares.
     function convertToShares(
         uint256 baseAmount
