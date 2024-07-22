@@ -15,6 +15,8 @@ import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
+import "forge-std/console2.sol";
+
 /// @author DELV
 /// @title InstanceTest
 /// @notice The base contract for the instance testing suite.
@@ -81,7 +83,9 @@ abstract contract InstanceTest is HyperdriveTest {
     /// @dev Inherits from HyperdriveTest and deploys the
     ///      Hyperdrive factory, deployer coordinator, and targets.
     function setUp() public virtual override {
+        console2.log("1");
         super.setUp();
+
 
         // Initial contribution.
         uint256 contribution = 5_000e18;
@@ -92,6 +96,7 @@ abstract contract InstanceTest is HyperdriveTest {
         address[] memory accounts = new address[](2);
         accounts[0] = alice;
         accounts[1] = bob;
+        console2.log("2");
         for (uint256 i = 0; i < config.baseTokenWhaleAccounts.length; i++) {
             fundAccounts(
                 address(hyperdrive),
@@ -100,6 +105,7 @@ abstract contract InstanceTest is HyperdriveTest {
                 accounts
             );
         }
+        console2.log("3");
         for (
             uint256 i = 0;
             i < config.vaultSharesTokenWhaleAccounts.length;
@@ -112,14 +118,14 @@ abstract contract InstanceTest is HyperdriveTest {
                 accounts
             );
         }
-
+        console2.log("4");
         // Deploy the Hyperdrive Factory contract.
         deployFactory();
-
+        console2.log("5");
         // Set the deployer coordinator address and add to the factory.
         deployerCoordinator = deployCoordinator(address(factory));
         factory.addDeployerCoordinator(deployerCoordinator);
-
+        console2.log("6");
         // Deploy all Hyperdrive contracts using deployer coordinator contract.
         deployHyperdrive(
             DEFAULT_DEPLOYMENT_ID, // Deployment Id
@@ -127,7 +133,7 @@ abstract contract InstanceTest is HyperdriveTest {
             contribution, // Contribution
             !config.enableShareDeposits // asBase
         );
-
+        console2.log("7");
         // If base deposits are supported, approve a large amount of shares for
         // Alice and Bob.
         if (config.enableBaseDeposits && !isBaseETH) {
