@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import { ERC4626HyperdriveCoreDeployer } from "contracts/src/deployers/erc4626/ERC4626HyperdriveCoreDeployer.sol";
 import { ERC4626HyperdriveDeployerCoordinator } from "contracts/src/deployers/erc4626/ERC4626HyperdriveDeployerCoordinator.sol";
@@ -28,10 +25,6 @@ import { InstanceTest } from "test/utils/InstanceTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-// FIXME:
-//
-// 1. [ ] Document the interest accrual mechanism.
-// 2. [ ] How does the Ethena cooldown period impact us?
 contract SUSDeHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
@@ -66,7 +59,6 @@ contract SUSDeHyperdriveTest is InstanceTest {
             vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
             baseToken: USDE,
             vaultSharesToken: IERC20(address(SUSDE)),
-            // FIXME: Experiment with this.
             shareTolerance: 1e3,
             minTransactionAmount: 1e15,
             positionDuration: POSITION_DURATION,
@@ -155,8 +147,6 @@ contract SUSDeHyperdriveTest is InstanceTest {
         return (USDE.balanceOf(account), SUSDE.balanceOf(account));
     }
 
-    // FIXME: Mess with the tolerances.
-    //
     /// @dev Verifies that deposit accounting is correct when opening positions.
     function verifyDeposit(
         address trader,
@@ -249,8 +239,6 @@ contract SUSDeHyperdriveTest is InstanceTest {
         }
     }
 
-    // FIXME: Mess with the tolerances.
-    //
     /// @dev Verifies that withdrawal accounting is correct when closing positions.
     function verifyWithdrawal(
         address trader,
@@ -573,8 +561,6 @@ contract SUSDeHyperdriveTest is InstanceTest {
         uint256 shareProceeds = closeLong(bob, maturityTime, longAmount, false);
         uint256 baseProceeds = convertToBase(shareProceeds);
 
-        // FIXME
-        //
         // Bob should receive almost exactly his bond amount.
         assertLe(baseProceeds, longAmount);
         assertApproxEqAbs(baseProceeds, longAmount, 1e3);
@@ -702,13 +688,11 @@ contract SUSDeHyperdriveTest is InstanceTest {
 
         // Bob should receive almost exactly the interest that accrued on the
         // bonds that were shorted.
-        console.log("test: 1");
         assertApproxEqAbs(
             baseProceeds,
             shortAmount.mulDown(uint256(variableAPR)),
             1e9
         );
-        console.log("test: 2");
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
@@ -720,7 +704,6 @@ contract SUSDeHyperdriveTest is InstanceTest {
             bobBalancesBefore,
             hyperdriveBalancesBefore
         );
-        console.log("test: 3");
     }
 
     /// Helpers ///
@@ -731,6 +714,12 @@ contract SUSDeHyperdriveTest is InstanceTest {
         uint256 timeDelta,
         int256 variableRate
     ) internal override {
+        // Get the total base before advancing the time. This is important
+        // because it ensures that we are accruing interest on the current
+        // amount of total assets rather than the amount of total assets after
+        // the current rewards have fully vested.
+        (uint256 totalBase, ) = getSupply();
+
         // Advance the time.
         vm.warp(block.timestamp + timeDelta);
 
@@ -738,19 +727,10 @@ contract SUSDeHyperdriveTest is InstanceTest {
         // calculated as assets divided shares, we can accrue interest by
         // updating the USDe balance. We modify this in place to allow negative
         // interest accrual.
-        console.log(
-            "vault share price = %s",
-            hyperdrive.getPoolInfo().vaultSharePrice.toString(18)
-        );
-        (uint256 totalBase, ) = getSupply();
         totalBase = variableRate >= 0
             ? totalBase + totalBase.mulDown(uint256(variableRate))
             : totalBase - totalBase.mulDown(uint256(-variableRate));
         bytes32 balanceLocation = keccak256(abi.encode(address(SUSDE), 2));
         vm.store(address(USDE), bytes32(balanceLocation), bytes32(totalBase));
-        console.log(
-            "vault share price = %s",
-            hyperdrive.getPoolInfo().vaultSharePrice.toString(18)
-        );
     }
 }
