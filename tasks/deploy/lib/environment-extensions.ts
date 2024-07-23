@@ -154,7 +154,7 @@ extendEnvironment((hre) => {
         const instance = await hre.viem.deployContract(
             contract as ContractName<typeof contract>,
             args as any,
-            { ...viemConfig, libraries, gas: 10_000_000n },
+            { ...viemConfig, libraries, gas: 6_750_000n },
         );
 
         console.log(` - saving ${name}...`);
@@ -490,10 +490,10 @@ extendEnvironment((hre) => {
             ];
             let { result: address } = await factory.simulate.deployTarget(
                 args as any,
-                { gas: 10_000_000n, ...options.viemConfig },
+                { gas: 6_750_000n, ...options.viemConfig },
             );
             let tx = await factory.write.deployTarget(args as any, {
-                gas: 10_000_000n,
+                gas: 6_750_000n,
                 ...(options.viemConfig as any),
             });
             await pc.waitForTransactionReceipt({
@@ -546,10 +546,10 @@ extendEnvironment((hre) => {
         }
         let { result: address } = await factory.simulate.deployAndInitialize(
             args as any,
-            { gas: 10_000_000n, value },
+            { gas: 6_750_000n, value },
         );
         let tx = await factory.write.deployAndInitialize(args as any, {
-            gas: 10_000_000n,
+            gas: 6_750_000n,
             value,
         });
         await pc.waitForTransactionReceipt({ hash: tx });
