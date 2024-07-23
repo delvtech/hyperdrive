@@ -7,12 +7,14 @@ import { HardhatUserConfig } from "hardhat/config";
 import baseConfig from "./hardhat.config";
 import "./tasks";
 import {
-    SEPOLIA_CHECKPOINT_REWARDER,
-    SEPOLIA_CHECKPOINT_SUBREWARDER,
-    SEPOLIA_FACTORY,
-    SEPOLIA_MORPHO_BLUE_COORDINATOR,
-    SEPOLIA_MORPHO_BLUE_DAI_14DAY,
-} from "./tasks/deploy/config/sepolia";
+    ANVIL_CHECKPOINT_REWARDER,
+    ANVIL_CHECKPOINT_SUBREWARDER,
+    ANVIL_ERC4626_COORDINATOR,
+    ANVIL_ERC4626_HYPERDRIVE,
+    ANVIL_FACTORY,
+    ANVIL_STETH_COORDINATOR,
+    ANVIL_STETH_HYPERDRIVE,
+} from "./tasks/deploy/config/anvil";
 
 const { env } = process;
 let DEFAULT_PK =
@@ -26,19 +28,14 @@ const config: HardhatUserConfig = {
             url: env.HYPERDRIVE_ETHEREUM_URL ?? "http://127.0.0.1:8545",
             accounts: [env.DEPLOYER_PRIVATE_KEY ?? DEFAULT_PK],
             hyperdriveDeploy: {
-                checkpointRewarders: [SEPOLIA_CHECKPOINT_REWARDER],
-                checkpointSubrewarders: [SEPOLIA_CHECKPOINT_SUBREWARDER],
-                factories: [SEPOLIA_FACTORY],
+                checkpointRewarders: [ANVIL_CHECKPOINT_REWARDER],
+                checkpointSubrewarders: [ANVIL_CHECKPOINT_SUBREWARDER],
+                factories: [ANVIL_FACTORY],
                 coordinators: [
-                    // SEPOLIA_ERC4626_COORDINATOR,
-                    // SEPOLIA_STETH_COORDINATOR,
-                    SEPOLIA_MORPHO_BLUE_COORDINATOR,
+                    ANVIL_ERC4626_COORDINATOR,
+                    ANVIL_STETH_COORDINATOR,
                 ],
-                instances: [
-                    // SEPOLIA_ERC4626_HYPERDRIVE,
-                    // SEPOLIA_STETH_HYPERDRIVE,
-                    SEPOLIA_MORPHO_BLUE_DAI_14DAY,
-                ],
+                instances: [ANVIL_ERC4626_HYPERDRIVE, ANVIL_STETH_HYPERDRIVE],
             },
         },
     },
