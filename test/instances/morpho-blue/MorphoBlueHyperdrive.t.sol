@@ -69,7 +69,7 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         address(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
     address[] internal baseTokenWhaleAccounts = [LOAN_TOKEN_WHALE];
 
-    // The configuration for the Instance testing suite.
+    // The configuration for the instance testing suite.
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig({
             name: "Hyperdrive",
@@ -96,12 +96,12 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
             )
         });
 
-    /// @dev Instantiates the Instance testing suite with the configuration.
+    /// @dev Instantiates the instance testing suite with the configuration.
     constructor() InstanceTest(__testConfig) {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(20_276_503) {
-        // Invoke the Instance testing suite setup.
+        // Invoke the instance testing suite setup.
         super.setUp();
     }
 

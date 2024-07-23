@@ -50,7 +50,7 @@ contract SUSDeHyperdriveTest is InstanceTest {
         address(0x4139cDC6345aFFbaC0692b43bed4D059Df3e6d65);
     address[] internal vaultSharesTokenWhaleAccounts = [SUSDE_TOKEN_WHALE];
 
-    // The configuration for the Instance testing suite.
+    // The configuration for the instance testing suite.
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig({
             name: "Hyperdrive",
@@ -75,7 +75,7 @@ contract SUSDeHyperdriveTest is InstanceTest {
             )
         });
 
-    /// @dev Instantiates the Instance testing suite with the configuration.
+    /// @dev Instantiates the instance testing suite with the configuration.
     constructor() InstanceTest(__testConfig) {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
@@ -373,14 +373,14 @@ contract SUSDeHyperdriveTest is InstanceTest {
 
     /// LP ///
 
-    function test_round_trip_lp_instantaneous() external {
+    function test_round_trip_lp_instantaneous(uint256 _contribution) external {
         // Bob adds liquidity with base.
-        uint256 contribution = 2_500e18;
+        _contribution = _contribution.normalizeToRange(100e18, 100_000_000e18);
         IERC20(hyperdrive.baseToken()).approve(
             address(hyperdrive),
-            contribution
+            _contribution
         );
-        uint256 lpShares = addLiquidity(bob, contribution);
+        uint256 lpShares = addLiquidity(bob, _contribution);
 
         // Get some balance information before the withdrawal.
         (
@@ -403,7 +403,7 @@ contract SUSDeHyperdriveTest is InstanceTest {
 
         // Bob should receive approximately as much base as he contributed since
         // no time as passed and the fees are zero.
-        assertApproxEqAbs(baseProceeds, contribution, 1e10);
+        assertApproxEqAbs(baseProceeds, _contribution, 1e10);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
@@ -417,14 +417,17 @@ contract SUSDeHyperdriveTest is InstanceTest {
         );
     }
 
-    function test_round_trip_lp_withdrawal_shares() external {
+    function test_round_trip_lp_withdrawal_shares(
+        uint256 _contribution,
+        uint256 _variableRate
+    ) external {
         // Bob adds liquidity with base.
-        uint256 contribution = 2_500e18;
+        _contribution = _contribution.normalizeToRange(100e18, 100_000_000e18);
         IERC20(hyperdrive.baseToken()).approve(
             address(hyperdrive),
-            contribution
+            _contribution
         );
-        uint256 lpShares = addLiquidity(bob, contribution);
+        uint256 lpShares = addLiquidity(bob, _contribution);
 
         // Alice opens a large short.
         vm.stopPrank();
@@ -443,11 +446,11 @@ contract SUSDeHyperdriveTest is InstanceTest {
             false
         );
         uint256 baseProceeds = convertToBase(shareProceeds);
-        assertEq(baseProceeds, 0);
         assertGt(withdrawalShares, 0);
 
         // The term passes and interest accrues.
-        advanceTime(POSITION_DURATION, 1.421e18);
+        _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
+        advanceTime(POSITION_DURATION, int256(_variableRate));
 
         // Bob should be able to redeem all of his withdrawal shares for
         // approximately the LP share price.
@@ -502,11 +505,14 @@ contract SUSDeHyperdriveTest is InstanceTest {
         );
     }
 
-    function test_round_trip_long_instantaneous() external {
+    function test_round_trip_long_instantaneous(uint256 _basePaid) external {
         // Bob opens a long with base.
-        uint256 basePaid = hyperdrive.calculateMaxLong();
-        IERC20(hyperdrive.baseToken()).approve(address(hyperdrive), basePaid);
-        (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
+        _basePaid = _basePaid.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            hyperdrive.calculateMaxLong()
+        );
+        IERC20(hyperdrive.baseToken()).approve(address(hyperdrive), _basePaid);
+        (uint256 maturityTime, uint256 longAmount) = openLong(bob, _basePaid);
 
         // Get some balance information before the withdrawal.
         (
@@ -524,7 +530,7 @@ contract SUSDeHyperdriveTest is InstanceTest {
 
         // Bob should receive approximately as much base as he paid since no
         // time as passed and the fees are zero.
-        assertApproxEqAbs(baseProceeds, basePaid, 1e9);
+        assertApproxEqAbs(baseProceeds, _basePaid, 1e9);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
@@ -538,14 +544,23 @@ contract SUSDeHyperdriveTest is InstanceTest {
         );
     }
 
-    function test_round_trip_long_maturity() external {
+    function test_round_trip_long_maturity(
+        uint256 _basePaid,
+        uint256 _variableRate
+    ) external {
         // Bob opens a long with base.
-        uint256 basePaid = hyperdrive.calculateMaxLong();
-        IERC20(hyperdrive.baseToken()).approve(address(hyperdrive), basePaid);
-        (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
+        _basePaid = _basePaid.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            hyperdrive.calculateMaxLong()
+        );
+        IERC20(hyperdrive.baseToken()).approve(address(hyperdrive), _basePaid);
+        (uint256 maturityTime, uint256 longAmount) = openLong(bob, _basePaid);
 
-        // Advance the time and accrue a large amount of interest.
-        advanceTime(POSITION_DURATION, 137.123423e18);
+        // Advance the time and accrue a interest. We fuzz over a large range of
+        // variable rates to make sure that the payout doesn't have large error
+        // bars when the variable rate gets astronomical.
+        _variableRate = _variableRate.normalizeToRange(0, 1000e18);
+        advanceTime(POSITION_DURATION, int256(_variableRate));
 
         // Get some balance information before the withdrawal.
         (
@@ -563,7 +578,7 @@ contract SUSDeHyperdriveTest is InstanceTest {
 
         // Bob should receive almost exactly his bond amount.
         assertLe(baseProceeds, longAmount);
-        assertApproxEqAbs(baseProceeds, longAmount, 1e3);
+        assertApproxEqAbs(baseProceeds, longAmount, 1e4);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
@@ -610,14 +625,19 @@ contract SUSDeHyperdriveTest is InstanceTest {
         );
     }
 
-    function test_round_trip_short_instantaneous() external {
+    function test_round_trip_short_instantaneous(
+        uint256 _shortAmount
+    ) external {
         // Bob opens a short with base.
-        uint256 shortAmount = hyperdrive.calculateMaxShort();
+        _shortAmount = _shortAmount.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            hyperdrive.calculateMaxShort()
+        );
         IERC20(hyperdrive.baseToken()).approve(
             address(hyperdrive),
-            shortAmount
+            _shortAmount
         );
-        (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
+        (uint256 maturityTime, uint256 basePaid) = openShort(bob, _shortAmount);
 
         // Get some balance information before the withdrawal.
         (
@@ -633,7 +653,7 @@ contract SUSDeHyperdriveTest is InstanceTest {
         uint256 shareProceeds = closeShort(
             bob,
             maturityTime,
-            shortAmount,
+            _shortAmount,
             false
         );
         uint256 baseProceeds = convertToBase(shareProceeds);
@@ -654,18 +674,24 @@ contract SUSDeHyperdriveTest is InstanceTest {
         );
     }
 
-    function test_round_trip_short_maturity() external {
+    function test_round_trip_short_maturity(
+        uint256 _shortAmount,
+        uint256 _variableRate
+    ) external {
         // Bob opens a short with base.
-        uint256 shortAmount = hyperdrive.calculateMaxShort();
+        _shortAmount = _shortAmount.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            hyperdrive.calculateMaxShort()
+        );
         IERC20(hyperdrive.baseToken()).approve(
             address(hyperdrive),
-            shortAmount
+            _shortAmount
         );
-        (uint256 maturityTime, ) = openShort(bob, shortAmount);
+        (uint256 maturityTime, ) = openShort(bob, _shortAmount);
 
         // The term passes and some interest accrues.
-        int256 variableAPR = 0.57e18;
-        advanceTime(POSITION_DURATION, variableAPR);
+        _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
+        advanceTime(POSITION_DURATION, int256(_variableRate));
 
         // Get some balance information before the withdrawal.
         (
@@ -681,7 +707,7 @@ contract SUSDeHyperdriveTest is InstanceTest {
         uint256 shareProceeds = closeShort(
             bob,
             maturityTime,
-            shortAmount,
+            _shortAmount,
             false
         );
         uint256 baseProceeds = convertToBase(shareProceeds);
@@ -690,7 +716,7 @@ contract SUSDeHyperdriveTest is InstanceTest {
         // bonds that were shorted.
         assertApproxEqAbs(
             baseProceeds,
-            shortAmount.mulDown(uint256(variableAPR)),
+            _shortAmount.mulDown(_variableRate),
             1e9
         );
 

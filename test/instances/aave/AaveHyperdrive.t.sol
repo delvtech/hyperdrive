@@ -48,7 +48,7 @@ contract AaveHyperdriveTest is InstanceTest {
     address[] internal baseTokenWhaleAccounts = [WETH_WHALE];
     address[] internal vaultSharesTokenWhaleAccounts = [AWETH_WHALE];
 
-    // The configuration for the Instance testing suite.
+    // The configuration for the instance testing suite.
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig({
             name: "Hyperdrive",
@@ -67,12 +67,12 @@ contract AaveHyperdriveTest is InstanceTest {
             baseWithdrawError: new bytes(0)
         });
 
-    /// @dev Instantiates the Instance testing suite with the configuration.
+    /// @dev Instantiates the instance testing suite with the configuration.
     constructor() InstanceTest(__testConfig) {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(20_276_503) {
-        // Invoke the Instance testing suite setup.
+        // Invoke the instance testing suite setup.
         super.setUp();
     }
 

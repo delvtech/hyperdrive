@@ -58,7 +58,7 @@ contract EzETHHyperdriveTest is InstanceTest {
     address internal EZETH_WHALE = 0x40C0d1fbcB0A43A62ca7A241E7A42ca58EeF96eb;
     address[] internal whaleAccounts = [EZETH_WHALE];
 
-    // The configuration for the Instance testing suite.
+    // The configuration for the instance testing suite.
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig(
             "Hyperdrive",
@@ -77,7 +77,7 @@ contract EzETHHyperdriveTest is InstanceTest {
             abi.encodeWithSelector(IHyperdrive.UnsupportedToken.selector)
         );
 
-    /// @dev Instantiates the Instance testing suite with the configuration.
+    /// @dev Instantiates the instance testing suite with the configuration.
     constructor() InstanceTest(__testConfig) {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
@@ -88,7 +88,7 @@ contract EzETHHyperdriveTest is InstanceTest {
         RESTAKE_MANAGER.depositETH{ value: 50_000e18 }();
         vm.stopPrank();
 
-        // Invoke the Instance testing suite setup.
+        // Invoke the instance testing suite setup.
         super.setUp();
     }
 

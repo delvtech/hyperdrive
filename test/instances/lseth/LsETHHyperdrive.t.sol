@@ -45,7 +45,7 @@ contract LsETHHyperdriveTest is InstanceTest {
         LSETH_WHALE_3
     ];
 
-    // The configuration for the Instance testing suite.
+    // The configuration for the instance testing suite.
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig(
             "Hyperdrive",
@@ -64,13 +64,13 @@ contract LsETHHyperdriveTest is InstanceTest {
             abi.encodeWithSelector(IHyperdrive.UnsupportedToken.selector)
         );
 
-    /// @dev Instantiates the Instance testing suite with the configuration.
+    /// @dev Instantiates the instance testing suite with the configuration.
     constructor() InstanceTest(__testConfig) {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
 
     function setUp() public override __mainnet_fork(19_429_100) {
-        // Invoke the Instance testing suite setup.
+        // Invoke the instance testing suite setup.
         super.setUp();
     }
 

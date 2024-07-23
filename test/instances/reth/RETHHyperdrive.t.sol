@@ -68,7 +68,7 @@ contract RETHHyperdriveTest is InstanceTest {
             new bytes(0)
         );
 
-    /// @dev Instantiates the Instance testing suite with the configuration.
+    /// @dev Instantiates the instance testing suite with the configuration.
     constructor() InstanceTest(__testConfig) {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
@@ -76,7 +76,7 @@ contract RETHHyperdriveTest is InstanceTest {
         // Give the rETH contract ETH to mimic adequate withdrawable liquidity.
         vm.deal(address(rocketTokenRETH), 50_000e18);
 
-        // Invoke the Instance testing suite setup.
+        // Invoke the instance testing suite setup.
         super.setUp();
     }
 
