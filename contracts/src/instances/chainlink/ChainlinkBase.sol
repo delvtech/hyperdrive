@@ -3,6 +3,7 @@ pragma solidity 0.8.20;
 
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import { IChainlinkAggregatorV3 } from "../../interfaces/IChainlinkAggregatorV3.sol";
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
@@ -27,11 +28,24 @@ import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 abstract contract ChainlinkBase is HyperdriveBase {
     using SafeERC20 for ERC20;
 
-    // FIXME: Add immutables for the oracle.
+    // FIXME: Do we need new immutables to handle L2 downtime?
+
+    // FIXME: Add a getter for this.
+    //
+    // FIXME: Add Natspec.
+    IChainlinkAggregatorV3 internal immutable aggregator;
+
+    /// @notice Instantiates the ChainlinkHyperdrive base contract.
+    /// @param _aggregator The Chainlink aggregator. This is the contract that
+    ///        will return the answer.
+    constructor(IChainlinkAggregatorV3 _aggregator) {
+        aggregator = _aggregator;
+    }
 
     /// Yield Source ///
 
-    /// @dev Accepts a deposit from the user in base.
+    /// @dev Accepts a deposit from the user in base. This function fails since
+    ///      base isn't a supported asset for this integration.
     /// @return The shares that were minted in the deposit.
     /// @return The amount of ETH to refund. Since this yield source isn't
     ///         payable, this is always zero.
@@ -48,20 +62,17 @@ abstract contract ChainlinkBase is HyperdriveBase {
         uint256 _shareAmount,
         bytes calldata // unused _extraData
     ) internal override {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC20 example provided.
         // Take custody of the deposit in vault shares.
         ERC20(address(_vaultSharesToken)).safeTransferFrom(
             msg.sender,
             address(this),
             _shareAmount
         );
-        // ****************************************************************
     }
 
     /// @dev Process a withdrawal in base and send the proceeds to the
-    ///      destination.
-
+    ///      destination. This function fails since base isn't a supported asset
+    ///      for this integration.
     /// @return amountWithdrawn The amount of base withdrawn.
     function _withdrawWithBase(
         uint256, // unused _shareAmount
@@ -80,16 +91,15 @@ abstract contract ChainlinkBase is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC20 example provided.
         // Transfer vault shares to the destination.
         ERC20(address(_vaultSharesToken)).safeTransfer(
             _destination,
             _shareAmount
         );
-        // ****************************************************************
     }
 
+    // FIXME: We should use the standard conversions pattern.
+    //
     /// @dev Convert an amount of vault shares to an amount of base.
     /// @param _shareAmount The vault shares amount.
     /// @return The base amount.
@@ -103,6 +113,8 @@ abstract contract ChainlinkBase is HyperdriveBase {
         // ****************************************************************
     }
 
+    // FIXME: We should use the standard conversions pattern.
+    //
     /// @dev Convert an amount of base to an amount of vault shares.
     /// @param _baseAmount The base amount.
     /// @return The vault shares amount.
