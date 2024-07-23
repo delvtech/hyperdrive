@@ -135,8 +135,8 @@ abstract contract MorphoBlueBase is HyperdriveBase {
                 irm: _irm,
                 lltv: _lltv
             }),
+            _convertToBase(_shareAmount),
             0,
-            _shareAmount,
             address(this),
             _destination
         );
