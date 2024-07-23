@@ -374,6 +374,106 @@
             "contract": "StETHHyperdrive",
             "address": "0x51C054F75b2c4b53E8E5114430C3ded4572473D8",
             "timestamp": "2024-06-19T02:08:03.413Z"
+        },
+        "MORPHO_BLUE_COORDINATOR_MorphoBlueHyperdriveCoreDeployer": {
+            "contract": "MorphoBlueHyperdriveCoreDeployer",
+            "address": "0x942de6161dce6b216eab2b0fb07a4cab01e75b25",
+            "timestamp": "2024-07-19T22:01:41.154Z"
+        },
+        "MorphoBlueConversions": {
+            "contract": "MorphoBlueConversions",
+            "address": "0xcdb48bb065c12aea6aa7693b718fc2d1d8e95d36",
+            "timestamp": "2024-07-19T22:01:50.043Z"
+        },
+        "MORPHO_BLUE_COORDINATOR_MorphoBlueTarget0Deployer": {
+            "contract": "MorphoBlueTarget0Deployer",
+            "address": "0x340b785817ba1180a9b89eace04552dbd5a17f26",
+            "timestamp": "2024-07-19T22:02:03.051Z"
+        },
+        "MORPHO_BLUE_COORDINATOR_MorphoBlueTarget1Deployer": {
+            "contract": "MorphoBlueTarget1Deployer",
+            "address": "0x6b2e8de070c4aaa9abbb6153daceeb4ef5a7408d",
+            "timestamp": "2024-07-19T22:02:16.149Z"
+        },
+        "MORPHO_BLUE_COORDINATOR_MorphoBlueTarget2Deployer": {
+            "contract": "MorphoBlueTarget2Deployer",
+            "address": "0x7111675bed3a26025cc01b1fb780a0bd0aeda52a",
+            "timestamp": "2024-07-19T22:02:37.230Z"
+        },
+        "MORPHO_BLUE_COORDINATOR_MorphoBlueTarget3Deployer": {
+            "contract": "MorphoBlueTarget3Deployer",
+            "address": "0xe98e41c06764cc7338a3a2c32785666c4e4cb2eb",
+            "timestamp": "2024-07-19T22:02:50.227Z"
+        },
+        "MORPHO_BLUE_COORDINATOR_MorphoBlueTarget4Deployer": {
+            "contract": "MorphoBlueTarget4Deployer",
+            "address": "0x2e1f6df541c57c5f87e29af81be30de07182247e",
+            "timestamp": "2024-07-19T22:03:03.133Z"
+        },
+        "MORPHO_BLUE_COORDINATOR": {
+            "contract": "MorphoBlueHyperdriveDeployerCoordinator",
+            "address": "0xb8f9876f10524c7b5cbdbbfac0409a77a518d876",
+            "timestamp": "2024-07-19T22:03:16.138Z"
+        },
+        "MORPHO_BLUE_DAI_14_DAY_MorphoBlueTarget0": {
+            "contract": "MorphoBlueTarget0",
+            "address": "0x90598C248110CB0bf413883751392E5B97e22D49",
+            "timestamp": "2024-07-19T22:06:03.670Z"
+        },
+        "MORPHO_BLUE_DAI_14_DAY_MorphoBlueTarget1": {
+            "contract": "MorphoBlueTarget1",
+            "address": "0x29A09380BE010f9b4321cd09B640Fc2390c23754",
+            "timestamp": "2024-07-19T22:05:15.590Z"
+        },
+        "MORPHO_BLUE_DAI_14_DAY_MorphoBlueTarget2": {
+            "contract": "MorphoBlueTarget2",
+            "address": "0x2C1100Be8d1a00731feE91bb2672f3f9a9f52Acb",
+            "timestamp": "2024-07-19T22:05:28.618Z"
+        },
+        "MORPHO_BLUE_DAI_14_DAY_MorphoBlueTarget3": {
+            "contract": "MorphoBlueTarget3",
+            "address": "0xB2A1F3703ba511dCCF12445f161397eD7c437252",
+            "timestamp": "2024-07-19T22:05:37.484Z"
+        },
+        "MORPHO_BLUE_DAI_14_DAY_MorphoBlueTarget4": {
+            "contract": "MorphoBlueTarget4",
+            "address": "0xf17392948E48C45bd6664db0AEe397FB80C4A9F4",
+            "timestamp": "2024-07-19T22:05:50.558Z"
+        },
+        "MORPHO_BLUE_DAI_14_DAY": {
+            "contract": "MorphoBlueHyperdrive",
+            "address": "0xE352F4D16C7Ee4162d1aa54b77A15d4DA8f35f4b",
+            "timestamp": "2024-07-19T22:06:03.574Z"
+        },
+        "MORPHO_BLUE_DAI_30_DAY_MorphoBlueTarget0": {
+            "contract": "MorphoBlueTarget0",
+            "address": "0x7f90dc0Dd4258FeBA19122F8B24CF398d938F762",
+            "timestamp": "2024-07-19T22:08:12.937Z"
+        },
+        "MORPHO_BLUE_DAI_30_DAY_MorphoBlueTarget1": {
+            "contract": "MorphoBlueTarget1",
+            "address": "0xa95a24160b29925035c0e76c34caA1C177bbbA9D",
+            "timestamp": "2024-07-19T22:06:52.218Z"
+        },
+        "MORPHO_BLUE_DAI_30_DAY_MorphoBlueTarget2": {
+            "contract": "MorphoBlueTarget2",
+            "address": "0x63f5084182194E3C7477E6041681Ee75661a3fb6",
+            "timestamp": "2024-07-19T22:07:25.542Z"
+        },
+        "MORPHO_BLUE_DAI_30_DAY_MorphoBlueTarget3": {
+            "contract": "MorphoBlueTarget3",
+            "address": "0xB160a49c99c8e579F761b20654Ef6B490E32C3BB",
+            "timestamp": "2024-07-19T22:07:38.596Z"
+        },
+        "MORPHO_BLUE_DAI_30_DAY_MorphoBlueTarget4": {
+            "contract": "MorphoBlueTarget4",
+            "address": "0x6511a69918DAe90aFf82994B952C97c6FffEE0c9",
+            "timestamp": "2024-07-19T22:07:51.696Z"
+        },
+        "MORPHO_BLUE_DAI_30_DAY": {
+            "contract": "MorphoBlueHyperdrive",
+            "address": "0x82089FDfdbDEB89F208fEc03C1cA5122D6862bDc",
+            "timestamp": "2024-07-19T22:08:12.841Z"
         }
     },
     "mainnet": {
