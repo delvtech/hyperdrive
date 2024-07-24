@@ -77,12 +77,12 @@ contract EETHHyperdrive is Hyperdrive, EETHBase {
         ILiquidityPool _liquidityPool
     )
         Hyperdrive(
-            __name, 
-            _config, 
-            _target0, 
-            _target1, 
-            _target2, 
-            _target3, 
+            __name,
+            _config,
+            _target0,
+            _target1,
+            _target2,
+            _target3,
             _target4
         )
         EETHBase(_liquidityPool)

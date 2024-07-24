@@ -22,7 +22,6 @@ import { EETHConversions } from "../../instances/eeth/EETHConversions.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract EETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
-
     /// @notice The Etherfi contract.
     ILiquidityPool public immutable liquidityPool;
 
@@ -80,7 +79,6 @@ contract EETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _lp,
         uint256 _contribution,
         IHyperdrive.Options memory _options
-
     ) internal override returns (uint256) {
         uint256 value;
         // If base is the deposit asset, ensure that enough ether was sent to
@@ -92,21 +90,29 @@ contract EETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             }
             value = _contribution;
         }
-
         // Otherwise, transfer vault shares from the LP and approve the
         // Hyperdrive pool.
         else {
             address token = _hyperdrive.vaultSharesToken();
 
             // Convert the vault shares to base.
-            uint256 baseContribution = convertToBase(IERC20(token),_contribution);
+            uint256 baseContribution = convertToBase(
+                IERC20(token),
+                _contribution
+            );
 
-            // NOTE: The eETH transferFrom function converts from base to shares under 
+            // NOTE: The eETH transferFrom function converts from base to shares under
             // the hood using `sharesForAmount(_amount)`.
-            IeETH(token).transferFrom(_lp, address(this), baseContribution);
+            bool result = IeETH(token).transferFrom(
+                _lp,
+                address(this),
+                baseContribution
+            );
+            if (!result) {
+                revert IHyperdrive.TransferFailed();
+            }
 
-            //TODO: Should I check the return value and revert if it fails?
-            IeETH(token).approve(address(_hyperdrive), _contribution);
+            IeETH(token).approve(address(_hyperdrive), baseContribution);
         }
         return value;
     }
@@ -119,7 +125,12 @@ contract EETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         IERC20 _vaultSharesToken,
         uint256 _shareAmount
     ) public view returns (uint256) {
-        return EETHConversions.convertToBase(liquidityPool, _vaultSharesToken, _shareAmount);
+        return
+            EETHConversions.convertToBase(
+                liquidityPool,
+                _vaultSharesToken,
+                _shareAmount
+            );
     }
 
     /// @notice Convert an amount of base to an amount of vault shares.
@@ -130,14 +141,17 @@ contract EETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         IERC20 _vaultSharesToken,
         uint256 _baseAmount
     ) public view returns (uint256) {
-        return EETHConversions.convertToShares(liquidityPool, _vaultSharesToken, _baseAmount);
+        return
+            EETHConversions.convertToShares(
+                liquidityPool,
+                _vaultSharesToken,
+                _baseAmount
+            );
     }
-
 
     /// @dev We override the message value check since this integration is
     ///      payable.
     function _checkMessageValue() internal view override {}
-
 
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.

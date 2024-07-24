@@ -29,12 +29,14 @@ library EETHConversions {
             return 0;
         }
 
-        // This calculation matches the implementation of 
+        // This calculation matches the implementation of
         // `amountForShare(uint256 _share)` found in the LiquidityPool
         //  contract.
         // NOTE: Round down so that the output is an underestimate.
-        return _shareAmount.mulDown(_liquidityPool.getTotalPooledEther())
-                     .divDown(totalShares);
+        return
+            _shareAmount.mulDown(_liquidityPool.getTotalPooledEther()).divDown(
+                totalShares
+            );
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
@@ -56,7 +58,9 @@ library EETHConversions {
         // `sharesForAmount(uint256 _amount)` found in the LiquidityPool
         // contract.
         // NOTE: Round down so that the output is an underestimate.
-        return _baseAmount.mulDown(IeETH(address(_eETH)).totalShares())
-                          .divDown(totalPooledEther);
+        return
+            _baseAmount.mulDown(IeETH(address(_eETH)).totalShares()).divDown(
+                totalPooledEther
+            );
     }
 }

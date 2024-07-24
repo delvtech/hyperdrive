@@ -6,7 +6,7 @@ import { IeETH } from "etherfi/src/interfaces/IeETH.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { EETHConversions } from "./EETHConversions.sol";
-
+import "forge-std/console2.sol";
 
 /// @author DELV
 /// @title EETHBase
@@ -18,7 +18,6 @@ import { EETHConversions } from "./EETHConversions.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract EETHBase is HyperdriveBase {
-
     /// @dev The EtherFi liquidity pool.
     ILiquidityPool internal immutable liquidityPool;
 
@@ -51,10 +50,9 @@ abstract contract EETHBase is HyperdriveBase {
         }
 
         // Deposit the base into the yield source.
-        sharesMinted = ILiquidityPool(address(_vaultSharesToken)).deposit{
-            value: _baseAmount
-        }(_feeCollector);
-
+        sharesMinted = liquidityPool.deposit{ value: _baseAmount }(
+            _feeCollector
+        );
         return (sharesMinted, refund);
     }
 
@@ -64,21 +62,20 @@ abstract contract EETHBase is HyperdriveBase {
         uint256 _shareAmount,
         bytes calldata // unused _extraData
     ) internal override {
-
         // Convert the vault shares to base.
         uint256 baseAmount = _convertToBase(_shareAmount);
 
-        // NOTE: The eETH transferFrom function converts from base to shares under 
+        // NOTE: The eETH transferFrom function converts from base to shares under
         // the hood using `sharesForAmount(_amount)`.
         // Take custody of the deposit in vault shares.
-        IeETH(address(_vaultSharesToken)).transferFrom(
+        bool result = IeETH(address(_vaultSharesToken)).transferFrom(
             msg.sender,
             address(this),
             baseAmount
         );
-
-        //TODO: Should I check the return value and revert if it fails?
-
+        if (!result) {
+            revert IHyperdrive.TransferFailed();
+        }
     }
 
     /// @dev Process a withdrawal in base and send the proceeds to the
@@ -87,7 +84,7 @@ abstract contract EETHBase is HyperdriveBase {
         uint256, // unused
         address, // unused
         bytes calldata // unused
-    ) internal pure override returns (uint256 ) {
+    ) internal pure override returns (uint256) {
         // eETH withdrawals aren't necessarily instantaneous. Users that want
         // to withdraw can manage their withdrawal separately.
         revert IHyperdrive.UnsupportedToken();
@@ -102,20 +99,19 @@ abstract contract EETHBase is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override {
-        
         // Convert the vault shares to base.
         uint256 baseAmount = _convertToBase(_shareAmount);
 
         // NOTE: The eETH transfer function converts from base to shares under
         // the hood using `sharesForAmount(_amount)`.
         // Transfer the stETH shares to the destination.
-        IeETH(address(_vaultSharesToken)).transfer(
+        bool result = IeETH(address(_vaultSharesToken)).transfer(
             _destination,
             baseAmount
         );
-
-        //TODO: Should I check the return value and revert if it fails?
-
+        if (!result) {
+            revert IHyperdrive.TransferFailed();
+        }
     }
 
     /// @dev Convert an amount of vault shares to an amount of base.
@@ -158,12 +154,7 @@ abstract contract EETHBase is HyperdriveBase {
         return _vaultSharesToken.balanceOf(address(this));
     }
 
-
     /// @dev We override the message value check since this integration is
     ///      not payable.
-    function _checkMessageValue() internal view override {
-        if (msg.value != 0) {
-            revert IHyperdrive.NotPayable();
-        }
-    }
+    function _checkMessageValue() internal pure override {}
 }

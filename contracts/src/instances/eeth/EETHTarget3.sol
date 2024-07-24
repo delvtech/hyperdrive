@@ -18,7 +18,7 @@ import { EETHBase } from "./EETHBase.sol";
 ///                    particular legal or regulatory significance.
 contract EETHTarget3 is HyperdriveTarget3, EETHBase {
     using SafeERC20 for ERC20;
-    
+
     /// @notice Initializes the target3 contract.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _liquidityPool The Etherfi liquidity pool contract.
