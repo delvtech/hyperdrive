@@ -26,10 +26,4 @@ contract {{ name.capitalized }}Target0 is HyperdriveTarget0, {{ name.capitalized
     function kind() external pure override returns (string memory) {
         _revert(abi.encode({{ name.uppercase }}_HYPERDRIVE_KIND));
     }
-
-    /// @notice Returns the MultiToken's decimals.
-    /// @return The MultiToken's decimals.
-    function decimals() external pure override returns (uint8) {
-        _revert(abi.encode(uint8(18)));
-    }
 }
