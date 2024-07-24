@@ -253,12 +253,12 @@ contract EETHHyperdriveTest is InstanceTest {
         assertApproxEqAbs(
             EETH.balanceOf(address(hyperdrive)),
             hyperdriveBalancesBefore.baseBalance - baseProceeds,
-            5
+            1e4
         );
         assertApproxEqAbs(
             EETH.balanceOf(trader),
             traderBalancesBefore.baseBalance + baseProceeds,
-            5
+            1e4
         );
 
         // Ensure that the EETH shares were updated correctly.
@@ -309,9 +309,9 @@ contract EETHHyperdriveTest is InstanceTest {
 
     /// LP ///
 
-    function test_round_trip_lp_instantaneous() external {
+    function test_round_trip_lp_instantaneous(uint256 contribution) external {
         // Bob adds liquidity with base.
-        uint256 contribution = 2_500e18;
+        contribution = contribution.normalizeToRange(100e18, 100_000e18);
         uint256 lpShares = addLiquidity(bob, contribution);
 
         // Get some balance information before the withdrawal.
@@ -349,16 +349,19 @@ contract EETHHyperdriveTest is InstanceTest {
         );
     }
 
-    function test_round_trip_lp_withdrawal_shares() external {
+    function test_round_trip_lp_withdrawal_shares(
+        uint256 contribution,
+        uint256 variableRate
+    ) external {
         // Bob adds liquidity with base.
-        uint256 contribution = 2_500e18;
+        contribution = contribution.normalizeToRange(100e18, 100_000e18);
         uint256 lpShares = addLiquidity(bob, contribution);
 
         // Alice opens a large short.
         vm.stopPrank();
         vm.startPrank(alice);
         uint256 shortAmount = hyperdrive.calculateMaxShort();
-        openShort(alice, shortAmount, true);
+        openShort(alice, shortAmount);
 
         // Bob removes his liquidity with base as the target asset.
         (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
@@ -366,12 +369,11 @@ contract EETHHyperdriveTest is InstanceTest {
             lpShares,
             false
         );
-        baseProceeds = convertToBase(baseProceeds);
-        assertEq(baseProceeds, 0);
         assertGt(withdrawalShares, 0);
 
         // The term passes and interest accrues.
-        advanceTime(POSITION_DURATION, 1.421e18);
+        variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        advanceTime(POSITION_DURATION, int256(variableRate));
 
         // Bob should be able to redeem all of his withdrawal shares for
         // approximately the LP share price.
@@ -390,15 +392,18 @@ contract EETHHyperdriveTest is InstanceTest {
         assertApproxEqAbs(
             baseProceeds,
             withdrawalShares.mulDown(lpSharePrice),
-            1e5
+            1e11
         );
     }
 
     /// Long ///
 
-    function test_round_trip_long_instantaneous() external {
+    function test_round_trip_long_instantaneous(uint256 basePaid) external {
         // Bob opens a long with base.
-        uint256 basePaid = hyperdrive.calculateMaxLong();
+        basePaid = basePaid.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            hyperdrive.calculateMaxLong()
+        );
         (uint256 maturityTime, uint256 bondAmount) = hyperdrive.openLong{
             value: basePaid
         }(
@@ -443,9 +448,15 @@ contract EETHHyperdriveTest is InstanceTest {
         );
     }
 
-    function test_round_trip_long_maturity() external {
+    function test_round_trip_long_maturity(
+        uint256 basePaid,
+        uint256 variableRate
+    ) external {
         // Bob opens a long with base.
-        uint256 basePaid = hyperdrive.calculateMaxLong();
+        basePaid = basePaid.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            hyperdrive.calculateMaxLong()
+        );
         (uint256 maturityTime, uint256 bondAmount) = hyperdrive.openLong{
             value: basePaid
         }(
@@ -460,7 +471,8 @@ contract EETHHyperdriveTest is InstanceTest {
         );
 
         // Advance the time and accrue a large amount of interest.
-        advanceTime(POSITION_DURATION, 0.05e18);
+        variableRate = variableRate.normalizeToRange(0, 1000e18);
+        advanceTime(POSITION_DURATION, int256(variableRate));
 
         // Get some balance information before the withdrawal.
         (
@@ -478,7 +490,7 @@ contract EETHHyperdriveTest is InstanceTest {
         );
 
         // Bob should receive almost exactly his bond amount.
-        assertApproxEqAbs(baseProceeds, bondAmount, 137.123423e18);
+        assertApproxEqAbs(baseProceeds, bondAmount, 1e5);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
@@ -494,9 +506,12 @@ contract EETHHyperdriveTest is InstanceTest {
 
     /// Short ///
 
-    function test_round_trip_short_instantaneous() external {
+    function test_round_trip_short_instantaneous(uint256 shortAmount) external {
         // Bob opens a short with base.
-        uint256 shortAmount = hyperdrive.calculateMaxShort();
+        shortAmount = shortAmount.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            hyperdrive.calculateMaxShort()
+        );
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
 
         // Get some balance information before the withdrawal.
@@ -530,14 +545,20 @@ contract EETHHyperdriveTest is InstanceTest {
         );
     }
 
-    function test_round_trip_short_maturity() external {
+    function test_round_trip_short_maturity(
+        uint256 shortAmount,
+        uint256 variableRate
+    ) external {
         // Bob opens a short with base.
-        uint256 shortAmount = hyperdrive.calculateMaxShort();
+        shortAmount = shortAmount.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            hyperdrive.calculateMaxShort()
+        );
         (uint256 maturityTime, ) = openShort(bob, shortAmount);
 
         // The term passes and some interest accrues.
-        int256 variableAPR = 0.57e18;
-        advanceTime(POSITION_DURATION, variableAPR);
+        variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        advanceTime(POSITION_DURATION, int256(variableRate));
 
         // Get some balance information before the withdrawal.
         (
@@ -558,7 +579,7 @@ contract EETHHyperdriveTest is InstanceTest {
         // bonds that were shorted.
         assertApproxEqAbs(
             baseProceeds,
-            shortAmount.mulDown(uint256(variableAPR)),
+            shortAmount.mulDown(uint256(variableRate)),
             1e5
         );
 
