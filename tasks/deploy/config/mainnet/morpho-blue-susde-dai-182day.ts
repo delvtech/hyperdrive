@@ -11,10 +11,10 @@ import {
 import { MAINNET_FACTORY_NAME } from "./factory";
 import { MAINNET_MORPHO_BLUE_COORDINATOR_NAME } from "./morpho-blue-coordinator";
 
-export const MAINNET_MORPHO_BLUE_DAI_14DAY_NAME =
+export const MAINNET_MORPHO_BLUE_DAI_182DAY_NAME =
     "ElementDAO 182 Day sUSDe/DAI Hyperdrive";
 
-const CONTRIBUTION = parseEther("100");
+const CONTRIBUTION = parseEther("1");
 
 const morphoBlueParameters = encodeAbiParameters(
     [
@@ -57,22 +57,22 @@ const morphoBlueParameters = encodeAbiParameters(
     ],
 );
 
-export const MAINNET_MORPHO_BLUE_DAI_14DAY: HyperdriveInstanceConfig<"MorphoBlue"> =
+export const MAINNET_MORPHO_BLUE_DAI_182DAY: HyperdriveInstanceConfig<"MorphoBlue"> =
     {
-        name: MAINNET_MORPHO_BLUE_DAI_14DAY_NAME,
+        name: MAINNET_MORPHO_BLUE_DAI_182DAY_NAME,
         prefix: "MorphoBlue",
         coordinatorAddress: async (hre) =>
             hre.hyperdriveDeploy.deployments.byName(
                 MAINNET_MORPHO_BLUE_COORDINATOR_NAME,
             ).address,
         deploymentId: toBytes32(
-            MAINNET_MORPHO_BLUE_DAI_14DAY_NAME.slice(0, 32),
+            MAINNET_MORPHO_BLUE_DAI_182DAY_NAME.slice(0, 32),
         ),
         salt: toBytes32("0x420"),
         extraData: morphoBlueParameters,
         contribution: CONTRIBUTION,
         fixedAPR: parseEther("0.083"),
-        timestretchAPR: parseEther("0.05"),
+        timestretchAPR: parseEther("0.1"),
         options: async (hre) => ({
             extraData: "0x",
             asBase: true,
@@ -97,8 +97,8 @@ export const MAINNET_MORPHO_BLUE_DAI_14DAY: HyperdriveInstanceConfig<"MorphoBlue
             return {
                 baseToken: MAINNET_DAI_ADDRESS,
                 vaultSharesToken: zeroAddress,
-                circuitBreakerDelta: parseEther("0.05"),
-                minimumShareReserves: parseEther("10"),
+                circuitBreakerDelta: parseEther("0.1"),
+                minimumShareReserves: parseEther("0.001"),
                 minimumTransactionAmount: parseEther("0.001"),
                 positionDuration: parseDuration(SIX_MONTHS),
                 checkpointDuration: parseDuration("1 day"),

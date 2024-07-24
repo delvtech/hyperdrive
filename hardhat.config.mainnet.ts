@@ -11,7 +11,7 @@ import {
     MAINNET_EZETH_COORDINATOR,
     MAINNET_FACTORY,
     MAINNET_MORPHO_BLUE_COORDINATOR,
-    MAINNET_MORPHO_BLUE_DAI_14DAY,
+    MAINNET_MORPHO_BLUE_DAI_182DAY,
     MAINNET_RETH_182DAY,
     MAINNET_RETH_COORDINATOR,
 } from "./tasks/deploy/config/mainnet";
@@ -35,7 +35,7 @@ const config: HardhatUserConfig = {
                 instances: [
                     MAINNET_EZETH_182DAY,
                     MAINNET_RETH_182DAY,
-                    MAINNET_MORPHO_BLUE_DAI_14DAY,
+                    MAINNET_MORPHO_BLUE_DAI_182DAY,
                 ],
                 checkpointRewarders: [],
                 checkpointSubrewarders: [],
