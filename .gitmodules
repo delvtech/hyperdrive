@@ -15,9 +15,6 @@
 [submodule "lib/aave-v3-core"]
 	path = lib/aave-v3-core
 	url = https://github.com/aave/aave-v3-core
-[submodule "lib/etherfi"]
-	path = lib/etherfi
-	url = git@github.com:etherfi-protocol/smart-contracts.git
 [submodule "lib/morpho-blue"]
 	path = lib/morpho-blue
 	url = https://github.com/morpho-org/morpho-blue
