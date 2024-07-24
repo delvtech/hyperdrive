@@ -16,6 +16,7 @@ cache_path = 'forge-cache'
 remappings = [
   'aave=lib/aave-v3-core/contracts',
   'forge-std=lib/forge-std/src',
+  'morpho-blue=lib/morpho-blue',
   'nomad=lib/ExcessivelySafeCall/src',
   'openzeppelin=lib/openzeppelin-contracts/contracts',
   'solmate=lib/solmate/src',

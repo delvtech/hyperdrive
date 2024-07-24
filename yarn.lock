@@ -959,10 +959,10 @@
     table "^6.8.0"
     undici "^5.14.0"
 
-"@nomicfoundation/hardhat-viem@^2.0.1":
-  version "2.0.1"
-  resolved "https://registry.yarnpkg.com/@nomicfoundation/hardhat-viem/-/hardhat-viem-2.0.1.tgz#8942cd68f2d619b9ccd087b2e5d28de349535285"
-  integrity sha512-C7mSg2MiJekWY2xZYYOdbGmA1+hRKIHoSsh/SeY97mPO6nTha7OEeeg+seecxTekLJW1kqryjCdU8ul+L29v3w==
+"@nomicfoundation/hardhat-viem@^2.0.3":
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/@nomicfoundation/hardhat-viem/-/hardhat-viem-2.0.3.tgz#db13066d2412fcaee7886a4cf6fe266522ab66fe"
+  integrity sha512-y2eYaHtpshiGrhU2L5My4zYrj/vxxRdCIqbTsg9YP7AjKWhJGvKPkVRYaPTosW68nYlNtkns/+Eb25aXACHd9Q==
   dependencies:
     abitype "^0.9.8"
     lodash.memoize "^4.1.2"
