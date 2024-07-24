@@ -736,6 +736,76 @@
             "contract": "RETHHyperdrive",
             "address": "0xca5dB9Bb25D09A9bF3b22360Be3763b5f2d13589",
             "timestamp": "2024-07-16T23:41:53.768Z"
+        },
+        "ElementDAO MorphoBlue Hyperdrive Deployer Coordinator_MorphoBlueHyperdriveCoreDeployer": {
+            "contract": "MorphoBlueHyperdriveCoreDeployer",
+            "address": "0x3efc73c09c53d0037db4a466fd2972b7d69dd548",
+            "timestamp": "2024-07-24T12:49:30.483Z"
+        },
+        "MorphoBlueConversions": {
+            "contract": "MorphoBlueConversions",
+            "address": "0xa5495ca17c93815c9684f8033a263740a2e7518d",
+            "timestamp": "2024-07-24T12:49:43.218Z"
+        },
+        "ElementDAO MorphoBlue Hyperdrive Deployer Coordinator_MorphoBlueTarget0Deployer": {
+            "contract": "MorphoBlueTarget0Deployer",
+            "address": "0xf270d908971820d1662675babb6c880ca7c0e5d8",
+            "timestamp": "2024-07-24T12:49:50.735Z"
+        },
+        "ElementDAO MorphoBlue Hyperdrive Deployer Coordinator_MorphoBlueTarget1Deployer": {
+            "contract": "MorphoBlueTarget1Deployer",
+            "address": "0x5e82951261d687d7b51580f9660909b055849c81",
+            "timestamp": "2024-07-24T12:50:04.028Z"
+        },
+        "ElementDAO MorphoBlue Hyperdrive Deployer Coordinator_MorphoBlueTarget2Deployer": {
+            "contract": "MorphoBlueTarget2Deployer",
+            "address": "0x91321eabbfae5bc0022a6e09b82eaa5eacd3ad0a",
+            "timestamp": "2024-07-24T12:50:16.867Z"
+        },
+        "ElementDAO MorphoBlue Hyperdrive Deployer Coordinator_MorphoBlueTarget3Deployer": {
+            "contract": "MorphoBlueTarget3Deployer",
+            "address": "0xdccdd954df14138e0533a5b737d0a546defdede7",
+            "timestamp": "2024-07-24T12:50:29.680Z"
+        },
+        "ElementDAO MorphoBlue Hyperdrive Deployer Coordinator_MorphoBlueTarget4Deployer": {
+            "contract": "MorphoBlueTarget4Deployer",
+            "address": "0x7b873c4f1933812815d7f0a84d9d365dea51ca32",
+            "timestamp": "2024-07-24T12:50:42.389Z"
+        },
+        "ElementDAO MorphoBlue Hyperdrive Deployer Coordinator": {
+            "contract": "MorphoBlueHyperdriveDeployerCoordinator",
+            "address": "0xfe2f14fd4d64fbacc818e47e9390d878bcad9fc1",
+            "timestamp": "2024-07-24T12:50:55.415Z"
+        },
+        "ElementDAO 182 Day sUSDe/DAI Hyperdrive_MorphoBlueTarget0": {
+            "contract": "MorphoBlueTarget0",
+            "address": "0xeC789CfF5cB464459FAcF320988B27d4C197Ffe5",
+            "timestamp": "2024-07-24T12:53:03.303Z"
+        },
+        "ElementDAO 182 Day sUSDe/DAI Hyperdrive_MorphoBlueTarget1": {
+            "contract": "MorphoBlueTarget1",
+            "address": "0x39899AE100d7dcd4C8C95F1009CcfA9355Ad1f3a",
+            "timestamp": "2024-07-24T12:52:17.600Z"
+        },
+        "ElementDAO 182 Day sUSDe/DAI Hyperdrive_MorphoBlueTarget2": {
+            "contract": "MorphoBlueTarget2",
+            "address": "0x394DdAC293d5a351F7E3c8777117D45d3a727Cb0",
+            "timestamp": "2024-07-24T12:52:29.523Z"
+        },
+        "ElementDAO 182 Day sUSDe/DAI Hyperdrive_MorphoBlueTarget3": {
+            "contract": "MorphoBlueTarget3",
+            "address": "0x1AA48E249a702D8207e0F0B8B9f0f61c91Bc1A2e",
+            "timestamp": "2024-07-24T12:52:42.486Z"
+        },
+        "ElementDAO 182 Day sUSDe/DAI Hyperdrive_MorphoBlueTarget4": {
+            "contract": "MorphoBlueTarget4",
+            "address": "0x24E2F0Bfc840B10888BF30388fED740e2C4Dd976",
+            "timestamp": "2024-07-24T12:52:49.697Z"
+        },
+        "ElementDAO 182 Day sUSDe/DAI Hyperdrive": {
+            "contract": "MorphoBlueHyperdrive",
+            "address": "0x3F104Cd9C793d01AE450b8eC6F143c5924aFDfb9",
+            "timestamp": "2024-07-24T12:53:02.947Z"
         }
     }
 }
