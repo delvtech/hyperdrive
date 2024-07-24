@@ -14,7 +14,7 @@ import { MAINNET_MORPHO_BLUE_COORDINATOR_NAME } from "./morpho-blue-coordinator"
 export const MAINNET_MORPHO_BLUE_DAI_182DAY_NAME =
     "ElementDAO 182 Day sUSDe/DAI Hyperdrive";
 
-const CONTRIBUTION = parseEther("1");
+const CONTRIBUTION = parseEther("100");
 
 const morphoBlueParameters = encodeAbiParameters(
     [
@@ -71,7 +71,7 @@ export const MAINNET_MORPHO_BLUE_DAI_182DAY: HyperdriveInstanceConfig<"MorphoBlu
         salt: toBytes32("0x420"),
         extraData: morphoBlueParameters,
         contribution: CONTRIBUTION,
-        fixedAPR: parseEther("0.083"),
+        fixedAPR: parseEther("0.08"),
         timestretchAPR: parseEther("0.1"),
         options: async (hre) => ({
             extraData: "0x",
