@@ -42,6 +42,8 @@ abstract contract InstanceTest is HyperdriveTest {
         bool enableShareDeposits;
         bool enableBaseWithdraws;
         bool enableShareWithdraws;
+        // TODO: Add variants of this for the other "enable" states.
+        bytes baseWithdrawError;
     }
 
     // Fixed rate used to configure market.
@@ -902,11 +904,11 @@ abstract contract InstanceTest is HyperdriveTest {
             address(hyperdrive)
         );
 
-        // Bob closes the long. We expect to fail with an UnsupportedToken error
-        // if withdrawing with base are not supported.
+        // Bob closes the long. We expect to fail if withdrawing with base is
+        // not supported.
         vm.startPrank(bob);
         if (!config.enableBaseWithdraws) {
-            vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+            vm.expectRevert(config.baseWithdrawError);
         }
         uint256 baseProceeds = hyperdrive.closeLong(
             maturityTime,
@@ -1168,7 +1170,7 @@ abstract contract InstanceTest is HyperdriveTest {
             startingVaultSharePrice
         );
         if (!config.enableBaseWithdraws) {
-            vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+            vm.expectRevert(config.baseWithdrawError);
         }
         uint256 baseProceeds = hyperdrive.closeShort(
             maturityTime,

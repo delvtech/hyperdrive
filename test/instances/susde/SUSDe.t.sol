@@ -1,22 +1,20 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { Id, IMorpho, Market, MarketParams } from "morpho-blue/src/interfaces/IMorpho.sol";
-import { MarketParamsLib } from "morpho-blue/src/libraries/MarketParamsLib.sol";
-import { MorphoBalancesLib } from "morpho-blue/src/libraries/periphery/MorphoBalancesLib.sol";
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
-import { MorphoBlueHyperdriveCoreDeployer } from "contracts/src/deployers/morpho-blue/MorphoBlueHyperdriveCoreDeployer.sol";
-import { MorphoBlueHyperdriveDeployerCoordinator } from "contracts/src/deployers/morpho-blue/MorphoBlueHyperdriveDeployerCoordinator.sol";
-import { MorphoBlueTarget0Deployer } from "contracts/src/deployers/morpho-blue/MorphoBlueTarget0Deployer.sol";
-import { MorphoBlueTarget1Deployer } from "contracts/src/deployers/morpho-blue/MorphoBlueTarget1Deployer.sol";
-import { MorphoBlueTarget2Deployer } from "contracts/src/deployers/morpho-blue/MorphoBlueTarget2Deployer.sol";
-import { MorphoBlueTarget3Deployer } from "contracts/src/deployers/morpho-blue/MorphoBlueTarget3Deployer.sol";
-import { MorphoBlueTarget4Deployer } from "contracts/src/deployers/morpho-blue/MorphoBlueTarget4Deployer.sol";
+import { ERC4626HyperdriveCoreDeployer } from "contracts/src/deployers/erc4626/ERC4626HyperdriveCoreDeployer.sol";
+import { ERC4626HyperdriveDeployerCoordinator } from "contracts/src/deployers/erc4626/ERC4626HyperdriveDeployerCoordinator.sol";
+import { ERC4626Target0Deployer } from "contracts/src/deployers/erc4626/ERC4626Target0Deployer.sol";
+import { ERC4626Target1Deployer } from "contracts/src/deployers/erc4626/ERC4626Target1Deployer.sol";
+import { ERC4626Target2Deployer } from "contracts/src/deployers/erc4626/ERC4626Target2Deployer.sol";
+import { ERC4626Target3Deployer } from "contracts/src/deployers/erc4626/ERC4626Target3Deployer.sol";
+import { ERC4626Target4Deployer } from "contracts/src/deployers/erc4626/ERC4626Target4Deployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { MorphoBlueConversions } from "contracts/src/instances/morpho-blue/MorphoBlueConversions.sol";
+import { ERC4626Conversions } from "contracts/src/instances/erc4626/ERC4626Conversions.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IMorphoBlueHyperdrive } from "contracts/src/interfaces/IMorphoBlueHyperdrive.sol";
+import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ETH } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
@@ -27,72 +25,53 @@ import { InstanceTest } from "test/utils/InstanceTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-contract MorphoBlueHyperdriveTest is InstanceTest {
+contract SUSDeHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
-    using MarketParamsLib for MarketParams;
-    using MorphoBalancesLib for IMorpho;
     using Lib for *;
     using stdStorage for StdStorage;
 
-    // The mainnet Morpho Blue pool.
-    IMorpho internal constant MORPHO =
-        IMorpho(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
+    /// The cooldown error thrown by SUSDe on withdraw.
+    error OperationNotAllowed();
 
-    // The ID of the SUSDe market.
-    bytes32 internal constant MARKET_ID =
-        bytes32(
-            0x39d11026eae1c6ec02aa4c0910778664089cdd97c3fd23f68f7cd05e2e95af48
-        );
+    // The staked USDe contract.
+    IERC4626 internal constant SUSDE =
+        IERC4626(0x9D39A5DE30e57443BfF2A8307A4256c8797A3497);
 
-    // The address of the loan token. This is just the DAI token.
-    address internal constant LOAN_TOKEN =
-        address(0x6B175474E89094C44Da98b954EedeAC495271d0F);
-
-    // The address of the collateral token. This is just the SUSDe token.
-    address internal constant COLLATERAL_TOKEN =
-        address(0x9D39A5DE30e57443BfF2A8307A4256c8797A3497);
-
-    // The address of the oracle.
-    address internal constant ORACLE =
-        address(0x5D916980D5Ae1737a8330Bf24dF812b2911Aae25);
-
-    // The address of the interest rate model.
-    address internal constant IRM =
-        address(0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC);
-
-    // The liquidation loan to value ratio of the SUSDe market.
-    uint256 internal constant LLTV = 860000000000000000;
+    // The USDe contract.
+    IERC20 internal constant USDE =
+        IERC20(0x4c9EDD5852cd905f086C759E8383e09bff1E68B3);
 
     // Whale accounts.
-    address internal LOAN_TOKEN_WHALE =
-        address(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
-    address[] internal baseTokenWhaleAccounts = [LOAN_TOKEN_WHALE];
+    address internal USDE_TOKEN_WHALE =
+        address(0x42862F48eAdE25661558AFE0A630b132038553D0);
+    address[] internal baseTokenWhaleAccounts = [USDE_TOKEN_WHALE];
+    address internal SUSDE_TOKEN_WHALE =
+        address(0x4139cDC6345aFFbaC0692b43bed4D059Df3e6d65);
+    address[] internal vaultSharesTokenWhaleAccounts = [SUSDE_TOKEN_WHALE];
 
     // The configuration for the instance testing suite.
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig({
             name: "Hyperdrive",
-            kind: "MorphoBlueHyperdrive",
+            kind: "ERC4626Hyperdrive",
             baseTokenWhaleAccounts: baseTokenWhaleAccounts,
-            vaultSharesTokenWhaleAccounts: new address[](0),
-            baseToken: IERC20(LOAN_TOKEN),
-            vaultSharesToken: IERC20(address(0)),
-            // NOTE: The share tolerance is quite high for this integration
-            // because the vault share price is ~1e12, which means that just
-            // multiplying or dividing by the vault is an imprecise way of
-            // converting between base and vault shares. We included more
-            // assertions than normal to the round trip tests to verify that
-            // the calculations satisfy our expectations of accuracy.
-            shareTolerance: 1e15,
+            vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
+            baseToken: USDE,
+            vaultSharesToken: IERC20(address(SUSDE)),
+            shareTolerance: 1e3,
             minTransactionAmount: 1e15,
             positionDuration: POSITION_DURATION,
             enableBaseDeposits: true,
-            enableShareDeposits: false,
-            enableBaseWithdraws: true,
-            enableShareWithdraws: false,
+            enableShareDeposits: true,
+            enableBaseWithdraws: false,
+            enableShareWithdraws: true,
+            // NOTE: SUSDe currently has a cooldown on withdrawals which
+            // prevents users from withdrawing as base instantaneously. We still
+            // support withdrawing with base since the cooldown can be disabled
+            // in the future.
             baseWithdrawError: abi.encodeWithSelector(
-                IHyperdrive.UnsupportedToken.selector
+                OperationNotAllowed.selector
             )
         });
 
@@ -100,8 +79,8 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
     constructor() InstanceTest(__testConfig) {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
-    function setUp() public override __mainnet_fork(20_276_503) {
-        // Invoke the instance testing suite setup.
+    function setUp() public override __mainnet_fork(20_335_384) {
+        // Invoke the Instance testing suite setup.
         super.setUp();
     }
 
@@ -110,16 +89,7 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
     /// @dev Gets the extra data used to deploy Hyperdrive instances.
     /// @return The extra data.
     function getExtraData() internal pure override returns (bytes memory) {
-        return
-            abi.encode(
-                IMorphoBlueHyperdrive.MorphoBlueParams({
-                    morpho: MORPHO,
-                    collateralToken: COLLATERAL_TOKEN,
-                    oracle: ORACLE,
-                    irm: IRM,
-                    lltv: LLTV
-                })
-            );
+        return new bytes(0);
     }
 
     /// @dev Converts base amount to the equivalent about in shares.
@@ -127,13 +97,8 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         uint256 baseAmount
     ) internal view override returns (uint256) {
         return
-            MorphoBlueConversions.convertToShares(
-                MORPHO,
-                IERC20(LOAN_TOKEN),
-                COLLATERAL_TOKEN,
-                ORACLE,
-                IRM,
-                LLTV,
+            ERC4626Conversions.convertToShares(
+                IERC20(address(SUSDE)),
                 baseAmount
             );
     }
@@ -143,18 +108,13 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         uint256 shareAmount
     ) internal view override returns (uint256) {
         return
-            MorphoBlueConversions.convertToBase(
-                MORPHO,
-                IERC20(LOAN_TOKEN),
-                COLLATERAL_TOKEN,
-                ORACLE,
-                IRM,
-                LLTV,
+            ERC4626Conversions.convertToBase(
+                IERC20(address(SUSDE)),
                 shareAmount
             );
     }
 
-    /// @dev Deploys the Morpho Blue deployer coordinator contract.
+    /// @dev Deploys the ERC4626 deployer coordinator contract.
     /// @param _factory The address of the Hyperdrive factory.
     function deployCoordinator(
         address _factory
@@ -162,53 +122,29 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         vm.startPrank(alice);
         return
             address(
-                new MorphoBlueHyperdriveDeployerCoordinator(
+                new ERC4626HyperdriveDeployerCoordinator(
                     string.concat(__testConfig.name, "DeployerCoordinator"),
                     _factory,
-                    address(new MorphoBlueHyperdriveCoreDeployer()),
-                    address(new MorphoBlueTarget0Deployer()),
-                    address(new MorphoBlueTarget1Deployer()),
-                    address(new MorphoBlueTarget2Deployer()),
-                    address(new MorphoBlueTarget3Deployer()),
-                    address(new MorphoBlueTarget4Deployer())
+                    address(new ERC4626HyperdriveCoreDeployer()),
+                    address(new ERC4626Target0Deployer()),
+                    address(new ERC4626Target1Deployer()),
+                    address(new ERC4626Target2Deployer()),
+                    address(new ERC4626Target3Deployer()),
+                    address(new ERC4626Target4Deployer())
                 )
             );
     }
 
     /// @dev Fetches the total supply of the base and share tokens.
     function getSupply() internal view override returns (uint256, uint256) {
-        (uint256 totalSupplyAssets, uint256 totalSupplyShares, , ) = MORPHO
-            .expectedMarketBalances(
-                MarketParams({
-                    loanToken: LOAN_TOKEN,
-                    collateralToken: COLLATERAL_TOKEN,
-                    oracle: ORACLE,
-                    irm: IRM,
-                    lltv: LLTV
-                })
-            );
-        return (totalSupplyAssets, totalSupplyShares);
+        return (SUSDE.totalAssets(), SUSDE.totalSupply());
     }
 
     /// @dev Fetches the token balance information of an account.
     function getTokenBalances(
         address account
     ) internal view override returns (uint256, uint256) {
-        return (
-            IERC20(LOAN_TOKEN).balanceOf(account),
-            MORPHO
-                .position(
-                    MarketParams({
-                        loanToken: LOAN_TOKEN,
-                        collateralToken: COLLATERAL_TOKEN,
-                        oracle: ORACLE,
-                        irm: IRM,
-                        lltv: LLTV
-                    }).id(),
-                    account
-                )
-                .supplyShares
-        );
+        return (USDE.balanceOf(account), SUSDE.balanceOf(account));
     }
 
     /// @dev Verifies that deposit accounting is correct when opening positions.
@@ -221,59 +157,86 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
     ) internal view override {
-        // Vault shares deposits are not supported for this instance.
-        if (!asBase) {
-            revert IHyperdrive.UnsupportedToken();
-        }
-
-        // Ensure that the total supply increased by the base paid.
-        (uint256 totalSupplyAssets, uint256 totalSupplyShares, , ) = MORPHO
-            .expectedMarketBalances(
-                MarketParams({
-                    loanToken: LOAN_TOKEN,
-                    collateralToken: COLLATERAL_TOKEN,
-                    oracle: ORACLE,
-                    irm: IRM,
-                    lltv: LLTV
-                })
+        if (asBase) {
+            // Ensure that the total supply increased by the base paid.
+            (uint256 totalBase, uint256 totalShares) = getSupply();
+            assertApproxEqAbs(totalBase, totalBaseBefore + amountPaid, 1);
+            assertApproxEqAbs(
+                totalShares,
+                totalSharesBefore + hyperdrive.convertToShares(amountPaid),
+                1
             );
-        assertApproxEqAbs(totalSupplyAssets, totalBaseBefore + amountPaid, 1);
-        assertApproxEqAbs(
-            totalSupplyShares,
-            totalSharesBefore + hyperdrive.convertToShares(amountPaid),
-            1
-        );
 
-        // Ensure that the ETH balances didn't change.
-        assertEq(
-            address(hyperdrive).balance,
-            hyperdriveBalancesBefore.ETHBalance
-        );
-        assertEq(bob.balance, traderBalancesBefore.ETHBalance);
+            // Ensure that the ETH balances didn't change.
+            assertEq(
+                address(hyperdrive).balance,
+                hyperdriveBalancesBefore.ETHBalance
+            );
+            assertEq(bob.balance, traderBalancesBefore.ETHBalance);
 
-        // Ensure that the Hyperdrive instance's base balance doesn't change
-        // and that the trader's base balance decreased by the amount paid.
-        assertEq(
-            IERC20(LOAN_TOKEN).balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.baseBalance
-        );
-        assertEq(
-            IERC20(LOAN_TOKEN).balanceOf(trader),
-            traderBalancesBefore.baseBalance - amountPaid
-        );
+            // Ensure that the Hyperdrive instance's base balance doesn't change
+            // and that the trader's base balance decreased by the amount paid.
+            (
+                uint256 hyperdriveBaseAfter,
+                uint256 hyperdriveSharesAfter
+            ) = getTokenBalances(address(hyperdrive));
+            (
+                uint256 traderBaseAfter,
+                uint256 traderSharesAfter
+            ) = getTokenBalances(address(trader));
+            assertEq(hyperdriveBaseAfter, hyperdriveBalancesBefore.baseBalance);
+            assertEq(
+                traderBaseAfter,
+                traderBalancesBefore.baseBalance - amountPaid
+            );
 
-        // Ensure that the shares balances were updated correctly.
-        (, uint256 hyperdriveSharesAfter) = getTokenBalances(
-            address(hyperdrive)
-        );
-        (, uint256 traderSharesAfter) = getTokenBalances(address(trader));
-        assertApproxEqAbs(
-            hyperdriveSharesAfter,
-            hyperdriveBalancesBefore.sharesBalance +
-                hyperdrive.convertToShares(amountPaid),
-            2
-        );
-        assertEq(traderSharesAfter, traderBalancesBefore.sharesBalance);
+            // Ensure that the shares balances were updated correctly.
+            assertApproxEqAbs(
+                hyperdriveSharesAfter,
+                hyperdriveBalancesBefore.sharesBalance +
+                    hyperdrive.convertToShares(amountPaid),
+                2
+            );
+            assertEq(traderSharesAfter, traderBalancesBefore.sharesBalance);
+        } else {
+            // Ensure that the total supply and scaled total supply stay the same.
+            (uint256 totalBase, uint256 totalShares) = getSupply();
+            assertEq(totalBase, totalBaseBefore);
+            assertApproxEqAbs(totalShares, totalSharesBefore, 1);
+
+            // Ensure that the ETH balances didn't change.
+            assertEq(
+                address(hyperdrive).balance,
+                hyperdriveBalancesBefore.ETHBalance
+            );
+            assertEq(bob.balance, traderBalancesBefore.ETHBalance);
+
+            // Ensure that the base balances didn't change.
+            (
+                uint256 hyperdriveBaseAfter,
+                uint256 hyperdriveSharesAfter
+            ) = getTokenBalances(address(hyperdrive));
+            (
+                uint256 traderBaseAfter,
+                uint256 traderSharesAfter
+            ) = getTokenBalances(address(trader));
+            assertEq(hyperdriveBaseAfter, hyperdriveBalancesBefore.baseBalance);
+            assertEq(traderBaseAfter, traderBalancesBefore.baseBalance);
+
+            // Ensure that the shares balances were updated correctly.
+            assertApproxEqAbs(
+                hyperdriveSharesAfter,
+                hyperdriveBalancesBefore.sharesBalance +
+                    convertToShares(amountPaid),
+                2
+            );
+            assertApproxEqAbs(
+                traderSharesAfter,
+                traderBalancesBefore.sharesBalance -
+                    convertToShares(amountPaid),
+                2
+            );
+        }
     }
 
     /// @dev Verifies that withdrawal accounting is correct when closing positions.
@@ -286,83 +249,106 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
     ) internal view override {
-        // Vault shares withdrawals are not supported for this instance.
-        if (!asBase) {
-            revert IHyperdrive.UnsupportedToken();
-        }
-
-        // Ensure that the total supply decreased by the base proceeds.
-        (uint256 totalSupplyAssets, uint256 totalSupplyShares, , ) = MORPHO
-            .expectedMarketBalances(
-                MarketParams({
-                    loanToken: LOAN_TOKEN,
-                    collateralToken: COLLATERAL_TOKEN,
-                    oracle: ORACLE,
-                    irm: IRM,
-                    lltv: LLTV
-                })
+        if (asBase) {
+            // Ensure that the total supply decreased by the base proceeds.
+            (uint256 totalBase, uint256 totalShares) = getSupply();
+            assertApproxEqAbs(totalBase, totalBaseBefore - baseProceeds, 1);
+            assertApproxEqAbs(
+                totalShares,
+                totalSharesBefore - convertToShares(baseProceeds),
+                1
             );
-        assertApproxEqAbs(totalSupplyAssets, totalBaseBefore - baseProceeds, 1);
-        assertApproxEqAbs(
-            totalSupplyShares,
-            totalSharesBefore - hyperdrive.convertToShares(baseProceeds),
-            1e6
-        );
 
-        // Ensure that the ETH balances didn't change.
-        assertEq(
-            address(hyperdrive).balance,
-            hyperdriveBalancesBefore.ETHBalance
-        );
-        assertEq(bob.balance, traderBalancesBefore.ETHBalance);
+            // Ensure that the ETH balances didn't change.
+            assertEq(
+                address(hyperdrive).balance,
+                hyperdriveBalancesBefore.ETHBalance
+            );
+            assertEq(bob.balance, traderBalancesBefore.ETHBalance);
 
-        // Ensure that the base balances Hyperdrive base balance doesn't
-        // change and that the trader's base balance decreased by the amount
-        // paid.
-        assertApproxEqAbs(
-            IERC20(LOAN_TOKEN).balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.baseBalance,
-            1
-        );
-        assertEq(
-            IERC20(LOAN_TOKEN).balanceOf(trader),
-            traderBalancesBefore.baseBalance + baseProceeds
-        );
+            // Ensure that the base balances were updated correctly.
+            (
+                uint256 hyperdriveBaseAfter,
+                uint256 hyperdriveSharesAfter
+            ) = getTokenBalances(address(hyperdrive));
+            (
+                uint256 traderBaseAfter,
+                uint256 traderSharesAfter
+            ) = getTokenBalances(address(trader));
+            assertEq(hyperdriveBaseAfter, hyperdriveBalancesBefore.baseBalance);
+            assertEq(
+                traderBaseAfter,
+                traderBalancesBefore.baseBalance + baseProceeds
+            );
 
-        // Ensure that the shares balances were updated correctly.
-        (, uint256 hyperdriveSharesAfter) = getTokenBalances(
-            address(hyperdrive)
-        );
-        (, uint256 traderSharesAfter) = getTokenBalances(address(trader));
-        assertApproxEqAbs(
-            hyperdriveSharesAfter,
-            hyperdriveBalancesBefore.sharesBalance -
-                hyperdrive.convertToShares(baseProceeds),
-            1e6
-        );
-        assertApproxEqAbs(
-            traderSharesAfter,
-            traderBalancesBefore.sharesBalance,
-            1
-        );
+            // Ensure that the shares balances were updated correctly.
+            assertApproxEqAbs(
+                hyperdriveSharesAfter,
+                hyperdriveBalancesBefore.sharesBalance -
+                    convertToShares(baseProceeds),
+                2
+            );
+            assertApproxEqAbs(
+                traderSharesAfter,
+                traderBalancesBefore.sharesBalance,
+                1
+            );
+        } else {
+            // Ensure that the total supply stayed the same.
+            (uint256 totalBase, uint256 totalShares) = getSupply();
+            assertApproxEqAbs(totalBase, totalBaseBefore, 1);
+            assertApproxEqAbs(totalShares, totalSharesBefore, 1);
+
+            // Ensure that the ETH balances didn't change.
+            assertEq(
+                address(hyperdrive).balance,
+                hyperdriveBalancesBefore.ETHBalance
+            );
+            assertEq(bob.balance, traderBalancesBefore.ETHBalance);
+
+            // Ensure that the base balances didn't change.
+            (
+                uint256 hyperdriveBaseAfter,
+                uint256 hyperdriveSharesAfter
+            ) = getTokenBalances(address(hyperdrive));
+            (
+                uint256 traderBaseAfter,
+                uint256 traderSharesAfter
+            ) = getTokenBalances(address(trader));
+            assertApproxEqAbs(
+                hyperdriveBaseAfter,
+                hyperdriveBalancesBefore.baseBalance,
+                1
+            );
+            assertApproxEqAbs(
+                traderBaseAfter,
+                traderBalancesBefore.baseBalance,
+                1
+            );
+
+            // Ensure that the shares balances were updated correctly.
+            assertApproxEqAbs(
+                hyperdriveSharesAfter,
+                hyperdriveBalancesBefore.sharesBalance -
+                    convertToShares(baseProceeds),
+                2
+            );
+            assertApproxEqAbs(
+                traderSharesAfter,
+                traderBalancesBefore.sharesBalance +
+                    convertToShares(baseProceeds),
+                2
+            );
+        }
     }
 
     /// Price Per Share ///
 
     function test__pricePerVaultShare(uint256 basePaid) external {
         // Ensure that the share price is the expected value.
-        (uint256 totalSupplyAssets, uint256 totalSupplyShares, , ) = MORPHO
-            .expectedMarketBalances(
-                MarketParams({
-                    loanToken: LOAN_TOKEN,
-                    collateralToken: COLLATERAL_TOKEN,
-                    oracle: ORACLE,
-                    irm: IRM,
-                    lltv: LLTV
-                })
-            );
+        (uint256 totalBase, uint256 totalSupply) = getSupply();
         uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
-        assertEq(vaultSharePrice, totalSupplyAssets.divDown(totalSupplyShares));
+        assertEq(vaultSharePrice, totalBase.divDown(totalSupply));
 
         // Ensure that the share price accurately predicts the amount of shares
         // that will be minted for depositing a given amount of shares. This will
@@ -389,7 +375,7 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
 
     function test_round_trip_lp_instantaneous(uint256 _contribution) external {
         // Bob adds liquidity with base.
-        _contribution = _contribution.normalizeToRange(100e18, 100_000e18);
+        _contribution = _contribution.normalizeToRange(100e18, 100_000_000e18);
         IERC20(hyperdrive.baseToken()).approve(
             address(hyperdrive),
             _contribution
@@ -406,22 +392,24 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
             address(hyperdrive)
         );
 
-        // Bob removes his liquidity with base as the target asset.
-        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
+        // Bob removes his liquidity with vault shares as the target asset.
+        (uint256 shareProceeds, uint256 withdrawalShares) = removeLiquidity(
             bob,
-            lpShares
+            lpShares,
+            false
         );
+        uint256 baseProceeds = convertToBase(shareProceeds);
         assertEq(withdrawalShares, 0);
 
         // Bob should receive approximately as much base as he contributed since
         // no time as passed and the fees are zero.
-        assertApproxEqAbs(baseProceeds, _contribution, 1e12);
+        assertApproxEqAbs(baseProceeds, _contribution, 1e10);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
             bob,
             baseProceeds,
-            true,
+            false,
             totalSupplyAssetsBefore,
             totalSupplySharesBefore,
             bobBalancesBefore,
@@ -434,7 +422,7 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         uint256 _variableRate
     ) external {
         // Bob adds liquidity with base.
-        _contribution = _contribution.normalizeToRange(100e18, 100_000e18);
+        _contribution = _contribution.normalizeToRange(100e18, 100_000_000e18);
         IERC20(hyperdrive.baseToken()).approve(
             address(hyperdrive),
             _contribution
@@ -451,11 +439,13 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         );
         openShort(alice, shortAmount);
 
-        // Bob removes his liquidity with base as the target asset.
-        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
+        // Bob removes his liquidity with vault shares as the target asset.
+        (uint256 shareProceeds, uint256 withdrawalShares) = removeLiquidity(
             bob,
-            lpShares
+            lpShares,
+            false
         );
+        uint256 baseProceeds = convertToBase(shareProceeds);
         assertGt(withdrawalShares, 0);
 
         // The term passes and interest accrues.
@@ -466,10 +456,12 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         // approximately the LP share price.
         uint256 lpSharePrice = hyperdrive.getPoolInfo().lpSharePrice;
         uint256 withdrawalSharesRedeemed;
-        (baseProceeds, withdrawalSharesRedeemed) = redeemWithdrawalShares(
+        (shareProceeds, withdrawalSharesRedeemed) = redeemWithdrawalShares(
             bob,
-            withdrawalShares
+            withdrawalShares,
+            false
         );
+        baseProceeds = convertToBase(shareProceeds);
         assertEq(withdrawalSharesRedeemed, withdrawalShares);
 
         // Bob should receive base approximately equal in value to his present
@@ -477,7 +469,7 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         assertApproxEqAbs(
             baseProceeds,
             withdrawalShares.mulDown(lpSharePrice),
-            1e11
+            1e9
         );
     }
 
@@ -532,8 +524,9 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
             address(hyperdrive)
         );
 
-        // Bob closes his long with base as the target asset.
-        uint256 baseProceeds = closeLong(bob, maturityTime, longAmount);
+        // Bob closes his long with vault shares as the target asset.
+        uint256 shareProceeds = closeLong(bob, maturityTime, longAmount, false);
+        uint256 baseProceeds = convertToBase(shareProceeds);
 
         // Bob should receive approximately as much base as he paid since no
         // time as passed and the fees are zero.
@@ -543,7 +536,7 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         verifyWithdrawal(
             bob,
             baseProceeds,
-            true,
+            false,
             totalSupplyAssetsBefore,
             totalSupplySharesBefore,
             bobBalancesBefore,
@@ -563,7 +556,9 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         IERC20(hyperdrive.baseToken()).approve(address(hyperdrive), _basePaid);
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, _basePaid);
 
-        // Advance the time and accrue a large amount of interest.
+        // Advance the time and accrue a interest. We fuzz over a large range of
+        // variable rates to make sure that the payout doesn't have large error
+        // bars when the variable rate gets astronomical.
         _variableRate = _variableRate.normalizeToRange(0, 1000e18);
         advanceTime(POSITION_DURATION, int256(_variableRate));
 
@@ -577,18 +572,19 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
             address(hyperdrive)
         );
 
-        // Bob closes his long with base as the target asset.
-        uint256 baseProceeds = closeLong(bob, maturityTime, longAmount);
+        // Bob closes his long with vault shares as the target asset.
+        uint256 shareProceeds = closeLong(bob, maturityTime, longAmount, false);
+        uint256 baseProceeds = convertToBase(shareProceeds);
 
         // Bob should receive almost exactly his bond amount.
         assertLe(baseProceeds, longAmount);
-        assertApproxEqAbs(baseProceeds, longAmount, 2);
+        assertApproxEqAbs(baseProceeds, longAmount, 1e4);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
             bob,
             baseProceeds,
-            true,
+            false,
             totalSupplyAssetsBefore,
             totalSupplySharesBefore,
             bobBalancesBefore,
@@ -653,8 +649,14 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
             address(hyperdrive)
         );
 
-        // Bob closes his long with base as the target asset.
-        uint256 baseProceeds = closeShort(bob, maturityTime, _shortAmount);
+        // Bob closes his long with vault shares as the target asset.
+        uint256 shareProceeds = closeShort(
+            bob,
+            maturityTime,
+            _shortAmount,
+            false
+        );
+        uint256 baseProceeds = convertToBase(shareProceeds);
 
         // Bob should receive approximately as much base as he paid since no
         // time as passed and the fees are zero.
@@ -664,7 +666,7 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         verifyWithdrawal(
             bob,
             baseProceeds,
-            true,
+            false,
             totalSupplyAssetsBefore,
             totalSupplySharesBefore,
             bobBalancesBefore,
@@ -701,22 +703,28 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
             address(hyperdrive)
         );
 
-        // Bob closes his long with base as the target asset.
-        uint256 baseProceeds = closeShort(bob, maturityTime, _shortAmount);
+        // Bob closes his long with vault shares as the target asset.
+        uint256 shareProceeds = closeShort(
+            bob,
+            maturityTime,
+            _shortAmount,
+            false
+        );
+        uint256 baseProceeds = convertToBase(shareProceeds);
 
         // Bob should receive almost exactly the interest that accrued on the
         // bonds that were shorted.
         assertApproxEqAbs(
             baseProceeds,
             _shortAmount.mulDown(_variableRate),
-            1e10
+            1e9
         );
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
             bob,
             baseProceeds,
-            true,
+            false,
             totalSupplyAssetsBefore,
             totalSupplySharesBefore,
             bobBalancesBefore,
@@ -726,51 +734,29 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
 
     /// Helpers ///
 
+    // Ethena accrues interest with the `transferInRewards` function. Interest
+    // accrues every 8 hours and vests over the course of the next 8 hours.
     function advanceTime(
         uint256 timeDelta,
         int256 variableRate
     ) internal override {
+        // Get the total base before advancing the time. This is important
+        // because it ensures that we are accruing interest on the current
+        // amount of total assets rather than the amount of total assets after
+        // the current rewards have fully vested.
+        (uint256 totalBase, ) = getSupply();
+
         // Advance the time.
         vm.warp(block.timestamp + timeDelta);
 
-        // Accrue interest in the Morpho market. This amounts to manually
-        // updating the total supply assets and the last update time.
-        Id marketId = MarketParams({
-            loanToken: LOAN_TOKEN,
-            collateralToken: COLLATERAL_TOKEN,
-            oracle: ORACLE,
-            irm: IRM,
-            lltv: LLTV
-        }).id();
-        Market memory market = MORPHO.market(marketId);
-        uint256 totalSupplyAssets = variableRate >= 0
-            ? market.totalSupplyAssets +
-                uint256(market.totalSupplyAssets).mulDown(uint256(variableRate))
-            : market.totalSupplyAssets -
-                uint256(market.totalSupplyAssets).mulDown(
-                    uint256(-variableRate)
-                );
-        bytes32 marketLocation = keccak256(abi.encode(marketId, 3));
-        vm.store(
-            address(MORPHO),
-            marketLocation,
-            bytes32(
-                (uint256(market.totalSupplyShares) << 128) | totalSupplyAssets
-            )
-        );
-        vm.store(
-            address(MORPHO),
-            bytes32(uint256(marketLocation) + 2),
-            bytes32((uint256(market.fee) << 128) | uint256(block.timestamp))
-        );
-
-        // In order to prevent transfers from failing, we also need to increase
-        // the DAI balance of the Morpho vault to match the total assets.
-        bytes32 balanceLocation = keccak256(abi.encode(address(MORPHO), 2));
-        vm.store(
-            address(LOAN_TOKEN),
-            balanceLocation,
-            bytes32(totalSupplyAssets)
-        );
+        // Accrue interest in the SUSDe market. Since SUSDe's share price is
+        // calculated as assets divided shares, we can accrue interest by
+        // updating the USDe balance. We modify this in place to allow negative
+        // interest accrual.
+        totalBase = variableRate >= 0
+            ? totalBase + totalBase.mulDown(uint256(variableRate))
+            : totalBase - totalBase.mulDown(uint256(-variableRate));
+        bytes32 balanceLocation = keccak256(abi.encode(address(SUSDE), 2));
+        vm.store(address(USDE), bytes32(balanceLocation), bytes32(totalBase));
     }
 }
