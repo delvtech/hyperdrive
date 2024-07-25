@@ -2,13 +2,13 @@
 pragma solidity ^0.8.18;
 
 import { Test } from "forge-std/Test.sol";
-import { Hyperdrive } from "contracts/src/external/Hyperdrive.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { HyperdriveStorage } from "contracts/src/internal/HyperdriveStorage.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { MockHyperdriveBase } from "contracts/test/MockHyperdrive.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Hyperdrive } from "../../contracts/src/external/Hyperdrive.sol";
+import { IERC20 } from "../../contracts/src/interfaces/IERC20.sol";
+import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
+import { HyperdriveStorage } from "../../contracts/src/internal/HyperdriveStorage.sol";
+import { HyperdriveMath } from "../../contracts/src/libraries/HyperdriveMath.sol";
+import { MockHyperdriveBase } from "../../contracts/test/MockHyperdrive.sol";
+import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 
 contract DummyProvider {
     function get() external pure returns (uint256) {

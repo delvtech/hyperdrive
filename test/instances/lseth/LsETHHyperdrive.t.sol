@@ -2,26 +2,26 @@
 pragma solidity 0.8.20;
 
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
-import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
-import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { LsETHHyperdriveCoreDeployer } from "contracts/src/deployers/lseth/LsETHHyperdriveCoreDeployer.sol";
-import { LsETHHyperdriveDeployerCoordinator } from "contracts/src/deployers/lseth/LsETHHyperdriveDeployerCoordinator.sol";
-import { LsETHTarget0Deployer } from "contracts/src/deployers/lseth/LsETHTarget0Deployer.sol";
-import { LsETHTarget1Deployer } from "contracts/src/deployers/lseth/LsETHTarget1Deployer.sol";
-import { LsETHTarget2Deployer } from "contracts/src/deployers/lseth/LsETHTarget2Deployer.sol";
-import { LsETHTarget3Deployer } from "contracts/src/deployers/lseth/LsETHTarget3Deployer.sol";
-import { LsETHTarget4Deployer } from "contracts/src/deployers/lseth/LsETHTarget4Deployer.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IRiverV1 } from "contracts/src/interfaces/IRiverV1.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { ETH } from "contracts/src/libraries/Constants.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { InstanceTest } from "test/utils/InstanceTest.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { ERC20ForwarderFactory } from "../../../contracts/src/token/ERC20ForwarderFactory.sol";
+import { HyperdriveFactory } from "../../../contracts/src/factory/HyperdriveFactory.sol";
+import { LsETHHyperdriveCoreDeployer } from "../../../contracts/src/deployers/lseth/LsETHHyperdriveCoreDeployer.sol";
+import { LsETHHyperdriveDeployerCoordinator } from "../../../contracts/src/deployers/lseth/LsETHHyperdriveDeployerCoordinator.sol";
+import { LsETHTarget0Deployer } from "../../../contracts/src/deployers/lseth/LsETHTarget0Deployer.sol";
+import { LsETHTarget1Deployer } from "../../../contracts/src/deployers/lseth/LsETHTarget1Deployer.sol";
+import { LsETHTarget2Deployer } from "../../../contracts/src/deployers/lseth/LsETHTarget2Deployer.sol";
+import { LsETHTarget3Deployer } from "../../../contracts/src/deployers/lseth/LsETHTarget3Deployer.sol";
+import { LsETHTarget4Deployer } from "../../../contracts/src/deployers/lseth/LsETHTarget4Deployer.sol";
+import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
+import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { IRiverV1 } from "../../../contracts/src/interfaces/IRiverV1.sol";
+import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
+import { ETH } from "../../../contracts/src/libraries/Constants.sol";
+import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
+import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
+import { InstanceTest } from "../../utils/InstanceTest.sol";
+import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract LsETHHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;

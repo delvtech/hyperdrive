@@ -2,9 +2,9 @@
 pragma solidity ^0.8.18;
 
 import { Vm } from "forge-std/Vm.sol";
-import { SafeCast } from "contracts/src/libraries/SafeCast.sol";
-import { MockSafeCast } from "contracts/test/MockSafeCast.sol";
-import { BaseTest } from "test/utils/BaseTest.sol";
+import { SafeCast } from "../../../contracts/src/libraries/SafeCast.sol";
+import { MockSafeCast } from "../../../contracts/test/MockSafeCast.sol";
+import { BaseTest } from "../../utils/BaseTest.sol";
 
 contract SafeCastTest is BaseTest {
     function test_toUint128_fuzz(uint256 num) public {

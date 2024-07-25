@@ -2,14 +2,14 @@
 pragma solidity 0.8.20;
 
 import { Test } from "forge-std/Test.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { LPMath } from "contracts/src/libraries/LPMath.sol";
-import { YieldSpaceMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { MockYieldSpaceMath } from "contracts/test/MockYieldSpaceMath.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
+import { LPMath } from "../../../contracts/src/libraries/LPMath.sol";
+import { YieldSpaceMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
+import { MockYieldSpaceMath } from "../../../contracts/test/MockYieldSpaceMath.sol";
+import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract YieldSpaceMathTest is Test {
     using FixedPointMath for uint256;

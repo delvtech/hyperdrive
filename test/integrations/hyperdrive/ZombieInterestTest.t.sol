@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "test/utils/HyperdriveTest.sol";
-import { MockHyperdrive, IMockHyperdrive } from "contracts/test/MockHyperdrive.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
+import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
+import { MockHyperdrive, IMockHyperdrive } from "../../../contracts/test/MockHyperdrive.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract ZombieInterestTest is HyperdriveTest {
     using FixedPointMath for uint256;

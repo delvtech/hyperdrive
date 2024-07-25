@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "test/utils/HyperdriveTest.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
+import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
+import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract PriceDiscoveryTest is HyperdriveTest {
     using FixedPointMath for uint256;

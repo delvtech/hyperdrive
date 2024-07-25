@@ -2,26 +2,26 @@
 pragma solidity 0.8.20;
 
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
-import { StETHHyperdriveCoreDeployer } from "contracts/src/deployers/steth/StETHHyperdriveCoreDeployer.sol";
-import { StETHHyperdriveDeployerCoordinator } from "contracts/src/deployers/steth/StETHHyperdriveDeployerCoordinator.sol";
-import { StETHTarget0Deployer } from "contracts/src/deployers/steth/StETHTarget0Deployer.sol";
-import { StETHTarget1Deployer } from "contracts/src/deployers/steth/StETHTarget1Deployer.sol";
-import { StETHTarget2Deployer } from "contracts/src/deployers/steth/StETHTarget2Deployer.sol";
-import { StETHTarget3Deployer } from "contracts/src/deployers/steth/StETHTarget3Deployer.sol";
-import { StETHTarget4Deployer } from "contracts/src/deployers/steth/StETHTarget4Deployer.sol";
-import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { ILido } from "contracts/src/interfaces/ILido.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { ETH } from "contracts/src/libraries/Constants.sol";
-import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { InstanceTest } from "test/utils/InstanceTest.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { StETHHyperdriveCoreDeployer } from "../../../contracts/src/deployers/steth/StETHHyperdriveCoreDeployer.sol";
+import { StETHHyperdriveDeployerCoordinator } from "../../../contracts/src/deployers/steth/StETHHyperdriveDeployerCoordinator.sol";
+import { StETHTarget0Deployer } from "../../../contracts/src/deployers/steth/StETHTarget0Deployer.sol";
+import { StETHTarget1Deployer } from "../../../contracts/src/deployers/steth/StETHTarget1Deployer.sol";
+import { StETHTarget2Deployer } from "../../../contracts/src/deployers/steth/StETHTarget2Deployer.sol";
+import { StETHTarget3Deployer } from "../../../contracts/src/deployers/steth/StETHTarget3Deployer.sol";
+import { StETHTarget4Deployer } from "../../../contracts/src/deployers/steth/StETHTarget4Deployer.sol";
+import { HyperdriveFactory } from "../../../contracts/src/factory/HyperdriveFactory.sol";
+import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
+import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { ILido } from "../../../contracts/src/interfaces/ILido.sol";
+import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
+import { ETH } from "../../../contracts/src/libraries/Constants.sol";
+import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
+import { ERC20ForwarderFactory } from "../../../contracts/src/token/ERC20ForwarderFactory.sol";
+import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
+import { InstanceTest } from "../../utils/InstanceTest.sol";
+import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract StETHHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;

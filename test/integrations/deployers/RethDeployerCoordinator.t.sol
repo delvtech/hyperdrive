@@ -1,24 +1,24 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
-import { HyperdriveDeployerCoordinator } from "contracts/src/deployers/HyperdriveDeployerCoordinator.sol";
-import { RETHHyperdriveCoreDeployer } from "contracts/src/deployers/reth/RETHHyperdriveCoreDeployer.sol";
-import { RETHTarget0Deployer } from "contracts/src/deployers/reth/RETHTarget0Deployer.sol";
-import { RETHTarget1Deployer } from "contracts/src/deployers/reth/RETHTarget1Deployer.sol";
-import { RETHTarget2Deployer } from "contracts/src/deployers/reth/RETHTarget2Deployer.sol";
-import { RETHTarget3Deployer } from "contracts/src/deployers/reth/RETHTarget3Deployer.sol";
-import { RETHTarget4Deployer } from "contracts/src/deployers/reth/RETHTarget4Deployer.sol";
-import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { MockRocketPool } from "contracts/test/MockRocketPool.sol";
-import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
+import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveDeployerCoordinator } from "../../../contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
+import { HyperdriveDeployerCoordinator } from "../../../contracts/src/deployers/HyperdriveDeployerCoordinator.sol";
+import { RETHHyperdriveCoreDeployer } from "../../../contracts/src/deployers/reth/RETHHyperdriveCoreDeployer.sol";
+import { RETHTarget0Deployer } from "../../../contracts/src/deployers/reth/RETHTarget0Deployer.sol";
+import { RETHTarget1Deployer } from "../../../contracts/src/deployers/reth/RETHTarget1Deployer.sol";
+import { RETHTarget2Deployer } from "../../../contracts/src/deployers/reth/RETHTarget2Deployer.sol";
+import { RETHTarget3Deployer } from "../../../contracts/src/deployers/reth/RETHTarget3Deployer.sol";
+import { RETHTarget4Deployer } from "../../../contracts/src/deployers/reth/RETHTarget4Deployer.sol";
+import { HyperdriveFactory } from "../../../contracts/src/factory/HyperdriveFactory.sol";
+import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
+import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
+import { MockRocketPool } from "../../../contracts/test/MockRocketPool.sol";
+import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { DeployerCoordinatorTest, MockHyperdriveDeployerCoordinator } from "test/integrations/deployers/DeployerCoordinator.t.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract RethDeployerCoordinatorTest is DeployerCoordinatorTest {
     using FixedPointMath for *;

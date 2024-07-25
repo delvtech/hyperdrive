@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
+import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
+import { IERC4626 } from "../../../contracts/src/interfaces/IERC4626.sol";
 import { ERC4626ValidationTest } from "./ERC4626Validation.t.sol";
 
 // Interface for the `Pot` of the underlying DSR

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
-import { HyperdriveTest, HyperdriveUtils } from "test/utils/HyperdriveTest.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
+import { YieldSpaceMath } from "../../../contracts/src/libraries/YieldSpaceMath.sol";
+import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract ExtremeInputs is HyperdriveTest {
     using FixedPointMath for uint256;

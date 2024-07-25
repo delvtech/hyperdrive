@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { StETHHyperdrive } from "contracts/src/instances/steth/StETHHyperdrive.sol";
-import { StETHTarget0 } from "contracts/src/instances/steth/StETHTarget0.sol";
-import { StETHTarget1 } from "contracts/src/instances/steth/StETHTarget1.sol";
-import { StETHTarget2 } from "contracts/src/instances/steth/StETHTarget2.sol";
-import { StETHTarget3 } from "contracts/src/instances/steth/StETHTarget3.sol";
-import { StETHTarget4 } from "contracts/src/instances/steth/StETHTarget4.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IHyperdriveEvents } from "contracts/src/interfaces/IHyperdriveEvents.sol";
-import { ILido } from "contracts/src/interfaces/ILido.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { ETH } from "contracts/src/libraries/Constants.sol";
-import { ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { MockLido } from "contracts/test/MockLido.sol";
-import { BaseTest } from "test/utils/BaseTest.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { StETHHyperdrive } from "../../../contracts/src/instances/steth/StETHHyperdrive.sol";
+import { StETHTarget0 } from "../../../contracts/src/instances/steth/StETHTarget0.sol";
+import { StETHTarget1 } from "../../../contracts/src/instances/steth/StETHTarget1.sol";
+import { StETHTarget2 } from "../../../contracts/src/instances/steth/StETHTarget2.sol";
+import { StETHTarget3 } from "../../../contracts/src/instances/steth/StETHTarget3.sol";
+import { StETHTarget4 } from "../../../contracts/src/instances/steth/StETHTarget4.sol";
+import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
+import { IHyperdriveEvents } from "../../../contracts/src/interfaces/IHyperdriveEvents.sol";
+import { ILido } from "../../../contracts/src/interfaces/ILido.sol";
+import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { ETH } from "../../../contracts/src/libraries/Constants.sol";
+import { ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
+import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
+import { MockLido } from "../../../contracts/test/MockLido.sol";
+import { BaseTest } from "../../utils/BaseTest.sol";
+import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 
 contract SweepTest is BaseTest, IHyperdriveEvents {
     string internal constant NAME = "Hyperdrive";

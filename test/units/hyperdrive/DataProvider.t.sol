@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 
 contract HyperdriveDataProviderTest is HyperdriveTest {
     function testLoadSlots() public view {
