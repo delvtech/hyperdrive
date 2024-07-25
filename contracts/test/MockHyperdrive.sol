@@ -12,7 +12,7 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ETH } from "contracts/src/libraries/Constants.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { HyperdriveUtils } from "./HyperdriveUtils.sol";
 
 interface IMockHyperdrive {
     function accrue(uint256 time, int256 apr) external;
