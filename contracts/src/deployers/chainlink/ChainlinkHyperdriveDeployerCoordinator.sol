@@ -3,8 +3,9 @@ pragma solidity 0.8.20;
 
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import { ChainlinkConversions } from "../../instances/chainlink/ChainlinkConversions.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { IChainlinkHyperdrive } from "../../interfaces/IChainlinkHyperdrive.sol";
+import { IChainlinkAggregatorV3 } from "../../interfaces/IChainlinkAggregatorV3.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { CHAINLINK_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
@@ -78,14 +79,11 @@ contract ChainlinkHyperdriveDeployerCoordinator is
             revert IHyperdrive.UnsupportedToken();
         }
 
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC20 example provided.
-        // Otherwise, transfer vault shares from the LP and approve the
-        // Hyperdrive pool.
+        // Take custody of the contribution and approve Hyperdrive to pull the
+        // tokens.
         address token = _hyperdrive.vaultSharesToken();
-        ERC20(token).transferFrom(_lp, address(this), _contribution);
-        ERC20(token).approve(address(_hyperdrive), _contribution);
-        // ****************************************************************
+        ERC20(token).safeTransferFrom(_lp, address(this), _contribution);
+        ERC20(token).forceApprove(address(_hyperdrive), _contribution);
 
         return value;
     }
@@ -98,8 +96,6 @@ contract ChainlinkHyperdriveDeployerCoordinator is
         }
     }
 
-    // FIXME: Update this.
-    //
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     function _checkPoolConfig(
@@ -108,6 +104,24 @@ contract ChainlinkHyperdriveDeployerCoordinator is
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig);
 
+        // Ensure that the base token is zero.
+        if (address(_deployConfig.baseToken) != address(0)) {
+            revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
+        }
+
+        // Ensure that the vault shares token isn't zero.
+        if (address(_deployConfig.vaultSharesToken) == address(0)) {
+            revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
+        }
+
+        // FIXME: This is going to be a bit tricky, but what we could do to
+        // calculate the token decimals is to multiply the initial share price
+        // by the amount of decimals of the vault share to get the rough order
+        // of magnitude.
+
+        // FIXME: It's somewhat hard to determine this since the base token is
+        // zero.
+        //
         // Ensure that the minimum share reserves are equal to 1e15. This value
         // has been tested to prevent arithmetic overflows in the
         // `_updateLiquidity` function when the share reserves are as high as
@@ -116,6 +130,9 @@ contract ChainlinkHyperdriveDeployerCoordinator is
             revert IHyperdriveDeployerCoordinator.InvalidMinimumShareReserves();
         }
 
+        // FIXME: It's somewhat hard to determine this since the base token is
+        // zero.
+        //
         // Ensure that the minimum transaction amount are equal to 1e15. This
         // value has been tested to prevent precision issues.
         if (_deployConfig.minimumTransactionAmount != 1e15) {
@@ -125,14 +142,16 @@ contract ChainlinkHyperdriveDeployerCoordinator is
     }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
+    /// @param _extraData The extra data containing the Chainlink aggregator.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
         IHyperdrive.PoolDeployConfig memory, // unused _deployConfig
-        bytes memory // unused _extraData
-    ) internal pure override returns (uint256) {
-        // ****************************************************************
-        // FIXME:  Implement this for new instances.
-        return ONE;
-        // ****************************************************************
+        bytes memory _extraData
+    ) internal view override returns (uint256) {
+        IChainlinkAggregatorV3 aggregator = abi.decode(
+            _extraData,
+            (IChainlinkAggregatorV3)
+        );
+        return ChainlinkConversions.convertToBase(aggregator, ONE);
     }
 }
