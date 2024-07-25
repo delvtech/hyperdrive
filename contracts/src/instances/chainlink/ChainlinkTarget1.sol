@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 import { HyperdriveTarget1 } from "../../external/HyperdriveTarget1.sol";
+import { IChainlinkAggregatorV3 } from "../../interfaces/IChainlinkAggregatorV3.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { ChainlinkBase } from "./ChainlinkBase.sol";
 
@@ -16,7 +17,10 @@ import { ChainlinkBase } from "./ChainlinkBase.sol";
 contract ChainlinkTarget1 is HyperdriveTarget1, ChainlinkBase {
     /// @notice Initializes the target1 contract.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param __aggregator The Chainlink aggregator. This is the contract that
+    ///        will return the answer.
     constructor(
-        IHyperdrive.PoolConfig memory _config
-    ) HyperdriveTarget1(_config) {}
+        IHyperdrive.PoolConfig memory _config,
+        IChainlinkAggregatorV3 __aggregator
+    ) HyperdriveTarget1(_config) ChainlinkBase(__aggregator) {}
 }

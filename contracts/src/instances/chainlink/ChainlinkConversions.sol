@@ -53,11 +53,9 @@ library ChainlinkConversions {
     function getVaultSharePrice(
         IChainlinkAggregatorV3 _aggregator
     ) internal view returns (uint256) {
-        // FIXME: At a bare minimum, we should use answer and updatedAt. We
-        //        should also consider using `answeredInRound` to provide some
-        //        additional security.
-        (, int256 answer, , uint256 updatedAt, ) = _aggregator
-            .latestRoundData();
+        // FIXME: Do we need to check last updated? If we don't, then outages
+        // will be handled gracefully.
+        (, int256 answer, , , ) = _aggregator.latestRoundData();
         return answer.toUint256();
     }
 }

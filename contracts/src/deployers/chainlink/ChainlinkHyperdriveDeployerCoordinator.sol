@@ -98,6 +98,8 @@ contract ChainlinkHyperdriveDeployerCoordinator is
         }
     }
 
+    // FIXME: Update this.
+    //
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     function _checkPoolConfig(

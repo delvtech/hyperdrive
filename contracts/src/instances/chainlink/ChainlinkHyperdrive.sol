@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
-import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
-import { IERC20 } from "../../interfaces/IERC20.sol";
+import { IChainlinkAggregatorV3 } from "../../interfaces/IChainlinkAggregatorV3.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { ChainlinkBase } from "./ChainlinkBase.sol";
 
@@ -55,8 +53,6 @@ import { ChainlinkBase } from "./ChainlinkBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ChainlinkHyperdrive is Hyperdrive, ChainlinkBase {
-    using SafeERC20 for ERC20;
-
     /// @notice Instantiates Hyperdrive with a Chainlink vault as the yield source.
     /// @param __name The pool's name.
     /// @param _config The configuration of the Hyperdrive pool.
@@ -65,6 +61,8 @@ contract ChainlinkHyperdrive is Hyperdrive, ChainlinkBase {
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
     /// @param _target4 The target4 address.
+    /// @param __aggregator The Chainlink aggregator. This is the contract that
+    ///        will return the answer.
     constructor(
         string memory __name,
         IHyperdrive.PoolConfig memory _config,
@@ -72,7 +70,8 @@ contract ChainlinkHyperdrive is Hyperdrive, ChainlinkBase {
         address _target1,
         address _target2,
         address _target3,
-        address _target4
+        address _target4,
+        IChainlinkAggregatorV3 __aggregator
     )
         Hyperdrive(
             __name,
@@ -83,15 +82,6 @@ contract ChainlinkHyperdrive is Hyperdrive, ChainlinkBase {
             _target3,
             _target4
         )
-    {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC4626 example provided.
-
-        // Approve the base token with 1 wei. This ensures that all of the
-        // subsequent approvals will be writing to a dirty storage slot.
-        ERC20(address(_config.baseToken)).forceApprove(
-            address(_config.vaultSharesToken),
-            1
-        );
-    }
+        ChainlinkBase(__aggregator)
+    {}
 }

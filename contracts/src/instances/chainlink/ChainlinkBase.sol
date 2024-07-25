@@ -4,42 +4,38 @@ pragma solidity 0.8.20;
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IChainlinkAggregatorV3 } from "../../interfaces/IChainlinkAggregatorV3.sol";
-import { IERC4626 } from "../../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
+import { ChainlinkConversions } from "./ChainlinkConversions.sol";
 
-// FIXME: This is the highest risk integration that we've added so far. I want
-//        this to be flexible enough for us to use it, but it will have more
-//        footguns than other integrations and will be more dangerous if it's
-//        used incorrectly.
-//
-// FIXME: What is the best way to handle uptime on L2s?
-//
 /// @author DELV
 /// @title ChainlinkBase
 /// @notice The base contract for the Chainlink Hyperdrive implementation.
-/// FIXME: Update this disclaimer.
-/// @dev This Hyperdrive implementation is designed to work with standard
-///      Chainlink vaults. Non-standard implementations may not work correctly
-///      and should be carefully checked.
+/// @dev This Hyperdrive implementation uses a Chainlink price feed for the
+///      vault share price. Users and integrators should be conscious of the
+///      price feed that is being used to ensure that it is compatible with the
+///      integration. Oracles carry some inherent risks that should be
+///      considered before interacting with the protocol. Chainlink oracles may
+///      have downtime on L2s and may be deprecated in which case this yield
+///      source may stop accruing variable interest temporarily or indefinitely.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract ChainlinkBase is HyperdriveBase {
     using SafeERC20 for ERC20;
 
-    // FIXME: Do we need new immutables to handle L2 downtime?
-
     // FIXME: Add a getter for this.
     //
-    // FIXME: Add Natspec.
-    IChainlinkAggregatorV3 internal immutable aggregator;
+    /// @dev The Chainlink aggregator that provides the vault share price.
+    IChainlinkAggregatorV3 internal immutable _aggregator;
 
+    // FIXME: The base token should be the zero address.
+    //
     /// @notice Instantiates the ChainlinkHyperdrive base contract.
-    /// @param _aggregator The Chainlink aggregator. This is the contract that
+    /// @param __aggregator The Chainlink aggregator. This is the contract that
     ///        will return the answer.
-    constructor(IChainlinkAggregatorV3 _aggregator) {
-        aggregator = _aggregator;
+    constructor(IChainlinkAggregatorV3 __aggregator) {
+        _aggregator = __aggregator;
     }
 
     /// Yield Source ///
@@ -98,34 +94,22 @@ abstract contract ChainlinkBase is HyperdriveBase {
         );
     }
 
-    // FIXME: We should use the standard conversions pattern.
-    //
     /// @dev Convert an amount of vault shares to an amount of base.
     /// @param _shareAmount The vault shares amount.
     /// @return The base amount.
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
-        // ****************************************************************
-        // FIXME: Implement this for new instances.
-        return
-            IERC4626(address(_vaultSharesToken)).convertToAssets(_shareAmount);
-        // ****************************************************************
+        return ChainlinkConversions.convertToBase(_aggregator, _shareAmount);
     }
 
-    // FIXME: We should use the standard conversions pattern.
-    //
     /// @dev Convert an amount of base to an amount of vault shares.
     /// @param _baseAmount The base amount.
     /// @return The vault shares amount.
     function _convertToShares(
         uint256 _baseAmount
     ) internal view override returns (uint256) {
-        // ****************************************************************
-        // FIXME: Implement this for new instances.
-        return
-            IERC4626(address(_vaultSharesToken)).convertToShares(_baseAmount);
-        // ****************************************************************
+        return ChainlinkConversions.convertToShares(_aggregator, _baseAmount);
     }
 
     /// @dev Gets the total amount of shares held by the pool in the yield
