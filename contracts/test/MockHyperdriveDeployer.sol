@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
-import { IHyperdriveTargetDeployer } from "contracts/src/interfaces/IHyperdriveTargetDeployer.sol";
-import { VERSION, NUM_TARGETS } from "contracts/src/libraries/Constants.sol";
+import { IERC20 } from "../src/interfaces/IERC20.sol";
+import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
+import { IHyperdriveDeployerCoordinator } from "../src/interfaces/IHyperdriveDeployerCoordinator.sol";
+import { IHyperdriveTargetDeployer } from "../src/interfaces/IHyperdriveTargetDeployer.sol";
+import { VERSION, NUM_TARGETS } from "../src/libraries/Constants.sol";
 import { MockHyperdrive } from "./MockHyperdrive.sol";
 
 contract MockHyperdriveDeployer is IHyperdriveDeployerCoordinator {
