@@ -17,10 +17,10 @@ import { YieldSpaceMath } from "../src/libraries/YieldSpaceMath.sol";
 import { HyperdriveRegistry } from "../src/factory/HyperdriveRegistry.sol";
 import { ERC20ForwarderFactory } from "../src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "./ERC20Mintable.sol";
-import { MockHyperdrive, MockHyperdriveTarget0, MockHyperdriveTarget1 } from "./MockHyperdrive.sol";
-import { BaseTest } from "./BaseTest.sol";
-import { HyperdriveUtils } from "./HyperdriveUtils.sol";
-import { Lib } from "./Lib.sol";
+import { MockHyperdrive, MockHyperdriveTarget0, MockHyperdriveTarget1 } from "contracts/test/MockHyperdrive.sol";
+import { BaseTest } from "contracts/test/BaseTest.sol";
+import { HyperdriveUtils } from "contracts/test/HyperdriveUtils.sol";
+import { Lib } from "contracts/test/Lib.sol";
 
 contract HyperdriveTest is IHyperdriveEvents, BaseTest {
     using FixedPointMath for uint256;
