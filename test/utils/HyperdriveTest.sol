@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { console2 as console } from "forge-std/console2.sol";
+
 import { VmSafe } from "forge-std/Vm.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
@@ -825,7 +827,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
 
     /// Utils ///
 
-    function advanceTime(uint256 time, int256 variableRate) internal virtual {
+    function advanceTime(uint256 time, int256 variableRate) public virtual {
         MockHyperdrive(address(hyperdrive)).accrue(time, variableRate);
         vm.warp(block.timestamp + time);
     }

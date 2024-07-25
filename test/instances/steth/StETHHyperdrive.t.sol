@@ -40,27 +40,27 @@ contract StETHHyperdriveTest is InstanceTest {
     address internal STETH_WHALE = 0x1982b2F5814301d4e9a8b0201555376e62F82428;
     address[] internal whaleAccounts = [STETH_WHALE];
 
-    // The configuration for the instance testing suite.
-    InstanceTestConfig internal __testConfig =
-        InstanceTestConfig(
-            "Hyperdrive",
-            "StETHHyperdrive",
-            new address[](0),
-            whaleAccounts,
-            IERC20(ETH),
-            IERC20(LIDO),
-            1e5,
-            1e15,
-            POSITION_DURATION,
-            true,
-            true,
-            false,
-            true,
-            abi.encodeWithSelector(IHyperdrive.UnsupportedToken.selector)
-        );
-
     /// @dev Instantiates the instance testing suite with the configuration.
-    constructor() InstanceTest(__testConfig) {}
+    constructor()
+        InstanceTest(
+            InstanceTestConfig(
+                "Hyperdrive",
+                "StETHHyperdrive",
+                new address[](0),
+                whaleAccounts,
+                IERC20(ETH),
+                IERC20(LIDO),
+                1e5,
+                1e15,
+                POSITION_DURATION,
+                true,
+                true,
+                false,
+                true,
+                abi.encodeWithSelector(IHyperdrive.UnsupportedToken.selector)
+            )
+        )
+    {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(17_376_154) {
@@ -72,14 +72,14 @@ contract StETHHyperdriveTest is InstanceTest {
 
     /// @dev Gets the extra data used to deploy Hyperdrive instances.
     /// @return The extra data.
-    function getExtraData() internal pure override returns (bytes memory) {
+    function getExtraData() public pure override returns (bytes memory) {
         return new bytes(0);
     }
 
     /// @dev Converts base amount to the equivalent about in stETH.
     function convertToShares(
         uint256 baseAmount
-    ) internal view override returns (uint256) {
+    ) public view override returns (uint256) {
         // Get protocol state information used for calculating shares.
         uint256 totalPooledEther = LIDO.getTotalPooledEther();
         uint256 totalShares = LIDO.getTotalShares();
@@ -89,7 +89,7 @@ contract StETHHyperdriveTest is InstanceTest {
     /// @dev Converts share amount to the equivalent amount in ETH.
     function convertToBase(
         uint256 shareAmount
-    ) internal view override returns (uint256) {
+    ) public view override returns (uint256) {
         // Lido has a built-in function for computing price in terms of base.
         return LIDO.getPooledEthByShares(shareAmount);
     }
@@ -98,12 +98,12 @@ contract StETHHyperdriveTest is InstanceTest {
     /// @param _factory The address of the Hyperdrive factory.
     function deployCoordinator(
         address _factory
-    ) internal override returns (address) {
+    ) public override returns (address) {
         vm.startPrank(alice);
         return
             address(
                 new StETHHyperdriveDeployerCoordinator(
-                    string.concat(__testConfig.name, "DeployerCoordinator"),
+                    string.concat(config.name, "DeployerCoordinator"),
                     _factory,
                     address(new StETHHyperdriveCoreDeployer()),
                     address(new StETHTarget0Deployer()),
@@ -117,14 +117,14 @@ contract StETHHyperdriveTest is InstanceTest {
     }
 
     /// @dev Fetches the total supply of the base and share tokens.
-    function getSupply() internal view override returns (uint256, uint256) {
+    function getSupply() public view override returns (uint256, uint256) {
         return (LIDO.getTotalPooledEther(), LIDO.getTotalShares());
     }
 
     /// @dev Fetches the token balance information of an account.
     function getTokenBalances(
         address account
-    ) internal view override returns (uint256, uint256) {
+    ) public view override returns (uint256, uint256) {
         return (LIDO.balanceOf(account), LIDO.sharesOf(account));
     }
 
@@ -514,7 +514,7 @@ contract StETHHyperdriveTest is InstanceTest {
     function advanceTime(
         uint256 timeDelta,
         int256 variableRate
-    ) internal override {
+    ) public override {
         // Advance the time.
         vm.warp(block.timestamp + timeDelta);
 

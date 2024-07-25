@@ -50,33 +50,33 @@ contract SUSDeHyperdriveTest is InstanceTest {
         address(0x4139cDC6345aFFbaC0692b43bed4D059Df3e6d65);
     address[] internal vaultSharesTokenWhaleAccounts = [SUSDE_TOKEN_WHALE];
 
-    // The configuration for the instance testing suite.
-    InstanceTestConfig internal __testConfig =
-        InstanceTestConfig({
-            name: "Hyperdrive",
-            kind: "ERC4626Hyperdrive",
-            baseTokenWhaleAccounts: baseTokenWhaleAccounts,
-            vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
-            baseToken: USDE,
-            vaultSharesToken: IERC20(address(SUSDE)),
-            shareTolerance: 1e3,
-            minTransactionAmount: 1e15,
-            positionDuration: POSITION_DURATION,
-            enableBaseDeposits: true,
-            enableShareDeposits: true,
-            enableBaseWithdraws: false,
-            enableShareWithdraws: true,
-            // NOTE: SUSDe currently has a cooldown on withdrawals which
-            // prevents users from withdrawing as base instantaneously. We still
-            // support withdrawing with base since the cooldown can be disabled
-            // in the future.
-            baseWithdrawError: abi.encodeWithSelector(
-                OperationNotAllowed.selector
-            )
-        });
-
     /// @dev Instantiates the instance testing suite with the configuration.
-    constructor() InstanceTest(__testConfig) {}
+    constructor()
+        InstanceTest(
+            InstanceTestConfig({
+                name: "Hyperdrive",
+                kind: "ERC4626Hyperdrive",
+                baseTokenWhaleAccounts: baseTokenWhaleAccounts,
+                vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
+                baseToken: USDE,
+                vaultSharesToken: IERC20(address(SUSDE)),
+                shareTolerance: 1e3,
+                minTransactionAmount: 1e15,
+                positionDuration: POSITION_DURATION,
+                enableBaseDeposits: true,
+                enableShareDeposits: true,
+                enableBaseWithdraws: false,
+                enableShareWithdraws: true,
+                // NOTE: SUSDe currently has a cooldown on withdrawals which
+                // prevents users from withdrawing as base instantaneously. We still
+                // support withdrawing with base since the cooldown can be disabled
+                // in the future.
+                baseWithdrawError: abi.encodeWithSelector(
+                    OperationNotAllowed.selector
+                )
+            })
+        )
+    {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(20_335_384) {
@@ -88,14 +88,14 @@ contract SUSDeHyperdriveTest is InstanceTest {
 
     /// @dev Gets the extra data used to deploy Hyperdrive instances.
     /// @return The extra data.
-    function getExtraData() internal pure override returns (bytes memory) {
+    function getExtraData() public pure override returns (bytes memory) {
         return new bytes(0);
     }
 
     /// @dev Converts base amount to the equivalent about in shares.
     function convertToShares(
         uint256 baseAmount
-    ) internal view override returns (uint256) {
+    ) public view override returns (uint256) {
         return
             ERC4626Conversions.convertToShares(
                 IERC20(address(SUSDE)),
@@ -106,7 +106,7 @@ contract SUSDeHyperdriveTest is InstanceTest {
     /// @dev Converts share amount to the equivalent amount in base.
     function convertToBase(
         uint256 shareAmount
-    ) internal view override returns (uint256) {
+    ) public view override returns (uint256) {
         return
             ERC4626Conversions.convertToBase(
                 IERC20(address(SUSDE)),
@@ -118,12 +118,12 @@ contract SUSDeHyperdriveTest is InstanceTest {
     /// @param _factory The address of the Hyperdrive factory.
     function deployCoordinator(
         address _factory
-    ) internal override returns (address) {
+    ) public override returns (address) {
         vm.startPrank(alice);
         return
             address(
                 new ERC4626HyperdriveDeployerCoordinator(
-                    string.concat(__testConfig.name, "DeployerCoordinator"),
+                    string.concat(config.name, "DeployerCoordinator"),
                     _factory,
                     address(new ERC4626HyperdriveCoreDeployer()),
                     address(new ERC4626Target0Deployer()),
@@ -136,14 +136,14 @@ contract SUSDeHyperdriveTest is InstanceTest {
     }
 
     /// @dev Fetches the total supply of the base and share tokens.
-    function getSupply() internal view override returns (uint256, uint256) {
+    function getSupply() public view override returns (uint256, uint256) {
         return (SUSDE.totalAssets(), SUSDE.totalSupply());
     }
 
     /// @dev Fetches the token balance information of an account.
     function getTokenBalances(
         address account
-    ) internal view override returns (uint256, uint256) {
+    ) public view override returns (uint256, uint256) {
         return (USDE.balanceOf(account), SUSDE.balanceOf(account));
     }
 
@@ -367,7 +367,7 @@ contract SUSDeHyperdriveTest is InstanceTest {
         assertApproxEqAbs(
             hyperdriveSharesAfter,
             hyperdriveSharesBefore + basePaid.divDown(vaultSharePrice),
-            __testConfig.shareTolerance
+            config.shareTolerance
         );
     }
 
@@ -739,7 +739,7 @@ contract SUSDeHyperdriveTest is InstanceTest {
     function advanceTime(
         uint256 timeDelta,
         int256 variableRate
-    ) internal override {
+    ) public override {
         // Get the total base before advancing the time. This is important
         // because it ensures that we are accruing interest on the current
         // amount of total assets rather than the amount of total assets after

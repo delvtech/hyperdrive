@@ -69,35 +69,35 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         address(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
     address[] internal baseTokenWhaleAccounts = [LOAN_TOKEN_WHALE];
 
-    // The configuration for the instance testing suite.
-    InstanceTestConfig internal __testConfig =
-        InstanceTestConfig({
-            name: "Hyperdrive",
-            kind: "MorphoBlueHyperdrive",
-            baseTokenWhaleAccounts: baseTokenWhaleAccounts,
-            vaultSharesTokenWhaleAccounts: new address[](0),
-            baseToken: IERC20(LOAN_TOKEN),
-            vaultSharesToken: IERC20(address(0)),
-            // NOTE: The share tolerance is quite high for this integration
-            // because the vault share price is ~1e12, which means that just
-            // multiplying or dividing by the vault is an imprecise way of
-            // converting between base and vault shares. We included more
-            // assertions than normal to the round trip tests to verify that
-            // the calculations satisfy our expectations of accuracy.
-            shareTolerance: 1e15,
-            minTransactionAmount: 1e15,
-            positionDuration: POSITION_DURATION,
-            enableBaseDeposits: true,
-            enableShareDeposits: false,
-            enableBaseWithdraws: true,
-            enableShareWithdraws: false,
-            baseWithdrawError: abi.encodeWithSelector(
-                IHyperdrive.UnsupportedToken.selector
-            )
-        });
-
     /// @dev Instantiates the instance testing suite with the configuration.
-    constructor() InstanceTest(__testConfig) {}
+    constructor()
+        InstanceTest(
+            InstanceTestConfig({
+                name: "Hyperdrive",
+                kind: "MorphoBlueHyperdrive",
+                baseTokenWhaleAccounts: baseTokenWhaleAccounts,
+                vaultSharesTokenWhaleAccounts: new address[](0),
+                baseToken: IERC20(LOAN_TOKEN),
+                vaultSharesToken: IERC20(address(0)),
+                // NOTE: The share tolerance is quite high for this integration
+                // because the vault share price is ~1e12, which means that just
+                // multiplying or dividing by the vault is an imprecise way of
+                // converting between base and vault shares. We included more
+                // assertions than normal to the round trip tests to verify that
+                // the calculations satisfy our expectations of accuracy.
+                shareTolerance: 1e15,
+                minTransactionAmount: 1e15,
+                positionDuration: POSITION_DURATION,
+                enableBaseDeposits: true,
+                enableShareDeposits: false,
+                enableBaseWithdraws: true,
+                enableShareWithdraws: false,
+                baseWithdrawError: abi.encodeWithSelector(
+                    IHyperdrive.UnsupportedToken.selector
+                )
+            })
+        )
+    {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(20_276_503) {
@@ -109,7 +109,7 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
 
     /// @dev Gets the extra data used to deploy Hyperdrive instances.
     /// @return The extra data.
-    function getExtraData() internal pure override returns (bytes memory) {
+    function getExtraData() public pure override returns (bytes memory) {
         return
             abi.encode(
                 IMorphoBlueHyperdrive.MorphoBlueParams({
@@ -125,7 +125,7 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
     /// @dev Converts base amount to the equivalent about in shares.
     function convertToShares(
         uint256 baseAmount
-    ) internal view override returns (uint256) {
+    ) public view override returns (uint256) {
         return
             MorphoBlueConversions.convertToShares(
                 MORPHO,
@@ -141,7 +141,7 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
     /// @dev Converts share amount to the equivalent amount in base.
     function convertToBase(
         uint256 shareAmount
-    ) internal view override returns (uint256) {
+    ) public view override returns (uint256) {
         return
             MorphoBlueConversions.convertToBase(
                 MORPHO,
@@ -158,12 +158,12 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
     /// @param _factory The address of the Hyperdrive factory.
     function deployCoordinator(
         address _factory
-    ) internal override returns (address) {
+    ) public override returns (address) {
         vm.startPrank(alice);
         return
             address(
                 new MorphoBlueHyperdriveDeployerCoordinator(
-                    string.concat(__testConfig.name, "DeployerCoordinator"),
+                    string.concat(config.name, "DeployerCoordinator"),
                     _factory,
                     address(new MorphoBlueHyperdriveCoreDeployer()),
                     address(new MorphoBlueTarget0Deployer()),
@@ -176,7 +176,7 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
     }
 
     /// @dev Fetches the total supply of the base and share tokens.
-    function getSupply() internal view override returns (uint256, uint256) {
+    function getSupply() public view override returns (uint256, uint256) {
         (uint256 totalSupplyAssets, uint256 totalSupplyShares, , ) = MORPHO
             .expectedMarketBalances(
                 MarketParams({
@@ -193,7 +193,7 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
     /// @dev Fetches the token balance information of an account.
     function getTokenBalances(
         address account
-    ) internal view override returns (uint256, uint256) {
+    ) public view override returns (uint256, uint256) {
         return (
             IERC20(LOAN_TOKEN).balanceOf(account),
             MORPHO
@@ -381,7 +381,7 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         assertApproxEqAbs(
             hyperdriveSharesAfter,
             hyperdriveSharesBefore + basePaid.divDown(vaultSharePrice),
-            __testConfig.shareTolerance
+            config.shareTolerance
         );
     }
 
@@ -729,7 +729,7 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
     function advanceTime(
         uint256 timeDelta,
         int256 variableRate
-    ) internal override {
+    ) public override {
         // Advance the time.
         vm.warp(block.timestamp + timeDelta);
 

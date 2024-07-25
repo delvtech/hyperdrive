@@ -45,27 +45,27 @@ contract LsETHHyperdriveTest is InstanceTest {
         LSETH_WHALE_3
     ];
 
-    // The configuration for the instance testing suite.
-    InstanceTestConfig internal __testConfig =
-        InstanceTestConfig(
-            "Hyperdrive",
-            "LsETHHyperdrive",
-            new address[](0),
-            whaleAccounts,
-            IERC20(ETH),
-            IERC20(RIVER),
-            1e5,
-            1e15,
-            POSITION_DURATION,
-            false,
-            true,
-            false,
-            true,
-            abi.encodeWithSelector(IHyperdrive.UnsupportedToken.selector)
-        );
-
     /// @dev Instantiates the instance testing suite with the configuration.
-    constructor() InstanceTest(__testConfig) {}
+    constructor()
+        InstanceTest(
+            InstanceTestConfig(
+                "Hyperdrive",
+                "LsETHHyperdrive",
+                new address[](0),
+                whaleAccounts,
+                IERC20(ETH),
+                IERC20(RIVER),
+                1e5,
+                1e15,
+                POSITION_DURATION,
+                false,
+                true,
+                false,
+                true,
+                abi.encodeWithSelector(IHyperdrive.UnsupportedToken.selector)
+            )
+        )
+    {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
 
@@ -78,7 +78,7 @@ contract LsETHHyperdriveTest is InstanceTest {
 
     /// @dev Gets the extra data used to deploy Hyperdrive instances.
     /// @return The extra data.
-    function getExtraData() internal pure override returns (bytes memory) {
+    function getExtraData() public pure override returns (bytes memory) {
         return new bytes(0);
     }
 
@@ -86,12 +86,12 @@ contract LsETHHyperdriveTest is InstanceTest {
     /// @param _factory The address of the Hyperdrive factory contract.
     function deployCoordinator(
         address _factory
-    ) internal override returns (address) {
+    ) public override returns (address) {
         vm.startPrank(alice);
         return
             address(
                 new LsETHHyperdriveDeployerCoordinator(
-                    string.concat(__testConfig.name, "DeployerCoordinator"),
+                    string.concat(config.name, "DeployerCoordinator"),
                     _factory,
                     address(new LsETHHyperdriveCoreDeployer()),
                     address(new LsETHTarget0Deployer()),
@@ -107,7 +107,7 @@ contract LsETHHyperdriveTest is InstanceTest {
     /// @dev Converts base amount to the equivalent amount in LsETH.
     function convertToShares(
         uint256 baseAmount
-    ) internal view override returns (uint256) {
+    ) public view override returns (uint256) {
         // River has a built-in function for computing price in terms of shares.
         return RIVER.sharesFromUnderlyingBalance(baseAmount);
     }
@@ -115,7 +115,7 @@ contract LsETHHyperdriveTest is InstanceTest {
     /// @dev Converts base amount to the equivalent amount in ETH.
     function convertToBase(
         uint256 shareAmount
-    ) internal view override returns (uint256) {
+    ) public view override returns (uint256) {
         // River has a built-in function for computing price in terms of base.
         return RIVER.underlyingBalanceFromShares(shareAmount);
     }
@@ -123,12 +123,12 @@ contract LsETHHyperdriveTest is InstanceTest {
     /// @dev Fetches the token balance information of an account.
     function getTokenBalances(
         address account
-    ) internal view override returns (uint256, uint256) {
+    ) public view override returns (uint256, uint256) {
         return (RIVER.balanceOfUnderlying(account), RIVER.balanceOf(account));
     }
 
     /// @dev Fetches the total supply of the base and share tokens.
-    function getSupply() internal view override returns (uint256, uint256) {
+    function getSupply() public view override returns (uint256, uint256) {
         return (RIVER.totalUnderlyingSupply(), RIVER.totalSupply());
     }
 
@@ -328,7 +328,7 @@ contract LsETHHyperdriveTest is InstanceTest {
     function advanceTime(
         uint256 timeDelta,
         int256 variableRate
-    ) internal override {
+    ) public override {
         // Storage slot for LsETH underlying ether balance.
         bytes32 lastConsensusLayerReportSlot = bytes32(
             uint256(keccak256("river.state.lastConsensusLayerReport"))

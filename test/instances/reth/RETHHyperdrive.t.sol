@@ -49,27 +49,27 @@ contract RETHHyperdriveTest is InstanceTest {
     address internal RETH_WHALE = 0xCc9EE9483f662091a1de4795249E24aC0aC2630f;
     address[] internal whaleAccounts = [RETH_WHALE];
 
-    // The configuration for the Instance testing suite.
-    InstanceTestConfig internal __testConfig =
-        InstanceTestConfig(
-            "Hyperdrive",
-            "RETHHyperdrive",
-            new address[](0),
-            whaleAccounts,
-            IERC20(ETH),
-            IERC20(rocketTokenRETH),
-            1e5,
-            1e15,
-            POSITION_DURATION,
-            false,
-            true,
-            true,
-            true,
-            new bytes(0)
-        );
-
     /// @dev Instantiates the instance testing suite with the configuration.
-    constructor() InstanceTest(__testConfig) {}
+    constructor()
+        InstanceTest(
+            InstanceTestConfig(
+                "Hyperdrive",
+                "RETHHyperdrive",
+                new address[](0),
+                whaleAccounts,
+                IERC20(ETH),
+                IERC20(rocketTokenRETH),
+                1e5,
+                1e15,
+                POSITION_DURATION,
+                false,
+                true,
+                true,
+                true,
+                new bytes(0)
+            )
+        )
+    {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(19_429_100) {
@@ -84,14 +84,14 @@ contract RETHHyperdriveTest is InstanceTest {
 
     /// @dev Gets the extra data used to deploy Hyperdrive instances.
     /// @return The extra data.
-    function getExtraData() internal pure override returns (bytes memory) {
+    function getExtraData() public pure override returns (bytes memory) {
         return new bytes(0);
     }
 
     /// @dev Converts base amount to the equivalent amount in rETH.
     function convertToShares(
         uint256 baseAmount
-    ) internal view override returns (uint256) {
+    ) public view override returns (uint256) {
         // Rocket Pool has a built-in function for computing price in terms of shares.
         return rocketTokenRETH.getRethValue(baseAmount);
     }
@@ -99,7 +99,7 @@ contract RETHHyperdriveTest is InstanceTest {
     /// @dev Converts share amount to the equivalent amount in ETH.
     function convertToBase(
         uint256 baseAmount
-    ) internal view override returns (uint256) {
+    ) public view override returns (uint256) {
         // Rocket Pool has a built-in function for computing price in terms of base.
         return rocketTokenRETH.getEthValue(baseAmount);
     }
@@ -107,12 +107,12 @@ contract RETHHyperdriveTest is InstanceTest {
     /// @dev Deploys the rETH deployer coordinator contract.
     function deployCoordinator(
         address _factory
-    ) internal override returns (address) {
+    ) public override returns (address) {
         vm.startPrank(alice);
         return
             address(
                 new RETHHyperdriveDeployerCoordinator(
-                    string.concat(__testConfig.name, "DeployerCoordinator"),
+                    string.concat(config.name, "DeployerCoordinator"),
                     _factory,
                     address(new RETHHyperdriveCoreDeployer()),
                     address(new RETHTarget0Deployer()),
@@ -126,7 +126,7 @@ contract RETHHyperdriveTest is InstanceTest {
     }
 
     /// @dev Fetches the total supply of the base and share tokens.
-    function getSupply() internal view override returns (uint256, uint256) {
+    function getSupply() public view override returns (uint256, uint256) {
         return (
             rocketNetworkBalances.getTotalETHBalance(),
             rocketNetworkBalances.getTotalRETHSupply()
@@ -136,7 +136,7 @@ contract RETHHyperdriveTest is InstanceTest {
     /// @dev Fetches the token balance information of an account.
     function getTokenBalances(
         address account
-    ) internal view override returns (uint256, uint256) {
+    ) public view override returns (uint256, uint256) {
         uint256 rethBalance = rocketTokenRETH.balanceOf(account);
         return (rocketTokenRETH.getEthValue(rethBalance), rethBalance);
     }
@@ -377,7 +377,7 @@ contract RETHHyperdriveTest is InstanceTest {
     function advanceTime(
         uint256 timeDelta,
         int256 variableRate
-    ) internal override {
+    ) public override {
         // Advance the time.
         vm.startPrank(address(rocketNetworkBalances));
         vm.warp(block.timestamp + timeDelta);

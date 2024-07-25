@@ -48,27 +48,27 @@ contract AaveHyperdriveTest is InstanceTest {
     address[] internal baseTokenWhaleAccounts = [WETH_WHALE];
     address[] internal vaultSharesTokenWhaleAccounts = [AWETH_WHALE];
 
-    // The configuration for the instance testing suite.
-    InstanceTestConfig internal __testConfig =
-        InstanceTestConfig({
-            name: "Hyperdrive",
-            kind: "AaveHyperdrive",
-            baseTokenWhaleAccounts: baseTokenWhaleAccounts,
-            vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
-            baseToken: WETH,
-            vaultSharesToken: IERC20(address(AWETH)),
-            shareTolerance: 1e3,
-            minTransactionAmount: 1e15,
-            positionDuration: POSITION_DURATION,
-            enableBaseDeposits: true,
-            enableShareDeposits: true,
-            enableBaseWithdraws: true,
-            enableShareWithdraws: true,
-            baseWithdrawError: new bytes(0)
-        });
-
     /// @dev Instantiates the instance testing suite with the configuration.
-    constructor() InstanceTest(__testConfig) {}
+    constructor()
+        InstanceTest(
+            InstanceTestConfig({
+                name: "Hyperdrive",
+                kind: "AaveHyperdrive",
+                baseTokenWhaleAccounts: baseTokenWhaleAccounts,
+                vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
+                baseToken: WETH,
+                vaultSharesToken: IERC20(address(AWETH)),
+                shareTolerance: 1e3,
+                minTransactionAmount: 1e15,
+                positionDuration: POSITION_DURATION,
+                enableBaseDeposits: true,
+                enableShareDeposits: true,
+                enableBaseWithdraws: true,
+                enableShareWithdraws: true,
+                baseWithdrawError: new bytes(0)
+            })
+        )
+    {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(20_276_503) {
@@ -80,14 +80,14 @@ contract AaveHyperdriveTest is InstanceTest {
 
     /// @dev Gets the extra data used to deploy Hyperdrive instances.
     /// @return The extra data.
-    function getExtraData() internal pure override returns (bytes memory) {
+    function getExtraData() public pure override returns (bytes memory) {
         return new bytes(0);
     }
 
     /// @dev Converts base amount to the equivalent about in shares.
     function convertToShares(
         uint256 baseAmount
-    ) internal view override returns (uint256) {
+    ) public view override returns (uint256) {
         return
             baseAmount.mulDivDown(
                 1e27,
@@ -98,7 +98,7 @@ contract AaveHyperdriveTest is InstanceTest {
     /// @dev Converts share amount to the equivalent amount in base.
     function convertToBase(
         uint256 shareAmount
-    ) internal view override returns (uint256) {
+    ) public view override returns (uint256) {
         return
             shareAmount.mulDivDown(
                 POOL.getReserveNormalizedIncome(address(WETH)),
@@ -110,12 +110,12 @@ contract AaveHyperdriveTest is InstanceTest {
     /// @param _factory The address of the Hyperdrive factory.
     function deployCoordinator(
         address _factory
-    ) internal override returns (address) {
+    ) public override returns (address) {
         vm.startPrank(alice);
         return
             address(
                 new AaveHyperdriveDeployerCoordinator(
-                    string.concat(__testConfig.name, "DeployerCoordinator"),
+                    string.concat(config.name, "DeployerCoordinator"),
                     _factory,
                     address(new AaveHyperdriveCoreDeployer()),
                     address(new AaveTarget0Deployer()),
@@ -128,14 +128,14 @@ contract AaveHyperdriveTest is InstanceTest {
     }
 
     /// @dev Fetches the total supply of the base and share tokens.
-    function getSupply() internal view override returns (uint256, uint256) {
+    function getSupply() public view override returns (uint256, uint256) {
         return (AWETH.totalSupply(), AWETH.scaledTotalSupply());
     }
 
     /// @dev Fetches the token balance information of an account.
     function getTokenBalances(
         address account
-    ) internal view override returns (uint256, uint256) {
+    ) public view override returns (uint256, uint256) {
         return (
             WETH.balanceOf(account),
             convertToShares(AWETH.balanceOf(account))
@@ -461,7 +461,7 @@ contract AaveHyperdriveTest is InstanceTest {
     function advanceTime(
         uint256 timeDelta,
         int256 variableRate
-    ) internal override {
+    ) public override {
         // Advance the time.
         vm.warp(block.timestamp + timeDelta);
 

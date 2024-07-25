@@ -58,27 +58,27 @@ contract EzETHHyperdriveTest is InstanceTest {
     address internal EZETH_WHALE = 0x40C0d1fbcB0A43A62ca7A241E7A42ca58EeF96eb;
     address[] internal whaleAccounts = [EZETH_WHALE];
 
-    // The configuration for the instance testing suite.
-    InstanceTestConfig internal __testConfig =
-        InstanceTestConfig(
-            "Hyperdrive",
-            "EzETHHyperdrive",
-            new address[](0),
-            whaleAccounts,
-            IERC20(ETH),
-            IERC20(EZETH),
-            1e6,
-            1e15,
-            POSITION_DURATION_15_DAYS,
-            false,
-            true,
-            false,
-            true,
-            abi.encodeWithSelector(IHyperdrive.UnsupportedToken.selector)
-        );
-
     /// @dev Instantiates the instance testing suite with the configuration.
-    constructor() InstanceTest(__testConfig) {}
+    constructor()
+        InstanceTest(
+            InstanceTestConfig(
+                "Hyperdrive",
+                "EzETHHyperdrive",
+                new address[](0),
+                whaleAccounts,
+                IERC20(ETH),
+                IERC20(EZETH),
+                1e6,
+                1e15,
+                POSITION_DURATION_15_DAYS,
+                false,
+                true,
+                false,
+                true,
+                abi.encodeWithSelector(IHyperdrive.UnsupportedToken.selector)
+            )
+        )
+    {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(STARTING_BLOCK) {
@@ -96,14 +96,14 @@ contract EzETHHyperdriveTest is InstanceTest {
 
     /// @dev Gets the extra data used to deploy Hyperdrive instances.
     /// @return The extra data.
-    function getExtraData() internal pure override returns (bytes memory) {
+    function getExtraData() public pure override returns (bytes memory) {
         return new bytes(0);
     }
 
     /// @dev Converts base amount to the equivalent about in EzETH.
     function convertToShares(
         uint256 baseAmount
-    ) internal view override returns (uint256) {
+    ) public view override returns (uint256) {
         // Get protocol state information used for calculating shares.
         (uint256 sharePrice, , ) = getSharePrice();
         return baseAmount.divDown(sharePrice);
@@ -112,7 +112,7 @@ contract EzETHHyperdriveTest is InstanceTest {
     /// @dev Converts share amount to the equivalent amount in ETH.
     function convertToBase(
         uint256 baseAmount
-    ) internal view override returns (uint256) {
+    ) public view override returns (uint256) {
         // Get the total TVL priced in ETH from RestakeManager.
         (, , uint256 totalTVL) = RESTAKE_MANAGER.calculateTVLs();
 
@@ -131,12 +131,12 @@ contract EzETHHyperdriveTest is InstanceTest {
     /// @param _factory The address of the Hyperdrive factory contract.
     function deployCoordinator(
         address _factory
-    ) internal override returns (address) {
+    ) public override returns (address) {
         vm.startPrank(alice);
         return
             address(
                 new EzETHHyperdriveDeployerCoordinator(
-                    string.concat(__testConfig.name, "DeployerCoordinator"),
+                    string.concat(config.name, "DeployerCoordinator"),
                     _factory,
                     address(new EzETHHyperdriveCoreDeployer(RESTAKE_MANAGER)),
                     address(new EzETHTarget0Deployer(RESTAKE_MANAGER)),
@@ -152,13 +152,13 @@ contract EzETHHyperdriveTest is InstanceTest {
     /// @dev Fetches the token balance information of an account.
     function getTokenBalances(
         address account
-    ) internal view override returns (uint256, uint256) {
+    ) public view override returns (uint256, uint256) {
         // EzETH does not have a convenient function for fetching base balance.
         return (0, EZETH.balanceOf(account));
     }
 
     /// @dev Fetches the total supply of the base and share tokens.
-    function getSupply() internal view override returns (uint256, uint256) {
+    function getSupply() public view override returns (uint256, uint256) {
         (, uint256 totalPooledEther, ) = getSharePrice();
         return (totalPooledEther, EZETH.totalSupply());
     }
@@ -563,7 +563,7 @@ contract EzETHHyperdriveTest is InstanceTest {
     function advanceTime(
         uint256 timeDelta, // assume a position duration jump
         int256 variableRate // annual variable rate
-    ) internal override {
+    ) public override {
         // Advance the time by a position duration and accrue interest.  We
         // adjust the variable rate to the position duration and multiply the
         // TVL to get interest:
