@@ -30,21 +30,22 @@ contract AaveL2HyperdriveTest is InstanceTest {
     using Lib for *;
     using stdStorage for StdStorage;
 
-    // The mainnet AaveL2 V3 pool.
+    // The Arbitrum AaveL2 V3 pool.
     IL2Pool internal constant POOL =
-        IL2Pool(0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2);
+        IL2Pool(0x794a61358D6845594F94dc1DB02A252b5b4814aD);
 
     // The WETH token.
     IERC20 internal constant WETH =
-        IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+        IERC20(0x82aF49447D8a07e3bd95BD0d56f35241523fBab1);
 
     // The aWETH AToken.
     IAToken internal constant AWETH =
-        IAToken(0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8);
+        IAToken(0xe50fA9b3c56FfB159cB0FCA61F5c9D750e8128c8);
 
     // Whale accounts.
-    address internal WETH_WHALE = 0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E;
-    address internal AWETH_WHALE = 0x4353e2df4E3444e97e20b2bdA165BDd9A23913Ab;
+    address internal WETH_WHALE = 0x70d95587d40A2caf56bd97485aB3Eec10Bee6336;
+    address internal AWETH_WHALE = 0xF715724abba480D4D45f4cb52BEF5ce5E3513CCC;
+
     address[] internal baseTokenWhaleAccounts = [WETH_WHALE];
     address[] internal vaultSharesTokenWhaleAccounts = [AWETH_WHALE];
 
@@ -71,7 +72,7 @@ contract AaveL2HyperdriveTest is InstanceTest {
     constructor() InstanceTest(__testConfig) {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
-    function setUp() public override __mainnet_fork(20_276_503) {
+    function setUp() public override __arbitrum_fork(236_332_617) {
         // Invoke the instance testing suite setup.
         super.setUp();
     }
