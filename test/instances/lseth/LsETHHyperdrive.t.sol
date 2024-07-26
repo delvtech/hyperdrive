@@ -223,6 +223,13 @@ contract LsETHHyperdriveTest is InstanceTest {
         assertEq(RIVER.totalSupply(), totalSharesBefore);
     }
 
+    /// Getters ///
+
+    function test_getters() external view {
+        (, uint256 totalShares) = getTokenBalances(address(hyperdrive));
+        assertEq(hyperdrive.totalShares(), totalShares);
+    }
+
     /// Price Per Share ///
 
     function test_pricePerVaultShare(uint256 basePaid) external {

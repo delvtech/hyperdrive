@@ -342,6 +342,13 @@ contract SUSDeHyperdriveTest is InstanceTest {
         }
     }
 
+    /// Getters ///
+
+    function test_getters() external view {
+        (, uint256 totalShares) = getTokenBalances(address(hyperdrive));
+        assertEq(hyperdrive.totalShares(), totalShares);
+    }
+
     /// Price Per Share ///
 
     function test__pricePerVaultShare(uint256 basePaid) external {

@@ -277,6 +277,8 @@ contract EzETHHyperdriveTest is InstanceTest {
             address(IEzETHHyperdriveRead(address(hyperdrive)).renzoOracle()),
             address(RENZO_ORACLE)
         );
+        (, uint256 totalShares) = getTokenBalances(address(hyperdrive));
+        assertEq(hyperdrive.totalShares(), totalShares);
     }
 
     /// Price Per Share ///

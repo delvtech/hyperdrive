@@ -12,6 +12,7 @@ import { AaveTarget2Deployer } from "contracts/src/deployers/aave/AaveTarget2Dep
 import { AaveTarget3Deployer } from "contracts/src/deployers/aave/AaveTarget3Deployer.sol";
 import { AaveTarget4Deployer } from "contracts/src/deployers/aave/AaveTarget4Deployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
+import { IAaveHyperdrive } from "contracts/src/interfaces/IAaveHyperdrive.sol";
 import { IAToken } from "contracts/src/interfaces/IAToken.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -330,6 +331,19 @@ contract AaveHyperdriveTest is InstanceTest {
                 2
             );
         }
+    }
+
+    /// Getters ///
+
+    function test_getters() external view {
+        assertEq(
+            address(IAaveHyperdrive(address(hyperdrive)).vault()),
+            address(POOL)
+        );
+        assertEq(
+            hyperdrive.totalShares(),
+            AWETH.balanceOf(address(hyperdrive))
+        );
     }
 
     /// Price Per Share ///
