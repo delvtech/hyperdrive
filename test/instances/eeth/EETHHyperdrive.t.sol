@@ -83,7 +83,7 @@ contract EETHHyperdriveTest is InstanceTest {
         return new bytes(0);
     }
 
-    /// @dev Converts base amount to the equivalent about in shares.
+    /// @dev Converts base amount to the equivalent amount in shares.
     function convertToShares(
         uint256 baseAmount
     ) internal view override returns (uint256) {
