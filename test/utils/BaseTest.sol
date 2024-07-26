@@ -28,6 +28,7 @@ contract BaseTest is Test {
     uint256 __init__; // time setup function was ran
 
     string MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
+    string ARBITRUM_RPC_URL = vm.envString("ARBITRUM_RPC_URL");
     string SEPOLIA_RPC_URL = vm.envString("SEPOLIA_RPC_URL");
 
     bool isForked;
@@ -49,6 +50,15 @@ contract BaseTest is Test {
         rewardSource = createUser("rewardSource");
 
         __init__ = block.timestamp;
+    }
+
+    modifier __arbitrum_fork(uint256 blockNumber) {
+        uint256 mainnetForkId = vm.createFork(ARBITRUM_RPC_URL);
+        vm.selectFork(mainnetForkId);
+        vm.rollFork(blockNumber);
+        isForked = true;
+
+        _;
     }
 
     modifier __mainnet_fork(uint256 blockNumber) {
