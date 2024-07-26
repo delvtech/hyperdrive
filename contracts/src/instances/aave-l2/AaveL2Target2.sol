@@ -3,17 +3,17 @@ pragma solidity 0.8.20;
 
 import { HyperdriveTarget2 } from "../../external/HyperdriveTarget2.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { AaveBase } from "./AaveBase.sol";
+import { AaveL2Base } from "./AaveL2Base.sol";
 
 /// @author DELV
-/// @title AaveTarget2
-/// @notice AaveHyperdrive's target2 logic contract. This contract contains
+/// @title AaveL2Target2
+/// @notice AaveL2Hyperdrive's target2 logic contract. This contract contains
 ///         several stateful functions that couldn't fit into the Hyperdrive
 ///         contract.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract AaveTarget2 is HyperdriveTarget2, AaveBase {
+contract AaveL2Target2 is HyperdriveTarget2, AaveL2Base {
     /// @notice Initializes the target2 contract.
     /// @param _config The configuration of the Hyperdrive pool.
     constructor(

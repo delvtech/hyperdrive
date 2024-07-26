@@ -40,6 +40,9 @@ string constant CORN_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "CornHyperdriveDeplo
 /// @dev The kind of the EETHHyperdrive deployer coordinator.
 string constant EETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "EETHHyperdriveDeployerCoordinator";
 
+/// @dev The kind of the AaveL2Hyperdrive deployer coordinator.
+string constant AAVE_L2_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "AaveL2HyperdriveDeployerCoordinator";
+
 /// @dev The kind of the ERC4626Hyperdrive deployer coordinator.
 string constant ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "ERC4626HyperdriveDeployerCoordinator";
 
@@ -78,6 +81,9 @@ string constant CHAINLINK_HYPERDRIVE_KIND = "ChainlinkHyperdrive";
 
 /// @dev The kind of CornHyperdrive.
 string constant CORN_HYPERDRIVE_KIND = "CornHyperdrive";
+
+/// @dev The kind of AaveHyperdrive.
+string constant AAVE_L2_HYPERDRIVE_KIND = "AaveL2Hyperdrive";
 
 /// @dev The kind of EETHHyperdrive.
 string constant EETH_HYPERDRIVE_KIND = "EETHHyperdrive";

@@ -1,37 +1,38 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IPool } from "aave/interfaces/IPool.sol";
+import { DataTypes } from "aave/protocol/libraries/types/DataTypes.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import { IAToken } from "../../interfaces/IAToken.sol";
+import { IL2Pool } from "../../interfaces/IAave.sol";
+import { IAL2Token } from "../../interfaces/IAL2Token.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
-import { AaveConversions } from "./AaveConversions.sol";
+import { AaveL2Conversions } from "./AaveL2Conversions.sol";
 
 /// @author DELV
-/// @title AaveBase
-/// @notice The base contract for the Aave Hyperdrive implementation.
+/// @title AaveL2Base
+/// @notice The base contract for the AaveL2 Hyperdrive implementation.
 /// @dev This Hyperdrive implementation is designed to work with standard
-///      Aave vaults. Non-standard implementations may not work correctly
+///      AaveL2 vaults. Non-standard implementations may not work correctly
 ///      and should be carefully checked.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract AaveBase is HyperdriveBase {
+abstract contract AaveL2Base is HyperdriveBase {
     using FixedPointMath for uint256;
     using SafeERC20 for ERC20;
 
-    /// @dev The Aave vault that is this instance's yield source.
-    IPool internal immutable _vault;
+    /// @dev The AaveL2 vault that is this instance's yield source.
+    IL2Pool internal immutable _vault;
 
-    /// @notice Instantiates the AaveHyperdrive base contract.
+    /// @notice Instantiates the AaveL2Hyperdrive base contract.
     constructor() {
-        // Initialize the Aave vault immutable.
-        _vault = IAToken(address(_vaultSharesToken)).POOL();
+        // Initialize the AaveL2 vault immutable.
+        _vault = IAL2Token(address(_vaultSharesToken)).POOL();
 
-        // Approve the Aave vault with 1 wei. This ensures that all of the
+        // Approve the AaveL2 vault with 1 wei. This ensures that all of the
         // subsequent approvals will be writing to a dirty storage slot.
         ERC20(address(_baseToken)).forceApprove(address(_vault), 1);
     }
@@ -63,13 +64,13 @@ abstract contract AaveBase is HyperdriveBase {
             address(_vault),
             _baseAmount + 1
         );
-        _vault.supply(
-            address(_baseToken), // asset
-            _baseAmount, // amount
-            address(this), // onBehalfOf
+        bytes32 params = encodeSupplyParams(
+            address(_baseToken),
+            _baseAmount,
             // NOTE: Aave's referral program is inactive.
-            0 // referralCode
+            0
         );
+        _vault.supply(params);
 
         return (_convertToShares(_baseAmount), 0);
     }
@@ -96,14 +97,13 @@ abstract contract AaveBase is HyperdriveBase {
     /// @dev Process a withdrawal in base and send the proceeds to the
     ///      destination.
     /// @param _shareAmount The amount of vault shares to withdraw.
-    /// @param _destination The destination of the withdrawal.
     /// @return amountWithdrawn The amount of base withdrawn.
     function _withdrawWithBase(
         uint256 _shareAmount,
         address _destination,
         bytes calldata // unused
     ) internal override returns (uint256 amountWithdrawn) {
-        // Withdraw assets from the Aave vault to the destination.
+        // Withdraw assets from the AaveL2 vault to the destination.
         amountWithdrawn = _vault.withdraw(
             address(_baseToken), // asset
             // NOTE: Withdrawals are processed in base, so we have to convert
@@ -142,7 +142,8 @@ abstract contract AaveBase is HyperdriveBase {
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
-        return AaveConversions.convertToBase(_baseToken, _vault, _shareAmount);
+        return
+            AaveL2Conversions.convertToBase(_baseToken, _vault, _shareAmount);
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
@@ -151,7 +152,8 @@ abstract contract AaveBase is HyperdriveBase {
     function _convertToShares(
         uint256 _baseAmount
     ) internal view override returns (uint256) {
-        return AaveConversions.convertToShares(_baseToken, _vault, _baseAmount);
+        return
+            AaveL2Conversions.convertToShares(_baseToken, _vault, _baseAmount);
     }
 
     /// @dev Gets the total amount of shares held by the pool in the yield
@@ -172,5 +174,59 @@ abstract contract AaveBase is HyperdriveBase {
         if (msg.value != 0) {
             revert IHyperdrive.NotPayable();
         }
+    }
+
+    /**
+     * @notice Encodes supply parameters from standard input to compact representation of 1 bytes32
+     * @dev Without an onBehalfOf parameter as the compact calls to L2Pool will use msg.sender as onBehalfOf
+     * @param asset The address of the underlying asset to supply
+     * @param amount The amount to be supplied
+     * @param referralCode referralCode Code used to register the integrator originating the operation, for potential rewards.
+     *   0 if the action is executed directly by the user, without any middle-man
+     * @return compact representation of supply parameters
+     */
+    function encodeSupplyParams(
+        address asset,
+        uint256 amount,
+        uint16 referralCode
+    ) internal view returns (bytes32) {
+        DataTypes.ReserveData memory data = _vault.getReserveData(asset);
+
+        uint16 assetId = data.id;
+        uint128 shortenedAmount = uint128(amount);
+        bytes32 res;
+
+        assembly {
+            res := add(
+                assetId,
+                add(shl(16, shortenedAmount), shl(144, referralCode))
+            )
+        }
+        return res;
+    }
+
+    /**
+     * @notice Encodes withdraw parameters from standard input to compact representation of 1 bytes32
+     * @dev Without a to parameter as the compact calls to L2Pool will use msg.sender as to
+     * @param asset The address of the underlying asset to withdraw
+     * @param amount The underlying amount to be withdrawn
+     * @return compact representation of withdraw parameters
+     */
+    function encodeWithdrawParams(
+        address asset,
+        uint256 amount
+    ) internal view returns (bytes32) {
+        DataTypes.ReserveData memory data = _vault.getReserveData(asset);
+
+        uint16 assetId = data.id;
+        uint128 shortenedAmount = amount == type(uint256).max
+            ? type(uint128).max
+            : uint128(amount);
+
+        bytes32 res;
+        assembly {
+            res := add(assetId, shl(16, shortenedAmount))
+        }
+        return res;
     }
 }
