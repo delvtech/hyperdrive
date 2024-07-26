@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { ILiquidityPool } from "etherfi/src/interfaces/ILiquidityPool.sol";
-import { IeETH } from "etherfi/src/interfaces/IeETH.sol";
+import { ILiquidityPool } from "../..//interfaces/ILiquidityPool.sol";
+import { IEETH } from "../..//interfaces/IEETH.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { EETHConversions } from "./EETHConversions.sol";
-import "forge-std/console2.sol";
 
 /// @author DELV
 /// @title EETHBase
@@ -18,13 +17,13 @@ import "forge-std/console2.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract EETHBase is HyperdriveBase {
-    /// @dev The EtherFi liquidity pool.
-    ILiquidityPool internal immutable liquidityPool;
+    /// @dev The Etherfi liquidity pool.
+    ILiquidityPool public immutable _liquidityPool;
 
     /// @notice Instantiates the EETH Hyperdrive base contract.
-    /// @param _liquidityPool The EtherFi liquidity pool contract.
-    constructor(ILiquidityPool _liquidityPool) {
-        liquidityPool = _liquidityPool;
+    /// @param __liquidityPool The Etherfi liquidity pool contract.
+    constructor(ILiquidityPool __liquidityPool) {
+        _liquidityPool = __liquidityPool;
     }
 
     /// Yield Source ///
@@ -50,7 +49,7 @@ abstract contract EETHBase is HyperdriveBase {
         }
 
         // Deposit the base into the yield source.
-        sharesMinted = liquidityPool.deposit{ value: _baseAmount }(
+        sharesMinted = _liquidityPool.deposit{ value: _baseAmount }(
             _feeCollector
         );
         return (sharesMinted, refund);
@@ -68,7 +67,7 @@ abstract contract EETHBase is HyperdriveBase {
         // NOTE: The eETH transferFrom function converts from base to shares under
         // the hood using `sharesForAmount(_amount)`.
         // Take custody of the deposit in vault shares.
-        bool result = IeETH(address(_vaultSharesToken)).transferFrom(
+        bool result = IEETH(address(_vaultSharesToken)).transferFrom(
             msg.sender,
             address(this),
             baseAmount
@@ -105,7 +104,7 @@ abstract contract EETHBase is HyperdriveBase {
         // NOTE: The eETH transfer function converts from base to shares under
         // the hood using `sharesForAmount(_amount)`.
         // Transfer the stETH shares to the destination.
-        bool result = IeETH(address(_vaultSharesToken)).transfer(
+        bool result = IEETH(address(_vaultSharesToken)).transfer(
             _destination,
             baseAmount
         );
@@ -122,7 +121,7 @@ abstract contract EETHBase is HyperdriveBase {
     ) internal view override returns (uint256) {
         return
             EETHConversions.convertToBase(
-                liquidityPool,
+                _liquidityPool,
                 _vaultSharesToken,
                 _shareAmount
             );
@@ -136,7 +135,7 @@ abstract contract EETHBase is HyperdriveBase {
     ) internal view override returns (uint256) {
         return
             EETHConversions.convertToShares(
-                liquidityPool,
+                _liquidityPool,
                 _vaultSharesToken,
                 _baseAmount
             );
@@ -155,6 +154,6 @@ abstract contract EETHBase is HyperdriveBase {
     }
 
     /// @dev We override the message value check since this integration is
-    ///      not payable.
+    ///      payable.
     function _checkMessageValue() internal pure override {}
 }

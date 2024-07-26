@@ -4,7 +4,7 @@ pragma solidity 0.8.20;
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveCoreDeployer } from "../../interfaces/IHyperdriveCoreDeployer.sol";
 import { EETHHyperdrive } from "../../instances/eeth/EETHHyperdrive.sol";
-import { ILiquidityPool } from "etherfi/src/interfaces/ILiquidityPool.sol";
+import { ILiquidityPool } from "../..//interfaces/ILiquidityPool.sol";
 
 /// @author DELV
 /// @title EETHHyperdriveCoreDeployer

@@ -157,6 +157,19 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig);
 
+        // ****************************************************************
+        // FIXME: Implement this for new instances.
+        // Ensure that the vault shares token address is properly configured.
+        if (address(_deployConfig.vaultSharesToken) != address(VAULT_SHARES_TOKEN) {
+            revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
+        }
+
+        // Ensure that the base token address is properly configured.
+        if (address(_deployConfig.baseToken) == address(0)) {
+            revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
+        }
+        // *****************************************************************
+
         // Ensure that the minimum share reserves are equal to 1e15. This value
         // has been tested to prevent arithmetic overflows in the
         // `_updateLiquidity` function when the share reserves are as high as

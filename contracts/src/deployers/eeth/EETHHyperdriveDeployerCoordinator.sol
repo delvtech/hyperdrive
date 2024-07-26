@@ -4,14 +4,14 @@ pragma solidity 0.8.20;
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import { IeETH } from "etherfi/src/interfaces/IeETH.sol";
+import { IEETH } from "../..//interfaces/IEETH.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IEETHHyperdrive } from "../../interfaces/IEETHHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { EETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
-import { ILiquidityPool } from "etherfi/src/interfaces/ILiquidityPool.sol";
+import { ILiquidityPool } from "../..//interfaces/ILiquidityPool.sol";
 import { EETHConversions } from "../../instances/eeth/EETHConversions.sol";
 
 /// @author DELV
@@ -79,8 +79,7 @@ contract EETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         address _lp,
         uint256 _contribution,
         IHyperdrive.Options memory _options
-    ) internal override returns (uint256) {
-        uint256 value;
+    ) internal override returns (uint256 value) {
         // If base is the deposit asset, ensure that enough ether was sent to
         // the contract and return the amount of ether that should be sent for
         // the contribution.
@@ -103,7 +102,7 @@ contract EETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
 
             // NOTE: The eETH transferFrom function converts from base to shares under
             // the hood using `sharesForAmount(_amount)`.
-            bool result = IeETH(token).transferFrom(
+            bool result = IEETH(token).transferFrom(
                 _lp,
                 address(this),
                 baseContribution
@@ -111,8 +110,7 @@ contract EETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             if (!result) {
                 revert IHyperdrive.TransferFailed();
             }
-
-            IeETH(token).approve(address(_hyperdrive), baseContribution);
+            IEETH(token).approve(address(_hyperdrive), baseContribution);
         }
         return value;
     }
@@ -160,6 +158,16 @@ contract EETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     ) internal view override {
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig);
+
+        // Ensure that the vault shares token address is properly configured.
+        if (address(_deployConfig.vaultSharesToken) != address(ILiquidityPool(liquidityPool).eETH())) {
+            revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
+        }
+
+        // Ensure that the base token address is properly configured.
+        if (address(_deployConfig.baseToken) == address(0)) {
+            revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
+        }
 
         // Ensure that the minimum share reserves are equal to 1e15. This value
         // has been tested to prevent arithmetic overflows in the

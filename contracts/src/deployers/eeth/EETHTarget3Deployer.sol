@@ -2,10 +2,10 @@
 pragma solidity 0.8.20;
 
 import { EETHTarget3 } from "../../instances/eeth/EETHTarget3.sol";
-import { IeETH } from "etherfi/src/interfaces/IeETH.sol";
+import { IEETH } from "../..//interfaces/IEETH.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDeployer.sol";
-import { ILiquidityPool } from "etherfi/src/interfaces/ILiquidityPool.sol";
+import { ILiquidityPool } from "../..//interfaces/ILiquidityPool.sol";
 
 /// @author DELV
 /// @title EETHTarget3Deployer

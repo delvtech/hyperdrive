@@ -920,7 +920,7 @@ abstract contract InstanceTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
-        
+
         // Early termination if base withdraws are not supported.
         if (!config.enableBaseWithdraws) {
             return;

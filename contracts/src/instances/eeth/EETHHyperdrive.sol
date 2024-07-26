@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
-import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import { ILiquidityPool } from "etherfi/src/interfaces/ILiquidityPool.sol";
+import { ILiquidityPool } from "../..//interfaces/ILiquidityPool.sol";
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
@@ -56,7 +54,6 @@ import { EETHBase } from "./EETHBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract EETHHyperdrive is Hyperdrive, EETHBase {
-    using SafeERC20 for ERC20;
 
     /// @notice Instantiates Hyperdrive with a EETH vault as the yield source.
     /// @param __name The pool's name.
@@ -66,6 +63,7 @@ contract EETHHyperdrive is Hyperdrive, EETHBase {
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
     /// @param _target4 The target4 address.
+    /// @param _liquidityPool The EETH liquidity pool contract.
     constructor(
         string memory __name,
         IHyperdrive.PoolConfig memory _config,

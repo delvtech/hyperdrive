@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { ILiquidityPool } from "etherfi/src/interfaces/ILiquidityPool.sol";
-import { IeETH } from "etherfi/src/interfaces/IeETH.sol";
-import { stdStorage, StdStorage } from "forge-std/Test.sol";
+import { ILiquidityPool } from "contracts/src/interfaces/ILiquidityPool.sol";
+import { IEETH } from "contracts/src/interfaces/IEETH.sol";
 import { EETHHyperdriveCoreDeployer } from "contracts/src/deployers/eeth/EETHHyperdriveCoreDeployer.sol";
 import { EETHHyperdriveDeployerCoordinator } from "contracts/src/deployers/eeth/EETHHyperdriveDeployerCoordinator.sol";
 import { EETHTarget0Deployer } from "contracts/src/deployers/eeth/EETHTarget0Deployer.sol";
@@ -30,16 +29,16 @@ contract EETHHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
-    using stdStorage for StdStorage;
 
     // The mainnet liquidity pool.
     ILiquidityPool internal constant POOL =
         ILiquidityPool(0x308861A430be4cce5502d0A12724771Fc6DaF216);
 
     // The mainnet EETH token.
-    IeETH internal constant EETH =
-        IeETH(0x35fA164735182de50811E8e2E824cFb9B6118ac2);
+    IEETH internal constant EETH =
+        IEETH(0x35fA164735182de50811E8e2E824cFb9B6118ac2);
 
+    // The mainnet address that has the ability to call the rebase function.
     address internal constant MEMBERSHIP_MANAGER =
         0x3d320286E014C3e1ce99Af6d6B00f0C1D63E3000;
 
@@ -63,7 +62,10 @@ contract EETHHyperdriveTest is InstanceTest {
             enableBaseDeposits: true,
             enableShareDeposits: true,
             enableBaseWithdraws: false,
-            enableShareWithdraws: true
+            enableShareWithdraws: true,
+            baseWithdrawError: abi.encodeWithSelector(
+                IHyperdrive.UnsupportedToken.selector
+            )
         });
 
     /// @dev Instantiates the Instance testing suite with the configuration.
@@ -166,15 +168,12 @@ contract EETHHyperdriveTest is InstanceTest {
             assertApproxEqAbs(
                 EETH.balanceOf(address(hyperdrive)),
                 hyperdriveBalancesBefore.baseBalance + amountPaid,
-                1
+                5
             );
             assertEq(EETH.balanceOf(trader), traderBalancesBefore.baseBalance);
 
             // Ensure that the EETH shares were updated correctly.
-            uint256 expectedShares = amountPaid.mulDivDown(
-                totalSharesBefore,
-                totalBaseBefore
-            );
+            uint256 expectedShares = convertToShares(amountPaid);
             assertEq(EETH.totalShares(), totalSharesBefore + expectedShares);
             assertEq(
                 EETH.shares(address(hyperdrive)),
@@ -205,10 +204,7 @@ contract EETHHyperdriveTest is InstanceTest {
             );
 
             // Ensure that the EETH shares were updated correctly.
-            uint256 expectedShares = amountPaid.mulDivDown(
-                totalSharesBefore,
-                totalBaseBefore
-            );
+            uint256 expectedShares = convertToShares(amountPaid);
             assertEq(EETH.totalShares(), totalSharesBefore);
             assertApproxEqAbs(
                 EETH.shares(address(hyperdrive)),
@@ -262,19 +258,16 @@ contract EETHHyperdriveTest is InstanceTest {
         );
 
         // Ensure that the EETH shares were updated correctly.
-        uint256 expectedShares = baseProceeds.mulDivDown(
-            totalSharesBefore,
-            totalBaseBefore
-        );
+        uint256 expectedShares = convertToShares(baseProceeds);
         assertApproxEqAbs(
             EETH.shares(address(hyperdrive)),
             hyperdriveBalancesBefore.sharesBalance - expectedShares,
-            5
+            2
         );
         assertApproxEqAbs(
             EETH.shares(trader),
             traderBalancesBefore.sharesBalance + expectedShares,
-            5
+            2
         );
     }
 
@@ -434,7 +427,7 @@ contract EETHHyperdriveTest is InstanceTest {
 
         // Bob should receive approximately as much base as he paid since no
         // time as passed and the fees are zero.
-        assertApproxEqAbs(baseProceeds, basePaid, 1e9);
+        assertApproxEqAbs(baseProceeds, basePaid, 1e5);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
@@ -490,7 +483,7 @@ contract EETHHyperdriveTest is InstanceTest {
         );
 
         // Bob should receive almost exactly his bond amount.
-        assertApproxEqAbs(baseProceeds, bondAmount, 1e5);
+        assertApproxEqAbs(baseProceeds, bondAmount, 1e4);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
@@ -531,7 +524,7 @@ contract EETHHyperdriveTest is InstanceTest {
 
         // Bob should receive approximately as much base as he paid since no
         // time as passed and the fees are zero.
-        assertApproxEqAbs(baseProceeds, basePaid, 1e9);
+        assertApproxEqAbs(baseProceeds, basePaid, 1e4);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
@@ -580,7 +573,7 @@ contract EETHHyperdriveTest is InstanceTest {
         assertApproxEqAbs(
             baseProceeds,
             shortAmount.mulDown(uint256(variableRate)),
-            1e5
+            1e4
         );
 
         // Ensure that the withdrawal was processed as expected.

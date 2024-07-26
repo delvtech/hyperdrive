@@ -2,9 +2,9 @@
 pragma solidity 0.8.20;
 
 import { IERC20 } from "../../interfaces/IERC20.sol";
-import { ILiquidityPool } from "etherfi/src/interfaces/ILiquidityPool.sol";
+import { ILiquidityPool } from "../..//interfaces/ILiquidityPool.sol";
 import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
-import { IeETH } from "etherfi/src/interfaces/IeETH.sol";
+import { IEETH } from "../..//interfaces/IEETH.sol";
 
 /// @author DELV
 /// @title EETHConversions
@@ -24,7 +24,8 @@ library EETHConversions {
         IERC20 _eETH,
         uint256 _shareAmount
     ) internal view returns (uint256) {
-        uint256 totalShares = IeETH(address(_eETH)).totalShares();
+        // Get the total supply assets and shares after interest accrues.
+        uint256 totalShares = IEETH(address(_eETH)).totalShares();
         if (totalShares == 0) {
             return 0;
         }
@@ -34,9 +35,7 @@ library EETHConversions {
         //  contract.
         // NOTE: Round down so that the output is an underestimate.
         return
-            _shareAmount.mulDown(_liquidityPool.getTotalPooledEther()).divDown(
-                totalShares
-            );
+            _shareAmount.mulDivDown(_liquidityPool.getTotalPooledEther(), totalShares);
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
@@ -49,6 +48,7 @@ library EETHConversions {
         IERC20 _eETH,
         uint256 _baseAmount
     ) internal view returns (uint256) {
+        // Get the total supply assets and shares after interest accrues.
         uint256 totalPooledEther = _liquidityPool.getTotalPooledEther();
         if (totalPooledEther == 0) {
             return 0;
@@ -59,7 +59,7 @@ library EETHConversions {
         // contract.
         // NOTE: Round down so that the output is an underestimate.
         return
-            _baseAmount.mulDown(IeETH(address(_eETH)).totalShares()).divDown(
+            _baseAmount.mulDivDown(IEETH(address(_eETH)).totalShares(),
                 totalPooledEther
             );
     }

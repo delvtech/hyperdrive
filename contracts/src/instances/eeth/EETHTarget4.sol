@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
-import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { HyperdriveTarget4 } from "../../external/HyperdriveTarget4.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { ILiquidityPool } from "etherfi/src/interfaces/ILiquidityPool.sol";
+import { ILiquidityPool } from "../..//interfaces/ILiquidityPool.sol";
 import { EETHBase } from "./EETHBase.sol";
 
 /// @author DELV
@@ -17,7 +15,6 @@ import { EETHBase } from "./EETHBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract EETHTarget4 is HyperdriveTarget4, EETHBase {
-    using SafeERC20 for ERC20;
 
     /// @notice Initializes the target4 contract.
     /// @param _config The configuration of the Hyperdrive pool.
