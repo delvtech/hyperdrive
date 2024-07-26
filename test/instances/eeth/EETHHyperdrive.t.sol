@@ -71,7 +71,7 @@ contract EETHHyperdriveTest is InstanceTest {
 
     /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(20_362_343) {
-        // Invoke the Instance testing suite setup.
+        // Invoke the instance testing suite setup.
         super.setUp();
     }
 
