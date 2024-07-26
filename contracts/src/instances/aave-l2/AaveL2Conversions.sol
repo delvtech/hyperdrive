@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { L2Pool } from "aave/protocol/pool/L2Pool.sol";
+import { IL2Pool } from "../../interfaces/IAave.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
 
@@ -21,7 +21,7 @@ library AaveL2Conversions {
     /// @return The base amount.
     function convertToBase(
         IERC20 _baseToken,
-        L2Pool _vault,
+        IL2Pool _vault,
         uint256 _shareAmount
     ) internal view returns (uint256) {
         // AaveL2's AToken accounting calls shares "scaled tokens." We can convert
@@ -49,7 +49,7 @@ library AaveL2Conversions {
     /// @return The vault shares amount.
     function convertToShares(
         IERC20 _baseToken,
-        L2Pool _vault,
+        IL2Pool _vault,
         uint256 _baseAmount
     ) internal view returns (uint256) {
         // AaveL2's AToken accounting calls shares "scaled tokens." We can convert
@@ -79,7 +79,7 @@ library AaveL2Conversions {
     /// @return The AaveL2 vault's reserve normalized income.
     function getReserveNormalizedIncome(
         IERC20 _baseToken,
-        L2Pool _vault
+        IL2Pool _vault
     ) internal view returns (uint256) {
         return _vault.getReserveNormalizedIncome(address(_baseToken));
     }

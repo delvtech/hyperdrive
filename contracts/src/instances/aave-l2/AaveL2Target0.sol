@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { L2Pool } from "aave/protocol/pool/L2Pool.sol";
+import { IL2Pool } from "../../interfaces/IAave.sol";
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { AAVE_HYPERDRIVE_KIND } from "../../libraries/Constants.sol";
@@ -30,7 +30,7 @@ contract AaveL2Target0 is HyperdriveTarget0, AaveL2Base {
 
     /// @notice Gets the AaveL2 pool used as this pool's yield source.
     /// @return The AaveL2 pool.
-    function vault() external view returns (L2Pool) {
+    function vault() external view returns (IL2Pool) {
         _revert(abi.encode(_vault));
     }
 }

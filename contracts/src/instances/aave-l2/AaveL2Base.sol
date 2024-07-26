@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { L2Pool } from "aave/protocol/pool/L2Pool.sol";
+import { IL2Pool } from "../../interfaces/IAave.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IAToken } from "../../interfaces/IAToken.sol";
@@ -24,7 +24,7 @@ abstract contract AaveL2Base is HyperdriveBase {
     using SafeERC20 for ERC20;
 
     /// @dev The AaveL2 vault that is this instance's yield source.
-    L2Pool internal immutable _vault;
+    IL2Pool internal immutable _vault;
 
     /// @notice Instantiates the AaveL2Hyperdrive base contract.
     constructor() {

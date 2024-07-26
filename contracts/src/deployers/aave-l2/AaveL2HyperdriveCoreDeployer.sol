@@ -11,7 +11,7 @@ import { AaveL2Hyperdrive } from "../../instances/aave-l2/AaveL2Hyperdrive.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract L2HyperdriveCoreDeployer is IHyperdriveCoreDeployer {
+contract AaveL2HyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param __name The name of the Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.

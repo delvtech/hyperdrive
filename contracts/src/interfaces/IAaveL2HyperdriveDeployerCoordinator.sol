@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { L2Pool } from "aave/protocol/pool/L2Pool.sol";
+import { IL2Pool } from "./IAave.sol";
 import { IERC20 } from "./IERC20.sol";
 import { IHyperdriveDeployerCoordinator } from "./IHyperdriveDeployerCoordinator.sol";
 
@@ -15,7 +15,7 @@ interface IAaveL2HyperdriveDeployerCoordinator is
     /// @return The base amount.
     function convertToBase(
         IERC20 _baseToken,
-        L2Pool _vault,
+        IL2Pool _vault,
         uint256 _shareAmount
     ) external view returns (uint256);
 
@@ -26,7 +26,7 @@ interface IAaveL2HyperdriveDeployerCoordinator is
     /// @return The vault shares amount.
     function convertToShares(
         IERC20 _baseToken,
-        L2Pool _vault,
+        IL2Pool _vault,
         uint256 _baseAmount
     ) external view returns (uint256);
 }
