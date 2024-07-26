@@ -17,7 +17,7 @@ import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPoint
 import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
 import { MockERC4626 } from "../../../contracts/test/MockERC4626.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
-import { DeployerCoordinatorTest, MockHyperdriveDeployerCoordinator } from "test/integrations/deployers/DeployerCoordinator.t.sol";
+import { DeployerCoordinatorTest, MockHyperdriveDeployerCoordinator } from "./DeployerCoordinator.t.sol";
 import { Lib } from "../../utils/Lib.sol";
 
 contract ERC4626DeployerCoordinatorTest is DeployerCoordinatorTest {

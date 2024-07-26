@@ -5,8 +5,8 @@ import { stdError, Test } from "forge-std/Test.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
 import { MockFixedPointMath } from "../../../contracts/test/MockFixedPointMath.sol";
-import { LogExpMath } from "test/3rdPartyLibs/LogExpMath.sol";
-import { BalancerErrors } from "test/3rdPartyLibs/BalancerErrors.sol";
+import { LogExpMath } from "../../3rdPartyLibs/LogExpMath.sol";
+import { BalancerErrors } from "../../3rdPartyLibs/BalancerErrors.sol";
 import { Lib } from "../../utils/Lib.sol";
 
 contract FixedPointMathTest is Test {
