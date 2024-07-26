@@ -4,7 +4,7 @@ pragma solidity 0.8.20;
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { EETH_HYPERDRIVE_KIND } from "../../libraries/Constants.sol";
-import { ILiquidityPool } from "../..//interfaces/ILiquidityPool.sol";
+import { ILiquidityPool } from "../../interfaces/ILiquidityPool.sol";
 import { EETHBase } from "./EETHBase.sol";
 
 /// @author DELV

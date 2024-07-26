@@ -44,7 +44,7 @@ contract EETHHyperdriveTest is InstanceTest {
 
     // Whale accounts.
     address internal EETH_TOKEN_WHALE =
-        address(0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee);
+        0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee;
     address[] internal EETHTokenWhaleAccounts = [EETH_TOKEN_WHALE];
 
     // The configuration for the Instance testing suite.
@@ -592,7 +592,7 @@ contract EETHHyperdriveTest is InstanceTest {
 
     function test_getters() external view {
         assertEq(
-            address(IEETHHyperdrive(address(hyperdrive)).liquidityPool()),
+            IEETHHyperdrive(address(hyperdrive)).liquidityPool(),
             address(POOL)
         );
     }

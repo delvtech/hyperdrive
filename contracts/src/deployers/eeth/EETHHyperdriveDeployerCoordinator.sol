@@ -4,14 +4,14 @@ pragma solidity 0.8.20;
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import { IEETH } from "../..//interfaces/IEETH.sol";
+import { IEETH } from "../../interfaces/IEETH.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IEETHHyperdrive } from "../../interfaces/IEETHHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { EETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
-import { ILiquidityPool } from "../..//interfaces/ILiquidityPool.sol";
+import { ILiquidityPool } from "../../interfaces/ILiquidityPool.sol";
 import { EETHConversions } from "../../instances/eeth/EETHConversions.sol";
 
 /// @author DELV

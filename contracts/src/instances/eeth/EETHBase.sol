@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { ILiquidityPool } from "../..//interfaces/ILiquidityPool.sol";
-import { IEETH } from "../..//interfaces/IEETH.sol";
+import { ILiquidityPool } from "../../interfaces/ILiquidityPool.sol";
+import { IEETH } from "../../interfaces/IEETH.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { EETHConversions } from "./EETHConversions.sol";
