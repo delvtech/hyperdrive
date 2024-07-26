@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import { console2 } from "forge-std/console2.sol";
 import { Test } from "forge-std/Test.sol";
 import { IERC20 } from "../../contracts/src/interfaces/IERC20.sol";
-import { ERC20ForwarderFactory } from "../../contracts/src/token/ERC20ForwarderFactory.sol";
 
 contract BaseTest is Test {
     address internal alice;
@@ -52,6 +50,15 @@ contract BaseTest is Test {
         rewardSource = createUser("rewardSource");
 
         __init__ = block.timestamp;
+    }
+
+    modifier __arbitrum_fork(uint256 blockNumber) {
+        uint256 arbitrumForkId = vm.createFork(ARBITRUM_RPC_URL);
+        vm.selectFork(arbitrumForkId);
+        vm.rollFork(blockNumber);
+        isForked = true;
+
+        _;
     }
 
     modifier __mainnet_fork(uint256 blockNumber) {
