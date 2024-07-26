@@ -32,8 +32,7 @@ abstract contract EETHBase is HyperdriveBase {
     /// @dev Accepts a deposit from the user in base.
     /// @param _baseAmount The base amount to deposit.
     /// @return sharesMinted The shares that were minted in the deposit.
-    /// @return refund The amount of ETH to refund. Since this yield source isn't
-    ///         payable, this is always zero.
+    /// @return refund The amount of ETH to refund.
     function _depositWithBase(
         uint256 _baseAmount,
         bytes calldata // unused
