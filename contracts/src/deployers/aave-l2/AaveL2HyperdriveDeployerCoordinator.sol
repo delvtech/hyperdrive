@@ -1,30 +1,30 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IPool } from "aave/interfaces/IPool.sol";
+import { IL2Pool } from "../../interfaces/IAave.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import { AaveConversions } from "../../instances/aave/AaveConversions.sol";
-import { IAaveHyperdriveDeployerCoordinator } from "../../interfaces/IAaveHyperdriveDeployerCoordinator.sol";
-import { IAToken } from "../../interfaces/IAToken.sol";
+import { AaveL2Conversions } from "../../instances/aave-l2/AaveL2Conversions.sol";
+import { IAaveL2HyperdriveDeployerCoordinator } from "../../interfaces/IAaveL2HyperdriveDeployerCoordinator.sol";
+import { IAL2Token } from "../../interfaces/IAL2Token.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
-import { AAVE_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
+import { AAVE_L2_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
 /// @author DELV
-/// @title AaveHyperdriveDeployerCoordinator
-/// @notice The deployer coordinator for the AaveHyperdrive
+/// @title AaveL2HyperdriveDeployerCoordinator
+/// @notice The deployer coordinator for the AaveL2Hyperdrive
 ///         implementation.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract AaveHyperdriveDeployerCoordinator is
+contract AaveL2HyperdriveDeployerCoordinator is
     HyperdriveDeployerCoordinator,
-    IAaveHyperdriveDeployerCoordinator
+    IAaveL2HyperdriveDeployerCoordinator
 {
     using FixedPointMath for uint256;
     using SafeERC20 for ERC20;
@@ -35,7 +35,7 @@ contract AaveHyperdriveDeployerCoordinator is
         override(
             HyperdriveDeployerCoordinator,
             IHyperdriveDeployerCoordinator
-        ) kind = AAVE_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
+        ) kind = AAVE_L2_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
 
     /// @notice Instantiates the deployer coordinator.
     /// @param _name The deployer coordinator's name.
@@ -100,7 +100,7 @@ contract AaveHyperdriveDeployerCoordinator is
             // shares to base.
             _contribution = convertToBase(
                 IERC20(baseToken),
-                IAToken(token).POOL(),
+                IAL2Token(token).POOL(),
                 _contribution
             );
         }
@@ -116,28 +116,30 @@ contract AaveHyperdriveDeployerCoordinator is
 
     /// @notice Convert an amount of vault shares to an amount of base.
     /// @param _baseToken The base token.
-    /// @param _vault The Aave vault.
+    /// @param _vault The AaveL2 vault.
     /// @param _shareAmount The vault shares amount.
     /// @return The base amount.
     function convertToBase(
         IERC20 _baseToken,
-        IPool _vault,
+        IL2Pool _vault,
         uint256 _shareAmount
     ) public view returns (uint256) {
-        return AaveConversions.convertToBase(_baseToken, _vault, _shareAmount);
+        return
+            AaveL2Conversions.convertToBase(_baseToken, _vault, _shareAmount);
     }
 
     /// @notice Convert an amount of base to an amount of vault shares.
     /// @param _baseToken The base token.
-    /// @param _vault The Aave vault.
+    /// @param _vault The AaveL2 vault.
     /// @param _baseAmount The base amount.
     /// @return The vault shares amount.
     function convertToShares(
         IERC20 _baseToken,
-        IPool _vault,
+        IL2Pool _vault,
         uint256 _baseAmount
     ) public view returns (uint256) {
-        return AaveConversions.convertToShares(_baseToken, _vault, _baseAmount);
+        return
+            AaveL2Conversions.convertToShares(_baseToken, _vault, _baseAmount);
     }
 
     /// @dev We override the message value check since this integration is
@@ -164,7 +166,7 @@ contract AaveHyperdriveDeployerCoordinator is
         // Ensure that the base token address is properly configured.
         if (
             address(_deployConfig.baseToken) !=
-            IAToken(address(_deployConfig.vaultSharesToken))
+            IAL2Token(address(_deployConfig.vaultSharesToken))
                 .UNDERLYING_ASSET_ADDRESS()
         ) {
             revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
@@ -209,7 +211,7 @@ contract AaveHyperdriveDeployerCoordinator is
         return
             convertToBase(
                 _deployConfig.baseToken,
-                IAToken(address(_deployConfig.vaultSharesToken)).POOL(),
+                IAL2Token(address(_deployConfig.vaultSharesToken)).POOL(),
                 ONE
             );
     }
