@@ -66,7 +66,7 @@ contract EETHHyperdriveTest is InstanceTest {
             enableShareWithdraws: true
         });
 
-    /// @dev Instantiates the Instance testing suite with the configuration.
+    /// @dev Instantiates the instance testing suite with the configuration.
     constructor() InstanceTest(__testConfig) {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
