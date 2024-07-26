@@ -6,7 +6,7 @@ import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { AaveL2Conversions } from "../../instances/aave-l2/AaveL2Conversions.sol";
 import { IAaveL2HyperdriveDeployerCoordinator } from "../../interfaces/IAaveL2HyperdriveDeployerCoordinator.sol";
-import { IAToken } from "../../interfaces/IAToken.sol";
+import { IAL2Token } from "../../interfaces/IAL2Token.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
@@ -100,7 +100,7 @@ contract AaveL2HyperdriveDeployerCoordinator is
             // shares to base.
             _contribution = convertToBase(
                 IERC20(baseToken),
-                IAToken(token).POOL(),
+                IAL2Token(token).POOL(),
                 _contribution
             );
         }
@@ -166,7 +166,7 @@ contract AaveL2HyperdriveDeployerCoordinator is
         // Ensure that the base token address is properly configured.
         if (
             address(_deployConfig.baseToken) !=
-            IAToken(address(_deployConfig.vaultSharesToken))
+            IAL2Token(address(_deployConfig.vaultSharesToken))
                 .UNDERLYING_ASSET_ADDRESS()
         ) {
             revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
@@ -211,7 +211,7 @@ contract AaveL2HyperdriveDeployerCoordinator is
         return
             convertToBase(
                 _deployConfig.baseToken,
-                IAToken(address(_deployConfig.vaultSharesToken)).POOL(),
+                IAL2Token(address(_deployConfig.vaultSharesToken)).POOL(),
                 ONE
             );
     }
