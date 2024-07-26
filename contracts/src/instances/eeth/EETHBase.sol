@@ -31,8 +31,7 @@ abstract contract EETHBase is HyperdriveBase {
     /// @dev Accepts a deposit from the user in base.
     /// @param _baseAmount The base amount to deposit.
     /// @return sharesMinted The shares that were minted in the deposit.
-    /// @return refund The amount of ETH to refund. Since this yield source isn't
-    ///         payable, this is always zero.
+    /// @return refund The amount of ETH to refund.
     function _depositWithBase(
         uint256 _baseAmount,
         bytes calldata // unused
@@ -66,6 +65,7 @@ abstract contract EETHBase is HyperdriveBase {
 
         // NOTE: The eETH transferFrom function converts from base to shares under
         // the hood using `sharesForAmount(_amount)`.
+        //
         // Take custody of the deposit in vault shares.
         bool result = IEETH(address(_vaultSharesToken)).transferFrom(
             msg.sender,
@@ -103,7 +103,8 @@ abstract contract EETHBase is HyperdriveBase {
 
         // NOTE: The eETH transfer function converts from base to shares under
         // the hood using `sharesForAmount(_amount)`.
-        // Transfer the stETH shares to the destination.
+        //
+        // Transfer the eETH to the destination.
         bool result = IEETH(address(_vaultSharesToken)).transfer(
             _destination,
             baseAmount

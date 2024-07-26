@@ -14,6 +14,7 @@ import { IEETH } from "../..//interfaces/IEETH.sol";
 ///                    particular legal or regulatory significance.
 library EETHConversions {
     using FixedPointMath for uint256;
+    
     /// @dev Convert an amount of vault shares to an amount of base.
     /// @param _liquidityPool The Etherfi liquidity pool contract.
     /// @param _eETH The eETH contract.

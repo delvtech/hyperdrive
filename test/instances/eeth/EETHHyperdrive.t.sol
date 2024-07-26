@@ -68,12 +68,12 @@ contract EETHHyperdriveTest is InstanceTest {
             )
         });
 
-    /// @dev Instantiates the Instance testing suite with the configuration.
+    /// @dev Instantiates the instance testing suite with the configuration.
     constructor() InstanceTest(__testConfig) {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(20_362_343) {
-        // Invoke the Instance testing suite setup.
+        // Invoke the instance testing suite setup.
         super.setUp();
     }
 
@@ -85,7 +85,7 @@ contract EETHHyperdriveTest is InstanceTest {
         return new bytes(0);
     }
 
-    /// @dev Converts base amount to the equivalent about in shares.
+    /// @dev Converts base amount to the equivalent amount in shares.
     function convertToShares(
         uint256 baseAmount
     ) internal view override returns (uint256) {
