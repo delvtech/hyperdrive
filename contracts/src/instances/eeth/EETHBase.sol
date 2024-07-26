@@ -6,7 +6,6 @@ import { IeETH } from "etherfi/src/interfaces/IeETH.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { EETHConversions } from "./EETHConversions.sol";
-import "forge-std/console2.sol";
 
 /// @author DELV
 /// @title EETHBase
