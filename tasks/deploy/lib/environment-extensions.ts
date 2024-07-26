@@ -8,7 +8,7 @@ import { ArtifactsMap } from "hardhat/types";
 import "hardhat/types/config";
 import "hardhat/types/runtime";
 import { ConfigurableTaskDefinition } from "hardhat/types/runtime";
-import { Address, ContractConstructorArgs, isHex } from "viem";
+import { Address, ContractConstructorArgs } from "viem";
 import { ETH_ADDRESS } from "./constants";
 import { Deployments } from "./deployments";
 import { evaluateValueOrHREFn } from "./utils";
@@ -132,12 +132,29 @@ extendEnvironment((hre) => {
                 ArtifactsMap[typeof contract]["abi"]
             >;
         }
+
         console.log(`deploying ${name}...`);
+
+        // Deploy libraries if necessary and link them to the target bytecode.
+        let artifact = await hre.artifacts.readArtifact(contract);
+        let libraries: Record<string, `0x${string}`> = {};
+        for (let libraryFilename in artifact.linkReferences) {
+            for (let libraryName in artifact.linkReferences[
+                libraryFilename as keyof typeof artifact.linkReferences
+            ] as any) {
+                let libraryAddress = (
+                    await ensureDeployed(libraryName, libraryName as any, [], {
+                        viemConfig,
+                    })
+                ).address;
+                libraries[libraryName] = libraryAddress;
+            }
+        }
 
         const instance = await hre.viem.deployContract(
             contract as ContractName<typeof contract>,
             args as any,
-            { ...viemConfig, gas: 5_000_000n },
+            { ...viemConfig, libraries, gas: 6_750_000n },
         );
 
         console.log(` - saving ${name}...`);
@@ -288,22 +305,6 @@ extendEnvironment((hre) => {
             await coordinatorConfig.prepare(hre, options ?? {});
         }
 
-        // Deploy the LPMath contract if needed
-        let { address: lpMathAddress } = await ensureDeployed(
-            `LPMath`,
-            "LPMath",
-            [],
-            options,
-        );
-        let lpMathArtifact = await hre.artifacts.readArtifact("LPMath");
-        let libraries: Link[] = [
-            {
-                address: lpMathAddress,
-                sourceName: lpMathArtifact.sourceName,
-                libraryName: "LPMath",
-            },
-        ];
-
         // Parse out the prefix to name various components
         let { prefix } = coordinatorConfig;
 
@@ -342,7 +343,6 @@ extendEnvironment((hre) => {
         let deployer = (await hre.getNamedAccounts())[
             "deployer"
         ]! as `0x${string}`;
-        let wc = await hre.viem.getWalletClient(deployer);
         let pc = await hre.viem.getPublicClient();
         let targets: Address[] = [];
         let targetCount = await evaluateValueOrHREFn(
@@ -353,53 +353,13 @@ extendEnvironment((hre) => {
         for (let i = 0; i < targetCount; i++) {
             let targetContractName = `${prefix}Target${i}Deployer`;
 
-            // retrieve from deployments and continue if it already exists
-            let targetDeployment = deployments.byNameSafe(
+            let target = await ensureDeployed(
                 `${name}_${targetContractName}`,
+                targetContractName as any,
+                [],
+                options,
             );
-            if (!!targetDeployment) {
-                targets.push(targetDeployment.address);
-                continue;
-            }
-
-            // link the LPMath library with the target (won't happen unless needed)
-            let targetArtifact =
-                await hre.artifacts.readArtifact(targetContractName);
-            let targetBytecode = targetArtifact.bytecode;
-            for (const { sourceName, libraryName, address } of libraries) {
-                const linkReferences =
-                    targetArtifact.linkReferences[sourceName][libraryName];
-                for (const { start, length } of linkReferences) {
-                    targetBytecode =
-                        targetBytecode.substring(0, 2 + start * 2) +
-                        address.substring(2) +
-                        targetBytecode.substring(2 + (start + length) * 2);
-                }
-            }
-            targetBytecode = isHex(targetBytecode)
-                ? targetBytecode
-                : `0x${targetBytecode}`;
-
-            // deploy the contract using the bytecode
-            console.log(`deploying ${name}_${targetContractName}`);
-
-            let tx = await wc.deployContract({
-                abi: targetArtifact.abi,
-                bytecode: targetBytecode as `0x${string}`,
-                args: extraArgs ?? [],
-                gas: 5_500_000n,
-            });
-            let receipt = await pc.waitForTransactionReceipt({ hash: tx });
-            let address = receipt.contractAddress!;
-            targets.push(address);
-
-            // handle options
-            console.log(` - saving ${name}_${targetContractName}...`);
-            deployments.add(
-                `${name}_${targetContractName}`,
-                targetContractName,
-                address,
-            );
+            targets.push(target.address);
         }
 
         // Deploy the coordinator
@@ -530,13 +490,10 @@ extendEnvironment((hre) => {
             ];
             let { result: address } = await factory.simulate.deployTarget(
                 args as any,
-                {
-                    gas: 5_500_000n,
-                    ...options.viemConfig,
-                },
+                { gas: 6_750_000n, ...options.viemConfig },
             );
             let tx = await factory.write.deployTarget(args as any, {
-                gas: 5_500_000n,
+                gas: 6_750_000n,
                 ...(options.viemConfig as any),
             });
             await pc.waitForTransactionReceipt({
@@ -589,13 +546,10 @@ extendEnvironment((hre) => {
         }
         let { result: address } = await factory.simulate.deployAndInitialize(
             args as any,
-            {
-                gas: 5_000_000n,
-                value,
-            },
+            { gas: 6_750_000n, value },
         );
         let tx = await factory.write.deployAndInitialize(args as any, {
-            gas: 5_000_000n,
+            gas: 6_750_000n,
             value,
         });
         await pc.waitForTransactionReceipt({ hash: tx });
@@ -606,7 +560,7 @@ extendEnvironment((hre) => {
 
         // NOTE: There's a bug in hardhat that results in receiving a garbage address for Target0.
         //       Because of this, we need to retrieve the correct address from the Hyperdrive instance once deployed.
-        await deployments.add(
+        deployments.add(
             `${name}_${prefix}Target0`,
             `${prefix}Target0`,
             await (

@@ -34,3 +34,5 @@ export const MAINNET_RETH_WHALE =
     "0x1bee69b7dfffa4e2d53c2a2df135c388ad25dcd2" as Address;
 
 export const SIX_MONTHS = "182 days";
+
+export const TWO_WEEKS = "14 days";
