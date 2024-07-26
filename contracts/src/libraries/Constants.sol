@@ -31,6 +31,9 @@ string constant HYPERDRIVE_REGISTRY_KIND = "HyperdriveRegistry";
 /// @dev The kind of the AaveHyperdrive deployer coordinator factory.
 string constant AAVE_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "AaveHyperdriveDeployerCoordinator";
 
+/// @dev The kind of the EETHHyperdrive deployer coordinator factory.
+string constant EETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "EETHHyperdriveDeployerCoordinator";
+
 /// @dev The kind of the ERC4626Hyperdrive deployer coordinator factory.
 string constant ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "ERC4626HyperdriveDeployerCoordinator";
 
@@ -51,6 +54,9 @@ string constant STETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "StETHHyperdriveDep
 
 /// @dev The kind of AaveHyperdrive.
 string constant AAVE_HYPERDRIVE_KIND = "AaveHyperdrive";
+
+/// @dev The kind of EETHHyperdrive.
+string constant EETH_HYPERDRIVE_KIND = "EETHHyperdrive";
 
 /// @dev The kind of ERC4626Hyperdrive.
 string constant ERC4626_HYPERDRIVE_KIND = "ERC4626Hyperdrive";

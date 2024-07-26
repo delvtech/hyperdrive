@@ -1,29 +1,33 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+import { IERC20 } from "../../interfaces/IERC20.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import { I{{ name.capitalized }} } from "../../interfaces/I{{ name.capitalized }}.sol";
+import { IEETH } from "../../interfaces/IEETH.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { I{{ name.capitalized }}Hyperdrive } from "../../interfaces/I{{ name.capitalized }}Hyperdrive.sol";
+import { IEETHHyperdrive } from "../../interfaces/IEETHHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
-import { {{ name.uppercase }}_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
+import { EETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
+import { ILiquidityPool } from "../../interfaces/ILiquidityPool.sol";
+import { EETHConversions } from "../../instances/eeth/EETHConversions.sol";
 
 /// @author DELV
-/// @title {{ name.capitalized }}HyperdriveDeployerCoordinator
-/// @notice The deployer coordinator for the {{ name.capitalized }}Hyperdrive
+/// @title EETHHyperdriveDeployerCoordinator
+/// @notice The deployer coordinator for the EETHHyperdrive
 ///         implementation.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
-    using SafeERC20 for ERC20;
+contract EETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+    /// @notice The Etherfi contract.
+    ILiquidityPool public immutable liquidityPool;
 
     /// @notice The deployer coordinator's kind.
     string public constant override kind =
-        {{ name.uppercase }}_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
+        EETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
 
     /// @notice Instantiates the deployer coordinator.
     /// @param _name The deployer coordinator's name.
@@ -34,6 +38,7 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
     /// @param _target4Deployer The target4 deployer.
+    /// @param _liquidityPool The liquidity pool contract.
     constructor(
         string memory _name,
         address _factory,
@@ -42,7 +47,8 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
         address _target1Deployer,
         address _target2Deployer,
         address _target3Deployer,
-        address _target4Deployer
+        address _target4Deployer,
+        ILiquidityPool _liquidityPool
     )
         HyperdriveDeployerCoordinator(
             _name,
@@ -54,7 +60,9 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
             _target3Deployer,
             _target4Deployer
         )
-    {}
+    {
+        liquidityPool = _liquidityPool;
+    }
 
     /// @dev Prepares the coordinator for initialization by drawing funds from
     ///      the LP, if necessary.
@@ -71,9 +79,7 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
         address _lp,
         uint256 _contribution,
         IHyperdrive.Options memory _options
-{% if contract.as_base_allowed and contract.payable %}
-    ) internal override returns (uint256) {
-        uint256 value;
+    ) internal override returns (uint256 value) {
         // If base is the deposit asset, ensure that enough ether was sent to
         // the contract and return the amount of ether that should be sent for
         // the contribution.
@@ -83,71 +89,67 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
             }
             value = _contribution;
         }
-
         // Otherwise, transfer vault shares from the LP and approve the
         // Hyperdrive pool.
         else {
-            // ****************************************************************
-            // FIXME: Implement this for new instances. ERC20 example provided.
-            // Take custody of the contribution and approve Hyperdrive to pull
-            // the tokens.
             address token = _hyperdrive.vaultSharesToken();
-            ERC20(token).safeTransferFrom(_lp, address(this), _contribution);
-            ERC20(token).forceApprove(address(_hyperdrive), _contribution);
-            // ****************************************************************
-        }
-{% elif contract.as_base_allowed and not contract.payable %}
-    ) internal override returns (uint256 value) {
-        // If base is the deposit asset, the initialization will be paid in the
-        // base token.
-        address token;
-        if (_options.asBase) {
-            token = _hyperdrive.baseToken();
-        }
-        // Otherwise, the initialization will be paid in vault shares.
-        else {
-            token = _hyperdrive.vaultSharesToken();
-        }
 
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC20 example provided.
-        // Take custody of the contribution and approve Hyperdrive to pull the
-        // tokens.
-        ERC20(token).safeTransferFrom(_lp, address(this), _contribution);
-        ERC20(token).forceApprove(address(_hyperdrive), _contribution);
-        // ****************************************************************
-{% elif not contract.as_base_allowed and not contract.payable %}
-    ) internal override returns (uint256 value) {
-        // Depositing as base is disallowed.
-        if (_options.asBase) {
-            revert IHyperdrive.UnsupportedToken();
-        }
+            // Convert the vault shares to base.
+            uint256 baseContribution = convertToBase(
+                IERC20(token),
+                _contribution
+            );
 
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC20 example provided.
-        // Otherwise, transfer vault shares from the LP and approve the
-        // Hyperdrive pool.
-        address token = _hyperdrive.vaultSharesToken();
-        ERC20(token).transferFrom(_lp, address(this), _contribution);
-        ERC20(token).approve(address(_hyperdrive), _contribution);
-        // ****************************************************************
-{% endif %}
+            // NOTE: The eETH transferFrom function converts from base to shares under
+            // the hood using `sharesForAmount(_amount)`.
+            bool result = IEETH(token).transferFrom(
+                _lp,
+                address(this),
+                baseContribution
+            );
+            if (!result) {
+                revert IHyperdrive.TransferFailed();
+            }
+            IEETH(token).approve(address(_hyperdrive), baseContribution);
+        }
         return value;
     }
 
-{% if contract.payable %}
+    /// @notice Convert an amount of vault shares to an amount of base.
+    /// @param _vaultSharesToken The vault shares asset.
+    /// @param _shareAmount The vault shares amount.
+    /// @return The base amount.
+    function convertToBase(
+        IERC20 _vaultSharesToken,
+        uint256 _shareAmount
+    ) public view returns (uint256) {
+        return
+            EETHConversions.convertToBase(
+                liquidityPool,
+                _vaultSharesToken,
+                _shareAmount
+            );
+    }
+
+    /// @notice Convert an amount of base to an amount of vault shares.
+    /// @param _vaultSharesToken The vault shares asset.
+    /// @param _baseAmount The base amount.
+    /// @return The vault shares amount.
+    function convertToShares(
+        IERC20 _vaultSharesToken,
+        uint256 _baseAmount
+    ) public view returns (uint256) {
+        return
+            EETHConversions.convertToShares(
+                liquidityPool,
+                _vaultSharesToken,
+                _baseAmount
+            );
+    }
+
     /// @dev We override the message value check since this integration is
     ///      payable.
     function _checkMessageValue() internal view override {}
-{% else %}
-    /// @dev We override the message value check since this integration is
-    ///      not payable.
-    function _checkMessageValue() internal view override {
-        if (msg.value != 0) {
-            revert IHyperdriveDeployerCoordinator.NotPayable();
-        }
-    }
-{% endif %}
 
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
@@ -157,10 +159,11 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig);
 
-        // ****************************************************************
-        // FIXME: Implement this for new instances.
         // Ensure that the vault shares token address is properly configured.
-        if (address(_deployConfig.vaultSharesToken) != address(VAULT_SHARES_TOKEN) {
+        if (
+            address(_deployConfig.vaultSharesToken) !=
+            address(ILiquidityPool(liquidityPool).eETH())
+        ) {
             revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
         }
 
@@ -168,7 +171,6 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
         if (address(_deployConfig.baseToken) == address(0)) {
             revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
         }
-        // *****************************************************************
 
         // Ensure that the minimum share reserves are equal to 1e15. This value
         // has been tested to prevent arithmetic overflows in the
@@ -189,12 +191,9 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
-        IHyperdrive.PoolDeployConfig memory, // unused _deployConfig
-        bytes memory // unused _extraData
-    ) internal pure override returns (uint256) {
-        // ****************************************************************
-        // FIXME:  Implement this for new instances.
-        return ONE;
-        // ****************************************************************
+        IHyperdrive.PoolDeployConfig memory _deployConfig,
+        bytes memory // unused extra data
+    ) internal view override returns (uint256) {
+        return convertToBase(_deployConfig.vaultSharesToken, ONE);
     }
 }

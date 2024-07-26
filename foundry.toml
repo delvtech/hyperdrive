@@ -20,6 +20,7 @@ remappings = [
   'nomad=lib/ExcessivelySafeCall/src',
   'openzeppelin=lib/openzeppelin-contracts/contracts',
   'solmate=lib/solmate/src',
+  'etherfi=lib/smart-contracts',
 ]
 # gas limit - max u64
 gas_limit = "18446744073709551615"
