@@ -14,7 +14,7 @@ import { IEETH } from "../..//interfaces/IEETH.sol";
 ///                    particular legal or regulatory significance.
 library EETHConversions {
     using FixedPointMath for uint256;
-    
+
     /// @dev Convert an amount of vault shares to an amount of base.
     /// @param _liquidityPool The Etherfi liquidity pool contract.
     /// @param _eETH The eETH contract.
@@ -36,7 +36,10 @@ library EETHConversions {
         //  contract.
         // NOTE: Round down so that the output is an underestimate.
         return
-            _shareAmount.mulDivDown(_liquidityPool.getTotalPooledEther(), totalShares);
+            _shareAmount.mulDivDown(
+                _liquidityPool.getTotalPooledEther(),
+                totalShares
+            );
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
@@ -60,7 +63,8 @@ library EETHConversions {
         // contract.
         // NOTE: Round down so that the output is an underestimate.
         return
-            _baseAmount.mulDivDown(IEETH(address(_eETH)).totalShares(),
+            _baseAmount.mulDivDown(
+                IEETH(address(_eETH)).totalShares(),
                 totalPooledEther
             );
     }

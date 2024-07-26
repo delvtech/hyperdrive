@@ -54,7 +54,6 @@ import { EETHBase } from "./EETHBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract EETHHyperdrive is Hyperdrive, EETHBase {
-
     /// @notice Instantiates Hyperdrive with a EETH vault as the yield source.
     /// @param __name The pool's name.
     /// @param _config The configuration of the Hyperdrive pool.

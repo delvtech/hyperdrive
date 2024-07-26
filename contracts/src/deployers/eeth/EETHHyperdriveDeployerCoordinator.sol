@@ -160,7 +160,10 @@ contract EETHHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         super._checkPoolConfig(_deployConfig);
 
         // Ensure that the vault shares token address is properly configured.
-        if (address(_deployConfig.vaultSharesToken) != address(ILiquidityPool(liquidityPool).eETH())) {
+        if (
+            address(_deployConfig.vaultSharesToken) !=
+            address(ILiquidityPool(liquidityPool).eETH())
+        ) {
             revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
         }
 

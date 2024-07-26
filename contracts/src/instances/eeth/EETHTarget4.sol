@@ -15,7 +15,6 @@ import { EETHBase } from "./EETHBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract EETHTarget4 is HyperdriveTarget4, EETHBase {
-
     /// @notice Initializes the target4 contract.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _liquidityPool The Etherfi liquidity pool contract.

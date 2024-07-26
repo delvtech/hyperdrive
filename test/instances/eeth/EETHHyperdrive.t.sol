@@ -588,6 +588,15 @@ contract EETHHyperdriveTest is InstanceTest {
         );
     }
 
+    /// Getters ///
+
+    function test_getters() external view {
+        assertEq(
+            address(IEETHHyperdrive(address(hyperdrive)).liquidityPool()),
+            address(POOL)
+        );
+    }
+
     /// Helpers ///
 
     function advanceTime(
