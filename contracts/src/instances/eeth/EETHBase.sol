@@ -67,6 +67,7 @@ abstract contract EETHBase is HyperdriveBase {
 
         // NOTE: The eETH transferFrom function converts from base to shares under
         // the hood using `sharesForAmount(_amount)`.
+        //
         // Take custody of the deposit in vault shares.
         bool result = IeETH(address(_vaultSharesToken)).transferFrom(
             msg.sender,
