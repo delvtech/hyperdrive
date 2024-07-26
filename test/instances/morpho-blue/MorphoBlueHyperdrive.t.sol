@@ -347,6 +347,30 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         );
     }
 
+    /// Getters ///
+
+    function test_getters() external view {
+        assertEq(
+            IMorphoBlueHyperdrive(address(hyperdrive)).vault(),
+            address(MORPHO)
+        );
+        assertEq(
+            IMorphoBlueHyperdrive(address(hyperdrive)).collateralToken(),
+            address(COLLATERAL_TOKEN)
+        );
+        assertEq(
+            IMorphoBlueHyperdrive(address(hyperdrive)).oracle(),
+            address(ORACLE)
+        );
+        assertEq(
+            IMorphoBlueHyperdrive(address(hyperdrive)).irm(),
+            address(IRM)
+        );
+        assertEq(IMorphoBlueHyperdrive(address(hyperdrive)).lltv(), LLTV);
+        (, uint256 totalShares) = getTokenBalances(address(hyperdrive));
+        assertEq(hyperdrive.totalShares(), totalShares);
+    }
+
     /// Price Per Share ///
 
     function test__pricePerVaultShare(uint256 basePaid) external {

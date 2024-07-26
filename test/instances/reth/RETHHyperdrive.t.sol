@@ -12,7 +12,6 @@ import { InstanceTest } from "test/utils/InstanceTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IRETHHyperdrive } from "contracts/src/interfaces/IRETHHyperdrive.sol";
 import { IRocketDepositPool } from "contracts/src/interfaces/IRocketDepositPool.sol";
 import { IRocketNetworkBalances } from "contracts/src/interfaces/IRocketNetworkBalances.sol";
 import { IRocketPoolDAOProtocolSettingsDeposit } from "contracts/src/interfaces/IRocketPoolDAOProtocolSettingsDeposit.sol";
@@ -268,6 +267,13 @@ contract RETHHyperdriveTest is InstanceTest {
             // Ensure the total supply was updated correctly.
             assertEq(rocketTokenRETH.totalSupply(), totalSharesBefore);
         }
+    }
+
+    /// Getters ///
+
+    function test_getters() external view {
+        (, uint256 totalShares) = getTokenBalances(address(hyperdrive));
+        assertEq(hyperdrive.totalShares(), totalShares);
     }
 
     /// Price Per Share ///
