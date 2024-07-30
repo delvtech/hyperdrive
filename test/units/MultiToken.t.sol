@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
-import { MockAssetId } from "contracts/test/MockAssetId.sol";
-import { HyperdriveMultiToken } from "contracts/src/internal/HyperdriveMultiToken.sol";
-import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
-import { IMockHyperdrive, MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
-import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
+import { IERC20 } from "../../contracts/src/interfaces/IERC20.sol";
+import { ERC20Mintable } from "../../contracts/test/ERC20Mintable.sol";
+import { AssetId } from "../../contracts/src/libraries/AssetId.sol";
+import { ERC20ForwarderFactory } from "../../contracts/src/token/ERC20ForwarderFactory.sol";
+import { MockAssetId } from "../../contracts/test/MockAssetId.sol";
+import { HyperdriveMultiToken } from "../../contracts/src/internal/HyperdriveMultiToken.sol";
+import { MockHyperdrive } from "../../contracts/test/MockHyperdrive.sol";
+import { IMockHyperdrive, MockHyperdrive } from "../../contracts/test/MockHyperdrive.sol";
+import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
+import { Lib } from "../utils/Lib.sol";
 
 contract DummyHyperdriveMultiToken is HyperdriveMultiToken, MockHyperdrive {
     constructor(

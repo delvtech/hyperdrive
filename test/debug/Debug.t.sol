@@ -2,12 +2,12 @@
 pragma solidity 0.8.20;
 
 import { console2 as console } from "forge-std/console2.sol";
-import { IHyperdriveCore } from "contracts/src/interfaces/IHyperdriveCore.sol";
-import { IMultiTokenCore } from "contracts/src/interfaces/IMultiTokenCore.sol";
-import { ETH } from "contracts/src/libraries/Constants.sol";
-import { BaseTest } from "test/utils/BaseTest.sol";
-import { EtchingUtils } from "test/utils/EtchingUtils.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { IHyperdriveCore } from "../../contracts/src/interfaces/IHyperdriveCore.sol";
+import { IMultiTokenCore } from "../../contracts/src/interfaces/IMultiTokenCore.sol";
+import { ETH } from "../../contracts/src/libraries/Constants.sol";
+import { BaseTest } from "../utils/BaseTest.sol";
+import { EtchingUtils } from "../utils/EtchingUtils.sol";
+import { Lib } from "../utils/Lib.sol";
 
 /// @author DELV
 /// @title Debugging

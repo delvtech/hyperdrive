@@ -4,9 +4,9 @@ pragma solidity 0.8.20;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
-import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
-import { IMockHyperdrive } from "contracts/test/MockHyperdrive.sol";
-import { CombinatorialTest } from "test/utils/CombinatorialTest.sol";
+import { ERC20ForwarderFactory } from "../../contracts/src/token/ERC20ForwarderFactory.sol";
+import { IMockHyperdrive } from "../../contracts/test/MockHyperdrive.sol";
+import { CombinatorialTest } from "../utils/CombinatorialTest.sol";
 
 contract MultiToken__transferFrom is CombinatorialTest {
     struct TestCase {

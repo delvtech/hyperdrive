@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { MockAssetId } from "contracts/test/MockAssetId.sol";
-import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
+import { MockAssetId } from "../../../contracts/test/MockAssetId.sol";
+import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract AssetIdTest is HyperdriveTest {
     using Lib for *;

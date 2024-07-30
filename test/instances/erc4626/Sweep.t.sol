@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { ERC4626Hyperdrive } from "contracts/src/instances/erc4626/ERC4626Hyperdrive.sol";
-import { ERC4626Target0 } from "contracts/src/instances/erc4626/ERC4626Target0.sol";
-import { ERC4626Target1 } from "contracts/src/instances/erc4626/ERC4626Target1.sol";
-import { ERC4626Target2 } from "contracts/src/instances/erc4626/ERC4626Target2.sol";
-import { ERC4626Target3 } from "contracts/src/instances/erc4626/ERC4626Target3.sol";
-import { ERC4626Target4 } from "contracts/src/instances/erc4626/ERC4626Target4.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IHyperdriveEvents } from "contracts/src/interfaces/IHyperdriveEvents.sol";
-import { ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { MockERC4626 } from "contracts/test/MockERC4626.sol";
-import { BaseTest } from "test/utils/BaseTest.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { ERC4626Hyperdrive } from "../../../contracts/src/instances/erc4626/ERC4626Hyperdrive.sol";
+import { ERC4626Target0 } from "../../../contracts/src/instances/erc4626/ERC4626Target0.sol";
+import { ERC4626Target1 } from "../../../contracts/src/instances/erc4626/ERC4626Target1.sol";
+import { ERC4626Target2 } from "../../../contracts/src/instances/erc4626/ERC4626Target2.sol";
+import { ERC4626Target3 } from "../../../contracts/src/instances/erc4626/ERC4626Target3.sol";
+import { ERC4626Target4 } from "../../../contracts/src/instances/erc4626/ERC4626Target4.sol";
+import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
+import { IERC4626 } from "../../../contracts/src/interfaces/IERC4626.sol";
+import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveEvents } from "../../../contracts/src/interfaces/IHyperdriveEvents.sol";
+import { ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
+import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
+import { MockERC4626 } from "../../../contracts/test/MockERC4626.sol";
+import { BaseTest } from "../../utils/BaseTest.sol";
+import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 
 contract SweepTest is BaseTest, IHyperdriveEvents {
     ForwardingToken baseForwarder;
