@@ -1,29 +1,29 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { ILiquidityPool } from "contracts/src/interfaces/ILiquidityPool.sol";
-import { IEETH } from "contracts/src/interfaces/IEETH.sol";
-import { EETHHyperdriveCoreDeployer } from "contracts/src/deployers/eeth/EETHHyperdriveCoreDeployer.sol";
-import { EETHHyperdriveDeployerCoordinator } from "contracts/src/deployers/eeth/EETHHyperdriveDeployerCoordinator.sol";
-import { EETHTarget0Deployer } from "contracts/src/deployers/eeth/EETHTarget0Deployer.sol";
-import { EETHTarget1Deployer } from "contracts/src/deployers/eeth/EETHTarget1Deployer.sol";
-import { EETHTarget2Deployer } from "contracts/src/deployers/eeth/EETHTarget2Deployer.sol";
-import { EETHTarget3Deployer } from "contracts/src/deployers/eeth/EETHTarget3Deployer.sol";
-import { EETHTarget4Deployer } from "contracts/src/deployers/eeth/EETHTarget4Deployer.sol";
-import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { EETHConversions } from "contracts/src/instances/eeth/EETHConversions.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IEETHHyperdrive } from "contracts/src/interfaces/IEETHHyperdrive.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { ETH } from "contracts/src/libraries/Constants.sol";
-import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { InstanceTest } from "test/utils/InstanceTest.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { ILiquidityPool } from "../../../contracts/src/interfaces/ILiquidityPool.sol";
+import { IEETH } from "../../../contracts/src/interfaces/IEETH.sol";
+import { EETHHyperdriveCoreDeployer } from "../../../contracts/src/deployers/eeth/EETHHyperdriveCoreDeployer.sol";
+import { EETHHyperdriveDeployerCoordinator } from "../../../contracts/src/deployers/eeth/EETHHyperdriveDeployerCoordinator.sol";
+import { EETHTarget0Deployer } from "../../../contracts/src/deployers/eeth/EETHTarget0Deployer.sol";
+import { EETHTarget1Deployer } from "../../../contracts/src/deployers/eeth/EETHTarget1Deployer.sol";
+import { EETHTarget2Deployer } from "../../../contracts/src/deployers/eeth/EETHTarget2Deployer.sol";
+import { EETHTarget3Deployer } from "../../../contracts/src/deployers/eeth/EETHTarget3Deployer.sol";
+import { EETHTarget4Deployer } from "../../../contracts/src/deployers/eeth/EETHTarget4Deployer.sol";
+import { HyperdriveFactory } from "../../../contracts/src/factory/HyperdriveFactory.sol";
+import { EETHConversions } from "../../../contracts/src/instances/eeth/EETHConversions.sol";
+import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
+import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { IEETHHyperdrive } from "../../../contracts/src/interfaces/IEETHHyperdrive.sol";
+import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
+import { ETH } from "../../../contracts/src/libraries/Constants.sol";
+import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
+import { ERC20ForwarderFactory } from "../../../contracts/src/token/ERC20ForwarderFactory.sol";
+import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
+import { InstanceTest } from "../../utils/InstanceTest.sol";
+import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract EETHHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
