@@ -20,10 +20,15 @@ contract ChainlinkTarget0 is HyperdriveTarget0, ChainlinkBase {
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param __aggregator The Chainlink aggregator. This is the contract that
     ///        will return the answer.
+    /// @param __decimals The decimals of this Hyperdrive instance's bonds and
+    ///        LP tokens.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        IChainlinkAggregatorV3 __aggregator
-    ) HyperdriveTarget0(_config) ChainlinkBase(__aggregator) {}
+        IChainlinkAggregatorV3 __aggregator,
+        uint8 __decimals
+    ) HyperdriveTarget0(_config) ChainlinkBase(__aggregator, __decimals) {}
+
+    /// Getters ///
 
     /// @notice Returns the instance's kind.
     /// @return The instance's kind.
@@ -38,5 +43,9 @@ contract ChainlinkTarget0 is HyperdriveTarget0, ChainlinkBase {
         return _aggregator;
     }
 
-    // FIXME: Should we add decimals here?
+    /// @notice Returns the MultiToken's decimals.
+    /// @return The MultiToken's decimals.
+    function decimals() external view override returns (uint8) {
+        _revert(abi.encode(_decimals));
+    }
 }

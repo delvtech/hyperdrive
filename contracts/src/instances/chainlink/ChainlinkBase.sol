@@ -24,18 +24,23 @@ import { ChainlinkConversions } from "./ChainlinkConversions.sol";
 abstract contract ChainlinkBase is HyperdriveBase {
     using SafeERC20 for ERC20;
 
-    // FIXME: Add a getter for this.
-    //
+    /// @dev The decimals of this Hyperdrive instance's bonds and LP tokens.
+    ///      Since the base token isn't provided, we can't inherit the decimals
+    ///      from the base token. This should be checked carefully in deployed
+    ///      instances of this contract.
+    uint8 internal immutable _decimals;
+
     /// @dev The Chainlink aggregator that provides the vault share price.
     IChainlinkAggregatorV3 internal immutable _aggregator;
 
-    // FIXME: The base token should be the zero address.
-    //
     /// @notice Instantiates the ChainlinkHyperdrive base contract.
     /// @param __aggregator The Chainlink aggregator. This is the contract that
     ///        will return the answer.
-    constructor(IChainlinkAggregatorV3 __aggregator) {
+    /// @param __decimals The decimals of this Hyperdrive instance's bonds and
+    ///        LP tokens.
+    constructor(IChainlinkAggregatorV3 __aggregator, uint8 __decimals) {
         _aggregator = __aggregator;
+        _decimals = __decimals;
     }
 
     /// Yield Source ///

@@ -98,11 +98,14 @@ contract ChainlinkHyperdriveDeployerCoordinator is
 
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
+    /// @param _extraData The extra data containing the Chainlink aggregator
+    ///        and the instance's decimals.
     function _checkPoolConfig(
-        IHyperdrive.PoolDeployConfig memory _deployConfig
+        IHyperdrive.PoolDeployConfig memory _deployConfig,
+        bytes memory _extraData
     ) internal view override {
         // Perform the default checks.
-        super._checkPoolConfig(_deployConfig);
+        super._checkPoolConfig(_deployConfig, _extraData);
 
         // Ensure that the base token is zero.
         if (address(_deployConfig.baseToken) != address(0)) {
@@ -114,35 +117,33 @@ contract ChainlinkHyperdriveDeployerCoordinator is
             revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
         }
 
-        // FIXME: This is going to be a bit tricky, but what we could do to
-        // calculate the token decimals is to multiply the initial share price
-        // by the amount of decimals of the vault share to get the rough order
-        // of magnitude.
-
-        // FIXME: It's somewhat hard to determine this since the base token is
-        // zero.
+        // Ensure that the minimum share reserves are large enough to meet the
+        // minimum requirements for safety.
         //
-        // Ensure that the minimum share reserves are equal to 1e15. This value
-        // has been tested to prevent arithmetic overflows in the
-        // `_updateLiquidity` function when the share reserves are as high as
-        // 200 million.
-        if (_deployConfig.minimumShareReserves != 1e15) {
+        // NOTE: Some pools may require larger minimum share reserves to be
+        // considered safe. This is just a sanity check.
+        (, uint8 decimals) = abi.decode(
+            _extraData,
+            (IChainlinkAggregatorV3, uint8)
+        );
+        if (_deployConfig.minimumShareReserves != 10 ** (decimals - 3)) {
             revert IHyperdriveDeployerCoordinator.InvalidMinimumShareReserves();
         }
 
-        // FIXME: It's somewhat hard to determine this since the base token is
-        // zero.
+        // Ensure that the minimum transaction amount is large enough to meet
+        // the minimum requirements for safety.
         //
-        // Ensure that the minimum transaction amount are equal to 1e15. This
-        // value has been tested to prevent precision issues.
-        if (_deployConfig.minimumTransactionAmount != 1e15) {
+        // NOTE: Some pools may require larger minimum transaction amounts to be
+        // considered safe. This is just a sanity check.
+        if (_deployConfig.minimumTransactionAmount != 10 ** (decimals - 3)) {
             revert IHyperdriveDeployerCoordinator
                 .InvalidMinimumTransactionAmount();
         }
     }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
-    /// @param _extraData The extra data containing the Chainlink aggregator.
+    /// @param _extraData The extra data containing the Chainlink aggregator
+    ///        and the instance's decimals.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
         IHyperdrive.PoolDeployConfig memory, // unused _deployConfig

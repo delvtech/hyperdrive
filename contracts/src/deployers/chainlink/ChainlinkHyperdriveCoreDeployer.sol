@@ -35,9 +35,9 @@ contract ChainlinkHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
         address _target4,
         bytes32 _salt
     ) external returns (address) {
-        IChainlinkAggregatorV3 aggregator = abi.decode(
+        (IChainlinkAggregatorV3 aggregator, uint8 decimals) = abi.decode(
             _extraData,
-            (IChainlinkAggregatorV3)
+            (IChainlinkAggregatorV3, uint8)
         );
         return (
             address(
@@ -53,7 +53,8 @@ contract ChainlinkHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
                     _target2,
                     _target3,
                     _target4,
-                    aggregator
+                    aggregator,
+                    decimals
                 )
             )
         );

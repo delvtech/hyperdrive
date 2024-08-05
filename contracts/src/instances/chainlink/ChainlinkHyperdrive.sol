@@ -63,6 +63,8 @@ contract ChainlinkHyperdrive is Hyperdrive, ChainlinkBase {
     /// @param _target4 The target4 address.
     /// @param __aggregator The Chainlink aggregator. This is the contract that
     ///        will return the answer.
+    /// @param __decimals The decimals of this Hyperdrive instance's bonds and
+    ///        LP tokens.
     constructor(
         string memory __name,
         IHyperdrive.PoolConfig memory _config,
@@ -71,7 +73,8 @@ contract ChainlinkHyperdrive is Hyperdrive, ChainlinkBase {
         address _target2,
         address _target3,
         address _target4,
-        IChainlinkAggregatorV3 __aggregator
+        IChainlinkAggregatorV3 __aggregator,
+        uint8 __decimals
     )
         Hyperdrive(
             __name,
@@ -82,6 +85,6 @@ contract ChainlinkHyperdrive is Hyperdrive, ChainlinkBase {
             _target3,
             _target4
         )
-        ChainlinkBase(__aggregator)
+        ChainlinkBase(__aggregator, __decimals)
     {}
 }

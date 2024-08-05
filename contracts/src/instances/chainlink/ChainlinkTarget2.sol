@@ -19,8 +19,11 @@ contract ChainlinkTarget2 is HyperdriveTarget2, ChainlinkBase {
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param __aggregator The Chainlink aggregator. This is the contract that
     ///        will return the answer.
+    /// @param __decimals The decimals of this Hyperdrive instance's bonds and
+    ///        LP tokens.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        IChainlinkAggregatorV3 __aggregator
-    ) HyperdriveTarget2(_config) ChainlinkBase(__aggregator) {}
+        IChainlinkAggregatorV3 __aggregator,
+        uint8 __decimals
+    ) HyperdriveTarget2(_config) ChainlinkBase(__aggregator, __decimals) {}
 }

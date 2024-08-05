@@ -23,9 +23,9 @@ contract ChainlinkTarget2Deployer is IHyperdriveTargetDeployer {
         bytes memory _extraData,
         bytes32 _salt
     ) external returns (address) {
-        IChainlinkAggregatorV3 aggregator = abi.decode(
+        (IChainlinkAggregatorV3 aggregator, uint8 decimals) = abi.decode(
             _extraData,
-            (IChainlinkAggregatorV3)
+            (IChainlinkAggregatorV3, uint8)
         );
         return
             address(
@@ -33,7 +33,7 @@ contract ChainlinkTarget2Deployer is IHyperdriveTargetDeployer {
                 // front-running of deployments.
                 new ChainlinkTarget2{
                     salt: keccak256(abi.encode(msg.sender, _salt))
-                }(_config, aggregator)
+                }(_config, aggregator, decimals)
             );
     }
 }
