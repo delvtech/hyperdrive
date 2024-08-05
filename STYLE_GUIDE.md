@@ -45,3 +45,7 @@
 1. Each immutable should have a corresponding getter.
 2. Each state variable should have a corresponding getter or should be reachable through a generalized getter (like `loads`).
 3. Each function that changes state should have an event that encodes the state changes that occurred within the function call. If possible, this event should be sufficient to fully recreate the state change that occurred from the previous state.
+
+# Functions
+
+1. Parameters should be prefaced with a leading underscore (`_`). To avoid shadowing internal or private immutable or storage values, prefix the parameter with a double underscore (`__`).

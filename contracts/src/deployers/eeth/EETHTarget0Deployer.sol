@@ -2,7 +2,6 @@
 pragma solidity 0.8.20;
 
 import { EETHTarget0 } from "../../instances/eeth/EETHTarget0.sol";
-import { IEETH } from "../../interfaces/IEETH.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDeployer.sol";
 import { ILiquidityPool } from "../../interfaces/ILiquidityPool.sol";
