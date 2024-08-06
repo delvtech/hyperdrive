@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
 import { console2 } from "forge-std/console2.sol";
 import { stdMath } from "forge-std/StdMath.sol";

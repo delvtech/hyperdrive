@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
 import { SignedMath } from "openzeppelin/utils/math/SignedMath.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
 import { Test } from "forge-std/Test.sol";
 import { ERC4626Hyperdrive } from "../../contracts/src/instances/erc4626/ERC4626Hyperdrive.sol";

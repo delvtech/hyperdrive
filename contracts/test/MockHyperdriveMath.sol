@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
 import { HyperdriveMath } from "../src/libraries/HyperdriveMath.sol";
 import { HyperdriveUtils } from "../../test/utils/HyperdriveUtils.sol";

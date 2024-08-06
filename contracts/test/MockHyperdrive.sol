@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
 import { Hyperdrive } from "../src/external/Hyperdrive.sol";
 import { HyperdriveTarget0 } from "../src/external/HyperdriveTarget0.sol";
