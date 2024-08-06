@@ -12,7 +12,7 @@ import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDep
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract ChainlinkTarget3Deployer is IHyperdriveTargetDeployer {
+contract ChainlinkTarget4Deployer is IHyperdriveTargetDeployer {
     /// @notice Deploys a target4 instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _extraData The extra data containing the Chainlink aggregator.
