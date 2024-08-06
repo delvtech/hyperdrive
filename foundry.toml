@@ -1,5 +1,5 @@
 [profile.default]
-solc_version = '0.8.20'
+solc_version = '0.8.22'
 # The source directory
 src = 'contracts'
 # The artifact directory

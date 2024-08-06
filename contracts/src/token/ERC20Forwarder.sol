@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { IERC20Forwarder } from "../interfaces/IERC20Forwarder.sol";
 import { IERC20ForwarderFactory } from "../interfaces/IERC20ForwarderFactory.sol";
