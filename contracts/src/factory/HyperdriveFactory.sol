@@ -814,11 +814,8 @@ contract HyperdriveFactory is IHyperdriveFactory {
 
         // Set the default pausers and transfer the governance status to the
         // hyperdrive governance address.
-        for (uint256 i = 0; i < _defaultPausers.length; ) {
+        for (uint256 i = 0; i < _defaultPausers.length; i++) {
             hyperdrive.setPauser(_defaultPausers[i], true);
-            unchecked {
-                ++i;
-            }
         }
         hyperdrive.setGovernance(hyperdriveGovernance);
 
