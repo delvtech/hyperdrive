@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
-import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { HyperdriveTarget2 } from "../../external/HyperdriveTarget2.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IMorphoBlueHyperdrive } from "../../interfaces/IMorphoBlueHyperdrive.sol";

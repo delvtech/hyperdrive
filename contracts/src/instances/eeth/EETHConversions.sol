@@ -3,7 +3,7 @@ pragma solidity 0.8.20;
 
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { ILiquidityPool } from "../../interfaces/ILiquidityPool.sol";
-import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
+import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
 import { IEETH } from "../../interfaces/IEETH.sol";
 
 /// @author DELV
