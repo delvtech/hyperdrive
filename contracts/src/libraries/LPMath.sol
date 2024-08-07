@@ -802,7 +802,7 @@ library LPMath {
         if (_maxIterations < SHARE_PROCEEDS_MAX_ITERATIONS) {
             _maxIterations = SHARE_PROCEEDS_MAX_ITERATIONS;
         }
-        for (uint256 i = 0; i < _maxIterations; ) {
+        for (uint256 i = 0; i < _maxIterations; i++) {
             // Clamp the share proceeds to the max share reserves delta since
             // values above this threshold are always invalid.
             shareProceeds = shareProceeds.min(_maxShareReservesDelta);
@@ -1006,11 +1006,6 @@ library LPMath {
                 }
             } else {
                 break;
-            }
-
-            // Increment the loop counter.
-            unchecked {
-                ++i;
             }
         }
 

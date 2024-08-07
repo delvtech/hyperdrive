@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { IPool } from "aave/interfaces/IPool.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";

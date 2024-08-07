@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
@@ -409,16 +409,13 @@ abstract contract HyperdriveTarget0 is
         bytes32[] memory loaded = new bytes32[](_slots.length);
 
         // Iterate on requested loads and then do them.
-        for (uint256 i = 0; i < _slots.length; ) {
+        for (uint256 i = 0; i < _slots.length; i++) {
             uint256 slot = _slots[i];
             bytes32 data;
             assembly ("memory-safe") {
                 data := sload(slot)
             }
             loaded[i] = data;
-            unchecked {
-                ++i;
-            }
         }
 
         _revert(abi.encode(loaded));

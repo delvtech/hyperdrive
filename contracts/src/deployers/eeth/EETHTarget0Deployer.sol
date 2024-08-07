@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { EETHTarget0 } from "../../instances/eeth/EETHTarget0.sol";
 import { IEETH } from "../../interfaces/IEETH.sol";
