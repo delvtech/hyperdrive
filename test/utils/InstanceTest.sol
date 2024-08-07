@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
 import { ERC20ForwarderFactory } from "../../contracts/src/token/ERC20ForwarderFactory.sol";
 import { HyperdriveFactory } from "../../contracts/src/factory/HyperdriveFactory.sol";

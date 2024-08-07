@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../interfaces/IHyperdriveDeployerCoordinator.sol";
@@ -814,11 +814,8 @@ contract HyperdriveFactory is IHyperdriveFactory {
 
         // Set the default pausers and transfer the governance status to the
         // hyperdrive governance address.
-        for (uint256 i = 0; i < _defaultPausers.length; ) {
+        for (uint256 i = 0; i < _defaultPausers.length; i++) {
             hyperdrive.setPauser(_defaultPausers[i], true);
-            unchecked {
-                ++i;
-            }
         }
         hyperdrive.setGovernance(hyperdriveGovernance);
 

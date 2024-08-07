@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";

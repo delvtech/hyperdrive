@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { EETHTarget1 } from "../../instances/eeth/EETHTarget1.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";

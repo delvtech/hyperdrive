@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import { EzETHHyperdriveCoreDeployer } from "../../../contracts/src/deployers/ezeth/EzETHHyperdriveCoreDeployer.sol";

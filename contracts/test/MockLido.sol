@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { Authority } from "solmate/auth/Auth.sol";

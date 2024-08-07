@@ -8,7 +8,7 @@ import "./tasks";
 
 const config: HardhatUserConfig = {
     solidity: {
-        version: "0.8.20",
+        version: "0.8.22",
         settings: {
             viaIR: false,
             optimizer: {
