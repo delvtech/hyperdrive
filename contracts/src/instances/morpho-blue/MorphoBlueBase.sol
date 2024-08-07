@@ -90,6 +90,12 @@ abstract contract MorphoBlueBase is HyperdriveBase {
             address(_vault),
             _baseAmount + 1
         );
+        // NOTE: The last 32 bytes of the extra data is passed through to the
+        // event without being passed to morpho.
+        bytes memory data;
+        if (_extraData.length > 32) {
+            data = _extraData[:_extraData.length - 32];
+        }
         (, sharesMinted) = _vault.supply(
             MarketParams({
                 loanToken: address(_baseToken),
@@ -101,7 +107,7 @@ abstract contract MorphoBlueBase is HyperdriveBase {
             _baseAmount,
             0,
             address(this),
-            _extraData
+            data
         );
 
         // NOTE: Since this yield source isn't payable, the value must be zero.
