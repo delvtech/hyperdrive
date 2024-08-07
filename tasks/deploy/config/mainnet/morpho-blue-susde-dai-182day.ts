@@ -11,8 +11,8 @@ import {
 import { MAINNET_FACTORY_NAME } from "./factory";
 import { MAINNET_MORPHO_BLUE_COORDINATOR_NAME } from "./morpho-blue-coordinator";
 
-export const MAINNET_MORPHO_BLUE_DAI_182DAY_NAME =
-    "ElementDAO 182 Day sUSDe/DAI Hyperdrive";
+export const MAINNET_MORPHO_BLUE_SUSDE_DAI_182DAY_NAME =
+    "ElementDAO 182 Day Morpho sUSDe/DAI Hyperdrive";
 
 const CONTRIBUTION = parseEther("100");
 
@@ -57,18 +57,18 @@ const morphoBlueParameters = encodeAbiParameters(
     ],
 );
 
-export const MAINNET_MORPHO_BLUE_DAI_182DAY: HyperdriveInstanceConfig<"MorphoBlue"> =
+export const MAINNET_MORPHO_BLUE_SUSDE_DAI_182DAY: HyperdriveInstanceConfig<"MorphoBlue"> =
     {
-        name: MAINNET_MORPHO_BLUE_DAI_182DAY_NAME,
+        name: MAINNET_MORPHO_BLUE_SUSDE_DAI_182DAY_NAME,
         prefix: "MorphoBlue",
         coordinatorAddress: async (hre) =>
             hre.hyperdriveDeploy.deployments.byName(
                 MAINNET_MORPHO_BLUE_COORDINATOR_NAME,
             ).address,
         deploymentId: toBytes32(
-            MAINNET_MORPHO_BLUE_DAI_182DAY_NAME.slice(0, 32),
+            MAINNET_MORPHO_BLUE_SUSDE_DAI_182DAY_NAME.slice(0, 32),
         ),
-        salt: toBytes32("0x420"),
+        salt: toBytes32("0x4201"),
         extraData: morphoBlueParameters,
         contribution: CONTRIBUTION,
         fixedAPR: parseEther("0.098"),
