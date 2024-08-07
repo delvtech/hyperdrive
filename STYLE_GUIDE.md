@@ -49,3 +49,8 @@
 # Functions
 
 1. Parameters should be prefaced with a leading underscore (`_`). To avoid shadowing internal or private immutable or storage values, prefix the parameter with a double underscore (`__`).
+
+## Tests
+
+1. Each test should have a comment above the function name giving a high-level description of what the test is doing.
+2. Each test name that evaluates a failure case should contain "failure" in the function name.
