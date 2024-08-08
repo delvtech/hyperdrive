@@ -1,7 +1,8 @@
 import { Address, encodeAbiParameters, parseEther, zeroAddress } from "viem";
 import {
     HyperdriveInstanceConfig,
-    MAINNET_DAI_ADDRESS,
+    MAINNET_USDC_ADDRESS,
+    MAINNET_WSTETH_ADDRESS,
     SIX_MONTHS,
     getLinkerDetails,
     normalizeFee,
@@ -11,10 +12,11 @@ import {
 import { MAINNET_FACTORY_NAME } from "./factory";
 import { MAINNET_MORPHO_BLUE_COORDINATOR_NAME } from "./morpho-blue-coordinator";
 
-export const MAINNET_MORPHO_BLUE_SUSDE_DAI_182DAY_NAME =
-    "ElementDAO 182 Day Morpho Blue sUSDe/DAI Hyperdrive";
+export const MAINNET_MORPHO_BLUE_WSTETH_USDC_182DAY_NAME =
+    "ElementDAO 182 Day Morpho Blue wstETH/USDC Hyperdrive";
 
-const CONTRIBUTION = parseEther("100");
+// USDC only has 6 decimals.
+const CONTRIBUTION = 100_000_000n;
 
 const morphoBlueParameters = encodeAbiParameters(
     [
@@ -48,31 +50,30 @@ const morphoBlueParameters = encodeAbiParameters(
     [
         {
             morpho: "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb" as `0x${string}`,
-            collateralToken:
-                "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497" as `0x${string}`, // Mainnet sUSDe
-            oracle: "0x5D916980D5Ae1737a8330Bf24dF812b2911Aae25" as `0x${string}`,
+            collateralToken: MAINNET_WSTETH_ADDRESS,
+            oracle: "0x48F7E36EB6B826B2dF4B2E630B62Cd25e89E40e2" as `0x${string}`,
             irm: "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC" as `0x${string}`,
             lltv: BigInt("860000000000000000"),
         },
     ],
 );
 
-export const MAINNET_MORPHO_BLUE_SUSDE_DAI_182DAY: HyperdriveInstanceConfig<"MorphoBlue"> =
+export const MAINNET_MORPHO_BLUE_WSTETH_USDC_182DAY: HyperdriveInstanceConfig<"MorphoBlue"> =
     {
-        name: MAINNET_MORPHO_BLUE_SUSDE_DAI_182DAY_NAME,
+        name: MAINNET_MORPHO_BLUE_WSTETH_USDC_182DAY_NAME,
         prefix: "MorphoBlue",
         coordinatorAddress: async (hre) =>
             hre.hyperdriveDeploy.deployments.byName(
                 MAINNET_MORPHO_BLUE_COORDINATOR_NAME,
             ).address,
         deploymentId: toBytes32(
-            MAINNET_MORPHO_BLUE_SUSDE_DAI_182DAY_NAME.slice(0, 32),
+            MAINNET_MORPHO_BLUE_WSTETH_USDC_182DAY_NAME.slice(0, 32),
         ),
-        salt: toBytes32("0x4201"),
+        salt: toBytes32("0x42080085"),
         extraData: morphoBlueParameters,
         contribution: CONTRIBUTION,
-        fixedAPR: parseEther("0.098"),
-        timestretchAPR: parseEther("0.1"),
+        fixedAPR: parseEther("0.04"),
+        timestretchAPR: parseEther("0.075"),
         options: async (hre) => ({
             extraData: "0x",
             asBase: true,
@@ -83,7 +84,7 @@ export const MAINNET_MORPHO_BLUE_SUSDE_DAI_182DAY: HyperdriveInstanceConfig<"Mor
             let pc = await hre.viem.getPublicClient();
             let baseToken = await hre.viem.getContractAt(
                 "contracts/src/interfaces/IERC20.sol:IERC20",
-                MAINNET_DAI_ADDRESS,
+                MAINNET_USDC_ADDRESS,
             );
             let tx = await baseToken.write.approve([
                 hre.hyperdriveDeploy.deployments.byName(
@@ -95,11 +96,11 @@ export const MAINNET_MORPHO_BLUE_SUSDE_DAI_182DAY: HyperdriveInstanceConfig<"Mor
         },
         poolDeployConfig: async (hre) => {
             return {
-                baseToken: MAINNET_DAI_ADDRESS,
+                baseToken: MAINNET_USDC_ADDRESS,
                 vaultSharesToken: zeroAddress,
                 circuitBreakerDelta: parseEther("0.075"),
-                minimumShareReserves: parseEther("0.001"),
-                minimumTransactionAmount: parseEther("0.001"),
+                minimumShareReserves: 1_000_000n,
+                minimumTransactionAmount: 1_000_000n,
                 positionDuration: parseDuration(SIX_MONTHS),
                 checkpointDuration: parseDuration("1 day"),
                 timeStretch: 0n,
