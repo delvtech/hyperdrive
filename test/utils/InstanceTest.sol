@@ -86,7 +86,7 @@ abstract contract InstanceTest is HyperdriveTest {
         super.setUp();
 
         // Initial contribution.
-        uint256 contribution = 5_000e18;
+        uint256 contribution = 5_000e6;
 
         // Fund accounts with ETH and vault shares from whales.
         vm.deal(alice, 100_000e18);
@@ -463,7 +463,7 @@ abstract contract InstanceTest is HyperdriveTest {
         }
 
         // Contribution in terms of base.
-        uint256 contribution = 1_000e18;
+        uint256 contribution = 1_000e6;
 
         // Contribution in terms of shares.
         uint256 contributionShares = convertToShares(contribution);
@@ -484,7 +484,7 @@ abstract contract InstanceTest is HyperdriveTest {
         }
 
         // Ensure that the decimals are set correctly.
-        assertEq(hyperdrive.decimals(), 18);
+        assertEq(hyperdrive.decimals(), 6);
 
         // Ensure that Alice received the correct amount of LP tokens. She should
         // receive LP shares totaling the amount of shares that he contributed
