@@ -49,7 +49,7 @@ contract USDCMorphoBlueHyperdriveTest is InstanceTest {
     address internal constant LOAN_TOKEN =
         address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
 
-    // The address of the collateral token. This is just the SUSDe token.
+    // The address of the collateral token. This is just the wstETH token.
     address internal constant COLLATERAL_TOKEN =
         address(0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0);
 
@@ -61,7 +61,7 @@ contract USDCMorphoBlueHyperdriveTest is InstanceTest {
     address internal constant IRM =
         address(0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC);
 
-    // The liquidation loan to value ratio of the SUSDe market.
+    // The liquidation loan to value ratio of the wstETH/USDC market.
     uint256 internal constant LLTV = 860000000000000000;
 
     // Whale accounts.
