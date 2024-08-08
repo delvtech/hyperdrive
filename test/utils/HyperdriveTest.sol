@@ -825,7 +825,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
 
     /// Utils ///
 
-    function advanceTime(uint256 time, int256 variableRate) internal virtual {
+    function advanceTime(uint256 time, int256 variableRate) public virtual {
         MockHyperdrive(address(hyperdrive)).accrue(time, variableRate);
         vm.warp(block.timestamp + time);
     }

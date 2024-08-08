@@ -56,23 +56,23 @@ abstract contract InstanceTest is HyperdriveTest {
         bytes32(uint256(0xdeadbabe));
 
     // The configuration for the Instance testing suite.
-    InstanceTestConfig private config;
+    InstanceTestConfig internal config;
 
     // The configuration for the pool.
-    IHyperdrive.PoolDeployConfig private poolConfig;
+    IHyperdrive.PoolDeployConfig internal poolConfig;
 
     // The address of the deployer coordinator contract.
-    address private deployerCoordinator;
+    address public deployerCoordinator;
 
     // The factory contract used for deployment in this testing suite.
-    HyperdriveFactory private factory;
+    HyperdriveFactory public factory;
 
     // Flag for denoting if the base token is ETH.
     bool private immutable isBaseETH;
 
     /// @dev Constructor for the Instance testing suite.
     /// @param _config The Instance configuration.
-    constructor(InstanceTestConfig storage _config) {
+    constructor(InstanceTestConfig memory _config) {
         config = _config;
         isBaseETH = config.baseToken == IERC20(ETH);
     }
@@ -126,6 +126,7 @@ abstract contract InstanceTest is HyperdriveTest {
         deployHyperdrive(
             DEFAULT_DEPLOYMENT_ID, // Deployment Id
             DEFAULT_DEPLOYMENT_SALT, // Deployment Salt
+            poolConfig, // Pool Config
             contribution, // Contribution
             !config.enableShareDeposits // asBase
         );
@@ -176,14 +177,16 @@ abstract contract InstanceTest is HyperdriveTest {
     ///      deployer coordinator contract.
     /// @param deploymentId The deployment id.
     /// @param deploymentSalt The deployment salt for create2.
+    /// @param poolConfig_ The pool config.
     /// @param contribution The amount to initialize the market.
     /// @param asBase Initialize the market with base token.
     function deployHyperdrive(
         bytes32 deploymentId,
         bytes32 deploymentSalt,
+        IHyperdrive.PoolDeployConfig memory poolConfig_,
         uint256 contribution,
         bool asBase
-    ) private {
+    ) public {
         // Alice is the default deployer.
         vm.startPrank(alice);
 
@@ -198,7 +201,7 @@ abstract contract InstanceTest is HyperdriveTest {
             factory.deployTarget(
                 deploymentId,
                 deployerCoordinator,
-                poolConfig,
+                poolConfig_,
                 getExtraData(),
                 FIXED_RATE,
                 FIXED_RATE,
@@ -236,13 +239,14 @@ abstract contract InstanceTest is HyperdriveTest {
 
         // Deploy and initialize the market. If the base token is ETH we pass
         // twice the contribution through the call to test refunds.
+        bytes32 deploymentSalt_ = deploymentSalt; // avoid stack-too-deep
         hyperdrive = factory.deployAndInitialize{
             value: asBase && isBaseETH ? 2 * contribution : 0
         }(
             deploymentId,
             deployerCoordinator,
             config.name,
-            poolConfig,
+            poolConfig_,
             getExtraData(),
             contribution,
             FIXED_RATE,
@@ -252,7 +256,7 @@ abstract contract InstanceTest is HyperdriveTest {
                 destination: alice,
                 extraData: new bytes(0)
             }),
-            deploymentSalt
+            deploymentSalt_
         );
 
         // Ensure that refunds are handled properly.
@@ -266,7 +270,7 @@ abstract contract InstanceTest is HyperdriveTest {
 
     /// @dev Deploys the Hyperdrive Factory contract and sets
     ///      the default pool configuration.
-    function deployFactory() private {
+    function deployFactory() public {
         // Deploy the hyperdrive factory.
         vm.startPrank(deployer);
         address[] memory defaults = new address[](1);
@@ -344,11 +348,11 @@ abstract contract InstanceTest is HyperdriveTest {
     /// @param _factory The address of the Hyperdrive factory contract.
     function deployCoordinator(
         address _factory
-    ) internal virtual returns (address);
+    ) public virtual returns (address);
 
     /// @dev Gets the extra data used to deploy Hyperdrive instances.
     /// @return The extra data.
-    function getExtraData() internal view virtual returns (bytes memory);
+    function getExtraData() public view virtual returns (bytes memory);
 
     /// @dev A virtual function that converts an amount in terms of the base token
     ///      to equivalent amount in shares.
@@ -356,7 +360,7 @@ abstract contract InstanceTest is HyperdriveTest {
     /// @return shareAmount Amount in terms of shares.
     function convertToShares(
         uint256 baseAmount
-    ) internal view virtual returns (uint256 shareAmount);
+    ) public view virtual returns (uint256 shareAmount);
 
     /// @dev A virtual function that converts an amount in terms of the share token
     ///      to equivalent amount in base.
@@ -364,7 +368,7 @@ abstract contract InstanceTest is HyperdriveTest {
     /// @return baseAmount Amount in terms of base.
     function convertToBase(
         uint256 shareAmount
-    ) internal view virtual returns (uint256 baseAmount);
+    ) public view virtual returns (uint256 baseAmount);
 
     /// @dev A virtual function that ensures the deposit accounting is correct
     ///      when opening positions.
@@ -410,13 +414,13 @@ abstract contract InstanceTest is HyperdriveTest {
     /// @return shareBalance The base token balance of the account.
     function getTokenBalances(
         address account
-    ) internal view virtual returns (uint256 baseBalance, uint256 shareBalance);
+    ) public view virtual returns (uint256 baseBalance, uint256 shareBalance);
 
     /// @dev A virtual function that fetches the total supply of the base and share tokens.
     /// @return totalSupplyBase The total supply of the base token.
     /// @return totalSupplyShares The total supply of the share token.
     function getSupply()
-        internal
+        public
         virtual
         returns (uint256 totalSupplyBase, uint256 totalSupplyShares);
 
@@ -473,6 +477,7 @@ abstract contract InstanceTest is HyperdriveTest {
         deployHyperdrive(
             bytes32(uint256(0xbeefbabe)), // Deployment Id
             bytes32(uint256(0xdeadfade)), // Deployment Salt
+            poolConfig, // Pool Config
             contribution, // Contribution
             true // asBase
         );
@@ -544,6 +549,7 @@ abstract contract InstanceTest is HyperdriveTest {
         deployHyperdrive(
             bytes32(uint256(0xbeefbabe)), // Deployment Id
             bytes32(uint256(0xdeadfade)), // Deployment Salt
+            poolConfig, // Pool Config
             contributionShares, // Contribution
             false // asBase
         );
@@ -1324,7 +1330,7 @@ abstract contract InstanceTest is HyperdriveTest {
 
     function getAccountBalances(
         address account
-    ) internal view returns (AccountBalances memory) {
+    ) public view returns (AccountBalances memory) {
         (uint256 base, uint256 shares) = getTokenBalances(account);
 
         return
