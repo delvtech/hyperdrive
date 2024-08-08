@@ -71,7 +71,7 @@ export const MAINNET_MORPHO_BLUE_DAI_182DAY: HyperdriveInstanceConfig<"MorphoBlu
         salt: toBytes32("0x420"),
         extraData: morphoBlueParameters,
         contribution: CONTRIBUTION,
-        fixedAPR: parseEther("0.08"),
+        fixedAPR: parseEther("0.098"),
         timestretchAPR: parseEther("0.1"),
         options: async (hre) => ({
             extraData: "0x",
@@ -97,7 +97,7 @@ export const MAINNET_MORPHO_BLUE_DAI_182DAY: HyperdriveInstanceConfig<"MorphoBlu
             return {
                 baseToken: MAINNET_DAI_ADDRESS,
                 vaultSharesToken: zeroAddress,
-                circuitBreakerDelta: parseEther("0.1"),
+                circuitBreakerDelta: parseEther("0.075"),
                 minimumShareReserves: parseEther("0.001"),
                 minimumTransactionAmount: parseEther("0.001"),
                 positionDuration: parseDuration(SIX_MONTHS),
