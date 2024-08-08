@@ -12,7 +12,7 @@ import { MAINNET_FACTORY_NAME } from "./factory";
 import { MAINNET_MORPHO_BLUE_COORDINATOR_NAME } from "./morpho-blue-coordinator";
 
 export const MAINNET_MORPHO_BLUE_SUSDE_DAI_182DAY_NAME =
-    "ElementDAO 182 Day Morpho sUSDe/DAI Hyperdrive";
+    "ElementDAO 182 Day Morpho Blue sUSDe/DAI Hyperdrive";
 
 const CONTRIBUTION = parseEther("100");
 
