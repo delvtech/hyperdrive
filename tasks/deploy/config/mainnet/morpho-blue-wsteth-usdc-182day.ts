@@ -15,7 +15,8 @@ import { MAINNET_MORPHO_BLUE_COORDINATOR_NAME } from "./morpho-blue-coordinator"
 export const MAINNET_MORPHO_BLUE_WSTETH_USDC_182DAY_NAME =
     "ElementDAO 182 Day Morpho Blue wstETH/USDC Hyperdrive";
 
-const CONTRIBUTION = parseEther("100");
+// USDC only has 6 decimals.
+const CONTRIBUTION = 100_000_000n;
 
 const morphoBlueParameters = encodeAbiParameters(
     [
@@ -71,7 +72,7 @@ export const MAINNET_MORPHO_BLUE_WSTETH_USDC_182DAY: HyperdriveInstanceConfig<"M
         salt: toBytes32("0x42080085"),
         extraData: morphoBlueParameters,
         contribution: CONTRIBUTION,
-        fixedAPR: parseEther("0.03"),
+        fixedAPR: parseEther("0.04"),
         timestretchAPR: parseEther("0.075"),
         options: async (hre) => ({
             extraData: "0x",
@@ -98,8 +99,8 @@ export const MAINNET_MORPHO_BLUE_WSTETH_USDC_182DAY: HyperdriveInstanceConfig<"M
                 baseToken: MAINNET_USDC_ADDRESS,
                 vaultSharesToken: zeroAddress,
                 circuitBreakerDelta: parseEther("0.075"),
-                minimumShareReserves: parseEther("0.001"),
-                minimumTransactionAmount: parseEther("0.001"),
+                minimumShareReserves: 1_000_000n,
+                minimumTransactionAmount: 1_000_000n,
                 positionDuration: parseDuration(SIX_MONTHS),
                 checkpointDuration: parseDuration("1 day"),
                 timeStretch: 0n,
