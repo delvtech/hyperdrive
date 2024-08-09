@@ -93,7 +93,8 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
             enableShareWithdraws: false,
             baseWithdrawError: abi.encodeWithSelector(
                 IHyperdrive.UnsupportedToken.selector
-            )
+            ),
+            minimumShareReserves: MINIMUM_SHARE_RESERVES
         });
 
     /// @dev Instantiates the instance testing suite with the configuration.

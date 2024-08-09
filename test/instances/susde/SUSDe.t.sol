@@ -72,7 +72,8 @@ contract SUSDeHyperdriveTest is InstanceTest {
             // in the future.
             baseWithdrawError: abi.encodeWithSelector(
                 OperationNotAllowed.selector
-            )
+            ),
+            minimumShareReserves: MINIMUM_SHARE_RESERVES
         });
 
     /// @dev Instantiates the instance testing suite with the configuration.

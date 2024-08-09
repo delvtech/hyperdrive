@@ -61,7 +61,8 @@ contract LsETHHyperdriveTest is InstanceTest {
             true,
             false,
             true,
-            abi.encodeWithSelector(IHyperdrive.UnsupportedToken.selector)
+            abi.encodeWithSelector(IHyperdrive.UnsupportedToken.selector),
+            MINIMUM_SHARE_RESERVES
         );
 
     /// @dev Instantiates the instance testing suite with the configuration.

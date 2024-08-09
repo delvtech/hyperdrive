@@ -65,7 +65,8 @@ contract EETHHyperdriveTest is InstanceTest {
             enableShareWithdraws: true,
             baseWithdrawError: abi.encodeWithSelector(
                 IHyperdrive.UnsupportedToken.selector
-            )
+            ),
+            minimumShareReserves: MINIMUM_SHARE_RESERVES
         });
 
     /// @dev Instantiates the instance testing suite with the configuration.

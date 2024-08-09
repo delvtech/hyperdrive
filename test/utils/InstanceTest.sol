@@ -44,6 +44,7 @@ abstract contract InstanceTest is HyperdriveTest {
         bool enableShareWithdraws;
         // TODO: Add variants of this for the other "enable" states.
         bytes baseWithdrawError;
+        uint256 minimumShareReserves;
     }
 
     // Fixed rate used to configure market.
@@ -318,7 +319,9 @@ abstract contract InstanceTest is HyperdriveTest {
             vaultSharesToken: config.vaultSharesToken,
             linkerFactory: factory.linkerFactory(),
             linkerCodeHash: factory.linkerCodeHash(),
-            minimumShareReserves: 1e15,
+            minimumShareReserves: config.minimumShareReserves > 0
+                ? config.minimumShareReserves
+                : MINIMUM_SHARE_RESERVES,
             minimumTransactionAmount: config.minTransactionAmount,
             circuitBreakerDelta: 2e18,
             positionDuration: config.positionDuration,
