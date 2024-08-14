@@ -71,7 +71,7 @@ export const MAINNET_MORPHO_BLUE_USDE_DAI_182DAY: HyperdriveInstanceConfig<"Morp
         salt: toBytes32("0x4202"),
         extraData: morphoBlueParameters,
         contribution: CONTRIBUTION,
-        fixedAPR: parseEther("0.065"),
+        fixedAPR: parseEther("0.075"),
         timestretchAPR: parseEther("0.1"),
         options: async (hre) => ({
             extraData: "0x",
