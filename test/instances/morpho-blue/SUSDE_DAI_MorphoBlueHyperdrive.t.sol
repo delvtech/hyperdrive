@@ -27,7 +27,7 @@ import { InstanceTest } from "../../utils/InstanceTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-contract MorphoBlueHyperdriveTest is InstanceTest {
+contract SUSDE_DAI_MorphoBlueHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
     using MarketParamsLib for MarketParams;
