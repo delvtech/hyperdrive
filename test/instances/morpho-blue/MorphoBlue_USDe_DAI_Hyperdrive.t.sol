@@ -12,22 +12,15 @@ import { MorphoBlueTarget1Deployer } from "../../../contracts/src/deployers/morp
 import { MorphoBlueTarget2Deployer } from "../../../contracts/src/deployers/morpho-blue/MorphoBlueTarget2Deployer.sol";
 import { MorphoBlueTarget3Deployer } from "../../../contracts/src/deployers/morpho-blue/MorphoBlueTarget3Deployer.sol";
 import { MorphoBlueTarget4Deployer } from "../../../contracts/src/deployers/morpho-blue/MorphoBlueTarget4Deployer.sol";
-import { HyperdriveFactory } from "../../../contracts/src/factory/HyperdriveFactory.sol";
 import { MorphoBlueConversions } from "../../../contracts/src/instances/morpho-blue/MorphoBlueConversions.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { IMorphoBlueHyperdrive } from "../../../contracts/src/interfaces/IMorphoBlueHyperdrive.sol";
-import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
-import { ETH } from "../../../contracts/src/libraries/Constants.sol";
-import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
-import { ERC20ForwarderFactory } from "../../../contracts/src/token/ERC20ForwarderFactory.sol";
-import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
 import { InstanceTest } from "../../utils/InstanceTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-contract MorphoBlueHyperdriveTest is InstanceTest {
+contract MorphoBlue_USDe_DAI_HyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
     using MarketParamsLib for MarketParams;
@@ -39,29 +32,29 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
     IMorpho internal constant MORPHO =
         IMorpho(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
 
-    // The ID of the SUSDe market.
+    // The ID of the USDe/DAI market.
     bytes32 internal constant MARKET_ID =
         bytes32(
-            0x39d11026eae1c6ec02aa4c0910778664089cdd97c3fd23f68f7cd05e2e95af48
+            0xc581c5f70bd1afa283eed57d1418c6432cbff1d862f94eaf58fdd4e46afbb67f
         );
 
     // The address of the loan token. This is just the DAI token.
     address internal constant LOAN_TOKEN =
         address(0x6B175474E89094C44Da98b954EedeAC495271d0F);
 
-    // The address of the collateral token. This is just the SUSDe token.
+    // The address of the collateral token. This is just the USDe token.
     address internal constant COLLATERAL_TOKEN =
-        address(0x9D39A5DE30e57443BfF2A8307A4256c8797A3497);
+        address(0x4c9EDD5852cd905f086C759E8383e09bff1E68B3);
 
     // The address of the oracle.
     address internal constant ORACLE =
-        address(0x5D916980D5Ae1737a8330Bf24dF812b2911Aae25);
+        address(0xaE4750d0813B5E37A51f7629beedd72AF1f9cA35);
 
     // The address of the interest rate model.
     address internal constant IRM =
         address(0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC);
 
-    // The liquidation loan to value ratio of the SUSDe market.
+    // The liquidation loan to value ratio of the USDe market.
     uint256 internal constant LLTV = 860000000000000000;
 
     // Whale accounts.
@@ -72,7 +65,7 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
     // The configuration for the instance testing suite.
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig({
-            name: "Hyperdrive",
+            name: "Morpho Blue USDe DAI Hyperdrive",
             kind: "MorphoBlueHyperdrive",
             baseTokenWhaleAccounts: baseTokenWhaleAccounts,
             vaultSharesTokenWhaleAccounts: new address[](0),
