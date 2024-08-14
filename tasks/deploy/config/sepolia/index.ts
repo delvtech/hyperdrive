@@ -10,6 +10,7 @@ export * from "./factory";
 export * from "./morpho-blue-coordinator";
 export * from "./morpho-blue-dai-14day";
 export * from "./morpho-blue-dai-30day";
+export * from "./morpho-blue-usde-dai-14day";
 export * from "./morpho-dai-14day";
 export * from "./morpho-dai-30day";
 export * from "./reth-14day";
