@@ -74,6 +74,7 @@ contract SUSDE_DAI_MorphoBlueHyperdriveTest is InstanceTest {
         InstanceTestConfig({
             name: "Hyperdrive",
             kind: "MorphoBlueHyperdrive",
+            decimals: 18,
             baseTokenWhaleAccounts: baseTokenWhaleAccounts,
             vaultSharesTokenWhaleAccounts: new address[](0),
             baseToken: IERC20(LOAN_TOKEN),
@@ -94,7 +95,8 @@ contract SUSDE_DAI_MorphoBlueHyperdriveTest is InstanceTest {
             baseWithdrawError: abi.encodeWithSelector(
                 IHyperdrive.UnsupportedToken.selector
             ),
-            minimumShareReserves: MINIMUM_SHARE_RESERVES
+            minimumShareReserves: MINIMUM_SHARE_RESERVES,
+            isRebasing: false
         });
 
     /// @dev Instantiates the instance testing suite with the configuration.
@@ -486,6 +488,7 @@ contract SUSDE_DAI_MorphoBlueHyperdriveTest is InstanceTest {
         // The term passes and interest accrues.
         _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
         advanceTime(POSITION_DURATION, int256(_variableRate));
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
         // Bob should be able to redeem all of his withdrawal shares for
         // approximately the LP share price.
@@ -560,9 +563,9 @@ contract SUSDE_DAI_MorphoBlueHyperdriveTest is InstanceTest {
         // Bob closes his long with base as the target asset.
         uint256 baseProceeds = closeLong(bob, maturityTime, longAmount);
 
-        // Bob should receive approximately as much base as he paid since no
-        // time as passed and the fees are zero.
-        assertApproxEqAbs(baseProceeds, _basePaid, 1e9);
+        // Bob should receive less base than he paid since no time as passed
+        // and the fees are non-zero.
+        assertLt(baseProceeds, _basePaid);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
@@ -607,7 +610,11 @@ contract SUSDE_DAI_MorphoBlueHyperdriveTest is InstanceTest {
 
         // Bob should receive almost exactly his bond amount.
         assertLe(baseProceeds, longAmount);
-        assertApproxEqAbs(baseProceeds, longAmount, 2);
+        assertApproxEqAbs(
+            baseProceeds,
+            longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat),
+            2
+        );
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
@@ -681,9 +688,9 @@ contract SUSDE_DAI_MorphoBlueHyperdriveTest is InstanceTest {
         // Bob closes his long with base as the target asset.
         uint256 baseProceeds = closeShort(bob, maturityTime, _shortAmount);
 
-        // Bob should receive approximately as much base as he paid since no
-        // time as passed and the fees are zero.
-        assertApproxEqAbs(baseProceeds, basePaid, 1e9);
+        // Bob should receive less base than he paid since no time as passed
+        // and the fees are non-zero.
+        assertLt(baseProceeds, basePaid);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(

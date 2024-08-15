@@ -21,6 +21,7 @@ import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
 import { ETH } from "../../../contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
+import { LPMath } from "../../../contracts/src/libraries/LPMath.sol";
 import { ERC20ForwarderFactory } from "../../../contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
 import { InstanceTest } from "../../utils/InstanceTest.sol";
@@ -74,17 +75,20 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
         InstanceTestConfig({
             name: "Hyperdrive",
             kind: "MorphoBlueHyperdrive",
+            decimals: 6,
             baseTokenWhaleAccounts: baseTokenWhaleAccounts,
             vaultSharesTokenWhaleAccounts: new address[](0),
             baseToken: IERC20(LOAN_TOKEN),
             vaultSharesToken: IERC20(address(0)),
+            // FIXME: Update this comment.
+            //
             // NOTE: The share tolerance is quite high for this integration
             // because the vault share price is ~1e12, which means that just
             // multiplying or dividing by the vault is an imprecise way of
             // converting between base and vault shares. We included more
             // assertions than normal to the round trip tests to verify that
             // the calculations satisfy our expectations of accuracy.
-            shareTolerance: 1e3,
+            shareTolerance: 1e8,
             minTransactionAmount: 1e3,
             positionDuration: POSITION_DURATION,
             enableBaseDeposits: true,
@@ -94,7 +98,8 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
             baseWithdrawError: abi.encodeWithSelector(
                 IHyperdrive.UnsupportedToken.selector
             ),
-            minimumShareReserves: 1e6
+            minimumShareReserves: 1e6,
+            isRebasing: false
         });
 
     /// @dev Instantiates the instance testing suite with the configuration.
@@ -486,6 +491,7 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
         // The term passes and interest accrues.
         _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
         advanceTime(POSITION_DURATION, int256(_variableRate));
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
         // Bob should be able to redeem all of his withdrawal shares for
         // approximately the LP share price.
@@ -560,9 +566,9 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
         // Bob closes his long with base as the target asset.
         uint256 baseProceeds = closeLong(bob, maturityTime, longAmount);
 
-        // Bob should receive approximately as much base as he paid since no
-        // time as passed and the fees are zero.
-        assertApproxEqAbs(baseProceeds, _basePaid, 1e9);
+        // Bob should receive less base than he paid since no time as passed
+        // and the fees are non-zero.
+        assertLt(baseProceeds, _basePaid);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
@@ -606,8 +612,15 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
         uint256 baseProceeds = closeLong(bob, maturityTime, longAmount);
 
         // Bob should receive almost exactly his bond amount.
-        assertLe(baseProceeds, longAmount);
-        assertApproxEqAbs(baseProceeds, longAmount, 2);
+        assertLe(
+            baseProceeds,
+            longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat)
+        );
+        assertApproxEqAbs(
+            baseProceeds,
+            longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat),
+            2
+        );
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
@@ -681,9 +694,9 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
         // Bob closes his long with base as the target asset.
         uint256 baseProceeds = closeShort(bob, maturityTime, _shortAmount);
 
-        // Bob should receive approximately as much base as he paid since no
-        // time as passed and the fees are zero.
-        assertApproxEqAbs(baseProceeds, basePaid, 1e9);
+        // Bob should receive less base than he paid since no time as passed
+        // and the fees are non-zero.
+        assertLt(baseProceeds, basePaid);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(

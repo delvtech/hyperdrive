@@ -52,6 +52,7 @@ contract EETHHyperdriveTest is InstanceTest {
         InstanceTestConfig({
             name: "Hyperdrive",
             kind: "EETHHyperdrive",
+            decimals: 18,
             baseTokenWhaleAccounts: new address[](0),
             vaultSharesTokenWhaleAccounts: EETHTokenWhaleAccounts,
             baseToken: IERC20(ETH),
@@ -66,7 +67,8 @@ contract EETHHyperdriveTest is InstanceTest {
             baseWithdrawError: abi.encodeWithSelector(
                 IHyperdrive.UnsupportedToken.selector
             ),
-            minimumShareReserves: MINIMUM_SHARE_RESERVES
+            minimumShareReserves: MINIMUM_SHARE_RESERVES,
+            isRebasing: true
         });
 
     /// @dev Instantiates the instance testing suite with the configuration.

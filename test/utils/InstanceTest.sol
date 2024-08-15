@@ -31,6 +31,7 @@ abstract contract InstanceTest is HyperdriveTest {
     struct InstanceTestConfig {
         string name;
         string kind;
+        uint8 decimals;
         address[] baseTokenWhaleAccounts;
         address[] vaultSharesTokenWhaleAccounts;
         IERC20 baseToken;
@@ -42,9 +43,12 @@ abstract contract InstanceTest is HyperdriveTest {
         bool enableShareDeposits;
         bool enableBaseWithdraws;
         bool enableShareWithdraws;
-        // TODO: Add variants of this for the other "enable" states.
         bytes baseWithdrawError;
         uint256 minimumShareReserves;
+        /// @dev Indicates whether or not the vault shares token is a rebasing
+        ///      token. If it is, we have to handle balances and approvals
+        ///      differently.
+        bool isRebasing;
     }
 
     // Fixed rate used to configure market.
@@ -57,23 +61,25 @@ abstract contract InstanceTest is HyperdriveTest {
         bytes32(uint256(0xdeadbabe));
 
     // The configuration for the Instance testing suite.
-    InstanceTestConfig private config;
+    InstanceTestConfig internal config;
 
-    // The configuration for the pool.
-    IHyperdrive.PoolDeployConfig private poolConfig;
+    /// @dev The configuration for the pool. This allows test authors to specify
+    ///      parameters like fee parameters, minimum share reserves, etc. Some
+    ///      parameters will be overridden by factory parameters.
+    IHyperdrive.PoolDeployConfig internal poolConfig;
 
     // The address of the deployer coordinator contract.
-    address private deployerCoordinator;
+    address internal deployerCoordinator;
 
     // The factory contract used for deployment in this testing suite.
-    HyperdriveFactory private factory;
+    HyperdriveFactory internal factory;
 
     // Flag for denoting if the base token is ETH.
-    bool private immutable isBaseETH;
+    bool internal immutable isBaseETH;
 
     /// @dev Constructor for the Instance testing suite.
     /// @param _config The Instance configuration.
-    constructor(InstanceTestConfig storage _config) {
+    constructor(InstanceTestConfig memory _config) {
         config = _config;
         isBaseETH = config.baseToken == IERC20(ETH);
     }
@@ -85,9 +91,6 @@ abstract contract InstanceTest is HyperdriveTest {
     ///      Hyperdrive factory, deployer coordinator, and targets.
     function setUp() public virtual override {
         super.setUp();
-
-        // Initial contribution.
-        uint256 contribution = 5_000e6;
 
         // Fund accounts with ETH and vault shares from whales.
         vm.deal(alice, 100_000e18);
@@ -124,6 +127,25 @@ abstract contract InstanceTest is HyperdriveTest {
         factory.addDeployerCoordinator(deployerCoordinator);
 
         // Deploy all Hyperdrive contracts using deployer coordinator contract.
+        uint256 contribution;
+        if (config.enableShareDeposits && !config.isRebasing) {
+            contribution = (poolConfig.vaultSharesToken.balanceOf(alice) / 10)
+                .min(1_000 * 10 ** config.decimals);
+        } else if (config.enableShareDeposits) {
+            contribution = convertToShares(
+                (poolConfig.vaultSharesToken.balanceOf(alice) / 10).min(
+                    1_000 * 10 ** config.decimals
+                )
+            );
+        } else if (!isBaseETH) {
+            contribution = (poolConfig.baseToken.balanceOf(alice) / 10).min(
+                1_000 * 10 ** config.decimals
+            );
+        } else {
+            contribution = (alice.balance / 10).min(
+                1_000 * 10 ** config.decimals
+            );
+        }
         deployHyperdrive(
             DEFAULT_DEPLOYMENT_ID, // Deployment Id
             DEFAULT_DEPLOYMENT_SALT, // Deployment Salt
@@ -134,17 +156,29 @@ abstract contract InstanceTest is HyperdriveTest {
         // If base deposits are supported, approve a large amount of shares for
         // Alice and Bob.
         if (config.enableBaseDeposits && !isBaseETH) {
-            config.baseToken.approve(address(hyperdrive), 100_000e18);
+            config.baseToken.approve(
+                address(hyperdrive),
+                poolConfig.baseToken.balanceOf(alice)
+            );
             vm.startPrank(bob);
-            config.baseToken.approve(address(hyperdrive), 100_000e18);
+            config.baseToken.approve(
+                address(hyperdrive),
+                poolConfig.baseToken.balanceOf(bob)
+            );
         }
 
         // If share deposits are supported, approve a large amount of shares for
         // Alice and Bob.
         if (config.enableShareDeposits) {
-            config.vaultSharesToken.approve(address(hyperdrive), 100_000e18);
+            config.vaultSharesToken.approve(
+                address(hyperdrive),
+                poolConfig.vaultSharesToken.balanceOf(alice)
+            );
             vm.startPrank(bob);
-            config.vaultSharesToken.approve(address(hyperdrive), 100_000e18);
+            config.vaultSharesToken.approve(
+                address(hyperdrive),
+                poolConfig.vaultSharesToken.balanceOf(bob)
+            );
         }
 
         // Ensure that Alice received the correct amount of LP tokens. She should
@@ -210,9 +244,14 @@ abstract contract InstanceTest is HyperdriveTest {
 
         // Alice gives approval to the deployer coordinator to fund the market.
         if (asBase && !isBaseETH) {
-            config.baseToken.approve(deployerCoordinator, 100_000e18);
+            config.baseToken.approve(deployerCoordinator, contribution);
+        } else if (!asBase && !config.isRebasing) {
+            config.vaultSharesToken.approve(deployerCoordinator, contribution);
         } else if (!asBase) {
-            config.vaultSharesToken.approve(deployerCoordinator, 100_000e18);
+            config.vaultSharesToken.approve(
+                deployerCoordinator,
+                convertToBase(contribution)
+            );
         }
 
         // We expect the deployAndInitialize to fail with an
@@ -265,8 +304,8 @@ abstract contract InstanceTest is HyperdriveTest {
         }
     }
 
-    /// @dev Deploys the Hyperdrive Factory contract and sets
-    ///      the default pool configuration.
+    /// @dev Deploys the Hyperdrive Factory contract and sets the default pool
+    ///      configuration.
     function deployFactory() private {
         // Deploy the hyperdrive factory.
         vm.startPrank(deployer);
@@ -313,7 +352,8 @@ abstract contract InstanceTest is HyperdriveTest {
             "HyperdriveFactory"
         );
 
-        // Set the pool configuration that will be used for instance deployments.
+        // Update the pool configuration that will be used for instance
+        // deployments.
         poolConfig = IHyperdrive.PoolDeployConfig({
             baseToken: config.baseToken,
             vaultSharesToken: config.vaultSharesToken,
@@ -331,9 +371,12 @@ abstract contract InstanceTest is HyperdriveTest {
             feeCollector: factory.feeCollector(),
             sweepCollector: factory.sweepCollector(),
             checkpointRewarder: address(0),
+            // TODO: Make the InstanceTest parameterizable by the pool config.
+            // This will allow us to revert back to 0 fees for most of the
+            // instance tests. 0 fee tests are more conservative.
             fees: IHyperdrive.Fees({
-                curve: 0,
-                flat: 0,
+                curve: 0.001e18,
+                flat: 0.0001e18,
                 governanceLP: 0,
                 governanceZombie: 0
             })
@@ -466,7 +509,16 @@ abstract contract InstanceTest is HyperdriveTest {
         }
 
         // Contribution in terms of base.
-        uint256 contribution = 1_000e6;
+        uint256 contribution;
+        if (!isBaseETH) {
+            contribution = (poolConfig.baseToken.balanceOf(alice) / 10).min(
+                1_000 * 10 ** config.decimals
+            );
+        } else {
+            contribution = (alice.balance / 10).min(
+                1_000 * 10 ** config.decimals
+            );
+        }
 
         // Contribution in terms of shares.
         uint256 contributionShares = convertToShares(contribution);
@@ -487,7 +539,7 @@ abstract contract InstanceTest is HyperdriveTest {
         }
 
         // Ensure that the decimals are set correctly.
-        assertEq(hyperdrive.decimals(), 6);
+        assertEq(hyperdrive.decimals(), config.decimals);
 
         // Ensure that Alice received the correct amount of LP tokens. She should
         // receive LP shares totaling the amount of shares that he contributed
@@ -537,17 +589,18 @@ abstract contract InstanceTest is HyperdriveTest {
             return;
         }
 
-        // Contribution in terms of base.
-        uint256 contribution = 1_000e18;
-
         // Contribution in terms of shares.
-        uint256 contributionShares = convertToShares(contribution);
+        uint256 contribution = (poolConfig.vaultSharesToken.balanceOf(alice) /
+            10).min(1_000 * 10 ** config.decimals);
+        if (config.isRebasing) {
+            contribution = convertToShares(contribution);
+        }
 
         // Deploy all Hyperdrive contracts using deployer coordinator contract.
         deployHyperdrive(
             bytes32(uint256(0xbeefbabe)), // Deployment Id
             bytes32(uint256(0xdeadfade)), // Deployment Salt
-            contributionShares, // Contribution
+            contribution, // Contribution
             false // asBase
         );
 
@@ -555,7 +608,7 @@ abstract contract InstanceTest is HyperdriveTest {
         assertEq(address(alice).balance, aliceBalanceBefore);
 
         // Ensure that the decimals are set correctly.
-        assertEq(hyperdrive.decimals(), 18);
+        assertEq(hyperdrive.decimals(), config.decimals);
 
         // Ensure that Alice received the correct amount of LP tokens. She should
         // receive LP shares totaling the amount of shares that he contributed
@@ -563,14 +616,12 @@ abstract contract InstanceTest is HyperdriveTest {
         // zero address's initial LP contribution.
         assertApproxEqAbs(
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
-            contribution.divDown(
-                hyperdrive.getPoolConfig().initialVaultSharePrice
-            ) - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
+            contribution - 2 * hyperdrive.getPoolConfig().minimumShareReserves,
             config.shareTolerance // Custom share tolerance per instance.
         );
 
         // Ensure that the share reserves and LP total supply are equal and correct.
-        assertEq(hyperdrive.getPoolInfo().shareReserves, contributionShares);
+        assertEq(hyperdrive.getPoolInfo().shareReserves, contribution);
         assertEq(
             hyperdrive.getPoolInfo().lpTotalSupply,
             hyperdrive.getPoolInfo().shareReserves -
@@ -582,7 +633,7 @@ abstract contract InstanceTest is HyperdriveTest {
             deployerCoordinator,
             hyperdrive,
             alice,
-            contributionShares,
+            contribution,
             FIXED_RATE,
             false,
             poolConfig.minimumShareReserves,
@@ -822,8 +873,15 @@ abstract contract InstanceTest is HyperdriveTest {
 
         // Ensure that Bob received approximately the bond amount but wasn't
         // overpaid.
-        assertLe(baseProceeds, longAmount);
-        assertApproxEqAbs(baseProceeds, longAmount, 10);
+        assertLe(
+            baseProceeds,
+            longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat)
+        );
+        assertApproxEqAbs(
+            baseProceeds,
+            longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat),
+            10
+        );
 
         // Ensure the withdrawal accounting is correct.
         verifyWithdrawal(
@@ -930,8 +988,15 @@ abstract contract InstanceTest is HyperdriveTest {
         }
 
         // Ensure Bob is credited the correct amount of bonds.
-        assertLe(baseProceeds, longAmount);
-        assertApproxEqAbs(baseProceeds, longAmount, 10);
+        assertLe(
+            baseProceeds,
+            longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat)
+        );
+        assertApproxEqAbs(
+            baseProceeds,
+            longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat),
+            10
+        );
 
         // Ensure the withdrawal accounting is correct.
         verifyWithdrawal(

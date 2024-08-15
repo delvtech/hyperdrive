@@ -44,23 +44,25 @@ contract RETHHyperdriveTest is InstanceTest {
 
     // The configuration for the Instance testing suite.
     InstanceTestConfig internal __testConfig =
-        InstanceTestConfig(
-            "Hyperdrive",
-            "RETHHyperdrive",
-            new address[](0),
-            whaleAccounts,
-            IERC20(ETH),
-            IERC20(rocketTokenRETH),
-            1e5,
-            1e15,
-            POSITION_DURATION,
-            false,
-            true,
-            true,
-            true,
-            new bytes(0),
-            MINIMUM_SHARE_RESERVES
-        );
+        InstanceTestConfig({
+            name: "Hyperdrive",
+            kind: "RETHHyperdrive",
+            decimals: 18,
+            baseTokenWhaleAccounts: new address[](0),
+            vaultSharesTokenWhaleAccounts: whaleAccounts,
+            baseToken: IERC20(ETH),
+            vaultSharesToken: IERC20(rocketTokenRETH),
+            shareTolerance: 1e5,
+            minTransactionAmount: 1e15,
+            positionDuration: POSITION_DURATION,
+            enableBaseDeposits: false,
+            enableShareDeposits: true,
+            enableBaseWithdraws: true,
+            enableShareWithdraws: true,
+            baseWithdrawError: new bytes(0),
+            minimumShareReserves: MINIMUM_SHARE_RESERVES,
+            isRebasing: false
+        });
 
     /// @dev Instantiates the instance testing suite with the configuration.
     constructor() InstanceTest(__testConfig) {}

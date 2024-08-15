@@ -42,23 +42,27 @@ contract StETHHyperdriveTest is InstanceTest {
 
     // The configuration for the instance testing suite.
     InstanceTestConfig internal __testConfig =
-        InstanceTestConfig(
-            "Hyperdrive",
-            "StETHHyperdrive",
-            new address[](0),
-            whaleAccounts,
-            IERC20(ETH),
-            IERC20(LIDO),
-            1e5,
-            1e15,
-            POSITION_DURATION,
-            true,
-            true,
-            false,
-            true,
-            abi.encodeWithSelector(IHyperdrive.UnsupportedToken.selector),
-            MINIMUM_SHARE_RESERVES
-        );
+        InstanceTestConfig({
+            name: "Hyperdrive",
+            kind: "StETHHyperdrive",
+            decimals: 18,
+            baseTokenWhaleAccounts: new address[](0),
+            vaultSharesTokenWhaleAccounts: whaleAccounts,
+            baseToken: IERC20(ETH),
+            vaultSharesToken: IERC20(LIDO),
+            shareTolerance: 1e5,
+            minTransactionAmount: 1e15,
+            positionDuration: POSITION_DURATION,
+            enableBaseDeposits: true,
+            enableShareDeposits: true,
+            enableBaseWithdraws: false,
+            enableShareWithdraws: true,
+            baseWithdrawError: abi.encodeWithSelector(
+                IHyperdrive.UnsupportedToken.selector
+            ),
+            minimumShareReserves: MINIMUM_SHARE_RESERVES,
+            isRebasing: true
+        });
 
     /// @dev Instantiates the instance testing suite with the configuration.
     constructor() InstanceTest(__testConfig) {}

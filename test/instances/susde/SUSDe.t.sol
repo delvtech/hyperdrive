@@ -55,6 +55,7 @@ contract SUSDeHyperdriveTest is InstanceTest {
         InstanceTestConfig({
             name: "Hyperdrive",
             kind: "ERC4626Hyperdrive",
+            decimals: 18,
             baseTokenWhaleAccounts: baseTokenWhaleAccounts,
             vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
             baseToken: USDE,
@@ -73,7 +74,8 @@ contract SUSDeHyperdriveTest is InstanceTest {
             baseWithdrawError: abi.encodeWithSelector(
                 OperationNotAllowed.selector
             ),
-            minimumShareReserves: MINIMUM_SHARE_RESERVES
+            minimumShareReserves: MINIMUM_SHARE_RESERVES,
+            isRebasing: false
         });
 
     /// @dev Instantiates the instance testing suite with the configuration.
