@@ -61,7 +61,8 @@ contract SUSDeHyperdriveTest is InstanceTest {
             baseToken: USDE,
             vaultSharesToken: IERC20(address(SUSDE)),
             shareTolerance: 1e3,
-            minTransactionAmount: 1e15,
+            minimumShareReserves: 1e18,
+            minimumTransactionAmount: 1e15,
             positionDuration: POSITION_DURATION,
             enableBaseDeposits: true,
             enableShareDeposits: true,
@@ -74,8 +75,13 @@ contract SUSDeHyperdriveTest is InstanceTest {
             baseWithdrawError: abi.encodeWithSelector(
                 OperationNotAllowed.selector
             ),
-            minimumShareReserves: MINIMUM_SHARE_RESERVES,
-            isRebasing: false
+            isRebasing: false,
+            fees: IHyperdrive.Fees({
+                curve: 0,
+                flat: 0,
+                governanceLP: 0,
+                governanceZombie: 0
+            })
         });
 
     /// @dev Instantiates the instance testing suite with the configuration.
@@ -670,6 +676,7 @@ contract SUSDeHyperdriveTest is InstanceTest {
 
         // Bob should receive approximately as much base as he paid since no
         // time as passed and the fees are zero.
+        assertLt(baseProceeds, basePaid + 100);
         assertApproxEqAbs(baseProceeds, basePaid, 1e9);
 
         // Ensure that the withdrawal was processed as expected.

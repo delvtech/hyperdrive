@@ -89,7 +89,8 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
             // assertions than normal to the round trip tests to verify that
             // the calculations satisfy our expectations of accuracy.
             shareTolerance: 1e8,
-            minTransactionAmount: 1e3,
+            minimumShareReserves: 1e6,
+            minimumTransactionAmount: 1e6,
             positionDuration: POSITION_DURATION,
             enableBaseDeposits: true,
             enableShareDeposits: false,
@@ -98,8 +99,13 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
             baseWithdrawError: abi.encodeWithSelector(
                 IHyperdrive.UnsupportedToken.selector
             ),
-            minimumShareReserves: 1e6,
-            isRebasing: false
+            isRebasing: false,
+            fees: IHyperdrive.Fees({
+                curve: 0.001e18,
+                flat: 0.0001e18,
+                governanceLP: 0,
+                governanceZombie: 0
+            })
         });
 
     /// @dev Instantiates the instance testing suite with the configuration.

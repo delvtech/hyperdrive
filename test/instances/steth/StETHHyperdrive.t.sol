@@ -51,7 +51,8 @@ contract StETHHyperdriveTest is InstanceTest {
             baseToken: IERC20(ETH),
             vaultSharesToken: IERC20(LIDO),
             shareTolerance: 1e5,
-            minTransactionAmount: 1e15,
+            minimumShareReserves: 1e15,
+            minimumTransactionAmount: 1e15,
             positionDuration: POSITION_DURATION,
             enableBaseDeposits: true,
             enableShareDeposits: true,
@@ -60,8 +61,13 @@ contract StETHHyperdriveTest is InstanceTest {
             baseWithdrawError: abi.encodeWithSelector(
                 IHyperdrive.UnsupportedToken.selector
             ),
-            minimumShareReserves: MINIMUM_SHARE_RESERVES,
-            isRebasing: true
+            isRebasing: true,
+            fees: IHyperdrive.Fees({
+                curve: 0,
+                flat: 0,
+                governanceLP: 0,
+                governanceZombie: 0
+            })
         });
 
     /// @dev Instantiates the instance testing suite with the configuration.

@@ -69,7 +69,8 @@ contract EzETHHyperdriveTest is InstanceTest {
             baseToken: IERC20(ETH),
             vaultSharesToken: IERC20(EZETH),
             shareTolerance: 1e6,
-            minTransactionAmount: 1e15,
+            minimumShareReserves: 1e15,
+            minimumTransactionAmount: 1e15,
             positionDuration: POSITION_DURATION_15_DAYS,
             enableBaseDeposits: false,
             enableShareDeposits: true,
@@ -78,8 +79,13 @@ contract EzETHHyperdriveTest is InstanceTest {
             baseWithdrawError: abi.encodeWithSelector(
                 IHyperdrive.UnsupportedToken.selector
             ),
-            minimumShareReserves: MINIMUM_SHARE_RESERVES,
-            isRebasing: false
+            isRebasing: false,
+            fees: IHyperdrive.Fees({
+                curve: 0,
+                flat: 0,
+                governanceLP: 0,
+                governanceZombie: 0
+            })
         });
 
     /// @dev Instantiates the instance testing suite with the configuration.

@@ -53,15 +53,21 @@ contract RETHHyperdriveTest is InstanceTest {
             baseToken: IERC20(ETH),
             vaultSharesToken: IERC20(rocketTokenRETH),
             shareTolerance: 1e5,
-            minTransactionAmount: 1e15,
+            minimumShareReserves: 1e15,
+            minimumTransactionAmount: 1e15,
             positionDuration: POSITION_DURATION,
             enableBaseDeposits: false,
             enableShareDeposits: true,
             enableBaseWithdraws: true,
             enableShareWithdraws: true,
             baseWithdrawError: new bytes(0),
-            minimumShareReserves: MINIMUM_SHARE_RESERVES,
-            isRebasing: false
+            isRebasing: false,
+            fees: IHyperdrive.Fees({
+                curve: 0,
+                flat: 0,
+                governanceLP: 0,
+                governanceZombie: 0
+            })
         });
 
     /// @dev Instantiates the instance testing suite with the configuration.

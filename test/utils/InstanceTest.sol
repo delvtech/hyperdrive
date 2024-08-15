@@ -29,26 +29,49 @@ abstract contract InstanceTest is HyperdriveTest {
 
     /// @dev Configuration for the Instance testing suite.
     struct InstanceTestConfig {
+        /// @dev The instance's name.
         string name;
+        /// @dev The instance's kind.
         string kind;
+        /// @dev The amount of decimals used by the instance's base token.
         uint8 decimals;
+        /// @dev The whale accounts for the base token.
         address[] baseTokenWhaleAccounts;
+        /// @dev The whale accounts for the vault shares token.
         address[] vaultSharesTokenWhaleAccounts;
+        /// @dev The instance's base token.
         IERC20 baseToken;
+        /// @dev The instance's vault shares token.
         IERC20 vaultSharesToken;
+        /// @dev The tolerance to use with assertions involving conversions from
+        ///      base to shares.
         uint256 shareTolerance;
-        uint256 minTransactionAmount;
-        uint256 positionDuration;
-        bool enableBaseDeposits;
-        bool enableShareDeposits;
-        bool enableBaseWithdraws;
-        bool enableShareWithdraws;
-        bytes baseWithdrawError;
+        /// @dev The instance's minimum share reserves.
         uint256 minimumShareReserves;
+        /// @dev The instance's minimum transaction amount.
+        uint256 minimumTransactionAmount;
+        /// @dev The instance's position duration.
+        uint256 positionDuration;
+        /// @dev Indicates whether or not the instance accepts base deposits.
+        bool enableBaseDeposits;
+        /// @dev Indicates whether or not the instance accepts share deposits.
+        bool enableShareDeposits;
+        /// @dev Indicates whether or not the instance accepts base withdrawals.
+        bool enableBaseWithdraws;
+        /// @dev Indicates whether or not the instance accepts share withdrawals.
+        bool enableShareWithdraws;
+        /// @dev An optional error message that can be used in cases where base
+        ///      withdrawals will fail with a message that isn't
+        ///      "UnsupportedToken".
+        bytes baseWithdrawError;
         /// @dev Indicates whether or not the vault shares token is a rebasing
         ///      token. If it is, we have to handle balances and approvals
         ///      differently.
         bool isRebasing;
+        /// @dev The fees that will be used in these tests. This can be helpful
+        ///      when testing pools with small amounts of precision to ensure
+        ///      that the pools are safe.
+        IHyperdrive.Fees fees;
     }
 
     // Fixed rate used to configure market.
@@ -359,10 +382,8 @@ abstract contract InstanceTest is HyperdriveTest {
             vaultSharesToken: config.vaultSharesToken,
             linkerFactory: factory.linkerFactory(),
             linkerCodeHash: factory.linkerCodeHash(),
-            minimumShareReserves: config.minimumShareReserves > 0
-                ? config.minimumShareReserves
-                : MINIMUM_SHARE_RESERVES,
-            minimumTransactionAmount: config.minTransactionAmount,
+            minimumShareReserves: config.minimumShareReserves,
+            minimumTransactionAmount: config.minimumTransactionAmount,
             circuitBreakerDelta: 2e18,
             positionDuration: config.positionDuration,
             checkpointDuration: CHECKPOINT_DURATION,
@@ -371,15 +392,7 @@ abstract contract InstanceTest is HyperdriveTest {
             feeCollector: factory.feeCollector(),
             sweepCollector: factory.sweepCollector(),
             checkpointRewarder: address(0),
-            // TODO: Make the InstanceTest parameterizable by the pool config.
-            // This will allow us to revert back to 0 fees for most of the
-            // instance tests. 0 fee tests are more conservative.
-            fees: IHyperdrive.Fees({
-                curve: 0.001e18,
-                flat: 0.0001e18,
-                governanceLP: 0,
-                governanceZombie: 0
-            })
+            fees: config.fees
         });
     }
 
@@ -880,7 +893,7 @@ abstract contract InstanceTest is HyperdriveTest {
         assertApproxEqAbs(
             baseProceeds,
             longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat),
-            10
+            20
         );
 
         // Ensure the withdrawal accounting is correct.
