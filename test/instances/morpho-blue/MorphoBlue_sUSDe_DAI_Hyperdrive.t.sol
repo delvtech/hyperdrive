@@ -12,22 +12,16 @@ import { MorphoBlueTarget1Deployer } from "../../../contracts/src/deployers/morp
 import { MorphoBlueTarget2Deployer } from "../../../contracts/src/deployers/morpho-blue/MorphoBlueTarget2Deployer.sol";
 import { MorphoBlueTarget3Deployer } from "../../../contracts/src/deployers/morpho-blue/MorphoBlueTarget3Deployer.sol";
 import { MorphoBlueTarget4Deployer } from "../../../contracts/src/deployers/morpho-blue/MorphoBlueTarget4Deployer.sol";
-import { HyperdriveFactory } from "../../../contracts/src/factory/HyperdriveFactory.sol";
 import { MorphoBlueConversions } from "../../../contracts/src/instances/morpho-blue/MorphoBlueConversions.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { IMorphoBlueHyperdrive } from "../../../contracts/src/interfaces/IMorphoBlueHyperdrive.sol";
-import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
-import { ETH } from "../../../contracts/src/libraries/Constants.sol";
-import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
-import { ERC20ForwarderFactory } from "../../../contracts/src/token/ERC20ForwarderFactory.sol";
-import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
+import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
 import { InstanceTest } from "../../utils/InstanceTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-contract SUSDE_DAI_MorphoBlueHyperdriveTest is InstanceTest {
+contract MorphoBlue_sUSDe_DAI_HyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
     using MarketParamsLib for MarketParams;
@@ -72,7 +66,7 @@ contract SUSDE_DAI_MorphoBlueHyperdriveTest is InstanceTest {
     // The configuration for the instance testing suite.
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig({
-            name: "Hyperdrive",
+            name: "Morpho Blue sUSDe DAI Hyperdrive",
             kind: "MorphoBlueHyperdrive",
             decimals: 18,
             baseTokenWhaleAccounts: baseTokenWhaleAccounts,

@@ -12,23 +12,16 @@ import { MorphoBlueTarget1Deployer } from "../../../contracts/src/deployers/morp
 import { MorphoBlueTarget2Deployer } from "../../../contracts/src/deployers/morpho-blue/MorphoBlueTarget2Deployer.sol";
 import { MorphoBlueTarget3Deployer } from "../../../contracts/src/deployers/morpho-blue/MorphoBlueTarget3Deployer.sol";
 import { MorphoBlueTarget4Deployer } from "../../../contracts/src/deployers/morpho-blue/MorphoBlueTarget4Deployer.sol";
-import { HyperdriveFactory } from "../../../contracts/src/factory/HyperdriveFactory.sol";
 import { MorphoBlueConversions } from "../../../contracts/src/instances/morpho-blue/MorphoBlueConversions.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { IMorphoBlueHyperdrive } from "../../../contracts/src/interfaces/IMorphoBlueHyperdrive.sol";
-import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
-import { ETH } from "../../../contracts/src/libraries/Constants.sol";
-import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
-import { LPMath } from "../../../contracts/src/libraries/LPMath.sol";
-import { ERC20ForwarderFactory } from "../../../contracts/src/token/ERC20ForwarderFactory.sol";
-import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
+import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
 import { InstanceTest } from "../../utils/InstanceTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
+contract MorphoBlue_USDe_DAI_HyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
     using MarketParamsLib for MarketParams;
@@ -40,57 +33,55 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
     IMorpho internal constant MORPHO =
         IMorpho(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
 
-    // The ID of the wstETH/USDC market.
+    // The ID of the USDe/DAI market.
     bytes32 internal constant MARKET_ID =
         bytes32(
-            0xb323495f7e4148be5643a4ea4a8221eef163e4bccfdedc2a6f4696baacbc86cc
+            0xc581c5f70bd1afa283eed57d1418c6432cbff1d862f94eaf58fdd4e46afbb67f
         );
 
     // The address of the loan token. This is just the DAI token.
     address internal constant LOAN_TOKEN =
-        address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+        address(0x6B175474E89094C44Da98b954EedeAC495271d0F);
 
-    // The address of the collateral token. This is just the wstETH token.
+    // The address of the collateral token. This is just the USDe token.
     address internal constant COLLATERAL_TOKEN =
-        address(0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0);
+        address(0x4c9EDD5852cd905f086C759E8383e09bff1E68B3);
 
     // The address of the oracle.
     address internal constant ORACLE =
-        address(0x48F7E36EB6B826B2dF4B2E630B62Cd25e89E40e2);
+        address(0xaE4750d0813B5E37A51f7629beedd72AF1f9cA35);
 
     // The address of the interest rate model.
     address internal constant IRM =
         address(0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC);
 
-    // The liquidation loan to value ratio of the wstETH/USDC market.
+    // The liquidation loan to value ratio of the USDe market.
     uint256 internal constant LLTV = 860000000000000000;
 
     // Whale accounts.
     address internal LOAN_TOKEN_WHALE =
-        address(0x4B16c5dE96EB2117bBE5fd171E4d203624B014aa);
+        address(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
     address[] internal baseTokenWhaleAccounts = [LOAN_TOKEN_WHALE];
 
     // The configuration for the instance testing suite.
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig({
-            name: "Hyperdrive",
+            name: "Morpho Blue USDe DAI Hyperdrive",
             kind: "MorphoBlueHyperdrive",
-            decimals: 6,
+            decimals: 18,
             baseTokenWhaleAccounts: baseTokenWhaleAccounts,
             vaultSharesTokenWhaleAccounts: new address[](0),
             baseToken: IERC20(LOAN_TOKEN),
             vaultSharesToken: IERC20(address(0)),
-            // FIXME: Update this comment.
-            //
             // NOTE: The share tolerance is quite high for this integration
             // because the vault share price is ~1e12, which means that just
             // multiplying or dividing by the vault is an imprecise way of
             // converting between base and vault shares. We included more
             // assertions than normal to the round trip tests to verify that
             // the calculations satisfy our expectations of accuracy.
-            shareTolerance: 1e8,
-            minimumShareReserves: 1e6,
-            minimumTransactionAmount: 1e6,
+            shareTolerance: 1e15,
+            minimumShareReserves: 1e15,
+            minimumTransactionAmount: 1e15,
             positionDuration: POSITION_DURATION,
             enableBaseDeposits: true,
             enableShareDeposits: false,
@@ -101,8 +92,8 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
             ),
             isRebasing: false,
             fees: IHyperdrive.Fees({
-                curve: 0.001e18,
-                flat: 0.0001e18,
+                curve: 0,
+                flat: 0,
                 governanceLP: 0,
                 governanceZombie: 0
             })
@@ -112,7 +103,7 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
     constructor() InstanceTest(__testConfig) {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
-    function setUp() public override __mainnet_fork(20_481_157) {
+    function setUp() public override __mainnet_fork(20_276_503) {
         // Invoke the instance testing suite setup.
         super.setUp();
     }
@@ -425,7 +416,7 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
 
     function test_round_trip_lp_instantaneous(uint256 _contribution) external {
         // Bob adds liquidity with base.
-        _contribution = _contribution.normalizeToRange(100e6, 100_000e6);
+        _contribution = _contribution.normalizeToRange(100e18, 100_000e18);
         IERC20(hyperdrive.baseToken()).approve(
             address(hyperdrive),
             _contribution
@@ -451,7 +442,7 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
 
         // Bob should receive approximately as much base as he contributed since
         // no time as passed and the fees are zero.
-        assertApproxEqAbs(baseProceeds, _contribution, 1e3);
+        assertApproxEqAbs(baseProceeds, _contribution, 1e12);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
@@ -470,7 +461,7 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
         uint256 _variableRate
     ) external {
         // Bob adds liquidity with base.
-        _contribution = _contribution.normalizeToRange(100e6, 100_000e6);
+        _contribution = _contribution.normalizeToRange(100e18, 100_000e18);
         IERC20(hyperdrive.baseToken()).approve(
             address(hyperdrive),
             _contribution
@@ -497,7 +488,6 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
         // The term passes and interest accrues.
         _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
         advanceTime(POSITION_DURATION, int256(_variableRate));
-        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
         // Bob should be able to redeem all of his withdrawal shares for
         // approximately the LP share price.
@@ -514,7 +504,7 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
         assertApproxEqAbs(
             baseProceeds,
             withdrawalShares.mulDown(lpSharePrice),
-            1e3
+            1e11
         );
     }
 
@@ -572,9 +562,9 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
         // Bob closes his long with base as the target asset.
         uint256 baseProceeds = closeLong(bob, maturityTime, longAmount);
 
-        // Bob should receive less base than he paid since no time as passed
-        // and the fees are non-zero.
-        assertLt(baseProceeds, _basePaid);
+        // Bob should receive approximately as much base as he paid since no
+        // time as passed and the fees are zero.
+        assertApproxEqAbs(baseProceeds, _basePaid, 1e9);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
@@ -618,15 +608,8 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
         uint256 baseProceeds = closeLong(bob, maturityTime, longAmount);
 
         // Bob should receive almost exactly his bond amount.
-        assertLe(
-            baseProceeds,
-            longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat)
-        );
-        assertApproxEqAbs(
-            baseProceeds,
-            longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat),
-            2
-        );
+        assertLe(baseProceeds, longAmount);
+        assertApproxEqAbs(baseProceeds, longAmount, 2);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
@@ -700,9 +683,9 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
         // Bob closes his long with base as the target asset.
         uint256 baseProceeds = closeShort(bob, maturityTime, _shortAmount);
 
-        // Bob should receive less base than he paid since no time as passed
-        // and the fees are non-zero.
-        assertLt(baseProceeds, basePaid);
+        // Bob should receive approximately as much base as he paid since no
+        // time as passed and the fees are zero.
+        assertApproxEqAbs(baseProceeds, basePaid, 1e9);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(

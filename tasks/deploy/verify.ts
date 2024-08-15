@@ -1,4 +1,5 @@
 import { task, types } from "hardhat/config";
+import { Address } from "viem";
 import { evaluateValueOrHREFn } from "./lib";
 
 export type VerifyParams = {};
@@ -193,7 +194,17 @@ task(
             // form target constructor args
             let targetArgs:
                 | [typeof poolConfig]
-                | [typeof poolConfig, `0x${string}`] = [poolConfig];
+                | [typeof poolConfig, `0x${string}`]
+                | [
+                      typeof poolConfig,
+                      {
+                          morpho: Address;
+                          collateralToken: Address;
+                          oracle: Address;
+                          irm: Address;
+                          lltv: bigint;
+                      },
+                  ] = [poolConfig];
 
             // add extra args if present
             let extras = await evaluateValueOrHREFn(
@@ -201,8 +212,26 @@ task(
                 hre,
                 {},
             );
+            let isMorpho =
+                (await instanceContract.read.kind()) == "MorphoBlueHyperdrive";
             if (extras) {
                 targetArgs = [poolConfig, ...extras];
+            } else if (isMorpho) {
+                let morphoInstanceContract = await hre.viem.getContractAt(
+                    "IMorphoBlueHyperdrive",
+                    instance.address,
+                );
+                targetArgs = [
+                    poolConfig,
+                    {
+                        morpho: await morphoInstanceContract.read.vault(),
+                        collateralToken:
+                            await morphoInstanceContract.read.collateralToken(),
+                        oracle: await morphoInstanceContract.read.oracle(),
+                        irm: await morphoInstanceContract.read.irm(),
+                        lltv: await morphoInstanceContract.read.lltv(),
+                    },
+                ];
             }
 
             // verify the targets
@@ -247,7 +276,21 @@ task(
             if (extras) {
                 args.push(...extras);
             }
-            let contract = `contracts/src/instances/${i.prefix.toLowerCase()}/${i.prefix}Hyperdrive.sol:${i.prefix}Hyperdrive`;
+            if (isMorpho) {
+                let morphoInstanceContract = await hre.viem.getContractAt(
+                    "IMorphoBlueHyperdrive",
+                    instance.address,
+                );
+                args.push({
+                    morpho: await morphoInstanceContract.read.vault(),
+                    collateralToken:
+                        await morphoInstanceContract.read.collateralToken(),
+                    oracle: await morphoInstanceContract.read.oracle(),
+                    irm: await morphoInstanceContract.read.irm(),
+                    lltv: await morphoInstanceContract.read.lltv(),
+                });
+            }
+            let contract = `contracts/src/instances/${isMorpho ? "morpho-blue" : i.prefix.toLowerCase()}/${i.prefix}Hyperdrive.sol:${i.prefix}Hyperdrive`;
             await sleep(1000);
             await run("verify:verify", {
                 address: hre.hyperdriveDeploy.deployments.byName(i.name)
