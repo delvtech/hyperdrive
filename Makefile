@@ -6,9 +6,13 @@
 
 build:
 	make build-sol
+	make build-hypertypes
 
 build-sol:
 	forge build
+
+build-hypertypes:
+	forge build && pypechain --output-dir python/hypertypes/types --line-length 80 out/
 
 ### Test ###
 

@@ -19,6 +19,7 @@ artifacts/
 .python-version
 .venv
 build/
+python/hypertypes/types
 
 # nix/shell extension - https://direnv.net/
 .direnv
