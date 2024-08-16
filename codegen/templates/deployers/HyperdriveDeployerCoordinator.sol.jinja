@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
@@ -156,6 +156,19 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
     ) internal view override {
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig);
+
+        // ****************************************************************
+        // FIXME: Implement this for new instances.
+        // Ensure that the vault shares token address is properly configured.
+        if (address(_deployConfig.vaultSharesToken) != address(VAULT_SHARES_TOKEN) {
+            revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
+        }
+
+        // Ensure that the base token address is properly configured.
+        if (address(_deployConfig.baseToken) == address(0)) {
+            revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
+        }
+        // *****************************************************************
 
         // Ensure that the minimum share reserves are equal to 1e15. This value
         // has been tested to prevent arithmetic overflows in the

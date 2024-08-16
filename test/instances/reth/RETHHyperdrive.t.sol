@@ -1,32 +1,25 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { ETH } from "contracts/src/libraries/Constants.sol";
-import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { InstanceTest } from "test/utils/InstanceTest.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IRETHHyperdrive } from "contracts/src/interfaces/IRETHHyperdrive.sol";
-import { IRocketDepositPool } from "contracts/src/interfaces/IRocketDepositPool.sol";
-import { IRocketNetworkBalances } from "contracts/src/interfaces/IRocketNetworkBalances.sol";
-import { IRocketPoolDAOProtocolSettingsDeposit } from "contracts/src/interfaces/IRocketPoolDAOProtocolSettingsDeposit.sol";
-import { IRocketStorage } from "contracts/src/interfaces/IRocketStorage.sol";
-import { IRocketTokenRETH } from "contracts/src/interfaces/IRocketTokenRETH.sol";
-import { Lib } from "test/utils/Lib.sol";
-import { RETHHyperdriveCoreDeployer } from "contracts/src/deployers/reth/RETHHyperdriveCoreDeployer.sol";
-import { RETHHyperdriveDeployerCoordinator } from "contracts/src/deployers/reth/RETHHyperdriveDeployerCoordinator.sol";
-import { RETHTarget0Deployer } from "contracts/src/deployers/reth/RETHTarget0Deployer.sol";
-import { RETHTarget1Deployer } from "contracts/src/deployers/reth/RETHTarget1Deployer.sol";
-import { RETHTarget2Deployer } from "contracts/src/deployers/reth/RETHTarget2Deployer.sol";
-import { RETHTarget3Deployer } from "contracts/src/deployers/reth/RETHTarget3Deployer.sol";
-import { RETHTarget4Deployer } from "contracts/src/deployers/reth/RETHTarget4Deployer.sol";
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
+import { ETH } from "../../../contracts/src/libraries/Constants.sol";
+import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
+import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { IRocketDepositPool } from "../../../contracts/src/interfaces/IRocketDepositPool.sol";
+import { IRocketNetworkBalances } from "../../../contracts/src/interfaces/IRocketNetworkBalances.sol";
+import { IRocketStorage } from "../../../contracts/src/interfaces/IRocketStorage.sol";
+import { IRocketTokenRETH } from "../../../contracts/src/interfaces/IRocketTokenRETH.sol";
+import { RETHHyperdriveCoreDeployer } from "../../../contracts/src/deployers/reth/RETHHyperdriveCoreDeployer.sol";
+import { RETHHyperdriveDeployerCoordinator } from "../../../contracts/src/deployers/reth/RETHHyperdriveDeployerCoordinator.sol";
+import { RETHTarget0Deployer } from "../../../contracts/src/deployers/reth/RETHTarget0Deployer.sol";
+import { RETHTarget1Deployer } from "../../../contracts/src/deployers/reth/RETHTarget1Deployer.sol";
+import { RETHTarget2Deployer } from "../../../contracts/src/deployers/reth/RETHTarget2Deployer.sol";
+import { RETHTarget3Deployer } from "../../../contracts/src/deployers/reth/RETHTarget3Deployer.sol";
+import { RETHTarget4Deployer } from "../../../contracts/src/deployers/reth/RETHTarget4Deployer.sol";
+import { InstanceTest } from "../../utils/InstanceTest.sol";
+import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract RETHHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
@@ -64,10 +57,11 @@ contract RETHHyperdriveTest is InstanceTest {
             false,
             true,
             true,
-            true
+            true,
+            new bytes(0)
         );
 
-    /// @dev Instantiates the Instance testing suite with the configuration.
+    /// @dev Instantiates the instance testing suite with the configuration.
     constructor() InstanceTest(__testConfig) {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
@@ -75,7 +69,7 @@ contract RETHHyperdriveTest is InstanceTest {
         // Give the rETH contract ETH to mimic adequate withdrawable liquidity.
         vm.deal(address(rocketTokenRETH), 50_000e18);
 
-        // Invoke the Instance testing suite setup.
+        // Invoke the instance testing suite setup.
         super.setUp();
     }
 
@@ -267,6 +261,13 @@ contract RETHHyperdriveTest is InstanceTest {
             // Ensure the total supply was updated correctly.
             assertEq(rocketTokenRETH.totalSupply(), totalSharesBefore);
         }
+    }
+
+    /// Getters ///
+
+    function test_getters() external view {
+        (, uint256 totalShares) = getTokenBalances(address(hyperdrive));
+        assertEq(hyperdrive.totalShares(), totalShares);
     }
 
     /// Price Per Share ///

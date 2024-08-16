@@ -8,7 +8,7 @@ import {
 HyperdriveDeployNamedTask(
     task(
         "factory:remove-coordinator",
-        "adds the specified hyperdrive instance to the registry",
+        "removes the specified deployer coordinator from the factory",
     ),
 ).setAction(
     async (
@@ -17,8 +17,6 @@ HyperdriveDeployNamedTask(
     ) => {
         // Get the factory contract.
         let deployment = deployments.byName(name);
-        if (!deployment.contract.endsWith("HyperdriveDeployerCoordinator"))
-            throw new Error("not a hyperdrive deployer coordinator");
         console.log(
             `removing ${name} ${deployment.contract} at ${deployment.address} from the factory ...`,
         );

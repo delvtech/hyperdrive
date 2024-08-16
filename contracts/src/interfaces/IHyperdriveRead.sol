@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
 import { IHyperdrive } from "./IHyperdrive.sol";
 import { IMultiTokenRead } from "./IMultiTokenRead.sol";
@@ -87,6 +87,9 @@ interface IHyperdriveRead is IMultiTokenRead {
     ) external view returns (bytes32[] memory);
 
     /// @notice Convert an amount of vault shares to an amount of base.
+    /// @dev This is a convenience method that allows developers to convert from
+    ///      vault shares to base without knowing the specifics of the
+    ///      integration.
     /// @param _shareAmount The vault shares amount.
     /// @return baseAmount The base amount.
     function convertToBase(
@@ -94,9 +97,19 @@ interface IHyperdriveRead is IMultiTokenRead {
     ) external view returns (uint256);
 
     /// @notice Convert an amount of base to an amount of vault shares.
+    /// @dev This is a convenience method that allows developers to convert from
+    ///      base to vault shares without knowing the specifics of the
+    ///      integration.
     /// @param _baseAmount The base amount.
     /// @return shareAmount The vault shares amount.
     function convertToShares(
         uint256 _baseAmount
     ) external view returns (uint256);
+
+    /// @notice Gets the total amount of vault shares held by Hyperdrive.
+    /// @dev This is a convenience method that allows developers to get the
+    ///      total amount of vault shares without knowing the specifics of the
+    ///      integration.
+    /// @return The total amount of vault shares held by Hyperdrive.
+    function totalShares() external view returns (uint256);
 }

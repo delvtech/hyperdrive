@@ -1,28 +1,28 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { VmSafe } from "forge-std/Vm.sol";
-import { ERC4626HyperdriveCoreDeployer } from "contracts/src/deployers/erc4626/ERC4626HyperdriveCoreDeployer.sol";
-import { ERC4626HyperdriveDeployerCoordinator } from "contracts/src/deployers/erc4626/ERC4626HyperdriveDeployerCoordinator.sol";
-import { ERC4626Target0Deployer } from "contracts/src/deployers/erc4626/ERC4626Target0Deployer.sol";
-import { ERC4626Target1Deployer } from "contracts/src/deployers/erc4626/ERC4626Target1Deployer.sol";
-import { ERC4626Target2Deployer } from "contracts/src/deployers/erc4626/ERC4626Target2Deployer.sol";
-import { ERC4626Target3Deployer } from "contracts/src/deployers/erc4626/ERC4626Target3Deployer.sol";
-import { ERC4626Target4Deployer } from "contracts/src/deployers/erc4626/ERC4626Target4Deployer.sol";
-import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { HyperdriveRegistry } from "contracts/src/factory/HyperdriveRegistry.sol";
-import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
-import { IHyperdriveFactory } from "contracts/src/interfaces/IHyperdriveFactory.sol";
-import { IHyperdriveGovernedRegistry } from "contracts/src/interfaces/IHyperdriveGovernedRegistry.sol";
-import { IHyperdriveRegistry } from "contracts/src/interfaces/IHyperdriveRegistry.sol";
-import { VERSION } from "contracts/src/libraries/Constants.sol";
-import { ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { MockERC4626 } from "contracts/test/MockERC4626.sol";
-import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { ERC4626HyperdriveCoreDeployer } from "../../../contracts/src/deployers/erc4626/ERC4626HyperdriveCoreDeployer.sol";
+import { ERC4626HyperdriveDeployerCoordinator } from "../../../contracts/src/deployers/erc4626/ERC4626HyperdriveDeployerCoordinator.sol";
+import { ERC4626Target0Deployer } from "../../../contracts/src/deployers/erc4626/ERC4626Target0Deployer.sol";
+import { ERC4626Target1Deployer } from "../../../contracts/src/deployers/erc4626/ERC4626Target1Deployer.sol";
+import { ERC4626Target2Deployer } from "../../../contracts/src/deployers/erc4626/ERC4626Target2Deployer.sol";
+import { ERC4626Target3Deployer } from "../../../contracts/src/deployers/erc4626/ERC4626Target3Deployer.sol";
+import { ERC4626Target4Deployer } from "../../../contracts/src/deployers/erc4626/ERC4626Target4Deployer.sol";
+import { HyperdriveFactory } from "../../../contracts/src/factory/HyperdriveFactory.sol";
+import { HyperdriveRegistry } from "../../../contracts/src/factory/HyperdriveRegistry.sol";
+import { IERC4626 } from "../../../contracts/src/interfaces/IERC4626.sol";
+import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveDeployerCoordinator } from "../../../contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
+import { IHyperdriveFactory } from "../../../contracts/src/interfaces/IHyperdriveFactory.sol";
+import { IHyperdriveGovernedRegistry } from "../../../contracts/src/interfaces/IHyperdriveGovernedRegistry.sol";
+import { IHyperdriveRegistry } from "../../../contracts/src/interfaces/IHyperdriveRegistry.sol";
+import { VERSION } from "../../../contracts/src/libraries/Constants.sol";
+import { ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
+import { MockERC4626 } from "../../../contracts/test/MockERC4626.sol";
+import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract HyperdriveRegistryTest is HyperdriveTest {
     using Lib for *;

@@ -1,33 +1,27 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { Id, IMorpho, Market, MarketParams } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { MarketParamsLib } from "morpho-blue/src/libraries/MarketParamsLib.sol";
 import { MorphoBalancesLib } from "morpho-blue/src/libraries/periphery/MorphoBalancesLib.sol";
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
-import { MorphoBlueHyperdriveCoreDeployer } from "contracts/src/deployers/morpho-blue/MorphoBlueHyperdriveCoreDeployer.sol";
-import { MorphoBlueHyperdriveDeployerCoordinator } from "contracts/src/deployers/morpho-blue/MorphoBlueHyperdriveDeployerCoordinator.sol";
-import { MorphoBlueTarget0Deployer } from "contracts/src/deployers/morpho-blue/MorphoBlueTarget0Deployer.sol";
-import { MorphoBlueTarget1Deployer } from "contracts/src/deployers/morpho-blue/MorphoBlueTarget1Deployer.sol";
-import { MorphoBlueTarget2Deployer } from "contracts/src/deployers/morpho-blue/MorphoBlueTarget2Deployer.sol";
-import { MorphoBlueTarget3Deployer } from "contracts/src/deployers/morpho-blue/MorphoBlueTarget3Deployer.sol";
-import { MorphoBlueTarget4Deployer } from "contracts/src/deployers/morpho-blue/MorphoBlueTarget4Deployer.sol";
-import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { MorphoBlueConversions } from "contracts/src/instances/morpho-blue/MorphoBlueConversions.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IMorphoBlueHyperdrive } from "contracts/src/interfaces/IMorphoBlueHyperdrive.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { ETH } from "contracts/src/libraries/Constants.sol";
-import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { InstanceTest } from "test/utils/InstanceTest.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { MorphoBlueHyperdriveCoreDeployer } from "../../../contracts/src/deployers/morpho-blue/MorphoBlueHyperdriveCoreDeployer.sol";
+import { MorphoBlueHyperdriveDeployerCoordinator } from "../../../contracts/src/deployers/morpho-blue/MorphoBlueHyperdriveDeployerCoordinator.sol";
+import { MorphoBlueTarget0Deployer } from "../../../contracts/src/deployers/morpho-blue/MorphoBlueTarget0Deployer.sol";
+import { MorphoBlueTarget1Deployer } from "../../../contracts/src/deployers/morpho-blue/MorphoBlueTarget1Deployer.sol";
+import { MorphoBlueTarget2Deployer } from "../../../contracts/src/deployers/morpho-blue/MorphoBlueTarget2Deployer.sol";
+import { MorphoBlueTarget3Deployer } from "../../../contracts/src/deployers/morpho-blue/MorphoBlueTarget3Deployer.sol";
+import { MorphoBlueTarget4Deployer } from "../../../contracts/src/deployers/morpho-blue/MorphoBlueTarget4Deployer.sol";
+import { MorphoBlueConversions } from "../../../contracts/src/instances/morpho-blue/MorphoBlueConversions.sol";
+import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
+import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { IMorphoBlueHyperdrive } from "../../../contracts/src/interfaces/IMorphoBlueHyperdrive.sol";
+import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { InstanceTest } from "../../utils/InstanceTest.sol";
+import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
+import { Lib } from "../../utils/Lib.sol";
 
-contract MorphoBlueHyperdriveTest is InstanceTest {
+contract MorphoBlue_sUSDe_DAI_HyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
     using MarketParamsLib for MarketParams;
@@ -69,10 +63,10 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         address(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
     address[] internal baseTokenWhaleAccounts = [LOAN_TOKEN_WHALE];
 
-    // The configuration for the Instance testing suite.
+    // The configuration for the instance testing suite.
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig({
-            name: "Hyperdrive",
+            name: "Morpho Blue sUSDe DAI Hyperdrive",
             kind: "MorphoBlueHyperdrive",
             baseTokenWhaleAccounts: baseTokenWhaleAccounts,
             vaultSharesTokenWhaleAccounts: new address[](0),
@@ -90,15 +84,18 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
             enableBaseDeposits: true,
             enableShareDeposits: false,
             enableBaseWithdraws: true,
-            enableShareWithdraws: false
+            enableShareWithdraws: false,
+            baseWithdrawError: abi.encodeWithSelector(
+                IHyperdrive.UnsupportedToken.selector
+            )
         });
 
-    /// @dev Instantiates the Instance testing suite with the configuration.
+    /// @dev Instantiates the instance testing suite with the configuration.
     constructor() InstanceTest(__testConfig) {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(20_276_503) {
-        // Invoke the Instance testing suite setup.
+        // Invoke the instance testing suite setup.
         super.setUp();
     }
 
@@ -344,6 +341,30 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         );
     }
 
+    /// Getters ///
+
+    function test_getters() external view {
+        assertEq(
+            IMorphoBlueHyperdrive(address(hyperdrive)).vault(),
+            address(MORPHO)
+        );
+        assertEq(
+            IMorphoBlueHyperdrive(address(hyperdrive)).collateralToken(),
+            address(COLLATERAL_TOKEN)
+        );
+        assertEq(
+            IMorphoBlueHyperdrive(address(hyperdrive)).oracle(),
+            address(ORACLE)
+        );
+        assertEq(
+            IMorphoBlueHyperdrive(address(hyperdrive)).irm(),
+            address(IRM)
+        );
+        assertEq(IMorphoBlueHyperdrive(address(hyperdrive)).lltv(), LLTV);
+        (, uint256 totalShares) = getTokenBalances(address(hyperdrive));
+        assertEq(hyperdrive.totalShares(), totalShares);
+    }
+
     /// Price Per Share ///
 
     function test__pricePerVaultShare(uint256 basePaid) external {
@@ -384,14 +405,14 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
 
     /// LP ///
 
-    function test_round_trip_lp_instantaneous() external {
+    function test_round_trip_lp_instantaneous(uint256 _contribution) external {
         // Bob adds liquidity with base.
-        uint256 contribution = 2_500e18;
+        _contribution = _contribution.normalizeToRange(100e18, 100_000e18);
         IERC20(hyperdrive.baseToken()).approve(
             address(hyperdrive),
-            contribution
+            _contribution
         );
-        uint256 lpShares = addLiquidity(bob, contribution);
+        uint256 lpShares = addLiquidity(bob, _contribution);
 
         // Get some balance information before the withdrawal.
         (
@@ -412,7 +433,7 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
 
         // Bob should receive approximately as much base as he contributed since
         // no time as passed and the fees are zero.
-        assertApproxEqAbs(baseProceeds, contribution, 1e10);
+        assertApproxEqAbs(baseProceeds, _contribution, 1e12);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
@@ -426,14 +447,17 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         );
     }
 
-    function test_round_trip_lp_withdrawal_shares() external {
+    function test_round_trip_lp_withdrawal_shares(
+        uint256 _contribution,
+        uint256 _variableRate
+    ) external {
         // Bob adds liquidity with base.
-        uint256 contribution = 2_500e18;
+        _contribution = _contribution.normalizeToRange(100e18, 100_000e18);
         IERC20(hyperdrive.baseToken()).approve(
             address(hyperdrive),
-            contribution
+            _contribution
         );
-        uint256 lpShares = addLiquidity(bob, contribution);
+        uint256 lpShares = addLiquidity(bob, _contribution);
 
         // Alice opens a large short.
         vm.stopPrank();
@@ -450,11 +474,11 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
             bob,
             lpShares
         );
-        assertEq(baseProceeds, 0);
         assertGt(withdrawalShares, 0);
 
         // The term passes and interest accrues.
-        advanceTime(POSITION_DURATION, 1.421e18);
+        _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
+        advanceTime(POSITION_DURATION, int256(_variableRate));
 
         // Bob should be able to redeem all of his withdrawal shares for
         // approximately the LP share price.
@@ -471,7 +495,7 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         assertApproxEqAbs(
             baseProceeds,
             withdrawalShares.mulDown(lpSharePrice),
-            1e9
+            1e11
         );
     }
 
@@ -507,11 +531,14 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         );
     }
 
-    function test_round_trip_long_instantaneous() external {
+    function test_round_trip_long_instantaneous(uint256 _basePaid) external {
         // Bob opens a long with base.
-        uint256 basePaid = hyperdrive.calculateMaxLong();
-        IERC20(hyperdrive.baseToken()).approve(address(hyperdrive), basePaid);
-        (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
+        _basePaid = _basePaid.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            hyperdrive.calculateMaxLong()
+        );
+        IERC20(hyperdrive.baseToken()).approve(address(hyperdrive), _basePaid);
+        (uint256 maturityTime, uint256 longAmount) = openLong(bob, _basePaid);
 
         // Get some balance information before the withdrawal.
         (
@@ -528,7 +555,7 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
 
         // Bob should receive approximately as much base as he paid since no
         // time as passed and the fees are zero.
-        assertApproxEqAbs(baseProceeds, basePaid, 1e9);
+        assertApproxEqAbs(baseProceeds, _basePaid, 1e9);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
@@ -542,14 +569,21 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         );
     }
 
-    function test_round_trip_long_maturity() external {
+    function test_round_trip_long_maturity(
+        uint256 _basePaid,
+        uint256 _variableRate
+    ) external {
         // Bob opens a long with base.
-        uint256 basePaid = hyperdrive.calculateMaxLong();
-        IERC20(hyperdrive.baseToken()).approve(address(hyperdrive), basePaid);
-        (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
+        _basePaid = _basePaid.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            hyperdrive.calculateMaxLong()
+        );
+        IERC20(hyperdrive.baseToken()).approve(address(hyperdrive), _basePaid);
+        (uint256 maturityTime, uint256 longAmount) = openLong(bob, _basePaid);
 
         // Advance the time and accrue a large amount of interest.
-        advanceTime(POSITION_DURATION, 137.123423e18);
+        _variableRate = _variableRate.normalizeToRange(0, 1000e18);
+        advanceTime(POSITION_DURATION, int256(_variableRate));
 
         // Get some balance information before the withdrawal.
         (
@@ -565,6 +599,7 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         uint256 baseProceeds = closeLong(bob, maturityTime, longAmount);
 
         // Bob should receive almost exactly his bond amount.
+        assertLe(baseProceeds, longAmount);
         assertApproxEqAbs(baseProceeds, longAmount, 2);
 
         // Ensure that the withdrawal was processed as expected.
@@ -612,14 +647,19 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         );
     }
 
-    function test_round_trip_short_instantaneous() external {
+    function test_round_trip_short_instantaneous(
+        uint256 _shortAmount
+    ) external {
         // Bob opens a short with base.
-        uint256 shortAmount = hyperdrive.calculateMaxShort();
+        _shortAmount = _shortAmount.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            hyperdrive.calculateMaxShort()
+        );
         IERC20(hyperdrive.baseToken()).approve(
             address(hyperdrive),
-            shortAmount
+            _shortAmount
         );
-        (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
+        (uint256 maturityTime, uint256 basePaid) = openShort(bob, _shortAmount);
 
         // Get some balance information before the withdrawal.
         (
@@ -632,7 +672,7 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         );
 
         // Bob closes his long with base as the target asset.
-        uint256 baseProceeds = closeShort(bob, maturityTime, shortAmount);
+        uint256 baseProceeds = closeShort(bob, maturityTime, _shortAmount);
 
         // Bob should receive approximately as much base as he paid since no
         // time as passed and the fees are zero.
@@ -650,18 +690,24 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         );
     }
 
-    function test_round_trip_short_maturity() external {
+    function test_round_trip_short_maturity(
+        uint256 _shortAmount,
+        uint256 _variableRate
+    ) external {
         // Bob opens a short with base.
-        uint256 shortAmount = hyperdrive.calculateMaxShort();
+        _shortAmount = _shortAmount.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            hyperdrive.calculateMaxShort()
+        );
         IERC20(hyperdrive.baseToken()).approve(
             address(hyperdrive),
-            shortAmount
+            _shortAmount
         );
-        (uint256 maturityTime, ) = openShort(bob, shortAmount);
+        (uint256 maturityTime, ) = openShort(bob, _shortAmount);
 
         // The term passes and some interest accrues.
-        int256 variableAPR = 0.57e18;
-        advanceTime(POSITION_DURATION, variableAPR);
+        _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
+        advanceTime(POSITION_DURATION, int256(_variableRate));
 
         // Get some balance information before the withdrawal.
         (
@@ -674,14 +720,14 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
         );
 
         // Bob closes his long with base as the target asset.
-        uint256 baseProceeds = closeShort(bob, maturityTime, shortAmount);
+        uint256 baseProceeds = closeShort(bob, maturityTime, _shortAmount);
 
         // Bob should receive almost exactly the interest that accrued on the
         // bonds that were shorted.
         assertApproxEqAbs(
             baseProceeds,
-            shortAmount.mulDown(uint256(variableAPR)),
-            1e9
+            _shortAmount.mulDown(_variableRate),
+            1e10
         );
 
         // Ensure that the withdrawal was processed as expected.
@@ -734,6 +780,15 @@ contract MorphoBlueHyperdriveTest is InstanceTest {
             address(MORPHO),
             bytes32(uint256(marketLocation) + 2),
             bytes32((uint256(market.fee) << 128) | uint256(block.timestamp))
+        );
+
+        // In order to prevent transfers from failing, we also need to increase
+        // the DAI balance of the Morpho vault to match the total assets.
+        bytes32 balanceLocation = keccak256(abi.encode(address(MORPHO), 2));
+        vm.store(
+            address(LOAN_TOKEN),
+            balanceLocation,
+            bytes32(totalSupplyAssets)
         );
     }
 }

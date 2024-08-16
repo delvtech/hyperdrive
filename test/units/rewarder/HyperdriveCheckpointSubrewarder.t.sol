@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { VmSafe } from "forge-std/Vm.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IHyperdriveCheckpointSubrewarder } from "contracts/src/interfaces/IHyperdriveCheckpointSubrewarder.sol";
-import { IHyperdriveRegistry } from "contracts/src/interfaces/IHyperdriveRegistry.sol";
-import { IHyperdriveGovernedRegistry } from "contracts/src/interfaces/IHyperdriveGovernedRegistry.sol";
-import { HYPERDRIVE_CHECKPOINT_SUBREWARDER_KIND, VERSION } from "contracts/src/libraries/Constants.sol";
-import { HyperdriveRegistry } from "contracts/src/factory/HyperdriveRegistry.sol";
-import { HyperdriveCheckpointRewarder } from "contracts/src/rewarder/HyperdriveCheckpointRewarder.sol";
-import { HyperdriveCheckpointSubrewarder } from "contracts/src/rewarder/HyperdriveCheckpointSubrewarder.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
+import { IHyperdriveCheckpointSubrewarder } from "../../../contracts/src/interfaces/IHyperdriveCheckpointSubrewarder.sol";
+import { IHyperdriveRegistry } from "../../../contracts/src/interfaces/IHyperdriveRegistry.sol";
+import { IHyperdriveGovernedRegistry } from "../../../contracts/src/interfaces/IHyperdriveGovernedRegistry.sol";
+import { HYPERDRIVE_CHECKPOINT_SUBREWARDER_KIND, VERSION } from "../../../contracts/src/libraries/Constants.sol";
+import { HyperdriveRegistry } from "../../../contracts/src/factory/HyperdriveRegistry.sol";
+import { HyperdriveCheckpointRewarder } from "../../../contracts/src/rewarder/HyperdriveCheckpointRewarder.sol";
+import { HyperdriveCheckpointSubrewarder } from "../../../contracts/src/rewarder/HyperdriveCheckpointSubrewarder.sol";
+import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
+import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract HyperdriveCheckpointSubrewarderTest is HyperdriveTest {
     using HyperdriveUtils for *;

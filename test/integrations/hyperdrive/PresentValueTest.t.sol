@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { console2 as console } from "forge-std/console2.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
-import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
+import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
+import { MockHyperdrive } from "../../../contracts/test/MockHyperdrive.sol";
+import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract PresentValueTest is HyperdriveTest {
     using FixedPointMath for *;

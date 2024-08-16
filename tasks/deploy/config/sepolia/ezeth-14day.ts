@@ -1,6 +1,7 @@
 import { Address, parseEther } from "viem";
 import {
     HyperdriveInstanceConfig,
+    TWO_WEEKS,
     getLinkerDetails,
     normalizeFee,
     parseDuration,
@@ -60,7 +61,7 @@ export const SEPOLIA_EZETH_14DAY: HyperdriveInstanceConfig<"EzETH"> = {
             circuitBreakerDelta: parseEther("0.6"),
             minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),
-            positionDuration: parseDuration("14 days"),
+            positionDuration: parseDuration(TWO_WEEKS),
             checkpointDuration: parseDuration("1 day"),
             timeStretch: 0n,
             governance: SEPOLIA_FACTORY_GOVERNANCE_ADDRESS,
@@ -76,7 +77,7 @@ export const SEPOLIA_EZETH_14DAY: HyperdriveInstanceConfig<"EzETH"> = {
             )),
             fees: {
                 curve: parseEther("0.01"),
-                flat: normalizeFee(parseEther("0.0005"), "14 days"),
+                flat: normalizeFee(parseEther("0.0005"), TWO_WEEKS),
                 governanceLP: parseEther("0.15"),
                 governanceZombie: parseEther("0.03"),
             },

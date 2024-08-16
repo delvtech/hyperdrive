@@ -1,29 +1,24 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { IPool } from "aave/interfaces/IPool.sol";
 import { DataTypes } from "aave/protocol/libraries/types/DataTypes.sol";
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
-import { AaveHyperdriveCoreDeployer } from "contracts/src/deployers/aave/AaveHyperdriveCoreDeployer.sol";
-import { AaveHyperdriveDeployerCoordinator } from "contracts/src/deployers/aave/AaveHyperdriveDeployerCoordinator.sol";
-import { AaveTarget0Deployer } from "contracts/src/deployers/aave/AaveTarget0Deployer.sol";
-import { AaveTarget1Deployer } from "contracts/src/deployers/aave/AaveTarget1Deployer.sol";
-import { AaveTarget2Deployer } from "contracts/src/deployers/aave/AaveTarget2Deployer.sol";
-import { AaveTarget3Deployer } from "contracts/src/deployers/aave/AaveTarget3Deployer.sol";
-import { AaveTarget4Deployer } from "contracts/src/deployers/aave/AaveTarget4Deployer.sol";
-import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { IAToken } from "contracts/src/interfaces/IAToken.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { ETH } from "contracts/src/libraries/Constants.sol";
-import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { InstanceTest } from "test/utils/InstanceTest.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { AaveHyperdriveCoreDeployer } from "../../../contracts/src/deployers/aave/AaveHyperdriveCoreDeployer.sol";
+import { AaveHyperdriveDeployerCoordinator } from "../../../contracts/src/deployers/aave/AaveHyperdriveDeployerCoordinator.sol";
+import { AaveTarget0Deployer } from "../../../contracts/src/deployers/aave/AaveTarget0Deployer.sol";
+import { AaveTarget1Deployer } from "../../../contracts/src/deployers/aave/AaveTarget1Deployer.sol";
+import { AaveTarget2Deployer } from "../../../contracts/src/deployers/aave/AaveTarget2Deployer.sol";
+import { AaveTarget3Deployer } from "../../../contracts/src/deployers/aave/AaveTarget3Deployer.sol";
+import { AaveTarget4Deployer } from "../../../contracts/src/deployers/aave/AaveTarget4Deployer.sol";
+import { IAToken } from "../../../contracts/src/interfaces/IAToken.sol";
+import { IAaveHyperdrive } from "../../../contracts/src/interfaces/IAaveHyperdrive.sol";
+import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
+import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { InstanceTest } from "../../utils/InstanceTest.sol";
+import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract AaveHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
@@ -48,7 +43,7 @@ contract AaveHyperdriveTest is InstanceTest {
     address[] internal baseTokenWhaleAccounts = [WETH_WHALE];
     address[] internal vaultSharesTokenWhaleAccounts = [AWETH_WHALE];
 
-    // The configuration for the Instance testing suite.
+    // The configuration for the instance testing suite.
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig({
             name: "Hyperdrive",
@@ -63,15 +58,16 @@ contract AaveHyperdriveTest is InstanceTest {
             enableBaseDeposits: true,
             enableShareDeposits: true,
             enableBaseWithdraws: true,
-            enableShareWithdraws: true
+            enableShareWithdraws: true,
+            baseWithdrawError: new bytes(0)
         });
 
-    /// @dev Instantiates the Instance testing suite with the configuration.
+    /// @dev Instantiates the instance testing suite with the configuration.
     constructor() InstanceTest(__testConfig) {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(20_276_503) {
-        // Invoke the Instance testing suite setup.
+        // Invoke the instance testing suite setup.
         super.setUp();
     }
 
@@ -263,8 +259,8 @@ contract AaveHyperdriveTest is InstanceTest {
             assertEq(bob.balance, traderBalancesBefore.ETHBalance);
 
             // Ensure that the base balances Hyperdrive base balance doesn't
-            // change and that the trader's base balance decreased by the amount
-            // paid.
+            // change and that the trader's base balance increased by the base
+            // proceeds.
             assertApproxEqAbs(
                 WETH.balanceOf(address(hyperdrive)),
                 hyperdriveBalancesBefore.baseBalance,
@@ -329,6 +325,19 @@ contract AaveHyperdriveTest is InstanceTest {
                 2
             );
         }
+    }
+
+    /// Getters ///
+
+    function test_getters() external view {
+        assertEq(
+            address(IAaveHyperdrive(address(hyperdrive)).vault()),
+            address(POOL)
+        );
+        assertEq(
+            hyperdrive.totalShares(),
+            AWETH.balanceOf(address(hyperdrive))
+        );
     }
 
     /// Price Per Share ///

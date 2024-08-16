@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { MorphoBlueTarget2 } from "../../instances/morpho-blue/MorphoBlueTarget2.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { VmSafe } from "forge-std/Vm.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { HyperdriveTest, HyperdriveUtils } from "test/utils/HyperdriveTest.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
+import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
+import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract AddLiquidityTest is HyperdriveTest {
     using FixedPointMath for uint256;

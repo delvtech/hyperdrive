@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
 /// @dev The placeholder address for ETH.
 address constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
 /// @dev The version of the contracts.
-string constant VERSION = "v1.0.15";
+string constant VERSION = "v1.0.17";
 
 /// @dev The number of targets that must be deployed for a full deployment.
 uint256 constant NUM_TARGETS = 5;
@@ -34,6 +34,9 @@ string constant AAVE_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "AaveHyperdriveDeplo
 /// @dev The kind of the ChainlinkHyperdrive deployer coordinator factory.
 string constant CHAINLINK_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "ChainlinkHyperdriveDeployerCoordinator";
 
+/// @dev The kind of the EETHHyperdrive deployer coordinator factory.
+string constant EETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "EETHHyperdriveDeployerCoordinator";
+
 /// @dev The kind of the ERC4626Hyperdrive deployer coordinator factory.
 string constant ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "ERC4626HyperdriveDeployerCoordinator";
 
@@ -57,6 +60,9 @@ string constant AAVE_HYPERDRIVE_KIND = "AaveHyperdrive";
 
 /// @dev The kind of ChainlinkHyperdrive.
 string constant CHAINLINK_HYPERDRIVE_KIND = "ChainlinkHyperdrive";
+
+/// @dev The kind of EETHHyperdrive.
+string constant EETH_HYPERDRIVE_KIND = "EETHHyperdrive";
 
 /// @dev The kind of ERC4626Hyperdrive.
 string constant ERC4626_HYPERDRIVE_KIND = "ERC4626Hyperdrive";

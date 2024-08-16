@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
-import { Hyperdrive } from "contracts/src/external/Hyperdrive.sol";
-import { HyperdriveTarget0 } from "contracts/src/external/HyperdriveTarget0.sol";
-import { HyperdriveTarget1 } from "contracts/src/external/HyperdriveTarget1.sol";
-import { HyperdriveTarget2 } from "contracts/src/external/HyperdriveTarget2.sol";
-import { HyperdriveTarget3 } from "contracts/src/external/HyperdriveTarget3.sol";
-import { HyperdriveTarget4 } from "contracts/src/external/HyperdriveTarget4.sol";
-import { HyperdriveBase } from "contracts/src/internal/HyperdriveBase.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { ETH } from "contracts/src/libraries/Constants.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Hyperdrive } from "../src/external/Hyperdrive.sol";
+import { HyperdriveTarget0 } from "../src/external/HyperdriveTarget0.sol";
+import { HyperdriveTarget1 } from "../src/external/HyperdriveTarget1.sol";
+import { HyperdriveTarget2 } from "../src/external/HyperdriveTarget2.sol";
+import { HyperdriveTarget3 } from "../src/external/HyperdriveTarget3.sol";
+import { HyperdriveTarget4 } from "../src/external/HyperdriveTarget4.sol";
+import { HyperdriveBase } from "../src/internal/HyperdriveBase.sol";
+import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
+import { ETH } from "../src/libraries/Constants.sol";
+import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
+import { ERC20Mintable } from "../test/ERC20Mintable.sol";
+import { HyperdriveUtils } from "../../test/utils/HyperdriveUtils.sol";
 
 interface IMockHyperdrive {
     function accrue(uint256 time, int256 apr) external;

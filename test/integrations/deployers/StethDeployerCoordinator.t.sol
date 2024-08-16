@@ -1,24 +1,24 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
-import { HyperdriveDeployerCoordinator } from "contracts/src/deployers/HyperdriveDeployerCoordinator.sol";
-import { StETHHyperdriveCoreDeployer } from "contracts/src/deployers/steth/StETHHyperdriveCoreDeployer.sol";
-import { StETHTarget0Deployer } from "contracts/src/deployers/steth/StETHTarget0Deployer.sol";
-import { StETHTarget1Deployer } from "contracts/src/deployers/steth/StETHTarget1Deployer.sol";
-import { StETHTarget2Deployer } from "contracts/src/deployers/steth/StETHTarget2Deployer.sol";
-import { StETHTarget3Deployer } from "contracts/src/deployers/steth/StETHTarget3Deployer.sol";
-import { StETHTarget4Deployer } from "contracts/src/deployers/steth/StETHTarget4Deployer.sol";
-import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { MockLido } from "contracts/test/MockLido.sol";
-import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
-import { DeployerCoordinatorTest, MockHyperdriveDeployerCoordinator } from "test/integrations/deployers/DeployerCoordinator.t.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
+import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveDeployerCoordinator } from "../../../contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
+import { HyperdriveDeployerCoordinator } from "../../../contracts/src/deployers/HyperdriveDeployerCoordinator.sol";
+import { StETHHyperdriveCoreDeployer } from "../../../contracts/src/deployers/steth/StETHHyperdriveCoreDeployer.sol";
+import { StETHTarget0Deployer } from "../../../contracts/src/deployers/steth/StETHTarget0Deployer.sol";
+import { StETHTarget1Deployer } from "../../../contracts/src/deployers/steth/StETHTarget1Deployer.sol";
+import { StETHTarget2Deployer } from "../../../contracts/src/deployers/steth/StETHTarget2Deployer.sol";
+import { StETHTarget3Deployer } from "../../../contracts/src/deployers/steth/StETHTarget3Deployer.sol";
+import { StETHTarget4Deployer } from "../../../contracts/src/deployers/steth/StETHTarget4Deployer.sol";
+import { HyperdriveFactory } from "../../../contracts/src/factory/HyperdriveFactory.sol";
+import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
+import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
+import { MockLido } from "../../../contracts/test/MockLido.sol";
+import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
+import { DeployerCoordinatorTest, MockHyperdriveDeployerCoordinator } from "./DeployerCoordinator.t.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract StethDeployerCoordinatorTest is DeployerCoordinatorTest {
     using FixedPointMath for *;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { IMorpho, MarketParams } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { MarketParamsLib } from "morpho-blue/src/libraries/MarketParamsLib.sol";
@@ -65,14 +65,12 @@ abstract contract MorphoBlueBase is HyperdriveBase {
 
     /// @dev Accepts a deposit from the user in base.
     /// @param _baseAmount The base amount to deposit.
-    /// @param _extraData Additional data to pass to the Morpho vault. This
-    ///        should be zero if it is unused.
     /// @return sharesMinted The shares that were minted in the deposit.
     /// @return value The amount of ETH to refund. Since this yield source isn't
     ///         payable, this is always zero.
     function _depositWithBase(
         uint256 _baseAmount,
-        bytes calldata _extraData
+        bytes calldata // unused _extraData
     ) internal override returns (uint256 sharesMinted, uint256 value) {
         // Take custody of the deposit in base.
         ERC20(address(_baseToken)).safeTransferFrom(
@@ -101,7 +99,7 @@ abstract contract MorphoBlueBase is HyperdriveBase {
             _baseAmount,
             0,
             address(this),
-            _extraData
+            new bytes(0)
         );
 
         // NOTE: Since this yield source isn't payable, the value must be zero.
@@ -135,8 +133,8 @@ abstract contract MorphoBlueBase is HyperdriveBase {
                 irm: _irm,
                 lltv: _lltv
             }),
+            _convertToBase(_shareAmount),
             0,
-            _shareAmount,
             address(this),
             _destination
         );

@@ -33,4 +33,15 @@ export const MAINNET_STETH_WHALE =
 export const MAINNET_RETH_WHALE =
     "0x1bee69b7dfffa4e2d53c2a2df135c388ad25dcd2" as Address;
 
+export const MAINNET_USDC_ADDRESS =
+    "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" as Address;
+
+export const MAINNET_WSTETH_ADDRESS =
+    "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0" as Address;
+
+export const SEPOLIA_USDE_ADDRESS =
+    "0x9458CaACa74249AbBE9E964b3Ce155B98EC88EF2" as Address;
+
 export const SIX_MONTHS = "182 days";
+
+export const TWO_WEEKS = "14 days";

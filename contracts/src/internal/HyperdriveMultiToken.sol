@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
@@ -59,11 +59,8 @@ abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
         }
 
         // Call internal transfer for each asset.
-        for (uint256 i = 0; i < ids.length; ) {
+        for (uint256 i = 0; i < ids.length; i++) {
             _transferFrom(ids[i], from, to, values[i], msg.sender);
-            unchecked {
-                ++i;
-            }
         }
     }
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
 import { IERC20 } from "./IERC20.sol";
 import { IHyperdriveCore } from "./IHyperdriveCore.sol";
@@ -194,7 +194,9 @@ interface IHyperdrive is
         ///      settled in base if true and in the yield source shares if false.
         bool asBase;
         /// @dev Additional data that can be used to implement custom logic in
-        ///      implementation contracts.
+        ///      implementation contracts. By convention, the last 32 bytes of
+        ///      extra data are ignored by instances and "passed through" to the
+        ///      event. This can be used to pass metadata through transactions.
         bytes extraData;
     }
 

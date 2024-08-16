@@ -1,5 +1,5 @@
 [profile.default]
-solc_version = '0.8.20'
+solc_version = '0.8.22'
 # The source directory
 src = 'contracts'
 # The artifact directory
@@ -16,9 +16,11 @@ cache_path = 'forge-cache'
 remappings = [
   'aave=lib/aave-v3-core/contracts',
   'forge-std=lib/forge-std/src',
+  'morpho-blue=lib/morpho-blue',
   'nomad=lib/ExcessivelySafeCall/src',
   'openzeppelin=lib/openzeppelin-contracts/contracts',
   'solmate=lib/solmate/src',
+  'etherfi=lib/smart-contracts',
 ]
 # gas limit - max u64
 gas_limit = "18446744073709551615"

@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
-import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
-import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IHyperdriveDeployerCoordinator } from "contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
-import { IHyperdriveFactory } from "contracts/src/interfaces/IHyperdriveFactory.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { ETH, VERSION } from "contracts/src/libraries/Constants.sol";
-import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { ERC20ForwarderFactory } from "../../contracts/src/token/ERC20ForwarderFactory.sol";
+import { HyperdriveFactory } from "../../contracts/src/factory/HyperdriveFactory.sol";
+import { IERC20 } from "../../contracts/src/interfaces/IERC20.sol";
+import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveDeployerCoordinator } from "../../contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
+import { IHyperdriveFactory } from "../../contracts/src/interfaces/IHyperdriveFactory.sol";
+import { AssetId } from "../../contracts/src/libraries/AssetId.sol";
+import { ETH, VERSION } from "../../contracts/src/libraries/Constants.sol";
+import { FixedPointMath, ONE } from "../../contracts/src/libraries/FixedPointMath.sol";
+import { ERC20Mintable } from "../../contracts/test/ERC20Mintable.sol";
+import { HyperdriveTest } from "./HyperdriveTest.sol";
+import { HyperdriveUtils } from "./HyperdriveUtils.sol";
+import { Lib } from "./Lib.sol";
 
 /// @author DELV
 /// @title InstanceTest
@@ -42,6 +42,8 @@ abstract contract InstanceTest is HyperdriveTest {
         bool enableShareDeposits;
         bool enableBaseWithdraws;
         bool enableShareWithdraws;
+        // TODO: Add variants of this for the other "enable" states.
+        bytes baseWithdrawError;
     }
 
     // Fixed rate used to configure market.
@@ -902,11 +904,11 @@ abstract contract InstanceTest is HyperdriveTest {
             address(hyperdrive)
         );
 
-        // Bob closes the long. We expect to fail with an UnsupportedToken error
-        // if withdrawing with base are not supported.
+        // Bob closes the long. We expect to fail if withdrawing with base is
+        // not supported.
         vm.startPrank(bob);
         if (!config.enableBaseWithdraws) {
-            vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+            vm.expectRevert(config.baseWithdrawError);
         }
         uint256 baseProceeds = hyperdrive.closeLong(
             maturityTime,
@@ -1168,7 +1170,7 @@ abstract contract InstanceTest is HyperdriveTest {
             startingVaultSharePrice
         );
         if (!config.enableBaseWithdraws) {
-            vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+            vm.expectRevert(config.baseWithdrawError);
         }
         uint256 baseProceeds = hyperdrive.closeShort(
             maturityTime,

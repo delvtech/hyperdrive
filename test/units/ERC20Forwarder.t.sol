@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { IERC20Forwarder } from "contracts/src/interfaces/IERC20Forwarder.sol";
-import { IMultiToken } from "contracts/src/interfaces/IMultiToken.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { ERC20_FORWARDER_KIND, ERC20_FORWARDER_FACTORY_KIND, VERSION } from "contracts/src/libraries/Constants.sol";
-import { ERC20Forwarder } from "contracts/src/token/ERC20Forwarder.sol";
-import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
-import { MockAssetId } from "contracts/test/MockAssetId.sol";
-import { IMockHyperdrive } from "contracts/test/MockHyperdrive.sol";
-import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { IERC20Forwarder } from "../../contracts/src/interfaces/IERC20Forwarder.sol";
+import { IMultiToken } from "../../contracts/src/interfaces/IMultiToken.sol";
+import { AssetId } from "../../contracts/src/libraries/AssetId.sol";
+import { ERC20_FORWARDER_KIND, ERC20_FORWARDER_FACTORY_KIND, VERSION } from "../../contracts/src/libraries/Constants.sol";
+import { ERC20Forwarder } from "../../contracts/src/token/ERC20Forwarder.sol";
+import { ERC20ForwarderFactory } from "../../contracts/src/token/ERC20ForwarderFactory.sol";
+import { MockAssetId } from "../../contracts/test/MockAssetId.sol";
+import { IMockHyperdrive } from "../../contracts/test/MockHyperdrive.sol";
+import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
+import { Lib } from "../utils/Lib.sol";
 
 contract ERC20ForwarderFactoryTest is HyperdriveTest {
     using Lib for *;

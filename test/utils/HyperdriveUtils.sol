@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { LPMath } from "contracts/src/libraries/LPMath.sol";
-import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
+import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
+import { AssetId } from "../../contracts/src/libraries/AssetId.sol";
+import { FixedPointMath, ONE } from "../../contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "../../contracts/src/libraries/HyperdriveMath.sol";
+import { LPMath } from "../../contracts/src/libraries/LPMath.sol";
+import { YieldSpaceMath } from "../../contracts/src/libraries/YieldSpaceMath.sol";
 
 library HyperdriveUtils {
     using FixedPointMath for uint256;

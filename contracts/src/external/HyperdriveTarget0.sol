@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
@@ -409,22 +409,22 @@ abstract contract HyperdriveTarget0 is
         bytes32[] memory loaded = new bytes32[](_slots.length);
 
         // Iterate on requested loads and then do them.
-        for (uint256 i = 0; i < _slots.length; ) {
+        for (uint256 i = 0; i < _slots.length; i++) {
             uint256 slot = _slots[i];
             bytes32 data;
             assembly ("memory-safe") {
                 data := sload(slot)
             }
             loaded[i] = data;
-            unchecked {
-                ++i;
-            }
         }
 
         _revert(abi.encode(loaded));
     }
 
     /// @notice Convert an amount of vault shares to an amount of base.
+    /// @dev This is a convenience method that allows developers to convert from
+    ///      vault shares to base without knowing the specifics of the
+    ///      integration.
     /// @param _shareAmount The vault shares amount.
     /// @return baseAmount The base amount.
     function convertToBase(
@@ -434,12 +434,24 @@ abstract contract HyperdriveTarget0 is
     }
 
     /// @notice Convert an amount of base to an amount of vault shares.
+    /// @dev This is a convenience method that allows developers to convert from
+    ///      base to vault shares without knowing the specifics of the
+    ///      integration.
     /// @param _baseAmount The base amount.
     /// @return shareAmount The vault shares amount.
     function convertToShares(
         uint256 _baseAmount
     ) external view returns (uint256) {
         _revert(abi.encode(_convertToShares(_baseAmount)));
+    }
+
+    /// @notice Gets the total amount of vault shares held by Hyperdrive.
+    /// @dev This is a convenience method that allows developers to get the
+    ///      total amount of vault shares without knowing the specifics of the
+    ///      integration.
+    /// @return The total amount of vault shares held by Hyperdrive.
+    function totalShares() external view returns (uint256) {
+        _revert(abi.encode(_totalShares()));
     }
 
     /// @notice Gets an account's balance of a sub-token.

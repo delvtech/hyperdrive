@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
-import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { LPMath } from "contracts/src/libraries/LPMath.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
-import { MockLPMath } from "contracts/test/MockLPMath.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
-import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { LPMath } from "../../../contracts/src/libraries/LPMath.sol";
+import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
+import { YieldSpaceMath } from "../../../contracts/src/libraries/YieldSpaceMath.sol";
+import { MockLPMath } from "../../../contracts/test/MockLPMath.sol";
+import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
+import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract LPMathTest is HyperdriveTest {
     using FixedPointMath for uint256;

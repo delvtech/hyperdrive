@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 # Ensure that the network variable is defined
 if [[ -z "${NETWORK}" ]]; then
 	echo 'Error: $NETWORK must be set'
@@ -20,5 +22,9 @@ if [[ "${NETWORK}" != "anvil" && "${NETWORK}" != "hardhat" && "${NETWORK}" != "m
 	fi
 fi
 
-npx hardhat deploy:hyperdrive --show-stack-traces --network ${NETWORK} --config hardhat.config.${NETWORK}.ts
-npx hardhat deploy:verify --show-stack-traces --network ${NETWORK} --config hardhat.config.${NETWORK}.ts
+config_filename="hardhat.config.${NETWORK}.ts"
+if [[ "${NETWORK}" == "hardhat" ]]; then
+	config_filename="hardhat.config.ts"
+fi
+npx hardhat deploy:hyperdrive --show-stack-traces --network ${NETWORK} --config "$config_filename"
+npx hardhat deploy:verify --show-stack-traces --network ${NETWORK} --config "$config_filename"

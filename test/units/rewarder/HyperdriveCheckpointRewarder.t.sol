@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { VmSafe } from "forge-std/Vm.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IHyperdriveCheckpointRewarder } from "contracts/src/interfaces/IHyperdriveCheckpointRewarder.sol";
-import { IHyperdriveCheckpointSubrewarder } from "contracts/src/interfaces/IHyperdriveCheckpointSubrewarder.sol";
-import { HYPERDRIVE_CHECKPOINT_REWARDER_KIND, VERSION } from "contracts/src/libraries/Constants.sol";
-import { HyperdriveCheckpointRewarder } from "contracts/src/rewarder/HyperdriveCheckpointRewarder.sol";
-import { HyperdriveCheckpointSubrewarder } from "contracts/src/rewarder/HyperdriveCheckpointSubrewarder.sol";
-import { BaseTest } from "test/utils/BaseTest.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
+import { IHyperdriveCheckpointRewarder } from "../../../contracts/src/interfaces/IHyperdriveCheckpointRewarder.sol";
+import { IHyperdriveCheckpointSubrewarder } from "../../../contracts/src/interfaces/IHyperdriveCheckpointSubrewarder.sol";
+import { HYPERDRIVE_CHECKPOINT_REWARDER_KIND, VERSION } from "../../../contracts/src/libraries/Constants.sol";
+import { HyperdriveCheckpointRewarder } from "../../../contracts/src/rewarder/HyperdriveCheckpointRewarder.sol";
+import { HyperdriveCheckpointSubrewarder } from "../../../contracts/src/rewarder/HyperdriveCheckpointSubrewarder.sol";
+import { BaseTest } from "../../utils/BaseTest.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract MockHyperdriveCheckpointSubrewarder {
     IERC20 public rewardToken;

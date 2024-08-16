@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 
 contract AdminTest is HyperdriveTest {
     function test_pause_failure_unauthorized() external {

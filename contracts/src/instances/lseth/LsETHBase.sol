@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { IRiverV1 } from "../../interfaces/IRiverV1.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { LsETHConversions } from "./LsETHConversions.sol";
 

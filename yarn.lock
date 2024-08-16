@@ -959,10 +959,10 @@
     table "^6.8.0"
     undici "^5.14.0"
 
-"@nomicfoundation/hardhat-viem@^2.0.1":
-  version "2.0.1"
-  resolved "https://registry.yarnpkg.com/@nomicfoundation/hardhat-viem/-/hardhat-viem-2.0.1.tgz#8942cd68f2d619b9ccd087b2e5d28de349535285"
-  integrity sha512-C7mSg2MiJekWY2xZYYOdbGmA1+hRKIHoSsh/SeY97mPO6nTha7OEeeg+seecxTekLJW1kqryjCdU8ul+L29v3w==
+"@nomicfoundation/hardhat-viem@^2.0.3":
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/@nomicfoundation/hardhat-viem/-/hardhat-viem-2.0.3.tgz#db13066d2412fcaee7886a4cf6fe266522ab66fe"
+  integrity sha512-y2eYaHtpshiGrhU2L5My4zYrj/vxxRdCIqbTsg9YP7AjKWhJGvKPkVRYaPTosW68nYlNtkns/+Eb25aXACHd9Q==
   dependencies:
     abitype "^0.9.8"
     lodash.memoize "^4.1.2"
@@ -5039,10 +5039,10 @@ solhint-plugin-prettier@^0.1.0:
     "@prettier/sync" "^0.3.0"
     prettier-linter-helpers "^1.0.0"
 
-solhint@^4.5.2:
-  version "4.5.2"
-  resolved "https://registry.yarnpkg.com/solhint/-/solhint-4.5.2.tgz#a3fa101366dd1fb37009d24a9f16c99a4a745b5d"
-  integrity sha512-o7MNYS5QPgE6l+PTGOTAUtCzo0ZLnffQsv586hntSHBe2JbSDfkoxfhAOcjZjN4OesTgaX4UEEjCjH9y/4BP5w==
+solhint@^5.0.3:
+  version "5.0.3"
+  resolved "https://registry.yarnpkg.com/solhint/-/solhint-5.0.3.tgz#b57f6d2534fe09a60f9db1b92e834363edd1cbde"
+  integrity sha512-OLCH6qm/mZTCpplTXzXTJGId1zrtNuDYP5c2e6snIv/hdRVxPfBBz/bAlL91bY/Accavkayp2Zp2BaDSrLVXTQ==
   dependencies:
     "@solidity-parser/parser" "^0.18.0"
     ajv "^6.12.6"
