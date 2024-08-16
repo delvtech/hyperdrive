@@ -40,7 +40,7 @@ contract ChainlinkTarget0 is HyperdriveTarget0, ChainlinkBase {
     ///         Chainlink contract that provides the vault share price.
     /// @return aggregator The Chainlink aggregator.
     function aggregator() external view returns (IChainlinkAggregatorV3) {
-        return _aggregator;
+        _revert(abi.encode(_aggregator));
     }
 
     /// @notice Returns the MultiToken's decimals.
