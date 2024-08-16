@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import { ChainlinkHyperdriveCoreDeployer } from "contracts/src/deployers/chainlink/ChainlinkHyperdriveCoreDeployer.sol";
@@ -65,7 +65,10 @@ contract ChainlinkHyperdriveTest is InstanceTest {
             enableBaseDeposits: false,
             enableShareDeposits: true,
             enableBaseWithdraws: false,
-            enableShareWithdraws: true
+            enableShareWithdraws: true,
+            baseWithdrawError: abi.encodeWithSelector(
+                IHyperdrive.UnsupportedToken.selector
+            )
         });
 
     /// @dev Instantiates the Instance testing suite with the configuration.

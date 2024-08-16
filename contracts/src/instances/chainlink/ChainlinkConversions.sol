@@ -1,21 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { IChainlinkAggregatorV3 } from "../../interfaces/IChainlinkAggregatorV3.sol";
 import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
 import { SafeCast } from "../../libraries/SafeCast.sol";
 
-// FIXME: This is the contract that will have to deal with things like uptime
-//        and when the answer is from.
-//
-// FIXME: How will we handle oracle outages?
-//
-// FIXME: How will we handle deprecation or data feed shutdown?
-//
 /// @author DELV
 /// @title ChainlinkConversions
 /// @notice The conversion logic for the Chainlink integration.
-/// @dev FIXME: It would be good to explain the limitations of these conversions.
+/// @dev This conversion library pulls the vault share price from a Chainlink
+///      aggregator. It's possible for Chainlink aggregators to have downtime or
+///      to be deprecated entirely. Our approach to this problem is to always
+///      use the latest round data (regardless of how current it is) since
+///      reverting will compromise the protocol's liveness and will prevent
+///      users from closing their existing positions. These pools should be
+///      monitored to ensure that the underlying oracle continues to be
+///      maintained, and the pool should be paused if the oracle has significant
+///      downtime or is deprecated.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
@@ -47,14 +48,16 @@ library ChainlinkConversions {
         return _baseAmount.divDown(getVaultSharePrice(_aggregator));
     }
 
-    // FIXME: Natspec
-    //
-    // FIXME: Handle uptime if necessary.
+    /// @dev Gets the vault share price from the Chainlink aggregator. We don't
+    ///      revert if the answer isn't current to avoid liveness problems with
+    ///      checkpointing. Long periods of downtime will be handled by pausing
+    ///      the pool.
+    /// @param _aggregator The Chainlink aggregator that provides the vault
+    ///        share price.
+    /// @return The vault share price.
     function getVaultSharePrice(
         IChainlinkAggregatorV3 _aggregator
     ) internal view returns (uint256) {
-        // FIXME: Do we need to check last updated? If we don't, then outages
-        // will be handled gracefully.
         (, int256 answer, , , ) = _aggregator.latestRoundData();
         return answer.toUint256();
     }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { ChainlinkTarget2 } from "../../instances/chainlink/ChainlinkTarget2.sol";
 import { IChainlinkAggregatorV3 } from "../../interfaces/IChainlinkAggregatorV3.sol";

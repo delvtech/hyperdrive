@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.22;
 
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
 import { IChainlinkAggregatorV3 } from "../../interfaces/IChainlinkAggregatorV3.sol";
@@ -49,6 +49,15 @@ import { ChainlinkBase } from "./ChainlinkBase.sol";
 /// @author DELV
 /// @title ChainlinkHyperdrive
 /// @notice A Hyperdrive instance that uses a Chainlink vault as the yield source.
+/// @dev This instance pulls the vault share price from a Chainlink aggregator.
+///      It's possible for Chainlink aggregators to have downtime or to be
+///      deprecated entirely. Our approach to this problem is to always use the
+///      latest round data (regardless of how current it is) since reverting
+///      will compromise the protocol's liveness and will prevent users from
+///      closing their existing positions. These pools should be monitored to
+///      ensure that the underlying oracle continues to be maintained, and the
+///      pool should be paused if the oracle has significant downtime or is
+///      deprecated.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
