@@ -6,6 +6,7 @@ import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPoint
 import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
+import "forge-std/console2.sol";
 
 contract PriceDiscoveryTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -498,6 +499,8 @@ contract PriceDiscoveryTest is HyperdriveTest {
         config.circuitBreakerDelta = type(uint128).max;
         config.minimumShareReserves = minimumShareReserves;
         deploy(alice, config);
+
+        console2.log("config.circuitBreakerDelta", config.circuitBreakerDelta);
 
         // Initialize the pool and calculate the low and high rates after
         // initialization.
