@@ -262,47 +262,6 @@ contract ChainlinkHyperdriveTest is InstanceTest {
         assertEq(hyperdrive.totalShares(), totalShares);
     }
 
-    /// Price Per Share ///
-
-    // FIXME: Is there a way to properly test this? There isn't a conversion
-    // that is happening.
-    //
-    // function test__pricePerVaultShare(uint256 basePaid) external {
-    //     // Ensure that the share price is the expected value.
-    //     (uint256 totalSupplyAssets, uint256 totalSupplyShares, , ) = MORPHO
-    //         .expectedMarketBalances(
-    //             MarketParams({
-    //                 loanToken: LOAN_TOKEN,
-    //                 collateralToken: COLLATERAL_TOKEN,
-    //                 oracle: ORACLE,
-    //                 irm: IRM,
-    //                 lltv: LLTV
-    //             })
-    //         );
-    //     uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
-    //     assertEq(vaultSharePrice, totalSupplyAssets.divDown(totalSupplyShares));
-
-    //     // Ensure that the share price accurately predicts the amount of shares
-    //     // that will be minted for depositing a given amount of shares. This will
-    //     // be an approximation.
-    //     basePaid = basePaid.normalizeToRange(
-    //         2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-    //         hyperdrive.calculateMaxLong()
-    //     );
-    //     (, uint256 hyperdriveSharesBefore) = getTokenBalances(
-    //         address(hyperdrive)
-    //     );
-    //     openLong(bob, basePaid);
-    //     (, uint256 hyperdriveSharesAfter) = getTokenBalances(
-    //         address(hyperdrive)
-    //     );
-    //     assertApproxEqAbs(
-    //         hyperdriveSharesAfter,
-    //         hyperdriveSharesBefore + basePaid.divDown(vaultSharePrice),
-    //         __testConfig.shareTolerance
-    //     );
-    // }
-
     /// LP ///
 
     function test_round_trip_lp_instantaneous(uint256 _contribution) external {
