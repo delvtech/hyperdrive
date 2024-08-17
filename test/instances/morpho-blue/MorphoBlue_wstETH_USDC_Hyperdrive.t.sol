@@ -28,7 +28,7 @@ import { InstanceTest } from "../../utils/InstanceTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
+contract MorphoBlue_wstETH_USDC_HyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
     using MarketParamsLib for MarketParams;
@@ -86,7 +86,7 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
             // converting between base and vault shares. We included more
             // assertions than normal to the round trip tests to verify that
             // the calculations satisfy our expectations of accuracy.
-            shareTolerance: 1e8,
+            shareTolerance: 1e3,
             minimumShareReserves: 1e6,
             minimumTransactionAmount: 1e6,
             positionDuration: POSITION_DURATION,
@@ -316,7 +316,7 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
         assertApproxEqAbs(
             totalSupplyShares,
             totalSharesBefore - hyperdrive.convertToShares(baseProceeds),
-            1e6
+            10
         );
 
         // Ensure that the ETH balances didn't change.
@@ -512,7 +512,7 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
         assertApproxEqAbs(
             baseProceeds,
             withdrawalShares.mulDown(lpSharePrice),
-            1e3
+            100
         );
     }
 
@@ -751,7 +751,7 @@ contract WSTETH_USDC_MorphoBlueHyperdriveTest is InstanceTest {
         assertApproxEqAbs(
             baseProceeds,
             _shortAmount.mulDown(_variableRate),
-            1e10
+            10
         );
 
         // Ensure that the withdrawal was processed as expected.

@@ -149,26 +149,42 @@ abstract contract InstanceTest is HyperdriveTest {
         deployerCoordinator = deployCoordinator(address(factory));
         factory.addDeployerCoordinator(deployerCoordinator);
 
-        // Deploy all Hyperdrive contracts using deployer coordinator contract.
+        // If share deposits are enabled and the vault shares token isn't a
+        // rebasing token, the contribution is the minimum of a tenth of Alice's
+        // vault shares balance and 1000 vault shares in units of vault shares.
         uint256 contribution;
         if (config.enableShareDeposits && !config.isRebasing) {
             contribution = (poolConfig.vaultSharesToken.balanceOf(alice) / 10)
                 .min(1_000 * 10 ** config.decimals);
-        } else if (config.enableShareDeposits) {
+        }
+        // If share deposits are enabled and the vault shares token is a
+        // rebasing token, the contribution is the minimum of a tenth of Alice's
+        // vault shares balance and 1000 vault shares in units of base.
+        else if (config.enableShareDeposits) {
             contribution = convertToShares(
                 (poolConfig.vaultSharesToken.balanceOf(alice) / 10).min(
                     1_000 * 10 ** config.decimals
                 )
             );
-        } else if (!isBaseETH) {
+        }
+        // If share deposits are disabled and the base token isn't ETH, the
+        // contribution is the minimum of a tenth of Alice's base balance and
+        // 1000 base.
+        else if (!isBaseETH) {
             contribution = (poolConfig.baseToken.balanceOf(alice) / 10).min(
                 1_000 * 10 ** config.decimals
             );
-        } else {
+        }
+        // If share deposits are disabled and the base token is ETH, the
+        // contribution is the minimum of a tenth of Alice's ETH balance and
+        // 1000 base.
+        else {
             contribution = (alice.balance / 10).min(
                 1_000 * 10 ** config.decimals
             );
         }
+
+        // Deploy all Hyperdrive contracts using deployer coordinator contract.
         deployHyperdrive(
             DEFAULT_DEPLOYMENT_ID, // Deployment Id
             DEFAULT_DEPLOYMENT_SALT, // Deployment Salt
@@ -265,12 +281,21 @@ abstract contract InstanceTest is HyperdriveTest {
             );
         }
 
-        // Alice gives approval to the deployer coordinator to fund the market.
+        // If base is being used and the base token isn't ETH, we set an
+        // approval on the deployer coordinator with the contribution in base.
         if (asBase && !isBaseETH) {
             config.baseToken.approve(deployerCoordinator, contribution);
-        } else if (!asBase && !config.isRebasing) {
+        }
+        // If vault shares is being used and the vault shares token isn't a
+        // rebasing token, we set an approval on the deployer coordinator
+        // with the contribution in vault shares.
+        else if (!asBase && !config.isRebasing) {
             config.vaultSharesToken.approve(deployerCoordinator, contribution);
-        } else if (!asBase) {
+        }
+        // If vault shares is being used and the vault shares token is a
+        // rebasing token, we set an approval on the deployer coordinator
+        // with the contribution in base.
+        else if (!asBase) {
             config.vaultSharesToken.approve(
                 deployerCoordinator,
                 convertToBase(contribution)
@@ -521,13 +546,17 @@ abstract contract InstanceTest is HyperdriveTest {
             return;
         }
 
-        // Contribution in terms of base.
+        // If the base asset isn't ETH, the contribution is the minimum of a
+        // tenth of Alice's balance and 1000 base tokens.
         uint256 contribution;
         if (!isBaseETH) {
             contribution = (poolConfig.baseToken.balanceOf(alice) / 10).min(
                 1_000 * 10 ** config.decimals
             );
-        } else {
+        }
+        // Otherwise, if the base asset is eth, the contribution is the minimum
+        // of a tenth of Alice's balance and 1000 base tokens.
+        else {
             contribution = (alice.balance / 10).min(
                 1_000 * 10 ** config.decimals
             );

@@ -685,6 +685,7 @@ contract MorphoBlue_USDe_DAI_HyperdriveTest is InstanceTest {
 
         // Bob should receive approximately as much base as he paid since no
         // time as passed and the fees are zero.
+        assertLt(baseProceeds, basePaid + 1000);
         assertApproxEqAbs(baseProceeds, basePaid, 1e9);
 
         // Ensure that the withdrawal was processed as expected.
