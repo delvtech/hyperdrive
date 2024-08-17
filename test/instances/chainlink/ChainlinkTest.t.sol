@@ -640,7 +640,7 @@ contract ChainlinkHyperdriveTest is InstanceTest {
         assertApproxEqAbs(
             baseProceeds,
             _shortAmount.mulDown(_variableRate),
-            1e9
+            1e4
         );
 
         // Ensure that the withdrawal was processed as expected.

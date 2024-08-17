@@ -26,8 +26,6 @@ library SafeCast {
         y = uint128(x);
     }
 
-    // FIXME: Add unit tests for this.
-    //
     /// @notice This function safely casts an int256 to an uint256.
     /// @param x The int256 to cast to uint256.
     /// @return y The uint256 casted from x.
