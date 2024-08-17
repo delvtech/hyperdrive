@@ -52,12 +52,14 @@ contract EETHHyperdriveTest is InstanceTest {
         InstanceTestConfig({
             name: "Hyperdrive",
             kind: "EETHHyperdrive",
+            decimals: 18,
             baseTokenWhaleAccounts: new address[](0),
             vaultSharesTokenWhaleAccounts: EETHTokenWhaleAccounts,
             baseToken: IERC20(ETH),
             vaultSharesToken: IERC20(address(EETH)),
             shareTolerance: 1e5,
-            minTransactionAmount: 1e15,
+            minimumShareReserves: 1e15,
+            minimumTransactionAmount: 1e15,
             positionDuration: POSITION_DURATION,
             enableBaseDeposits: true,
             enableShareDeposits: true,
@@ -65,7 +67,14 @@ contract EETHHyperdriveTest is InstanceTest {
             enableShareWithdraws: true,
             baseWithdrawError: abi.encodeWithSelector(
                 IHyperdrive.UnsupportedToken.selector
-            )
+            ),
+            isRebasing: true,
+            fees: IHyperdrive.Fees({
+                curve: 0,
+                flat: 0,
+                governanceLP: 0,
+                governanceZombie: 0
+            })
         });
 
     /// @dev Instantiates the instance testing suite with the configuration.
@@ -195,12 +204,12 @@ contract EETHHyperdriveTest is InstanceTest {
             assertApproxEqAbs(
                 EETH.balanceOf(address(hyperdrive)),
                 hyperdriveBalancesBefore.baseBalance + amountPaid,
-                2
+                3
             );
             assertApproxEqAbs(
                 EETH.balanceOf(trader),
                 traderBalancesBefore.baseBalance - amountPaid,
-                2
+                3
             );
 
             // Ensure that the EETH shares were updated correctly.
@@ -209,12 +218,12 @@ contract EETHHyperdriveTest is InstanceTest {
             assertApproxEqAbs(
                 EETH.shares(address(hyperdrive)),
                 hyperdriveBalancesBefore.sharesBalance + expectedShares,
-                2
+                3
             );
             assertApproxEqAbs(
                 EETH.shares(trader),
                 traderBalancesBefore.sharesBalance - expectedShares,
-                2
+                3
             );
         }
     }

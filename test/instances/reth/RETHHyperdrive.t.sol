@@ -44,22 +44,31 @@ contract RETHHyperdriveTest is InstanceTest {
 
     // The configuration for the Instance testing suite.
     InstanceTestConfig internal __testConfig =
-        InstanceTestConfig(
-            "Hyperdrive",
-            "RETHHyperdrive",
-            new address[](0),
-            whaleAccounts,
-            IERC20(ETH),
-            IERC20(rocketTokenRETH),
-            1e5,
-            1e15,
-            POSITION_DURATION,
-            false,
-            true,
-            true,
-            true,
-            new bytes(0)
-        );
+        InstanceTestConfig({
+            name: "Hyperdrive",
+            kind: "RETHHyperdrive",
+            decimals: 18,
+            baseTokenWhaleAccounts: new address[](0),
+            vaultSharesTokenWhaleAccounts: whaleAccounts,
+            baseToken: IERC20(ETH),
+            vaultSharesToken: IERC20(rocketTokenRETH),
+            shareTolerance: 1e5,
+            minimumShareReserves: 1e15,
+            minimumTransactionAmount: 1e15,
+            positionDuration: POSITION_DURATION,
+            enableBaseDeposits: false,
+            enableShareDeposits: true,
+            enableBaseWithdraws: true,
+            enableShareWithdraws: true,
+            baseWithdrawError: new bytes(0),
+            isRebasing: false,
+            fees: IHyperdrive.Fees({
+                curve: 0,
+                flat: 0,
+                governanceLP: 0,
+                governanceZombie: 0
+            })
+        });
 
     /// @dev Instantiates the instance testing suite with the configuration.
     constructor() InstanceTest(__testConfig) {}

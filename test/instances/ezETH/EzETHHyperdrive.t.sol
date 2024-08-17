@@ -60,22 +60,33 @@ contract EzETHHyperdriveTest is InstanceTest {
 
     // The configuration for the instance testing suite.
     InstanceTestConfig internal __testConfig =
-        InstanceTestConfig(
-            "Hyperdrive",
-            "EzETHHyperdrive",
-            new address[](0),
-            whaleAccounts,
-            IERC20(ETH),
-            IERC20(EZETH),
-            1e6,
-            1e15,
-            POSITION_DURATION_15_DAYS,
-            false,
-            true,
-            false,
-            true,
-            abi.encodeWithSelector(IHyperdrive.UnsupportedToken.selector)
-        );
+        InstanceTestConfig({
+            name: "Hyperdrive",
+            kind: "EzETHHyperdrive",
+            decimals: 18,
+            baseTokenWhaleAccounts: new address[](0),
+            vaultSharesTokenWhaleAccounts: whaleAccounts,
+            baseToken: IERC20(ETH),
+            vaultSharesToken: IERC20(EZETH),
+            shareTolerance: 1e6,
+            minimumShareReserves: 1e15,
+            minimumTransactionAmount: 1e15,
+            positionDuration: POSITION_DURATION_15_DAYS,
+            enableBaseDeposits: false,
+            enableShareDeposits: true,
+            enableBaseWithdraws: false,
+            enableShareWithdraws: true,
+            baseWithdrawError: abi.encodeWithSelector(
+                IHyperdrive.UnsupportedToken.selector
+            ),
+            isRebasing: false,
+            fees: IHyperdrive.Fees({
+                curve: 0,
+                flat: 0,
+                governanceLP: 0,
+                governanceZombie: 0
+            })
+        });
 
     /// @dev Instantiates the instance testing suite with the configuration.
     constructor() InstanceTest(__testConfig) {}
