@@ -68,6 +68,7 @@ contract MorphoBlue_USDe_DAI_HyperdriveTest is InstanceTest {
         InstanceTestConfig({
             name: "Morpho Blue USDe DAI Hyperdrive",
             kind: "MorphoBlueHyperdrive",
+            decimals: 18,
             baseTokenWhaleAccounts: baseTokenWhaleAccounts,
             vaultSharesTokenWhaleAccounts: new address[](0),
             baseToken: IERC20(LOAN_TOKEN),
@@ -79,7 +80,8 @@ contract MorphoBlue_USDe_DAI_HyperdriveTest is InstanceTest {
             // assertions than normal to the round trip tests to verify that
             // the calculations satisfy our expectations of accuracy.
             shareTolerance: 1e15,
-            minTransactionAmount: 1e15,
+            minimumShareReserves: 1e15,
+            minimumTransactionAmount: 1e15,
             positionDuration: POSITION_DURATION,
             enableBaseDeposits: true,
             enableShareDeposits: false,
@@ -87,7 +89,14 @@ contract MorphoBlue_USDe_DAI_HyperdriveTest is InstanceTest {
             enableShareWithdraws: false,
             baseWithdrawError: abi.encodeWithSelector(
                 IHyperdrive.UnsupportedToken.selector
-            )
+            ),
+            isRebasing: false,
+            fees: IHyperdrive.Fees({
+                curve: 0,
+                flat: 0,
+                governanceLP: 0,
+                governanceZombie: 0
+            })
         });
 
     /// @dev Instantiates the instance testing suite with the configuration.
@@ -676,6 +685,7 @@ contract MorphoBlue_USDe_DAI_HyperdriveTest is InstanceTest {
 
         // Bob should receive approximately as much base as he paid since no
         // time as passed and the fees are zero.
+        assertLt(baseProceeds, basePaid + 1000);
         assertApproxEqAbs(baseProceeds, basePaid, 1e9);
 
         // Ensure that the withdrawal was processed as expected.

@@ -43,27 +43,36 @@ contract AaveHyperdriveTest is InstanceTest {
     address[] internal baseTokenWhaleAccounts = [WETH_WHALE];
     address[] internal vaultSharesTokenWhaleAccounts = [AWETH_WHALE];
 
-    // The configuration for the instance testing suite.
-    InstanceTestConfig internal __testConfig =
-        InstanceTestConfig({
-            name: "Hyperdrive",
-            kind: "AaveHyperdrive",
-            baseTokenWhaleAccounts: baseTokenWhaleAccounts,
-            vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
-            baseToken: WETH,
-            vaultSharesToken: IERC20(address(AWETH)),
-            shareTolerance: 1e3,
-            minTransactionAmount: 1e15,
-            positionDuration: POSITION_DURATION,
-            enableBaseDeposits: true,
-            enableShareDeposits: true,
-            enableBaseWithdraws: true,
-            enableShareWithdraws: true,
-            baseWithdrawError: new bytes(0)
-        });
-
     /// @dev Instantiates the instance testing suite with the configuration.
-    constructor() InstanceTest(__testConfig) {}
+    constructor()
+        InstanceTest(
+            InstanceTestConfig({
+                name: "Hyperdrive",
+                kind: "AaveHyperdrive",
+                decimals: 18,
+                baseTokenWhaleAccounts: baseTokenWhaleAccounts,
+                vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
+                baseToken: WETH,
+                vaultSharesToken: IERC20(address(AWETH)),
+                shareTolerance: 1e3,
+                minimumShareReserves: 1e15,
+                minimumTransactionAmount: 1e15,
+                positionDuration: POSITION_DURATION,
+                enableBaseDeposits: true,
+                enableShareDeposits: true,
+                enableBaseWithdraws: true,
+                enableShareWithdraws: true,
+                baseWithdrawError: new bytes(0),
+                isRebasing: true,
+                fees: IHyperdrive.Fees({
+                    curve: 0,
+                    flat: 0,
+                    governanceLP: 0,
+                    governanceZombie: 0
+                })
+            })
+        )
+    {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(20_276_503) {
@@ -110,7 +119,7 @@ contract AaveHyperdriveTest is InstanceTest {
         return
             address(
                 new AaveHyperdriveDeployerCoordinator(
-                    string.concat(__testConfig.name, "DeployerCoordinator"),
+                    string.concat(config.name, "DeployerCoordinator"),
                     _factory,
                     address(new AaveHyperdriveCoreDeployer()),
                     address(new AaveTarget0Deployer()),

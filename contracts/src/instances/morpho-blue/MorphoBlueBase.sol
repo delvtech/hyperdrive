@@ -125,19 +125,22 @@ abstract contract MorphoBlueBase is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override returns (uint256 amountWithdrawn) {
-        (amountWithdrawn, ) = _vault.withdraw(
-            MarketParams({
-                loanToken: address(_baseToken),
-                collateralToken: _collateralToken,
-                oracle: _oracle,
-                irm: _irm,
-                lltv: _lltv
-            }),
-            _convertToBase(_shareAmount),
-            0,
-            address(this),
-            _destination
-        );
+        uint256 baseAmount = _convertToBase(_shareAmount);
+        if (baseAmount > 0) {
+            (amountWithdrawn, ) = _vault.withdraw(
+                MarketParams({
+                    loanToken: address(_baseToken),
+                    collateralToken: _collateralToken,
+                    oracle: _oracle,
+                    irm: _irm,
+                    lltv: _lltv
+                }),
+                _convertToBase(_shareAmount),
+                0,
+                address(this),
+                _destination
+            );
+        }
 
         return amountWithdrawn;
     }
