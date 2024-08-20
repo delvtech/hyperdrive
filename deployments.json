@@ -836,6 +836,36 @@
             "contract": "MorphoBlueHyperdrive",
             "address": "0xd41225855A5c5Ba1C672CcF4d72D1822a5686d30",
             "timestamp": "2024-08-08T15:43:26.033Z"
+        },
+        "ElementDAO 182 Day Morpho Blue USDe/DAI Hyperdrive_MorphoBlueTarget0": {
+            "contract": "MorphoBlueTarget0",
+            "address": "0x230c708944e0ce1fc470265628d3c64ECf7581F9",
+            "timestamp": "2024-08-14T19:30:51.687Z"
+        },
+        "ElementDAO 182 Day Morpho Blue USDe/DAI Hyperdrive_MorphoBlueTarget1": {
+            "contract": "MorphoBlueTarget1",
+            "address": "0x87a9305Ad62e72Ea7504B0B0029Ba832A61D4DF6",
+            "timestamp": "2024-08-14T19:30:03.423Z"
+        },
+        "ElementDAO 182 Day Morpho Blue USDe/DAI Hyperdrive_MorphoBlueTarget2": {
+            "contract": "MorphoBlueTarget2",
+            "address": "0xbb170C562d46ce71dAc431c4849cbE9d6cebf326",
+            "timestamp": "2024-08-14T19:30:16.496Z"
+        },
+        "ElementDAO 182 Day Morpho Blue USDe/DAI Hyperdrive_MorphoBlueTarget3": {
+            "contract": "MorphoBlueTarget3",
+            "address": "0x67a48DaF2F6E183a992647D685298A3a144af8CE",
+            "timestamp": "2024-08-14T19:30:29.489Z"
+        },
+        "ElementDAO 182 Day Morpho Blue USDe/DAI Hyperdrive_MorphoBlueTarget4": {
+            "contract": "MorphoBlueTarget4",
+            "address": "0xAA7fE6c0ec2f339ab829622926A8B61eA635662D",
+            "timestamp": "2024-08-14T19:30:38.431Z"
+        },
+        "ElementDAO 182 Day Morpho Blue USDe/DAI Hyperdrive": {
+            "contract": "MorphoBlueHyperdrive",
+            "address": "0xA29A771683b4857bBd16e1e4f27D5B6bfF53209B",
+            "timestamp": "2024-08-14T19:30:51.584Z"
         }
     }
 }
