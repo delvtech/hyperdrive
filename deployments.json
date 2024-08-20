@@ -534,6 +534,36 @@
             "contract": "ERC20Mintable",
             "address": "0x56a50847ba69e9efad57eadf6994cdfbae3d2180",
             "timestamp": "2024-08-20T16:33:05.090Z"
+        },
+        "ElementDAO 14 Day wstETH/USDC Morpho Blue Hyperdrive_MorphoBlueTarget0": {
+            "contract": "MorphoBlueTarget0",
+            "address": "0x2645eC5A9C558f8D4A0057Fbb046fAA54EB109e8",
+            "timestamp": "2024-08-20T17:05:17.308Z"
+        },
+        "ElementDAO 14 Day wstETH/USDC Morpho Blue Hyperdrive_MorphoBlueTarget1": {
+            "contract": "MorphoBlueTarget1",
+            "address": "0x680665653A07Aa34eB7aEa3D14b665ec4F47138B",
+            "timestamp": "2024-08-20T17:04:17.038Z"
+        },
+        "ElementDAO 14 Day wstETH/USDC Morpho Blue Hyperdrive_MorphoBlueTarget2": {
+            "contract": "MorphoBlueTarget2",
+            "address": "0x096F80520b4f032E2A76109b2336C436E3E7e782",
+            "timestamp": "2024-08-20T17:04:26.014Z"
+        },
+        "ElementDAO 14 Day wstETH/USDC Morpho Blue Hyperdrive_MorphoBlueTarget3": {
+            "contract": "MorphoBlueTarget3",
+            "address": "0x5A9C9362F5406cC97F5aafd9eD86942f93414896",
+            "timestamp": "2024-08-20T17:04:38.946Z"
+        },
+        "ElementDAO 14 Day wstETH/USDC Morpho Blue Hyperdrive_MorphoBlueTarget4": {
+            "contract": "MorphoBlueTarget4",
+            "address": "0xcC3f9D44FcB1D09EB34736b9622e1ECB49C7dB75",
+            "timestamp": "2024-08-20T17:05:04.269Z"
+        },
+        "ElementDAO 14 Day wstETH/USDC Morpho Blue Hyperdrive": {
+            "contract": "MorphoBlueHyperdrive",
+            "address": "0x00583284597c48A5de4753A2374076C289B93505",
+            "timestamp": "2024-08-20T17:05:17.220Z"
         }
     },
     "mainnet": {

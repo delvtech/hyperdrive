@@ -15,7 +15,7 @@ import {
 import { SEPOLIA_MORPHO_BLUE_COORDINATOR_NAME } from "./morpho-blue-coordinator";
 
 export const SEPOLIA_MORPHO_BLUE_WSTETH_USDC_14DAY_NAME =
-    "ElementDAO 14 Day Morpho Blue wstETH/USDC Hyperdrive";
+    "ElementDAO 14 Day wstETH/USDC Morpho Blue Hyperdrive";
 
 const CONTRIBUTION = 100_000_000n;
 
@@ -71,7 +71,7 @@ export const SEPOLIA_MORPHO_BLUE_WSTETH_USDC_14DAY: HyperdriveInstanceConfig<"Mo
         deploymentId: toBytes32(
             SEPOLIA_MORPHO_BLUE_WSTETH_USDC_14DAY_NAME.slice(0, 32),
         ),
-        salt: toBytes32("0x42012"),
+        salt: toBytes32("0x420123456"),
         extraData: enc,
         contribution: CONTRIBUTION,
         fixedAPR: parseEther("0.1"),
@@ -92,7 +92,7 @@ export const SEPOLIA_MORPHO_BLUE_WSTETH_USDC_14DAY: HyperdriveInstanceConfig<"Mo
                     6,
                     (await hre.getNamedAccounts())["deployer"] as Address,
                     true,
-                    parseEther("10000"),
+                    1000_000_000n,
                 ],
                 options,
             );
@@ -116,8 +116,8 @@ export const SEPOLIA_MORPHO_BLUE_WSTETH_USDC_14DAY: HyperdriveInstanceConfig<"Mo
                     hre.hyperdriveDeploy.deployments.byName("USDC").address,
                 vaultSharesToken: zeroAddress,
                 circuitBreakerDelta: parseEther("0.5"),
-                minimumShareReserves: parseEther("10"),
-                minimumTransactionAmount: parseEther("0.001"),
+                minimumShareReserves: 1_000_00n,
+                minimumTransactionAmount: 1_000_000n,
                 positionDuration: parseDuration(TWO_WEEKS),
                 checkpointDuration: parseDuration("1 day"),
                 timeStretch: 0n,
