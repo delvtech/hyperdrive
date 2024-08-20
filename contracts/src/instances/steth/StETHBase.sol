@@ -47,7 +47,7 @@ abstract contract StETHBase is HyperdriveBase {
         // stETH instead of ETH.
         sharesMinted = ILido(address(_vaultSharesToken)).submit{
             value: _baseAmount
-        }(_feeCollector);
+        }(_adminController.feeCollector());
 
         return (sharesMinted, refund);
     }

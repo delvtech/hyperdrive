@@ -3,6 +3,7 @@ pragma solidity 0.8.22;
 
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../../../contracts/src/interfaces/IHyperdriveAdminController.sol";
 import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
 import { MockHyperdrive, MockHyperdriveTarget0, MockHyperdriveTarget1 } from "../../../contracts/test/MockHyperdrive.sol";
@@ -37,7 +38,10 @@ contract UpdateLiquidityTest is HyperdriveTest {
             )
         );
         config.minimumShareReserves = 1e15;
-        mockHyperdrive = new MockHyperdrive(config);
+        mockHyperdrive = new MockHyperdrive(
+            config,
+            IHyperdriveAdminController(address(factory))
+        );
         hyperdrive = IHyperdrive(address(mockHyperdrive));
     }
 

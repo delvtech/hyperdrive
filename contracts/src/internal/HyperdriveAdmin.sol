@@ -30,16 +30,16 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
         _checkOptions(_options);
 
         // Ensure that the destination is set to the fee collector.
-        address feeCollector = _feeCollector;
+        address feeCollector = _adminController.feeCollector();
         if (_options.destination != feeCollector) {
             revert IHyperdrive.InvalidFeeDestination();
         }
 
         // Ensure that the caller is authorized to collect fees.
         if (
-            !_pausers[msg.sender] &&
             msg.sender != feeCollector &&
-            msg.sender != _governance
+            msg.sender != _adminController.hyperdriveGovernance() &&
+            !_isPauser(msg.sender)
         ) {
             revert IHyperdrive.Unauthorized();
         }
@@ -61,79 +61,16 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
     /// @param _status True to pause all deposits and false to unpause them.
     function _pause(bool _status) internal {
         // Ensure that the sender is authorized to pause the contract.
-        if (!_pausers[msg.sender] && msg.sender != _governance) {
+        if (
+            msg.sender != _adminController.hyperdriveGovernance() &&
+            !_isPauser(msg.sender)
+        ) {
             revert IHyperdrive.Unauthorized();
         }
 
         // Update the paused status and emit an event.
         _marketState.isPaused = _status;
         emit PauseStatusUpdated(_status);
-    }
-
-    /// @dev Allows governance to transfer the fee collector role.
-    /// @param _who The new fee collector.
-    function _setFeeCollector(address _who) internal {
-        // Ensure that the sender is governance.
-        if (msg.sender != _governance) {
-            revert IHyperdrive.Unauthorized();
-        }
-
-        // Update the governance address and emit an event.
-        _feeCollector = _who;
-        emit FeeCollectorUpdated(_who);
-    }
-
-    /// @dev Allows governance to transfer the sweep collector role.
-    /// @param _who The new fee collector.
-    function _setSweepCollector(address _who) internal {
-        // Ensure that the sender is governance.
-        if (msg.sender != _governance) {
-            revert IHyperdrive.Unauthorized();
-        }
-
-        // Update the sweep collector address and emit an event.
-        _sweepCollector = _who;
-        emit SweepCollectorUpdated(_who);
-    }
-
-    /// @dev Allows governance to transfer the checkpoint rewarder.
-    /// @param _newCheckpointRewarder The new checkpoint rewarder.
-    function _setCheckpointRewarder(address _newCheckpointRewarder) internal {
-        // Ensure that the sender is governance.
-        if (msg.sender != _governance) {
-            revert IHyperdrive.Unauthorized();
-        }
-
-        // Update the checkpoint rewarder address and emit an event.
-        _checkpointRewarder = _newCheckpointRewarder;
-        emit CheckpointRewarderUpdated(_checkpointRewarder);
-    }
-
-    /// @dev Allows governance to transfer the governance role.
-    /// @param _who The new governance address.
-    function _setGovernance(address _who) internal {
-        // Ensure that the sender is governance.
-        if (msg.sender != _governance) {
-            revert IHyperdrive.Unauthorized();
-        }
-
-        // Update the governance address and emit an event.
-        _governance = _who;
-        emit GovernanceUpdated(_who);
-    }
-
-    /// @dev Allows governance to change the pauser status of an address.
-    /// @param _who The address to change.
-    /// @param _status The new pauser status.
-    function _setPauser(address _who, bool _status) internal {
-        // Ensure that the sender is governance.
-        if (msg.sender != _governance) {
-            revert IHyperdrive.Unauthorized();
-        }
-
-        // Update the pauser status and emit an event.
-        _pausers[_who] = _status;
-        emit PauserUpdated(_who, _status);
     }
 
     /// @dev Transfers the contract's balance of a target token to the sweep
@@ -144,11 +81,11 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
     /// @param _target The target token to sweep.
     function _sweep(IERC20 _target) internal nonReentrant {
         // Ensure that the caller is authorized to sweep tokens.
-        address sweepCollector = _sweepCollector;
+        address sweepCollector = _adminController.sweepCollector();
         if (
-            !_pausers[msg.sender] &&
             msg.sender != sweepCollector &&
-            msg.sender != _governance
+            msg.sender != _adminController.hyperdriveGovernance() &&
+            !_isPauser(msg.sender)
         ) {
             revert IHyperdrive.Unauthorized();
         }
@@ -168,5 +105,18 @@ abstract contract HyperdriveAdmin is IHyperdriveEvents, HyperdriveBase {
         }
 
         emit Sweep(sweepCollector, address(_target));
+    }
+
+    /// @dev Gets an account's pauser status within the Hyperdrive pool.
+    /// @param _account The account to check.
+    /// @return The account's pauser status.
+    function _isPauser(address _account) internal view returns (bool) {
+        address[] memory pausers = _adminController.defaultPausers();
+        for (uint256 i = 0; i < pausers.length; i++) {
+            if (pausers[i] == _account) {
+                return true;
+            }
+        }
+        return false;
     }
 }

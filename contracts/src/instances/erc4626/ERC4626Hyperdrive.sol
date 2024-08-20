@@ -5,6 +5,7 @@ import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
 import { ERC4626Base } from "./ERC4626Base.sol";
 
 ///      ______  __                           _________      _____
@@ -59,6 +60,8 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
     /// @notice Instantiates Hyperdrive with a ERC4626 vault as the yield source.
     /// @param __name The pool's name.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param __adminController The admin controller that will specify the
+    ///        admin parameters for this instance.
     /// @param _target0 The target0 address.
     /// @param _target1 The target1 address.
     /// @param _target2 The target2 address.
@@ -67,6 +70,7 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
     constructor(
         string memory __name,
         IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController __adminController,
         address _target0,
         address _target1,
         address _target2,
@@ -76,6 +80,7 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
         Hyperdrive(
             __name,
             _config,
+            __adminController,
             _target0,
             _target1,
             _target2,

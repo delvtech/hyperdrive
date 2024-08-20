@@ -29,7 +29,6 @@ import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPoint
 import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20ForwarderFactory } from "../../../contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
-import { MockHyperdriveDeployer, MockHyperdriveTargetDeployer } from "../../../contracts/test/MockHyperdriveDeployer.sol";
 import { MockLido } from "../../../contracts/test/MockLido.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
@@ -44,8 +43,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
     string internal constant NAME = "HyperdriveFactory";
 
-    HyperdriveFactory internal factory;
-
     event DefaultPausersUpdated(address[] newDefaultPausers);
 
     event DeployerCoordinatorAdded(address indexed deployerCoordinator);
@@ -56,7 +53,13 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         address indexed deployerCoordinatorManager
     );
 
+    event GovernanceUpdated(address indexed governance);
+
     event HyperdriveGovernanceUpdated(address indexed hyperdriveGovernance);
+
+    event FeeCollectorUpdated(address indexed feeCollector);
+
+    event SweepCollectorUpdated(address indexed sweepCollector);
 
     event LinkerFactoryUpdated(address indexed newLinkerFactory);
 
@@ -2823,8 +2826,6 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
 
     string internal constant NAME = "HyperdriveFactory";
 
-    HyperdriveFactory factory;
-
     address deployerCoordinator;
     address coreDeployer;
     address target0Deployer;
@@ -3398,8 +3399,6 @@ contract ERC4626InstanceGetterTest is HyperdriveFactoryBaseTest {
 contract DeployerCoordinatorGetterTest is HyperdriveTest {
     string internal constant NAME = "HyperdriveFactory";
 
-    HyperdriveFactory factory;
-
     function setUp() public override {
         super.setUp();
 
@@ -3597,8 +3596,6 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
 contract HyperdriveFactoryAddDeployerCoordinatorTest is HyperdriveTest {
     string internal constant NAME = "HyperdriveFactory";
 
-    HyperdriveFactory factory;
-
     address deployerCoordinator0 = makeAddr("deployerCoordinator0");
     address deployerCoordinator1 = makeAddr("deployerCoordinator1");
 
@@ -3728,8 +3725,6 @@ contract HyperdriveFactoryAddDeployerCoordinatorTest is HyperdriveTest {
 
 contract HyperdriveFactoryRemoveDeployerCoordinatorTest is HyperdriveTest {
     string internal constant NAME = "HyperdriveFactory";
-
-    HyperdriveFactory factory;
 
     address deployerCoordinator0 = makeAddr("deployerCoordinator0");
     address deployerCoordinator1 = makeAddr("deployerCoordinator1");

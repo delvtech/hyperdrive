@@ -2,6 +2,7 @@
 pragma solidity 0.8.22;
 
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
 import { IHyperdriveCoreDeployer } from "../../interfaces/IHyperdriveCoreDeployer.sol";
 import { IMorphoBlueHyperdrive } from "../../interfaces/IMorphoBlueHyperdrive.sol";
 import { MorphoBlueHyperdrive } from "../../instances/morpho-blue/MorphoBlueHyperdrive.sol";
@@ -16,6 +17,8 @@ contract MorphoBlueHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param __name The name of the Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _adminController The admin controller that will specify the
+    ///        admin parameters for this instance.
     /// @param _extraData The extra data for the Morpho instance. This contains
     ///        the market parameters that weren't specified in the config.
     /// @param _target0 The target0 address.
@@ -28,6 +31,7 @@ contract MorphoBlueHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     function deployHyperdrive(
         string memory __name,
         IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController _adminController,
         bytes memory _extraData,
         address _target0,
         address _target1,
@@ -49,6 +53,7 @@ contract MorphoBlueHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
                 }(
                     __name,
                     _config,
+                    _adminController,
                     _target0,
                     _target1,
                     _target2,

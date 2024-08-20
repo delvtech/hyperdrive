@@ -17,6 +17,11 @@ interface IHyperdriveRead is IMultiTokenRead {
     /// @return The instance's version.
     function version() external pure returns (string memory);
 
+    /// @notice Gets the address that contains the admin configuration for this
+    ///         instance.
+    /// @return The admin controller address.
+    function adminController() external view returns (address);
+
     /// @notice Gets the Hyperdrive pool's base token.
     /// @return The base token.
     function baseToken() external view returns (address);

@@ -3,6 +3,7 @@ pragma solidity 0.8.22;
 
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../interfaces/IHyperdriveAdminController.sol";
 import { IHyperdriveRead } from "../interfaces/IHyperdriveRead.sol";
 import { HyperdriveAdmin } from "../internal/HyperdriveAdmin.sol";
 import { HyperdriveCheckpoint } from "../internal/HyperdriveCheckpoint.sol";
@@ -35,11 +36,30 @@ abstract contract HyperdriveTarget0 is
 
     /// @notice Instantiates target0.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param __adminController The admin controller that will specify the
+    ///        admin parameters for this contract.
     constructor(
-        IHyperdrive.PoolConfig memory _config
-    ) HyperdriveStorage(_config) {}
+        IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController __adminController
+    ) HyperdriveStorage(_config, __adminController) {}
 
     /// Admin ///
+
+    // TODO: This function doesn't do anything anymore and is only here for
+    // backwards compatability. This can be removed when the factory is upgraded.
+    //
+    /// @notice A stub for the old setPauser functions that doesn't do anything
+    ///         anymore.
+    /// @dev Don't call this. It doesn't do anything.
+    function setGovernance(address) external {}
+
+    // TODO: This function doesn't do anything anymore and is only here for
+    // backwards compatability. This can be removed when the factory is upgraded.
+    //
+    /// @notice A stub for the old setPauser functions that doesn't do anything
+    ///         anymore.
+    /// @dev Don't call this. It doesn't do anything.
+    function setPauser(address, bool) external {}
 
     /// @notice This function collects the governance fees accrued by the pool.
     /// @param _options The options that configure how the fees are settled.
@@ -56,37 +76,6 @@ abstract contract HyperdriveTarget0 is
     /// @param _status True to pause all deposits and false to unpause them.
     function pause(bool _status) external {
         _pause(_status);
-    }
-
-    /// @notice Allows governance to change the fee collector.
-    /// @param _who The new fee collector address.
-    function setFeeCollector(address _who) external {
-        _setFeeCollector(_who);
-    }
-
-    /// @notice Allows governance to change the sweep collector.
-    /// @param _who The new sweep collector address.
-    function setSweepCollector(address _who) external {
-        _setSweepCollector(_who);
-    }
-
-    /// @dev Allows governance to transfer the checkpoint rewarder.
-    /// @param _checkpointRewarder The new checkpoint rewarder.
-    function setCheckpointRewarder(address _checkpointRewarder) external {
-        _setCheckpointRewarder(_checkpointRewarder);
-    }
-
-    /// @notice Allows governance to change governance.
-    /// @param _who The new governance address.
-    function setGovernance(address _who) external {
-        _setGovernance(_who);
-    }
-
-    /// @notice Allows governance to change the pauser status of an address.
-    /// @param who The address to change.
-    /// @param status The new pauser status.
-    function setPauser(address who, bool status) external {
-        _setPauser(who, status);
     }
 
     /// @notice Transfers the contract's balance of a target token to the sweep
@@ -252,11 +241,18 @@ abstract contract HyperdriveTarget0 is
         _revert(abi.encode(VERSION));
     }
 
+    /// @notice Gets the address that contains the admin configuration for this
+    ///         instance.
+    /// @return The admin controller address.
+    function adminController() external view returns (address) {
+        _revert(abi.encode(_adminController));
+    }
+
     /// @notice Gets the pauser status of an address.
     /// @param _account The account to check.
     /// @return The pauser status.
     function isPauser(address _account) external view returns (bool) {
-        _revert(abi.encode(_pausers[_account]));
+        _revert(abi.encode(_isPauser(_account)));
     }
 
     /// @notice Gets the base token.
@@ -314,10 +310,10 @@ abstract contract HyperdriveTarget0 is
                     positionDuration: _positionDuration,
                     checkpointDuration: _checkpointDuration,
                     timeStretch: _timeStretch,
-                    governance: _governance,
-                    feeCollector: _feeCollector,
-                    sweepCollector: _sweepCollector,
-                    checkpointRewarder: _checkpointRewarder,
+                    governance: _adminController.hyperdriveGovernance(),
+                    feeCollector: _adminController.feeCollector(),
+                    sweepCollector: _adminController.sweepCollector(),
+                    checkpointRewarder: _adminController.checkpointRewarder(),
                     fees: IHyperdrive.Fees(
                         _curveFee,
                         _flatFee,

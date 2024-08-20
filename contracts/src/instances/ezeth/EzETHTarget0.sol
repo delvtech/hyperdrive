@@ -5,6 +5,7 @@ import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
 import { IRestakeManager, IRenzoOracle } from "../../interfaces/IRenzo.sol";
 import { EZETH_HYPERDRIVE_KIND } from "../../libraries/Constants.sol";
 import { EzETHBase } from "./EzETHBase.sol";
@@ -22,11 +23,17 @@ contract EzETHTarget0 is HyperdriveTarget0, EzETHBase {
 
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param __adminController The admin controller that will specify the
+    ///        admin parameters for this instance.
     /// @param _restakeManager The Renzo contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController __adminController,
         IRestakeManager _restakeManager
-    ) HyperdriveTarget0(_config) EzETHBase(_restakeManager) {}
+    )
+        HyperdriveTarget0(_config, __adminController)
+        EzETHBase(_restakeManager)
+    {}
 
     /// Extras ///
 

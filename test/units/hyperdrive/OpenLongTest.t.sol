@@ -161,16 +161,6 @@ contract OpenLongTest is HyperdriveTest {
         assertApproxEqAbs(hyperdrive.calculateSpotPrice(), 1e18, 1e6);
     }
 
-    function test_pauser_authorization_fail() external {
-        vm.stopPrank();
-        vm.startPrank(alice);
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
-        hyperdrive.setPauser(alice, true);
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
-        hyperdrive.pause(true);
-        vm.stopPrank();
-    }
-
     function test_open_long_failure_extreme_amount() external {
         uint256 apr = 0.05e18;
 

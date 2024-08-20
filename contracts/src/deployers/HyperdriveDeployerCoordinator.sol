@@ -2,6 +2,7 @@
 pragma solidity 0.8.22;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../interfaces/IHyperdriveAdminController.sol";
 import { IHyperdriveCoreDeployer } from "../interfaces/IHyperdriveCoreDeployer.sol";
 import { IHyperdriveDeployerCoordinator } from "../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IHyperdriveTargetDeployer } from "../interfaces/IHyperdriveTargetDeployer.sol";
@@ -187,6 +188,7 @@ abstract contract HyperdriveDeployerCoordinator is
             .deployHyperdrive(
                 __name,
                 config,
+                IHyperdriveAdminController(factory),
                 _extraData,
                 deployment.target0,
                 deployment.target1,
@@ -253,6 +255,7 @@ abstract contract HyperdriveDeployerCoordinator is
             // Deploy the target0 contract.
             target = IHyperdriveTargetDeployer(target0Deployer).deployTarget(
                 config_,
+                IHyperdriveAdminController(factory),
                 _extraData,
                 // NOTE: We hash the deployment ID with the salt to prevent the
                 // front-running of deployments.
@@ -306,6 +309,7 @@ abstract contract HyperdriveDeployerCoordinator is
             }
             target = IHyperdriveTargetDeployer(target1Deployer).deployTarget(
                 config,
+                IHyperdriveAdminController(factory),
                 _extraData,
                 keccak256(abi.encode(msg.sender, _deploymentId, _salt))
             );
@@ -316,6 +320,7 @@ abstract contract HyperdriveDeployerCoordinator is
             }
             target = IHyperdriveTargetDeployer(target2Deployer).deployTarget(
                 config,
+                IHyperdriveAdminController(factory),
                 _extraData,
                 keccak256(abi.encode(msg.sender, _deploymentId, _salt))
             );
@@ -326,6 +331,7 @@ abstract contract HyperdriveDeployerCoordinator is
             }
             target = IHyperdriveTargetDeployer(target3Deployer).deployTarget(
                 config,
+                IHyperdriveAdminController(factory),
                 _extraData,
                 keccak256(abi.encode(msg.sender, _deploymentId, _salt))
             );
@@ -336,6 +342,7 @@ abstract contract HyperdriveDeployerCoordinator is
             }
             target = IHyperdriveTargetDeployer(target4Deployer).deployTarget(
                 config,
+                IHyperdriveAdminController(factory),
                 _extraData,
                 keccak256(abi.encode(msg.sender, _deploymentId, _salt))
             );

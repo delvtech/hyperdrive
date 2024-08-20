@@ -3,6 +3,7 @@ pragma solidity 0.8.22;
 
 import { EzETHTarget4 } from "../../instances/ezeth/EzETHTarget4.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
 import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDeployer.sol";
 import { IRestakeManager } from "../../interfaces/IRenzo.sol";
 
@@ -24,10 +25,13 @@ contract EzETHTarget4Deployer is IHyperdriveTargetDeployer {
 
     /// @notice Deploys a target4 instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _adminController The admin controller that will specify the
+    ///        admin parameters for this instance.
     /// @param _salt The create2 salt used in the deployment.
     /// @return The address of the newly deployed EzETHTarget4 instance.
     function deployTarget(
         IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController _adminController,
         bytes memory, // unused extra data
         bytes32 _salt
     ) external returns (address) {
@@ -37,7 +41,7 @@ contract EzETHTarget4Deployer is IHyperdriveTargetDeployer {
                 // front-running of deployments.
                 new EzETHTarget4{
                     salt: keccak256(abi.encode(msg.sender, _salt))
-                }(_config, restakeManager)
+                }(_config, _adminController, restakeManager)
             );
     }
 }

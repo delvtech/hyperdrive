@@ -76,41 +76,45 @@ contract CheckpointRewardsTest is HyperdriveTest {
         vm.recordLogs();
     }
 
-    function test_checkpointReward_success_zeroCheckpointRewarder() external {
-        // Set the checkpoint rewarder to the zero address.
-        vm.stopPrank();
-        vm.startPrank(hyperdrive.getPoolConfig().governance);
-        hyperdrive.setCheckpointRewarder(address(0));
+    // FIXME: Update this by setting the parameter on the factory.
+    //
+    // function test_checkpointReward_success_zeroCheckpointRewarder() external {
+    //     // Set the checkpoint rewarder to the zero address.
+    //     vm.stopPrank();
+    //     vm.startPrank(hyperdrive.getPoolConfig().governance);
+    //     hyperdrive.setCheckpointRewarder(address(0));
 
-        // Ensure that a checkpoint can be submitted.
-        vm.stopPrank();
-        vm.startPrank(alice);
-        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
+    //     // Ensure that a checkpoint can be submitted.
+    //     vm.stopPrank();
+    //     vm.startPrank(alice);
+    //     hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
-        // Ensure that no `CheckpointRewardClaimed` events were emitted.
-        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
-            CheckpointRewardClaimed.selector
-        );
-        assertEq(logs.length, 0);
-    }
+    //     // Ensure that no `CheckpointRewardClaimed` events were emitted.
+    //     VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
+    //         CheckpointRewardClaimed.selector
+    //     );
+    //     assertEq(logs.length, 0);
+    // }
 
-    function test_checkpointReward_success_eoaCheckpointRewarder() external {
-        // Set the checkpoint rewarder to an EOA address.
-        vm.stopPrank();
-        vm.startPrank(hyperdrive.getPoolConfig().governance);
-        hyperdrive.setCheckpointRewarder(address(0xdeadbeef));
+    // FIXME: Update this by setting the parameter on the factory.
+    //
+    // function test_checkpointReward_success_eoaCheckpointRewarder() external {
+    //     // Set the checkpoint rewarder to an EOA address.
+    //     vm.stopPrank();
+    //     vm.startPrank(hyperdrive.getPoolConfig().governance);
+    //     hyperdrive.setCheckpointRewarder(address(0xdeadbeef));
 
-        // Ensure that a checkpoint can be submitted.
-        vm.stopPrank();
-        vm.startPrank(alice);
-        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
+    //     // Ensure that a checkpoint can be submitted.
+    //     vm.stopPrank();
+    //     vm.startPrank(alice);
+    //     hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
-        // Ensure that no `CheckpointRewardClaimed` events were emitted.
-        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
-            CheckpointRewardClaimed.selector
-        );
-        assertEq(logs.length, 0);
-    }
+    //     // Ensure that no `CheckpointRewardClaimed` events were emitted.
+    //     VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
+    //         CheckpointRewardClaimed.selector
+    //     );
+    //     assertEq(logs.length, 0);
+    // }
 
     function test_checkpointReward_success_zeroRewardAmount() external {
         // Set the minter reward amount to zero..

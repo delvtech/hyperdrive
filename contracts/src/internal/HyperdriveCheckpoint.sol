@@ -325,9 +325,10 @@ abstract contract HyperdriveCheckpoint is
         // that the checkpoint will be minted regardless of whether or not the
         // call succeeds. Furthermore, we use the `ExcessivelySafeCall` library
         // to prevent returndata bombing.
-        if (_checkpointRewarder != address(0)) {
-            bool isTrader = _isTrader; // avoid stack-too-deep
-            _checkpointRewarder.excessivelySafeCall(
+        bool isTrader = _isTrader; // avoid stack-too-deep
+        address checkpointRewarder = _adminController.checkpointRewarder();
+        if (checkpointRewarder != address(0)) {
+            checkpointRewarder.excessivelySafeCall(
                 gasleft(),
                 0, // value of 0
                 0, // max copy of 0 bytes

@@ -2,6 +2,7 @@
 pragma solidity 0.8.22;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../interfaces/IHyperdriveAdminController.sol";
 import { HyperdriveAdmin } from "../internal/HyperdriveAdmin.sol";
 import { HyperdriveCheckpoint } from "../internal/HyperdriveCheckpoint.sol";
 import { HyperdriveLong } from "../internal/HyperdriveLong.sol";
@@ -26,9 +27,12 @@ abstract contract HyperdriveTarget2 is
 {
     /// @notice Instantiates target2.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param __adminController The admin controller that will specify the
+    ///        admin parameters for this contract.
     constructor(
-        IHyperdrive.PoolConfig memory _config
-    ) HyperdriveStorage(_config) {}
+        IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController __adminController
+    ) HyperdriveStorage(_config, __adminController) {}
 
     /// Shorts ///
 

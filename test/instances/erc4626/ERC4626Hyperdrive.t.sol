@@ -17,6 +17,7 @@ import { ERC4626Target4 } from "../../../contracts/src/instances/erc4626/ERC4626
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "../../../contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../../../contracts/src/interfaces/IHyperdriveAdminController.sol";
 import { IHyperdriveDeployerCoordinator } from "../../../contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
 import { ERC4626_HYPERDRIVE_KIND, ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND, VERSION } from "../../../contracts/src/libraries/Constants.sol";
@@ -36,8 +37,6 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
 
     string internal constant HYPERDRIVE_NAME = "Hyperdrive";
     string internal constant COORDINATOR_NAME = "HyperdriveDeployerCoordinator";
-
-    HyperdriveFactory internal factory;
 
     address internal deployerCoordinator;
     address internal coreDeployer;
@@ -159,14 +158,40 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             checkpointRewarder: address(0),
             fees: IHyperdrive.Fees(0, 0, 0, 0)
         });
-        address target0 = address(new ERC4626Target0(config));
-        address target1 = address(new ERC4626Target1(config));
-        address target2 = address(new ERC4626Target2(config));
-        address target3 = address(new ERC4626Target3(config));
-        address target4 = address(new ERC4626Target4(config));
+        address target0 = address(
+            new ERC4626Target0(
+                config,
+                IHyperdriveAdminController(address(factory))
+            )
+        );
+        address target1 = address(
+            new ERC4626Target1(
+                config,
+                IHyperdriveAdminController(address(factory))
+            )
+        );
+        address target2 = address(
+            new ERC4626Target2(
+                config,
+                IHyperdriveAdminController(address(factory))
+            )
+        );
+        address target3 = address(
+            new ERC4626Target3(
+                config,
+                IHyperdriveAdminController(address(factory))
+            )
+        );
+        address target4 = address(
+            new ERC4626Target4(
+                config,
+                IHyperdriveAdminController(address(factory))
+            )
+        );
         mockHyperdrive = new MockERC4626Hyperdrive(
             HYPERDRIVE_NAME,
             config,
+            IHyperdriveAdminController(address(factory)),
             target0,
             target1,
             target2,

@@ -5,6 +5,7 @@ import { Test } from "forge-std/Test.sol";
 import { Hyperdrive } from "../../contracts/src/external/Hyperdrive.sol";
 import { IERC20 } from "../../contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../../contracts/src/interfaces/IHyperdriveAdminController.sol";
 import { HyperdriveStorage } from "../../contracts/src/internal/HyperdriveStorage.sol";
 import { HyperdriveMath } from "../../contracts/src/libraries/HyperdriveMath.sol";
 import { MockHyperdriveBase } from "../../contracts/test/MockHyperdrive.sol";
@@ -55,6 +56,7 @@ contract DummyHyperdrive is Hyperdrive, MockHyperdriveBase {
                     governanceZombie: 0
                 })
             }),
+            IHyperdriveAdminController(address(0)),
             address(new DummyProvider()),
             address(0),
             address(0),

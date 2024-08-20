@@ -5,8 +5,10 @@ import { VmSafe } from "forge-std/Vm.sol";
 import { HyperdriveFactory } from "../../contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "../../contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../../contracts/src/interfaces/IHyperdriveAdminController.sol";
 import { IHyperdriveCheckpointRewarder } from "../../contracts/src/interfaces/IHyperdriveCheckpointRewarder.sol";
 import { IHyperdriveEvents } from "../../contracts/src/interfaces/IHyperdriveEvents.sol";
+import { IHyperdriveFactory } from "../../contracts/src/interfaces/IHyperdriveFactory.sol";
 import { IHyperdriveGovernedRegistry } from "../../contracts/src/interfaces/IHyperdriveGovernedRegistry.sol";
 import { AssetId } from "../../contracts/src/libraries/AssetId.sol";
 import { ETH } from "../../contracts/src/libraries/Constants.sol";
@@ -33,6 +35,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
     IHyperdriveCheckpointRewarder internal checkpointRewarder =
         IHyperdriveCheckpointRewarder(address(0));
     IHyperdrive internal hyperdrive;
+    IHyperdriveFactory internal factory;
 
     uint256 internal constant INITIAL_SHARE_PRICE = ONE;
     uint256 internal constant MINIMUM_SHARE_RESERVES = ONE;
@@ -63,11 +66,56 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         vm.startPrank(registrar);
         registry = new HyperdriveRegistry("HyperdriveRegistry");
 
-        // Instantiate Hyperdrive.
+        // Instantiate the Hyperdrive factory.
         IHyperdrive.PoolConfig memory config = testConfig(
             0.05e18,
             POSITION_DURATION
         );
+        address[] memory pausers = new address[](1);
+        pausers[0] = pauser;
+        factory = IHyperdriveFactory(
+            new HyperdriveFactory(
+                HyperdriveFactory.FactoryConfig({
+                    governance: config.governance,
+                    hyperdriveGovernance: config.governance,
+                    deployerCoordinatorManager: alice,
+                    defaultPausers: pausers,
+                    feeCollector: config.feeCollector,
+                    sweepCollector: config.sweepCollector,
+                    checkpointRewarder: config.checkpointRewarder,
+                    checkpointDurationResolution: 1 hours,
+                    minCheckpointDuration: 8 hours,
+                    maxCheckpointDuration: 1 days,
+                    minPositionDuration: 1 days,
+                    maxPositionDuration: 2 * 365 days,
+                    minCircuitBreakerDelta: 0.01e18,
+                    // NOTE: This is higher than recommended to avoid triggering
+                    // this in some tests.
+                    maxCircuitBreakerDelta: 2e18,
+                    minFixedAPR: 0.01e18,
+                    maxFixedAPR: 0.5e18,
+                    minTimeStretchAPR: 0.01e18,
+                    maxTimeStretchAPR: 0.5e18,
+                    minFees: IHyperdrive.Fees({
+                        curve: 0.001e18,
+                        flat: 0.0001e18,
+                        governanceLP: 0.15e18,
+                        governanceZombie: 0.03e18
+                    }),
+                    maxFees: IHyperdrive.Fees({
+                        curve: 0.01e18,
+                        flat: 0.001e18,
+                        governanceLP: 0.15e18,
+                        governanceZombie: 0.03e18
+                    }),
+                    linkerFactory: config.linkerFactory,
+                    linkerCodeHash: config.linkerCodeHash
+                }),
+                "HyperdriveFactory"
+            )
+        );
+
+        // Instantiate Hyperdrive.
         deploy(alice, config);
         vm.stopPrank();
         vm.startPrank(governance);
@@ -89,7 +137,22 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         // Deploy the Hyperdrive instance.
         vm.stopPrank();
         vm.startPrank(deployer);
-        hyperdrive = IHyperdrive(address(new MockHyperdrive(_config)));
+        hyperdrive = IHyperdrive(
+            address(
+                new MockHyperdrive(
+                    _config,
+                    IHyperdriveAdminController(address(factory))
+                )
+            )
+        );
+
+        // Update the factory's configuration to match the pool config.
+        vm.stopPrank();
+        vm.startPrank(factory.governance());
+        factory.updateHyperdriveGovernance(_config.governance);
+        factory.updateFeeCollector(_config.feeCollector);
+        factory.updateSweepCollector(_config.feeCollector);
+        factory.updateCheckpointRewarder(_config.checkpointRewarder);
 
         // Register the new instance.
         vm.stopPrank();

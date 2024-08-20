@@ -2,6 +2,7 @@
 pragma solidity 0.8.22;
 
 import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../../contracts/src/interfaces/IHyperdriveAdminController.sol";
 import { IERC20 } from "../../contracts/src/interfaces/IERC20.sol";
 import { ERC20Mintable } from "../../contracts/test/ERC20Mintable.sol";
 import { AssetId } from "../../contracts/src/libraries/AssetId.sol";
@@ -16,7 +17,7 @@ import { Lib } from "../utils/Lib.sol";
 contract DummyHyperdriveMultiToken is HyperdriveMultiToken, MockHyperdrive {
     constructor(
         IHyperdrive.PoolConfig memory _config
-    ) MockHyperdrive(_config) {}
+    ) MockHyperdrive(_config, IHyperdriveAdminController(address(0))) {}
 
     function callOnlyLinker(
         uint256 tokenId

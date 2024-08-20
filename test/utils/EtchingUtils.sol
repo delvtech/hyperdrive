@@ -34,6 +34,7 @@ import { StETHTarget3 } from "../../contracts/src/instances/steth/StETHTarget3.s
 import { StETHTarget4 } from "../../contracts/src/instances/steth/StETHTarget4.sol";
 import { IEzETHHyperdrive } from "../../contracts/src/interfaces/IEzETHHyperdrive.sol";
 import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../../contracts/src/interfaces/IHyperdriveAdminController.sol";
 import { IRestakeManager } from "../../contracts/src/interfaces/IRenzo.sol";
 import { ERC4626_HYPERDRIVE_KIND, EZETH_HYPERDRIVE_KIND, LSETH_HYPERDRIVE_KIND, RETH_HYPERDRIVE_KIND, STETH_HYPERDRIVE_KIND, VERSION } from "../../contracts/src/libraries/Constants.sol";
 import { ERC20Mintable } from "../../contracts/test/ERC20Mintable.sol";
@@ -137,7 +138,8 @@ contract EtchingUtils is Test {
         // Etch the target0 contract.
         {
             ERC4626Target0 template = new ERC4626Target0(
-                hyperdrive.getPoolConfig()
+                hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController())
             );
             vm.etch(hyperdrive.target0(), address(template).code);
         }
@@ -145,7 +147,8 @@ contract EtchingUtils is Test {
         // Etch the target1 contract.
         {
             ERC4626Target1 template = new ERC4626Target1(
-                hyperdrive.getPoolConfig()
+                hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController())
             );
             vm.etch(hyperdrive.target1(), address(template).code);
         }
@@ -153,7 +156,8 @@ contract EtchingUtils is Test {
         // Etch the target2 contract.
         {
             ERC4626Target2 template = new ERC4626Target2(
-                hyperdrive.getPoolConfig()
+                hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController())
             );
             vm.etch(hyperdrive.target2(), address(template).code);
         }
@@ -161,7 +165,8 @@ contract EtchingUtils is Test {
         // Etch the target3 contract.
         {
             ERC4626Target3 template = new ERC4626Target3(
-                hyperdrive.getPoolConfig()
+                hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController())
             );
             vm.etch(hyperdrive.target3(), address(template).code);
         }
@@ -169,7 +174,8 @@ contract EtchingUtils is Test {
         // Etch the target4 contract.
         {
             ERC4626Target4 template = new ERC4626Target4(
-                hyperdrive.getPoolConfig()
+                hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController())
             );
             vm.etch(hyperdrive.target4(), address(template).code);
         }
@@ -181,6 +187,7 @@ contract EtchingUtils is Test {
                 // etch it.
                 "",
                 hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController()),
                 hyperdrive.target0(),
                 hyperdrive.target1(),
                 hyperdrive.target2(),
@@ -215,6 +222,7 @@ contract EtchingUtils is Test {
         {
             EzETHTarget0 template = new EzETHTarget0(
                 hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController()),
                 renzo
             );
             vm.etch(hyperdrive.target0(), address(template).code);
@@ -224,6 +232,7 @@ contract EtchingUtils is Test {
         {
             EzETHTarget1 template = new EzETHTarget1(
                 hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController()),
                 renzo
             );
             vm.etch(hyperdrive.target1(), address(template).code);
@@ -233,6 +242,7 @@ contract EtchingUtils is Test {
         {
             EzETHTarget2 template = new EzETHTarget2(
                 hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController()),
                 renzo
             );
             vm.etch(hyperdrive.target2(), address(template).code);
@@ -242,6 +252,7 @@ contract EtchingUtils is Test {
         {
             EzETHTarget3 template = new EzETHTarget3(
                 hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController()),
                 renzo
             );
             vm.etch(hyperdrive.target3(), address(template).code);
@@ -251,6 +262,7 @@ contract EtchingUtils is Test {
         {
             EzETHTarget4 template = new EzETHTarget4(
                 hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController()),
                 renzo
             );
             vm.etch(hyperdrive.target4(), address(template).code);
@@ -263,6 +275,7 @@ contract EtchingUtils is Test {
                 // etch it.
                 "",
                 hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController()),
                 hyperdrive.target0(),
                 hyperdrive.target1(),
                 hyperdrive.target2(),
@@ -282,7 +295,8 @@ contract EtchingUtils is Test {
         // Etch the target0 contract.
         {
             LsETHTarget0 template = new LsETHTarget0(
-                hyperdrive.getPoolConfig()
+                hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController())
             );
             vm.etch(hyperdrive.target0(), address(template).code);
         }
@@ -290,7 +304,8 @@ contract EtchingUtils is Test {
         // Etch the target1 contract.
         {
             LsETHTarget1 template = new LsETHTarget1(
-                hyperdrive.getPoolConfig()
+                hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController())
             );
             vm.etch(hyperdrive.target1(), address(template).code);
         }
@@ -298,7 +313,8 @@ contract EtchingUtils is Test {
         // Etch the target2 contract.
         {
             LsETHTarget2 template = new LsETHTarget2(
-                hyperdrive.getPoolConfig()
+                hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController())
             );
             vm.etch(hyperdrive.target2(), address(template).code);
         }
@@ -306,7 +322,8 @@ contract EtchingUtils is Test {
         // Etch the target3 contract.
         {
             LsETHTarget3 template = new LsETHTarget3(
-                hyperdrive.getPoolConfig()
+                hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController())
             );
             vm.etch(hyperdrive.target3(), address(template).code);
         }
@@ -314,7 +331,8 @@ contract EtchingUtils is Test {
         // Etch the target4 contract.
         {
             LsETHTarget4 template = new LsETHTarget4(
-                hyperdrive.getPoolConfig()
+                hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController())
             );
             vm.etch(hyperdrive.target4(), address(template).code);
         }
@@ -326,6 +344,7 @@ contract EtchingUtils is Test {
                 // etch it.
                 "",
                 hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController()),
                 hyperdrive.target0(),
                 hyperdrive.target1(),
                 hyperdrive.target2(),
@@ -359,31 +378,46 @@ contract EtchingUtils is Test {
 
         // Etch the target0 contract.
         {
-            RETHTarget0 template = new RETHTarget0(hyperdrive.getPoolConfig());
+            RETHTarget0 template = new RETHTarget0(
+                hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController())
+            );
             vm.etch(hyperdrive.target0(), address(template).code);
         }
 
         // Etch the target1 contract.
         {
-            RETHTarget1 template = new RETHTarget1(hyperdrive.getPoolConfig());
+            RETHTarget1 template = new RETHTarget1(
+                hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController())
+            );
             vm.etch(hyperdrive.target1(), address(template).code);
         }
 
         // Etch the target2 contract.
         {
-            RETHTarget2 template = new RETHTarget2(hyperdrive.getPoolConfig());
+            RETHTarget2 template = new RETHTarget2(
+                hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController())
+            );
             vm.etch(hyperdrive.target2(), address(template).code);
         }
 
         // Etch the target3 contract.
         {
-            RETHTarget3 template = new RETHTarget3(hyperdrive.getPoolConfig());
+            RETHTarget3 template = new RETHTarget3(
+                hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController())
+            );
             vm.etch(hyperdrive.target3(), address(template).code);
         }
 
         // Etch the target4 contract.
         {
-            RETHTarget4 template = new RETHTarget4(hyperdrive.getPoolConfig());
+            RETHTarget4 template = new RETHTarget4(
+                hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController())
+            );
             vm.etch(hyperdrive.target4(), address(template).code);
         }
 
@@ -394,6 +428,7 @@ contract EtchingUtils is Test {
                 // etch it.
                 "",
                 hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController()),
                 hyperdrive.target0(),
                 hyperdrive.target1(),
                 hyperdrive.target2(),
@@ -426,7 +461,8 @@ contract EtchingUtils is Test {
         // Etch the target0 contract.
         {
             StETHTarget0 template = new StETHTarget0(
-                hyperdrive.getPoolConfig()
+                hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController())
             );
             vm.etch(hyperdrive.target0(), address(template).code);
         }
@@ -434,7 +470,8 @@ contract EtchingUtils is Test {
         // Etch the target1 contract.
         {
             StETHTarget1 template = new StETHTarget1(
-                hyperdrive.getPoolConfig()
+                hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController())
             );
             vm.etch(hyperdrive.target1(), address(template).code);
         }
@@ -442,7 +479,8 @@ contract EtchingUtils is Test {
         // Etch the target2 contract.
         {
             StETHTarget2 template = new StETHTarget2(
-                hyperdrive.getPoolConfig()
+                hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController())
             );
             vm.etch(hyperdrive.target2(), address(template).code);
         }
@@ -450,7 +488,8 @@ contract EtchingUtils is Test {
         // Etch the target3 contract.
         {
             StETHTarget3 template = new StETHTarget3(
-                hyperdrive.getPoolConfig()
+                hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController())
             );
             vm.etch(hyperdrive.target3(), address(template).code);
         }
@@ -458,7 +497,8 @@ contract EtchingUtils is Test {
         // Etch the target4 contract.
         {
             StETHTarget4 template = new StETHTarget4(
-                hyperdrive.getPoolConfig()
+                hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController())
             );
             vm.etch(hyperdrive.target4(), address(template).code);
         }
@@ -470,6 +510,7 @@ contract EtchingUtils is Test {
                 // etch it.
                 "",
                 hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController()),
                 hyperdrive.target0(),
                 hyperdrive.target1(),
                 hyperdrive.target2(),

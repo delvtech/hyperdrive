@@ -4,6 +4,7 @@ pragma solidity 0.8.22;
 import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
 import { IMorphoBlueHyperdrive } from "../../interfaces/IMorphoBlueHyperdrive.sol";
 import { MORPHO_BLUE_HYPERDRIVE_KIND } from "../../libraries/Constants.sol";
 import { MorphoBlueBase } from "./MorphoBlueBase.sol";
@@ -19,11 +20,14 @@ import { MorphoBlueBase } from "./MorphoBlueBase.sol";
 contract MorphoBlueTarget0 is HyperdriveTarget0, MorphoBlueBase {
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param __adminController The admin controller that will specify the
+    ///        admin parameters for this instance.
     /// @param _params The Morpho Blue params.
     constructor(
         IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController __adminController,
         IMorphoBlueHyperdrive.MorphoBlueParams memory _params
-    ) HyperdriveTarget0(_config) MorphoBlueBase(_params) {}
+    ) HyperdriveTarget0(_config, __adminController) MorphoBlueBase(_params) {}
 
     /// @notice Returns the instance's kind.
     /// @return The instance's kind.

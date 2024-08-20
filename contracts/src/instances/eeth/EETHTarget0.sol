@@ -3,6 +3,7 @@ pragma solidity 0.8.22;
 
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
 import { EETH_HYPERDRIVE_KIND } from "../../libraries/Constants.sol";
 import { ILiquidityPool } from "../../interfaces/ILiquidityPool.sol";
 import { EETHBase } from "./EETHBase.sol";
@@ -18,11 +19,14 @@ import { EETHBase } from "./EETHBase.sol";
 contract EETHTarget0 is HyperdriveTarget0, EETHBase {
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param __adminController The admin controller that will specify the
+    ///        admin parameters for this instance.
     /// @param _liquidityPool The Etherfi liquidity pool contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController __adminController,
         ILiquidityPool _liquidityPool
-    ) HyperdriveTarget0(_config) EETHBase(_liquidityPool) {}
+    ) HyperdriveTarget0(_config, __adminController) EETHBase(_liquidityPool) {}
 
     /// @inheritdoc HyperdriveTarget0
     function kind() external pure override returns (string memory) {

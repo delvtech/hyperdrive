@@ -3,6 +3,7 @@ pragma solidity 0.8.22;
 
 import { HyperdriveTarget4 } from "../../external/HyperdriveTarget4.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
 import { ILiquidityPool } from "../../interfaces/ILiquidityPool.sol";
 import { EETHBase } from "./EETHBase.sol";
 
@@ -17,9 +18,12 @@ import { EETHBase } from "./EETHBase.sol";
 contract EETHTarget4 is HyperdriveTarget4, EETHBase {
     /// @notice Initializes the target4 contract.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param __adminController The admin controller that will specify the
+    ///        admin parameters for this instance.
     /// @param _liquidityPool The Etherfi liquidity pool contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController __adminController,
         ILiquidityPool _liquidityPool
-    ) HyperdriveTarget4(_config) EETHBase(_liquidityPool) {}
+    ) HyperdriveTarget4(_config, __adminController) EETHBase(_liquidityPool) {}
 }

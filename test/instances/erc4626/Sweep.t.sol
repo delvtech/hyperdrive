@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
+import { HyperdriveFactory } from "../../../contracts/src/factory/HyperdriveFactory.sol";
 import { ERC4626Hyperdrive } from "../../../contracts/src/instances/erc4626/ERC4626Hyperdrive.sol";
 import { ERC4626Target0 } from "../../../contracts/src/instances/erc4626/ERC4626Target0.sol";
 import { ERC4626Target1 } from "../../../contracts/src/instances/erc4626/ERC4626Target1.sol";
@@ -10,7 +11,9 @@ import { ERC4626Target4 } from "../../../contracts/src/instances/erc4626/ERC4626
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "../../../contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../../../contracts/src/interfaces/IHyperdriveAdminController.sol";
 import { IHyperdriveEvents } from "../../../contracts/src/interfaces/IHyperdriveEvents.sol";
+import { IHyperdriveFactory } from "../../../contracts/src/interfaces/IHyperdriveFactory.sol";
 import { ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
@@ -24,6 +27,7 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
     ERC20Mintable sweepable;
 
     IHyperdrive hyperdrive;
+    IHyperdriveFactory internal factory;
 
     function setUp() public override {
         super.setUp();
@@ -48,7 +52,7 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
         baseForwarder = new ForwardingToken(address(leakyBase));
         vaultForwarder = new ForwardingToken(address(leakyVault));
 
-        // Deploy Hyperdrive with the leaky vault as the backing vault.
+        // Deploy the Hyperdrive factory.
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: IERC20(address(leakyBase)),
             vaultSharesToken: IERC20(address(leakyVault)),
@@ -67,17 +71,88 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
             checkpointRewarder: address(0),
             fees: IHyperdrive.Fees(0, 0, 0, 0)
         });
+        address[] memory pausers = new address[](1);
+        pausers[0] = pauser;
+        factory = IHyperdriveFactory(
+            new HyperdriveFactory(
+                HyperdriveFactory.FactoryConfig({
+                    governance: config.governance,
+                    hyperdriveGovernance: config.governance,
+                    deployerCoordinatorManager: alice,
+                    defaultPausers: pausers,
+                    feeCollector: config.feeCollector,
+                    sweepCollector: config.sweepCollector,
+                    checkpointRewarder: config.checkpointRewarder,
+                    checkpointDurationResolution: 1 hours,
+                    minCheckpointDuration: 8 hours,
+                    maxCheckpointDuration: 1 days,
+                    minPositionDuration: 1 days,
+                    maxPositionDuration: 2 * 365 days,
+                    minCircuitBreakerDelta: 0.01e18,
+                    // NOTE: This is higher than recommended to avoid triggering
+                    // this in some tests.
+                    maxCircuitBreakerDelta: 2e18,
+                    minFixedAPR: 0.01e18,
+                    maxFixedAPR: 0.5e18,
+                    minTimeStretchAPR: 0.01e18,
+                    maxTimeStretchAPR: 0.5e18,
+                    minFees: IHyperdrive.Fees({
+                        curve: 0.001e18,
+                        flat: 0.0001e18,
+                        governanceLP: 0.15e18,
+                        governanceZombie: 0.03e18
+                    }),
+                    maxFees: IHyperdrive.Fees({
+                        curve: 0.01e18,
+                        flat: 0.001e18,
+                        governanceLP: 0.15e18,
+                        governanceZombie: 0.03e18
+                    }),
+                    linkerFactory: config.linkerFactory,
+                    linkerCodeHash: config.linkerCodeHash
+                }),
+                "HyperdriveFactory"
+            )
+        );
+
+        // Deploy Hyperdrive with the leaky vault as the backing vault.
         vm.warp(3 * config.positionDuration);
         hyperdrive = IHyperdrive(
             address(
                 new ERC4626Hyperdrive(
                     "Hyperdrive",
                     config,
-                    address(new ERC4626Target0(config)),
-                    address(new ERC4626Target1(config)),
-                    address(new ERC4626Target2(config)),
-                    address(new ERC4626Target3(config)),
-                    address(new ERC4626Target4(config))
+                    IHyperdriveAdminController(address(factory)),
+                    address(
+                        new ERC4626Target0(
+                            config,
+                            IHyperdriveAdminController(address(factory))
+                        )
+                    ),
+                    address(
+                        new ERC4626Target1(
+                            config,
+                            IHyperdriveAdminController(address(factory))
+                        )
+                    ),
+                    address(
+                        new ERC4626Target2(
+                            config,
+                            IHyperdriveAdminController(address(factory))
+                        )
+                    ),
+                    address(
+                        new ERC4626Target3(
+                            config,
+                            IHyperdriveAdminController(address(factory))
+                        )
+                    ),
+                    address(
+                        new ERC4626Target4(
+                            config,
+                            IHyperdriveAdminController(address(factory))
+                        )
+                    )
                 )
             )
         );

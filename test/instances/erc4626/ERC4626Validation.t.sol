@@ -37,7 +37,6 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     address internal target3Deployer;
     address internal target4Deployer;
 
-    HyperdriveFactory internal factory;
     IERC20 internal underlyingToken;
     IERC4626 internal token;
     MockERC4626Hyperdrive internal hyperdriveInstance;

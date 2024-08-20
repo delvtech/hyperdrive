@@ -9,6 +9,7 @@ import { HyperdriveTarget3 } from "../src/external/HyperdriveTarget3.sol";
 import { HyperdriveTarget4 } from "../src/external/HyperdriveTarget4.sol";
 import { HyperdriveBase } from "../src/internal/HyperdriveBase.sol";
 import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../src/interfaces/IHyperdriveAdminController.sol";
 import { ETH } from "../src/libraries/Constants.sol";
 import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "../test/ERC20Mintable.sol";
@@ -271,16 +272,18 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
     using FixedPointMath for uint256;
 
     constructor(
-        IHyperdrive.PoolConfig memory _config
+        IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController __adminController
     )
         Hyperdrive(
             "MockHyperdrive",
             _config,
-            address(new MockHyperdriveTarget0(_config)),
-            address(new MockHyperdriveTarget1(_config)),
-            address(new MockHyperdriveTarget2(_config)),
-            address(new MockHyperdriveTarget3(_config)),
-            address(new MockHyperdriveTarget4(_config))
+            __adminController,
+            address(new MockHyperdriveTarget0(_config, __adminController)),
+            address(new MockHyperdriveTarget1(_config, __adminController)),
+            address(new MockHyperdriveTarget2(_config, __adminController)),
+            address(new MockHyperdriveTarget3(_config, __adminController)),
+            address(new MockHyperdriveTarget4(_config, __adminController))
         )
     {}
 
@@ -452,8 +455,9 @@ contract MockHyperdriveTarget0 is HyperdriveTarget0, MockHyperdriveBase {
     string internal constant KIND = "MockHyperdrive";
 
     constructor(
-        IHyperdrive.PoolConfig memory _config
-    ) HyperdriveTarget0(_config) {}
+        IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController __adminController
+    ) HyperdriveTarget0(_config, __adminController) {}
 
     /// Metadata ///
 
@@ -470,24 +474,28 @@ contract MockHyperdriveTarget0 is HyperdriveTarget0, MockHyperdriveBase {
 
 contract MockHyperdriveTarget1 is HyperdriveTarget1, MockHyperdriveBase {
     constructor(
-        IHyperdrive.PoolConfig memory _config
-    ) HyperdriveTarget1(_config) {}
+        IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController __adminController
+    ) HyperdriveTarget1(_config, __adminController) {}
 }
 
 contract MockHyperdriveTarget2 is HyperdriveTarget2, MockHyperdriveBase {
     constructor(
-        IHyperdrive.PoolConfig memory _config
-    ) HyperdriveTarget2(_config) {}
+        IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController __adminController
+    ) HyperdriveTarget2(_config, __adminController) {}
 }
 
 contract MockHyperdriveTarget3 is HyperdriveTarget3, MockHyperdriveBase {
     constructor(
-        IHyperdrive.PoolConfig memory _config
-    ) HyperdriveTarget3(_config) {}
+        IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController __adminController
+    ) HyperdriveTarget3(_config, __adminController) {}
 }
 
 contract MockHyperdriveTarget4 is HyperdriveTarget4, MockHyperdriveBase {
     constructor(
-        IHyperdrive.PoolConfig memory _config
-    ) HyperdriveTarget4(_config) {}
+        IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController __adminController
+    ) HyperdriveTarget4(_config, __adminController) {}
 }
