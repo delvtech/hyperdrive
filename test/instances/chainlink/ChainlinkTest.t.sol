@@ -2,29 +2,29 @@
 pragma solidity 0.8.22;
 
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
-import { ChainlinkHyperdriveCoreDeployer } from "contracts/src/deployers/chainlink/ChainlinkHyperdriveCoreDeployer.sol";
-import { ChainlinkHyperdriveDeployerCoordinator } from "contracts/src/deployers/chainlink/ChainlinkHyperdriveDeployerCoordinator.sol";
-import { ChainlinkTarget0Deployer } from "contracts/src/deployers/chainlink/ChainlinkTarget0Deployer.sol";
-import { ChainlinkTarget1Deployer } from "contracts/src/deployers/chainlink/ChainlinkTarget1Deployer.sol";
-import { ChainlinkTarget2Deployer } from "contracts/src/deployers/chainlink/ChainlinkTarget2Deployer.sol";
-import { ChainlinkTarget3Deployer } from "contracts/src/deployers/chainlink/ChainlinkTarget3Deployer.sol";
-import { ChainlinkTarget4Deployer } from "contracts/src/deployers/chainlink/ChainlinkTarget4Deployer.sol";
-import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { ChainlinkConversions } from "contracts/src/instances/chainlink/ChainlinkConversions.sol";
-import { IChainlinkAggregatorV3 } from "contracts/src/interfaces/IChainlinkAggregatorV3.sol";
-import { IChainlinkHyperdrive } from "contracts/src/interfaces/IChainlinkHyperdrive.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IMorphoBlueHyperdrive } from "contracts/src/interfaces/IMorphoBlueHyperdrive.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { ETH } from "contracts/src/libraries/Constants.sol";
-import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { InstanceTest } from "test/utils/InstanceTest.sol";
-import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { ChainlinkHyperdriveCoreDeployer } from "../../../contracts/src/deployers/chainlink/ChainlinkHyperdriveCoreDeployer.sol";
+import { ChainlinkHyperdriveDeployerCoordinator } from "../../../contracts/src/deployers/chainlink/ChainlinkHyperdriveDeployerCoordinator.sol";
+import { ChainlinkTarget0Deployer } from "../../../contracts/src/deployers/chainlink/ChainlinkTarget0Deployer.sol";
+import { ChainlinkTarget1Deployer } from "../../../contracts/src/deployers/chainlink/ChainlinkTarget1Deployer.sol";
+import { ChainlinkTarget2Deployer } from "../../../contracts/src/deployers/chainlink/ChainlinkTarget2Deployer.sol";
+import { ChainlinkTarget3Deployer } from "../../../contracts/src/deployers/chainlink/ChainlinkTarget3Deployer.sol";
+import { ChainlinkTarget4Deployer } from "../../../contracts/src/deployers/chainlink/ChainlinkTarget4Deployer.sol";
+import { HyperdriveFactory } from "../../../contracts/src/factory/HyperdriveFactory.sol";
+import { ChainlinkConversions } from "../../../contracts/src/instances/chainlink/ChainlinkConversions.sol";
+import { IChainlinkAggregatorV3 } from "../../../contracts/src/interfaces/IChainlinkAggregatorV3.sol";
+import { IChainlinkHyperdrive } from "../../../contracts/src/interfaces/IChainlinkHyperdrive.sol";
+import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
+import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { IMorphoBlueHyperdrive } from "../../../contracts/src/interfaces/IMorphoBlueHyperdrive.sol";
+import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
+import { ETH } from "../../../contracts/src/libraries/Constants.sol";
+import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
+import { ERC20ForwarderFactory } from "../../../contracts/src/token/ERC20ForwarderFactory.sol";
+import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
+import { InstanceTest } from "../../utils/InstanceTest.sol";
+import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract ChainlinkHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
@@ -55,13 +55,14 @@ contract ChainlinkHyperdriveTest is InstanceTest {
         InstanceTestConfig({
             name: "Hyperdrive",
             kind: "ChainlinkHyperdrive",
+            decimals: 18,
             baseTokenWhaleAccounts: new address[](0),
             vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
             baseToken: IERC20(address(0)),
             vaultSharesToken: WSTETH,
-            // FIXME
             shareTolerance: 0,
-            minTransactionAmount: 1e15,
+            minimumShareReserves: 1e15,
+            minimumTransactionAmount: 1e15,
             positionDuration: POSITION_DURATION,
             enableBaseDeposits: false,
             enableShareDeposits: true,
@@ -69,7 +70,14 @@ contract ChainlinkHyperdriveTest is InstanceTest {
             enableShareWithdraws: true,
             baseWithdrawError: abi.encodeWithSelector(
                 IHyperdrive.UnsupportedToken.selector
-            )
+            ),
+            isRebasing: false,
+            fees: IHyperdrive.Fees({
+                curve: 0,
+                flat: 0,
+                governanceLP: 0,
+                governanceZombie: 0
+            })
         });
 
     /// @dev Instantiates the Instance testing suite with the configuration.

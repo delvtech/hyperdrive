@@ -58,6 +58,14 @@ import { ChainlinkBase } from "./ChainlinkBase.sol";
 ///      ensure that the underlying oracle continues to be maintained, and the
 ///      pool should be paused if the oracle has significant downtime or is
 ///      deprecated.
+///
+///      In addition to having a novel share price mechanism, some other things
+///      to be aware of with this integration are:
+///
+///      - The base token is the zero address since the base token isn't
+///        well-defined.
+///      - The extra data passed to the factory contains the Chainlink
+///        aggregator and the amount of decimals the integration should use.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
