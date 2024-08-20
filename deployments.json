@@ -504,6 +504,36 @@
             "contract": "MorphoBlueHyperdrive",
             "address": "0x0399BBA8DE5959007148a95ADaaD04eA3172513E",
             "timestamp": "2024-08-13T23:43:26.552Z"
+        },
+        "DELV Hyperdrive Registry": {
+            "contract": "HyperdriveRegistry",
+            "address": "0x8ff9064c1c6229d07b0c74170470f8017058fd0b",
+            "timestamp": "2024-08-20T16:30:51.336Z"
+        },
+        "ERC4626_COORDINATOR_ERC4626Target4Deployer": {
+            "contract": "ERC4626Target4Deployer",
+            "address": "0x80ec29c47e031fc16d3155dda0a4d405a8f92fd2",
+            "timestamp": "2024-08-20T16:32:04.185Z"
+        },
+        "STETH_COORDINATOR_StETHTarget4Deployer": {
+            "contract": "StETHTarget4Deployer",
+            "address": "0x3b20890f0919a5000a599fb52df2c1c6b076db8e",
+            "timestamp": "2024-08-20T16:32:17.475Z"
+        },
+        "RETH_COORDINATOR_RETHTarget4Deployer": {
+            "contract": "RETHTarget4Deployer",
+            "address": "0x222b7afd8802c876187726ae550c1eaa95c99f5d",
+            "timestamp": "2024-08-20T16:32:26.520Z"
+        },
+        "EZETH_COORDINATOR_EzETHTarget4Deployer": {
+            "contract": "EzETHTarget4Deployer",
+            "address": "0x7bb86b7c2758f9cbeeb88cfc009d3604bf2076ec",
+            "timestamp": "2024-08-20T16:32:39.614Z"
+        },
+        "USDC": {
+            "contract": "ERC20Mintable",
+            "address": "0x56a50847ba69e9efad57eadf6994cdfbae3d2180",
+            "timestamp": "2024-08-20T16:33:05.090Z"
         }
     },
     "mainnet": {
