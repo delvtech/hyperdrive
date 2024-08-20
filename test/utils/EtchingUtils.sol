@@ -384,6 +384,7 @@ contract EtchingUtils is Test {
         {
             MorphoBlueTarget0 template = new MorphoBlueTarget0(
                 hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController()),
                 params
             );
             vm.etch(hyperdrive.target0(), address(template).code);
@@ -393,6 +394,7 @@ contract EtchingUtils is Test {
         {
             MorphoBlueTarget1 template = new MorphoBlueTarget1(
                 hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController()),
                 params
             );
             vm.etch(hyperdrive.target1(), address(template).code);
@@ -402,6 +404,7 @@ contract EtchingUtils is Test {
         {
             MorphoBlueTarget2 template = new MorphoBlueTarget2(
                 hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController()),
                 params
             );
             vm.etch(hyperdrive.target2(), address(template).code);
@@ -411,6 +414,7 @@ contract EtchingUtils is Test {
         {
             MorphoBlueTarget3 template = new MorphoBlueTarget3(
                 hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController()),
                 params
             );
             vm.etch(hyperdrive.target3(), address(template).code);
@@ -420,6 +424,7 @@ contract EtchingUtils is Test {
         {
             MorphoBlueTarget4 template = new MorphoBlueTarget4(
                 hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController()),
                 params
             );
             vm.etch(hyperdrive.target4(), address(template).code);
@@ -432,6 +437,7 @@ contract EtchingUtils is Test {
                 // etch it.
                 "",
                 hyperdrive.getPoolConfig(),
+                IHyperdriveAdminController(hyperdrive.adminController()),
                 hyperdrive.target0(),
                 hyperdrive.target1(),
                 hyperdrive.target2(),
