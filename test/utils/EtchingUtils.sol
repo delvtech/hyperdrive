@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
+import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { Test } from "forge-std/Test.sol";
 import { ERC4626Hyperdrive } from "../../contracts/src/instances/erc4626/ERC4626Hyperdrive.sol";
 import { ERC4626Target0 } from "../../contracts/src/instances/erc4626/ERC4626Target0.sol";
@@ -20,6 +21,12 @@ import { LsETHTarget1 } from "../../contracts/src/instances/lseth/LsETHTarget1.s
 import { LsETHTarget2 } from "../../contracts/src/instances/lseth/LsETHTarget2.sol";
 import { LsETHTarget3 } from "../../contracts/src/instances/lseth/LsETHTarget3.sol";
 import { LsETHTarget4 } from "../../contracts/src/instances/lseth/LsETHTarget4.sol";
+import { MorphoBlueHyperdrive } from "../../contracts/src/instances/morpho-blue/MorphoBlueHyperdrive.sol";
+import { MorphoBlueTarget0 } from "../../contracts/src/instances/morpho-blue/MorphoBlueTarget0.sol";
+import { MorphoBlueTarget1 } from "../../contracts/src/instances/morpho-blue/MorphoBlueTarget1.sol";
+import { MorphoBlueTarget2 } from "../../contracts/src/instances/morpho-blue/MorphoBlueTarget2.sol";
+import { MorphoBlueTarget3 } from "../../contracts/src/instances/morpho-blue/MorphoBlueTarget3.sol";
+import { MorphoBlueTarget4 } from "../../contracts/src/instances/morpho-blue/MorphoBlueTarget4.sol";
 import { RETHHyperdrive } from "../../contracts/src/instances/reth/RETHHyperdrive.sol";
 import { RETHTarget0 } from "../../contracts/src/instances/reth/RETHTarget0.sol";
 import { RETHTarget1 } from "../../contracts/src/instances/reth/RETHTarget1.sol";
@@ -34,8 +41,9 @@ import { StETHTarget3 } from "../../contracts/src/instances/steth/StETHTarget3.s
 import { StETHTarget4 } from "../../contracts/src/instances/steth/StETHTarget4.sol";
 import { IEzETHHyperdrive } from "../../contracts/src/interfaces/IEzETHHyperdrive.sol";
 import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
+import { IMorphoBlueHyperdrive } from "../../contracts/src/interfaces/IMorphoBlueHyperdrive.sol";
 import { IRestakeManager } from "../../contracts/src/interfaces/IRenzo.sol";
-import { ERC4626_HYPERDRIVE_KIND, EZETH_HYPERDRIVE_KIND, LSETH_HYPERDRIVE_KIND, RETH_HYPERDRIVE_KIND, STETH_HYPERDRIVE_KIND, VERSION } from "../../contracts/src/libraries/Constants.sol";
+import { ERC4626_HYPERDRIVE_KIND, EZETH_HYPERDRIVE_KIND, LSETH_HYPERDRIVE_KIND, MORPHO_BLUE_HYPERDRIVE_KIND, RETH_HYPERDRIVE_KIND, STETH_HYPERDRIVE_KIND, VERSION } from "../../contracts/src/libraries/Constants.sol";
 import { ERC20Mintable } from "../../contracts/test/ERC20Mintable.sol";
 import { EtchingVault } from "../../contracts/test/EtchingVault.sol";
 import { MockERC4626 } from "../../contracts/test/MockERC4626.sol";
@@ -85,6 +93,8 @@ contract EtchingUtils is Test {
             etchRETHHyperdrive(_hyperdrive);
         } else if (kind.eq(STETH_HYPERDRIVE_KIND)) {
             etchStETHHyperdrive(_hyperdrive);
+        } else if (kind.eq(MORPHO_BLUE_HYPERDRIVE_KIND)) {
+            etchMorphoBlueHyperdrive(_hyperdrive);
         } else {
             revert(
                 vm.replace(
@@ -331,6 +341,84 @@ contract EtchingUtils is Test {
                 hyperdrive.target2(),
                 hyperdrive.target3(),
                 hyperdrive.target4()
+            );
+            vm.etch(address(hyperdrive), address(template).code);
+        }
+    }
+
+    function etchMorphoBlueHyperdrive(address _hyperdrive) internal {
+        // Get an interface to the target Hyperdrive instance. This will be
+        // used to load immutables that will be used during the etching process.
+        IMorphoBlueHyperdrive hyperdrive = IMorphoBlueHyperdrive(_hyperdrive);
+
+        // Get the Morpho Blue parameters.
+        IMorphoBlueHyperdrive.MorphoBlueParams
+            memory params = IMorphoBlueHyperdrive.MorphoBlueParams({
+                morpho: IMorpho(hyperdrive.vault()),
+                collateralToken: hyperdrive.collateralToken(),
+                oracle: hyperdrive.oracle(),
+                irm: hyperdrive.irm(),
+                lltv: hyperdrive.lltv()
+            });
+
+        // Etch the target0 contract.
+        {
+            MorphoBlueTarget0 template = new MorphoBlueTarget0(
+                hyperdrive.getPoolConfig(),
+                params
+            );
+            vm.etch(hyperdrive.target0(), address(template).code);
+        }
+
+        // Etch the target1 contract.
+        {
+            MorphoBlueTarget1 template = new MorphoBlueTarget1(
+                hyperdrive.getPoolConfig(),
+                params
+            );
+            vm.etch(hyperdrive.target1(), address(template).code);
+        }
+
+        // Etch the target2 contract.
+        {
+            MorphoBlueTarget2 template = new MorphoBlueTarget2(
+                hyperdrive.getPoolConfig(),
+                params
+            );
+            vm.etch(hyperdrive.target2(), address(template).code);
+        }
+
+        // Etch the target3 contract.
+        {
+            MorphoBlueTarget3 template = new MorphoBlueTarget3(
+                hyperdrive.getPoolConfig(),
+                params
+            );
+            vm.etch(hyperdrive.target3(), address(template).code);
+        }
+
+        // Etch the target4 contract.
+        {
+            MorphoBlueTarget4 template = new MorphoBlueTarget4(
+                hyperdrive.getPoolConfig(),
+                params
+            );
+            vm.etch(hyperdrive.target4(), address(template).code);
+        }
+
+        // Etch the hyperdrive contract.
+        {
+            MorphoBlueHyperdrive template = new MorphoBlueHyperdrive(
+                // NOTE: The name is in storage, so it doesn't matter how we
+                // etch it.
+                "",
+                hyperdrive.getPoolConfig(),
+                hyperdrive.target0(),
+                hyperdrive.target1(),
+                hyperdrive.target2(),
+                hyperdrive.target3(),
+                hyperdrive.target4(),
+                params
             );
             vm.etch(address(hyperdrive), address(template).code);
         }
