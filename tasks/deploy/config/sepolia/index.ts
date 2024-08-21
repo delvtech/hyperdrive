@@ -2,6 +2,8 @@ export * from "./checkpoint-rewarder";
 export * from "./checkpoint-subrewarder";
 export * from "./dai-14day";
 export * from "./dai-30day";
+export * from "./eeth-14day";
+export * from "./eeth-coordinator";
 export * from "./erc4626-coordinator";
 export * from "./ezeth-14day";
 export * from "./ezeth-30day";

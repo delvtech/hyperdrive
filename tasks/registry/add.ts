@@ -32,12 +32,10 @@ HyperdriveDeployNamedTask(
             console.log(
                 `adding ${name} ${deployment.contract} at ${deployment.address} to registry with value ${value} ...`,
             );
-            let factoryAddress = deployments.byName(
-                "ElementDAO Hyperdrive Factory",
-            ).address as Address;
-            const registryAddress = deployments.byName(
-                "DELV Hyperdrive Registry",
-            ).address as `0x${string}`;
+            let factoryAddress = deployments.byName("FACTORY")
+                .address as Address;
+            const registryAddress = deployments.byName("SEPOLIA_REGISTRY")
+                .address as `0x${string}`;
             const registryContract = await viem.getContractAt(
                 "IHyperdriveGovernedRegistry",
                 registryAddress,

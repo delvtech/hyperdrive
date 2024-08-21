@@ -564,6 +564,46 @@
             "contract": "MorphoBlueHyperdrive",
             "address": "0x00583284597c48A5de4753A2374076C289B93505",
             "timestamp": "2024-08-20T17:05:17.220Z"
+        },
+        "EETH": {
+            "contract": "MockEETH",
+            "address": "0xf1bb081eac531f07ad06d153655e9138fecbbd6b",
+            "timestamp": "2024-08-20T21:07:28.811Z"
+        },
+        "EETH_COORDINATOR_EETHHyperdriveCoreDeployer": {
+            "contract": "EETHHyperdriveCoreDeployer",
+            "address": "0xddee35d66d3247059d199de60f162538fdb9dfa4",
+            "timestamp": "2024-08-20T21:08:16.812Z"
+        },
+        "EETH_COORDINATOR_EETHTarget0Deployer": {
+            "contract": "EETHTarget0Deployer",
+            "address": "0x0a57da6998a380f1759342333fb405f34f9baefe",
+            "timestamp": "2024-08-20T21:08:25.744Z"
+        },
+        "EETH_COORDINATOR_EETHTarget1Deployer": {
+            "contract": "EETHTarget1Deployer",
+            "address": "0xed1385e7514670e093ffd1aaade0fa611f156150",
+            "timestamp": "2024-08-20T21:09:03.229Z"
+        },
+        "EETH_COORDINATOR_EETHTarget2Deployer": {
+            "contract": "EETHTarget2Deployer",
+            "address": "0x8ccaad5294bcfd0f7dd55fde9f175c51385890e5",
+            "timestamp": "2024-08-20T21:09:16.252Z"
+        },
+        "EETH_COORDINATOR_EETHTarget3Deployer": {
+            "contract": "EETHTarget3Deployer",
+            "address": "0xd1214cbfa2490d11bfcd221f798d341b94e1eade",
+            "timestamp": "2024-08-20T21:09:49.564Z"
+        },
+        "EETH_COORDINATOR_EETHTarget4Deployer": {
+            "contract": "EETHTarget4Deployer",
+            "address": "0xfab0df92da28dfffc02278bf91a5fe2dbe7342f0",
+            "timestamp": "2024-08-20T21:10:06.652Z"
+        },
+        "EETH_COORDINATOR": {
+            "contract": "EETHHyperdriveDeployerCoordinator",
+            "address": "0xc33fe46387a7b3e7286fcf696dd7717c8e6c7833",
+            "timestamp": "2024-08-20T21:10:15.525Z"
         }
     },
     "mainnet": {
