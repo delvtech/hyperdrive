@@ -13,14 +13,22 @@ addresses=('0x042CAb2Ea353fC48C9491bDbF10a12Cfe9072B6C' '0xf39Fd6e51aad88F6F4ce6
 for address in "${addresses[@]}"
 do
   echo "funding ${address}..."
-  echo " - funding ${address} eth..."
-  npx hardhat fork:mint-eth --address ${address} --amount 1000 --network ${NETWORK} --config hardhat.config.${NETWORK}.ts
-  echo " - funding ${address} steth..."
-  npx hardhat fork:mint-steth --address ${address} --amount 1000 --network ${NETWORK} --config hardhat.config.${NETWORK}.ts
-  echo " - funding ${address} reth..."
-  npx hardhat fork:mint-reth --address ${address} --amount 1000 --network ${NETWORK} --config hardhat.config.${NETWORK}.ts
-  echo " - funding ${address} dai..."
-  npx hardhat fork:mint-dai --address ${address} --amount 20000 --network ${NETWORK} --config hardhat.config.${NETWORK}.ts
-  echo " - funding ${address} sdai..."
-  npx hardhat fork:mint-sdai --address ${address} --amount 20000 --network ${NETWORK} --config hardhat.config.${NETWORK}.ts
+  echo " - funding dai..."
+  npx hardhat fork:mint-dai --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
+  echo " - funding eth..."
+  npx hardhat fork:mint-eth --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
+  echo " - funding ezeth..."
+  npx hardhat fork:mint-ezeth --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
+  echo " - funding reth..."
+  npx hardhat fork:mint-reth --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
+  echo " - funding sdai..."
+  npx hardhat fork:mint-sdai --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
+  echo " - funding steth..."
+  npx hardhat fork:mint-steth --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
+  echo " - funding usdc..."
+  npx hardhat fork:mint-usdc --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
+  echo " - funding usde..."
+  npx hardhat fork:mint-usde --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
+  echo " - funding wsteth..."
+  npx hardhat fork:mint-wsteth --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
 done

@@ -1,6 +1,6 @@
 import {
     HyperdriveCoordinatorConfig,
-    MAINNET_RENZO_RESTAKE_MANAGER_ADDRESS,
+    RENZO_RESTAKE_MANAGER_ADDRESS_MAINNET,
 } from "../../lib";
 import { MAINNET_FACTORY_NAME } from "./factory";
 
@@ -10,8 +10,8 @@ export const MAINNET_EZETH_COORDINATOR: HyperdriveCoordinatorConfig<"EzETH"> = {
     name: MAINNET_EZETH_COORDINATOR_NAME,
     prefix: "EzETH",
     targetCount: 5,
-    extraConstructorArgs: [MAINNET_RENZO_RESTAKE_MANAGER_ADDRESS],
+    extraConstructorArgs: [RENZO_RESTAKE_MANAGER_ADDRESS_MAINNET],
     factoryAddress: async (hre) =>
         hre.hyperdriveDeploy.deployments.byName(MAINNET_FACTORY_NAME).address,
-    token: MAINNET_RENZO_RESTAKE_MANAGER_ADDRESS,
+    token: RENZO_RESTAKE_MANAGER_ADDRESS_MAINNET,
 };

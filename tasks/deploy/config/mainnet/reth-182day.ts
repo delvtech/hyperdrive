@@ -2,7 +2,7 @@ import { Address, keccak256, parseEther, toBytes, zeroAddress } from "viem";
 import {
     ETH_ADDRESS,
     HyperdriveInstanceConfig,
-    MAINNET_RETH_ADDRESS,
+    RETH_ADDRESS_MAINNET,
     SIX_MONTHS,
     getLinkerDetails,
     normalizeFee,
@@ -39,7 +39,7 @@ export const MAINNET_RETH_182DAY: HyperdriveInstanceConfig<"RETH"> = {
         // approve the coordinator
         let vaultSharesToken = await hre.viem.getContractAt(
             "IRocketTokenRETH",
-            MAINNET_RETH_ADDRESS,
+            RETH_ADDRESS_MAINNET,
         );
         let pc = await hre.viem.getPublicClient();
         let tx = await vaultSharesToken.write.approve([
@@ -53,7 +53,7 @@ export const MAINNET_RETH_182DAY: HyperdriveInstanceConfig<"RETH"> = {
     poolDeployConfig: async (hre) => {
         return {
             baseToken: ETH_ADDRESS,
-            vaultSharesToken: MAINNET_RETH_ADDRESS,
+            vaultSharesToken: RETH_ADDRESS_MAINNET,
             circuitBreakerDelta: parseEther("0.035"),
             minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),

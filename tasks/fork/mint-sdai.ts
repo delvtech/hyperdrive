@@ -5,8 +5,8 @@ import {
     HyperdriveDeployBaseTaskParams,
 } from "../deploy";
 import {
-    MAINNET_SDAI_ADDRESS,
-    MAINNET_SDAI_WHALE,
+    SDAI_ADDRESS_MAINNET,
+    SDAI_WHALE_MAINNET,
 } from "../deploy/lib/constants";
 
 export type MintSDAIParams = HyperdriveDeployBaseTaskParams & {
@@ -21,7 +21,12 @@ HyperdriveDeployBaseTask(
     ),
 )
     .addParam("address", "address to send SDAI", undefined, types.string)
-    .addParam("amount", "amount (in ether) to mint", undefined, types.string)
+    .addOptionalParam(
+        "amount",
+        "amount (in ether) to mint",
+        "10000",
+        types.string,
+    )
     .setAction(
         async (
             { address, amount }: Required<MintSDAIParams>,
@@ -29,9 +34,9 @@ HyperdriveDeployBaseTask(
         ) => {
             let contract = await viem.getContractAt(
                 "solmate/tokens/ERC20.sol:ERC20",
-                MAINNET_SDAI_ADDRESS,
+                SDAI_ADDRESS_MAINNET,
             );
-            let balance = await contract.read.balanceOf([MAINNET_SDAI_WHALE]);
+            let balance = await contract.read.balanceOf([SDAI_WHALE_MAINNET]);
             if (balance < parseEther(amount)) {
                 console.log(
                     "ERROR: insufficient funds in SDAI whale account, skipping...",
@@ -50,12 +55,12 @@ HyperdriveDeployBaseTask(
                 mode: "anvil",
             });
             await tc.setBalance({
-                address: MAINNET_SDAI_WHALE,
+                address: SDAI_WHALE_MAINNET,
                 value: parseEther("1"),
             });
             let tx = await tc.sendUnsignedTransaction({
-                from: MAINNET_SDAI_WHALE,
-                to: MAINNET_SDAI_ADDRESS,
+                from: SDAI_WHALE_MAINNET,
+                to: SDAI_ADDRESS_MAINNET,
                 data: transferData,
             });
             await pc.waitForTransactionReceipt({ hash: tx });

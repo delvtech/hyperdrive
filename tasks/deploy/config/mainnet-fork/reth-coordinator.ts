@@ -1,4 +1,4 @@
-import { HyperdriveCoordinatorConfig, MAINNET_RETH_ADDRESS } from "../../lib";
+import { HyperdriveCoordinatorConfig, RETH_ADDRESS_MAINNET } from "../../lib";
 import { MAINNET_FORK_FACTORY_NAME } from "./factory";
 
 export const MAINNET_FORK_RETH_COORDINATOR_NAME = "RETH_COORDINATOR";
@@ -10,5 +10,5 @@ export const MAINNET_FORK_RETH_COORDINATOR: HyperdriveCoordinatorConfig<"RETH"> 
             hre.hyperdriveDeploy.deployments.byName(MAINNET_FORK_FACTORY_NAME)
                 .address,
         targetCount: 5,
-        token: MAINNET_RETH_ADDRESS,
+        token: RETH_ADDRESS_MAINNET,
     };

@@ -1,4 +1,4 @@
-import { HyperdriveCoordinatorConfig, MAINNET_STETH_ADDRESS } from "../../lib";
+import { HyperdriveCoordinatorConfig, STETH_ADDRESS_MAINNET } from "../../lib";
 import { MAINNET_FACTORY_NAME } from "./factory";
 
 export const MAINNET_STETH_COORDINATOR_NAME =
@@ -9,5 +9,5 @@ export const MAINNET_STETH_COORDINATOR: HyperdriveCoordinatorConfig<"StETH"> = {
     factoryAddress: async (hre) =>
         hre.hyperdriveDeploy.deployments.byName(MAINNET_FACTORY_NAME).address,
     targetCount: 5,
-    token: MAINNET_STETH_ADDRESS,
+    token: STETH_ADDRESS_MAINNET,
 };

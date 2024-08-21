@@ -1,7 +1,7 @@
 import { Address, formatEther, parseEther } from "viem";
 import {
     HyperdriveCheckpointSubrewarderConfig,
-    MAINNET_DAI_ADDRESS,
+    DAI_ADDRESS_MAINNET,
 } from "../../lib";
 import { MAINNET_FORK_CHECKPOINT_REWARDER_NAME } from "./checkpoint-rewarder";
 
@@ -20,7 +20,7 @@ export const MAINNET_FORK_CHECKPOINT_SUBREWARDER: HyperdriveCheckpointSubrewarde
             (await hre.getNamedAccounts())["deployer"] as Address,
             hre.hyperdriveDeploy.deployments.byName("DELV Hyperdrive Registry")
                 .address,
-            MAINNET_DAI_ADDRESS,
+            DAI_ADDRESS_MAINNET,
             parseEther("1"),
             parseEther("1"),
         ],
@@ -43,7 +43,7 @@ export const MAINNET_FORK_CHECKPOINT_SUBREWARDER: HyperdriveCheckpointSubrewarde
             // get the base token
             let baseToken = await hre.viem.getContractAt(
                 "ERC20Mintable",
-                MAINNET_DAI_ADDRESS,
+                DAI_ADDRESS_MAINNET,
             );
 
             // mint some tokens for checkpoint rewards

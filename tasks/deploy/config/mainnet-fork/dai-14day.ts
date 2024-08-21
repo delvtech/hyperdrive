@@ -6,7 +6,7 @@ import {
     parseDuration,
     toBytes32,
 } from "../../lib";
-import { MAINNET_DAI_ADDRESS, MAINNET_SDAI_ADDRESS } from "../../lib/constants";
+import { DAI_ADDRESS_MAINNET, SDAI_ADDRESS_MAINNET } from "../../lib/constants";
 import { MAINNET_FORK_CHECKPOINT_REWARDER_NAME } from "./checkpoint-rewarder";
 import { MAINNET_FORK_ERC4626_COORDINATOR_NAME } from "./erc4626-coordinator";
 import {
@@ -40,7 +40,7 @@ export const MAINNET_FORK_DAI_14DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     prepare: async (hre) => {
         let baseToken = await hre.viem.getContractAt(
             "ERC20Mintable",
-            MAINNET_DAI_ADDRESS,
+            DAI_ADDRESS_MAINNET,
         );
         let tx = await baseToken.write.approve([
             hre.hyperdriveDeploy.deployments.byName(
@@ -57,8 +57,8 @@ export const MAINNET_FORK_DAI_14DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     },
     poolDeployConfig: async (hre) => {
         return {
-            baseToken: MAINNET_DAI_ADDRESS,
-            vaultSharesToken: MAINNET_SDAI_ADDRESS,
+            baseToken: DAI_ADDRESS_MAINNET,
+            vaultSharesToken: SDAI_ADDRESS_MAINNET,
             circuitBreakerDelta: parseEther("0.6"),
             minimumShareReserves: parseEther("10"),
             minimumTransactionAmount: parseEther("0.001"),

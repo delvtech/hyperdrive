@@ -1,43 +1,39 @@
 import { task, types } from "hardhat/config";
 import { Address, encodeFunctionData, parseEther } from "viem";
 import {
-    DAI_ADDRESS_MAINNET,
-    DAI_WHALE_MAINNET,
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
+    USDC_ADDRESS_MAINNET,
+    USDC_WHALE_MAINNET,
 } from "../deploy";
 
-export type MintDAIParams = HyperdriveDeployBaseTaskParams & {
+export type MintUSDCParams = HyperdriveDeployBaseTaskParams & {
     address: string;
     amount: string;
 };
 
 HyperdriveDeployBaseTask(
     task(
-        "fork:mint-dai",
-        "Mints the specified amount of DAI to the input address",
+        "fork:mint-usdc",
+        "Mints the specified amount of USDC to the input address",
     ),
 )
-    .addParam("address", "address to send DAI", undefined, types.string)
-    .addOptionalParam(
-        "amount",
-        "amount (in ether) to mint",
-        "10000",
-        types.string,
-    )
+    .addParam("address", "address to send USDC", undefined, types.string)
+    .addOptionalParam("amount", "amount of USDC to mint", "10000", types.string)
     .setAction(
         async (
-            { address, amount }: Required<MintDAIParams>,
+            { address, amount }: Required<MintUSDCParams>,
             { viem, artifacts },
         ) => {
+            let adjustedAmount = BigInt(amount) * 1_000_000n;
             let contract = await viem.getContractAt(
                 "solmate/tokens/ERC20.sol:ERC20",
-                DAI_ADDRESS_MAINNET,
+                USDC_ADDRESS_MAINNET,
             );
-            let balance = await contract.read.balanceOf([DAI_WHALE_MAINNET]);
+            let balance = await contract.read.balanceOf([USDC_WHALE_MAINNET]);
             if (balance < parseEther(amount)) {
                 console.log(
-                    "ERROR: insufficient funds in DAI whale account, skipping...",
+                    "ERROR: insufficient funds in USDC whale account, skipping...",
                 );
                 return;
             }
@@ -49,19 +45,19 @@ HyperdriveDeployBaseTask(
                     )
                 ).abi,
                 functionName: "transfer",
-                args: [address as Address, parseEther(amount!)],
+                args: [address as Address, adjustedAmount],
             });
 
             let tc = await viem.getTestClient({
                 mode: "anvil",
             });
             await tc.setBalance({
-                address: DAI_WHALE_MAINNET,
-                value: parseEther("1"),
+                address: USDC_WHALE_MAINNET,
+                value: adjustedAmount,
             });
             let tx = await tc.sendUnsignedTransaction({
-                from: DAI_WHALE_MAINNET,
-                to: DAI_ADDRESS_MAINNET,
+                from: USDC_WHALE_MAINNET,
+                to: USDC_ADDRESS_MAINNET,
                 data: transferData,
             });
             let pc = await viem.getPublicClient();

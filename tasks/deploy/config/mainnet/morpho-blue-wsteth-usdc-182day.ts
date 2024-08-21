@@ -1,8 +1,8 @@
 import { Address, encodeAbiParameters, parseEther, zeroAddress } from "viem";
 import {
     HyperdriveInstanceConfig,
-    MAINNET_USDC_ADDRESS,
-    MAINNET_WSTETH_ADDRESS,
+    USDC_ADDRESS_MAINNET,
+    WSTETH_ADDRESS_MAINNET,
     SIX_MONTHS,
     getLinkerDetails,
     normalizeFee,
@@ -50,7 +50,7 @@ const morphoBlueParameters = encodeAbiParameters(
     [
         {
             morpho: "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb" as `0x${string}`,
-            collateralToken: MAINNET_WSTETH_ADDRESS,
+            collateralToken: WSTETH_ADDRESS_MAINNET,
             oracle: "0x48F7E36EB6B826B2dF4B2E630B62Cd25e89E40e2" as `0x${string}`,
             irm: "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC" as `0x${string}`,
             lltv: BigInt("860000000000000000"),
@@ -84,7 +84,7 @@ export const MAINNET_MORPHO_BLUE_WSTETH_USDC_182DAY: HyperdriveInstanceConfig<"M
             let pc = await hre.viem.getPublicClient();
             let baseToken = await hre.viem.getContractAt(
                 "contracts/src/interfaces/IERC20.sol:IERC20",
-                MAINNET_USDC_ADDRESS,
+                USDC_ADDRESS_MAINNET,
             );
             let tx = await baseToken.write.approve([
                 hre.hyperdriveDeploy.deployments.byName(
@@ -96,7 +96,7 @@ export const MAINNET_MORPHO_BLUE_WSTETH_USDC_182DAY: HyperdriveInstanceConfig<"M
         },
         poolDeployConfig: async (hre) => {
             return {
-                baseToken: MAINNET_USDC_ADDRESS,
+                baseToken: USDC_ADDRESS_MAINNET,
                 vaultSharesToken: zeroAddress,
                 circuitBreakerDelta: parseEther("0.075"),
                 minimumShareReserves: 1_000_000n,

@@ -1,7 +1,7 @@
 import { formatEther, parseEther } from "viem";
 import {
     HyperdriveInstanceConfig,
-    MAINNET_STETH_ADDRESS,
+    STETH_ADDRESS_MAINNET,
     getLinkerDetails,
     normalizeFee,
     parseDuration,
@@ -38,7 +38,7 @@ export const MAINNET_FORK_STETH_30DAY: HyperdriveInstanceConfig<"StETH"> = {
     prepare: async (hre) => {
         let vaultSharesToken = await hre.viem.getContractAt(
             "MockLido",
-            MAINNET_STETH_ADDRESS,
+            STETH_ADDRESS_MAINNET,
         );
         let pc = await hre.viem.getPublicClient();
         // approve the coordinator
@@ -58,7 +58,7 @@ export const MAINNET_FORK_STETH_30DAY: HyperdriveInstanceConfig<"StETH"> = {
     poolDeployConfig: async (hre) => {
         return {
             baseToken: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-            vaultSharesToken: MAINNET_STETH_ADDRESS,
+            vaultSharesToken: STETH_ADDRESS_MAINNET,
             circuitBreakerDelta: parseEther("0.6"),
             minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),

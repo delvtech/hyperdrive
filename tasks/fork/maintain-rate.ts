@@ -47,7 +47,7 @@ HyperdriveDeployBaseTask(
             let slot = keccak256(toHex("lido.Lido.beaconBalance"));
             let stethCurrentBalance = BigInt(
                 (await pc.getStorageAt({
-                    address: MAINNET_STETH_ADDRESS,
+                    address: STETH_ADDRESS_MAINNET,
                     slot,
                 }))!,
             );
@@ -55,7 +55,7 @@ HyperdriveDeployBaseTask(
                 (stethCurrentBalance * BigInt(interval) * parseEther(rate)) /
                 (365n * 24n * BigInt(1e18));
             await tc.setStorageAt({
-                address: MAINNET_STETH_ADDRESS,
+                address: STETH_ADDRESS_MAINNET,
                 index: slot,
                 value: toHex(
                     BigInt(stethCurrentBalance!) + stethBalanceIncrease,
@@ -68,13 +68,13 @@ HyperdriveDeployBaseTask(
 
             // For RETH, update the ETH balance of the RocketTokenRETH contract.
             let rethCurrentBalance = await pc.getBalance({
-                address: MAINNET_RETH_ADDRESS,
+                address: RETH_ADDRESS_MAINNET,
             });
             let rethBalanceIncrease =
                 (rethCurrentBalance * BigInt(interval) * parseEther(rate)) /
                 (365n * 24n * BigInt(1e18));
             await tc.setBalance({
-                address: MAINNET_RETH_ADDRESS,
+                address: RETH_ADDRESS_MAINNET,
                 value: rethCurrentBalance + rethBalanceIncrease,
             });
             console.log(`reth balance increased by ${rethBalanceIncrease}`);

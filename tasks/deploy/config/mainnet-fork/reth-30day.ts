@@ -1,7 +1,7 @@
 import { formatEther, parseEther } from "viem";
 import {
     HyperdriveInstanceConfig,
-    MAINNET_RETH_ADDRESS,
+    RETH_ADDRESS_MAINNET,
     getLinkerDetails,
     normalizeFee,
     parseDuration,
@@ -42,7 +42,7 @@ export const MAINNET_FORK_RETH_30DAY: HyperdriveInstanceConfig<"RETH"> = {
         });
         let vaultSharesToken = await hre.viem.getContractAt(
             "MockRocketPool",
-            MAINNET_RETH_ADDRESS,
+            RETH_ADDRESS_MAINNET,
         );
         let pc = await hre.viem.getPublicClient();
         let tx = await vaultSharesToken.write.approve([
@@ -56,7 +56,7 @@ export const MAINNET_FORK_RETH_30DAY: HyperdriveInstanceConfig<"RETH"> = {
     poolDeployConfig: async (hre) => {
         return {
             baseToken: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-            vaultSharesToken: MAINNET_RETH_ADDRESS,
+            vaultSharesToken: RETH_ADDRESS_MAINNET,
             circuitBreakerDelta: parseEther("0.6"),
             minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),

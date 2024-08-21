@@ -7,8 +7,8 @@ import {
     toBytes32,
 } from "../../lib";
 import {
-    MAINNET_DAI_ADDRESS,
-    MAINNET_SDAI_ADDRESS,
+    DAI_ADDRESS_MAINNET,
+    SDAI_ADDRESS_MAINNET,
     SIX_MONTHS,
 } from "../../lib/constants";
 import { MAINNET_ERC4626_COORDINATOR_NAME } from "./erc4626-coordinator";
@@ -42,7 +42,7 @@ export const MAINNET_DAI_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     prepare: async (hre) => {
         let baseToken = await hre.viem.getContractAt(
             "contracts/src/interfaces/IERC20.sol:IERC20",
-            MAINNET_DAI_ADDRESS,
+            DAI_ADDRESS_MAINNET,
         );
         let tx = await baseToken.write.approve([
             hre.hyperdriveDeploy.deployments.byName(
@@ -55,8 +55,8 @@ export const MAINNET_DAI_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     },
     poolDeployConfig: async (hre) => {
         return {
-            baseToken: MAINNET_DAI_ADDRESS,
-            vaultSharesToken: MAINNET_SDAI_ADDRESS,
+            baseToken: DAI_ADDRESS_MAINNET,
+            vaultSharesToken: SDAI_ADDRESS_MAINNET,
             circuitBreakerDelta: parseEther("0.05"),
             minimumShareReserves: parseEther("10"),
             minimumTransactionAmount: parseEther("0.001"),

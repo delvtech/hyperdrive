@@ -17,7 +17,12 @@ HyperdriveDeployBaseTask(
     ),
 )
     .addParam("address", "address to send ETH", undefined, types.string)
-    .addParam("amount", "amount (in ether) to mint", undefined, types.string)
+    .addOptionalParam(
+        "amount",
+        "amount (in ether) to mint",
+        "100",
+        types.string,
+    )
     .setAction(
         async ({ address, amount }: Required<MintETHParams>, { viem }) => {
             let tc = await viem.getTestClient({

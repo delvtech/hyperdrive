@@ -1,43 +1,43 @@
 import { task, types } from "hardhat/config";
 import { Address, encodeFunctionData, parseEther } from "viem";
 import {
-    DAI_ADDRESS_MAINNET,
-    DAI_WHALE_MAINNET,
+    EZETH_ADDRESS_MAINNET,
+    EZETH_WHALE_MAINNET,
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
 } from "../deploy";
 
-export type MintDAIParams = HyperdriveDeployBaseTaskParams & {
+export type MintEZETHParams = HyperdriveDeployBaseTaskParams & {
     address: string;
     amount: string;
 };
 
 HyperdriveDeployBaseTask(
     task(
-        "fork:mint-dai",
-        "Mints the specified amount of DAI to the input address",
+        "fork:mint-ezeth",
+        "Mints the specified amount of EZETH to the input address",
     ),
 )
-    .addParam("address", "address to send DAI", undefined, types.string)
+    .addParam("address", "address to send EZETH", undefined, types.string)
     .addOptionalParam(
         "amount",
         "amount (in ether) to mint",
-        "10000",
+        "100",
         types.string,
     )
     .setAction(
         async (
-            { address, amount }: Required<MintDAIParams>,
+            { address, amount }: Required<MintEZETHParams>,
             { viem, artifacts },
         ) => {
             let contract = await viem.getContractAt(
                 "solmate/tokens/ERC20.sol:ERC20",
-                DAI_ADDRESS_MAINNET,
+                EZETH_ADDRESS_MAINNET,
             );
-            let balance = await contract.read.balanceOf([DAI_WHALE_MAINNET]);
+            let balance = await contract.read.balanceOf([EZETH_WHALE_MAINNET]);
             if (balance < parseEther(amount)) {
                 console.log(
-                    "ERROR: insufficient funds in DAI whale account, skipping...",
+                    "ERROR: insufficient funds in EZETH whale account, skipping...",
                 );
                 return;
             }
@@ -56,12 +56,12 @@ HyperdriveDeployBaseTask(
                 mode: "anvil",
             });
             await tc.setBalance({
-                address: DAI_WHALE_MAINNET,
+                address: EZETH_WHALE_MAINNET,
                 value: parseEther("1"),
             });
             let tx = await tc.sendUnsignedTransaction({
-                from: DAI_WHALE_MAINNET,
-                to: DAI_ADDRESS_MAINNET,
+                from: EZETH_WHALE_MAINNET,
+                to: EZETH_ADDRESS_MAINNET,
                 data: transferData,
             });
             let pc = await viem.getPublicClient();

@@ -5,8 +5,8 @@ import {
     HyperdriveDeployBaseTaskParams,
 } from "../deploy";
 import {
-    MAINNET_RETH_ADDRESS,
-    MAINNET_RETH_WHALE,
+    RETH_ADDRESS_MAINNET,
+    RETH_WHALE_MAINNET,
 } from "../deploy/lib/constants";
 
 export type MintRETHParams = HyperdriveDeployBaseTaskParams & {
@@ -21,7 +21,12 @@ HyperdriveDeployBaseTask(
     ),
 )
     .addParam("address", "address to send RETH", undefined, types.string)
-    .addParam("amount", "amount (in ether) to mint", undefined, types.string)
+    .addOptionalParam(
+        "amount",
+        "amount (in ether) to mint",
+        "100",
+        types.string,
+    )
     .setAction(
         async (
             { address, amount }: Required<MintRETHParams>,
@@ -41,12 +46,12 @@ HyperdriveDeployBaseTask(
                 mode: "anvil",
             });
             await tc.setBalance({
-                address: MAINNET_RETH_WHALE,
+                address: RETH_WHALE_MAINNET,
                 value: parseEther("1"),
             });
             let tx = await tc.sendUnsignedTransaction({
-                from: MAINNET_RETH_WHALE,
-                to: MAINNET_RETH_ADDRESS,
+                from: RETH_WHALE_MAINNET,
+                to: RETH_ADDRESS_MAINNET,
                 data: transferData,
             });
             let pc = await viem.getPublicClient();

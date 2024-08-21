@@ -4,7 +4,7 @@ import {
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
 } from "../deploy";
-import { MAINNET_STETH_ADDRESS } from "../deploy/lib/constants";
+import { STETH_ADDRESS_MAINNET } from "../deploy/lib/constants";
 
 export type MintSTETHParams = HyperdriveDeployBaseTaskParams & {
     address: string;
@@ -18,7 +18,12 @@ HyperdriveDeployBaseTask(
     ),
 )
     .addParam("address", "address to send STETH", undefined, types.string)
-    .addParam("amount", "amount (in ether) to mint", undefined, types.string)
+    .addOptionalParam(
+        "amount",
+        "amount (in ether) to mint",
+        "100",
+        types.string,
+    )
     .setAction(
         async (
             { address, amount }: Required<MintSTETHParams>,
@@ -42,7 +47,7 @@ HyperdriveDeployBaseTask(
             });
             let tx = await tc.sendUnsignedTransaction({
                 from: address as Address,
-                to: MAINNET_STETH_ADDRESS,
+                to: STETH_ADDRESS_MAINNET,
                 data: submitData,
                 value: parseEther(amount!),
             });
