@@ -26,6 +26,16 @@ library SafeCast {
         y = uint128(x);
     }
 
+    /// @notice This function safely casts an int256 to an uint256.
+    /// @param x The int256 to cast to uint256.
+    /// @return y The uint256 casted from x.
+    function toUint256(int256 x) internal pure returns (uint256 y) {
+        if (x < 0) {
+            revert IHyperdrive.UnsafeCastToUint256();
+        }
+        y = uint256(x);
+    }
+
     /// @notice This function safely casts an uint256 to an int128.
     /// @param x The uint256 to cast to int128.
     /// @return y The int128 casted from x.

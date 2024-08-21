@@ -3,39 +3,29 @@ pragma solidity 0.8.22;
 
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import { LsETHConversions } from "../../instances/lseth/LsETHConversions.sol";
-import { IERC20 } from "../../interfaces/IERC20.sol";
+import { ChainlinkConversions } from "../../instances/chainlink/ChainlinkConversions.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IChainlinkAggregatorV3 } from "../../interfaces/IChainlinkAggregatorV3.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
-import { ILsETHHyperdriveDeployerCoordinator } from "../../interfaces/ILsETHHyperdriveDeployerCoordinator.sol";
-import { IRiverV1 } from "../../interfaces/IRiverV1.sol";
-import { ETH, LSETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
-import { FixedPointMath, ONE } from "../../libraries/FixedPointMath.sol";
+import { CHAINLINK_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
+import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
 /// @author DELV
-/// @title LsETHHyperdriveDeployerCoordinator
-/// @notice The deployer coordinator for the LsETHHyperdrive implementation.
+/// @title ChainlinkHyperdriveDeployerCoordinator
+/// @notice The deployer coordinator for the ChainlinkHyperdrive
+///         implementation.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract LsETHHyperdriveDeployerCoordinator is
-    HyperdriveDeployerCoordinator,
-    ILsETHHyperdriveDeployerCoordinator
+contract ChainlinkHyperdriveDeployerCoordinator is
+    HyperdriveDeployerCoordinator
 {
     using SafeERC20 for ERC20;
-    using FixedPointMath for uint256;
 
     /// @notice The deployer coordinator's kind.
-    string
-        public constant
-        override(
-            HyperdriveDeployerCoordinator,
-            IHyperdriveDeployerCoordinator
-        ) kind = LSETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
-
-    /// @dev The LsETH contract.
-    IRiverV1 internal immutable river;
+    string public constant override kind =
+        CHAINLINK_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
 
     /// @notice Instantiates the deployer coordinator.
     /// @param _name The deployer coordinator's name.
@@ -46,7 +36,6 @@ contract LsETHHyperdriveDeployerCoordinator is
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
     /// @param _target4Deployer The target4 deployer.
-    /// @param _river The LsETH contract.
     constructor(
         string memory _name,
         address _factory,
@@ -55,8 +44,7 @@ contract LsETHHyperdriveDeployerCoordinator is
         address _target1Deployer,
         address _target2Deployer,
         address _target3Deployer,
-        address _target4Deployer,
-        IRiverV1 _river
+        address _target4Deployer
     )
         HyperdriveDeployerCoordinator(
             _name,
@@ -68,9 +56,7 @@ contract LsETHHyperdriveDeployerCoordinator is
             _target3Deployer,
             _target4Deployer
         )
-    {
-        river = _river;
-    }
+    {}
 
     /// @dev Prepares the coordinator for initialization by drawing funds from
     ///      the LP, if necessary.
@@ -81,63 +67,39 @@ contract LsETHHyperdriveDeployerCoordinator is
     ///        of `_options.asBase`.
     /// @param _options The options that configure how the initialization is
     ///        settled.
-    /// @return The value that should be sent in the initialize transaction.
+    /// @return value The value that should be sent in the initialize transaction.
     function _prepareInitialize(
         IHyperdrive _hyperdrive,
         address _lp,
         uint256 _contribution,
         IHyperdrive.Options memory _options
-    ) internal override returns (uint256) {
-        // Depositing with base is not supported.
+    ) internal override returns (uint256 value) {
+        // Depositing as base is disallowed.
         if (_options.asBase) {
             revert IHyperdrive.UnsupportedToken();
         }
 
-        // Transfer vault shares from the LP and approve the Hyperdrive pool.
-        ERC20(address(river)).safeTransferFrom(
-            _lp,
-            address(this),
-            _contribution
-        );
-        ERC20(address(river)).forceApprove(address(_hyperdrive), _contribution);
+        // Take custody of the contribution and approve Hyperdrive to pull the
+        // tokens.
+        address token = _hyperdrive.vaultSharesToken();
+        ERC20(token).safeTransferFrom(_lp, address(this), _contribution);
+        ERC20(token).forceApprove(address(_hyperdrive), _contribution);
 
-        // NOTE: Return zero since this yield source isn't payable.
-        return 0;
-    }
-
-    /// @notice Convert an amount of vault shares to an amount of base.
-    /// @param _vaultSharesToken The vault shares asset.
-    /// @param _shareAmount The vault shares amount.
-    /// @return The base amount.
-    function convertToBase(
-        IERC20 _vaultSharesToken,
-        uint256 _shareAmount
-    ) public view returns (uint256) {
-        return LsETHConversions.convertToBase(_vaultSharesToken, _shareAmount);
-    }
-
-    /// @notice Convert an amount of base to an amount of vault shares.
-    /// @param _vaultSharesToken The vault shares asset.
-    /// @param _baseAmount The base amount.
-    /// @return The vault shares amount.
-    function convertToShares(
-        IERC20 _vaultSharesToken,
-        uint256 _baseAmount
-    ) public view returns (uint256) {
-        return LsETHConversions.convertToShares(_vaultSharesToken, _baseAmount);
+        return value;
     }
 
     /// @dev We override the message value check since this integration is
     ///      not payable.
     function _checkMessageValue() internal view override {
         if (msg.value != 0) {
-            revert IHyperdrive.NotPayable();
+            revert IHyperdriveDeployerCoordinator.NotPayable();
         }
     }
 
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
-    /// @param _extraData The empty extra data.
+    /// @param _extraData The extra data containing the Chainlink aggregator
+    ///        and the instance's decimals.
     function _checkPoolConfig(
         IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory _extraData
@@ -145,39 +107,52 @@ contract LsETHHyperdriveDeployerCoordinator is
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig, _extraData);
 
-        // Ensure that the base token address is properly configured.
-        if (address(_deployConfig.baseToken) != ETH) {
+        // Ensure that the base token is zero.
+        if (address(_deployConfig.baseToken) != address(0)) {
             revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
         }
 
-        // Ensure that the vault shares token address is properly configured.
-        if (address(_deployConfig.vaultSharesToken) != address(river)) {
+        // Ensure that the vault shares token isn't zero.
+        if (address(_deployConfig.vaultSharesToken) == address(0)) {
             revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
         }
 
-        // Ensure that the minimum share reserves are equal to 1e15. This value
-        // has been tested to prevent arithmetic overflows in the
-        // `_updateLiquidity` function when the share reserves are as high as
-        // 200 million.
-        if (_deployConfig.minimumShareReserves != 1e15) {
+        // Ensure that the minimum share reserves are large enough to meet the
+        // minimum requirements for safety.
+        //
+        // NOTE: Some pools may require larger minimum share reserves to be
+        // considered safe. This is just a sanity check.
+        (, uint8 decimals) = abi.decode(
+            _extraData,
+            (IChainlinkAggregatorV3, uint8)
+        );
+        if (_deployConfig.minimumShareReserves != 10 ** (decimals - 3)) {
             revert IHyperdriveDeployerCoordinator.InvalidMinimumShareReserves();
         }
 
-        // Ensure that the minimum transaction amount are equal to 1e15. This
-        // value has been tested to prevent precision issues.
-        if (_deployConfig.minimumTransactionAmount != 1e15) {
+        // Ensure that the minimum transaction amount is large enough to meet
+        // the minimum requirements for safety.
+        //
+        // NOTE: Some pools may require larger minimum transaction amounts to be
+        // considered safe. This is just a sanity check.
+        if (_deployConfig.minimumTransactionAmount != 10 ** (decimals - 3)) {
             revert IHyperdriveDeployerCoordinator
                 .InvalidMinimumTransactionAmount();
         }
     }
 
     /// @dev Gets the initial vault share price of the Hyperdrive pool.
-    /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
+    /// @param _extraData The extra data containing the Chainlink aggregator
+    ///        and the instance's decimals.
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
-        IHyperdrive.PoolDeployConfig memory _deployConfig,
-        bytes memory // unused extra data
+        IHyperdrive.PoolDeployConfig memory, // unused _deployConfig
+        bytes memory _extraData
     ) internal view override returns (uint256) {
-        return convertToBase(_deployConfig.vaultSharesToken, ONE);
+        IChainlinkAggregatorV3 aggregator = abi.decode(
+            _extraData,
+            (IChainlinkAggregatorV3)
+        );
+        return ChainlinkConversions.convertToBase(aggregator, ONE);
     }
 }

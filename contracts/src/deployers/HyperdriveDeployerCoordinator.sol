@@ -174,7 +174,7 @@ abstract contract HyperdriveDeployerCoordinator is
         // configuration for this instance. This was already done when deploying
         // target0, but we check again as a precaution in case the check relies
         // on state that can change.
-        _checkPoolConfig(_deployConfig);
+        _checkPoolConfig(_deployConfig, _extraData);
 
         // Convert the deploy config into the pool config and set the initial
         // vault share price.
@@ -234,7 +234,7 @@ abstract contract HyperdriveDeployerCoordinator is
 
             // Check the pool configuration to ensure that it's a valid
             // configuration for this instance.
-            _checkPoolConfig(_deployConfig);
+            _checkPoolConfig(_deployConfig, _extraData);
 
             // Get the initial share price and the hashes of the config and extra
             // data.
@@ -292,7 +292,7 @@ abstract contract HyperdriveDeployerCoordinator is
         // configuration for this instance. This was already done when deploying
         // target0, but we check again as a precaution in case the check relies
         // on state that can change.
-        _checkPoolConfig(_deployConfig);
+        _checkPoolConfig(_deployConfig, _extraData);
 
         // Convert the deploy config into the pool config and set the initial
         // vault share price.
@@ -454,7 +454,8 @@ abstract contract HyperdriveDeployerCoordinator is
     /// @dev Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     function _checkPoolConfig(
-        IHyperdrive.PoolDeployConfig memory _deployConfig
+        IHyperdrive.PoolDeployConfig memory _deployConfig,
+        bytes memory // unused _extraData
     ) internal view virtual {
         // Ensure that the minimum share reserves is at least 1e3. Deployer
         // coordinators should override this to be stricter.

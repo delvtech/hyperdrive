@@ -338,6 +338,14 @@ interface IHyperdrive is
     ///         that are intended to be read-only are actually read-only.
     error UnexpectedSuccess();
 
+    /// @notice Thrown when casting a value to a int128 that is outside of the
+    ///         int128 scale.
+    error UnsafeCastToInt128();
+
+    /// @notice Thrown when casting a value to a int256 that is outside of the
+    ///         int256 scale.
+    error UnsafeCastToInt256();
+
     /// @notice Thrown when casting a value to a uint112 that is outside of the
     ///         uint128 scale.
     error UnsafeCastToUint112();
@@ -346,13 +354,9 @@ interface IHyperdrive is
     ///         uint128 scale.
     error UnsafeCastToUint128();
 
-    /// @notice Thrown when casting a value to a int128 that is outside of the
-    ///         int128 scale.
-    error UnsafeCastToInt128();
-
-    /// @notice Thrown when casting a value to a int256 that is outside of the
-    ///         int256 scale.
-    error UnsafeCastToInt256();
+    /// @notice Thrown when casting a value to a uint256 that is outside of the
+    ///         uint256 scale.
+    error UnsafeCastToUint256();
 
     /// @notice Thrown when an unsupported option is passed to a function or
     ///         a user attempts to sweep an invalid token. The options and sweep

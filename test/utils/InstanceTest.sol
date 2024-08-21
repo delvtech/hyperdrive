@@ -679,7 +679,7 @@ abstract contract InstanceTest is HyperdriveTest {
             FIXED_RATE,
             false,
             poolConfig.minimumShareReserves,
-            new bytes(0),
+            getExtraData(),
             config.shareTolerance
         );
     }

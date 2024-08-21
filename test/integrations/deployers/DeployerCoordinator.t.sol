@@ -81,13 +81,14 @@ contract MockHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     }
 
     function _checkPoolConfig(
-        IHyperdrive.PoolDeployConfig memory _config
+        IHyperdrive.PoolDeployConfig memory _config,
+        bytes memory _extraData
     ) internal view override {
         require(
             _checkPoolConfigStatus,
             "MockDeployerCoordinator: invalid config"
         );
-        super._checkPoolConfig(_config);
+        super._checkPoolConfig(_config, _extraData);
     }
 
     function _getInitialVaultSharePrice(

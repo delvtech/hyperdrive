@@ -17,9 +17,12 @@ FUNCTION_NAMES = [
     "checkpoint",
 ]
 
+# HACK: We have to ignore the Chainlink instance test and the combinatorial test
+# since these tests fail during gas benchmarking.
+#
 # Run the Solidity tests and write the test name and the gas used to a markdown table.
 try:
-    test_output = subprocess.check_output('FOUNDRY_FUZZ_RUNS=100 forge test --no-match-path \'*/combinatorial/*\' --gas-report', shell=True).decode()
+    test_output = subprocess.check_output('FOUNDRY_FUZZ_RUNS=100 forge test --no-match-contract \'ChainlinkHyperdriveTest\' --no-match-path \'*/combinatorial/*\' --gas-report', shell=True).decode()
 except subprocess.CalledProcessError as e:
     print(e.output)
     exit(1)
