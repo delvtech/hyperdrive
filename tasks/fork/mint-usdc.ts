@@ -63,15 +63,10 @@ HyperdriveDeployBaseTask(
             let tc = await viem.getTestClient({
                 mode: "anvil",
             });
-            let pc = await viem.getPublicClient();
-            if (
-                (await pc.getBalance({ address: USDC_WHALE_MAINNET })) <
-                parseEther("1")
-            )
-                await tc.setBalance({
-                    address: USDC_WHALE_MAINNET,
-                    value: parseEther("1"),
-                });
+            await tc.setBalance({
+                address: USDC_WHALE_MAINNET,
+                value: parseEther("1"),
+            });
 
             // Send an unsigned transaction (will only work on anvil/hardhat).
             let tx = await tc.sendUnsignedTransaction({
@@ -79,6 +74,7 @@ HyperdriveDeployBaseTask(
                 to: USDC_ADDRESS_MAINNET,
                 data: transferData,
             });
+            let pc = await viem.getPublicClient();
             await pc.waitForTransactionReceipt({ hash: tx });
         },
     );
