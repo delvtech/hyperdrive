@@ -106,8 +106,8 @@ contract OpenLongTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Attempt to add zero base as liquidity. This should fail.
-        vm.stopPrank();
         pause(true);
+        vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.PoolIsPaused.selector);
         hyperdrive.openLong(
@@ -120,7 +120,6 @@ contract OpenLongTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
-        vm.stopPrank();
         pause(false);
     }
 

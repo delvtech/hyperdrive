@@ -19,7 +19,7 @@ import { YieldSpaceMath } from "../../contracts/src/libraries/YieldSpaceMath.sol
 import { HyperdriveRegistry } from "../../contracts/src/factory/HyperdriveRegistry.sol";
 import { ERC20ForwarderFactory } from "../../contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "../../contracts/test/ERC20Mintable.sol";
-import { MockHyperdrive, MockHyperdriveTarget0, MockHyperdriveTarget1 } from "../../contracts/test/MockHyperdrive.sol";
+import { MockHyperdrive, MockHyperdriveAdminController } from "../../contracts/test/MockHyperdrive.sol";
 import { BaseTest } from "./BaseTest.sol";
 import { HyperdriveUtils } from "./HyperdriveUtils.sol";
 import { Lib } from "./Lib.sol";
@@ -35,7 +35,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
     IHyperdriveCheckpointRewarder internal checkpointRewarder =
         IHyperdriveCheckpointRewarder(address(0));
     IHyperdrive internal hyperdrive;
-    IHyperdriveFactory internal factory;
+    IHyperdriveAdminController internal adminController;
 
     uint256 internal constant INITIAL_SHARE_PRICE = ONE;
     uint256 internal constant MINIMUM_SHARE_RESERVES = ONE;
@@ -73,45 +73,15 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         );
         address[] memory pausers = new address[](1);
         pausers[0] = pauser;
-        factory = IHyperdriveFactory(
-            new HyperdriveFactory(
-                HyperdriveFactory.FactoryConfig({
-                    governance: config.governance,
-                    hyperdriveGovernance: config.governance,
-                    deployerCoordinatorManager: alice,
-                    defaultPausers: pausers,
-                    feeCollector: config.feeCollector,
-                    sweepCollector: config.sweepCollector,
-                    checkpointRewarder: config.checkpointRewarder,
-                    checkpointDurationResolution: 1 hours,
-                    minCheckpointDuration: 8 hours,
-                    maxCheckpointDuration: 1 days,
-                    minPositionDuration: 1 days,
-                    maxPositionDuration: 2 * 365 days,
-                    minCircuitBreakerDelta: 0.01e18,
-                    // NOTE: This is higher than recommended to avoid triggering
-                    // this in some tests.
-                    maxCircuitBreakerDelta: 2e18,
-                    minFixedAPR: 0.01e18,
-                    maxFixedAPR: 0.5e18,
-                    minTimeStretchAPR: 0.01e18,
-                    maxTimeStretchAPR: 0.5e18,
-                    minFees: IHyperdrive.Fees({
-                        curve: 0.001e18,
-                        flat: 0.0001e18,
-                        governanceLP: 0.15e18,
-                        governanceZombie: 0.03e18
-                    }),
-                    maxFees: IHyperdrive.Fees({
-                        curve: 0.01e18,
-                        flat: 0.001e18,
-                        governanceLP: 0.15e18,
-                        governanceZombie: 0.03e18
-                    }),
-                    linkerFactory: config.linkerFactory,
-                    linkerCodeHash: config.linkerCodeHash
-                }),
-                "HyperdriveFactory"
+        adminController = IHyperdriveAdminController(
+            address(
+                new MockHyperdriveAdminController(
+                    config.governance,
+                    config.feeCollector,
+                    config.sweepCollector,
+                    config.checkpointRewarder,
+                    pausers
+                )
             )
         );
 
@@ -138,21 +108,18 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         vm.stopPrank();
         vm.startPrank(deployer);
         hyperdrive = IHyperdrive(
-            address(
-                new MockHyperdrive(
-                    _config,
-                    IHyperdriveAdminController(address(factory))
-                )
-            )
+            address(new MockHyperdrive(_config, adminController))
         );
 
         // Update the factory's configuration to match the pool config.
-        vm.stopPrank();
-        vm.startPrank(factory.governance());
-        factory.updateHyperdriveGovernance(_config.governance);
-        factory.updateFeeCollector(_config.feeCollector);
-        factory.updateSweepCollector(_config.feeCollector);
-        factory.updateCheckpointRewarder(_config.checkpointRewarder);
+        MockHyperdriveAdminController(address(adminController))
+            .updateHyperdriveGovernance(_config.governance);
+        MockHyperdriveAdminController(address(adminController))
+            .updateFeeCollector(_config.feeCollector);
+        MockHyperdriveAdminController(address(adminController))
+            .updateSweepCollector(_config.feeCollector);
+        MockHyperdriveAdminController(address(adminController))
+            .updateCheckpointRewarder(_config.checkpointRewarder);
 
         // Register the new instance.
         vm.stopPrank();

@@ -38,10 +38,7 @@ contract UpdateLiquidityTest is HyperdriveTest {
             )
         );
         config.minimumShareReserves = 1e15;
-        mockHyperdrive = new MockHyperdrive(
-            config,
-            IHyperdriveAdminController(address(factory))
-        );
+        mockHyperdrive = new MockHyperdrive(config, adminController);
         hyperdrive = IHyperdrive(address(mockHyperdrive));
     }
 

@@ -499,3 +499,47 @@ contract MockHyperdriveTarget4 is HyperdriveTarget4, MockHyperdriveBase {
         IHyperdriveAdminController __adminController
     ) HyperdriveTarget4(_config, __adminController) {}
 }
+
+contract MockHyperdriveAdminController {
+    address public hyperdriveGovernance;
+    address public feeCollector;
+    address public sweepCollector;
+    address public checkpointRewarder;
+    address[] internal _defaultPausers;
+
+    constructor(
+        address _hyperdriveGovernance,
+        address _feeCollector,
+        address _sweepCollector,
+        address _checkpointRewarder,
+        address[] memory __defaultPausers
+    ) {
+        hyperdriveGovernance = _hyperdriveGovernance;
+        feeCollector = _feeCollector;
+        sweepCollector = _sweepCollector;
+        checkpointRewarder = _checkpointRewarder;
+        _defaultPausers = __defaultPausers;
+    }
+
+    function updateHyperdriveGovernance(
+        address _hyperdriveGovernance
+    ) external {
+        hyperdriveGovernance = _hyperdriveGovernance;
+    }
+
+    function updateFeeCollector(address _feeCollector) external {
+        feeCollector = _feeCollector;
+    }
+
+    function updateSweepCollector(address _sweepCollector) external {
+        sweepCollector = _sweepCollector;
+    }
+
+    function updateCheckpointRewarder(address _checkpointRewarder) external {
+        checkpointRewarder = _checkpointRewarder;
+    }
+
+    function defaultPausers() external view returns (address[] memory) {
+        return _defaultPausers;
+    }
+}

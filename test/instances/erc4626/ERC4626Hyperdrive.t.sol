@@ -19,6 +19,7 @@ import { IERC4626 } from "../../../contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveAdminController } from "../../../contracts/src/interfaces/IHyperdriveAdminController.sol";
 import { IHyperdriveDeployerCoordinator } from "../../../contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
+import { IHyperdriveFactory } from "../../../contracts/src/interfaces/IHyperdriveFactory.sol";
 import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
 import { ERC4626_HYPERDRIVE_KIND, ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND, VERSION } from "../../../contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
@@ -51,6 +52,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
     IERC4626 internal pool;
     uint256 internal aliceShares;
     MockERC4626Hyperdrive internal mockHyperdrive;
+    IHyperdriveFactory internal factory;
 
     function setUp() public override __mainnet_fork(16_685_972) {
         alice = createUser("alice");

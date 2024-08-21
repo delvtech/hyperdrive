@@ -91,6 +91,9 @@ abstract contract InstanceTest is HyperdriveTest {
     ///      parameters will be overridden by factory parameters.
     IHyperdrive.PoolDeployConfig internal poolConfig;
 
+    // The Hyperdrive factory.
+    IHyperdriveFactory internal factory;
+
     // The address of the deployer coordinator contract.
     address internal deployerCoordinator;
 
