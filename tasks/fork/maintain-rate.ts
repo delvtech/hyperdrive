@@ -2,12 +2,12 @@ import { task, types } from "hardhat/config";
 import { HttpNetworkUserConfig } from "hardhat/types";
 import { keccak256, parseEther, toHex } from "viem";
 import {
+    ETHERFI_ADDRESS_MAINNET,
+    ETHERFI_MEMBERSHIP_MANAGER_ADDRESS_MAINNET,
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
-    MAINNET_ETHERFI_ADDRESS,
-    MAINNET_ETHERFI_MEMBERSHIP_MANAGER,
-    MAINNET_RETH_ADDRESS,
-    MAINNET_STETH_ADDRESS,
+    RETH_ADDRESS_MAINNET,
+    STETH_ADDRESS_MAINNET,
 } from "../deploy";
 import { sleep } from "./lib";
 
@@ -89,11 +89,11 @@ HyperdriveDeployBaseTask(
             const config = hre.network.config as HttpNetworkUserConfig;
             config.accounts = "remote";
             await tc.impersonateAccount({
-                address: MAINNET_ETHERFI_MEMBERSHIP_MANAGER,
+                address: ETHERFI_MEMBERSHIP_MANAGER_ADDRESS_MAINNET,
             });
             let etherfi = await hre.viem.getContractAt(
                 "ILiquidityPool",
-                MAINNET_ETHERFI_ADDRESS,
+                ETHERFI_ADDRESS_MAINNET,
             );
             let etherToAdd =
                 ((await etherfi.read.getTotalPooledEther()) *
@@ -101,14 +101,14 @@ HyperdriveDeployBaseTask(
                     parseEther(rate)) /
                 (365n * 24n * BigInt(1e18));
             await etherfi.write.rebase([etherToAdd], {
-                account: MAINNET_ETHERFI_MEMBERSHIP_MANAGER,
+                account: ETHERFI_MEMBERSHIP_MANAGER_ADDRESS_MAINNET,
             });
             await tc.setBalance({
-                address: MAINNET_ETHERFI_ADDRESS,
+                address: ETHERFI_ADDRESS_MAINNET,
                 value: etherToAdd,
             });
             await tc.stopImpersonatingAccount({
-                address: MAINNET_ETHERFI_MEMBERSHIP_MANAGER,
+                address: ETHERFI_MEMBERSHIP_MANAGER_ADDRESS_MAINNET,
             });
             console.log(`etherfi total assets increased by ${etherToAdd}`);
 
