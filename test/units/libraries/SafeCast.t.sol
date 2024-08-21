@@ -77,6 +77,23 @@ contract SafeCastTest is BaseTest {
         mock.toUint128(2 ** 255);
     }
 
+    function test_toUint256() public {
+        MockSafeCast mock = new MockSafeCast();
+
+        uint256 cast_num = mock.toUint256(0);
+        assertEq(cast_num, uint256(0));
+        cast_num = mock.toUint256(1);
+        assertEq(cast_num, uint256(1));
+        cast_num = mock.toUint256(type(int256).max);
+        assertEq(cast_num, uint256(type(int256).max));
+
+        vm.expectRevert();
+        mock.toUint256(-1);
+
+        vm.expectRevert();
+        mock.toUint256(type(int256).min);
+    }
+
     function test_toInt128_fromUint256_fuzz(uint256 num) public {
         MockSafeCast mock = new MockSafeCast();
 
