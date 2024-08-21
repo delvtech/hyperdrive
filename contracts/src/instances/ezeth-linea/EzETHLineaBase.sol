@@ -122,6 +122,10 @@ abstract contract EzETHLineaBase is HyperdriveBase {
     }
 
     /// @dev We override the message value check since this integration is
-    ///      payable.
-    function _checkMessageValue() internal pure override {}
+    ///      not payable.
+    function _checkMessageValue() internal view override {
+        if (msg.value != 0) {
+            revert IHyperdrive.NotPayable();
+        }
+    }
 }

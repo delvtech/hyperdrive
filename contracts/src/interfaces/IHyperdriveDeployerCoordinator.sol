@@ -6,6 +6,9 @@ import { IHyperdrive } from "./IHyperdrive.sol";
 interface IHyperdriveDeployerCoordinator {
     /// Errors ///
 
+    /// @notice Thrown when a token approval fails.
+    error ApprovalFailed();
+
     /// @notice Thrown when a user attempts to deploy target0 the deployment has
     ///         already been created.
     error DeploymentAlreadyExists();

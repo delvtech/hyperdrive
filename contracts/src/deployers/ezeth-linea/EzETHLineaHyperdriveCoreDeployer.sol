@@ -13,8 +13,8 @@ import { EzETHLineaHyperdrive } from "../../instances/ezeth-linea/EzETHLineaHype
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract EzETHLineaHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
-    /// @dev The Renzo deposit contract on Linea. The latest mint rate is used
-    ///      as the vault share price.
+    /// @notice The Renzo deposit contract on Linea. The latest mint rate is
+    ///         used as the vault share price.
     IXRenzoDeposit public immutable xRenzoDeposit;
 
     /// @notice Instantiates the ezETH Linea Hyperdrive base contract.

@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
-import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
-import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import { EzETHLineaConversions } from "../../instances/ezeth-linea/EzETHLineaConversions.sol";
+import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
-import { EZETH_LINEA_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
+import { IXRenzoDeposit } from "../../interfaces/IXRenzoDeposit.sol";
+import { ETH, EZETH_LINEA_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
@@ -19,11 +20,13 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 contract EzETHLineaHyperdriveDeployerCoordinator is
     HyperdriveDeployerCoordinator
 {
-    using SafeERC20 for ERC20;
-
     /// @notice The deployer coordinator's kind.
     string public constant override kind =
         EZETH_LINEA_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
+
+    /// @notice The Renzo deposit contract on Linea. The latest mint rate is
+    ///         used as the vault share price.
+    IXRenzoDeposit public immutable xRenzoDeposit;
 
     /// @notice Instantiates the deployer coordinator.
     /// @param _name The deployer coordinator's name.
@@ -34,6 +37,8 @@ contract EzETHLineaHyperdriveDeployerCoordinator is
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
     /// @param _target4Deployer The target4 deployer.
+    /// @param _xRenzoDeposit The xRenzoDeposit contract that provides the
+    ///        vault share price.
     constructor(
         string memory _name,
         address _factory,
@@ -42,7 +47,8 @@ contract EzETHLineaHyperdriveDeployerCoordinator is
         address _target1Deployer,
         address _target2Deployer,
         address _target3Deployer,
-        address _target4Deployer
+        address _target4Deployer,
+        IXRenzoDeposit _xRenzoDeposit
     )
         HyperdriveDeployerCoordinator(
             _name,
@@ -54,7 +60,9 @@ contract EzETHLineaHyperdriveDeployerCoordinator is
             _target3Deployer,
             _target4Deployer
         )
-    {}
+    {
+        xRenzoDeposit = _xRenzoDeposit;
+    }
 
     /// @dev Prepares the coordinator for initialization by drawing funds from
     ///      the LP, if necessary.
@@ -72,35 +80,54 @@ contract EzETHLineaHyperdriveDeployerCoordinator is
         uint256 _contribution,
         IHyperdrive.Options memory _options
     ) internal override returns (uint256) {
-        uint256 value;
-        // If base is the deposit asset, ensure that enough ether was sent to
-        // the contract and return the amount of ether that should be sent for
-        // the contribution.
+        // Depositing as base is disallowed.
         if (_options.asBase) {
-            if (msg.value < _contribution) {
-                revert IHyperdriveDeployerCoordinator.InsufficientValue();
-            }
-            value = _contribution;
-        }
-        // Otherwise, transfer vault shares from the LP and approve the
-        // Hyperdrive pool.
-        else {
-            // ****************************************************************
-            // FIXME: Implement this for new instances. ERC20 example provided.
-            // Take custody of the contribution and approve Hyperdrive to pull
-            // the tokens.
-            address token = _hyperdrive.vaultSharesToken();
-            ERC20(token).safeTransferFrom(_lp, address(this), _contribution);
-            ERC20(token).forceApprove(address(_hyperdrive), _contribution);
-            // ****************************************************************
+            revert IHyperdrive.UnsupportedToken();
         }
 
-        return value;
+        // Take custody of the contribution and approve Hyperdrive to pull
+        // the tokens.
+        IERC20 vaultSharesToken = IERC20(_hyperdrive.vaultSharesToken());
+        bool success = vaultSharesToken.transferFrom(
+            _lp,
+            address(this),
+            _contribution
+        );
+        if (!success) {
+            revert IHyperdriveDeployerCoordinator.TransferFailed();
+        }
+        success = vaultSharesToken.approve(address(_hyperdrive), _contribution);
+        if (!success) {
+            revert IHyperdriveDeployerCoordinator.ApprovalFailed();
+        }
+
+        // NOTE: Return zero since this yield source isn't payable.
+        return 0;
+    }
+
+    /// @notice Convert an amount of vault shares to an amount of base.
+    /// @param _shareAmount The vault shares amount.
+    /// @return The base amount.
+    function convertToBase(uint256 _shareAmount) public view returns (uint256) {
+        return EzETHLineaConversions.convertToBase(xRenzoDeposit, _shareAmount);
+    }
+
+    /// @notice Convert an amount of base to an amount of vault shares.
+    /// @param _baseAmount The base amount.
+    /// @return The vault shares amount.
+    function convertToShares(
+        uint256 _baseAmount
+    ) public view returns (uint256) {
+        return EzETHLineaConversions.convertToBase(xRenzoDeposit, _baseAmount);
     }
 
     /// @dev We override the message value check since this integration is
-    ///      payable.
-    function _checkMessageValue() internal view override {}
+    ///      not payable.
+    function _checkMessageValue() internal view override {
+        if (msg.value != 0) {
+            revert IHyperdrive.NotPayable();
+        }
+    }
 
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
@@ -110,21 +137,15 @@ contract EzETHLineaHyperdriveDeployerCoordinator is
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig);
 
-        // ****************************************************************
-        // FIXME: Implement this for new instances.
         // Ensure that the vault shares token address is properly configured.
-        if (
-            address(_deployConfig.vaultSharesToken) !=
-            address(VAULT_SHARES_TOKEN)
-        ) {
+        if (address(_deployConfig.vaultSharesToken) != address(xRenzoDeposit)) {
             revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
         }
 
         // Ensure that the base token address is properly configured.
-        if (address(_deployConfig.baseToken) == address(0)) {
+        if (address(_deployConfig.baseToken) != ETH) {
             revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
         }
-        // *****************************************************************
 
         // Ensure that the minimum share reserves are equal to 1e15. This value
         // has been tested to prevent arithmetic overflows in the
@@ -147,10 +168,7 @@ contract EzETHLineaHyperdriveDeployerCoordinator is
     function _getInitialVaultSharePrice(
         IHyperdrive.PoolDeployConfig memory, // unused _deployConfig
         bytes memory // unused _extraData
-    ) internal pure override returns (uint256) {
-        // ****************************************************************
-        // FIXME:  Implement this for new instances.
-        return ONE;
-        // ****************************************************************
+    ) internal view override returns (uint256) {
+        return convertToBase(ONE);
     }
 }
