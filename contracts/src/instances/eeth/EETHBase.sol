@@ -49,7 +49,7 @@ abstract contract EETHBase is HyperdriveBase {
 
         // Deposit the base into the yield source.
         sharesMinted = _liquidityPool.deposit{ value: _baseAmount }(
-            _feeCollector
+            _adminController.feeCollector()
         );
         return (sharesMinted, refund);
     }

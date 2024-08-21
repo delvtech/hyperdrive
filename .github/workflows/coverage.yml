@@ -57,7 +57,7 @@ jobs:
           cat lcov.info | sed '/.*\/test\/.*/,/TN:/d' > tmp.info && mv tmp.info lcov.info
 
       - name: Coveralls
-        uses: coverallsapp/github-action@v2
+        uses: coverallsapp/github-action@v2.3.0
         with:
           path-to-lcov: "./lcov.info"
           parallel: true
@@ -67,6 +67,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Coveralls Finished
-        uses: coverallsapp/github-action@v2
+        uses: coverallsapp/github-action@v2.3.0
         with:
           parallel-finished: true

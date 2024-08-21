@@ -29,7 +29,6 @@ import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPoint
 import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20ForwarderFactory } from "../../../contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
-import { MockHyperdriveDeployer, MockHyperdriveTargetDeployer } from "../../../contracts/test/MockHyperdriveDeployer.sol";
 import { MockLido } from "../../../contracts/test/MockLido.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
@@ -44,8 +43,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
     string internal constant NAME = "HyperdriveFactory";
 
-    HyperdriveFactory internal factory;
-
     event DefaultPausersUpdated(address[] newDefaultPausers);
 
     event DeployerCoordinatorAdded(address indexed deployerCoordinator);
@@ -56,7 +53,13 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         address indexed deployerCoordinatorManager
     );
 
+    event GovernanceUpdated(address indexed governance);
+
     event HyperdriveGovernanceUpdated(address indexed hyperdriveGovernance);
+
+    event FeeCollectorUpdated(address indexed feeCollector);
+
+    event SweepCollectorUpdated(address indexed sweepCollector);
 
     event LinkerFactoryUpdated(address indexed newLinkerFactory);
 
@@ -89,6 +92,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
     event MaxFeesUpdated(IHyperdrive.Fees newMaxFees);
 
     event MinFeesUpdated(IHyperdrive.Fees newMinFees);
+
+    IHyperdriveFactory internal factory;
 
     function setUp() public override {
         super.setUp();
@@ -133,7 +138,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 linkerFactory: address(0xdeadbeef),
                 linkerCodeHash: bytes32(uint256(0xdeadbabe))
             });
-        factory = new HyperdriveFactory(config, NAME);
+        factory = IHyperdriveFactory(new HyperdriveFactory(config, NAME));
     }
 
     function test_constructor() external {
@@ -2823,8 +2828,6 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
 
     string internal constant NAME = "HyperdriveFactory";
 
-    HyperdriveFactory factory;
-
     address deployerCoordinator;
     address coreDeployer;
     address target0Deployer;
@@ -2849,6 +2852,8 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
 
     IHyperdrive.PoolDeployConfig config;
 
+    IHyperdriveFactory internal factory;
+
     function setUp() public virtual override __mainnet_fork(16_685_972) {
         alice = createUser("alice");
         bob = createUser("bob");
@@ -2859,42 +2864,44 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ERC20ForwarderFactory("ForwarderFactory");
-        factory = new HyperdriveFactory(
-            HyperdriveFactory.FactoryConfig({
-                governance: alice,
-                deployerCoordinatorManager: celine,
-                hyperdriveGovernance: bob,
-                feeCollector: feeCollector,
-                sweepCollector: sweepCollector,
-                checkpointRewarder: address(0),
-                defaultPausers: defaults,
-                checkpointDurationResolution: 1 hours,
-                minCheckpointDuration: 8 hours,
-                maxCheckpointDuration: 1 days,
-                minPositionDuration: 7 days,
-                maxPositionDuration: 10 * 365 days,
-                minCircuitBreakerDelta: 0.15e18,
-                maxCircuitBreakerDelta: 0.6e18,
-                minFixedAPR: 0.001e18,
-                maxFixedAPR: 0.5e18,
-                minTimeStretchAPR: 0.01e18,
-                maxTimeStretchAPR: 0.5e18,
-                minFees: IHyperdrive.Fees({
-                    curve: 0.001e18,
-                    flat: 0.0001e18,
-                    governanceLP: 0.15e18,
-                    governanceZombie: 0.03e18
+        factory = IHyperdriveFactory(
+            new HyperdriveFactory(
+                HyperdriveFactory.FactoryConfig({
+                    governance: alice,
+                    deployerCoordinatorManager: celine,
+                    hyperdriveGovernance: bob,
+                    feeCollector: feeCollector,
+                    sweepCollector: sweepCollector,
+                    checkpointRewarder: address(0),
+                    defaultPausers: defaults,
+                    checkpointDurationResolution: 1 hours,
+                    minCheckpointDuration: 8 hours,
+                    maxCheckpointDuration: 1 days,
+                    minPositionDuration: 7 days,
+                    maxPositionDuration: 10 * 365 days,
+                    minCircuitBreakerDelta: 0.15e18,
+                    maxCircuitBreakerDelta: 0.6e18,
+                    minFixedAPR: 0.001e18,
+                    maxFixedAPR: 0.5e18,
+                    minTimeStretchAPR: 0.01e18,
+                    maxTimeStretchAPR: 0.5e18,
+                    minFees: IHyperdrive.Fees({
+                        curve: 0.001e18,
+                        flat: 0.0001e18,
+                        governanceLP: 0.15e18,
+                        governanceZombie: 0.03e18
+                    }),
+                    maxFees: IHyperdrive.Fees({
+                        curve: 0.1e18,
+                        flat: 0.01e18,
+                        governanceLP: 0.15e18,
+                        governanceZombie: 0.03e18
+                    }),
+                    linkerFactory: address(0xdeadbeef),
+                    linkerCodeHash: bytes32(uint256(0xdeadbabe))
                 }),
-                maxFees: IHyperdrive.Fees({
-                    curve: 0.1e18,
-                    flat: 0.01e18,
-                    governanceLP: 0.15e18,
-                    governanceZombie: 0.03e18
-                }),
-                linkerFactory: address(0xdeadbeef),
-                linkerCodeHash: bytes32(uint256(0xdeadbabe))
-            }),
-            NAME
+                NAME
+            )
         );
         coreDeployer = address(new ERC4626HyperdriveCoreDeployer());
         target0Deployer = address(new ERC4626Target0Deployer());
@@ -3398,7 +3405,7 @@ contract ERC4626InstanceGetterTest is HyperdriveFactoryBaseTest {
 contract DeployerCoordinatorGetterTest is HyperdriveTest {
     string internal constant NAME = "HyperdriveFactory";
 
-    HyperdriveFactory factory;
+    IHyperdriveFactory internal factory;
 
     function setUp() public override {
         super.setUp();
@@ -3407,42 +3414,44 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
 
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
-        factory = new HyperdriveFactory(
-            HyperdriveFactory.FactoryConfig({
-                governance: alice,
-                deployerCoordinatorManager: celine,
-                hyperdriveGovernance: bob,
-                feeCollector: feeCollector,
-                sweepCollector: sweepCollector,
-                checkpointRewarder: address(0),
-                defaultPausers: defaults,
-                checkpointDurationResolution: 1 hours,
-                minCheckpointDuration: 8 hours,
-                maxCheckpointDuration: 1 days,
-                minPositionDuration: 7 days,
-                maxPositionDuration: 10 * 365 days,
-                minCircuitBreakerDelta: 0.15e18,
-                maxCircuitBreakerDelta: 0.6e18,
-                minFixedAPR: 0.001e18,
-                maxFixedAPR: 0.5e18,
-                minTimeStretchAPR: 0.01e18,
-                maxTimeStretchAPR: 0.5e18,
-                minFees: IHyperdrive.Fees({
-                    curve: 0.001e18,
-                    flat: 0.0001e18,
-                    governanceLP: 0.15e18,
-                    governanceZombie: 0.03e18
+        factory = IHyperdriveFactory(
+            new HyperdriveFactory(
+                HyperdriveFactory.FactoryConfig({
+                    governance: alice,
+                    deployerCoordinatorManager: celine,
+                    hyperdriveGovernance: bob,
+                    feeCollector: feeCollector,
+                    sweepCollector: sweepCollector,
+                    checkpointRewarder: address(0),
+                    defaultPausers: defaults,
+                    checkpointDurationResolution: 1 hours,
+                    minCheckpointDuration: 8 hours,
+                    maxCheckpointDuration: 1 days,
+                    minPositionDuration: 7 days,
+                    maxPositionDuration: 10 * 365 days,
+                    minCircuitBreakerDelta: 0.15e18,
+                    maxCircuitBreakerDelta: 0.6e18,
+                    minFixedAPR: 0.001e18,
+                    maxFixedAPR: 0.5e18,
+                    minTimeStretchAPR: 0.01e18,
+                    maxTimeStretchAPR: 0.5e18,
+                    minFees: IHyperdrive.Fees({
+                        curve: 0.001e18,
+                        flat: 0.0001e18,
+                        governanceLP: 0.15e18,
+                        governanceZombie: 0.03e18
+                    }),
+                    maxFees: IHyperdrive.Fees({
+                        curve: 0.1e18,
+                        flat: 0.01e18,
+                        governanceLP: 0.15e18,
+                        governanceZombie: 0.03e18
+                    }),
+                    linkerFactory: address(0xdeadbeef),
+                    linkerCodeHash: bytes32(uint256(0xdeadbabe))
                 }),
-                maxFees: IHyperdrive.Fees({
-                    curve: 0.1e18,
-                    flat: 0.01e18,
-                    governanceLP: 0.15e18,
-                    governanceZombie: 0.03e18
-                }),
-                linkerFactory: address(0xdeadbeef),
-                linkerCodeHash: bytes32(uint256(0xdeadbabe))
-            }),
-            NAME
+                NAME
+            )
         );
     }
 
@@ -3597,10 +3606,10 @@ contract DeployerCoordinatorGetterTest is HyperdriveTest {
 contract HyperdriveFactoryAddDeployerCoordinatorTest is HyperdriveTest {
     string internal constant NAME = "HyperdriveFactory";
 
-    HyperdriveFactory factory;
-
     address deployerCoordinator0 = makeAddr("deployerCoordinator0");
     address deployerCoordinator1 = makeAddr("deployerCoordinator1");
+
+    IHyperdriveFactory internal factory;
 
     function setUp() public override {
         super.setUp();
@@ -3609,42 +3618,44 @@ contract HyperdriveFactoryAddDeployerCoordinatorTest is HyperdriveTest {
 
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
-        factory = new HyperdriveFactory(
-            HyperdriveFactory.FactoryConfig({
-                governance: alice,
-                deployerCoordinatorManager: celine,
-                hyperdriveGovernance: bob,
-                feeCollector: feeCollector,
-                sweepCollector: sweepCollector,
-                checkpointRewarder: address(0),
-                defaultPausers: defaults,
-                checkpointDurationResolution: 1 hours,
-                minCheckpointDuration: 8 hours,
-                maxCheckpointDuration: 1 days,
-                minPositionDuration: 7 days,
-                maxPositionDuration: 10 * 365 days,
-                minCircuitBreakerDelta: 0.15e18,
-                maxCircuitBreakerDelta: 0.6e18,
-                minFixedAPR: 0.001e18,
-                maxFixedAPR: 0.5e18,
-                minTimeStretchAPR: 0.01e18,
-                maxTimeStretchAPR: 0.5e18,
-                minFees: IHyperdrive.Fees({
-                    curve: 0.001e18,
-                    flat: 0.0001e18,
-                    governanceLP: 0.15e18,
-                    governanceZombie: 0.03e18
+        factory = IHyperdriveFactory(
+            new HyperdriveFactory(
+                HyperdriveFactory.FactoryConfig({
+                    governance: alice,
+                    deployerCoordinatorManager: celine,
+                    hyperdriveGovernance: bob,
+                    feeCollector: feeCollector,
+                    sweepCollector: sweepCollector,
+                    checkpointRewarder: address(0),
+                    defaultPausers: defaults,
+                    checkpointDurationResolution: 1 hours,
+                    minCheckpointDuration: 8 hours,
+                    maxCheckpointDuration: 1 days,
+                    minPositionDuration: 7 days,
+                    maxPositionDuration: 10 * 365 days,
+                    minCircuitBreakerDelta: 0.15e18,
+                    maxCircuitBreakerDelta: 0.6e18,
+                    minFixedAPR: 0.001e18,
+                    maxFixedAPR: 0.5e18,
+                    minTimeStretchAPR: 0.01e18,
+                    maxTimeStretchAPR: 0.5e18,
+                    minFees: IHyperdrive.Fees({
+                        curve: 0.001e18,
+                        flat: 0.0001e18,
+                        governanceLP: 0.15e18,
+                        governanceZombie: 0.03e18
+                    }),
+                    maxFees: IHyperdrive.Fees({
+                        curve: 0.1e18,
+                        flat: 0.01e18,
+                        governanceLP: 0.15e18,
+                        governanceZombie: 0.03e18
+                    }),
+                    linkerFactory: address(0xdeadbeef),
+                    linkerCodeHash: bytes32(uint256(0xdeadbabe))
                 }),
-                maxFees: IHyperdrive.Fees({
-                    curve: 0.1e18,
-                    flat: 0.01e18,
-                    governanceLP: 0.15e18,
-                    governanceZombie: 0.03e18
-                }),
-                linkerFactory: address(0xdeadbeef),
-                linkerCodeHash: bytes32(uint256(0xdeadbabe))
-            }),
-            NAME
+                NAME
+            )
         );
     }
 
@@ -3729,53 +3740,55 @@ contract HyperdriveFactoryAddDeployerCoordinatorTest is HyperdriveTest {
 contract HyperdriveFactoryRemoveDeployerCoordinatorTest is HyperdriveTest {
     string internal constant NAME = "HyperdriveFactory";
 
-    HyperdriveFactory factory;
-
     address deployerCoordinator0 = makeAddr("deployerCoordinator0");
     address deployerCoordinator1 = makeAddr("deployerCoordinator1");
     address deployerCoordinator2 = makeAddr("deployerCoordinator2");
+
+    IHyperdriveFactory internal factory;
 
     function setUp() public override {
         super.setUp();
 
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
-        factory = new HyperdriveFactory(
-            HyperdriveFactory.FactoryConfig({
-                governance: alice,
-                deployerCoordinatorManager: celine,
-                hyperdriveGovernance: bob,
-                feeCollector: feeCollector,
-                sweepCollector: sweepCollector,
-                checkpointRewarder: address(0),
-                defaultPausers: defaults,
-                checkpointDurationResolution: 1 hours,
-                minCheckpointDuration: 8 hours,
-                maxCheckpointDuration: 1 days,
-                minPositionDuration: 7 days,
-                maxPositionDuration: 10 * 365 days,
-                minCircuitBreakerDelta: 0.15e18,
-                maxCircuitBreakerDelta: 0.6e18,
-                minFixedAPR: 0.001e18,
-                maxFixedAPR: 0.5e18,
-                minTimeStretchAPR: 0.01e18,
-                maxTimeStretchAPR: 0.5e18,
-                minFees: IHyperdrive.Fees({
-                    curve: 0.001e18,
-                    flat: 0.0001e18,
-                    governanceLP: 0.15e18,
-                    governanceZombie: 0.03e18
+        factory = IHyperdriveFactory(
+            new HyperdriveFactory(
+                HyperdriveFactory.FactoryConfig({
+                    governance: alice,
+                    deployerCoordinatorManager: celine,
+                    hyperdriveGovernance: bob,
+                    feeCollector: feeCollector,
+                    sweepCollector: sweepCollector,
+                    checkpointRewarder: address(0),
+                    defaultPausers: defaults,
+                    checkpointDurationResolution: 1 hours,
+                    minCheckpointDuration: 8 hours,
+                    maxCheckpointDuration: 1 days,
+                    minPositionDuration: 7 days,
+                    maxPositionDuration: 10 * 365 days,
+                    minCircuitBreakerDelta: 0.15e18,
+                    maxCircuitBreakerDelta: 0.6e18,
+                    minFixedAPR: 0.001e18,
+                    maxFixedAPR: 0.5e18,
+                    minTimeStretchAPR: 0.01e18,
+                    maxTimeStretchAPR: 0.5e18,
+                    minFees: IHyperdrive.Fees({
+                        curve: 0.001e18,
+                        flat: 0.0001e18,
+                        governanceLP: 0.15e18,
+                        governanceZombie: 0.03e18
+                    }),
+                    maxFees: IHyperdrive.Fees({
+                        curve: 0.1e18,
+                        flat: 0.01e18,
+                        governanceLP: 0.15e18,
+                        governanceZombie: 0.03e18
+                    }),
+                    linkerFactory: address(0xdeadbeef),
+                    linkerCodeHash: bytes32(uint256(0xdeadbabe))
                 }),
-                maxFees: IHyperdrive.Fees({
-                    curve: 0.1e18,
-                    flat: 0.01e18,
-                    governanceLP: 0.15e18,
-                    governanceZombie: 0.03e18
-                }),
-                linkerFactory: address(0xdeadbeef),
-                linkerCodeHash: bytes32(uint256(0xdeadbabe))
-            }),
-            NAME
+                NAME
+            )
         );
 
         vm.startPrank(alice);

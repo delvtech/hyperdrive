@@ -151,10 +151,6 @@ contract Debug is BaseTest, EtchingUtils {
             return ("collectGovernanceFee", true);
         } else if (selector == IHyperdriveCore.pause.selector) {
             return ("pause", true);
-        } else if (selector == IHyperdriveCore.setFeeCollector.selector) {
-            return ("setFeeCollector", true);
-        } else if (selector == IHyperdriveCore.setSweepCollector.selector) {
-            return ("setSweepCollector", true);
         } else if (selector == IHyperdriveCore.setGovernance.selector) {
             return ("setGovernance", true);
         } else if (selector == IHyperdriveCore.setPauser.selector) {

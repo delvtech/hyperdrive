@@ -245,6 +245,14 @@ interface IHyperdriveFactory {
     /// @param _governance The new governance address.
     function updateGovernance(address _governance) external;
 
+    /// @notice Allows governance to change the deployer coordinator manager
+    ///         address.
+    /// @param _deployerCoordinatorManager The new deployer coordinator manager
+    ///        address.
+    function updateDeployerCoordinatorManager(
+        address _deployerCoordinatorManager
+    ) external;
+
     /// @notice Allows governance to change the hyperdrive governance address.
     /// @param _hyperdriveGovernance The new hyperdrive governance address.
     function updateHyperdriveGovernance(address _hyperdriveGovernance) external;
@@ -296,6 +304,18 @@ interface IHyperdriveFactory {
     /// @notice Allows governance to update the minimum position duration.
     /// @param _minPositionDuration The new minimum position duration.
     function updateMinPositionDuration(uint256 _minPositionDuration) external;
+
+    /// @notice Allows governance to update the maximum circuit breaker delta.
+    /// @param _maxCircuitBreakerDelta The new maximum circuit breaker delta.
+    function updateMaxCircuitBreakerDelta(
+        uint256 _maxCircuitBreakerDelta
+    ) external;
+
+    /// @notice Allows governance to update the minimum circuit breaker delta.
+    /// @param _minCircuitBreakerDelta The new minimum circuit breaker delta.
+    function updateMinCircuitBreakerDelta(
+        uint256 _minCircuitBreakerDelta
+    ) external;
 
     /// @notice Allows governance to update the maximum fixed APR.
     /// @param _maxFixedAPR The new maximum fixed APR.
@@ -465,6 +485,16 @@ interface IHyperdriveFactory {
     ///         deployments.
     /// @return The factory's maximum position duration.
     function maxPositionDuration() external view returns (uint256);
+
+    /// @notice Returns the minimum circuit breaker delta that can be used by
+    ///         new deployments.
+    /// @return The factory's minimum circuit breaker delta.
+    function minCircuitBreakerDelta() external view returns (uint256);
+
+    /// @notice Returns the maximum circuit breaker delta that can be used by
+    ///         new deployments.
+    /// @return The factory's maximum circuit breaker delta.
+    function maxCircuitBreakerDelta() external view returns (uint256);
 
     /// @notice Returns the minimum fixed APR that can be used by new
     ///         deployments.

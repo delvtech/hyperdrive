@@ -4,6 +4,7 @@ pragma solidity 0.8.22;
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../../contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
+import { IHyperdriveFactory } from "../../../contracts/src/interfaces/IHyperdriveFactory.sol";
 import { HyperdriveDeployerCoordinator } from "../../../contracts/src/deployers/HyperdriveDeployerCoordinator.sol";
 import { StETHHyperdriveCoreDeployer } from "../../../contracts/src/deployers/steth/StETHHyperdriveCoreDeployer.sol";
 import { StETHTarget0Deployer } from "../../../contracts/src/deployers/steth/StETHTarget0Deployer.sol";
@@ -49,7 +50,7 @@ contract StethDeployerCoordinatorTest is DeployerCoordinatorTest {
         config.vaultSharesToken = IERC20(address(vault));
 
         // Deploy the factory.
-        factory = address(
+        factory = IHyperdriveFactory(
             new HyperdriveFactory(
                 HyperdriveFactory.FactoryConfig({
                     governance: alice,
@@ -92,7 +93,7 @@ contract StethDeployerCoordinatorTest is DeployerCoordinatorTest {
         // Deploy the coordinator.
         coordinator = new MockHyperdriveDeployerCoordinator(
             COORDINATOR_NAME,
-            factory,
+            address(factory),
             address(new StETHHyperdriveCoreDeployer()),
             address(new StETHTarget0Deployer()),
             address(new StETHTarget1Deployer()),
@@ -104,7 +105,7 @@ contract StethDeployerCoordinatorTest is DeployerCoordinatorTest {
         // Start a prank as the factory address. This is the default address
         // that should be used for deploying Hyperdrive instances.
         vm.stopPrank();
-        vm.startPrank(factory);
+        vm.startPrank(address(factory));
     }
 
     function test_initialize_success_asBase() external override {

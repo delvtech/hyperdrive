@@ -33,7 +33,7 @@ ffi = true
 deny_warnings = true
 # optimizer settings
 optimizer = true
-optimizer_runs = 10000000 # 10 million runs
+optimizer_runs = 13000
 via_ir = false
 # Enable gas-reporting for all contracts
 gas_reports = ["*"]

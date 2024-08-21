@@ -4,8 +4,8 @@ pragma solidity 0.8.22;
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../../contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
+import { IHyperdriveFactory } from "../../../contracts/src/interfaces/IHyperdriveFactory.sol";
 import { HyperdriveDeployerCoordinator } from "../../../contracts/src/deployers/HyperdriveDeployerCoordinator.sol";
-import { HyperdriveFactory } from "../../../contracts/src/factory/HyperdriveFactory.sol";
 import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
@@ -110,9 +110,9 @@ abstract contract DeployerCoordinatorTest is HyperdriveTest {
 
     IHyperdrive.PoolDeployConfig internal config;
 
-    address internal factory;
     MockERC4626 private vault;
     MockHyperdriveDeployerCoordinator internal coordinator;
+    IHyperdriveFactory internal factory;
 
     function test_deployTarget_failure_invalidSender() external {
         // Attempt to deploy a target0 instance with an invalid sender. This

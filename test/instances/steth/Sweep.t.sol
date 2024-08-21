@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
+import { HyperdriveFactory } from "../../../contracts/src/factory/HyperdriveFactory.sol";
 import { StETHHyperdrive } from "../../../contracts/src/instances/steth/StETHHyperdrive.sol";
 import { StETHTarget0 } from "../../../contracts/src/instances/steth/StETHTarget0.sol";
 import { StETHTarget1 } from "../../../contracts/src/instances/steth/StETHTarget1.sol";
@@ -8,7 +9,9 @@ import { StETHTarget2 } from "../../../contracts/src/instances/steth/StETHTarget
 import { StETHTarget3 } from "../../../contracts/src/instances/steth/StETHTarget3.sol";
 import { StETHTarget4 } from "../../../contracts/src/instances/steth/StETHTarget4.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
+import { IHyperdriveAdminController } from "../../../contracts/src/interfaces/IHyperdriveAdminController.sol";
 import { IHyperdriveEvents } from "../../../contracts/src/interfaces/IHyperdriveEvents.sol";
+import { IHyperdriveFactory } from "../../../contracts/src/interfaces/IHyperdriveFactory.sol";
 import { ILido } from "../../../contracts/src/interfaces/ILido.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { ETH } from "../../../contracts/src/libraries/Constants.sol";
@@ -26,6 +29,7 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
     ERC20Mintable sweepable;
 
     IHyperdrive hyperdrive;
+    IHyperdriveFactory internal factory;
 
     function setUp() public override {
         super.setUp();
@@ -50,7 +54,7 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
         lidoForwarder = new ForwardingToken(address(leakyLido));
         leakyLido.submit{ value: 1e18 }(address(0));
 
-        // Deploy Hyperdrive with the leaky lido.
+        // Deploy the Hyperdrive factory.
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: IERC20(address(ETH)),
             vaultSharesToken: IERC20(address(leakyLido)),
@@ -69,17 +73,88 @@ contract SweepTest is BaseTest, IHyperdriveEvents {
             checkpointRewarder: address(0),
             fees: IHyperdrive.Fees(0, 0, 0, 0)
         });
+        address[] memory pausers = new address[](1);
+        pausers[0] = pauser;
+        factory = IHyperdriveFactory(
+            new HyperdriveFactory(
+                HyperdriveFactory.FactoryConfig({
+                    governance: config.governance,
+                    hyperdriveGovernance: config.governance,
+                    deployerCoordinatorManager: alice,
+                    defaultPausers: pausers,
+                    feeCollector: config.feeCollector,
+                    sweepCollector: config.sweepCollector,
+                    checkpointRewarder: config.checkpointRewarder,
+                    checkpointDurationResolution: 1 hours,
+                    minCheckpointDuration: 8 hours,
+                    maxCheckpointDuration: 1 days,
+                    minPositionDuration: 1 days,
+                    maxPositionDuration: 2 * 365 days,
+                    minCircuitBreakerDelta: 0.01e18,
+                    // NOTE: This is higher than recommended to avoid triggering
+                    // this in some tests.
+                    maxCircuitBreakerDelta: 2e18,
+                    minFixedAPR: 0.01e18,
+                    maxFixedAPR: 0.5e18,
+                    minTimeStretchAPR: 0.01e18,
+                    maxTimeStretchAPR: 0.5e18,
+                    minFees: IHyperdrive.Fees({
+                        curve: 0.001e18,
+                        flat: 0.0001e18,
+                        governanceLP: 0.15e18,
+                        governanceZombie: 0.03e18
+                    }),
+                    maxFees: IHyperdrive.Fees({
+                        curve: 0.01e18,
+                        flat: 0.001e18,
+                        governanceLP: 0.15e18,
+                        governanceZombie: 0.03e18
+                    }),
+                    linkerFactory: config.linkerFactory,
+                    linkerCodeHash: config.linkerCodeHash
+                }),
+                "HyperdriveFactory"
+            )
+        );
+
+        // Deploy Hyperdrive with the leaky lido.
         vm.warp(3 * config.positionDuration);
         hyperdrive = IHyperdrive(
             address(
                 new StETHHyperdrive(
                     NAME,
                     config,
-                    address(new StETHTarget0(config)),
-                    address(new StETHTarget1(config)),
-                    address(new StETHTarget2(config)),
-                    address(new StETHTarget3(config)),
-                    address(new StETHTarget4(config))
+                    IHyperdriveAdminController(address(factory)),
+                    address(
+                        new StETHTarget0(
+                            config,
+                            IHyperdriveAdminController(address(factory))
+                        )
+                    ),
+                    address(
+                        new StETHTarget1(
+                            config,
+                            IHyperdriveAdminController(address(factory))
+                        )
+                    ),
+                    address(
+                        new StETHTarget2(
+                            config,
+                            IHyperdriveAdminController(address(factory))
+                        )
+                    ),
+                    address(
+                        new StETHTarget3(
+                            config,
+                            IHyperdriveAdminController(address(factory))
+                        )
+                    ),
+                    address(
+                        new StETHTarget4(
+                            config,
+                            IHyperdriveAdminController(address(factory))
+                        )
+                    )
                 )
             )
         );

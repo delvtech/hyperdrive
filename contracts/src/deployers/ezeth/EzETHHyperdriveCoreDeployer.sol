@@ -2,6 +2,7 @@
 pragma solidity 0.8.22;
 
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
 import { IHyperdriveCoreDeployer } from "../../interfaces/IHyperdriveCoreDeployer.sol";
 import { IRestakeManager } from "../../interfaces/IRenzo.sol";
 import { EzETHHyperdrive } from "../../instances/ezeth/EzETHHyperdrive.sol";
@@ -25,6 +26,8 @@ contract EzETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param __name The name of the Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _adminController The admin controller that will specify the
+    ///        admin parameters for this instance.
     /// @param target0 The target0 address.
     /// @param target1 The target1 address.
     /// @param target2 The target2 address.
@@ -35,6 +38,7 @@ contract EzETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     function deployHyperdrive(
         string memory __name,
         IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController _adminController,
         bytes memory, // unused extra data
         address target0,
         address target1,
@@ -51,6 +55,7 @@ contract EzETHHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
             }(
                 __name,
                 _config,
+                _adminController,
                 target0,
                 target1,
                 target2,

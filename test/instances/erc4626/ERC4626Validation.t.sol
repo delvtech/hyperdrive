@@ -13,6 +13,7 @@ import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "../../../contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../../contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
+import { IHyperdriveFactory } from "../../../contracts/src/interfaces/IHyperdriveFactory.sol";
 import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
@@ -37,10 +38,11 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     address internal target3Deployer;
     address internal target4Deployer;
 
-    HyperdriveFactory internal factory;
     IERC20 internal underlyingToken;
     IERC4626 internal token;
     MockERC4626Hyperdrive internal hyperdriveInstance;
+    IHyperdriveFactory internal factory;
+
     uint8 internal decimals = 18;
     uint256 internal constant FIXED_RATE = 0.05e18;
 

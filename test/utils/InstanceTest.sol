@@ -91,11 +91,11 @@ abstract contract InstanceTest is HyperdriveTest {
     ///      parameters will be overridden by factory parameters.
     IHyperdrive.PoolDeployConfig internal poolConfig;
 
+    // The Hyperdrive factory.
+    IHyperdriveFactory internal factory;
+
     // The address of the deployer coordinator contract.
     address internal deployerCoordinator;
-
-    // The factory contract used for deployment in this testing suite.
-    HyperdriveFactory internal factory;
 
     // Flag for denoting if the base token is ETH.
     bool internal immutable isBaseETH;

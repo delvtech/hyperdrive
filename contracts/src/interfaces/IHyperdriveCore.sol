@@ -177,6 +177,22 @@ interface IHyperdriveCore is IMultiTokenCore {
 
     /// Admin ///
 
+    // TODO: This function doesn't do anything anymore and is only here for
+    // backwards compatability. This can be removed when the factory is upgraded.
+    //
+    /// @notice A stub for the old setPauser functions that doesn't do anything
+    ///         anymore.
+    /// @dev Don't call this. It doesn't do anything.
+    function setGovernance(address _who) external;
+
+    // TODO: This function doesn't do anything anymore and is only here for
+    // backwards compatability. This can be removed when the factory is upgraded.
+    //
+    /// @notice A stub for the old setPauser functions that doesn't do anything
+    ///         anymore.
+    /// @dev Don't call this. It doesn't do anything.
+    function setPauser(address, bool) external;
+
     /// @notice This function collects the governance fees accrued by the pool.
     /// @param _options The options that configure how the fees are settled.
     /// @return proceeds The governance fees collected. The units of this
@@ -189,27 +205,6 @@ interface IHyperdriveCore is IMultiTokenCore {
     /// @notice Allows an authorized address to pause this contract.
     /// @param _status True to pause all deposits and false to unpause them.
     function pause(bool _status) external;
-
-    /// @notice Allows governance to transfer the fee collector role.
-    /// @param _who The new fee collector address.
-    function setFeeCollector(address _who) external;
-
-    /// @notice Allows governance to transfer the sweep collector role.
-    /// @param _who The new sweep collector address.
-    function setSweepCollector(address _who) external;
-
-    /// @dev Allows governance to transfer the checkpoint rewarder.
-    /// @param _checkpointRewarder The new checkpoint rewarder.
-    function setCheckpointRewarder(address _checkpointRewarder) external;
-
-    /// @notice Allows governance to transfer the governance role.
-    /// @param _who The new governance address.
-    function setGovernance(address _who) external;
-
-    /// @notice Allows governance to change the pauser status of an address.
-    /// @param who The address to change.
-    /// @param status The new pauser status.
-    function setPauser(address who, bool status) external;
 
     /// @notice Transfers the contract's balance of a target token to the fee
     ///         collector address.

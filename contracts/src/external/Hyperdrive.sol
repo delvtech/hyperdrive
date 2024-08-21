@@ -4,6 +4,7 @@ pragma solidity 0.8.22;
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { HyperdriveTarget0 } from "../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../interfaces/IHyperdriveAdminController.sol";
 import { IHyperdriveCore } from "../interfaces/IHyperdriveCore.sol";
 import { IMultiTokenCore } from "../interfaces/IMultiTokenCore.sol";
 import { HyperdriveAdmin } from "../internal/HyperdriveAdmin.sol";
@@ -97,6 +98,8 @@ abstract contract Hyperdrive is
     /// @notice Instantiates a Hyperdrive pool.
     /// @param __name The pool's name.
     /// @param _config The configuration of the pool.
+    /// @param __adminController The admin controller that will specify the
+    ///        admin parameters for this contract.
     /// @param _target0 The target0 address.
     /// @param _target1 The target1 address.
     /// @param _target2 The target2 address.
@@ -105,12 +108,13 @@ abstract contract Hyperdrive is
     constructor(
         string memory __name,
         IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController __adminController,
         address _target0,
         address _target1,
         address _target2,
         address _target3,
         address _target4
-    ) HyperdriveStorage(_config) {
+    ) HyperdriveStorage(_config, __adminController) {
         // NOTE: This is initialized here rather than in `HyperdriveStorage` to
         // avoid needing to set the name in all of the target contracts. Since
         // this is a storage value, it will still be accessible.
@@ -258,21 +262,6 @@ abstract contract Hyperdrive is
 
     /// @inheritdoc IHyperdriveCore
     function pause(bool) external {
-        _delegate(target0);
-    }
-
-    /// @inheritdoc IHyperdriveCore
-    function setFeeCollector(address) external {
-        _delegate(target0);
-    }
-
-    /// @inheritdoc IHyperdriveCore
-    function setSweepCollector(address) external {
-        _delegate(target0);
-    }
-
-    /// @inheritdoc IHyperdriveCore
-    function setCheckpointRewarder(address) external {
         _delegate(target0);
     }
 

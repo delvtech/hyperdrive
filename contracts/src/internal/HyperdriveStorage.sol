@@ -4,6 +4,7 @@ pragma solidity 0.8.22;
 import { ReentrancyGuard } from "openzeppelin/utils/ReentrancyGuard.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../interfaces/IHyperdriveAdminController.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
@@ -89,24 +90,15 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
 
     /// Admin ///
 
-    /// @dev The address that can pause the contract.
-    address internal _governance;
-
-    /// @dev The address which collects governance fees.
-    address internal _feeCollector;
-
-    /// @dev The address which collects swept tokens.
-    address internal _sweepCollector;
-
-    /// @dev The address that will reward checkpoint minters.
-    address internal _checkpointRewarder;
+    // TODO: This isn't included in `IHyperdrive.PoolConfig` for backwards
+    //       compatability, but we should add it in a future breaking version.
+    //
+    /// @dev The address that contains the admin configuration for this instance.
+    /// @dev A HyperdriveFactory instance can serve as the admin controller.
+    IHyperdriveAdminController internal immutable _adminController;
 
     /// @dev Governance fees that haven't been collected yet denominated in shares.
     uint256 internal _governanceFeesAccrued;
-
-    /// @dev Addresses approved in this mapping can pause all deposits into the
-    ///      contract and other non essential functionality.
-    mapping(address user => bool isPauser) internal _pausers;
 
     /// MultiToken ///
 
@@ -139,9 +131,17 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
 
     /// Constructor ///
 
+    // TODO: It would be good to update `PoolConfig` when we make other breaking
+    //       changes.
+    //
     /// @notice Instantiates Hyperdrive's storage.
     /// @param _config The configuration of the Hyperdrive pool.
-    constructor(IHyperdrive.PoolConfig memory _config) {
+    /// @param __adminController The admin controller that will specify the
+    ///        admin parameters for this contract.
+    constructor(
+        IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController __adminController
+    ) {
         // Initialize the base and vault shares token addresses.
         _baseToken = _config.baseToken;
         _vaultSharesToken = _config.vaultSharesToken;
@@ -185,11 +185,7 @@ abstract contract HyperdriveStorage is ReentrancyGuard {
         _linkerFactory = _config.linkerFactory;
         _linkerCodeHash = _config.linkerCodeHash;
 
-        // Initialize governance, the fee collector, the sweep collector, and
-        // the checkpoint rewarder.
-        _governance = _config.governance;
-        _feeCollector = _config.feeCollector;
-        _sweepCollector = _config.sweepCollector;
-        _checkpointRewarder = _config.checkpointRewarder;
+        // Initialize the admin controller.
+        _adminController = __adminController;
     }
 }

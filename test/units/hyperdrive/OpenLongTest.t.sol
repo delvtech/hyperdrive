@@ -106,8 +106,8 @@ contract OpenLongTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Attempt to add zero base as liquidity. This should fail.
-        vm.stopPrank();
         pause(true);
+        vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.PoolIsPaused.selector);
         hyperdrive.openLong(
@@ -120,7 +120,6 @@ contract OpenLongTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
-        vm.stopPrank();
         pause(false);
     }
 
@@ -159,16 +158,6 @@ contract OpenLongTest is HyperdriveTest {
         openLong(bob, hyperdrive.calculateMaxLong());
         assertLe(hyperdrive.calculateSpotPrice(), 1e18);
         assertApproxEqAbs(hyperdrive.calculateSpotPrice(), 1e18, 1e6);
-    }
-
-    function test_pauser_authorization_fail() external {
-        vm.stopPrank();
-        vm.startPrank(alice);
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
-        hyperdrive.setPauser(alice, true);
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
-        hyperdrive.pause(true);
-        vm.stopPrank();
     }
 
     function test_open_long_failure_extreme_amount() external {

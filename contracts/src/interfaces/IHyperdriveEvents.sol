@@ -120,21 +120,6 @@ interface IHyperdriveEvents is IMultiTokenEvents {
         bool asBase
     );
 
-    /// @notice Emitted when the fee collector address is updated.
-    event FeeCollectorUpdated(address indexed newFeeCollector);
-
-    /// @notice Emitted when the sweep collector address is updated.
-    event SweepCollectorUpdated(address indexed newSweepCollector);
-
-    /// @notice Emitted when the checkpoint rewarder address is updated.
-    event CheckpointRewarderUpdated(address indexed newCheckpointRewarder);
-
-    /// @notice Emitted when the governance address is updated.
-    event GovernanceUpdated(address indexed newGovernance);
-
-    /// @notice Emitted when a pauser is updated.
-    event PauserUpdated(address indexed newPauser, bool status);
-
     /// @notice Emitted when the pause status is updated.
     event PauseStatusUpdated(bool isPaused);
 
