@@ -29,7 +29,7 @@ export const MAINNET_EETH_182DAY: HyperdriveInstanceConfig<"EETH"> = {
     salt: toBytes32("0xababe"),
     extraData: "0x",
     contribution: CONTRIBUTION,
-    fixedAPR: parseEther("0.09"),
+    fixedAPR: parseEther("0.05"),
     timestretchAPR: parseEther("0.1"),
     options: async (hre) => ({
         asBase: false,
@@ -63,7 +63,7 @@ export const MAINNET_EETH_182DAY: HyperdriveInstanceConfig<"EETH"> = {
         return {
             baseToken: ETH_ADDRESS,
             vaultSharesToken: EETH_ADDRESS_MAINNET,
-            circuitBreakerDelta: parseEther("0.1"),
+            circuitBreakerDelta: parseEther("0.075"),
             minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),
             positionDuration: parseDuration(SIX_MONTHS),

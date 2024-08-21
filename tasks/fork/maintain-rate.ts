@@ -83,7 +83,8 @@ HyperdriveDeployBaseTask(
             // For SDAI, nothing needs to be done so long as the underlying `rho`
             // value is not recalculated.
 
-            // For EETH, we can call rebase on the Etherfi contracts using an
+            // For EETH, we can call rebase on the Etherfi contract using an
+            // impersonated account.
             let etherfi = await hre.viem.getContractAt(
                 "ILiquidityPool",
                 EETH_LIQUIDITY_POOL_ADDRESS_MAINNET,
