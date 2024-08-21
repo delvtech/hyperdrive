@@ -370,6 +370,18 @@ contract MorphoBlue_USDe_DAI_HyperdriveTest is InstanceTest {
             address(IRM)
         );
         assertEq(IMorphoBlueHyperdrive(address(hyperdrive)).lltv(), LLTV);
+        assertEq(
+            Id.unwrap(IMorphoBlueHyperdrive(address(hyperdrive)).id()),
+            Id.unwrap(
+                MarketParams({
+                    loanToken: LOAN_TOKEN,
+                    collateralToken: COLLATERAL_TOKEN,
+                    oracle: ORACLE,
+                    irm: IRM,
+                    lltv: LLTV
+                }).id()
+            )
+        );
         (, uint256 totalShares) = getTokenBalances(address(hyperdrive));
         assertEq(hyperdrive.totalShares(), totalShares);
     }
