@@ -1,8 +1,8 @@
 import { task, types } from "hardhat/config";
 import { encodeFunctionData, keccak256, parseEther, toHex } from "viem";
 import {
-    ETHERFI_ADDRESS_MAINNET,
-    ETHERFI_MEMBERSHIP_MANAGER_ADDRESS_MAINNET,
+    EETH_LIQUIDITY_POOL_ADDRESS_MAINNET,
+    EETH_MEMBERSHIP_MANAGER_ADDRESS_MAINNET,
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
     RETH_ADDRESS_MAINNET,
@@ -84,13 +84,9 @@ HyperdriveDeployBaseTask(
             // value is not recalculated.
 
             // For EETH, we can call rebase on the Etherfi contracts using an
-            // impersonated account.
-            // await tc.impersonateAccount({
-            //     address: ETHERFI_MEMBERSHIP_MANAGER_ADDRESS_MAINNET,
-            // });
             let etherfi = await hre.viem.getContractAt(
                 "ILiquidityPool",
-                ETHERFI_ADDRESS_MAINNET,
+                EETH_LIQUIDITY_POOL_ADDRESS_MAINNET,
             );
             let etherToAdd =
                 ((await etherfi.read.getTotalPooledEther()) *
@@ -103,20 +99,14 @@ HyperdriveDeployBaseTask(
                 args: [etherToAdd],
             });
             await tc.sendUnsignedTransaction({
-                from: ETHERFI_MEMBERSHIP_MANAGER_ADDRESS_MAINNET,
-                to: ETHERFI_ADDRESS_MAINNET,
+                from: EETH_MEMBERSHIP_MANAGER_ADDRESS_MAINNET,
+                to: EETH_LIQUIDITY_POOL_ADDRESS_MAINNET,
                 data: txData,
             });
-            // await etherfi.write.rebase([etherToAdd], {
-            //     account: ETHERFI_MEMBERSHIP_MANAGER_ADDRESS_MAINNET,
-            // });
             await tc.setBalance({
-                address: ETHERFI_ADDRESS_MAINNET,
+                address: EETH_LIQUIDITY_POOL_ADDRESS_MAINNET,
                 value: etherToAdd,
             });
-            // await tc.stopImpersonatingAccount({
-            //     address: ETHERFI_MEMBERSHIP_MANAGER_ADDRESS_MAINNET,
-            // });
             console.log(`etherfi total assets increased by ${etherToAdd}`);
 
             // TODO: This won't necessarily use the right rate.

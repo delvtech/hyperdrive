@@ -1,6 +1,7 @@
 export * from "./create-checkpoints";
 export * from "./maintain-rate";
 export * from "./mint-dai";
+export * from "./mint-eeth";
 export * from "./mint-eth";
 export * from "./mint-ezeth";
 export * from "./mint-reth";

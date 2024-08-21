@@ -29,6 +29,8 @@ do
   npx hardhat fork:mint-eth --address "${address}" --amount "1000" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
   echo " - funding dai..."
   npx hardhat fork:mint-dai --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
+  echo " - funding eeth..."
+  npx hardhat fork:mint-eeth --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
   echo " - funding ezeth..."
   npx hardhat fork:mint-ezeth --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
   echo " - funding reth..."
