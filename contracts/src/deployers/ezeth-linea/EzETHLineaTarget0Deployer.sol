@@ -2,9 +2,9 @@
 pragma solidity 0.8.22;
 
 import { EzETHLineaTarget0 } from "../../instances/ezeth-linea/EzETHLineaTarget0.sol";
-import { IEzETHLinea } from "../../interfaces/IEzETHLinea.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDeployer.sol";
+import { IXRenzoDeposit } from "../../interfaces/IXRenzoDeposit.sol";
 
 /// @author DELV
 /// @title EzETHLineaTarget0Deployer
@@ -13,6 +13,17 @@ import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDep
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract EzETHLineaTarget0Deployer is IHyperdriveTargetDeployer {
+    /// @dev The Renzo deposit contract on Linea. The latest mint rate is used
+    ///      as the vault share price.
+    IXRenzoDeposit public immutable xRenzoDeposit;
+
+    /// @notice Instantiates the ezETH Linea Hyperdrive base contract.
+    /// @param _xRenzoDeposit The xRenzoDeposit contract that provides the
+    ///        vault share price.
+    constructor(IXRenzoDeposit _xRenzoDeposit) {
+        xRenzoDeposit = _xRenzoDeposit;
+    }
+
     /// @notice Deploys a target0 instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _salt The create2 salt used in the deployment.
@@ -28,7 +39,7 @@ contract EzETHLineaTarget0Deployer is IHyperdriveTargetDeployer {
                 // front-running of deployments.
                 new EzETHLineaTarget0{
                     salt: keccak256(abi.encode(msg.sender, _salt))
-                }(_config)
+                }(_config, xRenzoDeposit)
             );
     }
 }

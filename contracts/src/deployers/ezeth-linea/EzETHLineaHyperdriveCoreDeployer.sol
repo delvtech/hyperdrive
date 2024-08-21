@@ -3,6 +3,7 @@ pragma solidity 0.8.22;
 
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveCoreDeployer } from "../../interfaces/IHyperdriveCoreDeployer.sol";
+import { IXRenzoDeposit } from "../../interfaces/IXRenzoDeposit.sol";
 import { EzETHLineaHyperdrive } from "../../instances/ezeth-linea/EzETHLineaHyperdrive.sol";
 
 /// @author DELV
@@ -12,6 +13,17 @@ import { EzETHLineaHyperdrive } from "../../instances/ezeth-linea/EzETHLineaHype
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract EzETHLineaHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
+    /// @dev The Renzo deposit contract on Linea. The latest mint rate is used
+    ///      as the vault share price.
+    IXRenzoDeposit public immutable xRenzoDeposit;
+
+    /// @notice Instantiates the ezETH Linea Hyperdrive base contract.
+    /// @param _xRenzoDeposit The xRenzoDeposit contract that provides the
+    ///        vault share price.
+    constructor(IXRenzoDeposit _xRenzoDeposit) {
+        xRenzoDeposit = _xRenzoDeposit;
+    }
+
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param __name The name of the Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
@@ -46,7 +58,8 @@ contract EzETHLineaHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
                     _target1,
                     _target2,
                     _target3,
-                    _target4
+                    _target4,
+                    xRenzoDeposit
                 )
             )
         );

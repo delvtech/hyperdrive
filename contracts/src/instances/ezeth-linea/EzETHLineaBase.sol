@@ -18,8 +18,6 @@ import { EzETHLineaConversions } from "./EzETHLineaConversions.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract EzETHLineaBase is HyperdriveBase {
-    // FIXME: Add a getter for this.
-    //
     /// @dev The Renzo deposit contract on Linea. The latest mint rate is used
     ///      as the vault share price.
     IXRenzoDeposit internal immutable _xRenzoDeposit;
