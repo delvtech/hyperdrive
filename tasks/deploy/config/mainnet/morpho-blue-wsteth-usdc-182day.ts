@@ -1,9 +1,16 @@
-import { Address, encodeAbiParameters, parseEther, zeroAddress } from "viem";
+import {
+    Address,
+    encodeAbiParameters,
+    keccak256,
+    parseEther,
+    toHex,
+    zeroAddress,
+} from "viem";
 import {
     HyperdriveInstanceConfig,
+    SIX_MONTHS,
     USDC_ADDRESS_MAINNET,
     WSTETH_ADDRESS_MAINNET,
-    SIX_MONTHS,
     getLinkerDetails,
     normalizeFee,
     parseDuration,
@@ -66,8 +73,8 @@ export const MAINNET_MORPHO_BLUE_WSTETH_USDC_182DAY: HyperdriveInstanceConfig<"M
             hre.hyperdriveDeploy.deployments.byName(
                 MAINNET_MORPHO_BLUE_COORDINATOR_NAME,
             ).address,
-        deploymentId: toBytes32(
-            MAINNET_MORPHO_BLUE_WSTETH_USDC_182DAY_NAME.slice(0, 32),
+        deploymentId: keccak256(
+            toHex(MAINNET_MORPHO_BLUE_WSTETH_USDC_182DAY_NAME),
         ),
         salt: toBytes32("0x42080085"),
         extraData: morphoBlueParameters,
