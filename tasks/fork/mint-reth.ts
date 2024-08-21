@@ -1,5 +1,5 @@
 import { task, types } from "hardhat/config";
-import { Address, encodeFunctionData, parseEther } from "viem";
+import { Address, encodeFunctionData, parseEther, zeroAddress } from "viem";
 import {
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
@@ -20,7 +20,12 @@ HyperdriveDeployBaseTask(
         "Mints the specified amount of RETH to the input address",
     ),
 )
-    .addParam("address", "address to send RETH", undefined, types.string)
+    .addOptionalParam(
+        "address",
+        "address to send RETH",
+        zeroAddress,
+        types.string,
+    )
     .addOptionalParam(
         "amount",
         "amount (in ether) to mint",
@@ -30,8 +35,11 @@ HyperdriveDeployBaseTask(
     .setAction(
         async (
             { address, amount }: Required<MintRETHParams>,
-            { viem, artifacts },
+            { viem, artifacts, getNamedAccounts },
         ) => {
+            if (address === zeroAddress) {
+                address = (await getNamedAccounts())["deployer"];
+            }
             let transferData = encodeFunctionData({
                 abi: (
                     await artifacts.readArtifact(

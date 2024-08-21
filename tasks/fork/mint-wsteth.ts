@@ -1,5 +1,5 @@
 import { task, types } from "hardhat/config";
-import { Address, encodeFunctionData, parseEther } from "viem";
+import { Address, encodeFunctionData, parseEther, zeroAddress } from "viem";
 import {
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
@@ -18,7 +18,12 @@ HyperdriveDeployBaseTask(
         "Mints the specified amount of WSTETH to the input address",
     ),
 )
-    .addParam("address", "address to send WSTETH", undefined, types.string)
+    .addOptionalParam(
+        "address",
+        "address to send WSTETH",
+        zeroAddress,
+        types.string,
+    )
     .addOptionalParam(
         "amount",
         "amount (in ether) to mint",
@@ -28,8 +33,11 @@ HyperdriveDeployBaseTask(
     .setAction(
         async (
             { address, amount }: Required<MintWSTETHParams>,
-            { viem, artifacts },
+            { viem, artifacts, getNamedAccounts },
         ) => {
+            if (address === zeroAddress) {
+                address = (await getNamedAccounts())["deployer"];
+            }
             let contract = await viem.getContractAt(
                 "solmate/tokens/ERC20.sol:ERC20",
                 WSTETH_ADDRESS_MAINNET,

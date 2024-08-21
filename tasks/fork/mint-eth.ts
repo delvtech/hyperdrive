@@ -1,5 +1,5 @@
 import { task, types } from "hardhat/config";
-import { Address, parseEther } from "viem";
+import { Address, parseEther, zeroAddress } from "viem";
 import {
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
@@ -16,7 +16,12 @@ HyperdriveDeployBaseTask(
         "Mints the specified amount of ETH to the input address",
     ),
 )
-    .addParam("address", "address to send ETH", undefined, types.string)
+    .addOptionalParam(
+        "address",
+        "address to send ETH",
+        zeroAddress,
+        types.string,
+    )
     .addOptionalParam(
         "amount",
         "amount (in ether) to mint",
@@ -24,7 +29,13 @@ HyperdriveDeployBaseTask(
         types.string,
     )
     .setAction(
-        async ({ address, amount }: Required<MintETHParams>, { viem }) => {
+        async (
+            { address, amount }: Required<MintETHParams>,
+            { viem, getNamedAccounts },
+        ) => {
+            if (address === zeroAddress) {
+                address = (await getNamedAccounts())["deployer"];
+            }
             let tc = await viem.getTestClient({
                 mode: "anvil",
             });

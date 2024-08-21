@@ -1,5 +1,5 @@
 import { task, types } from "hardhat/config";
-import { Address, encodeFunctionData, parseEther } from "viem";
+import { Address, encodeFunctionData, parseEther, zeroAddress } from "viem";
 import {
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
@@ -17,7 +17,12 @@ HyperdriveDeployBaseTask(
         "Mints the specified amount of STETH to the input address",
     ),
 )
-    .addParam("address", "address to send STETH", undefined, types.string)
+    .addOptionalParam(
+        "address",
+        "address to send STETH",
+        zeroAddress,
+        types.string,
+    )
     .addOptionalParam(
         "amount",
         "amount (in ether) to mint",
@@ -27,8 +32,11 @@ HyperdriveDeployBaseTask(
     .setAction(
         async (
             { address, amount }: Required<MintSTETHParams>,
-            { viem, artifacts },
+            { viem, artifacts, getNamedAccounts },
         ) => {
+            if (address === zeroAddress) {
+                address = (await getNamedAccounts())["deployer"];
+            }
             let submitData = encodeFunctionData({
                 abi: (await artifacts.readArtifact("MockLido")).abi,
                 functionName: "submit",

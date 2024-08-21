@@ -1,5 +1,5 @@
 import { task, types } from "hardhat/config";
-import { Address, encodeFunctionData, parseEther } from "viem";
+import { Address, encodeFunctionData, parseEther, zeroAddress } from "viem";
 import {
     DAI_ADDRESS_MAINNET,
     DAI_WHALE_MAINNET,
@@ -18,7 +18,12 @@ HyperdriveDeployBaseTask(
         "Mints the specified amount of DAI to the input address",
     ),
 )
-    .addParam("address", "address to send DAI", undefined, types.string)
+    .addOptionalParam(
+        "address",
+        "address to send DAI",
+        zeroAddress,
+        types.string,
+    )
     .addOptionalParam(
         "amount",
         "amount (in ether) to mint",
@@ -28,8 +33,11 @@ HyperdriveDeployBaseTask(
     .setAction(
         async (
             { address, amount }: Required<MintDAIParams>,
-            { viem, artifacts },
+            { viem, artifacts, getNamedAccounts },
         ) => {
+            if (address === zeroAddress) {
+                address = (await getNamedAccounts())["deployer"];
+            }
             let contract = await viem.getContractAt(
                 "solmate/tokens/ERC20.sol:ERC20",
                 DAI_ADDRESS_MAINNET,

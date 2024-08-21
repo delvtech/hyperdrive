@@ -1,6 +1,5 @@
 import { task, types } from "hardhat/config";
-import { HttpNetworkUserConfig } from "hardhat/types";
-import { keccak256, parseEther, toHex } from "viem";
+import { encodeFunctionData, keccak256, parseEther, toHex } from "viem";
 import {
     ETHERFI_ADDRESS_MAINNET,
     ETHERFI_MEMBERSHIP_MANAGER_ADDRESS_MAINNET,
@@ -86,11 +85,9 @@ HyperdriveDeployBaseTask(
 
             // For EETH, we can call rebase on the Etherfi contracts using an
             // impersonated account.
-            const config = hre.network.config as HttpNetworkUserConfig;
-            config.accounts = "remote";
-            await tc.impersonateAccount({
-                address: ETHERFI_MEMBERSHIP_MANAGER_ADDRESS_MAINNET,
-            });
+            // await tc.impersonateAccount({
+            //     address: ETHERFI_MEMBERSHIP_MANAGER_ADDRESS_MAINNET,
+            // });
             let etherfi = await hre.viem.getContractAt(
                 "ILiquidityPool",
                 ETHERFI_ADDRESS_MAINNET,
@@ -100,16 +97,26 @@ HyperdriveDeployBaseTask(
                     BigInt(interval) *
                     parseEther(rate)) /
                 (365n * 24n * BigInt(1e18));
-            await etherfi.write.rebase([etherToAdd], {
-                account: ETHERFI_MEMBERSHIP_MANAGER_ADDRESS_MAINNET,
+            let txData = encodeFunctionData({
+                abi: (await hre.artifacts.readArtifact("ILiquidityPool")).abi,
+                functionName: "rebase",
+                args: [etherToAdd],
             });
+            await tc.sendUnsignedTransaction({
+                from: ETHERFI_MEMBERSHIP_MANAGER_ADDRESS_MAINNET,
+                to: ETHERFI_ADDRESS_MAINNET,
+                data: txData,
+            });
+            // await etherfi.write.rebase([etherToAdd], {
+            //     account: ETHERFI_MEMBERSHIP_MANAGER_ADDRESS_MAINNET,
+            // });
             await tc.setBalance({
                 address: ETHERFI_ADDRESS_MAINNET,
                 value: etherToAdd,
             });
-            await tc.stopImpersonatingAccount({
-                address: ETHERFI_MEMBERSHIP_MANAGER_ADDRESS_MAINNET,
-            });
+            // await tc.stopImpersonatingAccount({
+            //     address: ETHERFI_MEMBERSHIP_MANAGER_ADDRESS_MAINNET,
+            // });
             console.log(`etherfi total assets increased by ${etherToAdd}`);
 
             // TODO: This won't necessarily use the right rate.
