@@ -4,6 +4,7 @@ pragma solidity 0.8.22;
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IChainlinkAggregatorV3 } from "../../interfaces/IChainlinkAggregatorV3.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
 import { CHAINLINK_HYPERDRIVE_KIND } from "../../libraries/Constants.sol";
 import { ChainlinkBase } from "./ChainlinkBase.sol";
 
@@ -18,15 +19,21 @@ import { ChainlinkBase } from "./ChainlinkBase.sol";
 contract ChainlinkTarget0 is HyperdriveTarget0, ChainlinkBase {
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param __adminController The admin controller that will specify the
+    ///        admin parameters for this instance.
     /// @param __aggregator The Chainlink aggregator. This is the contract that
     ///        will return the answer.
     /// @param __decimals The decimals of this Hyperdrive instance's bonds and
     ///        LP tokens.
     constructor(
         IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController __adminController,
         IChainlinkAggregatorV3 __aggregator,
         uint8 __decimals
-    ) HyperdriveTarget0(_config) ChainlinkBase(__aggregator, __decimals) {}
+    )
+        HyperdriveTarget0(_config, __adminController)
+        ChainlinkBase(__aggregator, __decimals)
+    {}
 
     /// Getters ///
 

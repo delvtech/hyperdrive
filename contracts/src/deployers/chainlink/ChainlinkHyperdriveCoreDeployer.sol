@@ -3,6 +3,7 @@ pragma solidity 0.8.22;
 
 import { IChainlinkAggregatorV3 } from "../../interfaces/IChainlinkAggregatorV3.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
 import { IHyperdriveCoreDeployer } from "../../interfaces/IHyperdriveCoreDeployer.sol";
 import { ChainlinkHyperdrive } from "../../instances/chainlink/ChainlinkHyperdrive.sol";
 
@@ -16,6 +17,8 @@ contract ChainlinkHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param __name The name of the Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _adminController The admin controller that will specify the
+    ///        admin parameters for this instance.
     /// @param _extraData The extra data containing the Chainlink aggregator.
     /// @param _target0 The target0 address.
     /// @param _target1 The target1 address.
@@ -27,6 +30,7 @@ contract ChainlinkHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     function deployHyperdrive(
         string memory __name,
         IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController _adminController,
         bytes memory _extraData,
         address _target0,
         address _target1,
@@ -48,6 +52,7 @@ contract ChainlinkHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
                 }(
                     __name,
                     _config,
+                    _adminController,
                     _target0,
                     _target1,
                     _target2,
