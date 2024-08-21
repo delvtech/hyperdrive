@@ -1,7 +1,7 @@
 import { Address, encodeAbiParameters, parseEther, zeroAddress } from "viem";
 import {
     HyperdriveInstanceConfig,
-    MAINNET_DAI_ADDRESS,
+    DAI_ADDRESS_MAINNET,
     SIX_MONTHS,
     getLinkerDetails,
     normalizeFee,
@@ -83,7 +83,7 @@ export const MAINNET_MORPHO_BLUE_SUSDE_DAI_182DAY: HyperdriveInstanceConfig<"Mor
             let pc = await hre.viem.getPublicClient();
             let baseToken = await hre.viem.getContractAt(
                 "contracts/src/interfaces/IERC20.sol:IERC20",
-                MAINNET_DAI_ADDRESS,
+                DAI_ADDRESS_MAINNET,
             );
             let tx = await baseToken.write.approve([
                 hre.hyperdriveDeploy.deployments.byName(
@@ -95,7 +95,7 @@ export const MAINNET_MORPHO_BLUE_SUSDE_DAI_182DAY: HyperdriveInstanceConfig<"Mor
         },
         poolDeployConfig: async (hre) => {
             return {
-                baseToken: MAINNET_DAI_ADDRESS,
+                baseToken: DAI_ADDRESS_MAINNET,
                 vaultSharesToken: zeroAddress,
                 circuitBreakerDelta: parseEther("0.075"),
                 minimumShareReserves: parseEther("0.001"),

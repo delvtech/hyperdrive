@@ -3,26 +3,24 @@ import { Address, encodeFunctionData, parseEther, zeroAddress } from "viem";
 import {
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
+    WSTETH_ADDRESS_MAINNET,
+    WSTETH_WHALE_MAINNET,
 } from "../deploy";
-import {
-    RETH_ADDRESS_MAINNET,
-    RETH_WHALE_MAINNET,
-} from "../deploy/lib/constants";
 
-export type MintRETHParams = HyperdriveDeployBaseTaskParams & {
+export type MintWSTETHParams = HyperdriveDeployBaseTaskParams & {
     address: string;
     amount: string;
 };
 
 HyperdriveDeployBaseTask(
     task(
-        "fork:mint-reth",
-        "Mints the specified amount of RETH to the input address",
+        "fork:mint-wsteth",
+        "Mints the specified amount of WSTETH to the input address",
     ),
 )
     .addOptionalParam(
         "address",
-        "address to send RETH",
+        "address to send WSTETH",
         zeroAddress,
         types.string,
     )
@@ -34,12 +32,24 @@ HyperdriveDeployBaseTask(
     )
     .setAction(
         async (
-            { address, amount }: Required<MintRETHParams>,
+            { address, amount }: Required<MintWSTETHParams>,
             { viem, artifacts, getNamedAccounts },
         ) => {
             if (address === zeroAddress) {
                 address = (await getNamedAccounts())["deployer"];
             }
+            let contract = await viem.getContractAt(
+                "solmate/tokens/ERC20.sol:ERC20",
+                WSTETH_ADDRESS_MAINNET,
+            );
+            let balance = await contract.read.balanceOf([WSTETH_WHALE_MAINNET]);
+            if (balance < parseEther(amount)) {
+                console.log(
+                    "ERROR: insufficient funds in WSTETH whale account, skipping...",
+                );
+                return;
+            }
+
             let transferData = encodeFunctionData({
                 abi: (
                     await artifacts.readArtifact(
@@ -54,12 +64,12 @@ HyperdriveDeployBaseTask(
                 mode: "anvil",
             });
             await tc.setBalance({
-                address: RETH_WHALE_MAINNET,
+                address: WSTETH_WHALE_MAINNET,
                 value: parseEther("1"),
             });
             let tx = await tc.sendUnsignedTransaction({
-                from: RETH_WHALE_MAINNET,
-                to: RETH_ADDRESS_MAINNET,
+                from: WSTETH_WHALE_MAINNET,
+                to: WSTETH_ADDRESS_MAINNET,
                 data: transferData,
             });
             let pc = await viem.getPublicClient();

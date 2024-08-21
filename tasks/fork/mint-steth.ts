@@ -1,10 +1,10 @@
 import { task, types } from "hardhat/config";
-import { Address, encodeFunctionData, parseEther } from "viem";
+import { Address, encodeFunctionData, parseEther, zeroAddress } from "viem";
 import {
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
 } from "../deploy";
-import { MAINNET_STETH_ADDRESS } from "../deploy/lib/constants";
+import { STETH_ADDRESS_MAINNET } from "../deploy/lib/constants";
 
 export type MintSTETHParams = HyperdriveDeployBaseTaskParams & {
     address: string;
@@ -17,13 +17,26 @@ HyperdriveDeployBaseTask(
         "Mints the specified amount of STETH to the input address",
     ),
 )
-    .addParam("address", "address to send STETH", undefined, types.string)
-    .addParam("amount", "amount (in ether) to mint", undefined, types.string)
+    .addOptionalParam(
+        "address",
+        "address to send STETH",
+        zeroAddress,
+        types.string,
+    )
+    .addOptionalParam(
+        "amount",
+        "amount (in ether) to mint",
+        "100",
+        types.string,
+    )
     .setAction(
         async (
             { address, amount }: Required<MintSTETHParams>,
-            { viem, artifacts },
+            { viem, artifacts, getNamedAccounts },
         ) => {
+            if (address === zeroAddress) {
+                address = (await getNamedAccounts())["deployer"];
+            }
             let submitData = encodeFunctionData({
                 abi: (await artifacts.readArtifact("MockLido")).abi,
                 functionName: "submit",
@@ -42,7 +55,7 @@ HyperdriveDeployBaseTask(
             });
             let tx = await tc.sendUnsignedTransaction({
                 from: address as Address,
-                to: MAINNET_STETH_ADDRESS,
+                to: STETH_ADDRESS_MAINNET,
                 data: submitData,
                 value: parseEther(amount!),
             });
