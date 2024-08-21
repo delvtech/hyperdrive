@@ -772,6 +772,7 @@ contract MorphoBlue_sUSDe_DAI_HyperdriveTest is InstanceTest {
             lltv: LLTV
         }).id();
         Market memory market = MORPHO.market(marketId);
+        // TODO: We don't incorporate time in this.
         uint256 totalSupplyAssets = variableRate >= 0
             ? market.totalSupplyAssets +
                 uint256(market.totalSupplyAssets).mulDown(uint256(variableRate))

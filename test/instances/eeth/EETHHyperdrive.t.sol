@@ -615,6 +615,8 @@ contract EETHHyperdriveTest is InstanceTest {
         // Advance the time.
         vm.warp(block.timestamp + timeDelta);
 
+        // TODO: We don't incorporate time in this.
+        //
         // Accrue interest in Etherfi. Since the share price is given by
         // `getTotalPooledEther() / getTotalShares()`, we can simulate the
         // accrual of interest by multiplying the total pooled ether by the
