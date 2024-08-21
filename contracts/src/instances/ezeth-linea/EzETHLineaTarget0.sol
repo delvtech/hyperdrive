@@ -3,6 +3,7 @@ pragma solidity 0.8.22;
 
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IXRenzoDeposit } from "../../interfaces/IXRenzoDeposit.sol";
 import { EZETH_LINEA_HYPERDRIVE_KIND } from "../../libraries/Constants.sol";
 import { EzETHLineaBase } from "./EzETHLineaBase.sol";
 
@@ -25,5 +26,12 @@ contract EzETHLineaTarget0 is HyperdriveTarget0, EzETHLineaBase {
     /// @return The instance's kind.
     function kind() external pure override returns (string memory) {
         _revert(abi.encode(EZETH_LINEA_HYPERDRIVE_KIND));
+    }
+
+    /// @notice Returns the instance's xRenzoDeposit contract. This is the
+    ///         contract that provides the vault share price.
+    /// @return The instance's xRenzoDeposit contract.
+    function xRenzoDeposit() external view returns (IXRenzoDeposit) {
+        _revert(abi.encode(_xRenzoDeposit));
     }
 }

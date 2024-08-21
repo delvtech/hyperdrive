@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
-import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
-import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import { IERC4626 } from "../../interfaces/IERC4626.sol";
-import { IEzETHLinea } from "../../interfaces/IEzETHLinea.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IXRenzoDeposit } from "../../interfaces/IXRenzoDeposit.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
+import { EzETHLineaConversions } from "./EzETHLineaConversions.sol";
 
+// FIXME: Update the Natspec comment.
+//
 /// @author DELV
 /// @title EzETHLineaBase
 /// @notice The base contract for the EzETHLinea Hyperdrive implementation.
@@ -18,44 +18,29 @@ import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract EzETHLineaBase is HyperdriveBase {
-    using SafeERC20 for ERC20;
+    // FIXME: Add a getter for this.
+    //
+    /// @dev The Renzo deposit contract on Linea. The latest mint rate is used
+    ///      as the vault share price.
+    IXRenzoDeposit internal immutable _xRenzoDeposit;
+
+    /// @notice Instantiates the ezETH Linea Hyperdrive base contract.
+    /// @param __xRenzoDeposit The xRenzoDeposit contract that provides the
+    ///        vault share price.
+    constructor(IXRenzoDeposit __xRenzoDeposit) {
+        _xRenzoDeposit = __xRenzoDeposit;
+    }
 
     /// Yield Source ///
 
-    /// @dev Accepts a deposit from the user in base.
-    /// @param _baseAmount The base amount to deposit.
-    /// @return The shares that were minted in the deposit.
-    /// @return The amount of ETH to refund. Since this yield source isn't
-    ///         payable, this is always zero.
+    /// @dev Deposits with base are not supported for this integration.
+    ///      xRenzoDeposit takes a bridge fee which causes problems with the
+    ///      `openShort` accounting.
     function _depositWithBase(
-        uint256 _baseAmount,
+        uint256, // unused
         bytes calldata // unused
-    ) internal override returns (uint256, uint256) {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC4626 example provided.
-        // Take custody of the deposit in base.
-        ERC20(address(_baseToken)).safeTransferFrom(
-            msg.sender,
-            address(this),
-            _baseAmount
-        );
-
-        // Deposit the base into the yield source.
-        //
-        // NOTE: We increase the required approval amount by 1 wei so that
-        // the vault ends with an approval of 1 wei. This makes future
-        // approvals cheaper by keeping the storage slot warm.
-        ERC20(address(_baseToken)).forceApprove(
-            address(_vaultSharesToken),
-            _baseAmount + 1
-        );
-        uint256 sharesMinted = IERC4626(address(_vaultSharesToken)).deposit(
-            _baseAmount,
-            address(this)
-        );
-
-        return (sharesMinted, 0);
-        // ****************************************************************
+    ) internal pure override returns (uint256, uint256) {
+        revert IHyperdrive.UnsupportedToken();
     }
 
     /// @dev Process a deposit in vault shares.
@@ -64,40 +49,27 @@ abstract contract EzETHLineaBase is HyperdriveBase {
         uint256 _shareAmount,
         bytes calldata // unused _extraData
     ) internal override {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC20 example provided.
+        // NOTE: Since Linea ezETH is a xERC20, which is itself an OpenZeppelin
+        // ERC20 token, we don't need to use safeTransferFrom.
+        //
         // Take custody of the deposit in vault shares.
-        ERC20(address(_vaultSharesToken)).safeTransferFrom(
+        bool success = _vaultSharesToken.transferFrom(
             msg.sender,
             address(this),
             _shareAmount
         );
-        // ****************************************************************
+        if (!success) {
+            revert IHyperdrive.TransferFailed();
+        }
     }
 
-    /// @dev Process a withdrawal in base and send the proceeds to the
-    ///      destination.
-
-    /// @param _shareAmount The amount of vault shares to withdraw.
-    /// @param _destination The destination of the withdrawal.
-    /// @return amountWithdrawn The amount of base withdrawn.
+    /// @dev Withdrawals with base are not supported for this integration.
     function _withdrawWithBase(
-        uint256 _shareAmount,
-        address _destination,
+        uint256, // unused
+        address, // unused
         bytes calldata // unused
-    ) internal override returns (uint256 amountWithdrawn) {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC4626 example provided.
-        // Redeem from the yield source and transfer the
-        // resulting base to the destination address.
-        amountWithdrawn = IERC4626(address(_vaultSharesToken)).redeem(
-            _shareAmount,
-            _destination,
-            address(this)
-        );
-
-        return amountWithdrawn;
-        // ****************************************************************
+    ) internal pure override returns (uint256) {
+        revert IHyperdrive.UnsupportedToken();
     }
 
     /// @dev Process a withdrawal in vault shares and send the proceeds to the
@@ -109,14 +81,14 @@ abstract contract EzETHLineaBase is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC20 example provided.
+        // NOTE: Since Linea ezETH is a xERC20, which is itself an OpenZeppelin
+        // ERC20 token, we don't need to use safeTransferFrom.
+        //
         // Transfer vault shares to the destination.
-        ERC20(address(_vaultSharesToken)).safeTransfer(
-            _destination,
-            _shareAmount
-        );
-        // ****************************************************************
+        bool success = _vaultSharesToken.transfer(_destination, _shareAmount);
+        if (!success) {
+            revert IHyperdrive.TransferFailed();
+        }
     }
 
     /// @dev Convert an amount of vault shares to an amount of base.
@@ -125,11 +97,8 @@ abstract contract EzETHLineaBase is HyperdriveBase {
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
-        // ****************************************************************
-        // FIXME: Implement this for new instances.
         return
-            IERC4626(address(_vaultSharesToken)).convertToAssets(_shareAmount);
-        // ****************************************************************
+            EzETHLineaConversions.convertToBase(_xRenzoDeposit, _shareAmount);
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
@@ -138,11 +107,8 @@ abstract contract EzETHLineaBase is HyperdriveBase {
     function _convertToShares(
         uint256 _baseAmount
     ) internal view override returns (uint256) {
-        // ****************************************************************
-        // FIXME: Implement this for new instances.
         return
-            IERC4626(address(_vaultSharesToken)).convertToShares(_baseAmount);
-        // ****************************************************************
+            EzETHLineaConversions.convertToShares(_xRenzoDeposit, _baseAmount);
     }
 
     /// @dev Gets the total amount of shares held by the pool in the yield

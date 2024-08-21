@@ -57,6 +57,10 @@ import { EzETHLineaBase } from "./EzETHLineaBase.sol";
 contract EzETHLineaHyperdrive is Hyperdrive, EzETHLineaBase {
     using SafeERC20 for ERC20;
 
+    // FIXME: Update the natspec.
+    //
+    // FIXME: We need the xRenzoDeposit contract.
+    //
     /// @notice Instantiates Hyperdrive with a EzETHLinea vault as the yield source.
     /// @param __name The pool's name.
     /// @param _config The configuration of the Hyperdrive pool.
