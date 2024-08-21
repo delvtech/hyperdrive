@@ -141,23 +141,23 @@ configurations.
 
 1. In one terminal, start a local anvil fork instance:
 
-  ```sh
-  anvil --fork-url <your_mainnet_rpc_url>
-  ```
+    ```sh
+    anvil --fork-url <your_mainnet_rpc_url>
+    ```
 
 1. In another terminal, bootstrap the `mainnet_fork` network's deployments in
 `deployments.local.json` with the mainnet contract addresses.
 
-  ```sh
-  ./scripts/bootstrap-fork.sh
-  ```
+    ```sh
+    ./scripts/bootstrap-fork.sh
+    ```
 
 1. Deploy any new contracts present in `hardhat.config.mainnet_fork.ts` that
 have not already been deployed on mainnet.
 
-  ```sh
-  NETWORK=mainnet_fork ADMIN=<your_deployer_address> ./scripts/deploy-fork.sh
-  ```
+    ```sh
+    NETWORK=mainnet_fork ADMIN=<your_deployer_address> ./scripts/deploy-fork.sh
+    ```
 
 To update the remote fork with these changes, first create a pull request and
 obtain the latest version for the `devnet` image. The changes will be reflected
