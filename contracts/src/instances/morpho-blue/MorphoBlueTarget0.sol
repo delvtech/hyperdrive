@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
-import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
+import { MarketParamsLib } from "morpho-blue/src/libraries/MarketParamsLib.sol";
+import { Id, IMorpho, MarketParams } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IMorphoBlueHyperdrive } from "../../interfaces/IMorphoBlueHyperdrive.sol";
@@ -17,6 +18,8 @@ import { MorphoBlueBase } from "./MorphoBlueBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract MorphoBlueTarget0 is HyperdriveTarget0, MorphoBlueBase {
+    using MarketParamsLib for MarketParams;
+
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _params The Morpho Blue params.
@@ -59,5 +62,21 @@ contract MorphoBlueTarget0 is HyperdriveTarget0, MorphoBlueBase {
     /// @return The LLTV for this Morpho Blue market.
     function lltv() external view returns (uint256) {
         _revert(abi.encode(_lltv));
+    }
+
+    /// @notice Returns the Morpho Blue ID for this market.
+    /// @return The Morpho Blue ID.
+    function id() external view returns (Id) {
+        _revert(
+            abi.encode(
+                MarketParams({
+                    loanToken: address(_baseToken),
+                    collateralToken: _collateralToken,
+                    oracle: _oracle,
+                    irm: _irm,
+                    lltv: _lltv
+                }).id()
+            )
+        );
     }
 }

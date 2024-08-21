@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
+import { Id, IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { IHyperdrive } from "./IHyperdrive.sol";
 
 interface IMorphoBlueHyperdrive is IHyperdrive {
@@ -33,4 +33,8 @@ interface IMorphoBlueHyperdrive is IHyperdrive {
     ///         market.
     /// @return The liquiditation loan to value ratio for this Morpho Blue market.
     function lltv() external view returns (uint256);
+
+    /// @notice Returns the Morpho Blue ID for this market.
+    /// @return The Morpho Blue ID.
+    function id() external view returns (Id);
 }
