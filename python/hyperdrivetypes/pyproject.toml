@@ -1,13 +1,13 @@
 [project]
-name = "hypertypes"
-version = "0.0.1"
+name = "hyperdrivetypes"
+version = "0.0.2"
 # Authors are the current, primary stewards of the repo
 # contributors can be found on github
 authors = [
     {name = "Dylan Paiton", email = "dylan@delv.tech" },
     {name = "Matthew Brown", email = "matt@delv.tech"  },
 ]
-description = "Agent interface for on-chain protocols."
+description = "Python type definitions for the Hyperdrive smart contracts and integrations."
 readme = "README.md"
 requires-python = ">=3.10, <=3.11"
 classifiers = [
@@ -18,4 +18,4 @@ classifiers = [
     "Natural Language :: English",
 ]
 
-dependencies = ["pypechain"]
+dependencies = ["pypechain", "fixedpointmath"]

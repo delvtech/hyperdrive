@@ -4,15 +4,18 @@
 
 ### Build ###
 
+# hyperdrivetypes build must be done after sol build
 build:
 	make build-sol
-	make build-hypertypes
+	make build-hyperdrivetypes
 
 build-sol:
 	forge build
 
-build-hypertypes:
-	forge build && pypechain --output-dir python/hypertypes/types --line-length 80 out/
+# forge build will do nothing if build-sol was previously run,
+# but we put it here so this can be called individually
+build-hyperdrivetypes:
+	forge build && pypechain --output-dir python/hyperdrivetypes/hyperdrivetypes --line-length 80 out/
 
 ### Test ###
 
