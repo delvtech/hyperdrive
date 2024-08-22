@@ -11,6 +11,9 @@ function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// FIXME: Update this to do library lookups automatically.
+//
+// FIXME: We aren't verifying libraries right now.
 task(
     "deploy:verify",
     "attempts to verify all deployed contracts for the specified network",
@@ -252,6 +255,10 @@ task(
                     libraries: {
                         LPMath: hyperdriveDeploy.deployments.byName("LPMath")
                             .address,
+                        MorphoBlueConversions:
+                            hyperdriveDeploy.deployments.byName(
+                                "MorphoBlueConversions",
+                            ).address,
                     },
                 });
             }

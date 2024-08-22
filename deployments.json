@@ -901,6 +901,66 @@
             "contract": "MorphoBlueHyperdriveDeployerCoordinator",
             "address": "0x0c8e5d10d7bc07942f863521dc1f3b475d6701b0",
             "timestamp": "2024-08-22T03:37:15.466Z"
+        },
+        "ElementDAO 182 Day Morpho Blue wstETH/USDC Hyperdrive_MorphoBlueTarget0": {
+            "contract": "MorphoBlueTarget0",
+            "address": "0x2BFAaf0cde270754FB80e0aebaddf46d309C9327",
+            "timestamp": "2024-08-22T17:54:16.811Z"
+        },
+        "ElementDAO 182 Day Morpho Blue wstETH/USDC Hyperdrive_MorphoBlueTarget1": {
+            "contract": "MorphoBlueTarget1",
+            "address": "0x92fB0d67B3a78a0EF8505B22ea216F203a6A1970",
+            "timestamp": "2024-08-22T17:53:27.967Z"
+        },
+        "ElementDAO 182 Day Morpho Blue wstETH/USDC Hyperdrive_MorphoBlueTarget2": {
+            "contract": "MorphoBlueTarget2",
+            "address": "0xC6167F9988701eC1772c88139d97C55BB0DB689F",
+            "timestamp": "2024-08-22T17:53:37.049Z"
+        },
+        "ElementDAO 182 Day Morpho Blue wstETH/USDC Hyperdrive_MorphoBlueTarget3": {
+            "contract": "MorphoBlueTarget3",
+            "address": "0xE0828d558e279a47889DaaF074c2f0a748AcC82B",
+            "timestamp": "2024-08-22T17:53:50.233Z"
+        },
+        "ElementDAO 182 Day Morpho Blue wstETH/USDC Hyperdrive_MorphoBlueTarget4": {
+            "contract": "MorphoBlueTarget4",
+            "address": "0x9E9Dc97E9218E4202f884DAD0d11851Daa8aE3ec",
+            "timestamp": "2024-08-22T17:54:03.512Z"
+        },
+        "ElementDAO 182 Day Morpho Blue wstETH/USDC Hyperdrive": {
+            "contract": "MorphoBlueHyperdrive",
+            "address": "0xc8D47DE20F7053Cc02504600596A647A482Bbc46",
+            "timestamp": "2024-08-22T17:54:16.660Z"
+        },
+        "ElementDAO 182 Day ether.fi eETH Hyperdrive_EETHTarget0": {
+            "contract": "EETHTarget0",
+            "address": "0x7E81E9d49430D871e8ff344D74A3D54f17c1E525",
+            "timestamp": "2024-08-22T17:55:41.370Z"
+        },
+        "ElementDAO 182 Day ether.fi eETH Hyperdrive_EETHTarget1": {
+            "contract": "EETHTarget1",
+            "address": "0x4c8E53943137D139C3670564C4FFCb78C431386f",
+            "timestamp": "2024-08-22T17:54:52.734Z"
+        },
+        "ElementDAO 182 Day ether.fi eETH Hyperdrive_EETHTarget2": {
+            "contract": "EETHTarget2",
+            "address": "0x3033e480E12FCFcF70df162B4A369a4717d39a1E",
+            "timestamp": "2024-08-22T17:55:01.855Z"
+        },
+        "ElementDAO 182 Day ether.fi eETH Hyperdrive_EETHTarget3": {
+            "contract": "EETHTarget3",
+            "address": "0x1444f5aFb942eE591189C927b3f23E1b09fB5D3d",
+            "timestamp": "2024-08-22T17:55:14.999Z"
+        },
+        "ElementDAO 182 Day ether.fi eETH Hyperdrive_EETHTarget4": {
+            "contract": "EETHTarget4",
+            "address": "0xe8Ff4a8C9B9eEa305d433Ac2f4ac7108C7c2AfCA",
+            "timestamp": "2024-08-22T17:55:28.103Z"
+        },
+        "ElementDAO 182 Day ether.fi eETH Hyperdrive": {
+            "contract": "EETHHyperdrive",
+            "address": "0x158Ed87D7E529CFE274f3036ade49975Fb10f030",
+            "timestamp": "2024-08-22T17:55:41.253Z"
         }
     }
 }

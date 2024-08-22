@@ -7,6 +7,7 @@ import { HardhatUserConfig } from "hardhat/config";
 import baseConfig from "./hardhat.config";
 import "./tasks";
 import {
+    MAINNET_EETH_182DAY,
     MAINNET_EETH_COORDINATOR,
     MAINNET_EZETH_182DAY,
     MAINNET_EZETH_COORDINATOR,
@@ -14,6 +15,7 @@ import {
     MAINNET_MORPHO_BLUE_COORDINATOR,
     MAINNET_MORPHO_BLUE_SUSDE_DAI_182DAY,
     MAINNET_MORPHO_BLUE_USDE_DAI_182DAY,
+    MAINNET_MORPHO_BLUE_WSTETH_USDC_182DAY,
     MAINNET_RETH_182DAY,
     MAINNET_RETH_COORDINATOR,
 } from "./tasks/deploy/config/mainnet";
@@ -40,7 +42,8 @@ const config: HardhatUserConfig = {
                     MAINNET_RETH_182DAY,
                     MAINNET_MORPHO_BLUE_SUSDE_DAI_182DAY,
                     MAINNET_MORPHO_BLUE_USDE_DAI_182DAY,
-                    // MAINNET_MORPHO_BLUE_WSTETH_USDC_182DAY,
+                    MAINNET_MORPHO_BLUE_WSTETH_USDC_182DAY,
+                    MAINNET_EETH_182DAY,
                 ],
                 checkpointRewarders: [],
                 checkpointSubrewarders: [],
