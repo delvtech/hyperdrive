@@ -15,7 +15,7 @@ build-sol:
 # forge build will do nothing if build-sol was previously run,
 # but we put it here so this can be called individually
 build-hyperdrivetypes:
-	forge build && pypechain --output-dir python/hyperdrivetypes/hyperdrivetypes/types --line-length 80 out/ && . scripts/set-hyperdrivetypes-version.sh 
+	forge build && pypechain --output-dir python/hyperdrivetypes/hyperdrivetypes/types --line-length 80 out/ && . scripts/set-hyperdrivetypes-version.sh
 
 ### Test ###
 
@@ -51,6 +51,9 @@ test-sol-netting:
 # NOTE: Breaking these out onto a separate machine speeds up CI execution.
 test-sol-zombie:
 	forge test -vv --match-contract "$(SOLIDITY_ZOMBIE_TESTS)"
+
+test-python:
+	pytest
 	
 ### Lint ###
 
