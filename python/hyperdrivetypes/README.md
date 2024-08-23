@@ -9,4 +9,4 @@ These were generated using [pypechain](https://github.com/delvtech/pypechain).
 pip install hyperdrivetypes
 ```
 
-Now you can import hyperdrive contracts directly into python, e.g. `from hyperdrivetypes import IHyperdriveContract`
+Now you can import hyperdrive contracts directly into python, e.g. `from hyperdrivetypes import IHyperdriveContract`.

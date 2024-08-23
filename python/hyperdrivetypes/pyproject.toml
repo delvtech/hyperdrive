@@ -20,3 +20,11 @@ classifiers = [
 ]
 
 dependencies = ["pypechain", "fixedpointmath"]
+
+[project.optional-dependencies]
+dev = ["pyright", "pytest"]
+
+all = [
+    "hyperdrivetypes[dev]",
+]
+
