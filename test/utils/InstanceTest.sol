@@ -648,6 +648,7 @@ abstract contract InstanceTest is HyperdriveTest {
 
         // Ensure Alice's ETH balance remains the same.
         assertEq(address(alice).balance, aliceBalanceBefore);
+        hyperdrive.decimals();
 
         // Ensure that the decimals are set correctly.
         assertEq(hyperdrive.decimals(), config.decimals);

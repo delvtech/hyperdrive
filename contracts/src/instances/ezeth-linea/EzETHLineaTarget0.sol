@@ -38,6 +38,12 @@ contract EzETHLineaTarget0 is HyperdriveTarget0, EzETHLineaBase {
         _revert(abi.encode(EZETH_LINEA_HYPERDRIVE_KIND));
     }
 
+    /// @notice Returns the MultiToken's decimals.
+    /// @return The MultiToken's decimals.
+    function decimals() external pure override returns (uint8) {
+        _revert(abi.encode(uint8(18)));
+    }
+
     /// @notice Returns the instance's xRenzoDeposit contract. This is the
     ///         contract that provides the vault share price.
     /// @return The instance's xRenzoDeposit contract.
