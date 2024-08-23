@@ -3,6 +3,12 @@ import { Address } from "viem";
 export const ETH_ADDRESS =
     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" as Address;
 
+export const LINEA_EZETH_ADDRESS =
+    "0x2416092f143378750bb29b79eD961ab195CcEea5" as Address;
+
+export const LINEA_X_RENZO_DEPOSIT =
+    "0x4D7572040B84b41a6AA2efE4A93eFFF182388F88" as Address;
+
 export const MAINNET_DAI_ADDRESS =
     "0x6b175474e89094c44da98b954eedeac495271d0f" as Address;
 
