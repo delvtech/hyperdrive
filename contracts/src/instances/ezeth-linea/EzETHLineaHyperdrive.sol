@@ -7,8 +7,6 @@ import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminCon
 import { IXRenzoDeposit } from "../../interfaces/IXRenzoDeposit.sol";
 import { EzETHLineaBase } from "./EzETHLineaBase.sol";
 
-// FIXME: Add an @dev comment documenting this yield source.
-//
 ///      ______  __                           _________      _____
 ///      ___  / / /____  ___________________________  /_________(_)__   ______
 ///      __  /_/ /__  / / /__  __ \  _ \_  ___/  __  /__  ___/_  /__ | / /  _ \
@@ -52,6 +50,18 @@ import { EzETHLineaBase } from "./EzETHLineaBase.sol";
 /// @author DELV
 /// @title EzETHLineaHyperdrive
 /// @notice A Hyperdrive instance that uses a EzETHLinea vault as the yield source.
+/// @dev This instance supports the Renzo protocol on Linea. The vault shares token
+///      is the rebasing LRT token xezETH. There are a few special things about
+///      this integration:
+///
+///      - The base token address is the ETH constant.
+///      - The vault shares token address is the xezETH address.
+///      - The vault share price is provided by an oracle.
+///      - Interest accrues sporadically when the oracle is updated.
+///      - Base deposits aren't supported since there is a deposit fee for
+///        minting xezETH.
+///      - Base withdrawals aren't supported since there isn't an instantaneous
+///        way to withdraw from xezETH.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.

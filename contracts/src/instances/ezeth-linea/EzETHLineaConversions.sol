@@ -4,11 +4,18 @@ pragma solidity 0.8.22;
 import { IXRenzoDeposit } from "../../interfaces/IXRenzoDeposit.sol";
 import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
 
-// FIXME: Add a @dev section explaining the oracle.
-//
 /// @author DELV
 /// @title EzETHLineaConversions
 /// @notice The conversion logic for the EzETH integration on Linea.
+/// @dev This conversion library pulls the vault share price from the Renzo
+///      oracle on linea. It's possible for this oracle to have downtime or
+///      to be deprecated entirely. Our approach to this problem is to always
+///      use the latest price data (regardless of how current it is) since
+///      reverting will compromise the protocol's liveness and will prevent
+///      users from closing their existing positions. These pools should be
+///      monitored to ensure that the underlying oracle continues to be
+///      maintained, and the pool should be paused if the oracle has significant
+///      downtime or is deprecated.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
@@ -50,13 +57,7 @@ library EzETHLineaConversions {
     function getLastMintPrice(
         IXRenzoDeposit _xRenzoDeposit
     ) internal view returns (uint256) {
-        // FIXME: What are the historical values for this oracle? Does it ever
-        // go down?
-        //
-        // FIXME: Is this acceptable? Do we need to do anything with the timestamp?
-        //
-        // FIXME: Regardless of what we do with the timestamp, we need to make a
-        // note of what we're doing.
+        // NOTE: We
         (uint256 lastPrice, ) = _xRenzoDeposit.getMintRate();
         return lastPrice;
     }

@@ -6,14 +6,9 @@ import { IXRenzoDeposit } from "../../interfaces/IXRenzoDeposit.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { EzETHLineaConversions } from "./EzETHLineaConversions.sol";
 
-// FIXME: Update the Natspec comment.
-//
 /// @author DELV
 /// @title EzETHLineaBase
 /// @notice The base contract for the EzETHLinea Hyperdrive implementation.
-/// @dev This Hyperdrive implementation is designed to work with standard
-///      EzETHLinea vaults. Non-standard implementations may not work correctly
-///      and should be carefully checked.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.

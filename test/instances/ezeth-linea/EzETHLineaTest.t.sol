@@ -55,7 +55,6 @@ contract EzETHLineaHyperdriveTest is InstanceTest {
             vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
             baseToken: IERC20(ETH),
             vaultSharesToken: EZETH,
-            // FIXME
             shareTolerance: 0,
             minimumShareReserves: 1e15,
             minimumTransactionAmount: 1e15,
