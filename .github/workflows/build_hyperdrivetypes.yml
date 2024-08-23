@@ -1,21 +1,11 @@
 name: build and upload hyperdrivetypes wheel
 
-# TODO: We will want to sync the python version with the hyperdrive version & push on hyperdrive tags
-#on:
-#  push:
-#    tags:
-#      - "v*"
-
-# TODO: Temp for testing
 on:
   push:
+    # tags:
+    #   - "v*"
 
 jobs:
-  # TODO: Temp for testing; will sync version
-  detect-changes:
-    uses: ./.github/workflows/check_diff.yaml
-    with:
-      pattern: ^python/\hyperdrivetypes/\pyproject.toml
 
   build-wheel:
     name: build hyperdrivetypes wheel
@@ -46,7 +36,7 @@ jobs:
 
       - name: build hyperdrivetypes package
         shell: bash
-        run: source scripts/build-hyperdrivetypes-wheel.sh
+        run: scripts/build-hyperdrivetypes-wheel.sh
 
       - name: upload wheel
         uses: actions/upload-artifact@v4
