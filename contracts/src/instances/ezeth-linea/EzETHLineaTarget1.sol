@@ -3,6 +3,7 @@ pragma solidity 0.8.22;
 
 import { HyperdriveTarget1 } from "../../external/HyperdriveTarget1.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
 import { IXRenzoDeposit } from "../../interfaces/IXRenzoDeposit.sol";
 import { EzETHLineaBase } from "./EzETHLineaBase.sol";
 
@@ -17,10 +18,16 @@ import { EzETHLineaBase } from "./EzETHLineaBase.sol";
 contract EzETHLineaTarget1 is HyperdriveTarget1, EzETHLineaBase {
     /// @notice Initializes the target1 contract.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param __adminController The admin controller that will specify the
+    ///        admin parameters for this instance.
     /// @param __xRenzoDeposit The xRenzoDeposit contract that provides the
     ///        vault share price.
     constructor(
         IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController __adminController,
         IXRenzoDeposit __xRenzoDeposit
-    ) HyperdriveTarget1(_config) EzETHLineaBase(__xRenzoDeposit) {}
+    )
+        HyperdriveTarget1(_config, __adminController)
+        EzETHLineaBase(__xRenzoDeposit)
+    {}
 }

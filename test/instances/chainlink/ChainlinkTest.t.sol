@@ -682,6 +682,8 @@ contract ChainlinkHyperdriveTest is InstanceTest {
 
         ) = CHAINLINK_AGGREGATOR_PROXY.latestRoundData();
 
+        // TODO: Add the time component to this.
+        //
         // Accrue interest in the Chainlink wstETH market. We do this by
         // overwriting the latest round's answer.
         answer = variableRate >= 0

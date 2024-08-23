@@ -30,6 +30,7 @@ contract BaseTest is Test {
     string MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
     string SEPOLIA_RPC_URL = vm.envString("SEPOLIA_RPC_URL");
     string GNOSIS_CHAIN_RPC_URL = vm.envString("GNOSIS_CHAIN_RPC_URL");
+    string LINEA_RPC_URL = vm.envString("LINEA_RPC_URL");
 
     bool isForked;
 
@@ -73,6 +74,15 @@ contract BaseTest is Test {
     modifier __gnosis_chain_fork(uint256 blockNumber) {
         uint256 gnosisChainForkId = vm.createFork(GNOSIS_CHAIN_RPC_URL);
         vm.selectFork(gnosisChainForkId);
+        vm.rollFork(blockNumber);
+        isForked = true;
+
+        _;
+    }
+
+    modifier __linea_fork(uint256 blockNumber) {
+        uint256 lineaForkId = vm.createFork(LINEA_RPC_URL);
+        vm.selectFork(lineaForkId);
         vm.rollFork(blockNumber);
         isForked = true;
 
