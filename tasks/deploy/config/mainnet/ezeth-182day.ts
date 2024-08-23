@@ -1,8 +1,8 @@
 import { Address, keccak256, parseEther, toBytes, zeroAddress } from "viem";
 import {
     ETH_ADDRESS,
+    EZETH_ADDRESS_MAINNET,
     HyperdriveInstanceConfig,
-    MAINNET_EZETH_ADDRESS,
     SIX_MONTHS,
     getLinkerDetails,
     normalizeFee,
@@ -39,7 +39,7 @@ export const MAINNET_EZETH_182DAY: HyperdriveInstanceConfig<"EzETH"> = {
         // approve the coordinator
         let vaultSharesToken = await hre.viem.getContractAt(
             "openzeppelin/token/ERC20/IERC20.sol:IERC20",
-            MAINNET_EZETH_ADDRESS,
+            EZETH_ADDRESS_MAINNET,
         );
         let pc = await hre.viem.getPublicClient();
         let tx = await vaultSharesToken.write.approve([
@@ -53,7 +53,7 @@ export const MAINNET_EZETH_182DAY: HyperdriveInstanceConfig<"EzETH"> = {
     poolDeployConfig: async (hre) => {
         return {
             baseToken: ETH_ADDRESS,
-            vaultSharesToken: MAINNET_EZETH_ADDRESS,
+            vaultSharesToken: EZETH_ADDRESS_MAINNET,
             circuitBreakerDelta: parseEther("0.1"),
             minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),

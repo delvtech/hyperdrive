@@ -1,4 +1,6 @@
 export * from "./dai-182day";
+export * from "./eeth-182day";
+export * from "./eeth-coordinator";
 export * from "./erc4626-coordinator";
 export * from "./ezeth-182day";
 export * from "./ezeth-coordinator";

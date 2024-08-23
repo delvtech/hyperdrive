@@ -1,13 +1,12 @@
 import { task, types } from "hardhat/config";
-import { HttpNetworkUserConfig } from "hardhat/types";
-import { keccak256, parseEther, toHex } from "viem";
+import { encodeFunctionData, keccak256, parseEther, toHex } from "viem";
 import {
+    EETH_LIQUIDITY_POOL_ADDRESS_MAINNET,
+    EETH_MEMBERSHIP_MANAGER_ADDRESS_MAINNET,
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
-    MAINNET_ETHERFI_ADDRESS,
-    MAINNET_ETHERFI_MEMBERSHIP_MANAGER,
-    MAINNET_RETH_ADDRESS,
-    MAINNET_STETH_ADDRESS,
+    RETH_ADDRESS_MAINNET,
+    STETH_ADDRESS_MAINNET,
 } from "../deploy";
 import { sleep } from "./lib";
 
@@ -47,7 +46,7 @@ HyperdriveDeployBaseTask(
             let slot = keccak256(toHex("lido.Lido.beaconBalance"));
             let stethCurrentBalance = BigInt(
                 (await pc.getStorageAt({
-                    address: MAINNET_STETH_ADDRESS,
+                    address: STETH_ADDRESS_MAINNET,
                     slot,
                 }))!,
             );
@@ -55,7 +54,7 @@ HyperdriveDeployBaseTask(
                 (stethCurrentBalance * BigInt(interval) * parseEther(rate)) /
                 (365n * 24n * BigInt(1e18));
             await tc.setStorageAt({
-                address: MAINNET_STETH_ADDRESS,
+                address: STETH_ADDRESS_MAINNET,
                 index: slot,
                 value: toHex(
                     BigInt(stethCurrentBalance!) + stethBalanceIncrease,
@@ -68,13 +67,13 @@ HyperdriveDeployBaseTask(
 
             // For RETH, update the ETH balance of the RocketTokenRETH contract.
             let rethCurrentBalance = await pc.getBalance({
-                address: MAINNET_RETH_ADDRESS,
+                address: RETH_ADDRESS_MAINNET,
             });
             let rethBalanceIncrease =
                 (rethCurrentBalance * BigInt(interval) * parseEther(rate)) /
                 (365n * 24n * BigInt(1e18));
             await tc.setBalance({
-                address: MAINNET_RETH_ADDRESS,
+                address: RETH_ADDRESS_MAINNET,
                 value: rethCurrentBalance + rethBalanceIncrease,
             });
             console.log(`reth balance increased by ${rethBalanceIncrease}`);
@@ -84,31 +83,30 @@ HyperdriveDeployBaseTask(
             // For SDAI, nothing needs to be done so long as the underlying `rho`
             // value is not recalculated.
 
-            // For EETH, we can call rebase on the Etherfi contracts using an
+            // For EETH, we can call rebase on the Etherfi contract using an
             // impersonated account.
-            const config = hre.network.config as HttpNetworkUserConfig;
-            config.accounts = "remote";
-            await tc.impersonateAccount({
-                address: MAINNET_ETHERFI_MEMBERSHIP_MANAGER,
-            });
             let etherfi = await hre.viem.getContractAt(
                 "ILiquidityPool",
-                MAINNET_ETHERFI_ADDRESS,
+                EETH_LIQUIDITY_POOL_ADDRESS_MAINNET,
             );
             let etherToAdd =
                 ((await etherfi.read.getTotalPooledEther()) *
                     BigInt(interval) *
                     parseEther(rate)) /
                 (365n * 24n * BigInt(1e18));
-            await etherfi.write.rebase([etherToAdd], {
-                account: MAINNET_ETHERFI_MEMBERSHIP_MANAGER,
+            let txData = encodeFunctionData({
+                abi: (await hre.artifacts.readArtifact("ILiquidityPool")).abi,
+                functionName: "rebase",
+                args: [etherToAdd],
+            });
+            await tc.sendUnsignedTransaction({
+                from: EETH_MEMBERSHIP_MANAGER_ADDRESS_MAINNET,
+                to: EETH_LIQUIDITY_POOL_ADDRESS_MAINNET,
+                data: txData,
             });
             await tc.setBalance({
-                address: MAINNET_ETHERFI_ADDRESS,
+                address: EETH_LIQUIDITY_POOL_ADDRESS_MAINNET,
                 value: etherToAdd,
-            });
-            await tc.stopImpersonatingAccount({
-                address: MAINNET_ETHERFI_MEMBERSHIP_MANAGER,
             });
             console.log(`etherfi total assets increased by ${etherToAdd}`);
 

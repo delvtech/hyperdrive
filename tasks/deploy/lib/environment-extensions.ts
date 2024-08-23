@@ -356,7 +356,7 @@ extendEnvironment((hre) => {
             let target = await ensureDeployed(
                 `${name}_${targetContractName}`,
                 targetContractName as any,
-                [],
+                extraArgs ?? [],
                 options,
             );
             targets.push(target.address);
