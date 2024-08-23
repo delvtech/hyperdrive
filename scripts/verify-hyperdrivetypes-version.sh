@@ -6,7 +6,7 @@ VERSION_CONSTANTS=$(sed -n -E 's/.*VERSION = "v([0-9]+\.[0-9]+\.[0-9]+)".*/\1/p'
 
 # Extract version from hyperdrivetypes
 init_file="python/hyperdrivetypes/pyproject.toml"
-VERSION_INIT=$(sed -n -E 's/version = "([0-9]+\.[0-9]+\.[0-9]+)".*/\1/p' "$init_file")
+VERSION_INIT=$(sed -n -E 's/version = "([0-9]+\.[0-9]+\.[0-9]+)\.*[0-9]*".*/\1/p' "$init_file")
 
 # Compare versions
 if [ "$VERSION_CONSTANTS" == "$VERSION_INIT" ]; then
