@@ -2,8 +2,8 @@ name: build and upload hyperdrivetypes wheel
 
 on:
   push:
-    # tags:
-    #   - "v*"
+    tags:
+      - "v*"
 
 jobs:
 
