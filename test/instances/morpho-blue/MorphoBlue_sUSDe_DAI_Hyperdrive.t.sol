@@ -23,6 +23,7 @@ import { Lib } from "../../utils/Lib.sol";
 
 contract MorphoBlue_sUSDe_DAI_HyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for uint256;
     using HyperdriveUtils for IHyperdrive;
     using MarketParamsLib for MarketParams;
     using MorphoBalancesLib for IMorpho;
@@ -784,14 +785,8 @@ contract MorphoBlue_sUSDe_DAI_HyperdriveTest is InstanceTest {
             lltv: LLTV
         }).id();
         Market memory market = MORPHO.market(marketId);
-        // TODO: We don't incorporate time in this.
-        uint256 totalSupplyAssets = variableRate >= 0
-            ? market.totalSupplyAssets +
-                uint256(market.totalSupplyAssets).mulDown(uint256(variableRate))
-            : market.totalSupplyAssets -
-                uint256(market.totalSupplyAssets).mulDown(
-                    uint256(-variableRate)
-                );
+        (uint256 totalSupplyAssets, ) = uint256(market.totalSupplyAssets)
+            .calculateInterest(variableRate, timeDelta);
         bytes32 marketLocation = keccak256(abi.encode(marketId, 3));
         vm.store(
             address(MORPHO),

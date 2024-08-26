@@ -27,6 +27,7 @@ import { Lib } from "../../utils/Lib.sol";
 
 contract EETHHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for uint256;
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
 
@@ -621,11 +622,12 @@ contract EETHHyperdriveTest is InstanceTest {
         // `getTotalPooledEther() / getTotalShares()`, we can simulate the
         // accrual of interest by multiplying the total pooled ether by the
         // variable rate plus one.
-        uint256 etherToAdd = POOL.getTotalPooledEther().mulDown(
-            uint256(variableRate)
+        (, int256 etherToAdd) = POOL.getTotalPooledEther().calculateInterest(
+            variableRate,
+            timeDelta
         );
         vm.startPrank(MEMBERSHIP_MANAGER);
         POOL.rebase(int128(int256(etherToAdd)));
-        vm.deal(address(POOL), etherToAdd);
+        vm.deal(address(POOL), uint256(etherToAdd));
     }
 }

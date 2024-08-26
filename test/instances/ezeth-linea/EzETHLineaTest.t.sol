@@ -2,65 +2,59 @@
 pragma solidity 0.8.22;
 
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
-import { ChainlinkHyperdriveCoreDeployer } from "../../../contracts/src/deployers/chainlink/ChainlinkHyperdriveCoreDeployer.sol";
-import { ChainlinkHyperdriveDeployerCoordinator } from "../../../contracts/src/deployers/chainlink/ChainlinkHyperdriveDeployerCoordinator.sol";
-import { ChainlinkTarget0Deployer } from "../../../contracts/src/deployers/chainlink/ChainlinkTarget0Deployer.sol";
-import { ChainlinkTarget1Deployer } from "../../../contracts/src/deployers/chainlink/ChainlinkTarget1Deployer.sol";
-import { ChainlinkTarget2Deployer } from "../../../contracts/src/deployers/chainlink/ChainlinkTarget2Deployer.sol";
-import { ChainlinkTarget3Deployer } from "../../../contracts/src/deployers/chainlink/ChainlinkTarget3Deployer.sol";
-import { ChainlinkTarget4Deployer } from "../../../contracts/src/deployers/chainlink/ChainlinkTarget4Deployer.sol";
+import { EzETHLineaHyperdriveCoreDeployer } from "../../../contracts/src/deployers/ezeth-linea/EzETHLineaHyperdriveCoreDeployer.sol";
+import { EzETHLineaHyperdriveDeployerCoordinator } from "../../../contracts/src/deployers/ezeth-linea/EzETHLineaHyperdriveDeployerCoordinator.sol";
+import { EzETHLineaTarget0Deployer } from "../../../contracts/src/deployers/ezeth-linea/EzETHLineaTarget0Deployer.sol";
+import { EzETHLineaTarget1Deployer } from "../../../contracts/src/deployers/ezeth-linea/EzETHLineaTarget1Deployer.sol";
+import { EzETHLineaTarget2Deployer } from "../../../contracts/src/deployers/ezeth-linea/EzETHLineaTarget2Deployer.sol";
+import { EzETHLineaTarget3Deployer } from "../../../contracts/src/deployers/ezeth-linea/EzETHLineaTarget3Deployer.sol";
+import { EzETHLineaTarget4Deployer } from "../../../contracts/src/deployers/ezeth-linea/EzETHLineaTarget4Deployer.sol";
 import { HyperdriveFactory } from "../../../contracts/src/factory/HyperdriveFactory.sol";
-import { ChainlinkConversions } from "../../../contracts/src/instances/chainlink/ChainlinkConversions.sol";
-import { IChainlinkAggregatorV3 } from "../../../contracts/src/interfaces/IChainlinkAggregatorV3.sol";
-import { IChainlinkHyperdrive } from "../../../contracts/src/interfaces/IChainlinkHyperdrive.sol";
+import { EzETHLineaConversions } from "../../../contracts/src/instances/ezeth-linea/EzETHLineaConversions.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
+import { IEzETHLineaHyperdrive } from "../../../contracts/src/interfaces/IEzETHLineaHyperdrive.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
-import { IMorphoBlueHyperdrive } from "../../../contracts/src/interfaces/IMorphoBlueHyperdrive.sol";
+import { IXRenzoDeposit } from "../../../contracts/src/interfaces/IXRenzoDeposit.sol";
 import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
 import { ETH } from "../../../contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
+import { LPMath } from "../../../contracts/src/libraries/LPMath.sol";
 import { ERC20ForwarderFactory } from "../../../contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
 import { InstanceTest } from "../../utils/InstanceTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-contract ChainlinkHyperdriveTest is InstanceTest {
+contract EzETHLineaHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
-    using HyperdriveUtils for uint256;
-    using HyperdriveUtils for IHyperdrive;
+    using HyperdriveUtils for *;
     using Lib for *;
     using stdStorage for StdStorage;
 
-    // Chainlink's proxy for the wstETH-ETH reference rate on Gnosis Chain.
-    IChainlinkAggregatorV3 internal constant CHAINLINK_AGGREGATOR_PROXY =
-        IChainlinkAggregatorV3(0x0064AC007fF665CF8D0D3Af5E0AD1c26a3f853eA);
+    // The Linea xRenzoDeposit contract.
+    IXRenzoDeposit internal constant X_RENZO_DEPOSIT =
+        IXRenzoDeposit(0x4D7572040B84b41a6AA2efE4A93eFFF182388F88);
 
-    // The underlying aggregator used Chainlink's by Chainlink's proxy on Gnosis
-    // chain.
-    address internal constant CHAINLINK_AGGREGATOR =
-        address(0x6dcF8CE1982Fc71E7128407c7c6Ce4B0C1722F55);
+    // The address of the ezETH on Linea.
+    IERC20 internal constant EZETH =
+        IERC20(0x2416092f143378750bb29b79eD961ab195CcEea5);
 
-    // The address of the wstETH token on Gnosis Chain.
-    IERC20 internal constant WSTETH =
-        IERC20(0x6C76971f98945AE98dD7d4DFcA8711ebea946eA6);
+    // Whale accounts.
+    address internal EZETH_WHALE =
+        address(0x0684FC172a0B8e6A65cF4684eDb2082272fe9050);
+    address[] internal vaultSharesTokenWhaleAccounts = [EZETH_WHALE];
 
-    // The wstETH Whale accounts.
-    address internal constant WSTETH_WHALE =
-        address(0x458cD345B4C05e8DF39d0A07220feb4Ec19F5e6f);
-    address[] internal vaultSharesTokenWhaleAccounts = [WSTETH_WHALE];
-
-    // The configuration for the Instance testing suite.
+    // The configuration for the instance testing suite.
     InstanceTestConfig internal __testConfig =
         InstanceTestConfig({
             name: "Hyperdrive",
-            kind: "ChainlinkHyperdrive",
+            kind: "EzETHLineaHyperdrive",
             decimals: 18,
             baseTokenWhaleAccounts: new address[](0),
             vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
-            baseToken: IERC20(address(0)),
-            vaultSharesToken: WSTETH,
+            baseToken: IERC20(ETH),
+            vaultSharesToken: EZETH,
             shareTolerance: 0,
             minimumShareReserves: 1e15,
             minimumTransactionAmount: 1e15,
@@ -81,22 +75,23 @@ contract ChainlinkHyperdriveTest is InstanceTest {
             })
         });
 
-    /// @dev Instantiates the Instance testing suite with the configuration.
+    /// @dev Instantiates the instance testing suite with the configuration.
     constructor() InstanceTest(__testConfig) {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
-    function setUp() public override __gnosis_chain_fork(35336446) {
-        // Invoke the Instance testing suite setup.
+    function setUp() public override __linea_fork(8_431_727) {
+        // Invoke the instance testing suite setup.
         super.setUp();
     }
 
     /// Overrides ///
 
-    /// @dev Gets the extra data used to deploy the Chainlink instance.
-    /// @return The extra data containing the Chainlink aggregator and the
-    ///         decimals that the instance should use.
+    /// @dev Gets the extra data used to deploy EzETHLineaHyperdrive instances.
+    ///      This is empty since the instance gets all of it's information from
+    ///      the deployer coordinators and deployers.
+    /// @return The empty extra data.
     function getExtraData() internal pure override returns (bytes memory) {
-        return abi.encode(CHAINLINK_AGGREGATOR_PROXY, uint8(18));
+        return new bytes(0);
     }
 
     /// @dev Converts base amount to the equivalent about in shares.
@@ -104,10 +99,7 @@ contract ChainlinkHyperdriveTest is InstanceTest {
         uint256 baseAmount
     ) internal view override returns (uint256) {
         return
-            ChainlinkConversions.convertToShares(
-                CHAINLINK_AGGREGATOR_PROXY,
-                baseAmount
-            );
+            EzETHLineaConversions.convertToShares(X_RENZO_DEPOSIT, baseAmount);
     }
 
     /// @dev Converts share amount to the equivalent amount in base.
@@ -115,13 +107,10 @@ contract ChainlinkHyperdriveTest is InstanceTest {
         uint256 shareAmount
     ) internal view override returns (uint256) {
         return
-            ChainlinkConversions.convertToBase(
-                CHAINLINK_AGGREGATOR_PROXY,
-                shareAmount
-            );
+            EzETHLineaConversions.convertToBase(X_RENZO_DEPOSIT, shareAmount);
     }
 
-    /// @dev Deploys the Chainlink deployer coordinator contract.
+    /// @dev Deploys the ezETH Linea deployer coordinator contract.
     /// @param _factory The address of the Hyperdrive factory.
     function deployCoordinator(
         address _factory
@@ -129,29 +118,32 @@ contract ChainlinkHyperdriveTest is InstanceTest {
         vm.startPrank(alice);
         return
             address(
-                new ChainlinkHyperdriveDeployerCoordinator(
+                new EzETHLineaHyperdriveDeployerCoordinator(
                     string.concat(__testConfig.name, "DeployerCoordinator"),
                     _factory,
-                    address(new ChainlinkHyperdriveCoreDeployer()),
-                    address(new ChainlinkTarget0Deployer()),
-                    address(new ChainlinkTarget1Deployer()),
-                    address(new ChainlinkTarget2Deployer()),
-                    address(new ChainlinkTarget3Deployer()),
-                    address(new ChainlinkTarget4Deployer())
+                    address(
+                        new EzETHLineaHyperdriveCoreDeployer(X_RENZO_DEPOSIT)
+                    ),
+                    address(new EzETHLineaTarget0Deployer(X_RENZO_DEPOSIT)),
+                    address(new EzETHLineaTarget1Deployer(X_RENZO_DEPOSIT)),
+                    address(new EzETHLineaTarget2Deployer(X_RENZO_DEPOSIT)),
+                    address(new EzETHLineaTarget3Deployer(X_RENZO_DEPOSIT)),
+                    address(new EzETHLineaTarget4Deployer(X_RENZO_DEPOSIT)),
+                    X_RENZO_DEPOSIT
                 )
             );
     }
 
     /// @dev Fetches the total supply of the base and share tokens.
     function getSupply() internal view override returns (uint256, uint256) {
-        return (0, WSTETH.totalSupply());
+        return (0, EZETH.totalSupply());
     }
 
     /// @dev Fetches the token balance information of an account.
     function getTokenBalances(
         address account
     ) internal view override returns (uint256, uint256) {
-        return (0, WSTETH.balanceOf(account));
+        return (account.balance, EZETH.balanceOf(account));
     }
 
     /// @dev Verifies that deposit accounting is correct when opening positions.
@@ -169,7 +161,7 @@ contract ChainlinkHyperdriveTest is InstanceTest {
             revert IHyperdrive.UnsupportedToken();
         }
 
-        // Ensure that the total shares amount stayed the same.
+        // Ensure that the total supply stayed the same.
         (uint256 totalBaseAfter, uint256 totalSharesAfter) = getSupply();
         assertEq(totalBaseAfter, totalBaseBefore);
         assertEq(totalSharesAfter, totalSharesBefore);
@@ -181,7 +173,7 @@ contract ChainlinkHyperdriveTest is InstanceTest {
         );
         assertEq(bob.balance, traderBalancesBefore.ETHBalance);
 
-        // Ensure that none of the base balances changed.
+        // Ensure that the base balances didn't change.
         (
             uint256 hyperdriveBaseAfter,
             uint256 hyperdriveSharesAfter
@@ -197,13 +189,13 @@ contract ChainlinkHyperdriveTest is InstanceTest {
             hyperdriveSharesAfter,
             hyperdriveBalancesBefore.sharesBalance +
                 hyperdrive.convertToShares(amountPaid),
-            1
+            2
         );
         assertApproxEqAbs(
             traderSharesAfter,
             traderBalancesBefore.sharesBalance -
                 hyperdrive.convertToShares(amountPaid),
-            1
+            2
         );
     }
 
@@ -222,7 +214,7 @@ contract ChainlinkHyperdriveTest is InstanceTest {
             revert IHyperdrive.UnsupportedToken();
         }
 
-        // Ensure that the total supplies didn't change.
+        // Ensure that the total supply stayed the same.
         (uint256 totalBaseAfter, uint256 totalSharesAfter) = getSupply();
         assertEq(totalBaseAfter, totalBaseBefore);
         assertEq(totalSharesAfter, totalSharesBefore);
@@ -234,7 +226,7 @@ contract ChainlinkHyperdriveTest is InstanceTest {
         );
         assertEq(bob.balance, traderBalancesBefore.ETHBalance);
 
-        // Ensure that the base balances do not change.
+        // Ensure that the base balances didn't change.
         (
             uint256 hyperdriveBaseAfter,
             uint256 hyperdriveSharesAfter
@@ -250,13 +242,13 @@ contract ChainlinkHyperdriveTest is InstanceTest {
             hyperdriveSharesAfter,
             hyperdriveBalancesBefore.sharesBalance -
                 hyperdrive.convertToShares(baseProceeds),
-            1
+            2
         );
         assertApproxEqAbs(
             traderSharesAfter,
             traderBalancesBefore.sharesBalance +
                 hyperdrive.convertToShares(baseProceeds),
-            1
+            2
         );
     }
 
@@ -264,8 +256,8 @@ contract ChainlinkHyperdriveTest is InstanceTest {
 
     function test_getters() external view {
         assertEq(
-            address(IChainlinkHyperdrive(address(hyperdrive)).aggregator()),
-            address(CHAINLINK_AGGREGATOR_PROXY)
+            address(IEzETHLineaHyperdrive(address(hyperdrive)).xRenzoDeposit()),
+            address(X_RENZO_DEPOSIT)
         );
         (, uint256 totalShares) = getTokenBalances(address(hyperdrive));
         assertEq(hyperdrive.totalShares(), totalShares);
@@ -275,10 +267,8 @@ contract ChainlinkHyperdriveTest is InstanceTest {
 
     function test_round_trip_lp_instantaneous(uint256 _contribution) external {
         // Bob adds liquidity with vault shares.
-        _contribution = _contribution.normalizeToRange(0.1e18, 5_000e18);
-        IERC20(hyperdrive.vaultSharesToken()).approve(
-            address(hyperdrive),
-            _contribution
+        _contribution = hyperdrive.convertToShares(
+            _contribution.normalizeToRange(0.01e18, 1_000e18)
         );
         uint256 lpShares = addLiquidity(bob, _contribution, false);
 
@@ -320,57 +310,47 @@ contract ChainlinkHyperdriveTest is InstanceTest {
         uint256 _contribution,
         uint256 _variableRate
     ) external {
-        // Bob adds liquidity with base.
-        _contribution = _contribution.normalizeToRange(500e18, 5_000e18);
-        IERC20(hyperdrive.vaultSharesToken()).approve(
-            address(hyperdrive),
-            _contribution
+        // Bob adds liquidity with vault shares.
+        _contribution = hyperdrive.convertToShares(
+            _contribution.normalizeToRange(0.01e18, 1_000e18)
         );
         uint256 lpShares = addLiquidity(bob, _contribution, false);
 
         // Alice opens a large short.
         vm.stopPrank();
         vm.startPrank(alice);
-        uint256 shortAmount = hyperdrive.convertToShares(
-            hyperdrive.calculateMaxShort()
-        );
-        IERC20(hyperdrive.vaultSharesToken()).approve(
-            address(hyperdrive),
-            shortAmount
-        );
+        uint256 shortAmount = hyperdrive.calculateMaxShort();
         openShort(alice, shortAmount, false);
 
-        // Bob removes his liquidity with base as the target asset.
+        // Bob removes his liquidity with vault shares as the target asset.
         (
-            uint256 vaultShareProceeds,
+            uint256 vaultSharesProceeds,
             uint256 withdrawalShares
         ) = removeLiquidity(bob, lpShares, false);
-        if (withdrawalShares == 0) {
-            return;
-        }
+        assertGt(withdrawalShares, 0);
 
         // The term passes and interest accrues.
         _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
         advanceTime(POSITION_DURATION, int256(_variableRate));
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
 
         // Bob should be able to redeem all of his withdrawal shares for
         // approximately the LP share price.
         uint256 lpSharePrice = hyperdrive.getPoolInfo().lpSharePrice;
         uint256 withdrawalSharesRedeemed;
-        (vaultShareProceeds, withdrawalSharesRedeemed) = redeemWithdrawalShares(
-            bob,
-            withdrawalShares,
-            false
-        );
-        uint256 baseProceeds = hyperdrive.convertToBase(vaultShareProceeds);
+        (
+            vaultSharesProceeds,
+            withdrawalSharesRedeemed
+        ) = redeemWithdrawalShares(bob, withdrawalShares, false);
+        uint256 baseProceeds = hyperdrive.convertToBase(vaultSharesProceeds);
         assertEq(withdrawalSharesRedeemed, withdrawalShares);
 
-        // Bob should receive vault shares approximately equal in value to his
-        // present value.
+        // Bob should receive base approximately equal in value to his present
+        // value.
         assertApproxEqAbs(
             baseProceeds,
             withdrawalShares.mulDown(lpSharePrice),
-            1e5
+            1_000
         );
     }
 
@@ -379,7 +359,7 @@ contract ChainlinkHyperdriveTest is InstanceTest {
     function test_open_long_nonpayable() external {
         vm.startPrank(bob);
 
-        // Ensure that sending ETH to `openLong` fails when `asBase` is true.
+        // Ensure that sending ETH to `openLong` fails with `asBase` as true.
         vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openLong{ value: 2e18 }(
             1e18,
@@ -392,7 +372,7 @@ contract ChainlinkHyperdriveTest is InstanceTest {
             })
         );
 
-        // Ensure that sending ETH to `openLong` fails when `asBase` is false.
+        // Ensure that sending ETH to `openLong` fails with `asBase` as false.
         vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openLong{ value: 0.5e18 }(
             1e18,
@@ -415,10 +395,6 @@ contract ChainlinkHyperdriveTest is InstanceTest {
                 2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
                 hyperdrive.calculateMaxLong()
             )
-        );
-        IERC20(hyperdrive.vaultSharesToken()).approve(
-            address(hyperdrive),
-            _vaultSharesPaid
         );
         (uint256 maturityTime, uint256 longAmount) = openLong(
             bob,
@@ -445,9 +421,11 @@ contract ChainlinkHyperdriveTest is InstanceTest {
         );
         uint256 baseProceeds = hyperdrive.convertToBase(vaultSharesProceeds);
 
-        // Bob should receive approximately as many vault shares as he paid
-        // since no time as passed and the fees are zero.
-        assertApproxEqAbs(vaultSharesProceeds, _vaultSharesPaid, 1e5);
+        // NOTE: We add a slight buffer since the fees are zero.
+        //
+        // Bob should receive less base than he paid since no time as passed.
+        assertLt(vaultSharesProceeds, _vaultSharesPaid + 1_000);
+        assertApproxEqAbs(vaultSharesProceeds, _vaultSharesPaid, 1e9);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
@@ -465,16 +443,12 @@ contract ChainlinkHyperdriveTest is InstanceTest {
         uint256 _vaultSharesPaid,
         uint256 _variableRate
     ) external {
-        // Bob opens a long with base.
+        // Bob opens a long with vault shares.
         _vaultSharesPaid = hyperdrive.convertToShares(
             _vaultSharesPaid.normalizeToRange(
                 2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
                 hyperdrive.calculateMaxLong()
             )
-        );
-        IERC20(hyperdrive.vaultSharesToken()).approve(
-            address(hyperdrive),
-            _vaultSharesPaid
         );
         (uint256 maturityTime, uint256 longAmount) = openLong(
             bob,
@@ -496,7 +470,7 @@ contract ChainlinkHyperdriveTest is InstanceTest {
             address(hyperdrive)
         );
 
-        // Bob closes his long with vault share as the target asset.
+        // Bob closes his long with vault shares as the target asset.
         uint256 vaultSharesProceeds = closeLong(
             bob,
             maturityTime,
@@ -507,7 +481,7 @@ contract ChainlinkHyperdriveTest is InstanceTest {
 
         // Bob should receive almost exactly his bond amount.
         assertLe(baseProceeds, longAmount);
-        assertApproxEqAbs(baseProceeds, longAmount, 1e5);
+        assertApproxEqAbs(baseProceeds, longAmount, 3_000);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
@@ -526,7 +500,7 @@ contract ChainlinkHyperdriveTest is InstanceTest {
     function test_open_short_nonpayable() external {
         vm.startPrank(bob);
 
-        // Ensure that sending ETH to `openShort` fails when `asBase` is true.
+        // Ensure that sending ETH to `openLong` fails.
         vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openShort{ value: 2e18 }(
             1e18,
@@ -539,7 +513,8 @@ contract ChainlinkHyperdriveTest is InstanceTest {
             })
         );
 
-        // Ensure that sending ETH to `openShort` fails when `asBase` is false.
+        // Ensure that Bob receives a refund when he opens a short with "asBase"
+        // set to false and sends ether to the contract.
         vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openShort{ value: 0.5e18 }(
             1e18,
@@ -560,10 +535,6 @@ contract ChainlinkHyperdriveTest is InstanceTest {
         _shortAmount = _shortAmount.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
             hyperdrive.calculateMaxShort()
-        );
-        IERC20(hyperdrive.vaultSharesToken()).approve(
-            address(hyperdrive),
-            _shortAmount
         );
         (uint256 maturityTime, uint256 vaultSharesPaid) = openShort(
             bob,
@@ -592,6 +563,7 @@ contract ChainlinkHyperdriveTest is InstanceTest {
 
         // Bob should receive approximately as many vault shares as he paid
         // since no time as passed and the fees are zero.
+        assertLt(vaultSharesProceeds, vaultSharesPaid + 1_000);
         assertApproxEqAbs(vaultSharesProceeds, vaultSharesPaid, 1e9);
 
         // Ensure that the withdrawal was processed as expected.
@@ -614,10 +586,6 @@ contract ChainlinkHyperdriveTest is InstanceTest {
         _shortAmount = _shortAmount.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
             hyperdrive.calculateMaxShort()
-        );
-        IERC20(hyperdrive.vaultSharesToken()).approve(
-            address(hyperdrive),
-            _shortAmount
         );
         (uint256 maturityTime, ) = openShort(bob, _shortAmount, false);
 
@@ -649,7 +617,7 @@ contract ChainlinkHyperdriveTest is InstanceTest {
         assertApproxEqAbs(
             baseProceeds,
             _shortAmount.mulDown(_variableRate),
-            1e4
+            1_000
         );
 
         // Ensure that the withdrawal was processed as expected.
@@ -673,30 +641,17 @@ contract ChainlinkHyperdriveTest is InstanceTest {
         // Advance the time.
         vm.warp(block.timestamp + timeDelta);
 
-        // Get the latest round ID and answer. We'll overwrite this round ID
-        // with the updated answer.
-        (
-            uint80 roundId,
-            int256 answer,
-            ,
-            uint256 updatedAt,
+        // Get the last price.
+        (uint256 lastPrice, ) = X_RENZO_DEPOSIT.getMintRate();
 
-        ) = CHAINLINK_AGGREGATOR_PROXY.latestRoundData();
-        uint256 answer_ = uint256(answer);
-
-        // Accrue interest in the Chainlink wstETH market. We do this by
-        // overwriting the latest round's answer.
-        (answer_, ) = uint256(answer_).calculateInterest(
-            variableRate,
-            timeDelta
-        );
-        bytes32 latestRoundLocation = keccak256(
-            abi.encode(uint32(roundId), 44)
-        );
+        // Accrue interest in the Renzo Linea market. We do this by overwriting
+        // the xRenzoDeposit contract's last price.
+        (lastPrice, ) = lastPrice.calculateInterest(variableRate, timeDelta);
+        bytes32 lastPriceLocation = bytes32(uint256(152));
         vm.store(
-            CHAINLINK_AGGREGATOR,
-            latestRoundLocation,
-            bytes32((updatedAt << 192) | answer_)
+            address(X_RENZO_DEPOSIT),
+            lastPriceLocation,
+            bytes32(lastPrice)
         );
     }
 }

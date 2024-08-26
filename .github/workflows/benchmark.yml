@@ -20,6 +20,7 @@ jobs:
       MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
       SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
       GNOSIS_CHAIN_RPC_URL: ${{ secrets.GNOSIS_CHAIN_RPC_URL }}
+      LINEA_RPC_URL: ${{ secrets.LINEA_RPC_URL }}
     steps:
       # Install the dependencies.
       - uses: actions/checkout@v2

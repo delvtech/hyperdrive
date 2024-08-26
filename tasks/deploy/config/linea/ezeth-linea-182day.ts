@@ -1,35 +1,36 @@
 import { Address, keccak256, parseEther, toBytes, zeroAddress } from "viem";
 import {
     ETH_ADDRESS,
+    EZETH_ADDRESS_LINEA,
     HyperdriveInstanceConfig,
     SIX_MONTHS,
-    STETH_ADDRESS_MAINNET,
     getLinkerDetails,
     normalizeFee,
     parseDuration,
     toBytes32,
 } from "../../lib";
-import { MAINNET_FACTORY_NAME } from "./factory";
-import { MAINNET_STETH_COORDINATOR_NAME } from "./steth-coordinator";
+import { LINEA_EZETH_COORDINATOR_NAME } from "./ezeth-linea-coordinator";
+import { LINEA_FACTORY_NAME } from "./factory";
 
 // The name of the pool.
-export const MAINNET_STETH_182DAY_NAME = "ElementDAO 182 Day stETH Hyperdrive";
+export const LINEA_EZETH_182DAY_NAME =
+    "ElementDAO 182 Day Renzo xezETH Hyperdrive";
 
 // The initial contribution of the pool.
 const CONTRIBUTION = parseEther("0.01");
 
-export const MAINNET_STETH_182DAY: HyperdriveInstanceConfig<"StETH"> = {
-    name: MAINNET_STETH_182DAY_NAME,
-    prefix: "StETH",
+export const LINEA_EZETH_182DAY: HyperdriveInstanceConfig<"EzETHLinea"> = {
+    name: LINEA_EZETH_182DAY_NAME,
+    prefix: "EzETHLinea",
     coordinatorAddress: async (hre) =>
-        hre.hyperdriveDeploy.deployments.byName(MAINNET_STETH_COORDINATOR_NAME)
+        hre.hyperdriveDeploy.deployments.byName(LINEA_EZETH_COORDINATOR_NAME)
             .address,
-    deploymentId: keccak256(toBytes(MAINNET_STETH_182DAY_NAME)),
+    deploymentId: keccak256(toBytes(LINEA_EZETH_182DAY_NAME)),
     salt: toBytes32("0xababe"),
     extraData: "0x",
     contribution: CONTRIBUTION,
-    fixedAPR: parseEther("0.0314"),
-    timestretchAPR: parseEther("0.035"),
+    fixedAPR: parseEther("0.031"),
+    timestretchAPR: parseEther("0.1"),
     options: async (hre) => ({
         asBase: false,
         extraData: "0x",
@@ -38,23 +39,23 @@ export const MAINNET_STETH_182DAY: HyperdriveInstanceConfig<"StETH"> = {
     prepare: async (hre) => {
         // approve the coordinator
         let vaultSharesToken = await hre.viem.getContractAt(
-            "ILido",
-            STETH_ADDRESS_MAINNET,
+            "openzeppelin/token/ERC20/IERC20.sol:IERC20",
+            EZETH_ADDRESS_LINEA,
         );
         let pc = await hre.viem.getPublicClient();
         let tx = await vaultSharesToken.write.approve([
             hre.hyperdriveDeploy.deployments.byName(
-                MAINNET_STETH_COORDINATOR_NAME,
+                LINEA_EZETH_COORDINATOR_NAME,
             ).address,
-            await vaultSharesToken.read.getPooledEthByShares([CONTRIBUTION]),
+            CONTRIBUTION,
         ]);
         await pc.waitForTransactionReceipt({ hash: tx });
     },
     poolDeployConfig: async (hre) => {
         return {
             baseToken: ETH_ADDRESS,
-            vaultSharesToken: STETH_ADDRESS_MAINNET,
-            circuitBreakerDelta: parseEther("0.035"),
+            vaultSharesToken: EZETH_ADDRESS_LINEA,
+            circuitBreakerDelta: parseEther("0.075"),
             minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),
             positionDuration: parseDuration(SIX_MONTHS),
@@ -66,7 +67,7 @@ export const MAINNET_STETH_182DAY: HyperdriveInstanceConfig<"StETH"> = {
             checkpointRewarder: zeroAddress,
             ...(await getLinkerDetails(
                 hre,
-                hre.hyperdriveDeploy.deployments.byName(MAINNET_FACTORY_NAME)
+                hre.hyperdriveDeploy.deployments.byName(LINEA_FACTORY_NAME)
                     .address,
             )),
             fees: {

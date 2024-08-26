@@ -20,6 +20,7 @@ jobs:
       MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
       SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
       GNOSIS_CHAIN_RPC_URL: ${{ secrets.GNOSIS_CHAIN_RPC_URL }}
+      LINEA_RPC_URL: ${{ secrets.LINEA_RPC_URL }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -40,7 +41,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: nightly-626221f5ef44b4af950a08e09bd714650d9eb77d
           cache: false
 
       - name: forge version

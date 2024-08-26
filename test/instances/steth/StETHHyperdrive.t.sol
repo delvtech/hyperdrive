@@ -25,6 +25,7 @@ import { Lib } from "../../utils/Lib.sol";
 
 contract StETHHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for uint256;
     using Lib for *;
     using stdStorage for StdStorage;
 
@@ -540,11 +541,13 @@ contract StETHHyperdriveTest is InstanceTest {
         // `getTotalPooledEther() / getTotalShares()`, we can simulate the
         // accrual of interest by multiplying the total pooled ether by the
         // variable rate plus one.
-        uint256 bufferedEther = variableRate >= 0
-            ? LIDO.getBufferedEther() +
-                LIDO.getTotalPooledEther().mulDown(uint256(variableRate))
-            : LIDO.getBufferedEther() -
-                LIDO.getTotalPooledEther().mulDown(uint256(variableRate));
+        (, int256 interest) = LIDO.getTotalPooledEther().calculateInterest(
+            variableRate,
+            timeDelta
+        );
+        uint256 bufferedEther = interest >= 0
+            ? LIDO.getBufferedEther() + uint256(interest)
+            : LIDO.getBufferedEther() - uint256(-interest);
         vm.store(
             address(LIDO),
             BUFFERED_ETHER_POSITION,

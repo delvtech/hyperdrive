@@ -4,6 +4,16 @@ export const ETH_ADDRESS =
     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" as Address;
 
 // ╭─────────────────────────────────────────────────────────╮
+// │ Linea Addresses                                         │
+// ╰─────────────────────────────────────────────────────────╯
+
+export const EZETH_ADDRESS_LINEA =
+    "0x2416092f143378750bb29b79eD961ab195CcEea5" as Address;
+
+export const X_RENZO_DEPOSIT_LINEA =
+    "0x4D7572040B84b41a6AA2efE4A93eFFF182388F88" as Address;
+
+// ╭─────────────────────────────────────────────────────────╮
 // │ Mainnet Addresses                                       │
 // ╰─────────────────────────────────────────────────────────╯
 

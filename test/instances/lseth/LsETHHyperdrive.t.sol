@@ -25,6 +25,7 @@ import { Lib } from "../../utils/Lib.sol";
 
 contract LsETHHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for uint256;
     using Lib for *;
     using stdStorage for StdStorage;
 
@@ -362,13 +363,14 @@ contract LsETHHyperdriveTest is InstanceTest {
         );
 
         // Increase the balance by the variable rate.
-        uint256 newValidatorBalance = variableRate >= 0
-            ? validatorBalance.mulDown(uint256(variableRate + 1e18))
-            : validatorBalance.mulDown(uint256(1e18 - variableRate));
+        (validatorBalance, ) = validatorBalance.calculateInterest(
+            variableRate,
+            timeDelta
+        );
         vm.store(
             address(RIVER),
             lastConsensusLayerReportSlot,
-            bytes32(newValidatorBalance)
+            bytes32(validatorBalance)
         );
     }
 

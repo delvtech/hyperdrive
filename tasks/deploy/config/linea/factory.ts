@@ -2,19 +2,19 @@ import { Address, parseEther, zeroAddress } from "viem";
 import { HyperdriveFactoryConfig, parseDuration } from "../../lib";
 
 // The name of the factory.
-export const MAINNET_FACTORY_NAME = "ElementDAO Hyperdrive Factory";
+export const LINEA_FACTORY_NAME = "ElementDAO Hyperdrive Factory";
 
 // The name of the forwarder factory.
-export const MAINNET_FACTORY_FORWARDER_NAME =
+export const LINEA_FACTORY_FORWARDER_NAME =
     "ElementDAO ERC20 Factory Forwarder";
 
-export const MAINNET_FACTORY: HyperdriveFactoryConfig = {
-    name: MAINNET_FACTORY_NAME,
+export const LINEA_FACTORY: HyperdriveFactoryConfig = {
+    name: LINEA_FACTORY_NAME,
     prepare: async (hre, options) => {
         await hre.hyperdriveDeploy.ensureDeployed(
-            MAINNET_FACTORY_FORWARDER_NAME,
+            LINEA_FACTORY_FORWARDER_NAME,
             "ERC20ForwarderFactory",
-            [MAINNET_FACTORY_FORWARDER_NAME],
+            [LINEA_FACTORY_FORWARDER_NAME],
             options,
         );
     },
@@ -58,17 +58,17 @@ export const MAINNET_FACTORY: HyperdriveFactoryConfig = {
                 governanceZombie: parseEther("0.03"),
             },
             linkerFactory: hre.hyperdriveDeploy.deployments.byName(
-                MAINNET_FACTORY_FORWARDER_NAME,
+                LINEA_FACTORY_FORWARDER_NAME,
             ).address,
             linkerCodeHash: await (
                 await hre.viem.getContractAt(
                     "ERC20ForwarderFactory",
                     hre.hyperdriveDeploy.deployments.byName(
-                        MAINNET_FACTORY_FORWARDER_NAME,
+                        LINEA_FACTORY_FORWARDER_NAME,
                     ).address,
                 )
             ).read.ERC20LINK_HASH(),
         },
-        MAINNET_FACTORY_NAME,
+        LINEA_FACTORY_NAME,
     ],
 };
