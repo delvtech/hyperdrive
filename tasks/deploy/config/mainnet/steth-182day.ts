@@ -2,8 +2,8 @@ import { Address, keccak256, parseEther, toBytes, zeroAddress } from "viem";
 import {
     ETH_ADDRESS,
     HyperdriveInstanceConfig,
-    STETH_ADDRESS_MAINNET,
     SIX_MONTHS,
+    STETH_ADDRESS_MAINNET,
     getLinkerDetails,
     normalizeFee,
     parseDuration,
