@@ -1,7 +1,7 @@
 import { Address, encodeAbiParameters, parseEther, zeroAddress } from "viem";
 import {
-    HyperdriveInstanceConfig,
     DAI_ADDRESS_MAINNET,
+    HyperdriveInstanceConfig,
     SIX_MONTHS,
     getLinkerDetails,
     normalizeFee,
