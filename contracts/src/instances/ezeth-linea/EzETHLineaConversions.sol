@@ -8,7 +8,7 @@ import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
 /// @title EzETHLineaConversions
 /// @notice The conversion logic for the EzETH integration on Linea.
 /// @dev This conversion library pulls the vault share price from the Renzo
-///      oracle on linea. It's possible for this oracle to have downtime or
+///      oracle on Linea. It's possible for this oracle to have downtime or
 ///      to be deprecated entirely. Our approach to this problem is to always
 ///      use the latest price data (regardless of how current it is) since
 ///      reverting will compromise the protocol's liveness and will prevent
@@ -57,7 +57,6 @@ library EzETHLineaConversions {
     function getLastMintPrice(
         IXRenzoDeposit _xRenzoDeposit
     ) internal view returns (uint256) {
-        // NOTE: We
         (uint256 lastPrice, ) = _xRenzoDeposit.getMintRate();
         return lastPrice;
     }

@@ -4,7 +4,7 @@ export const ETH_ADDRESS =
     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" as Address;
 
 // ╭─────────────────────────────────────────────────────────╮
-// │ Linea Addresses                                       │
+// │ Linea Addresses                                         │
 // ╰─────────────────────────────────────────────────────────╯
 
 export const EZETH_ADDRESS_LINEA =

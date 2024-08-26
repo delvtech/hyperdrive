@@ -49,7 +49,7 @@ import { EzETHLineaBase } from "./EzETHLineaBase.sol";
 ///
 /// @author DELV
 /// @title EzETHLineaHyperdrive
-/// @notice A Hyperdrive instance that uses a EzETHLinea vault as the yield source.
+/// @notice A Hyperdrive instance that uses EzETH on Linea as a yield source.
 /// @dev This instance supports the Renzo protocol on Linea. The vault shares token
 ///      is the rebasing LRT token xezETH. There are a few special things about
 ///      this integration:
@@ -62,6 +62,8 @@ import { EzETHLineaBase } from "./EzETHLineaBase.sol";
 ///        minting xezETH.
 ///      - Base withdrawals aren't supported since there isn't an instantaneous
 ///        way to withdraw from xezETH.
+///      - The minimum share reserves and minimum transaction amount are both
+///        1e15.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.

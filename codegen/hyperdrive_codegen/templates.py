@@ -51,6 +51,7 @@ instance_templates = [
     TemplatePathInfo("instances/Target0.sol.jinja", "Target0", "instances"),
     TemplatePathInfo("instances/Target1.sol.jinja", "Target1", "instances"),
     TemplatePathInfo("instances/Target2.sol.jinja", "Target2", "instances"),
+    TemplatePathInfo("instances/Target3.sol.jinja", "Target3", "instances"),
     TemplatePathInfo("instances/Target4.sol.jinja", "Target4", "instances"),
 ]
 

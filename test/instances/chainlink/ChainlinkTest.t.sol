@@ -28,6 +28,7 @@ import { Lib } from "../../utils/Lib.sol";
 
 contract ChainlinkHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for uint256;
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
     using stdStorage for StdStorage;
@@ -681,21 +682,21 @@ contract ChainlinkHyperdriveTest is InstanceTest {
             uint256 updatedAt,
 
         ) = CHAINLINK_AGGREGATOR_PROXY.latestRoundData();
+        uint256 answer_ = uint256(answer);
 
-        // TODO: Add the time component to this.
-        //
         // Accrue interest in the Chainlink wstETH market. We do this by
         // overwriting the latest round's answer.
-        answer = variableRate >= 0
-            ? answer + int256(uint256(answer).mulDown(uint256(variableRate)))
-            : answer - int256(uint256(answer).mulDown(uint256(-variableRate)));
+        (answer_, ) = uint256(answer_).calculateInterest(
+            variableRate,
+            timeDelta
+        );
         bytes32 latestRoundLocation = keccak256(
             abi.encode(uint32(roundId), 44)
         );
         vm.store(
             CHAINLINK_AGGREGATOR,
             latestRoundLocation,
-            bytes32((updatedAt << 192) | uint256(answer))
+            bytes32((updatedAt << 192) | answer_)
         );
     }
 }

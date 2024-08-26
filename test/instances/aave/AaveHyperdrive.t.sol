@@ -489,14 +489,16 @@ contract AaveHyperdriveTest is InstanceTest {
         uint256 reserveNormalizedIncome = POOL.getReserveNormalizedIncome(
             address(WETH)
         );
+        uint256 normalizedTime = timeDelta.divDown(365 days);
         reserveNormalizedIncome = variableRate >= 0
             ? reserveNormalizedIncome +
-                reserveNormalizedIncome.mulDivDown(uint256(variableRate), 1e27)
+                reserveNormalizedIncome
+                    .mulDivDown(uint256(variableRate), 1e27)
+                    .mulDown(normalizedTime)
             : reserveNormalizedIncome -
-                reserveNormalizedIncome.mulDivDown(
-                    uint256(-variableRate),
-                    1e27
-                );
+                reserveNormalizedIncome
+                    .mulDivDown(uint256(-variableRate), 1e27)
+                    .mulDown(normalizedTime);
         bytes32 reserveDataLocation = keccak256(abi.encode(address(WETH), 52));
         DataTypes.ReserveData memory data = POOL.getReserveData(address(WETH));
         vm.store(

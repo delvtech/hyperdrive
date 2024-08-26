@@ -27,6 +27,7 @@ import { Lib } from "../../utils/Lib.sol";
 
 contract SUSDeHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for uint256;
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
     using stdStorage for StdStorage;
@@ -770,9 +771,7 @@ contract SUSDeHyperdriveTest is InstanceTest {
         // calculated as assets divided shares, we can accrue interest by
         // updating the USDe balance. We modify this in place to allow negative
         // interest accrual.
-        totalBase = variableRate >= 0
-            ? totalBase + totalBase.mulDown(uint256(variableRate))
-            : totalBase - totalBase.mulDown(uint256(-variableRate));
+        (totalBase, ) = totalBase.calculateInterest(variableRate, timeDelta);
         bytes32 balanceLocation = keccak256(abi.encode(address(SUSDE), 2));
         vm.store(address(USDE), bytes32(balanceLocation), bytes32(totalBase));
     }

@@ -8,7 +8,7 @@ import { EzETHLineaConversions } from "./EzETHLineaConversions.sol";
 
 /// @author DELV
 /// @title EzETHLineaBase
-/// @notice The base contract for the EzETHLinea Hyperdrive implementation.
+/// @notice The base contract for the EzETH integration on Linea.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.

@@ -23,6 +23,7 @@ import { Lib } from "../../utils/Lib.sol";
 
 contract RETHHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for uint256;
     using Lib for *;
     using stdStorage for StdStorage;
 
@@ -395,13 +396,9 @@ contract RETHHyperdriveTest is InstanceTest {
         // `getTotalETHBalance() / getTotalRETHBalance()`, we can simulate the
         // accrual of interest by multiplying the total pooled ether by the
         // variable rate plus one.
-        uint256 bufferedEther = variableRate >= 0
-            ? rocketNetworkBalances.getTotalETHBalance().mulDown(
-                uint256(variableRate + 1e18)
-            )
-            : rocketNetworkBalances.getTotalETHBalance().mulDown(
-                uint256(1e18 - variableRate)
-            );
+        (uint256 bufferedEther, ) = rocketNetworkBalances
+            .getTotalETHBalance()
+            .calculateInterest(variableRate, timeDelta);
         ROCKET_STORAGE.setUint(
             keccak256("network.balance.total"),
             bufferedEther
