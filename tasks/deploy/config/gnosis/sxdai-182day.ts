@@ -62,7 +62,7 @@ export const GNOSIS_SXDAI_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
             baseToken: WXDAI_ADDRESS_GNOSIS,
             vaultSharesToken: SXDAI_ADDRESS_GNOSIS,
             circuitBreakerDelta: parseEther("0.05"),
-            minimumShareReserves: parseEther("0.005"),
+            minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),
             positionDuration: parseDuration(SIX_MONTHS),
             checkpointDuration: parseDuration("1 day"),
