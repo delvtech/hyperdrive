@@ -32,8 +32,8 @@ contract sxDaiHyperdriveTest is InstanceTest {
     using Lib for *;
     using stdStorage for StdStorage;
 
-    // The xDai contract.
-    IERC20 internal constant XDAI =
+    // The wxDai contract.
+    IERC20 internal constant WXDAI =
         IERC20(0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d);
 
     // The sxDai contract.
@@ -56,7 +56,7 @@ contract sxDaiHyperdriveTest is InstanceTest {
             decimals: 18,
             baseTokenWhaleAccounts: baseTokenWhaleAccounts,
             vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
-            baseToken: XDAI,
+            baseToken: WXDAI,
             vaultSharesToken: SXDAI,
             shareTolerance: 1e3,
             minimumShareReserves: 1e15,
@@ -137,7 +137,7 @@ contract sxDaiHyperdriveTest is InstanceTest {
     function getTokenBalances(
         address account
     ) internal view override returns (uint256, uint256) {
-        return (XDAI.balanceOf(account), SXDAI.balanceOf(account));
+        return (WXDAI.balanceOf(account), SXDAI.balanceOf(account));
     }
 
     /// @dev Verifies that deposit accounting is correct when opening positions.
@@ -750,6 +750,6 @@ contract sxDaiHyperdriveTest is InstanceTest {
             timeDelta
         );
         bytes32 balanceLocation = keccak256(abi.encode(address(SXDAI), 3));
-        vm.store(address(XDAI), balanceLocation, bytes32(totalAssets));
+        vm.store(address(WXDAI), balanceLocation, bytes32(totalAssets));
     }
 }
