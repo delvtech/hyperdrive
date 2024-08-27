@@ -30,7 +30,7 @@ export const GNOSIS_SXDAI_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     salt: toBytes32("0x69420"),
     extraData: "0x",
     contribution: CONTRIBUTION,
-    fixedAPR: parseEther("0.06"),
+    fixedAPR: parseEther("0.07"),
     timestretchAPR: parseEther("0.05"),
     options: async (hre) => ({
         extraData: "0x",
@@ -62,7 +62,7 @@ export const GNOSIS_SXDAI_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
             baseToken: WXDAI_ADDRESS_GNOSIS,
             vaultSharesToken: SXDAI_ADDRESS_GNOSIS,
             circuitBreakerDelta: parseEther("0.05"),
-            minimumShareReserves: parseEther("0.005"),
+            minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),
             positionDuration: parseDuration(SIX_MONTHS),
             checkpointDuration: parseDuration("1 day"),

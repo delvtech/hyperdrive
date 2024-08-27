@@ -26,7 +26,7 @@ import { GNOSIS_FACTORY_NAME } from "./factory";
 export const GNOSIS_WSTETH_182DAY_NAME = "ElementDAO 182 Day wstETH Hyperdrive";
 
 // The initial contribution of the pool.
-const CONTRIBUTION = parseEther("0.01");
+const CONTRIBUTION = parseEther("0.03");
 
 export const GNOSIS_WSTETH_182DAY: HyperdriveInstanceConfig<"Chainlink"> = {
     name: GNOSIS_WSTETH_182DAY_NAME,
