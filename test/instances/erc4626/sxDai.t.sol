@@ -469,7 +469,7 @@ contract sxDaiHyperdriveTest is InstanceTest {
         assertApproxEqAbs(
             baseProceeds,
             withdrawalShares.mulDown(lpSharePrice),
-            1e9
+            1e5
         );
     }
 
