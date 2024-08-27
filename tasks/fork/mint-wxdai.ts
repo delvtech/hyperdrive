@@ -3,57 +3,49 @@ import { Address, encodeFunctionData, parseEther, zeroAddress } from "viem";
 import {
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
-    WSTETH_ADDRESS_GNOSIS,
-    WSTETH_ADDRESS_MAINNET,
+    SXDAI_ADDRESS_GNOSIS,
+    WXDAI_ADDRESS_GNOSIS,
 } from "../deploy";
 
-export type MintWSTETHParams = HyperdriveDeployBaseTaskParams & {
+export type MintWXDAIParams = HyperdriveDeployBaseTaskParams & {
     address: string;
     amount: string;
 };
 
 HyperdriveDeployBaseTask(
     task(
-        "fork:mint-wsteth",
-        "Mints the specified amount of WSTETH to the input address",
+        "fork:mint-wxdai",
+        "Mints the specified amount of WXDAI to the input address",
     ),
 )
     .addOptionalParam(
         "address",
-        "address to send WSTETH",
+        "address to send WXDAI",
         zeroAddress,
         types.string,
     )
     .addOptionalParam(
         "amount",
         "amount (in ether) to mint",
-        "100",
+        "10000",
         types.string,
     )
     .setAction(
         async (
-            { address, amount }: Required<MintWSTETHParams>,
-            { viem, artifacts, getNamedAccounts, network },
+            { address, amount }: Required<MintWXDAIParams>,
+            { viem, artifacts, getNamedAccounts },
         ) => {
             if (address === zeroAddress) {
                 address = (await getNamedAccounts())["deployer"];
             }
-            let wstethAddress =
-                network.name === "gnosis"
-                    ? WSTETH_ADDRESS_GNOSIS
-                    : WSTETH_ADDRESS_MAINNET;
-            let wstethWhale =
-                network.name === "gnosis"
-                    ? WSTETH_ADDRESS_GNOSIS
-                    : WSTETH_ADDRESS_MAINNET;
             let contract = await viem.getContractAt(
                 "solmate/tokens/ERC20.sol:ERC20",
-                wstethAddress,
+                WXDAI_ADDRESS_GNOSIS,
             );
-            let balance = await contract.read.balanceOf([wstethWhale]);
+            let balance = await contract.read.balanceOf([SXDAI_ADDRESS_GNOSIS]);
             if (balance < parseEther(amount)) {
                 console.log(
-                    "ERROR: insufficient funds in WSTETH whale account, skipping...",
+                    "ERROR: insufficient funds in WXDAI whale account, skipping...",
                 );
                 return;
             }
@@ -72,12 +64,12 @@ HyperdriveDeployBaseTask(
                 mode: "anvil",
             });
             await tc.setBalance({
-                address: wstethWhale,
+                address: SXDAI_ADDRESS_GNOSIS,
                 value: parseEther("1"),
             });
             let tx = await tc.sendUnsignedTransaction({
-                from: wstethWhale,
-                to: wstethAddress,
+                from: SXDAI_ADDRESS_GNOSIS,
+                to: WXDAI_ADDRESS_GNOSIS,
                 data: transferData,
             });
             let pc = await viem.getPublicClient();

@@ -19,24 +19,36 @@ fi
 for address in "${addresses[@]}"
 do
   echo "funding ${address}..."
+
   echo " - funding eth..."
   npx hardhat fork:mint-eth --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
-  echo " - funding dai..."
-  npx hardhat fork:mint-dai --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
-  echo " - funding eeth..."
-  npx hardhat fork:mint-eeth --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
-  echo " - funding ezeth..."
-  npx hardhat fork:mint-ezeth --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
-  echo " - funding reth..."
-  npx hardhat fork:mint-reth --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
-  echo " - funding sdai..."
-  npx hardhat fork:mint-sdai --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
-  echo " - funding steth..."
-  npx hardhat fork:mint-steth --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
-  echo " - funding usde..."
-  npx hardhat fork:mint-usde --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
-  echo " - funding wsteth..."
-  npx hardhat fork:mint-wsteth --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
-  echo " - funding usdc..."
-  npx hardhat fork:mint-usdc --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
+
+  if [ "$NETWORK" = "mainnet_fork"]; then
+    echo " - funding dai..."
+    npx hardhat fork:mint-dai --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
+    echo " - funding eeth..."
+    npx hardhat fork:mint-eeth --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
+    echo " - funding ezeth..."
+    npx hardhat fork:mint-ezeth --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
+    echo " - funding reth..."
+    npx hardhat fork:mint-reth --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
+    echo " - funding sdai..."
+    npx hardhat fork:mint-sdai --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
+    echo " - funding steth..."
+    npx hardhat fork:mint-steth --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
+    echo " - funding usde..."
+    npx hardhat fork:mint-usde --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
+    echo " - funding wsteth..."
+    npx hardhat fork:mint-wsteth --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
+    echo " - funding usdc..."
+    npx hardhat fork:mint-usdc --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
+  fi
+
+  if [ "$NETWORK" = "gnosis" ]; then
+    echo " - funding wsteth..."
+    npx hardhat fork:mint-wsteth --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
+    echo " - funding wxdai..."
+    npx hardhat fork:mint-wxdai --address "${address}" --network "${NETWORK}" --config "hardhat.config.${NETWORK}.ts"
+  fi
+
 done
