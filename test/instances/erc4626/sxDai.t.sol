@@ -478,7 +478,7 @@ contract sxDaiHyperdriveTest is InstanceTest {
     function test_open_long_nonpayable() external {
         vm.startPrank(bob);
 
-        // Ensure that sending ETH to `openLong` fails.
+        // Ensure that sending ETH to `openLong` fails with `asBase` as true.
         vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openLong{ value: 2e18 }(
             1e18,
