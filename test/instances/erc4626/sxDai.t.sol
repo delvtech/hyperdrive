@@ -610,8 +610,8 @@ contract sxDaiHyperdriveTest is InstanceTest {
             })
         );
 
-        // Ensure that Bob receives a refund when he opens a short with "asBase"
-        // set to false and sends ether to the contract.
+        // Ensure that sending ETH to `openShort` fails with `asBase` as false.
+
         vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openShort{ value: 0.5e18 }(
             1e18,
