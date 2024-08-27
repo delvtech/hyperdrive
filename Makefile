@@ -15,7 +15,7 @@ build-sol:
 # forge build will do nothing if build-sol was previously run,
 # but we put it here so this can be called individually
 build-hyperdrivetypes:
-	forge build && pypechain --output-dir python/hyperdrivetypes/hyperdrivetypes/types --line-length 80 --parallel out/ && . scripts/set-hyperdrivetypes-version.sh
+	forge build && pypechain --output-dir python/hyperdrivetypes/hyperdrivetypes/types --line-length 80 out/ && . scripts/set-hyperdrivetypes-version.sh
 
 ### Test ###
 

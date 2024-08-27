@@ -25,7 +25,7 @@ jobs:
           token: ${{github.token}}
 
       - name: set up pip and pypechain
-        run: python -m pip install --upgrade pip "pypechain>=0.0.34"
+        run: python -m pip install --upgrade pip pypechain
 
       - name: generate hyperdrivetypes files
         run: make build
@@ -34,7 +34,7 @@ jobs:
         run: python -m pip install python/hyperdrivetypes[all]
       
       - name: run type checker
-        run: python -m pyright
+        run: python -m pyright python/
 
       - name: run tests
         run: make test-python
