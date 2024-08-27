@@ -25,10 +25,9 @@ import { InstanceTest } from "../../utils/InstanceTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-import "forge-std/console2.sol";
-
 contract sxDaiHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for uint256;
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
     using stdStorage for StdStorage;
@@ -98,22 +97,14 @@ contract sxDaiHyperdriveTest is InstanceTest {
     function convertToShares(
         uint256 baseAmount
     ) internal view override returns (uint256) {
-        return
-            ERC4626Conversions.convertToShares(
-                SXDAI,
-                baseAmount
-            );
+        return ERC4626Conversions.convertToShares(SXDAI, baseAmount);
     }
 
     /// @dev Converts share amount to the equivalent amount in base.
     function convertToBase(
         uint256 shareAmount
     ) internal view override returns (uint256) {
-        return
-            ERC4626Conversions.convertToBase(
-                SXDAI,
-                shareAmount
-            );
+        return ERC4626Conversions.convertToBase(SXDAI, shareAmount);
     }
 
     /// @dev Deploys the ERC4626 deployer coordinator contract.
@@ -415,7 +406,6 @@ contract sxDaiHyperdriveTest is InstanceTest {
         assertApproxEqAbs(baseProceeds, _contribution, 1e10);
 
         // Ensure that the withdrawal was processed as expected.
-        console2.log("baseProceeds", baseProceeds);
         verifyWithdrawal(
             bob,
             baseProceeds,
@@ -702,11 +692,6 @@ contract sxDaiHyperdriveTest is InstanceTest {
 
         // The term passes and some interest accrues.
         _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
-        console2.log("variableRate", _variableRate.toString(18));
-        console2.log("initialVaultSharePrice", hyperdrive.getPoolConfig().initialVaultSharePrice.toString(18));
-        console2.log("vaultSharePrice", hyperdrive.getPoolInfo().vaultSharePrice.toString(18));
-        console2.log("totalAssets", SXDAI.totalAssets().toString(18));
-        console2.log("totalSupply", SXDAI.totalSupply().toString(18));
         advanceTime(POSITION_DURATION, int256(_variableRate));
 
         // Get some balance information before the withdrawal.
@@ -726,9 +711,6 @@ contract sxDaiHyperdriveTest is InstanceTest {
             _shortAmount,
             false
         );
-        console2.log("_shortAmount", _shortAmount.toString(18));
-        console2.log("shareProceeds", shareProceeds.toString(18));
-        console2.log("_variableRate", _variableRate.toString(18));
         uint256 baseProceeds = convertToBase(shareProceeds);
 
         // Bob should receive almost exactly the interest that accrued on the
@@ -752,36 +734,22 @@ contract sxDaiHyperdriveTest is InstanceTest {
     }
 
     /// Helpers ///
+
     function advanceTime(
         uint256 timeDelta,
         int256 variableRate
     ) internal override {
+        // Advance the time.
         vm.warp(block.timestamp + timeDelta);
-        (, int256 interest) = HyperdriveUtils.calculateCompoundInterest(
-            SXDAI.totalAssets(),
+
+        // Accrue interest in the sxDAI market. This amounts to manually
+        // updating the total supply assets.
+        uint256 totalAssets = SXDAI.totalAssets();
+        (totalAssets, ) = totalAssets.calculateInterest(
             variableRate,
             timeDelta
         );
-        console2.log("before XDAI.totalSupply()",SXDAI.totalSupply().toString(18));
-
-        if (interest > 0) {
-            ERC20Mintable(address(XDAI)).mint(
-                address(SXDAI),
-                uint256(interest)
-            );
-        } else if (interest < 0) {
-            ERC20Mintable(address(XDAI)).burn(
-                address(SXDAI),
-                uint256(-interest)
-            );
-        }
-        console2.log("after XDAI.totalSupply()",SXDAI.totalSupply().toString(18));
-
-        console2.log("interest           ",interest.toString(18));
-        //uint256 totalBase = SXDAI.totalAssets() + uint256(interest);
-        console2.log("SXDAI.totalAssets()",SXDAI.totalAssets().toString(18));
-        //console2.log("totalBase          ", totalBase.toString(18));
-        // bytes32 balanceLocation = keccak256(abi.encode(address(SXDAI), 12));
-        // vm.store(address(SXDAI), bytes32(balanceLocation), bytes32(totalBase));
+        bytes32 balanceLocation = keccak256(abi.encode(address(SXDAI), 3));
+        vm.store(address(XDAI), balanceLocation, bytes32(totalAssets));
     }
 }
