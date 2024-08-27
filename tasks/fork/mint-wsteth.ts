@@ -5,6 +5,8 @@ import {
     HyperdriveDeployBaseTaskParams,
     WSTETH_ADDRESS_GNOSIS,
     WSTETH_ADDRESS_MAINNET,
+    WSTETH_WHALE_GNOSIS,
+    WSTETH_WHALE_MAINNET,
 } from "../deploy";
 
 export type MintWSTETHParams = HyperdriveDeployBaseTaskParams & {
@@ -44,8 +46,8 @@ HyperdriveDeployBaseTask(
                     : WSTETH_ADDRESS_MAINNET;
             let wstethWhale =
                 network.name === "gnosis"
-                    ? WSTETH_ADDRESS_GNOSIS
-                    : WSTETH_ADDRESS_MAINNET;
+                    ? WSTETH_WHALE_GNOSIS
+                    : WSTETH_WHALE_MAINNET;
             let contract = await viem.getContractAt(
                 "solmate/tokens/ERC20.sol:ERC20",
                 wstethAddress,
