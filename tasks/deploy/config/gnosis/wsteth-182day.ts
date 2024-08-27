@@ -68,6 +68,11 @@ export const GNOSIS_WSTETH_182DAY: HyperdriveInstanceConfig<"Chainlink"> = {
         await pc.waitForTransactionReceipt({ hash: tx });
     },
     poolDeployConfig: async (hre) => {
+        let factoryContract = await hre.viem.getContractAt(
+            "HyperdriveFactory",
+            hre.hyperdriveDeploy.deployments.byName(GNOSIS_FACTORY_NAME)
+                .address,
+        );
         return {
             baseToken: zeroAddress,
             vaultSharesToken: WSTETH_ADDRESS_GNOSIS,
@@ -78,10 +83,10 @@ export const GNOSIS_WSTETH_182DAY: HyperdriveInstanceConfig<"Chainlink"> = {
             checkpointDuration: parseDuration("1 day"),
             timeStretch: 0n,
             // TODO: Read from the factory.
-            governance: (await hre.getNamedAccounts())["deployer"] as Address,
-            feeCollector: zeroAddress,
-            sweepCollector: zeroAddress,
-            checkpointRewarder: zeroAddress,
+            governance: await factoryContract.read.governance(),
+            feeCollector: await factoryContract.read.feeCollector(),
+            sweepCollector: await factoryContract.read.sweepCollector(),
+            checkpointRewarder: await factoryContract.read.checkpointRewarder(),
             ...(await getLinkerDetails(
                 hre,
                 hre.hyperdriveDeploy.deployments.byName(GNOSIS_FACTORY_NAME)

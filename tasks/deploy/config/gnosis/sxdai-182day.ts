@@ -1,4 +1,4 @@
-import { Address, keccak256, parseEther, toBytes, zeroAddress } from "viem";
+import { Address, keccak256, parseEther, toBytes } from "viem";
 import {
     HyperdriveInstanceConfig,
     getLinkerDetails,
@@ -53,20 +53,24 @@ export const GNOSIS_SXDAI_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
         await pc.waitForTransactionReceipt({ hash: tx });
     },
     poolDeployConfig: async (hre) => {
+        let factoryContract = await hre.viem.getContractAt(
+            "HyperdriveFactory",
+            hre.hyperdriveDeploy.deployments.byName(GNOSIS_FACTORY_NAME)
+                .address,
+        );
         return {
             baseToken: WXDAI_ADDRESS_GNOSIS,
             vaultSharesToken: SXDAI_ADDRESS_GNOSIS,
             circuitBreakerDelta: parseEther("0.05"),
-            minimumShareReserves: parseEther("10"),
+            minimumShareReserves: parseEther("0.005"),
             minimumTransactionAmount: parseEther("0.001"),
             positionDuration: parseDuration(SIX_MONTHS),
             checkpointDuration: parseDuration("1 day"),
             timeStretch: 0n,
-            // TODO: Read from the factory.
-            governance: (await hre.getNamedAccounts())["deployer"] as Address,
-            feeCollector: zeroAddress,
-            sweepCollector: zeroAddress,
-            checkpointRewarder: zeroAddress,
+            governance: await factoryContract.read.governance(),
+            feeCollector: await factoryContract.read.feeCollector(),
+            sweepCollector: await factoryContract.read.sweepCollector(),
+            checkpointRewarder: await factoryContract.read.checkpointRewarder(),
             ...(await getLinkerDetails(
                 hre,
                 hre.hyperdriveDeploy.deployments.byName(GNOSIS_FACTORY_NAME)
