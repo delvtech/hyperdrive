@@ -34,7 +34,7 @@ contract HyperdriveCreate3Factory {
     function getDeployed(
         address _deployer,
         bytes32 _salt
-    ) external view returns (address) {
+    ) external pure returns (address) {
         _salt = keccak256(abi.encodePacked(_deployer, _salt));
         return CREATE3.getDeployed(_salt, _deployer);
     }
