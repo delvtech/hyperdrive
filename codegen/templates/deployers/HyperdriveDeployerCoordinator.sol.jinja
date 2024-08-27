@@ -135,6 +135,24 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
         return value;
     }
 
+    /// @notice Convert an amount of vault shares to an amount of base.
+    /// @param _shareAmount The vault shares amount.
+    /// @return The base amount.
+    function convertToBase(
+        uint256 _shareAmount
+    ) public view returns (uint256) {
+        // FIXME
+    }
+
+    /// @notice Convert an amount of base to an amount of vault shares.
+    /// @param _baseAmount The base amount.
+    /// @return The vault shares amount.
+    function convertToShares(
+        uint256 _baseAmount
+    ) public view returns (uint256) {
+        // FIXME
+    }
+
 {% if contract.payable %}
     /// @dev We override the message value check since this integration is
     ///      payable.
@@ -194,7 +212,7 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
     ) internal pure override returns (uint256) {
         // ****************************************************************
         // FIXME:  Implement this for new instances.
-        return ONE;
+        return convertToBase(ONE);
         // ****************************************************************
     }
 }

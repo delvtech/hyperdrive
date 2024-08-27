@@ -10,3 +10,4 @@ export * from "./mint-steth";
 export * from "./mint-usdc";
 export * from "./mint-usde";
 export * from "./mint-wsteth";
+export * from "./mint-wxdai";

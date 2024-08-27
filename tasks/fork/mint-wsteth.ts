@@ -3,7 +3,9 @@ import { Address, encodeFunctionData, parseEther, zeroAddress } from "viem";
 import {
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
+    WSTETH_ADDRESS_GNOSIS,
     WSTETH_ADDRESS_MAINNET,
+    WSTETH_WHALE_GNOSIS,
     WSTETH_WHALE_MAINNET,
 } from "../deploy";
 
@@ -33,16 +35,24 @@ HyperdriveDeployBaseTask(
     .setAction(
         async (
             { address, amount }: Required<MintWSTETHParams>,
-            { viem, artifacts, getNamedAccounts },
+            { viem, artifacts, getNamedAccounts, network },
         ) => {
             if (address === zeroAddress) {
                 address = (await getNamedAccounts())["deployer"];
             }
+            let wstethAddress =
+                network.name === "gnosis"
+                    ? WSTETH_ADDRESS_GNOSIS
+                    : WSTETH_ADDRESS_MAINNET;
+            let wstethWhale =
+                network.name === "gnosis"
+                    ? WSTETH_WHALE_GNOSIS
+                    : WSTETH_WHALE_MAINNET;
             let contract = await viem.getContractAt(
                 "solmate/tokens/ERC20.sol:ERC20",
-                WSTETH_ADDRESS_MAINNET,
+                wstethAddress,
             );
-            let balance = await contract.read.balanceOf([WSTETH_WHALE_MAINNET]);
+            let balance = await contract.read.balanceOf([wstethWhale]);
             if (balance < parseEther(amount)) {
                 console.log(
                     "ERROR: insufficient funds in WSTETH whale account, skipping...",
@@ -64,12 +74,12 @@ HyperdriveDeployBaseTask(
                 mode: "anvil",
             });
             await tc.setBalance({
-                address: WSTETH_WHALE_MAINNET,
+                address: wstethWhale,
                 value: parseEther("1"),
             });
             let tx = await tc.sendUnsignedTransaction({
-                from: WSTETH_WHALE_MAINNET,
-                to: WSTETH_ADDRESS_MAINNET,
+                from: wstethWhale,
+                to: wstethAddress,
                 data: transferData,
             });
             let pc = await viem.getPublicClient();

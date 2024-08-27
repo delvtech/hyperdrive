@@ -42,7 +42,7 @@ export const MAINNET_FACTORY: HyperdriveFactoryConfig = {
             minFixedAPR: parseEther("0.005"),
             maxFixedAPR: parseEther("0.1"),
             minTimeStretchAPR: parseEther("0.005"),
-            maxTimeStretchAPR: parseEther("0.1"),
+            maxTimeStretchAPR: parseEther("0.2"),
             minCircuitBreakerDelta: parseEther("0.01"),
             maxCircuitBreakerDelta: parseEther("0.2"),
             minFees: {

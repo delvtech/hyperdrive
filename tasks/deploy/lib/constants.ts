@@ -4,6 +4,16 @@ export const ETH_ADDRESS =
     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" as Address;
 
 // ╭─────────────────────────────────────────────────────────╮
+// │ Linea Addresses                                         │
+// ╰─────────────────────────────────────────────────────────╯
+
+export const EZETH_ADDRESS_LINEA =
+    "0x2416092f143378750bb29b79eD961ab195CcEea5" as Address;
+
+export const X_RENZO_DEPOSIT_LINEA =
+    "0x4D7572040B84b41a6AA2efE4A93eFFF182388F88" as Address;
+
+// ╭─────────────────────────────────────────────────────────╮
 // │ Mainnet Addresses                                       │
 // ╰─────────────────────────────────────────────────────────╯
 
@@ -80,6 +90,32 @@ export const WSTETH_WHALE_MAINNET =
 
 export const SEPOLIA_USDE_ADDRESS =
     "0x9458CaACa74249AbBE9E964b3Ce155B98EC88EF2" as Address;
+
+// ╭─────────────────────────────────────────────────────────╮
+// │ Gnosis Addresses                                        │
+// ╰─────────────────────────────────────────────────────────╯
+
+export const CHAINLINK_AGGREGATOR_ADDRESS_GNOSIS =
+    "0x6dcF8CE1982Fc71E7128407c7c6Ce4B0C1722F55" as Address;
+
+export const CHAINLINK_AGGREGATOR_WSTETH_ETH_PROXY_GNOSIS =
+    "0x0064AC007fF665CF8D0D3Af5E0AD1c26a3f853eA" as Address;
+
+export const SXDAI_ADDRESS_GNOSIS =
+    "0xaf204776c7245bF4147c2612BF6e5972Ee483701" as Address;
+
+export const WXDAI_ADDRESS_GNOSIS =
+    "0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d" as Address;
+
+export const WSTETH_ADDRESS_GNOSIS =
+    "0x6C76971f98945AE98dD7d4DFcA8711ebea946eA6" as Address;
+
+// ╭─────────────────────────────────────────────────────────╮
+// │ Gnosis Whales                                           │
+// ╰─────────────────────────────────────────────────────────╯
+
+export const WSTETH_WHALE_GNOSIS =
+    "0x458cD345B4C05e8DF39d0A07220feb4Ec19F5e6f" as Address;
 
 // ╭─────────────────────────────────────────────────────────╮
 // │ Durations                                               │
