@@ -718,7 +718,7 @@ contract sxDaiHyperdriveTest is InstanceTest {
         assertApproxEqAbs(
             baseProceeds,
             _shortAmount.mulDown(_variableRate),
-            1e9
+            1e3
         );
 
         // Ensure that the withdrawal was processed as expected.
