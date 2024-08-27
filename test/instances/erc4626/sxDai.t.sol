@@ -661,7 +661,7 @@ contract sxDaiHyperdriveTest is InstanceTest {
         // Bob should receive approximately as much base as he paid since no
         // time as passed and the fees are zero.
         assertLt(baseProceeds, basePaid + 200);
-        assertApproxEqAbs(baseProceeds, basePaid, 1e9);
+        assertApproxEqAbs(baseProceeds, basePaid, 1e3);
 
         // Ensure that the withdrawal was processed as expected.
         verifyWithdrawal(
