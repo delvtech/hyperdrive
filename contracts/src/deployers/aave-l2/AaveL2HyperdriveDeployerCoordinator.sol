@@ -153,10 +153,11 @@ contract AaveL2HyperdriveDeployerCoordinator is
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     function _checkPoolConfig(
-        IHyperdrive.PoolDeployConfig memory _deployConfig
+        IHyperdrive.PoolDeployConfig memory _deployConfig,
+        bytes memory _extraData
     ) internal view override {
         // Perform the default checks.
-        super._checkPoolConfig(_deployConfig);
+        super._checkPoolConfig(_deployConfig, _extraData);
 
         // Ensure that the vault shares token address is non-zero.
         if (address(_deployConfig.vaultSharesToken) == address(0)) {

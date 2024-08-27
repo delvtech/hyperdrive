@@ -64,13 +64,13 @@ abstract contract AaveL2Base is HyperdriveBase {
             address(_vault),
             _baseAmount + 1
         );
-        bytes32 params = encodeSupplyParams(
-            address(_baseToken),
-            _baseAmount,
+        _vault.supply(
+            address(_baseToken), // asset
+            _baseAmount, // amount
+            address(this), // onBehalfOf
             // NOTE: Aave's referral program is inactive.
-            0
+            0 // referralCode
         );
-        _vault.supply(params);
 
         return (_convertToShares(_baseAmount), 0);
     }

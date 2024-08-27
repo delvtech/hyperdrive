@@ -4,6 +4,7 @@ pragma solidity 0.8.22;
 import { IL2Pool } from "../../interfaces/IAave.sol";
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
 import { AAVE_L2_HYPERDRIVE_KIND } from "../../libraries/Constants.sol";
 import { AaveL2Base } from "./AaveL2Base.sol";
 
@@ -18,9 +19,12 @@ import { AaveL2Base } from "./AaveL2Base.sol";
 contract AaveL2Target0 is HyperdriveTarget0, AaveL2Base {
     /// @notice Initializes the target0 contract.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param __adminController The admin controller that will specify the
+    ///        admin parameters for this instance.
     constructor(
-        IHyperdrive.PoolConfig memory _config
-    ) HyperdriveTarget0(_config) {}
+        IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController __adminController
+    ) HyperdriveTarget0(_config, __adminController) {}
 
     /// @notice Returns the instance's kind.
     /// @return The instance's kind.
