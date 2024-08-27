@@ -41,12 +41,12 @@ contract sxDaiHyperdriveTest is InstanceTest {
         IERC4626(0xaf204776c7245bF4147c2612BF6e5972Ee483701);
 
     // Whale accounts.
-    address internal XDAI_TOKEN_WHALE =
+    address internal WXDAI_TOKEN_WHALE =
         address(0xd0Dd6cEF72143E22cCED4867eb0d5F2328715533);
-    address[] internal baseTokenWhaleAccounts = [XDAI_TOKEN_WHALE];
-    address internal XSDAI_TOKEN_WHALE =
+    address[] internal baseTokenWhaleAccounts = [WXDAI_TOKEN_WHALE];
+    address internal SXDAI_TOKEN_WHALE =
         address(0x7a5c3860a77a8DC1b225BD46d0fb2ac1C6D191BC);
-    address[] internal vaultSharesTokenWhaleAccounts = [XSDAI_TOKEN_WHALE];
+    address[] internal vaultSharesTokenWhaleAccounts = [SXDAI_TOKEN_WHALE];
 
     // The configuration for the instance testing suite.
     InstanceTestConfig internal __testConfig =
