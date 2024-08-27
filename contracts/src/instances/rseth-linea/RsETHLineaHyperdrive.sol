@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
-import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
-import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
-import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
+import { IRSETHPoolV2 } from "../../interfaces/IRSETHPoolV2.sol";
 import { RsETHLineaBase } from "./RsETHLineaBase.sol";
 
 ///      ______  __                           _________      _____
@@ -55,43 +54,39 @@ import { RsETHLineaBase } from "./RsETHLineaBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract RsETHLineaHyperdrive is Hyperdrive, RsETHLineaBase {
-    using SafeERC20 for ERC20;
-
     /// @notice Instantiates Hyperdrive with a RsETHLinea vault as the yield source.
     /// @param __name The pool's name.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param __adminController The admin controller that will specify the
+    ///        admin parameters for this instance.
     /// @param _target0 The target0 address.
     /// @param _target1 The target1 address.
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
     /// @param _target4 The target4 address.
+    /// @param __rsETHPool The Kelp DAO deposit contract that provides the
+    ///        vault share price.
     constructor(
         string memory __name,
         IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController __adminController,
         address _target0,
         address _target1,
         address _target2,
         address _target3,
-        address _target4
+        address _target4,
+        IRSETHPoolV2 __rsETHPool
     )
         Hyperdrive(
             __name,
             _config,
+            __adminController,
             _target0,
             _target1,
             _target2,
             _target3,
             _target4
         )
-    {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC4626 example provided.
-
-        // Approve the base token with 1 wei. This ensures that all of the
-        // subsequent approvals will be writing to a dirty storage slot.
-        ERC20(address(_config.baseToken)).forceApprove(
-            address(_config.vaultSharesToken),
-            1
-        );
-    }
+        RsETHLineaBase(__rsETHPool)
+    {}
 }

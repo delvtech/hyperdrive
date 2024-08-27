@@ -2,7 +2,9 @@
 pragma solidity 0.8.22;
 
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
 import { IHyperdriveCoreDeployer } from "../../interfaces/IHyperdriveCoreDeployer.sol";
+import { IRSETHPoolV2 } from "../../interfaces/IRSETHPoolV2.sol";
 import { RsETHLineaHyperdrive } from "../../instances/rseth-linea/RsETHLineaHyperdrive.sol";
 
 // FIXME: Update the Natspec.
@@ -14,9 +16,22 @@ import { RsETHLineaHyperdrive } from "../../instances/rseth-linea/RsETHLineaHype
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract RsETHLineaHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
+    /// @notice The Kelp DAO deposit contract on Linea. The rsETH/ETH price is
+    ///         used as the vault share price.
+    IRSETHPoolV2 public immutable rsETHPool;
+
+    /// @notice Instantiates the rsETH Linea Hyperdrive base contract.
+    /// @param _rsETHPool The Kelp DAO deposit contract that provides the vault
+    ///        share price.
+    constructor(IRSETHPoolV2 _rsETHPool) {
+        rsETHPool = _rsETHPool;
+    }
+
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param __name The name of the Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _adminController The admin controller that will specify the
+    ///        admin parameters for this instance.
     /// @param _target0 The target0 address.
     /// @param _target1 The target1 address.
     /// @param _target2 The target2 address.
@@ -27,6 +42,7 @@ contract RsETHLineaHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
     function deployHyperdrive(
         string memory __name,
         IHyperdrive.PoolConfig memory _config,
+        IHyperdriveAdminController _adminController,
         bytes memory, // unused _extraData,
         address _target0,
         address _target1,
@@ -44,11 +60,13 @@ contract RsETHLineaHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
                 }(
                     __name,
                     _config,
+                    _adminController,
                     _target0,
                     _target1,
                     _target2,
                     _target3,
-                    _target4
+                    _target4,
+                    rsETHPool
                 )
             )
         );

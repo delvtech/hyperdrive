@@ -3,6 +3,7 @@ pragma solidity 0.8.22;
 
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import { {{ name.capitalized }}Conversions } from "../../instances/{{ name.lowercase }}/{{ name.capitalized }}Conversions.sol";
 import { I{{ name.capitalized }} } from "../../interfaces/I{{ name.capitalized }}.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { I{{ name.capitalized }}Hyperdrive } from "../../interfaces/I{{ name.capitalized }}Hyperdrive.sol";
@@ -141,7 +142,7 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
     function convertToBase(
         uint256 _shareAmount
     ) public view returns (uint256) {
-        // FIXME
+        return {{ name.capitalized }}Conversions.convertToBase(_shareAmount);
     }
 
     /// @notice Convert an amount of base to an amount of vault shares.
@@ -150,7 +151,7 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
     function convertToShares(
         uint256 _baseAmount
     ) public view returns (uint256) {
-        // FIXME
+        return {{ name.capitalized }}Conversions.convertToShares(_baseAmount);
     }
 
 {% if contract.payable %}
@@ -167,23 +168,27 @@ contract {{ name.capitalized }}HyperdriveDeployerCoordinator is HyperdriveDeploy
     }
 {% endif %}
 
+    // FIXME: Update the extra data comment if the extra data isn't empty.
+    //
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
+    /// @param _extraData The empty extra data.
     function _checkPoolConfig(
-        IHyperdrive.PoolDeployConfig memory _deployConfig
+        IHyperdrive.PoolDeployConfig memory _deployConfig,
+        bytes memory _extraData
     ) internal view override {
         // Perform the default checks.
-        super._checkPoolConfig(_deployConfig);
+        super._checkPoolConfig(_deployConfig, _extraData);
 
         // ****************************************************************
         // FIXME: Implement this for new instances.
         // Ensure that the vault shares token address is properly configured.
-        if (address(_deployConfig.vaultSharesToken) != address(VAULT_SHARES_TOKEN) {
+        if (address(_deployConfig.vaultSharesToken) != address(0)) {
             revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
         }
 
         // Ensure that the base token address is properly configured.
-        if (address(_deployConfig.baseToken) == address(0)) {
+        if (address(_deployConfig.baseToken) != address(0)) {
             revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
         }
         // *****************************************************************

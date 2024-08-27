@@ -28,34 +28,37 @@ string constant HYPERDRIVE_FACTORY_KIND = "HyperdriveFactory";
 /// @dev The kind of the Hyperdrive registry.
 string constant HYPERDRIVE_REGISTRY_KIND = "HyperdriveRegistry";
 
-/// @dev The kind of the AaveHyperdrive deployer coordinator factory.
+/// @dev The kind of the AaveHyperdrive deployer coordinator.
 string constant AAVE_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "AaveHyperdriveDeployerCoordinator";
 
-/// @dev The kind of the ChainlinkHyperdrive deployer coordinator factory.
+/// @dev The kind of the ChainlinkHyperdrive deployer coordinator.
 string constant CHAINLINK_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "ChainlinkHyperdriveDeployerCoordinator";
 
-/// @dev The kind of the EETHHyperdrive deployer coordinator factory.
+/// @dev The kind of the EETHHyperdrive deployer coordinator.
 string constant EETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "EETHHyperdriveDeployerCoordinator";
 
-/// @dev The kind of the ERC4626Hyperdrive deployer coordinator factory.
+/// @dev The kind of the ERC4626Hyperdrive deployer coordinator.
 string constant ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "ERC4626HyperdriveDeployerCoordinator";
 
-/// @dev The kind of the EzETHHyperdrive deployer coordinator factory.
+/// @dev The kind of the EzETHHyperdrive deployer coordinator.
 string constant EZETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "EzETHHyperdriveDeployerCoordinator";
 
-/// @dev The kind of the EzETHLineaHyperdrive deployer coordinator factory.
+/// @dev The kind of the EzETHLineaHyperdrive deployer coordinator.
 string constant EZETH_LINEA_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "EzETHLineaHyperdriveDeployerCoordinator";
 
-/// @dev The kind of the MorphoBlueHyperdrive deployer coordinator factory.
+/// @dev The kind of the MorphoBlueHyperdrive deployer coordinator.
 string constant MORPHO_BLUE_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "MorphoBlueHyperdriveDeployerCoordinator";
 
-/// @dev The kind of the LsETHHyperdrive deployer coordinator factory.
+/// @dev The kind of the LsETHHyperdrive deployer coordinator.
 string constant LSETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "LsETHHyperdriveDeployerCoordinator";
 
-/// @dev The kind of the RETHHyperdrive deployer coordinator factory.
+/// @dev The kind of the RETHHyperdrive deployer coordinator.
 string constant RETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "RETHHyperdriveDeployerCoordinator";
 
-/// @dev The kind of the StETHHyperdrive deployer coordinator factory.
+/// @dev The kind of RsETHLineaHyperdrive deployer coordinator.
+string constant RSETH_LINEA_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "RsETHLineaHyperdriveDeployerCoordinator";
+
+/// @dev The kind of the StETHHyperdrive deployer coordinator.
 string constant STETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "StETHHyperdriveDeployerCoordinator";
 
 /// @dev The kind of AaveHyperdrive.
@@ -84,6 +87,9 @@ string constant MORPHO_BLUE_HYPERDRIVE_KIND = "MorphoBlueHyperdrive";
 
 /// @dev The kind of RETHHyperdrive.
 string constant RETH_HYPERDRIVE_KIND = "RETHHyperdrive";
+
+/// @dev The kind of RsETHLineaHyperdrive.
+string constant RSETH_LINEA_HYPERDRIVE_KIND = "RsETHLineaHyperdrive";
 
 /// @dev The kind of StETHHyperdrive.
 string constant STETH_HYPERDRIVE_KIND = "StETHHyperdrive";
