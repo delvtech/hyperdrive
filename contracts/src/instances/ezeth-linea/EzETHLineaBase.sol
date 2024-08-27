@@ -43,7 +43,7 @@ abstract contract EzETHLineaBase is HyperdriveBase {
         bytes calldata // unused _extraData
     ) internal override {
         // NOTE: Since Linea ezETH is a xERC20, which is itself an OpenZeppelin
-        // ERC20 token, we don't need to use safeTransferFrom.
+        // ERC20 token, we don't need to use `safeTransferFrom`.
         //
         // Take custody of the deposit in vault shares.
         bool success = _vaultSharesToken.transferFrom(
@@ -75,7 +75,7 @@ abstract contract EzETHLineaBase is HyperdriveBase {
         bytes calldata // unused
     ) internal override {
         // NOTE: Since Linea ezETH is a xERC20, which is itself an OpenZeppelin
-        // ERC20 token, we don't need to use safeTransferFrom.
+        // ERC20 token, we don't need to use `safeTransfer`.
         //
         // Transfer vault shares to the destination.
         bool success = _vaultSharesToken.transfer(_destination, _shareAmount);

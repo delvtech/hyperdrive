@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
-import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
-import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import { IERC4626 } from "../../interfaces/IERC4626.sol";
-import { IRsETHLinea } from "../../interfaces/IRsETHLinea.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
+import { IRSETHPoolV2 } from "../../interfaces/IRSETHPoolV2.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
+import { RsETHLineaConversions } from "./RsETHLineaConversions.sol";
 
+// FIXME: Add clear @dev comments that explain what is special about this
+// integration.
+//
 /// @author DELV
 /// @title RsETHLineaBase
 /// @notice The base contract for the RsETHLinea Hyperdrive implementation.
@@ -18,17 +19,27 @@ import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract RsETHLineaBase is HyperdriveBase {
-    using SafeERC20 for ERC20;
+    /// @dev The Kelp DAO deposit contract on Linea. The rsETH/ETH price is used
+    ///      as the vault share price.
+    IRSETHPoolV2 internal immutable _rsETHPool;
+
+    /// @notice Instantiates the rsETH Linea Hyperdrive base contract.
+    /// @param __rsETHPool The Kelp DAO deposit contract that provides the
+    ///        vault share price.
+    constructor(IRSETHPoolV2 __rsETHPool) {
+        _rsETHPool = __rsETHPool;
+    }
 
     /// Yield Source ///
 
-    /// @dev Accepts a deposit from the user in base.
-    /// @return The shares that were minted in the deposit.
-    /// @return The amount of ETH to refund. Since this yield source isn't
-    ///         payable, this is always zero.
+    // FIXME: We should support base deposits as long as the fee is zero.
+    //
+    /// @dev Deposits with base are not supported for this integration.
+    ///      The Kelp DAO deposit contract could take a bridge fee which causes
+    ///      problems with the `openShort` accounting.
     function _depositWithBase(
-        uint256, // unused _baseAmount
-        bytes calldata // unused _extraData
+        uint256, // unused
+        bytes calldata // unused
     ) internal pure override returns (uint256, uint256) {
         revert IHyperdrive.UnsupportedToken();
     }
@@ -39,25 +50,25 @@ abstract contract RsETHLineaBase is HyperdriveBase {
         uint256 _shareAmount,
         bytes calldata // unused _extraData
     ) internal override {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC20 example provided.
+        // NOTE: Since Linea wrsETH is an OpenZeppelin ERC20 token, we don't
+        // need to use `safeTransferFrom`.
+        //
         // Take custody of the deposit in vault shares.
-        ERC20(address(_vaultSharesToken)).safeTransferFrom(
+        bool success = _vaultSharesToken.transferFrom(
             msg.sender,
             address(this),
             _shareAmount
         );
-        // ****************************************************************
+        if (!success) {
+            revert IHyperdrive.TransferFailed();
+        }
     }
 
-    /// @dev Process a withdrawal in base and send the proceeds to the
-    ///      destination.
-
-    /// @return amountWithdrawn The amount of base withdrawn.
+    /// @dev Withdrawals with base are not supported for this integration.
     function _withdrawWithBase(
-        uint256, // unused _shareAmount
-        address, // unused _destination
-        bytes calldata // unused _extraData
+        uint256, // unused
+        address, // unused
+        bytes calldata // unused
     ) internal pure override returns (uint256) {
         revert IHyperdrive.UnsupportedToken();
     }
@@ -71,14 +82,14 @@ abstract contract RsETHLineaBase is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC20 example provided.
+        // NOTE: Since Linea wrsETH is an OpenZeppelin ERC20 token, we don't
+        // need to use `safeTransfer`.
+        //
         // Transfer vault shares to the destination.
-        ERC20(address(_vaultSharesToken)).safeTransfer(
-            _destination,
-            _shareAmount
-        );
-        // ****************************************************************
+        bool success = _vaultSharesToken.transfer(_destination, _shareAmount);
+        if (!success) {
+            revert IHyperdrive.TransferFailed();
+        }
     }
 
     /// @dev Convert an amount of vault shares to an amount of base.
@@ -87,11 +98,7 @@ abstract contract RsETHLineaBase is HyperdriveBase {
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
-        // ****************************************************************
-        // FIXME: Implement this for new instances.
-        return
-            IERC4626(address(_vaultSharesToken)).convertToAssets(_shareAmount);
-        // ****************************************************************
+        return RsETHLineaConversions.convertToBase(_rsETHPool, _shareAmount);
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
@@ -100,11 +107,7 @@ abstract contract RsETHLineaBase is HyperdriveBase {
     function _convertToShares(
         uint256 _baseAmount
     ) internal view override returns (uint256) {
-        // ****************************************************************
-        // FIXME: Implement this for new instances.
-        return
-            IERC4626(address(_vaultSharesToken)).convertToShares(_baseAmount);
-        // ****************************************************************
+        return RsETHLineaConversions.convertToShares(_rsETHPool, _baseAmount);
     }
 
     /// @dev Gets the total amount of shares held by the pool in the yield
@@ -119,6 +122,9 @@ abstract contract RsETHLineaBase is HyperdriveBase {
         return _vaultSharesToken.balanceOf(address(this));
     }
 
+    // FIXME: We may need to update this and the payability check in the
+    // deployer coordinator.
+    //
     /// @dev We override the message value check since this integration is
     ///      not payable.
     function _checkMessageValue() internal view override {
