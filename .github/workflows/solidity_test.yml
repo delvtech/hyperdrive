@@ -22,6 +22,7 @@ jobs:
       BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
       GNOSIS_CHAIN_RPC_URL: ${{ secrets.GNOSIS_CHAIN_RPC_URL }}
       LINEA_RPC_URL: ${{ secrets.LINEA_RPC_URL }}
+      ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -47,6 +48,7 @@ jobs:
       BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
       GNOSIS_CHAIN_RPC_URL: ${{ secrets.GNOSIS_CHAIN_RPC_URL }}
       LINEA_RPC_URL: ${{ secrets.LINEA_RPC_URL }}
+      ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -72,6 +74,7 @@ jobs:
       BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
       GNOSIS_CHAIN_RPC_URL: ${{ secrets.GNOSIS_CHAIN_RPC_URL }}
       LINEA_RPC_URL: ${{ secrets.LINEA_RPC_URL }}
+      ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -97,6 +100,7 @@ jobs:
       BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
       GNOSIS_CHAIN_RPC_URL: ${{ secrets.GNOSIS_CHAIN_RPC_URL }}
       LINEA_RPC_URL: ${{ secrets.LINEA_RPC_URL }}
+      ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
     steps:
       - uses: actions/checkout@v3
         with:
