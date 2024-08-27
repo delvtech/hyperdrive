@@ -491,7 +491,7 @@ contract sxDaiHyperdriveTest is InstanceTest {
             })
         );
 
-        // Ensure that sending ETH to `openShort` fails.
+        // Ensure that sending ETH to `openLong` fails with `asBase` as false.
         vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openLong{ value: 0.5e18 }(
             1e18,
