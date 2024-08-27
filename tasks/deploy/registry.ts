@@ -4,10 +4,10 @@ import {
     encodeAbiParameters,
     encodeFunctionData,
     encodePacked,
-    keccak256,
     stringToHex,
 } from "viem";
 import {
+    CREATE_X_FACTORY,
     HyperdriveDeployBaseTask,
     HyperdriveDeployNamedTaskParams,
 } from "./lib";
@@ -25,17 +25,18 @@ HyperdriveDeployBaseTask(
         { hyperdriveDeploy, artifacts, getNamedAccounts, viem },
     ) => {
         console.log("\nRunning deploy:registry ...");
+
+        let deployer = (await getNamedAccounts())["deployer"] as Address;
+
         // Skip if the registry is already deployed.
         if (!!hyperdriveDeploy.deployments.byNameSafe(name)) {
             console.log(`skipping ${name}, found existing deployment`);
             return;
         }
 
-        // Ensure the Create2 factory is deployed.
-        let create2Deployer = await hyperdriveDeploy.ensureDeployed(
-            "Hyperdrive Create2 Factory",
-            "HyperdriveCreate2Factory",
-            [],
+        let createXDeployer = await viem.getContractAt(
+            "IDeterministicDeployer",
+            CREATE_X_FACTORY,
         );
 
         // Take the `REGISTRY_SALT` string and convert it to bytes32
@@ -46,7 +47,6 @@ HyperdriveDeployBaseTask(
 
         // Assemble the creation code by packing the registry contract's
         // bytecode with its constructor arguments.
-        let deployer = (await getNamedAccounts())["deployer"] as Address;
         let artifact = artifacts.readArtifactSync("HyperdriveRegistry");
         let creationCode = encodePacked(
             ["bytes", "bytes"],
@@ -65,34 +65,23 @@ HyperdriveDeployBaseTask(
         });
 
         // Call the Create2 deployer to deploy the contract.
-        let tx = await create2Deployer.write.deploy([
+        let tx = await createXDeployer.write.deployCreate2AndInit([
             salt,
             creationCode,
             initializationData,
+            { constructorAmount: 0n, initCallAmount: 0n },
         ]);
         let pc = await viem.getPublicClient();
-        await pc.waitForTransactionReceipt({ hash: tx });
+        let receipt = await pc.waitForTransactionReceipt({ hash: tx });
+        let deployedAddress = receipt.logs[1].address;
 
         // Use the deployer address to back-compute the deployed contract address
         // and store the deployment configuration in deployments.json.
         console.log(` - saving ${name}...`);
-        let deployedAddress = await create2Deployer.read.getDeployed([
-            salt,
-            keccak256(creationCode),
-        ]);
         hyperdriveDeploy.deployments.add(
             name,
             "HyperdriveRegistry",
-            deployedAddress,
-        );
-
-        // Print out the current number of instances in the registry.
-        let registry = await viem.getContractAt(
-            "HyperdriveRegistry",
-            deployedAddress,
-        );
-        console.log(
-            `NumFactories: ${await registry.read.getNumberOfInstances()}`,
+            deployedAddress as Address,
         );
     },
 );
