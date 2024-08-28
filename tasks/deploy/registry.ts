@@ -64,9 +64,7 @@ HyperdriveDeployBaseTask(
             args: [deployer],
         });
 
-        // Retrieve the contract's bytecode from the artifact and pack it
-        // with the constructor arguments to form the creation code.
-        console.log(artifact.bytecode);
+        // Call the Create2 deployer to deploy the contract.
         let tx = await create2Deployer.write.deploy([
             salt,
             creationCode,
@@ -74,10 +72,10 @@ HyperdriveDeployBaseTask(
         ]);
         let pc = await viem.getPublicClient();
         await pc.waitForTransactionReceipt({ hash: tx });
-        console.log(` - saving ${name}...`);
 
         // Use the deployer address to back-compute the deployed contract address
         // and store the deployment configuration in deployments.json.
+        console.log(` - saving ${name}...`);
         let deployedAddress = await create2Deployer.read.getDeployed([
             salt,
             keccak256(creationCode),
@@ -88,6 +86,7 @@ HyperdriveDeployBaseTask(
             deployedAddress,
         );
 
+        // Print out the current number of instances in the registry.
         let registry = await viem.getContractAt(
             "HyperdriveRegistry",
             deployedAddress,
