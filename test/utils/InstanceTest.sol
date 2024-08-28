@@ -1561,6 +1561,11 @@ abstract contract InstanceTest is HyperdriveTest {
         uint256 _basePaid,
         uint256 _variableRate
     ) external {
+        // If base deposits aren't enabled, we skip the test.
+        if (!config.enableBaseDeposits) {
+            return;
+        }
+
         // Bob opens a long with base.
         _basePaid = _basePaid.normalizeToRange(
             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
