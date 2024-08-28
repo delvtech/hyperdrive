@@ -39,7 +39,7 @@ HyperdriveDeployNamedTask(
                 "DELV Hyperdrive Registry",
             ).address as `0x${string}`;
             const registryContract = await viem.getContractAt(
-                "IHyperdriveGovernedRegistry",
+                "HyperdriveRegistry",
                 registryAddress,
             );
             let tx = await registryContract.write.setInstanceInfo([
@@ -49,5 +49,10 @@ HyperdriveDeployNamedTask(
             ]);
             let pc = await viem.getPublicClient();
             await pc.waitForTransactionReceipt({ hash: tx });
+            let instanceCount =
+                await registryContract.read.getNumberOfInstances();
+            console.log(
+                `there are now ${instanceCount} instances in the registry`,
+            );
         },
     );
