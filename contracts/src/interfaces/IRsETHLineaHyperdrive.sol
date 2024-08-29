@@ -2,9 +2,11 @@
 pragma solidity 0.8.22;
 
 import { IHyperdrive } from "./IHyperdrive.sol";
+import { IRSETHPoolV2 } from "./IRSETHPoolV2.sol";
 
 interface IRsETHLineaHyperdrive is IHyperdrive {
-    /// @notice Gets the vault used as this pool's yield source.
-    /// @return The compatible yield source.
-    function vault() external view returns (address);
+    /// @notice Gets the Kelp DAO deposit contract on Linea. The rsETH/ETH price
+    ///         is used as the vault share price.
+    /// @return The Kelp DAO deposit contract on Linea.
+    function rsETHPool() external view returns (IRSETHPoolV2);
 }

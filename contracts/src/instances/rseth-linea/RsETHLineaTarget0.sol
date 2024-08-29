@@ -37,4 +37,17 @@ contract RsETHLineaTarget0 is HyperdriveTarget0, RsETHLineaBase {
     function kind() external pure override returns (string memory) {
         _revert(abi.encode(RSETH_LINEA_HYPERDRIVE_KIND));
     }
+
+    /// @notice Returns the MultiToken's decimals.
+    /// @return The MultiToken's decimals.
+    function decimals() external pure override returns (uint8) {
+        _revert(abi.encode(uint8(18)));
+    }
+
+    /// @notice Gets the Kelp DAO deposit contract on Linea. The rsETH/ETH price
+    ///         is used as the vault share price.
+    /// @return The Kelp DAO deposit contract on Linea.
+    function rsETHPool() external view returns (IRSETHPoolV2) {
+        _revert(abi.encode(_rsETHPool));
+    }
 }
