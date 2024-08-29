@@ -82,6 +82,7 @@ prettify the source code. Proceed through the following steps to set up the repo
 - [Install yarn](https://yarnpkg.com/getting-started/install)
 - Install lib/forge-std dependencies by running `forge install` from the project root
 - Install node.js dependencies by running `yarn` from the project root
+- Install [pypechain](https://github.com/delvtech/pypechain) by running `pip install pypechain` from the project root (we recommend using a virtual environment with python 3.10)
 
 ## Environment Variables
 
