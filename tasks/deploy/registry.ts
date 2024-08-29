@@ -4,7 +4,7 @@ import {
     encodeAbiParameters,
     encodeFunctionData,
     encodePacked,
-    stringToHex,
+    isHex,
 } from "viem";
 import {
     CREATE_X_FACTORY,
@@ -39,11 +39,13 @@ HyperdriveDeployBaseTask(
             CREATE_X_FACTORY,
         );
 
-        // Take the `REGISTRY_SALT` string and convert it to bytes32
-        // compatible formatting.
-        let salt = stringToHex(process.env.REGISTRY_SALT! as `0x${string}`, {
-            size: 32,
-        });
+        // Read the salt from the environment and ensure it is a hex string.
+        let salt = process.env.REGISTRY_SALT! as `0x${string}`;
+        if (!isHex(salt)) {
+            console.error(
+                'Invalid REGISTRY_SALT, must be a "0x" prefixed hex string',
+            );
+        }
 
         // Assemble the creation code by packing the registry contract's
         // bytecode with its constructor arguments.
