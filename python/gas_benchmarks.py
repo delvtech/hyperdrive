@@ -22,7 +22,7 @@ FUNCTION_NAMES = [
 #
 # Run the Solidity tests and write the test name and the gas used to a markdown table.
 try:
-    test_output = subprocess.check_output('FOUNDRY_FUZZ_RUNS=100 forge test --no-match-path \'test/instances/*\' --no-match-path \'*/combinatorial/*\' --gas-report', shell=True).decode()
+    test_output = subprocess.check_output('FOUNDRY_FUZZ_RUNS=100 forge test --no-match-path \'test/instances/*\' --no-match-contract \'MultiToken__transferFrom\' --gas-report', shell=True).decode()
 except subprocess.CalledProcessError as e:
     print(e.output)
     exit(1)
