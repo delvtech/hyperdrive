@@ -68,7 +68,31 @@ contract StETHHyperdriveTest is InstanceTest {
                 flat: 0,
                 governanceLP: 0,
                 governanceZombie: 0
-            })
+            }),
+            // NOTE: Base  withdrawals are disabled, so the tolerances are zero.
+            //
+            // The base test tolerances.
+            roundTripLpInstantaneousWithBaseTolerance: 0,
+            roundTripLpWithdrawalSharesWithBaseTolerance: 0,
+            roundTripLongInstantaneousWithBaseUpperBoundTolerance: 0,
+            roundTripLongInstantaneousWithBaseTolerance: 0,
+            roundTripLongMaturityWithBaseUpperBoundTolerance: 0,
+            roundTripLongMaturityWithBaseTolerance: 0,
+            roundTripShortInstantaneousWithBaseUpperBoundTolerance: 0,
+            roundTripShortInstantaneousWithBaseTolerance: 0,
+            roundTripShortMaturityWithBaseTolerance: 0,
+            // The share test tolerances.
+            closeLongWithSharesTolerance: 20,
+            closeShortWithSharesTolerance: 100,
+            roundTripLpInstantaneousWithSharesTolerance: 1e5,
+            roundTripLpWithdrawalSharesWithSharesTolerance: 1e5,
+            roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
+            roundTripLongInstantaneousWithSharesTolerance: 1e4,
+            roundTripLongMaturityWithSharesUpperBoundTolerance: 100,
+            roundTripLongMaturityWithSharesTolerance: 3e3,
+            roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
+            roundTripShortInstantaneousWithSharesTolerance: 1e3,
+            roundTripShortMaturityWithSharesTolerance: 1e3
         });
 
     /// @dev Instantiates the instance testing suite with the configuration.
@@ -308,224 +332,6 @@ contract StETHHyperdriveTest is InstanceTest {
             hyperdriveSharesBefore + basePaid.divDown(vaultSharePrice),
             1e4
         );
-    }
-
-    /// Long ///
-
-    function test_open_long_refunds() external {
-        vm.startPrank(bob);
-
-        // Ensure that Bob receives a refund on the excess ETH that he sent
-        // when opening a long with "asBase" set to true.
-        uint256 ethBalanceBefore = address(bob).balance;
-        hyperdrive.openLong{ value: 2e18 }(
-            1e18,
-            0,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-        assertEq(address(bob).balance, ethBalanceBefore - 1e18);
-
-        // Ensure that Bob receives a  refund when he opens a long with "asBase"
-        // set to false and sends ether to the contract.
-        ethBalanceBefore = address(bob).balance;
-        hyperdrive.openLong{ value: 0.5e18 }(
-            1e18,
-            0,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: false,
-                extraData: new bytes(0)
-            })
-        );
-        assertEq(address(bob).balance, ethBalanceBefore);
-    }
-
-    /// Short ///
-
-    function test_open_short_refunds() external {
-        vm.startPrank(bob);
-
-        // Ensure that Bob receives a refund on the excess ETH that he sent
-        // when opening a short with "asBase" set to true.
-        uint256 ethBalanceBefore = address(bob).balance;
-        (, uint256 basePaid) = hyperdrive.openShort{ value: 2e18 }(
-            1e18,
-            1e18,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-        assertEq(address(bob).balance, ethBalanceBefore - basePaid);
-
-        // Ensure that Bob receives a refund when he opens a short with "asBase"
-        // set to false and sends ether to the contract.
-        ethBalanceBefore = address(bob).balance;
-        hyperdrive.openShort{ value: 0.5e18 }(
-            1e18,
-            1e18,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: false,
-                extraData: new bytes(0)
-            })
-        );
-        assertEq(address(bob).balance, ethBalanceBefore);
-    }
-
-    function test_round_trip_long() external {
-        // Get some balance information before the deposit.
-        LIDO.sharesOf(address(hyperdrive));
-
-        // Bob opens a long by depositing ETH.
-        uint256 basePaid = HyperdriveUtils.calculateMaxLong(hyperdrive);
-        (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
-
-        // Get some balance information before the withdrawal.
-        uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
-        uint256 totalSharesBefore = LIDO.getTotalShares();
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-
-        // Bob closes his long with stETH as the target asset.
-        uint256 shareProceeds = closeLong(bob, maturityTime, longAmount, false);
-        uint256 baseProceeds = shareProceeds.mulDivDown(
-            LIDO.getTotalPooledEther(),
-            LIDO.getTotalShares()
-        );
-
-        // Ensure that Lido's aggregates and the token balances were updated
-        // correctly during the trade.
-        verifyWithdrawal(
-            bob,
-            baseProceeds,
-            false,
-            totalPooledEtherBefore,
-            totalSharesBefore,
-            bobBalancesBefore,
-            hyperdriveBalancesBefore
-        );
-    }
-
-    function test__DOSStethHyperdriveCloseLong() external {
-        //###########################################################################"
-        //#### TEST: Denial of Service when LIDO's `TotalPooledEther` decreases. ####"
-        //###########################################################################"
-
-        // Ensure that the share price is the expected value.
-        uint256 totalPooledEther = LIDO.getTotalPooledEther();
-        uint256 totalShares = LIDO.getTotalShares();
-        uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
-        assertEq(vaultSharePrice, totalPooledEther.divDown(totalShares));
-
-        // Ensure that the share price accurately predicts the amount of shares
-        // that will be minted for depositing a given amount of ETH. This will
-        // be an approximation since Lido uses `mulDivDown` whereas this test
-        // pre-computes the share price.
-        uint256 basePaid = HyperdriveUtils.calculateMaxLong(hyperdrive) / 10;
-        uint256 hyperdriveSharesBefore = LIDO.sharesOf(address(hyperdrive));
-
-        // Bob calls openLong()
-        (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
-        // Bob paid basePaid == ", basePaid);
-        // Bob received longAmount == ", longAmount);
-        assertApproxEqAbs(
-            LIDO.sharesOf(address(hyperdrive)),
-            hyperdriveSharesBefore + basePaid.divDown(vaultSharePrice),
-            1e4
-        );
-
-        // Get some balance information before the withdrawal.
-        uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
-        uint256 totalSharesBefore = LIDO.getTotalShares();
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-        uint256 snapshotId = vm.snapshot();
-
-        // Taking a Snapshot of the state
-        // Bob closes his long with stETH as the target asset.
-        uint256 shareProceeds = closeLong(
-            bob,
-            maturityTime,
-            longAmount / 2,
-            false
-        );
-        uint256 baseProceeds = shareProceeds.mulDivDown(
-            LIDO.getTotalPooledEther(),
-            LIDO.getTotalShares()
-        );
-
-        // Ensure that Lido's aggregates and the token balances were updated
-        // correctly during the trade.
-        verifyWithdrawal(
-            bob,
-            baseProceeds,
-            false,
-            totalPooledEtherBefore,
-            totalSharesBefore,
-            bobBalancesBefore,
-            hyperdriveBalancesBefore
-        );
-        // # Reverting to the saved state Snapshot #\n");
-        vm.revertTo(snapshotId);
-
-        // # Manipulating Lido's totalPooledEther : removing only 1e18
-        bytes32 balanceBefore = vm.load(
-            address(LIDO),
-            bytes32(
-                0xa66d35f054e68143c18f32c990ed5cb972bb68a68f500cd2dd3a16bbf3686483
-            )
-        );
-        // LIDO.CL_BALANCE_POSITION Before: ", uint(balanceBefore));
-        uint(LIDO.getTotalPooledEther());
-        hyperdrive.balanceOf(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
-            bob
-        );
-        vm.store(
-            address(LIDO),
-            bytes32(
-                uint256(
-                    0xa66d35f054e68143c18f32c990ed5cb972bb68a68f500cd2dd3a16bbf3686483
-                )
-            ),
-            bytes32(uint256(balanceBefore) - 1e18)
-        );
-
-        // Avoid Stack too deep
-        uint256 maturityTime_ = maturityTime;
-        uint256 longAmount_ = longAmount;
-
-        vm.load(
-            address(LIDO),
-            bytes32(
-                uint256(
-                    0xa66d35f054e68143c18f32c990ed5cb972bb68a68f500cd2dd3a16bbf3686483
-                )
-            )
-        );
-
-        // Bob closes his long with stETH as the target asset.
-        hyperdrive.balanceOf(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime_),
-            bob
-        );
-
-        // The fact that this doesn't revert means that it works
-        closeLong(bob, maturityTime_, longAmount_ / 2, false);
     }
 
     /// Helpers ///

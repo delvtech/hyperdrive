@@ -91,6 +91,12 @@ contract MorphoBlue_wstETH_USDC_HyperdriveTest is InstanceTest {
             minimumShareReserves: 1e6,
             minimumTransactionAmount: 1e6,
             positionDuration: POSITION_DURATION,
+            fees: IHyperdrive.Fees({
+                curve: 0.001e18,
+                flat: 0.0001e18,
+                governanceLP: 0,
+                governanceZombie: 0
+            }),
             enableBaseDeposits: true,
             enableShareDeposits: false,
             enableBaseWithdraws: true,
@@ -99,12 +105,33 @@ contract MorphoBlue_wstETH_USDC_HyperdriveTest is InstanceTest {
                 IHyperdrive.UnsupportedToken.selector
             ),
             isRebasing: false,
-            fees: IHyperdrive.Fees({
-                curve: 0.001e18,
-                flat: 0.0001e18,
-                governanceLP: 0,
-                governanceZombie: 0
-            })
+            // The base test tolerances.
+            roundTripLpInstantaneousWithBaseTolerance: 1e3,
+            roundTripLpWithdrawalSharesWithBaseTolerance: 1e5,
+            roundTripLongInstantaneousWithBaseUpperBoundTolerance: 100,
+            // NOTE: Since the curve fee isn't zero, this check is ignored.
+            roundTripLongInstantaneousWithBaseTolerance: 0,
+            roundTripLongMaturityWithBaseUpperBoundTolerance: 100,
+            roundTripLongMaturityWithBaseTolerance: 1e3,
+            roundTripShortInstantaneousWithBaseUpperBoundTolerance: 100,
+            // NOTE: Since the curve fee isn't zero, this check is ignored.
+            roundTripShortInstantaneousWithBaseTolerance: 0,
+            roundTripShortMaturityWithBaseTolerance: 1e3,
+            // NOTE: Share deposits and withdrawals are disabled, so these are
+            // 0.
+            //
+            // The share test tolerances.
+            closeLongWithSharesTolerance: 0,
+            closeShortWithSharesTolerance: 0,
+            roundTripLpInstantaneousWithSharesTolerance: 0,
+            roundTripLpWithdrawalSharesWithSharesTolerance: 0,
+            roundTripLongInstantaneousWithSharesUpperBoundTolerance: 0,
+            roundTripLongInstantaneousWithSharesTolerance: 0,
+            roundTripLongMaturityWithSharesUpperBoundTolerance: 0,
+            roundTripLongMaturityWithSharesTolerance: 0,
+            roundTripShortInstantaneousWithSharesUpperBoundTolerance: 0,
+            roundTripShortInstantaneousWithSharesTolerance: 0,
+            roundTripShortMaturityWithSharesTolerance: 0
         });
 
     /// @dev Instantiates the instance testing suite with the configuration.
@@ -432,353 +459,6 @@ contract MorphoBlue_wstETH_USDC_HyperdriveTest is InstanceTest {
         );
     }
 
-    /// LP ///
-
-    function test_round_trip_lp_instantaneous(uint256 _contribution) external {
-        // Bob adds liquidity with base.
-        _contribution = _contribution.normalizeToRange(100e6, 100_000e6);
-        IERC20(hyperdrive.baseToken()).approve(
-            address(hyperdrive),
-            _contribution
-        );
-        uint256 lpShares = addLiquidity(bob, _contribution);
-
-        // Get some balance information before the withdrawal.
-        (
-            uint256 totalSupplyAssetsBefore,
-            uint256 totalSupplySharesBefore
-        ) = getSupply();
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-
-        // Bob removes his liquidity with base as the target asset.
-        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
-            bob,
-            lpShares
-        );
-        assertEq(withdrawalShares, 0);
-
-        // Bob should receive approximately as much base as he contributed since
-        // no time as passed and the fees are zero.
-        assertApproxEqAbs(baseProceeds, _contribution, 1e3);
-
-        // Ensure that the withdrawal was processed as expected.
-        verifyWithdrawal(
-            bob,
-            baseProceeds,
-            true,
-            totalSupplyAssetsBefore,
-            totalSupplySharesBefore,
-            bobBalancesBefore,
-            hyperdriveBalancesBefore
-        );
-    }
-
-    function test_round_trip_lp_withdrawal_shares(
-        uint256 _contribution,
-        uint256 _variableRate
-    ) external {
-        // Bob adds liquidity with base.
-        _contribution = _contribution.normalizeToRange(100e6, 100_000e6);
-        IERC20(hyperdrive.baseToken()).approve(
-            address(hyperdrive),
-            _contribution
-        );
-        uint256 lpShares = addLiquidity(bob, _contribution);
-
-        // Alice opens a large short.
-        vm.stopPrank();
-        vm.startPrank(alice);
-        uint256 shortAmount = hyperdrive.calculateMaxShort();
-        IERC20(hyperdrive.baseToken()).approve(
-            address(hyperdrive),
-            shortAmount
-        );
-        openShort(alice, shortAmount);
-
-        // Bob removes his liquidity with base as the target asset.
-        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
-            bob,
-            lpShares
-        );
-        assertGt(withdrawalShares, 0);
-
-        // The term passes and interest accrues.
-        _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
-        advanceTime(POSITION_DURATION, int256(_variableRate));
-        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
-
-        // Bob should be able to redeem all of his withdrawal shares for
-        // approximately the LP share price.
-        uint256 lpSharePrice = hyperdrive.getPoolInfo().lpSharePrice;
-        uint256 withdrawalSharesRedeemed;
-        (baseProceeds, withdrawalSharesRedeemed) = redeemWithdrawalShares(
-            bob,
-            withdrawalShares
-        );
-        assertEq(withdrawalSharesRedeemed, withdrawalShares);
-
-        // Bob should receive base approximately equal in value to his present
-        // value.
-        assertApproxEqAbs(
-            baseProceeds,
-            withdrawalShares.mulDown(lpSharePrice),
-            100
-        );
-    }
-
-    /// Long ///
-
-    function test_open_long_nonpayable() external {
-        vm.startPrank(bob);
-
-        // Ensure that sending ETH to `openLong` fails.
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openLong{ value: 2e18 }(
-            1e18,
-            0,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-
-        // Ensure that sending ETH to `openShort` fails.
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openLong{ value: 0.5e18 }(
-            1e18,
-            0,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: false,
-                extraData: new bytes(0)
-            })
-        );
-    }
-
-    function test_round_trip_long_instantaneous(uint256 _basePaid) external {
-        // Bob opens a long with base.
-        _basePaid = _basePaid.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            hyperdrive.calculateMaxLong()
-        );
-        IERC20(hyperdrive.baseToken()).approve(address(hyperdrive), _basePaid);
-        (uint256 maturityTime, uint256 longAmount) = openLong(bob, _basePaid);
-
-        // Get some balance information before the withdrawal.
-        (
-            uint256 totalSupplyAssetsBefore,
-            uint256 totalSupplySharesBefore
-        ) = getSupply();
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-
-        // Bob closes his long with base as the target asset.
-        uint256 baseProceeds = closeLong(bob, maturityTime, longAmount);
-
-        // Bob should receive less base than he paid since no time as passed
-        // and the fees are non-zero.
-        assertLt(baseProceeds, _basePaid);
-
-        // Ensure that the withdrawal was processed as expected.
-        verifyWithdrawal(
-            bob,
-            baseProceeds,
-            true,
-            totalSupplyAssetsBefore,
-            totalSupplySharesBefore,
-            bobBalancesBefore,
-            hyperdriveBalancesBefore
-        );
-    }
-
-    function test_round_trip_long_maturity(
-        uint256 _basePaid,
-        uint256 _variableRate
-    ) external {
-        // Bob opens a long with base.
-        _basePaid = _basePaid.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            hyperdrive.calculateMaxLong()
-        );
-        IERC20(hyperdrive.baseToken()).approve(address(hyperdrive), _basePaid);
-        (uint256 maturityTime, uint256 longAmount) = openLong(bob, _basePaid);
-
-        // Advance the time and accrue a large amount of interest.
-        _variableRate = _variableRate.normalizeToRange(0, 1000e18);
-        advanceTime(POSITION_DURATION, int256(_variableRate));
-
-        // Get some balance information before the withdrawal.
-        (
-            uint256 totalSupplyAssetsBefore,
-            uint256 totalSupplySharesBefore
-        ) = getSupply();
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-
-        // Bob closes his long with base as the target asset.
-        uint256 baseProceeds = closeLong(bob, maturityTime, longAmount);
-
-        // Bob should receive almost exactly his bond amount.
-        assertLe(
-            baseProceeds,
-            longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat)
-        );
-        assertApproxEqAbs(
-            baseProceeds,
-            longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat),
-            2
-        );
-
-        // Ensure that the withdrawal was processed as expected.
-        verifyWithdrawal(
-            bob,
-            baseProceeds,
-            true,
-            totalSupplyAssetsBefore,
-            totalSupplySharesBefore,
-            bobBalancesBefore,
-            hyperdriveBalancesBefore
-        );
-    }
-
-    /// Short ///
-
-    function test_open_short_nonpayable() external {
-        vm.startPrank(bob);
-
-        // Ensure that sending ETH to `openLong` fails.
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openShort{ value: 2e18 }(
-            1e18,
-            1e18,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-
-        // Ensure that Bob receives a refund when he opens a short with "asBase"
-        // set to false and sends ether to the contract.
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openShort{ value: 0.5e18 }(
-            1e18,
-            1e18,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: false,
-                extraData: new bytes(0)
-            })
-        );
-    }
-
-    function test_round_trip_short_instantaneous(
-        uint256 _shortAmount
-    ) external {
-        // Bob opens a short with base.
-        _shortAmount = _shortAmount.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            hyperdrive.calculateMaxShort()
-        );
-        IERC20(hyperdrive.baseToken()).approve(
-            address(hyperdrive),
-            _shortAmount
-        );
-        (uint256 maturityTime, uint256 basePaid) = openShort(bob, _shortAmount);
-
-        // Get some balance information before the withdrawal.
-        (
-            uint256 totalSupplyAssetsBefore,
-            uint256 totalSupplySharesBefore
-        ) = getSupply();
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-
-        // Bob closes his long with base as the target asset.
-        uint256 baseProceeds = closeShort(bob, maturityTime, _shortAmount);
-
-        // Bob should receive less base than he paid since no time as passed
-        // and the fees are non-zero.
-        assertLt(baseProceeds, basePaid);
-
-        // Ensure that the withdrawal was processed as expected.
-        verifyWithdrawal(
-            bob,
-            baseProceeds,
-            true,
-            totalSupplyAssetsBefore,
-            totalSupplySharesBefore,
-            bobBalancesBefore,
-            hyperdriveBalancesBefore
-        );
-    }
-
-    function test_round_trip_short_maturity(
-        uint256 _shortAmount,
-        uint256 _variableRate
-    ) external {
-        // Bob opens a short with base.
-        _shortAmount = _shortAmount.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-            hyperdrive.calculateMaxShort()
-        );
-        IERC20(hyperdrive.baseToken()).approve(
-            address(hyperdrive),
-            _shortAmount
-        );
-        (uint256 maturityTime, ) = openShort(bob, _shortAmount);
-
-        // The term passes and some interest accrues.
-        _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
-        advanceTime(POSITION_DURATION, int256(_variableRate));
-
-        // Get some balance information before the withdrawal.
-        (
-            uint256 totalSupplyAssetsBefore,
-            uint256 totalSupplySharesBefore
-        ) = getSupply();
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-
-        // Bob closes his long with base as the target asset.
-        uint256 baseProceeds = closeShort(bob, maturityTime, _shortAmount);
-
-        // Bob should receive almost exactly the interest that accrued on the
-        // bonds that were shorted.
-        assertApproxEqAbs(
-            baseProceeds,
-            _shortAmount.mulDown(_variableRate),
-            10
-        );
-
-        // Ensure that the withdrawal was processed as expected.
-        verifyWithdrawal(
-            bob,
-            baseProceeds,
-            true,
-            totalSupplyAssetsBefore,
-            totalSupplySharesBefore,
-            bobBalancesBefore,
-            hyperdriveBalancesBefore
-        );
-    }
-
     /// Helpers ///
 
     function advanceTime(
@@ -815,8 +495,8 @@ contract MorphoBlue_wstETH_USDC_HyperdriveTest is InstanceTest {
         );
 
         // In order to prevent transfers from failing, we also need to increase
-        // the DAI balance of the Morpho vault to match the total assets.
-        bytes32 balanceLocation = keccak256(abi.encode(address(MORPHO), 2));
+        // the USDC balance of the Morpho vault to match the total assets.
+        bytes32 balanceLocation = keccak256(abi.encode(address(MORPHO), 9));
         vm.store(
             address(LOAN_TOKEN),
             balanceLocation,

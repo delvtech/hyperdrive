@@ -84,6 +84,12 @@ contract MorphoBlue_USDe_DAI_HyperdriveTest is InstanceTest {
             minimumShareReserves: 1e15,
             minimumTransactionAmount: 1e15,
             positionDuration: POSITION_DURATION,
+            fees: IHyperdrive.Fees({
+                curve: 0,
+                flat: 0,
+                governanceLP: 0,
+                governanceZombie: 0
+            }),
             enableBaseDeposits: true,
             enableShareDeposits: false,
             enableBaseWithdraws: true,
@@ -92,12 +98,31 @@ contract MorphoBlue_USDe_DAI_HyperdriveTest is InstanceTest {
                 IHyperdrive.UnsupportedToken.selector
             ),
             isRebasing: false,
-            fees: IHyperdrive.Fees({
-                curve: 0,
-                flat: 0,
-                governanceLP: 0,
-                governanceZombie: 0
-            })
+            // The base test tolerances.
+            roundTripLpInstantaneousWithBaseTolerance: 1e13,
+            roundTripLpWithdrawalSharesWithBaseTolerance: 1e13,
+            roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
+            roundTripLongInstantaneousWithBaseTolerance: 1e9,
+            roundTripLongMaturityWithBaseUpperBoundTolerance: 1e3,
+            roundTripLongMaturityWithBaseTolerance: 1e5,
+            roundTripShortInstantaneousWithBaseUpperBoundTolerance: 1e3,
+            roundTripShortInstantaneousWithBaseTolerance: 1e5,
+            roundTripShortMaturityWithBaseTolerance: 1e10,
+            // NOTE: Share deposits and withdrawals are disabled, so these are
+            // 0.
+            //
+            // The share test tolerances.
+            closeLongWithSharesTolerance: 0,
+            closeShortWithSharesTolerance: 0,
+            roundTripLpInstantaneousWithSharesTolerance: 0,
+            roundTripLpWithdrawalSharesWithSharesTolerance: 0,
+            roundTripLongInstantaneousWithSharesUpperBoundTolerance: 0,
+            roundTripLongInstantaneousWithSharesTolerance: 0,
+            roundTripLongMaturityWithSharesUpperBoundTolerance: 0,
+            roundTripLongMaturityWithSharesTolerance: 0,
+            roundTripShortInstantaneousWithSharesUpperBoundTolerance: 0,
+            roundTripShortInstantaneousWithSharesTolerance: 0,
+            roundTripShortMaturityWithSharesTolerance: 0
         });
 
     /// @dev Instantiates the instance testing suite with the configuration.

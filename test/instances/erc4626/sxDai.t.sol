@@ -25,31 +25,28 @@ import { InstanceTest } from "../../utils/InstanceTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-contract SUSDeHyperdriveTest is InstanceTest {
+contract sxDaiHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for uint256;
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
     using stdStorage for StdStorage;
 
-    /// The cooldown error thrown by SUSDe on withdraw.
-    error OperationNotAllowed();
+    // The wxDai contract.
+    IERC20 internal constant WXDAI =
+        IERC20(0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d);
 
-    // The staked USDe contract.
-    IERC4626 internal constant SUSDE =
-        IERC4626(0x9D39A5DE30e57443BfF2A8307A4256c8797A3497);
-
-    // The USDe contract.
-    IERC20 internal constant USDE =
-        IERC20(0x4c9EDD5852cd905f086C759E8383e09bff1E68B3);
+    // The sxDai contract.
+    IERC4626 internal constant SXDAI =
+        IERC4626(0xaf204776c7245bF4147c2612BF6e5972Ee483701);
 
     // Whale accounts.
-    address internal USDE_TOKEN_WHALE =
-        address(0x42862F48eAdE25661558AFE0A630b132038553D0);
-    address[] internal baseTokenWhaleAccounts = [USDE_TOKEN_WHALE];
-    address internal SUSDE_TOKEN_WHALE =
-        address(0x4139cDC6345aFFbaC0692b43bed4D059Df3e6d65);
-    address[] internal vaultSharesTokenWhaleAccounts = [SUSDE_TOKEN_WHALE];
+    address internal WXDAI_TOKEN_WHALE =
+        address(0xd0Dd6cEF72143E22cCED4867eb0d5F2328715533);
+    address[] internal baseTokenWhaleAccounts = [WXDAI_TOKEN_WHALE];
+    address internal SXDAI_TOKEN_WHALE =
+        address(0x7a5c3860a77a8DC1b225BD46d0fb2ac1C6D191BC);
+    address[] internal vaultSharesTokenWhaleAccounts = [SXDAI_TOKEN_WHALE];
 
     // The configuration for the instance testing suite.
     InstanceTestConfig internal __testConfig =
@@ -59,10 +56,10 @@ contract SUSDeHyperdriveTest is InstanceTest {
             decimals: 18,
             baseTokenWhaleAccounts: baseTokenWhaleAccounts,
             vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
-            baseToken: USDE,
-            vaultSharesToken: IERC20(address(SUSDE)),
+            baseToken: WXDAI,
+            vaultSharesToken: SXDAI,
             shareTolerance: 1e3,
-            minimumShareReserves: 1e18,
+            minimumShareReserves: 1e15,
             minimumTransactionAmount: 1e15,
             positionDuration: POSITION_DURATION,
             fees: IHyperdrive.Fees({
@@ -73,36 +70,28 @@ contract SUSDeHyperdriveTest is InstanceTest {
             }),
             enableBaseDeposits: true,
             enableShareDeposits: true,
-            enableBaseWithdraws: false,
+            enableBaseWithdraws: true,
             enableShareWithdraws: true,
-            // NOTE: SUSDe currently has a cooldown on withdrawals which
-            // prevents users from withdrawing as base instantaneously. We still
-            // support withdrawing with base since the cooldown can be disabled
-            // in the future.
-            baseWithdrawError: abi.encodeWithSelector(
-                OperationNotAllowed.selector
-            ),
+            baseWithdrawError: new bytes(0),
             isRebasing: false,
-            // NOTE: Base  withdrawals are disabled, so the tolerances are zero.
-            //
             // The base test tolerances.
-            roundTripLpInstantaneousWithBaseTolerance: 0,
-            roundTripLpWithdrawalSharesWithBaseTolerance: 0,
-            roundTripLongInstantaneousWithBaseUpperBoundTolerance: 0,
-            roundTripLongInstantaneousWithBaseTolerance: 0,
-            roundTripLongMaturityWithBaseUpperBoundTolerance: 0,
-            roundTripLongMaturityWithBaseTolerance: 0,
-            roundTripShortInstantaneousWithBaseUpperBoundTolerance: 0,
-            roundTripShortInstantaneousWithBaseTolerance: 0,
-            roundTripShortMaturityWithBaseTolerance: 0,
+            roundTripLpInstantaneousWithBaseTolerance: 1e5,
+            roundTripLpWithdrawalSharesWithBaseTolerance: 1e5,
+            roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
+            roundTripLongInstantaneousWithBaseTolerance: 1e5,
+            roundTripLongMaturityWithBaseUpperBoundTolerance: 1e3,
+            roundTripLongMaturityWithBaseTolerance: 1e5,
+            roundTripShortInstantaneousWithBaseUpperBoundTolerance: 1e3,
+            roundTripShortInstantaneousWithBaseTolerance: 1e5,
+            roundTripShortMaturityWithBaseTolerance: 1e5,
             // The share test tolerances.
             closeLongWithSharesTolerance: 20,
             closeShortWithSharesTolerance: 100,
-            roundTripLpInstantaneousWithSharesTolerance: 1e8,
-            roundTripLpWithdrawalSharesWithSharesTolerance: 1e8,
+            roundTripLpInstantaneousWithSharesTolerance: 1e7,
+            roundTripLpWithdrawalSharesWithSharesTolerance: 1e7,
             roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
             roundTripLongInstantaneousWithSharesTolerance: 1e5,
-            roundTripLongMaturityWithSharesUpperBoundTolerance: 100,
+            roundTripLongMaturityWithSharesUpperBoundTolerance: 1e3,
             roundTripLongMaturityWithSharesTolerance: 1e5,
             roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
             roundTripShortInstantaneousWithSharesTolerance: 1e5,
@@ -113,7 +102,7 @@ contract SUSDeHyperdriveTest is InstanceTest {
     constructor() InstanceTest(__testConfig) {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
-    function setUp() public override __mainnet_fork(20_335_384) {
+    function setUp() public override __gnosis_chain_fork(35_681_086) {
         // Invoke the Instance testing suite setup.
         super.setUp();
     }
@@ -130,22 +119,14 @@ contract SUSDeHyperdriveTest is InstanceTest {
     function convertToShares(
         uint256 baseAmount
     ) internal view override returns (uint256) {
-        return
-            ERC4626Conversions.convertToShares(
-                IERC20(address(SUSDE)),
-                baseAmount
-            );
+        return ERC4626Conversions.convertToShares(SXDAI, baseAmount);
     }
 
     /// @dev Converts share amount to the equivalent amount in base.
     function convertToBase(
         uint256 shareAmount
     ) internal view override returns (uint256) {
-        return
-            ERC4626Conversions.convertToBase(
-                IERC20(address(SUSDE)),
-                shareAmount
-            );
+        return ERC4626Conversions.convertToBase(SXDAI, shareAmount);
     }
 
     /// @dev Deploys the ERC4626 deployer coordinator contract.
@@ -171,14 +152,14 @@ contract SUSDeHyperdriveTest is InstanceTest {
 
     /// @dev Fetches the total supply of the base and share tokens.
     function getSupply() internal view override returns (uint256, uint256) {
-        return (SUSDE.totalAssets(), SUSDE.totalSupply());
+        return (SXDAI.totalAssets(), SXDAI.totalSupply());
     }
 
     /// @dev Fetches the token balance information of an account.
     function getTokenBalances(
         address account
     ) internal view override returns (uint256, uint256) {
-        return (USDE.balanceOf(account), SUSDE.balanceOf(account));
+        return (WXDAI.balanceOf(account), SXDAI.balanceOf(account));
     }
 
     /// @dev Verifies that deposit accounting is correct when opening positions.
@@ -414,27 +395,21 @@ contract SUSDeHyperdriveTest is InstanceTest {
 
     /// Helpers ///
 
-    // Ethena accrues interest with the `transferInRewards` function. Interest
-    // accrues every 8 hours and vests over the course of the next 8 hours.
     function advanceTime(
         uint256 timeDelta,
         int256 variableRate
     ) internal override {
-        // Get the total base before advancing the time. This is important
-        // because it ensures that we are accruing interest on the current
-        // amount of total assets rather than the amount of total assets after
-        // the current rewards have fully vested.
-        (uint256 totalBase, ) = getSupply();
-
         // Advance the time.
         vm.warp(block.timestamp + timeDelta);
 
-        // Accrue interest in the SUSDe market. Since SUSDe's share price is
-        // calculated as assets divided shares, we can accrue interest by
-        // updating the USDe balance. We modify this in place to allow negative
-        // interest accrual.
-        (totalBase, ) = totalBase.calculateInterest(variableRate, timeDelta);
-        bytes32 balanceLocation = keccak256(abi.encode(address(SUSDE), 2));
-        vm.store(address(USDE), bytes32(balanceLocation), bytes32(totalBase));
+        // Accrue interest in the sxDAI market. This amounts to manually
+        // updating the total supply assets.
+        uint256 totalAssets = SXDAI.totalAssets();
+        (totalAssets, ) = totalAssets.calculateInterest(
+            variableRate,
+            timeDelta
+        );
+        bytes32 balanceLocation = keccak256(abi.encode(address(SXDAI), 3));
+        vm.store(address(WXDAI), balanceLocation, bytes32(totalAssets));
     }
 }
