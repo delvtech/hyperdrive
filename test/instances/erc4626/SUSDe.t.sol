@@ -96,6 +96,8 @@ contract SUSDeHyperdriveTest is InstanceTest {
             roundTripShortInstantaneousWithBaseTolerance: 0,
             roundTripShortMaturityWithBaseTolerance: 0,
             // The share test tolerances.
+            closeLongWithSharesTolerance: 20,
+            closeShortWithSharesTolerance: 100,
             roundTripLpInstantaneousWithSharesTolerance: 1e8,
             roundTripLpWithdrawalSharesWithSharesTolerance: 1e8,
             roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,

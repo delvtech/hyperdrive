@@ -60,6 +60,12 @@ contract LsETHHyperdriveTest is InstanceTest {
             minimumShareReserves: 1e15,
             minimumTransactionAmount: 1e15,
             positionDuration: POSITION_DURATION,
+            fees: IHyperdrive.Fees({
+                curve: 0,
+                flat: 0,
+                governanceLP: 0,
+                governanceZombie: 0
+            }),
             enableBaseDeposits: false,
             enableShareDeposits: true,
             enableBaseWithdraws: false,
@@ -68,12 +74,30 @@ contract LsETHHyperdriveTest is InstanceTest {
                 IHyperdrive.UnsupportedToken.selector
             ),
             isRebasing: false,
-            fees: IHyperdrive.Fees({
-                curve: 0,
-                flat: 0,
-                governanceLP: 0,
-                governanceZombie: 0
-            })
+            // NOTE: Base  withdrawals are disabled, so the tolerances are zero.
+            //
+            // The base test tolerances.
+            roundTripLpInstantaneousWithBaseTolerance: 0,
+            roundTripLpWithdrawalSharesWithBaseTolerance: 0,
+            roundTripLongInstantaneousWithBaseUpperBoundTolerance: 0,
+            roundTripLongInstantaneousWithBaseTolerance: 0,
+            roundTripLongMaturityWithBaseUpperBoundTolerance: 0,
+            roundTripLongMaturityWithBaseTolerance: 0,
+            roundTripShortInstantaneousWithBaseUpperBoundTolerance: 0,
+            roundTripShortInstantaneousWithBaseTolerance: 0,
+            roundTripShortMaturityWithBaseTolerance: 0,
+            // The share test tolerances.
+            closeLongWithSharesTolerance: 20,
+            closeShortWithSharesTolerance: 100,
+            roundTripLpInstantaneousWithSharesTolerance: 1e3,
+            roundTripLpWithdrawalSharesWithSharesTolerance: 1e3,
+            roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
+            roundTripLongInstantaneousWithSharesTolerance: 1e4,
+            roundTripLongMaturityWithSharesUpperBoundTolerance: 100,
+            roundTripLongMaturityWithSharesTolerance: 3e3,
+            roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
+            roundTripShortInstantaneousWithSharesTolerance: 1e3,
+            roundTripShortMaturityWithSharesTolerance: 1e3
         });
 
     /// @dev Instantiates the instance testing suite with the configuration.
@@ -266,82 +290,6 @@ contract LsETHHyperdriveTest is InstanceTest {
         );
     }
 
-    /// Long ///
-
-    function test_open_long_refunds() external {
-        vm.startPrank(bob);
-
-        // Ensure that the call fails when he opens a long with "asBase"
-        // set to true and sends ether to the contract.
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openLong{ value: 2e18 }(
-            1e18,
-            0,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-
-        // Ensure that the call fails when he opens a long with "asBase"
-        // set to false and sends ether to the contract.
-        uint256 sharesPaid = 1e18;
-        uint256 ethBalanceBefore = address(bob).balance;
-        RIVER.approve(address(hyperdrive), sharesPaid);
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openLong{ value: sharesPaid }(
-            sharesPaid,
-            0,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: false,
-                extraData: new bytes(0)
-            })
-        );
-        assertEq(address(bob).balance, ethBalanceBefore);
-    }
-
-    /// Short ///
-
-    function test_open_short_refunds() external {
-        vm.startPrank(bob);
-
-        // Ensure that the refund fails when he opens a short with "asBase"
-        // set to true and sends ether to the contract.
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openShort{ value: 2e18 }(
-            1e18,
-            1e18,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-
-        // Ensure that the refund fails when he opens a short with "asBase"
-        // set to false and sends ether to the contract.
-        uint256 sharesPaid = 1e18;
-        uint256 ethBalanceBefore = address(bob).balance;
-        RIVER.approve(address(hyperdrive), sharesPaid);
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openShort{ value: sharesPaid }(
-            sharesPaid,
-            sharesPaid,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: false,
-                extraData: new bytes(0)
-            })
-        );
-        assertEq(address(bob).balance, ethBalanceBefore);
-    }
-
     /// Helpers ///
 
     function advanceTime(
@@ -353,8 +301,11 @@ contract LsETHHyperdriveTest is InstanceTest {
             uint256(keccak256("river.state.lastConsensusLayerReport"))
         );
 
-        // Advance the time.
-        vm.warp(block.timestamp + timeDelta);
+        // Get the total underlying supply. This is the numerator of the vault
+        // share price. We'll modify this value to accrue interest. Since this
+        // is broken up over several storage values, we'll modify the largest
+        // value, `validatorBalance`.
+        uint256 totalUnderlyingSupply = RIVER.totalUnderlyingSupply();
 
         // Load the validator balance from the last consensus
         // layer report slot.
@@ -362,11 +313,19 @@ contract LsETHHyperdriveTest is InstanceTest {
             vm.load(address(RIVER), lastConsensusLayerReportSlot)
         );
 
+        // Advance the time.
+        vm.warp(block.timestamp + timeDelta);
+
         // Increase the balance by the variable rate.
+        (, int256 interest) = (totalUnderlyingSupply - validatorBalance)
+            .calculateInterest(variableRate, timeDelta);
         (validatorBalance, ) = validatorBalance.calculateInterest(
             variableRate,
             timeDelta
         );
+        validatorBalance = interest >= 0
+            ? validatorBalance + uint256(interest)
+            : validatorBalance - uint256(-interest);
         vm.store(
             address(RIVER),
             lastConsensusLayerReportSlot,

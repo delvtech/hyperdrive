@@ -93,6 +93,8 @@ contract ChainlinkHyperdriveTest is InstanceTest {
             roundTripShortInstantaneousWithBaseTolerance: 0,
             roundTripShortMaturityWithBaseTolerance: 0,
             // The share test tolerances.
+            closeLongWithSharesTolerance: 20,
+            closeShortWithSharesTolerance: 100,
             roundTripLpInstantaneousWithSharesTolerance: 1e5,
             roundTripLpWithdrawalSharesWithSharesTolerance: 1e5,
             roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,

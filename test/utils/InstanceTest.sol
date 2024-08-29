@@ -10,6 +10,7 @@ import { IHyperdriveFactory } from "../../contracts/src/interfaces/IHyperdriveFa
 import { AssetId } from "../../contracts/src/libraries/AssetId.sol";
 import { ETH, VERSION } from "../../contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "../../contracts/src/libraries/FixedPointMath.sol";
+import { SafeCast } from "../../contracts/src/libraries/SafeCast.sol";
 import { ERC20Mintable } from "../../contracts/test/ERC20Mintable.sol";
 import { HyperdriveTest } from "./HyperdriveTest.sol";
 import { HyperdriveUtils } from "./HyperdriveUtils.sol";
@@ -27,6 +28,7 @@ abstract contract InstanceTest is HyperdriveTest {
     using HyperdriveUtils for *;
     using FixedPointMath for *;
     using Lib for *;
+    using SafeCast for *;
 
     /// @dev Configuration for the Instance testing suite.
     struct InstanceTestConfig {
@@ -73,6 +75,10 @@ abstract contract InstanceTest is HyperdriveTest {
         ///      token. If it is, we have to handle balances and approvals
         ///      differently.
         bool isRebasing;
+        /// @dev The equality tolerance for the close long with shares test.
+        uint256 closeLongWithSharesTolerance;
+        /// @dev The equality tolerance for the close short with shares test.
+        uint256 closeShortWithSharesTolerance;
         /// @dev The equality tolerance for the instantaneous LP with base test.
         uint256 roundTripLpInstantaneousWithBaseTolerance;
         /// @dev The equality tolerance for the instantaneous LP with shares test.
@@ -1426,7 +1432,7 @@ abstract contract InstanceTest is HyperdriveTest {
         assertApproxEqAbs(
             baseProceeds,
             longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat),
-            20
+            config.closeLongWithSharesTolerance
         );
 
         // Ensure the withdrawal accounting is correct.
@@ -2312,7 +2318,11 @@ abstract contract InstanceTest is HyperdriveTest {
         // interest was credited to Bob.
         uint256 baseProceeds = convertToBase(shareProceeds);
         assertLe(baseProceeds, expectedBaseProceeds + 10);
-        assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 100);
+        assertApproxEqAbs(
+            baseProceeds,
+            expectedBaseProceeds,
+            config.closeShortWithSharesTolerance
+        );
 
         // Ensure the withdrawal accounting is correct.
         verifyWithdrawal(
@@ -2598,7 +2608,7 @@ abstract contract InstanceTest is HyperdriveTest {
     /// @param _variableRate The fuzz parameter for the variable rate.
     function test_round_trip_short_maturity_with_shares(
         uint256 _shortAmount,
-        uint256 _variableRate
+        int256 _variableRate
     ) external {
         // If share deposits aren't enabled, we skip the test.
         if (!config.enableShareDeposits) {
@@ -2614,10 +2624,7 @@ abstract contract InstanceTest is HyperdriveTest {
 
         // The term passes and some interest accrues.
         _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
-        advanceTime(
-            hyperdrive.getPoolConfig().positionDuration,
-            int256(_variableRate)
-        );
+        advanceTime(hyperdrive.getPoolConfig().positionDuration, _variableRate);
 
         // Get some balance information before the withdrawal.
         (
@@ -2632,6 +2639,14 @@ abstract contract InstanceTest is HyperdriveTest {
         // If vault share withdrawals are supported, we withdraw with vault
         // shares.
         uint256 baseProceeds;
+        uint256 interest;
+        {
+            (, int256 interest_) = _shortAmount.calculateInterest(
+                _variableRate,
+                hyperdrive.getPoolConfig().positionDuration
+            );
+            interest = interest_.toUint256();
+        }
         if (config.enableShareWithdraws) {
             // Bob closes his long with vault shares as the target asset.
             uint256 vaultSharesProceeds = closeShort(
@@ -2646,7 +2661,7 @@ abstract contract InstanceTest is HyperdriveTest {
             // bonds that were shorted.
             assertApproxEqAbs(
                 baseProceeds,
-                _shortAmount.mulDown(_variableRate),
+                interest,
                 config.roundTripShortMaturityWithSharesTolerance
             );
         }
@@ -2659,7 +2674,7 @@ abstract contract InstanceTest is HyperdriveTest {
             // bonds that were shorted.
             assertApproxEqAbs(
                 baseProceeds,
-                _shortAmount.mulDown(_variableRate),
+                interest,
                 config.roundTripShortMaturityWithBaseTolerance
             );
         }

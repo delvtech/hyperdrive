@@ -85,6 +85,8 @@ contract sxDaiHyperdriveTest is InstanceTest {
             roundTripShortInstantaneousWithBaseTolerance: 1e5,
             roundTripShortMaturityWithBaseTolerance: 1e5,
             // The share test tolerances.
+            closeLongWithSharesTolerance: 20,
+            closeShortWithSharesTolerance: 100,
             roundTripLpInstantaneousWithSharesTolerance: 1e7,
             roundTripLpWithdrawalSharesWithSharesTolerance: 1e7,
             roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
