@@ -58,18 +58,40 @@ contract AaveHyperdriveTest is InstanceTest {
                 minimumShareReserves: 1e15,
                 minimumTransactionAmount: 1e15,
                 positionDuration: POSITION_DURATION,
+                fees: IHyperdrive.Fees({
+                    curve: 0,
+                    flat: 0,
+                    governanceLP: 0,
+                    governanceZombie: 0
+                }),
                 enableBaseDeposits: true,
                 enableShareDeposits: true,
                 enableBaseWithdraws: true,
                 enableShareWithdraws: true,
                 baseWithdrawError: new bytes(0),
                 isRebasing: true,
-                fees: IHyperdrive.Fees({
-                    curve: 0,
-                    flat: 0,
-                    governanceLP: 0,
-                    governanceZombie: 0
-                })
+                // The base test tolerances.
+                roundTripLpInstantaneousWithBaseTolerance: 1e5,
+                roundTripLpWithdrawalSharesWithBaseTolerance: 1e5,
+                roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
+                roundTripLongInstantaneousWithBaseTolerance: 1e5,
+                roundTripLongMaturityWithBaseUpperBoundTolerance: 1e3,
+                roundTripLongMaturityWithBaseTolerance: 1e5,
+                roundTripShortInstantaneousWithBaseUpperBoundTolerance: 1e3,
+                roundTripShortInstantaneousWithBaseTolerance: 1e5,
+                roundTripShortMaturityWithBaseTolerance: 1e5,
+                // The share test tolerances.
+                closeLongWithSharesTolerance: 20,
+                closeShortWithSharesTolerance: 100,
+                roundTripLpInstantaneousWithSharesTolerance: 1e5,
+                roundTripLpWithdrawalSharesWithSharesTolerance: 1e3,
+                roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripLongInstantaneousWithSharesTolerance: 1e5,
+                roundTripLongMaturityWithSharesUpperBoundTolerance: 1e3,
+                roundTripLongMaturityWithSharesTolerance: 1e5,
+                roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripShortInstantaneousWithSharesTolerance: 1e5,
+                roundTripShortMaturityWithSharesTolerance: 1e5
             })
         )
     {}
@@ -379,106 +401,17 @@ contract AaveHyperdriveTest is InstanceTest {
         );
     }
 
-    /// Long ///
-
-    function test_open_long_nonpayable() external {
-        vm.startPrank(bob);
-
-        // Ensure that sending ETH to `openLong` fails.
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openLong{ value: 2e18 }(
-            1e18,
-            0,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-
-        // Ensure that sending ETH to `openShort` fails.
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openLong{ value: 0.5e18 }(
-            1e18,
-            0,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: false,
-                extraData: new bytes(0)
-            })
-        );
-    }
-
-    /// Short ///
-
-    function test_open_short_nonpayable() external {
-        vm.startPrank(bob);
-
-        // Ensure that sending ETH to `openLong` fails.
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openShort{ value: 2e18 }(
-            1e18,
-            1e18,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-
-        // Ensure that Bob receives a refund when he opens a short with "asBase"
-        // set to false and sends ether to the contract.
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openShort{ value: 0.5e18 }(
-            1e18,
-            1e18,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: false,
-                extraData: new bytes(0)
-            })
-        );
-    }
-
-    function test_round_trip_long() external {
-        // Bob opens a long with base.
-        uint256 basePaid = HyperdriveUtils.calculateMaxLong(hyperdrive);
-        IERC20(hyperdrive.baseToken()).approve(address(hyperdrive), basePaid);
-        (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
-
-        // Get some balance information before the withdrawal.
-        uint256 totalSupplyBefore = AWETH.totalSupply();
-        uint256 scaledTotalSupplyBefore = AWETH.scaledTotalSupply();
-        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-            address(hyperdrive)
-        );
-
-        // Bob closes his long with shares as the target asset.
-        uint256 shareProceeds = closeLong(bob, maturityTime, longAmount, false);
-        uint256 baseProceeds = convertToBase(shareProceeds);
-
-        verifyWithdrawal(
-            bob,
-            baseProceeds,
-            false,
-            totalSupplyBefore,
-            scaledTotalSupplyBefore,
-            bobBalancesBefore,
-            hyperdriveBalancesBefore
-        );
-    }
-
     /// Helpers ///
 
     function advanceTime(
         uint256 timeDelta,
         int256 variableRate
     ) internal override {
+        // Get the normalized income prior to updating the time.
+        uint256 reserveNormalizedIncome = POOL.getReserveNormalizedIncome(
+            address(WETH)
+        );
+
         // Advance the time.
         vm.warp(block.timestamp + timeDelta);
 
@@ -486,19 +419,16 @@ contract AaveHyperdriveTest is InstanceTest {
         // given by `getReserveNormalizedIncome()`, we can simulate the accrual
         // of interest by multiplying the total pooled ether by the variable
         // rate plus one.
-        uint256 reserveNormalizedIncome = POOL.getReserveNormalizedIncome(
-            address(WETH)
-        );
         uint256 normalizedTime = timeDelta.divDown(365 days);
         reserveNormalizedIncome = variableRate >= 0
             ? reserveNormalizedIncome +
-                reserveNormalizedIncome
-                    .mulDivDown(uint256(variableRate), 1e27)
-                    .mulDown(normalizedTime)
+                reserveNormalizedIncome.mulDown(uint256(variableRate)).mulDown(
+                    normalizedTime
+                )
             : reserveNormalizedIncome -
-                reserveNormalizedIncome
-                    .mulDivDown(uint256(-variableRate), 1e27)
-                    .mulDown(normalizedTime);
+                reserveNormalizedIncome.mulDown(uint256(-variableRate)).mulDown(
+                    normalizedTime
+                );
         bytes32 reserveDataLocation = keccak256(abi.encode(address(WETH), 52));
         DataTypes.ReserveData memory data = POOL.getReserveData(address(WETH));
         vm.store(

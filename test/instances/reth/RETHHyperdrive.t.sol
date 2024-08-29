@@ -68,7 +68,29 @@ contract RETHHyperdriveTest is InstanceTest {
                 flat: 0,
                 governanceLP: 0,
                 governanceZombie: 0
-            })
+            }),
+            // The base test tolerances.
+            roundTripLpInstantaneousWithBaseTolerance: 1e3,
+            roundTripLpWithdrawalSharesWithBaseTolerance: 1e3,
+            roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
+            roundTripLongInstantaneousWithBaseTolerance: 1e3,
+            roundTripLongMaturityWithBaseUpperBoundTolerance: 1e3,
+            roundTripLongMaturityWithBaseTolerance: 1e3,
+            roundTripShortInstantaneousWithBaseUpperBoundTolerance: 1e3,
+            roundTripShortInstantaneousWithBaseTolerance: 1e3,
+            roundTripShortMaturityWithBaseTolerance: 1e3,
+            // The share test tolerances.
+            closeLongWithSharesTolerance: 20,
+            closeShortWithSharesTolerance: 100,
+            roundTripLpInstantaneousWithSharesTolerance: 2e3,
+            roundTripLpWithdrawalSharesWithSharesTolerance: 2e3,
+            roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
+            roundTripLongInstantaneousWithSharesTolerance: 1e4,
+            roundTripLongMaturityWithSharesUpperBoundTolerance: 100,
+            roundTripLongMaturityWithSharesTolerance: 3e3,
+            roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
+            roundTripShortInstantaneousWithSharesTolerance: 1e3,
+            roundTripShortMaturityWithSharesTolerance: 1e3
         });
 
     /// @dev Instantiates the instance testing suite with the configuration.
@@ -304,82 +326,6 @@ contract RETHHyperdriveTest is InstanceTest {
             rocketTokenRETH.balanceOf(address(hyperdrive)),
             hyperdriveSharesBefore + sharesPaid
         );
-    }
-
-    /// Long ///
-
-    function test_open_long_refunds() external {
-        vm.startPrank(bob);
-
-        // Ensure that the refund fails when Bob sends excess ETH
-        // when opening a long with "asBase" set to true.
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openLong{ value: 2e18 }(
-            1e18,
-            0,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-
-        // Ensure that the refund fails when he opens a long with "asBase"
-        // set to false and sends ETH to the contract.
-        uint256 sharesPaid = 1e18;
-        uint256 ethBalanceBefore = address(bob).balance;
-        rocketTokenRETH.approve(address(hyperdrive), sharesPaid);
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openLong{ value: 0.5e18 }(
-            sharesPaid,
-            0,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: false,
-                extraData: new bytes(0)
-            })
-        );
-        assertEq(address(bob).balance, ethBalanceBefore);
-    }
-
-    // /// Short ///
-
-    function test_open_short_refunds() external {
-        vm.startPrank(bob);
-
-        // Ensure that the refund fails when Bob sends excess ETH
-        // when opening a short with "asBase" set to true.
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openShort{ value: 2e18 }(
-            1e18,
-            1e18,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: true,
-                extraData: new bytes(0)
-            })
-        );
-
-        // Ensure that the refund fails when he opens a short with "asBase"
-        // set to false and sends ether to the contract.
-        uint256 sharesPaid = 1e18;
-        uint256 ethBalanceBefore = address(bob).balance;
-        rocketTokenRETH.approve(address(hyperdrive), sharesPaid);
-        vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openShort{ value: 1e18 }(
-            sharesPaid,
-            sharesPaid,
-            0,
-            IHyperdrive.Options({
-                destination: bob,
-                asBase: false,
-                extraData: new bytes(0)
-            })
-        );
-        assertEq(address(bob).balance, ethBalanceBefore);
     }
 
     /// Helpers ///
