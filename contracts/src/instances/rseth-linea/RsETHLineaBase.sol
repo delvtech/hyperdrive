@@ -6,15 +6,9 @@ import { IRSETHPoolV2 } from "../../interfaces/IRSETHPoolV2.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { RsETHLineaConversions } from "./RsETHLineaConversions.sol";
 
-// FIXME: Add clear @dev comments that explain what is special about this
-// integration.
-//
 /// @author DELV
 /// @title RsETHLineaBase
 /// @notice The base contract for the RsETHLinea Hyperdrive implementation.
-/// @dev This Hyperdrive implementation is designed to work with standard
-///      RsETHLinea vaults. Non-standard implementations may not work correctly
-///      and should be carefully checked.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
@@ -32,16 +26,37 @@ abstract contract RsETHLineaBase is HyperdriveBase {
 
     /// Yield Source ///
 
-    // FIXME: We should support base deposits as long as the fee is zero.
-    //
-    /// @dev Deposits with base are not supported for this integration.
-    ///      The Kelp DAO deposit contract could take a bridge fee which causes
-    ///      problems with the `openShort` accounting.
+    /// @dev Accepts a deposit from the user in base. This is only allowed when
+    ///      Kelp DAO fees are turned off.
+    /// @param _baseAmount The base amount to deposit.
+    /// @return sharesMinted The shares that were minted in the deposit.
+    /// @return refund The amount of ETH to refund. This should be zero for
+    ///         yield sources that don't accept ETH.
     function _depositWithBase(
-        uint256, // unused
+        uint256 _baseAmount,
         bytes calldata // unused
-    ) internal pure override returns (uint256, uint256) {
-        revert IHyperdrive.UnsupportedToken();
+    ) internal override returns (uint256 sharesMinted, uint256 refund) {
+        // If Kelp DAO is taking a bridge fee, we disallow depositing with base.
+        // This avoids problems with the `openShort` accounting.
+        if (_rsETHPool.feeBps() > 0) {
+            revert IHyperdrive.UnsupportedToken();
+        }
+
+        // If the user sent more ether than the amount specified, refund the
+        // excess ether.
+        unchecked {
+            refund = msg.value - _baseAmount;
+        }
+
+        // TODO: Get a referral ID.
+        //
+        // Submit the provided ether to the Kelp DAO deposit pool. We specify
+        // the empty referral address; however, users can specify whatever
+        // referrer they'd like by depositing wrsETH instead of ETH.
+        _rsETHPool.deposit{ value: _baseAmount }("");
+        sharesMinted = _convertToShares(_baseAmount);
+
+        return (sharesMinted, refund);
     }
 
     /// @dev Process a deposit in vault shares.
@@ -122,14 +137,7 @@ abstract contract RsETHLineaBase is HyperdriveBase {
         return _vaultSharesToken.balanceOf(address(this));
     }
 
-    // FIXME: We may need to update this and the payability check in the
-    // deployer coordinator.
-    //
     /// @dev We override the message value check since this integration is
-    ///      not payable.
-    function _checkMessageValue() internal view override {
-        if (msg.value != 0) {
-            revert IHyperdrive.NotPayable();
-        }
-    }
+    ///      payable.
+    function _checkMessageValue() internal view override {}
 }

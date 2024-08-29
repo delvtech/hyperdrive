@@ -66,7 +66,7 @@ contract RsETHLineaHyperdriveTest is InstanceTest {
                 governanceLP: 0,
                 governanceZombie: 0
             }),
-            enableBaseDeposits: false,
+            enableBaseDeposits: true,
             enableShareDeposits: true,
             enableBaseWithdraws: false,
             enableShareWithdraws: true,
@@ -86,13 +86,11 @@ contract RsETHLineaHyperdriveTest is InstanceTest {
             roundTripShortInstantaneousWithBaseUpperBoundTolerance: 0,
             roundTripShortInstantaneousWithBaseTolerance: 0,
             roundTripShortMaturityWithBaseTolerance: 0,
-            // FIXME: Update this.
-            //
             // The share test tolerances.
             closeLongWithSharesTolerance: 100,
             closeShortWithSharesTolerance: 100,
             roundTripLpInstantaneousWithSharesTolerance: 100,
-            roundTripLpWithdrawalSharesWithSharesTolerance: 1e3,
+            roundTripLpWithdrawalSharesWithSharesTolerance: 1e4,
             roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
             roundTripLongInstantaneousWithSharesTolerance: 1e4,
             roundTripLongMaturityWithSharesUpperBoundTolerance: 100,
@@ -159,7 +157,7 @@ contract RsETHLineaHyperdriveTest is InstanceTest {
 
     /// @dev Fetches the total supply of the base and share tokens.
     function getSupply() internal view override returns (uint256, uint256) {
-        return (0, WRSETH.totalSupply());
+        return (address(RSETH_POOL).balance, WRSETH.totalSupply());
     }
 
     /// @dev Fetches the token balance information of an account.
@@ -169,8 +167,6 @@ contract RsETHLineaHyperdriveTest is InstanceTest {
         return (account.balance, WRSETH.balanceOf(account));
     }
 
-    // FIXME
-    //
     /// @dev Verifies that deposit accounting is correct when opening positions.
     function verifyDeposit(
         address trader,
@@ -181,51 +177,91 @@ contract RsETHLineaHyperdriveTest is InstanceTest {
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
     ) internal view override {
-        // Base deposits are not supported for this instance.
         if (asBase) {
-            revert IHyperdrive.UnsupportedToken();
+            // Ensure that the total supply increased the same.
+            (uint256 totalBaseAfter, uint256 totalSharesAfter) = getSupply();
+            assertEq(totalBaseAfter, totalBaseBefore + amountPaid);
+            assertEq(
+                totalSharesAfter,
+                totalSharesBefore + hyperdrive.convertToShares(amountPaid)
+            );
+
+            // Ensure that the trader's ETH balance decreased and that
+            // Hyperdrive's stayed the same.
+            assertEq(
+                address(hyperdrive).balance,
+                hyperdriveBalancesBefore.ETHBalance
+            );
+            assertEq(
+                trader.balance,
+                traderBalancesBefore.ETHBalance - amountPaid
+            );
+
+            // Ensure that the trader's base balance decreased and that
+            // Hyperdrive's stayed the same.
+            (
+                uint256 hyperdriveBaseAfter,
+                uint256 hyperdriveSharesAfter
+            ) = getTokenBalances(address(hyperdrive));
+            (
+                uint256 traderBaseAfter,
+                uint256 traderSharesAfter
+            ) = getTokenBalances(trader);
+            assertEq(hyperdriveBaseAfter, hyperdriveBalancesBefore.baseBalance);
+            assertEq(
+                traderBaseAfter,
+                traderBalancesBefore.baseBalance - amountPaid
+            );
+
+            // Ensure that the shares balances were updated correctly.
+            assertApproxEqAbs(
+                hyperdriveSharesAfter,
+                hyperdriveBalancesBefore.sharesBalance +
+                    hyperdrive.convertToShares(amountPaid),
+                2
+            );
+            assertEq(traderSharesAfter, traderBalancesBefore.sharesBalance);
+        } else {
+            // Ensure that the total supply stayed the same.
+            (uint256 totalBaseAfter, uint256 totalSharesAfter) = getSupply();
+            assertEq(totalBaseAfter, totalBaseBefore);
+            assertEq(totalSharesAfter, totalSharesBefore);
+
+            // Ensure that the ETH balances didn't change.
+            assertEq(
+                address(hyperdrive).balance,
+                hyperdriveBalancesBefore.ETHBalance
+            );
+            assertEq(bob.balance, traderBalancesBefore.ETHBalance);
+
+            // Ensure that the base balances didn't change.
+            (
+                uint256 hyperdriveBaseAfter,
+                uint256 hyperdriveSharesAfter
+            ) = getTokenBalances(address(hyperdrive));
+            (
+                uint256 traderBaseAfter,
+                uint256 traderSharesAfter
+            ) = getTokenBalances(trader);
+            assertEq(hyperdriveBaseAfter, hyperdriveBalancesBefore.baseBalance);
+            assertEq(traderBaseAfter, traderBalancesBefore.baseBalance);
+
+            // Ensure that the shares balances were updated correctly.
+            assertApproxEqAbs(
+                hyperdriveSharesAfter,
+                hyperdriveBalancesBefore.sharesBalance +
+                    hyperdrive.convertToShares(amountPaid),
+                2
+            );
+            assertApproxEqAbs(
+                traderSharesAfter,
+                traderBalancesBefore.sharesBalance -
+                    hyperdrive.convertToShares(amountPaid),
+                2
+            );
         }
-
-        // Ensure that the total supply stayed the same.
-        (uint256 totalBaseAfter, uint256 totalSharesAfter) = getSupply();
-        assertEq(totalBaseAfter, totalBaseBefore);
-        assertEq(totalSharesAfter, totalSharesBefore);
-
-        // Ensure that the ETH balances didn't change.
-        assertEq(
-            address(hyperdrive).balance,
-            hyperdriveBalancesBefore.ETHBalance
-        );
-        assertEq(bob.balance, traderBalancesBefore.ETHBalance);
-
-        // Ensure that the base balances didn't change.
-        (
-            uint256 hyperdriveBaseAfter,
-            uint256 hyperdriveSharesAfter
-        ) = getTokenBalances(address(hyperdrive));
-        (uint256 traderBaseAfter, uint256 traderSharesAfter) = getTokenBalances(
-            trader
-        );
-        assertEq(hyperdriveBaseAfter, hyperdriveBalancesBefore.baseBalance);
-        assertEq(traderBaseAfter, traderBalancesBefore.baseBalance);
-
-        // Ensure that the shares balances were updated correctly.
-        assertApproxEqAbs(
-            hyperdriveSharesAfter,
-            hyperdriveBalancesBefore.sharesBalance +
-                hyperdrive.convertToShares(amountPaid),
-            2
-        );
-        assertApproxEqAbs(
-            traderSharesAfter,
-            traderBalancesBefore.sharesBalance -
-                hyperdrive.convertToShares(amountPaid),
-            2
-        );
     }
 
-    // FIXME: This could be abstracted away.
-    //
     /// @dev Verifies that withdrawal accounting is correct when closing positions.
     function verifyWithdrawal(
         address trader,

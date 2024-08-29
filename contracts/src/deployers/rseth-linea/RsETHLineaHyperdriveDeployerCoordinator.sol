@@ -10,8 +10,6 @@ import { ETH, RSETH_LINEA_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../lib
 import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
-// FIXME: Update the Natspec.
-//
 /// @author DELV
 /// @title RsETHLineaHyperdriveDeployerCoordinator
 /// @notice The deployer coordinator for the RsETHLineaHyperdrive
@@ -66,8 +64,6 @@ contract RsETHLineaHyperdriveDeployerCoordinator is
         rsETHPool = _rsETHPool;
     }
 
-    // FIXME: Are we going to support asBase = true?
-    //
     /// @dev Prepares the coordinator for initialization by drawing funds from
     ///      the LP, if necessary.
     /// @param _hyperdrive The Hyperdrive instance that is being initialized.
@@ -84,27 +80,43 @@ contract RsETHLineaHyperdriveDeployerCoordinator is
         uint256 _contribution,
         IHyperdrive.Options memory _options
     ) internal override returns (uint256 value) {
-        // FIXME: Are we going to support asBase = true?
-        //
-        // Depositing as base is disallowed.
-        if (_options.asBase) {
+        // Depositing as base is disallowed when deposit fees are enabled..
+        if (_options.asBase && rsETHPool.feeBps() > 0) {
             revert IHyperdrive.UnsupportedToken();
         }
-
-        // Take custody of the contribution and approve Hyperdrive to pull
-        // the tokens.
-        IERC20 vaultSharesToken = IERC20(_hyperdrive.vaultSharesToken());
-        bool success = vaultSharesToken.transferFrom(
-            _lp,
-            address(this),
-            _contribution
-        );
-        if (!success) {
-            revert IHyperdriveDeployerCoordinator.TransferFailed();
+        // If base is the deposit asset, ensure that enough ether was sent to
+        // the contract and return the amount of ether that should be sent for
+        // the contribution.
+        else if (_options.asBase) {
+            if (msg.value < _contribution) {
+                revert IHyperdriveDeployerCoordinator.InsufficientValue();
+            }
+            value = _contribution;
         }
-        success = vaultSharesToken.approve(address(_hyperdrive), _contribution);
-        if (!success) {
-            revert IHyperdriveDeployerCoordinator.ApprovalFailed();
+        // Otherwise, transfer vault shares from the LP and approve the
+        // Hyperdrive pool.
+        else {
+            // NOTE: We don't use `forceApprove` or `safeTransferFrom` since
+            // wrsETH is an OpenZeppelin token contract.
+            //
+            // Take custody of the contribution and approve Hyperdrive to pull
+            // the tokens.
+            IERC20 vaultSharesToken = IERC20(_hyperdrive.vaultSharesToken());
+            bool success = vaultSharesToken.transferFrom(
+                _lp,
+                address(this),
+                _contribution
+            );
+            if (!success) {
+                revert IHyperdriveDeployerCoordinator.TransferFailed();
+            }
+            success = vaultSharesToken.approve(
+                address(_hyperdrive),
+                _contribution
+            );
+            if (!success) {
+                revert IHyperdriveDeployerCoordinator.ApprovalFailed();
+            }
         }
 
         return value;
@@ -126,15 +138,9 @@ contract RsETHLineaHyperdriveDeployerCoordinator is
         return RsETHLineaConversions.convertToShares(rsETHPool, _baseAmount);
     }
 
-    // FIXME: This may end up being payable.
-    //
     /// @dev We override the message value check since this integration is
-    ///      not payable.
-    function _checkMessageValue() internal view override {
-        if (msg.value != 0) {
-            revert IHyperdriveDeployerCoordinator.NotPayable();
-        }
-    }
+    ///      payable.
+    function _checkMessageValue() internal view override {}
 
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.

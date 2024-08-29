@@ -50,6 +50,19 @@ import { RsETHLineaBase } from "./RsETHLineaBase.sol";
 /// @author DELV
 /// @title RsETHLineaHyperdrive
 /// @notice A Hyperdrive instance that uses a RsETHLinea vault as the yield source.
+/// @dev This instance supports the Renzo protocol on Linea. The vault shares
+///      token is the non-rebasing LRT token wrsETH. There are a few special
+///      things about this integration:
+///
+///      - The base token address is the ETH constant.
+///      - The vault shares token address is the wrsETH address.
+///      - The vault share price is provided by an oracle.
+///      - Interest accrues sporadically when the oracle is updated.
+///      - Base deposits are supported as long as deposit fees are turned off.
+///      - Base withdrawals aren't supported since there isn't an instantaneous
+///        way to withdraw from wrsETH.
+///      - The minimum share reserves and minimum transaction amount are both
+///        1e15.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
