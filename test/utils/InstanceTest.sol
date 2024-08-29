@@ -1603,11 +1603,14 @@ abstract contract InstanceTest is HyperdriveTest {
                 _basePaid +
                     config.roundTripLongInstantaneousWithBaseUpperBoundTolerance
             );
-            assertApproxEqAbs(
-                baseProceeds,
-                _basePaid,
-                config.roundTripLongInstantaneousWithBaseTolerance
-            );
+            // NOTE: If the fees aren't zero, we can't make an equality comparison.
+            if (hyperdrive.getPoolConfig().fees.curve == 0) {
+                assertApproxEqAbs(
+                    baseProceeds,
+                    _basePaid,
+                    config.roundTripLongInstantaneousWithBaseTolerance
+                );
+            }
         }
         // Otherwise we withdraw with vault shares.
         else {
@@ -1629,11 +1632,14 @@ abstract contract InstanceTest is HyperdriveTest {
                     config
                         .roundTripLongInstantaneousWithSharesUpperBoundTolerance
             );
-            assertApproxEqAbs(
-                vaultSharesProceeds,
-                hyperdrive.convertToShares(_basePaid),
-                config.roundTripLongInstantaneousWithSharesTolerance
-            );
+            // NOTE: If the fees aren't zero, we can't make an equality comparison.
+            if (hyperdrive.getPoolConfig().fees.curve == 0) {
+                assertApproxEqAbs(
+                    vaultSharesProceeds,
+                    hyperdrive.convertToShares(_basePaid),
+                    config.roundTripLongInstantaneousWithSharesTolerance
+                );
+            }
         }
 
         // Ensure that the withdrawal was processed as expected.
@@ -1696,8 +1702,6 @@ abstract contract InstanceTest is HyperdriveTest {
             );
             baseProceeds = hyperdrive.convertToBase(vaultSharesProceeds);
 
-            // NOTE: We add a slight buffer since the fees are zero.
-            //
             // Bob should receive less base than he paid since no time as passed.
             assertLt(
                 vaultSharesProceeds,
@@ -1705,11 +1709,14 @@ abstract contract InstanceTest is HyperdriveTest {
                     config
                         .roundTripLongInstantaneousWithSharesUpperBoundTolerance
             );
-            assertApproxEqAbs(
-                vaultSharesProceeds,
-                _vaultSharesPaid,
-                config.roundTripLongInstantaneousWithSharesTolerance
-            );
+            // NOTE: If the fees aren't zero, we can't make an equality comparison.
+            if (hyperdrive.getPoolConfig().fees.curve == 0) {
+                assertApproxEqAbs(
+                    vaultSharesProceeds,
+                    _vaultSharesPaid,
+                    config.roundTripLongInstantaneousWithSharesTolerance
+                );
+            }
         }
         // Otherwise we withdraw with base.
         else {
@@ -1722,11 +1729,14 @@ abstract contract InstanceTest is HyperdriveTest {
                 hyperdrive.convertToBase(_vaultSharesPaid) +
                     config.roundTripLongInstantaneousWithBaseUpperBoundTolerance
             );
-            assertApproxEqAbs(
-                baseProceeds,
-                hyperdrive.convertToBase(_vaultSharesPaid),
-                config.roundTripLongInstantaneousWithBaseTolerance
-            );
+            // NOTE: If the fees aren't zero, we can't make an equality comparison.
+            if (hyperdrive.getPoolConfig().fees.curve == 0) {
+                assertApproxEqAbs(
+                    baseProceeds,
+                    hyperdrive.convertToBase(_vaultSharesPaid),
+                    config.roundTripLongInstantaneousWithBaseTolerance
+                );
+            }
         }
 
         // Ensure that the withdrawal was processed as expected.
@@ -1784,12 +1794,12 @@ abstract contract InstanceTest is HyperdriveTest {
             // Bob should receive almost exactly his bond amount.
             assertLe(
                 baseProceeds,
-                longAmount +
+                longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat) +
                     config.roundTripLongMaturityWithBaseUpperBoundTolerance
             );
             assertApproxEqAbs(
                 baseProceeds,
-                longAmount,
+                longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat),
                 config.roundTripLongMaturityWithBaseTolerance
             );
         }
@@ -1807,12 +1817,12 @@ abstract contract InstanceTest is HyperdriveTest {
             // Bob should receive almost exactly his bond amount.
             assertLe(
                 baseProceeds,
-                longAmount +
+                longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat) +
                     config.roundTripLongMaturityWithSharesUpperBoundTolerance
             );
             assertApproxEqAbs(
                 baseProceeds,
-                longAmount,
+                longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat),
                 config.roundTripLongMaturityWithSharesTolerance
             );
         }
@@ -1888,12 +1898,12 @@ abstract contract InstanceTest is HyperdriveTest {
             // Bob should receive almost exactly his bond amount.
             assertLe(
                 baseProceeds,
-                longAmount +
+                longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat) +
                     config.roundTripLongMaturityWithSharesUpperBoundTolerance
             );
             assertApproxEqAbs(
                 baseProceeds,
-                longAmount,
+                longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat),
                 config.roundTripLongMaturityWithSharesTolerance
             );
         }
@@ -1905,12 +1915,12 @@ abstract contract InstanceTest is HyperdriveTest {
             // Bob should receive almost exactly his bond amount.
             assertLe(
                 baseProceeds,
-                longAmount +
+                longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat) +
                     config.roundTripLongMaturityWithBaseUpperBoundTolerance
             );
             assertApproxEqAbs(
                 baseProceeds,
-                longAmount,
+                longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat),
                 config.roundTripLongMaturityWithBaseTolerance
             );
         }
@@ -2381,11 +2391,14 @@ abstract contract InstanceTest is HyperdriveTest {
                     config
                         .roundTripShortInstantaneousWithBaseUpperBoundTolerance
             );
-            assertApproxEqAbs(
-                baseProceeds,
-                basePaid,
-                config.roundTripShortInstantaneousWithBaseTolerance
-            );
+            // NOTE: If the fees aren't zero, we can't make an equality comparison.
+            if (hyperdrive.getPoolConfig().fees.curve == 0) {
+                assertApproxEqAbs(
+                    baseProceeds,
+                    basePaid,
+                    config.roundTripShortInstantaneousWithBaseTolerance
+                );
+            }
         }
         // Otherwise we withdraw with vault shares.
         else {
@@ -2406,11 +2419,14 @@ abstract contract InstanceTest is HyperdriveTest {
                     config
                         .roundTripShortInstantaneousWithSharesUpperBoundTolerance
             );
-            assertApproxEqAbs(
-                vaultSharesProceeds,
-                hyperdrive.convertToShares(basePaid),
-                config.roundTripShortInstantaneousWithSharesTolerance
-            );
+            // NOTE: If the fees aren't zero, we can't make an equality comparison.
+            if (hyperdrive.getPoolConfig().fees.curve == 0) {
+                assertApproxEqAbs(
+                    vaultSharesProceeds,
+                    hyperdrive.convertToShares(basePaid),
+                    config.roundTripShortInstantaneousWithSharesTolerance
+                );
+            }
         }
 
         // Ensure that the withdrawal was processed as expected.
@@ -2481,11 +2497,14 @@ abstract contract InstanceTest is HyperdriveTest {
                     config
                         .roundTripShortInstantaneousWithSharesUpperBoundTolerance
             );
-            assertApproxEqAbs(
-                vaultSharesProceeds,
-                vaultSharesPaid,
-                config.roundTripShortInstantaneousWithSharesTolerance
-            );
+            // NOTE: If the fees aren't zero, we can't make an equality comparison.
+            if (hyperdrive.getPoolConfig().fees.curve == 0) {
+                assertApproxEqAbs(
+                    vaultSharesProceeds,
+                    vaultSharesPaid,
+                    config.roundTripShortInstantaneousWithSharesTolerance
+                );
+            }
         }
         // Otherwise we withdraw with base.
         else {
@@ -2500,11 +2519,14 @@ abstract contract InstanceTest is HyperdriveTest {
                     config
                         .roundTripShortInstantaneousWithBaseUpperBoundTolerance
             );
-            assertApproxEqAbs(
-                baseProceeds,
-                hyperdrive.convertToBase(vaultSharesPaid),
-                config.roundTripShortInstantaneousWithBaseTolerance
-            );
+            // NOTE: If the fees aren't zero, we can't make an equality comparison.
+            if (hyperdrive.getPoolConfig().fees.curve == 0) {
+                assertApproxEqAbs(
+                    baseProceeds,
+                    hyperdrive.convertToBase(vaultSharesPaid),
+                    config.roundTripShortInstantaneousWithBaseTolerance
+                );
+            }
         }
 
         // Ensure that the withdrawal was processed as expected.
