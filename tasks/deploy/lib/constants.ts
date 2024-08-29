@@ -13,6 +13,12 @@ export const EZETH_ADDRESS_LINEA =
 export const X_RENZO_DEPOSIT_LINEA =
     "0x4D7572040B84b41a6AA2efE4A93eFFF182388F88" as Address;
 
+export const WRSETH_ADDRESS_LINEA =
+    "0xD2671165570f41BBB3B0097893300b6EB6101E6C" as Address;
+
+export const RSETH_POOL_LINEA =
+    "0x057297e44a3364139edcf3e1594d6917ed7688c2" as Address;
+
 // ╭─────────────────────────────────────────────────────────╮
 // │ Mainnet Addresses                                       │
 // ╰─────────────────────────────────────────────────────────╯

@@ -10,6 +10,8 @@ import {
     LINEA_EZETH_182DAY,
     LINEA_EZETH_COORDINATOR,
     LINEA_FACTORY,
+    LINEA_RSETH_182DAY,
+    LINEA_RSETH_COORDINATOR,
 } from "./tasks/deploy/config/linea";
 
 const { env } = process;
@@ -23,8 +25,11 @@ const config: HardhatUserConfig = {
             accounts: [env.DEPLOYER_PRIVATE_KEY!, env.PAUSER_PRIVATE_KEY!],
             hyperdriveDeploy: {
                 factories: [LINEA_FACTORY],
-                coordinators: [LINEA_EZETH_COORDINATOR],
-                instances: [LINEA_EZETH_182DAY],
+                coordinators: [
+                    LINEA_EZETH_COORDINATOR,
+                    LINEA_RSETH_COORDINATOR,
+                ],
+                instances: [LINEA_EZETH_182DAY, LINEA_RSETH_182DAY],
                 checkpointRewarders: [],
                 checkpointSubrewarders: [],
             },
