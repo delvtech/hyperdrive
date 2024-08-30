@@ -44,6 +44,8 @@ const config: HardhatUserConfig = {
                     MAINNET_MORPHO_BLUE_WSTETH_USDC_182DAY,
                     MAINNET_MORPHO_BLUE_WSTETH_USDA_182DAY,
                     MAINNET_STUSD_182DAY,
+                    MAINNET_MORPHO_BLUE_WSTETH_USDC_182DAY,
+                    MAINNET_MORPHO_BLUE_WSTETH_USDA_182DAY,
                 ],
                 checkpointRewarders: [],
                 checkpointSubrewarders: [],
