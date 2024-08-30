@@ -7,8 +7,6 @@ import { IHyperdriveCoreDeployer } from "../../interfaces/IHyperdriveCoreDeploye
 import { IRSETHPoolV2 } from "../../interfaces/IRSETHPoolV2.sol";
 import { RsETHLineaHyperdrive } from "../../instances/rseth-linea/RsETHLineaHyperdrive.sol";
 
-// FIXME: Update the Natspec.
-//
 /// @author DELV
 /// @title RsETHLineaHyperdriveCoreDeployer
 /// @notice The core deployer for the RsETHLineaHyperdrive implementation.

@@ -9,21 +9,15 @@ import { RsETHLineaTarget1Deployer } from "../../../contracts/src/deployers/rset
 import { RsETHLineaTarget2Deployer } from "../../../contracts/src/deployers/rseth-linea/RsETHLineaTarget2Deployer.sol";
 import { RsETHLineaTarget3Deployer } from "../../../contracts/src/deployers/rseth-linea/RsETHLineaTarget3Deployer.sol";
 import { RsETHLineaTarget4Deployer } from "../../../contracts/src/deployers/rseth-linea/RsETHLineaTarget4Deployer.sol";
-import { HyperdriveFactory } from "../../../contracts/src/factory/HyperdriveFactory.sol";
 import { RsETHLineaConversions } from "../../../contracts/src/instances/rseth-linea/RsETHLineaConversions.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { IRsETHLineaHyperdrive } from "../../../contracts/src/interfaces/IRsETHLineaHyperdrive.sol";
 import { IRSETHPoolV2 } from "../../../contracts/src/interfaces/IRSETHPoolV2.sol";
-import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
 import { ETH } from "../../../contracts/src/libraries/Constants.sol";
-import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
-import { LPMath } from "../../../contracts/src/libraries/LPMath.sol";
-import { ERC20ForwarderFactory } from "../../../contracts/src/token/ERC20ForwarderFactory.sol";
-import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
-import { InstanceTest } from "../../utils/InstanceTest.sol";
+import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
+import { InstanceTest } from "../../utils/InstanceTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 
 contract RsETHLineaHyperdriveTest is InstanceTest {
@@ -120,6 +114,8 @@ contract RsETHLineaHyperdriveTest is InstanceTest {
     }
 
     /// @dev Converts base amount to the equivalent about in shares.
+    /// @param baseAmount The base amount.
+    /// @return The converted share amount.
     function convertToShares(
         uint256 baseAmount
     ) internal view override returns (uint256) {
@@ -127,6 +123,8 @@ contract RsETHLineaHyperdriveTest is InstanceTest {
     }
 
     /// @dev Converts share amount to the equivalent amount in base.
+    /// @param shareAmount The share amount.
+    /// @return The converted base amount.
     function convertToBase(
         uint256 shareAmount
     ) internal view override returns (uint256) {
@@ -135,6 +133,7 @@ contract RsETHLineaHyperdriveTest is InstanceTest {
 
     /// @dev Deploys the rsETH Linea deployer coordinator contract.
     /// @param _factory The address of the Hyperdrive factory.
+    /// @return The coordinator address.
     function deployCoordinator(
         address _factory
     ) internal override returns (address) {
@@ -156,11 +155,16 @@ contract RsETHLineaHyperdriveTest is InstanceTest {
     }
 
     /// @dev Fetches the total supply of the base and share tokens.
+    /// @return The total supply of base.
+    /// @return The total supply of vault shares.
     function getSupply() internal view override returns (uint256, uint256) {
         return (address(RSETH_POOL).balance, WRSETH.totalSupply());
     }
 
     /// @dev Fetches the token balance information of an account.
+    /// @param account The account to query.
+    /// @return The balance of base.
+    /// @return The balance of vault shares.
     function getTokenBalances(
         address account
     ) internal view override returns (uint256, uint256) {
@@ -168,6 +172,13 @@ contract RsETHLineaHyperdriveTest is InstanceTest {
     }
 
     /// @dev Verifies that deposit accounting is correct when opening positions.
+    /// @param trader The trader that is depositing.
+    /// @param amountPaid The amount that was deposited.
+    /// @param asBase Whether the deposit was made with base or vault shares.
+    /// @param totalBaseBefore The total base before the deposit.
+    /// @param totalSharesBefore The total shares before the deposit.
+    /// @param traderBalancesBefore The trader balances before the deposit.
+    /// @param hyperdriveBalancesBefore The hyperdrive balances before the deposit.
     function verifyDeposit(
         address trader,
         uint256 amountPaid,
@@ -263,6 +274,13 @@ contract RsETHLineaHyperdriveTest is InstanceTest {
     }
 
     /// @dev Verifies that withdrawal accounting is correct when closing positions.
+    /// @param trader The trader that is withdrawing.
+    /// @param baseProceeds The base proceeds of the deposit.
+    /// @param asBase Whether the withdrawal was made with base or vault shares.
+    /// @param totalBaseBefore The total base before the withdrawal.
+    /// @param totalSharesBefore The total shares before the withdrawal.
+    /// @param traderBalancesBefore The trader balances before the withdrawal.
+    /// @param hyperdriveBalancesBefore The hyperdrive balances before the withdrawal.
     function verifyWithdrawal(
         address trader,
         uint256 baseProceeds,
@@ -317,6 +335,7 @@ contract RsETHLineaHyperdriveTest is InstanceTest {
 
     /// Getters ///
 
+    /// @dev Test the instances getters.
     function test_getters() external view {
         assertEq(
             address(IRsETHLineaHyperdrive(address(hyperdrive)).rsETHPool()),
@@ -328,6 +347,9 @@ contract RsETHLineaHyperdriveTest is InstanceTest {
 
     /// Helpers ///
 
+    /// @dev Advance time and accrue interest.
+    /// @param timeDelta The time to advance.
+    /// @param variableRate The variable rate.
     function advanceTime(
         uint256 timeDelta,
         int256 variableRate
