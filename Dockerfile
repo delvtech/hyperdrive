@@ -82,7 +82,7 @@ ARG STETH_HYPERDRIVE_GOVERNANCE_LP_FEE=0.15
 ARG STETH_HYPERDRIVE_GOVERNANCE_ZOMBIE_FEE=0.03
 RUN anvil --dump-state ./data & ANVIL="$!" && \
   sleep 2 && \
-  npx hardhat fork:mint-eth --address ${ADMIN} --amount 10 --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
+  npx hardhat fork:mint-eth --address ${ADMIN} --amount 50 --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
   make deploy && \
   npx hardhat registry:add --name ERC4626_HYPERDRIVE --value 1 --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
   npx hardhat registry:add --name STETH_HYPERDRIVE --value 1 --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
