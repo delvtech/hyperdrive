@@ -31,7 +31,7 @@ export const MAINNET_STUSD_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     salt: toBytes32("0x69420"),
     extraData: "0x",
     contribution: CONTRIBUTION,
-    fixedAPR: parseEther("0.08"),
+    fixedAPR: parseEther("0.0829"),
     timestretchAPR: parseEther("0.05"),
     options: async (hre) => ({
         extraData: "0x",
@@ -58,7 +58,7 @@ export const MAINNET_STUSD_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
             baseToken: USDA_ADDRESS_MAINNET,
             vaultSharesToken: STUSD_ADDRESS_MAINNET,
             circuitBreakerDelta: parseEther("0.05"),
-            minimumShareReserves: parseEther("10"),
+            minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),
             positionDuration: parseDuration(SIX_MONTHS),
             checkpointDuration: parseDuration("1 day"),
