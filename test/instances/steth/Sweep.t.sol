@@ -12,7 +12,6 @@ import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IHyperdriveAdminController } from "../../../contracts/src/interfaces/IHyperdriveAdminController.sol";
 import { IHyperdriveEvents } from "../../../contracts/src/interfaces/IHyperdriveEvents.sol";
 import { IHyperdriveFactory } from "../../../contracts/src/interfaces/IHyperdriveFactory.sol";
-import { ILido } from "../../../contracts/src/interfaces/ILido.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { ETH } from "../../../contracts/src/libraries/Constants.sol";
 import { ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
@@ -20,7 +19,6 @@ import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.
 import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
 import { MockLido } from "../../../contracts/test/MockLido.sol";
 import { BaseTest } from "../../utils/BaseTest.sol";
-import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 
 contract SweepTest is BaseTest, IHyperdriveEvents {
     string internal constant NAME = "Hyperdrive";

@@ -11,16 +11,10 @@ import { AaveL2Target1Deployer } from "contracts/src/deployers/aave-l2/AaveL2Tar
 import { AaveL2Target2Deployer } from "contracts/src/deployers/aave-l2/AaveL2Target2Deployer.sol";
 import { AaveL2Target3Deployer } from "contracts/src/deployers/aave-l2/AaveL2Target3Deployer.sol";
 import { AaveL2Target4Deployer } from "contracts/src/deployers/aave-l2/AaveL2Target4Deployer.sol";
-import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IAToken } from "contracts/src/interfaces/IAToken.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { ETH } from "contracts/src/libraries/Constants.sol";
-import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { ERC20ForwarderFactory } from "contracts/src/token/ERC20ForwarderFactory.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
+import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { InstanceTest } from "test/utils/InstanceTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
