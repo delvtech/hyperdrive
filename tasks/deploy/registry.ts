@@ -4,10 +4,13 @@ import {
     encodeAbiParameters,
     encodeFunctionData,
     encodePacked,
-    keccak256,
-    stringToHex,
+    isHex,
+    parseEther,
 } from "viem";
 import {
+    CREATE_X_FACTORY,
+    CREATE_X_FACTORY_DEPLOYER,
+    CREATE_X_PRESIGNED_TRANSACTION,
     HyperdriveDeployBaseTask,
     HyperdriveDeployNamedTaskParams,
 } from "./lib";
@@ -22,31 +25,45 @@ HyperdriveDeployBaseTask(
 ).setAction(
     async (
         { name }: DeployRegistryParams,
-        { hyperdriveDeploy, artifacts, getNamedAccounts, viem },
+        { hyperdriveDeploy, artifacts, getNamedAccounts, viem, network },
     ) => {
         console.log("\nRunning deploy:registry ...");
+
+        let deployer = (await getNamedAccounts())["deployer"] as Address;
+
+        if (network.name == "anvil") {
+            let tc = await viem.getTestClient();
+            await tc.setBalance({
+                value: parseEther("1"),
+                address: CREATE_X_FACTORY_DEPLOYER,
+            });
+            let wc = await viem.getWalletClient(CREATE_X_FACTORY_DEPLOYER);
+            await wc.sendRawTransaction({
+                serializedTransaction: CREATE_X_PRESIGNED_TRANSACTION,
+            });
+        }
+
         // Skip if the registry is already deployed.
         if (!!hyperdriveDeploy.deployments.byNameSafe(name)) {
             console.log(`skipping ${name}, found existing deployment`);
             return;
         }
 
-        // Ensure the Create2 factory is deployed.
-        let create2Deployer = await hyperdriveDeploy.ensureDeployed(
-            "Hyperdrive Create2 Factory",
-            "HyperdriveCreate2Factory",
-            [],
+        let createXDeployer = await viem.getContractAt(
+            "IDeterministicDeployer",
+            CREATE_X_FACTORY,
         );
 
-        // Take the `REGISTRY_SALT` string and convert it to bytes32
-        // compatible formatting.
-        let salt = stringToHex(process.env.REGISTRY_SALT! as `0x${string}`, {
-            size: 32,
-        });
+        // Read the salt from the environment and ensure it is a hex string.
+        let salt = process.env.REGISTRY_SALT! as `0x${string}`;
+        if (!isHex(salt)) {
+            console.error(
+                'Invalid REGISTRY_SALT, must be a "0x" prefixed hex string',
+            );
+        }
 
         // Assemble the creation code by packing the registry contract's
         // bytecode with its constructor arguments.
-        let deployer = (await getNamedAccounts())["deployer"] as Address;
         let artifact = artifacts.readArtifactSync("HyperdriveRegistry");
         let creationCode = encodePacked(
             ["bytes", "bytes"],
@@ -65,34 +82,23 @@ HyperdriveDeployBaseTask(
         });
 
         // Call the Create2 deployer to deploy the contract.
-        let tx = await create2Deployer.write.deploy([
+        let tx = await createXDeployer.write.deployCreate2AndInit([
             salt,
             creationCode,
             initializationData,
+            { constructorAmount: 0n, initCallAmount: 0n },
         ]);
         let pc = await viem.getPublicClient();
-        await pc.waitForTransactionReceipt({ hash: tx });
+        let receipt = await pc.waitForTransactionReceipt({ hash: tx });
+        let deployedAddress = receipt.logs[1].address;
 
         // Use the deployer address to back-compute the deployed contract address
         // and store the deployment configuration in deployments.json.
         console.log(` - saving ${name}...`);
-        let deployedAddress = await create2Deployer.read.getDeployed([
-            salt,
-            keccak256(creationCode),
-        ]);
         hyperdriveDeploy.deployments.add(
             name,
             "HyperdriveRegistry",
-            deployedAddress,
-        );
-
-        // Print out the current number of instances in the registry.
-        let registry = await viem.getContractAt(
-            "HyperdriveRegistry",
-            deployedAddress,
-        );
-        console.log(
-            `NumFactories: ${await registry.read.getNumberOfInstances()}`,
+            deployedAddress as Address,
         );
     },
 );

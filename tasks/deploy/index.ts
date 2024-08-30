@@ -6,4 +6,5 @@ export * from "./hyperdrive";
 export * from "./instance";
 export * from "./lib";
 export * from "./registry";
+export * from "./registry-create2-info";
 export * from "./verify";

@@ -27,6 +27,8 @@ ARG NETWORK=anvil
 ARG HYPERDRIVE_ETHEREUM_URL=http://127.0.0.1:8545
 ARG ADMIN=0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
 ARG DEPLOYER_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+ARG REGISTRY_SALT
+ENV REGISTRY_SALT=${REGISTRY_SALT}
 ARG IS_COMPETITION_MODE=false
 ARG BASE_TOKEN_NAME=Base
 ARG BASE_TOKEN_SYMBOL=BASE
@@ -80,7 +82,7 @@ ARG STETH_HYPERDRIVE_GOVERNANCE_LP_FEE=0.15
 ARG STETH_HYPERDRIVE_GOVERNANCE_ZOMBIE_FEE=0.03
 RUN anvil --dump-state ./data & ANVIL="$!" && \
   sleep 2 && \
-  npx hardhat fork:mint-eth --address ${ADMIN} --amount 10 --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
+  npx hardhat fork:mint-eth --address ${ADMIN} --amount 50 --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
   make deploy && \
   npx hardhat registry:add --name ERC4626_HYPERDRIVE --value 1 --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
   npx hardhat registry:add --name STETH_HYPERDRIVE --value 1 --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \

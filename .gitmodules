@@ -18,3 +18,6 @@
 [submodule "lib/morpho-blue"]
 	path = lib/morpho-blue
 	url = https://github.com/morpho-org/morpho-blue
+[submodule "lib/createx"]
+	path = lib/createx
+	url = https://github.com/pcaversaccio/createx

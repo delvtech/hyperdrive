@@ -21,6 +21,7 @@ const config: HardhatUserConfig = {
     networks: {
         gnosis: {
             live: true,
+            chainId: 100,
             url: env.HYPERDRIVE_ETHEREUM_URL!,
             accounts: [env.DEPLOYER_PRIVATE_KEY!, env.PAUSER_PRIVATE_KEY!],
             hyperdriveDeploy: {
@@ -36,7 +37,19 @@ const config: HardhatUserConfig = {
         },
     },
     etherscan: {
-        apiKey: env.GNOSISSCAN_API_KEY ?? "",
+        customChains: [
+            {
+                network: "gnosis",
+                chainId: 100,
+                urls: {
+                    apiURL: "https://api.gnosisscan.io/api",
+                    browserURL: "https://gnosisscan.io/",
+                },
+            },
+        ],
+        apiKey: {
+            gnosis: env.GNOSISSCAN_API_KEY ?? "",
+        },
     },
 };
 

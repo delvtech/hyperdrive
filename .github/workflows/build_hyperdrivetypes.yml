@@ -6,7 +6,6 @@ on:
       - "v*"
 
 jobs:
-
   build-wheel:
     name: build hyperdrivetypes wheel
     runs-on: ubuntu-latest
