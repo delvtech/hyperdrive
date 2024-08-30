@@ -2346,8 +2346,6 @@ abstract contract InstanceTest is HyperdriveTest {
         );
     }
 
-    // FIXME: This can be consolidated with test_close_short_*
-    //
     /// @dev Fuzz test that ensures that shorts receive the correct payouts if
     ///      they open and close instantaneously when deposits and withdrawals
     ///      are made with base.
@@ -2441,8 +2439,6 @@ abstract contract InstanceTest is HyperdriveTest {
         );
     }
 
-    // FIXME: This can be consolidated with test_close_short_*
-    //
     /// @dev Fuzz test that ensures that shorts receive the correct payouts if
     ///      they open and close instantaneously when deposits and withdrawals
     ///      are made with vault shares.

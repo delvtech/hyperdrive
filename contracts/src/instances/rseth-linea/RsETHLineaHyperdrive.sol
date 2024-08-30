@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
-import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
-import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
-import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
-import { {{ name.capitalized }}Base } from "./{{ name.capitalized }}Base.sol";
+import { IRSETHPoolV2 } from "../../interfaces/IRSETHPoolV2.sol";
+import { RsETHLineaBase } from "./RsETHLineaBase.sol";
 
 ///      ______  __                           _________      _____
 ///      ___  / / /____  ___________________________  /_________(_)__   ______
@@ -50,15 +48,26 @@ import { {{ name.capitalized }}Base } from "./{{ name.capitalized }}Base.sol";
 /// SSSSSSSS                                                                SSSSSSSS
 ///
 /// @author DELV
-/// @title {{ name.capitalized }}Hyperdrive
-/// @notice A Hyperdrive instance that uses a {{ name.capitalized }} vault as the yield source.
+/// @title RsETHLineaHyperdrive
+/// @notice A Hyperdrive instance that uses a RsETHLinea vault as the yield source.
+/// @dev This instance supports the Renzo protocol on Linea. The vault shares
+///      token is the non-rebasing LRT token wrsETH. There are a few special
+///      things about this integration:
+///
+///      - The base token address is the ETH constant.
+///      - The vault shares token address is the wrsETH address.
+///      - The vault share price is provided by an oracle.
+///      - Interest accrues sporadically when the oracle is updated.
+///      - Base deposits are supported as long as deposit fees are turned off.
+///      - Base withdrawals aren't supported since there isn't an instantaneous
+///        way to withdraw from wrsETH.
+///      - The minimum share reserves and minimum transaction amount are both
+///        1e15.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract {{ name.capitalized }}Hyperdrive is Hyperdrive, {{ name.capitalized }}Base {
-    using SafeERC20 for ERC20;
-
-    /// @notice Instantiates Hyperdrive with a {{ name.capitalized }} vault as the yield source.
+contract RsETHLineaHyperdrive is Hyperdrive, RsETHLineaBase {
+    /// @notice Instantiates Hyperdrive with a RsETHLinea vault as the yield source.
     /// @param __name The pool's name.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param __adminController The admin controller that will specify the
@@ -68,6 +77,8 @@ contract {{ name.capitalized }}Hyperdrive is Hyperdrive, {{ name.capitalized }}B
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
     /// @param _target4 The target4 address.
+    /// @param __rsETHPool The Kelp DAO deposit contract that provides the
+    ///        vault share price.
     constructor(
         string memory __name,
         IHyperdrive.PoolConfig memory _config,
@@ -76,7 +87,8 @@ contract {{ name.capitalized }}Hyperdrive is Hyperdrive, {{ name.capitalized }}B
         address _target1,
         address _target2,
         address _target3,
-        address _target4
+        address _target4,
+        IRSETHPoolV2 __rsETHPool
     )
         Hyperdrive(
             __name,
@@ -88,15 +100,6 @@ contract {{ name.capitalized }}Hyperdrive is Hyperdrive, {{ name.capitalized }}B
             _target3,
             _target4
         )
-    {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC4626 example provided.
-
-        // Approve the base token with 1 wei. This ensures that all of the
-        // subsequent approvals will be writing to a dirty storage slot.
-        ERC20(address(_config.baseToken)).forceApprove(
-            address(_config.vaultSharesToken),
-            1
-        );
-    }
+        RsETHLineaBase(__rsETHPool)
+    {}
 }
