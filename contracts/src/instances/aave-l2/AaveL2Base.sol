@@ -11,6 +11,8 @@ import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
 import { AaveL2Conversions } from "./AaveL2Conversions.sol";
 
+import { console2 as console } from "forge-std/console2.sol";
+
 /// @author DELV
 /// @title AaveL2Base
 /// @notice The base contract for the AaveL2 Hyperdrive implementation.
@@ -48,12 +50,14 @@ abstract contract AaveL2Base is HyperdriveBase {
         uint256 _baseAmount,
         bytes calldata // unused
     ) internal override returns (uint256, uint256) {
+        console.log("_depositWithBase");
         // Take custody of the deposit in base.
         ERC20(address(_baseToken)).safeTransferFrom(
             msg.sender,
             address(this),
             _baseAmount
         );
+        console.log("  msg.sender", msg.sender);
 
         // Deposit the base into the yield source.
         //
@@ -64,13 +68,15 @@ abstract contract AaveL2Base is HyperdriveBase {
             address(_vault),
             _baseAmount + 1
         );
-        _vault.supply(
-            address(_baseToken), // asset
-            _baseAmount, // amount
-            address(this), // onBehalfOf
-            // NOTE: Aave's referral program is inactive.
-            0 // referralCode
-        );
+        _vault.supply(address(_baseToken), _baseAmount, address(this), 0);
+        // NOTE: We use the encoded params version of 'supply' for better gas
+        // efficiency.
+        // bytes32 supplyParams = encodeSupplyParams(
+        //     address(_baseToken),
+        //     _baseAmount,
+        //     0
+        // );
+        // _vault.supply(supplyParams);
 
         return (_convertToShares(_baseAmount), 0);
     }
@@ -100,17 +106,29 @@ abstract contract AaveL2Base is HyperdriveBase {
     /// @return amountWithdrawn The amount of base withdrawn.
     function _withdrawWithBase(
         uint256 _shareAmount,
-        address _destination,
+        address _destination, // unused _destination,
         bytes calldata // unused
     ) internal override returns (uint256 amountWithdrawn) {
+        console.log("_withdrawWithBase");
+        console.log("  msg.sender", msg.sender);
+        console.log("  _destination", _destination);
         // Withdraw assets from the AaveL2 vault to the destination.
-        amountWithdrawn = _vault.withdraw(
-            address(_baseToken), // asset
-            // NOTE: Withdrawals are processed in base, so we have to convert
-            // the share amount to a base amount.
-            _convertToBase(_shareAmount), // amount
-            _destination // onBehalfOf
+        bytes32 withdrawParams = encodeWithdrawParams(
+            address(_baseToken),
+            _convertToBase(_shareAmount)
         );
+        if (msg.sender == _destination) {
+            amountWithdrawn = _vault.withdraw(withdrawParams);
+            _baseToken.transfer(_destination, amountWithdrawn);
+        } else {
+            amountWithdrawn = _vault.withdraw(
+                address(_baseToken), // asset
+                // NOTE: Withdrawals are processed in base, so we have to convert
+                // the share amount to a base amount.
+                _convertToBase(_shareAmount), // amount
+                _destination // onBehalfOf
+            );
+        }
 
         return amountWithdrawn;
     }
