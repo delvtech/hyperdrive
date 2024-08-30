@@ -37,7 +37,7 @@ HyperdriveDeployBaseTask(
                 value: parseEther("1"),
                 address: CREATE_X_FACTORY_DEPLOYER,
             });
-            let wc = await viem.getWalletClient(deployer);
+            let wc = await viem.getWalletClient(CREATE_X_FACTORY_DEPLOYER);
             await wc.sendRawTransaction({
                 serializedTransaction: CREATE_X_PRESIGNED_TRANSACTION,
             });
