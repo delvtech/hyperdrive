@@ -230,7 +230,7 @@ abstract contract MorphoBlueHyperdriveInstanceTest is InstanceTest {
             hyperdriveSharesAfter,
             hyperdriveBalancesBefore.sharesBalance +
                 hyperdrive.convertToShares(amountPaid),
-            2
+            3
         );
         assertEq(traderSharesAfter, traderBalancesBefore.sharesBalance);
     }
@@ -276,8 +276,7 @@ abstract contract MorphoBlueHyperdriveInstanceTest is InstanceTest {
         assertApproxEqAbs(
             totalSupplyShares,
             totalSharesBefore - hyperdrive.convertToShares(baseProceeds),
-            // FIXME: Should this be updated?
-            1e6
+            3
         );
 
         // Ensure that the ETH balances didn't change.
@@ -309,8 +308,7 @@ abstract contract MorphoBlueHyperdriveInstanceTest is InstanceTest {
             hyperdriveSharesAfter,
             hyperdriveBalancesBefore.sharesBalance -
                 hyperdrive.convertToShares(baseProceeds),
-            // FIXME: Should this be updated?
-            1e6
+            3
         );
         assertApproxEqAbs(
             traderSharesAfter,
