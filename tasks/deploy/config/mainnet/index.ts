@@ -13,3 +13,4 @@ export * from "./reth-182day";
 export * from "./reth-coordinator";
 export * from "./steth-182day";
 export * from "./steth-coordinator";
+export * from "./stusd-182day";
