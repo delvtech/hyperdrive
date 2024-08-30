@@ -2,6 +2,7 @@
 *.js
 *.md
 *.yaml
+*.yml
 lib/
 !tasks/deploy/lib/
 target/
