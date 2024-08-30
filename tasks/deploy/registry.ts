@@ -5,10 +5,12 @@ import {
     encodeFunctionData,
     encodePacked,
     isHex,
+    parseEther,
 } from "viem";
 import {
     CREATE_X_FACTORY,
-    DELV_REGISTRY_ADDRESS,
+    CREATE_X_FACTORY_DEPLOYER,
+    CREATE_X_PRESIGNED_TRANSACTION,
     HyperdriveDeployBaseTask,
     HyperdriveDeployNamedTaskParams,
 } from "./lib";
@@ -23,11 +25,23 @@ HyperdriveDeployBaseTask(
 ).setAction(
     async (
         { name }: DeployRegistryParams,
-        { hyperdriveDeploy, artifacts, getNamedAccounts, viem },
+        { hyperdriveDeploy, artifacts, getNamedAccounts, viem, network },
     ) => {
         console.log("\nRunning deploy:registry ...");
 
         let deployer = (await getNamedAccounts())["deployer"] as Address;
+
+        if (network.name == "anvil") {
+            let tc = await viem.getTestClient();
+            await tc.setBalance({
+                value: parseEther("1"),
+                address: CREATE_X_FACTORY_DEPLOYER,
+            });
+            let wc = await viem.getWalletClient(deployer);
+            await wc.sendRawTransaction({
+                serializedTransaction: CREATE_X_PRESIGNED_TRANSACTION,
+            });
+        }
 
         // Skip if the registry is already deployed.
         if (!!hyperdriveDeploy.deployments.byNameSafe(name)) {
@@ -76,10 +90,7 @@ HyperdriveDeployBaseTask(
         ]);
         let pc = await viem.getPublicClient();
         let receipt = await pc.waitForTransactionReceipt({ hash: tx });
-        let deployedAddress =
-            receipt.logs.length > 0
-                ? receipt.logs[1].address
-                : DELV_REGISTRY_ADDRESS;
+        let deployedAddress = receipt.logs[1].address;
 
         // Use the deployer address to back-compute the deployed contract address
         // and store the deployment configuration in deployments.json.
