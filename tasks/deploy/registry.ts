@@ -8,6 +8,7 @@ import {
 } from "viem";
 import {
     CREATE_X_FACTORY,
+    DELV_REGISTRY_ADDRESS,
     HyperdriveDeployBaseTask,
     HyperdriveDeployNamedTaskParams,
 } from "./lib";
@@ -75,7 +76,10 @@ HyperdriveDeployBaseTask(
         ]);
         let pc = await viem.getPublicClient();
         let receipt = await pc.waitForTransactionReceipt({ hash: tx });
-        let deployedAddress = receipt.logs[1].address;
+        let deployedAddress =
+            receipt.logs.length > 0
+                ? receipt.logs[1].address
+                : DELV_REGISTRY_ADDRESS;
 
         // Use the deployer address to back-compute the deployed contract address
         // and store the deployment configuration in deployments.json.

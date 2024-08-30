@@ -57,6 +57,7 @@ jobs:
           build-args: |
             ADMIN=${{ vars.DEVNET_ADMIN }}
             DEPLOYER_PRIVATE_KEY=${{ vars.DEVNET_ADMIN_PRIVATE_KEY }}
+            REGISTRY_SALT=${{ vars.REGISTRY_SALT }}
             FACTORY_MIN_CURVE_FEE=0 # 0%
             FACTORY_MIN_FLAT_FEE=0 # 0%
             FACTORY_MIN_GOVERNANCE_LP_FEE=0 # 0%
