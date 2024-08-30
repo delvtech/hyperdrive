@@ -14,14 +14,14 @@ cache = true
 cache_path = 'forge-cache'
 # Import statement remappings
 remappings = [
-  'aave=lib/aave-v3-core/contracts',
-  'forge-std=lib/forge-std/src',
-  'morpho-blue=lib/morpho-blue',
-  'nomad=lib/ExcessivelySafeCall/src',
-  'openzeppelin=lib/openzeppelin-contracts/contracts',
-  'solmate=lib/solmate/src',
-  'etherfi=lib/smart-contracts',
-  'createx=lib/createx/src'
+  'aave/=lib/aave-v3-core/contracts',
+  'forge-std/=lib/forge-std/src',
+  'morpho-blue/=lib/morpho-blue',
+  'nomad/=lib/ExcessivelySafeCall/src',
+  'openzeppelin/=lib/openzeppelin-contracts/contracts',
+  'solmate/=lib/solmate/src',
+  'etherfi/=lib/smart-contracts',
+  'createx/=lib/createx/src',
 ]
 # gas limit - max u64
 gas_limit = "18446744073709551615"
