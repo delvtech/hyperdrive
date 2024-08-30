@@ -103,6 +103,9 @@ export const SDAI_WHALE_MAINNET =
 export const STETH_WHALE_MAINNET =
     "0xd15a672319cf0352560ee76d9e89eab0889046d3" as Address;
 
+export const USDA_WHALE_MAINNET =
+    "0xEc0B13b2271E212E1a74D55D51932BD52A002961" as Address;
+
 export const USDC_WHALE_MAINNET =
     "0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503" as Address;
 
