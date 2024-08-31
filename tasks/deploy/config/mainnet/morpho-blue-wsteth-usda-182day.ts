@@ -72,7 +72,7 @@ export const MAINNET_MORPHO_BLUE_WSTETH_USDA_182DAY: HyperdriveInstanceConfig<"M
         extraData: morphoBlueParameters,
         contribution: CONTRIBUTION,
         fixedAPR: parseEther("0.035"),
-        timestretchAPR: parseEther("0.075"),
+        timestretchAPR: parseEther("0.05"),
         options: async (hre) => ({
             extraData: "0x",
             asBase: true,
@@ -97,7 +97,7 @@ export const MAINNET_MORPHO_BLUE_WSTETH_USDA_182DAY: HyperdriveInstanceConfig<"M
             return {
                 baseToken: USDA_ADDRESS_MAINNET,
                 vaultSharesToken: zeroAddress,
-                circuitBreakerDelta: parseEther("0.075"),
+                circuitBreakerDelta: parseEther("0.05"),
                 minimumShareReserves: parseEther("0.001"),
                 minimumTransactionAmount: parseEther("0.001"),
                 positionDuration: parseDuration(SIX_MONTHS),
