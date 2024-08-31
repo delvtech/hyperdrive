@@ -48,62 +48,65 @@ contract EETHHyperdriveTest is InstanceTest {
         0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee;
     address[] internal EETHTokenWhaleAccounts = [EETH_TOKEN_WHALE];
 
-    // The configuration for the Instance testing suite.
-    InstanceTestConfig internal __testConfig =
-        InstanceTestConfig({
-            name: "Hyperdrive",
-            kind: "EETHHyperdrive",
-            decimals: 18,
-            baseTokenWhaleAccounts: new address[](0),
-            vaultSharesTokenWhaleAccounts: EETHTokenWhaleAccounts,
-            baseToken: IERC20(ETH),
-            vaultSharesToken: IERC20(address(EETH)),
-            shareTolerance: 1e5,
-            minimumShareReserves: 1e15,
-            minimumTransactionAmount: 1e15,
-            positionDuration: POSITION_DURATION,
-            fees: IHyperdrive.Fees({
-                curve: 0,
-                flat: 0,
-                governanceLP: 0,
-                governanceZombie: 0
-            }),
-            enableBaseDeposits: true,
-            enableShareDeposits: true,
-            enableBaseWithdraws: false,
-            enableShareWithdraws: true,
-            baseWithdrawError: abi.encodeWithSelector(
-                IHyperdrive.UnsupportedToken.selector
-            ),
-            isRebasing: true,
-            // NOTE: Base  withdrawals are disabled, so the tolerances are zero.
-            //
-            // The base test tolerances.
-            roundTripLpInstantaneousWithBaseTolerance: 0,
-            roundTripLpWithdrawalSharesWithBaseTolerance: 0,
-            roundTripLongInstantaneousWithBaseUpperBoundTolerance: 0,
-            roundTripLongInstantaneousWithBaseTolerance: 0,
-            roundTripLongMaturityWithBaseUpperBoundTolerance: 0,
-            roundTripLongMaturityWithBaseTolerance: 0,
-            roundTripShortInstantaneousWithBaseUpperBoundTolerance: 0,
-            roundTripShortInstantaneousWithBaseTolerance: 0,
-            roundTripShortMaturityWithBaseTolerance: 0,
-            // The share test tolerances.
-            closeLongWithSharesTolerance: 20,
-            closeShortWithSharesTolerance: 100,
-            roundTripLpInstantaneousWithSharesTolerance: 1e5,
-            roundTripLpWithdrawalSharesWithSharesTolerance: 1e5,
-            roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
-            roundTripLongInstantaneousWithSharesTolerance: 1e5,
-            roundTripLongMaturityWithSharesUpperBoundTolerance: 1e3,
-            roundTripLongMaturityWithSharesTolerance: 1e5,
-            roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
-            roundTripShortInstantaneousWithSharesTolerance: 1e5,
-            roundTripShortMaturityWithSharesTolerance: 1e4
-        });
-
     /// @dev Instantiates the instance testing suite with the configuration.
-    constructor() InstanceTest(__testConfig) {}
+    constructor()
+        InstanceTest(
+            InstanceTestConfig({
+                name: "Hyperdrive",
+                kind: "EETHHyperdrive",
+                decimals: 18,
+                baseTokenWhaleAccounts: new address[](0),
+                vaultSharesTokenWhaleAccounts: EETHTokenWhaleAccounts,
+                baseToken: IERC20(ETH),
+                vaultSharesToken: IERC20(address(EETH)),
+                shareTolerance: 1e5,
+                minimumShareReserves: 1e15,
+                minimumTransactionAmount: 1e15,
+                positionDuration: POSITION_DURATION,
+                fees: IHyperdrive.Fees({
+                    curve: 0,
+                    flat: 0,
+                    governanceLP: 0,
+                    governanceZombie: 0
+                }),
+                enableBaseDeposits: true,
+                enableShareDeposits: true,
+                enableBaseWithdraws: false,
+                enableShareWithdraws: true,
+                baseWithdrawError: abi.encodeWithSelector(
+                    IHyperdrive.UnsupportedToken.selector
+                ),
+                isRebasing: true,
+                // NOTE: Base  withdrawals are disabled, so the tolerances are zero.
+                //
+                // The base test tolerances.
+                roundTripLpInstantaneousWithBaseTolerance: 0,
+                roundTripLpWithdrawalSharesWithBaseTolerance: 0,
+                roundTripLongInstantaneousWithBaseUpperBoundTolerance: 0,
+                roundTripLongInstantaneousWithBaseTolerance: 0,
+                roundTripLongMaturityWithBaseUpperBoundTolerance: 0,
+                roundTripLongMaturityWithBaseTolerance: 0,
+                roundTripShortInstantaneousWithBaseUpperBoundTolerance: 0,
+                roundTripShortInstantaneousWithBaseTolerance: 0,
+                roundTripShortMaturityWithBaseTolerance: 0,
+                // The share test tolerances.
+                closeLongWithSharesTolerance: 20,
+                closeShortWithSharesTolerance: 100,
+                roundTripLpInstantaneousWithSharesTolerance: 1e5,
+                roundTripLpWithdrawalSharesWithSharesTolerance: 1e5,
+                roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripLongInstantaneousWithSharesTolerance: 1e5,
+                roundTripLongMaturityWithSharesUpperBoundTolerance: 1e3,
+                roundTripLongMaturityWithSharesTolerance: 1e5,
+                roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripShortInstantaneousWithSharesTolerance: 1e5,
+                roundTripShortMaturityWithSharesTolerance: 1e4,
+                // The verification tolerances.
+                verifyDepositTolerance: 2,
+                verifyWithdrawalTolerance: 2
+            })
+        )
+    {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(20_362_343) {
@@ -152,7 +155,7 @@ contract EETHHyperdriveTest is InstanceTest {
         return
             address(
                 new EETHHyperdriveDeployerCoordinator(
-                    string.concat(__testConfig.name, "DeployerCoordinator"),
+                    string.concat(config.name, "DeployerCoordinator"),
                     _factory,
                     address(new EETHHyperdriveCoreDeployer(POOL)),
                     address(new EETHTarget0Deployer(POOL)),
@@ -167,142 +170,14 @@ contract EETHHyperdriveTest is InstanceTest {
 
     /// @dev Fetches the total supply of the base and share tokens.
     function getSupply() internal view override returns (uint256, uint256) {
-        return (POOL.getTotalPooledEther(), EETH.totalShares());
+        return (address(POOL).balance, EETH.totalShares());
     }
 
     /// @dev Fetches the token balance information of an account.
     function getTokenBalances(
         address account
     ) internal view override returns (uint256, uint256) {
-        return (EETH.balanceOf(account), EETH.shares(account));
-    }
-
-    /// @dev Verifies that deposit accounting is correct when opening positions.
-    function verifyDeposit(
-        address trader,
-        uint256 amountPaid,
-        bool asBase,
-        uint256 totalBaseBefore,
-        uint256 totalSharesBefore,
-        AccountBalances memory traderBalancesBefore,
-        AccountBalances memory hyperdriveBalancesBefore
-    ) internal view override {
-        if (asBase) {
-            // Ensure that the amount of pooled ether increased by the base paid.
-            assertEq(POOL.getTotalPooledEther(), totalBaseBefore + amountPaid);
-
-            // Ensure that the ETH balances were updated correctly.
-            assertEq(
-                address(hyperdrive).balance,
-                hyperdriveBalancesBefore.ETHBalance
-            );
-            assertEq(bob.balance, traderBalancesBefore.ETHBalance - amountPaid);
-
-            // Ensure that the EETH balances were updated correctly.
-            assertApproxEqAbs(
-                EETH.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.baseBalance + amountPaid,
-                5
-            );
-            assertEq(EETH.balanceOf(trader), traderBalancesBefore.baseBalance);
-
-            // Ensure that the EETH shares were updated correctly.
-            uint256 expectedShares = convertToShares(amountPaid);
-            assertEq(EETH.totalShares(), totalSharesBefore + expectedShares);
-            assertEq(
-                EETH.shares(address(hyperdrive)),
-                hyperdriveBalancesBefore.sharesBalance + expectedShares
-            );
-            assertEq(EETH.shares(bob), traderBalancesBefore.sharesBalance);
-        } else {
-            // Ensure that the amount of pooled ether stays the same.
-            assertEq(POOL.getTotalPooledEther(), totalBaseBefore);
-
-            // Ensure that the ETH balances were updated correctly.
-            assertEq(
-                address(hyperdrive).balance,
-                hyperdriveBalancesBefore.ETHBalance
-            );
-            assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-            // Ensure that the EETH balances were updated correctly.
-            assertApproxEqAbs(
-                EETH.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.baseBalance + amountPaid,
-                3
-            );
-            assertApproxEqAbs(
-                EETH.balanceOf(trader),
-                traderBalancesBefore.baseBalance - amountPaid,
-                3
-            );
-
-            // Ensure that the EETH shares were updated correctly.
-            uint256 expectedShares = convertToShares(amountPaid);
-            assertEq(EETH.totalShares(), totalSharesBefore);
-            assertApproxEqAbs(
-                EETH.shares(address(hyperdrive)),
-                hyperdriveBalancesBefore.sharesBalance + expectedShares,
-                3
-            );
-            assertApproxEqAbs(
-                EETH.shares(trader),
-                traderBalancesBefore.sharesBalance - expectedShares,
-                3
-            );
-        }
-    }
-
-    /// @dev Verifies that withdrawal accounting is correct when closing positions.
-    function verifyWithdrawal(
-        address trader,
-        uint256 baseProceeds,
-        bool asBase,
-        uint256 totalBaseBefore,
-        uint256 totalSharesBefore,
-        AccountBalances memory traderBalancesBefore,
-        AccountBalances memory hyperdriveBalancesBefore
-    ) internal view override {
-        // Base withdraws are not supported for this instance.
-        if (asBase) {
-            revert IHyperdrive.UnsupportedToken();
-        }
-
-        // Ensure that the total pooled ether and shares stays the same.
-        assertEq(POOL.getTotalPooledEther(), totalBaseBefore);
-        assertApproxEqAbs(EETH.totalShares(), totalSharesBefore, 1);
-
-        // Ensure that the ETH balances were updated correctly.
-        assertEq(
-            address(hyperdrive).balance,
-            hyperdriveBalancesBefore.ETHBalance
-        );
-        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-        // Ensure that the EETH balances were updated correctly.
-        assertApproxEqAbs(
-            EETH.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.baseBalance - baseProceeds,
-            1e4
-        );
-        assertApproxEqAbs(
-            EETH.balanceOf(trader),
-            traderBalancesBefore.baseBalance + baseProceeds,
-            1e4
-        );
-
-        // Ensure that the EETH shares were updated correctly.
-        uint256 expectedShares = convertToShares(baseProceeds);
-        assertApproxEqAbs(
-            EETH.shares(address(hyperdrive)),
-            hyperdriveBalancesBefore.sharesBalance - expectedShares,
-            2
-        );
-        assertApproxEqAbs(
-            EETH.shares(trader),
-            traderBalancesBefore.sharesBalance + expectedShares,
-            2
-        );
+        return (account.balance, EETH.shares(account));
     }
 
     /// Getters ///
@@ -318,9 +193,12 @@ contract EETHHyperdriveTest is InstanceTest {
 
     function test__pricePerVaultShare(uint256 basePaid) external {
         // Ensure that the share price is the expected value.
-        (uint256 totalSupplyAssets, uint256 totalSupplyShares) = getSupply();
+        (, uint256 totalSupplyShares) = getSupply();
         uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
-        assertEq(vaultSharePrice, totalSupplyAssets.divDown(totalSupplyShares));
+        assertEq(
+            vaultSharePrice,
+            POOL.getTotalPooledEther().divDown(totalSupplyShares)
+        );
 
         // Ensure that the share price accurately predicts the amount of shares
         // that will be minted for depositing a given amount of shares. This will
@@ -339,7 +217,7 @@ contract EETHHyperdriveTest is InstanceTest {
         assertApproxEqAbs(
             hyperdriveSharesAfter,
             hyperdriveSharesBefore + basePaid.divDown(vaultSharePrice),
-            __testConfig.shareTolerance
+            config.shareTolerance
         );
     }
 

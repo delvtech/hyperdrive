@@ -38,63 +38,68 @@ contract RETHHyperdriveTest is InstanceTest {
         IRocketNetworkBalances(0x07FCaBCbe4ff0d80c2b1eb42855C0131b6cba2F4);
     IRocketDepositPool internal constant rocketDepositPool =
         IRocketDepositPool(0xDD3f50F8A6CafbE9b31a427582963f465E745AF8);
+    address internal constant rocketVault =
+        address(0x3bDC69C4E5e13E52A65f5583c23EFB9636b469d6);
 
     // Whale accounts.
     address internal RETH_WHALE = 0xCc9EE9483f662091a1de4795249E24aC0aC2630f;
     address[] internal whaleAccounts = [RETH_WHALE];
 
-    // The configuration for the Instance testing suite.
-    InstanceTestConfig internal __testConfig =
-        InstanceTestConfig({
-            name: "Hyperdrive",
-            kind: "RETHHyperdrive",
-            decimals: 18,
-            baseTokenWhaleAccounts: new address[](0),
-            vaultSharesTokenWhaleAccounts: whaleAccounts,
-            baseToken: IERC20(ETH),
-            vaultSharesToken: IERC20(rocketTokenRETH),
-            shareTolerance: 1e5,
-            minimumShareReserves: 1e15,
-            minimumTransactionAmount: 1e15,
-            positionDuration: POSITION_DURATION,
-            enableBaseDeposits: false,
-            enableShareDeposits: true,
-            enableBaseWithdraws: true,
-            enableShareWithdraws: true,
-            baseWithdrawError: new bytes(0),
-            isRebasing: false,
-            fees: IHyperdrive.Fees({
-                curve: 0,
-                flat: 0,
-                governanceLP: 0,
-                governanceZombie: 0
-            }),
-            // The base test tolerances.
-            roundTripLpInstantaneousWithBaseTolerance: 1e3,
-            roundTripLpWithdrawalSharesWithBaseTolerance: 1e3,
-            roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
-            roundTripLongInstantaneousWithBaseTolerance: 1e3,
-            roundTripLongMaturityWithBaseUpperBoundTolerance: 1e3,
-            roundTripLongMaturityWithBaseTolerance: 1e3,
-            roundTripShortInstantaneousWithBaseUpperBoundTolerance: 1e3,
-            roundTripShortInstantaneousWithBaseTolerance: 1e3,
-            roundTripShortMaturityWithBaseTolerance: 1e3,
-            // The share test tolerances.
-            closeLongWithSharesTolerance: 20,
-            closeShortWithSharesTolerance: 100,
-            roundTripLpInstantaneousWithSharesTolerance: 2e3,
-            roundTripLpWithdrawalSharesWithSharesTolerance: 2e3,
-            roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
-            roundTripLongInstantaneousWithSharesTolerance: 1e4,
-            roundTripLongMaturityWithSharesUpperBoundTolerance: 100,
-            roundTripLongMaturityWithSharesTolerance: 3e3,
-            roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
-            roundTripShortInstantaneousWithSharesTolerance: 1e3,
-            roundTripShortMaturityWithSharesTolerance: 1e3
-        });
-
     /// @dev Instantiates the instance testing suite with the configuration.
-    constructor() InstanceTest(__testConfig) {}
+    constructor()
+        InstanceTest(
+            InstanceTestConfig({
+                name: "Hyperdrive",
+                kind: "RETHHyperdrive",
+                decimals: 18,
+                baseTokenWhaleAccounts: new address[](0),
+                vaultSharesTokenWhaleAccounts: whaleAccounts,
+                baseToken: IERC20(ETH),
+                vaultSharesToken: IERC20(rocketTokenRETH),
+                shareTolerance: 1e5,
+                minimumShareReserves: 1e15,
+                minimumTransactionAmount: 1e15,
+                positionDuration: POSITION_DURATION,
+                enableBaseDeposits: false,
+                enableShareDeposits: true,
+                enableBaseWithdraws: true,
+                enableShareWithdraws: true,
+                baseWithdrawError: new bytes(0),
+                isRebasing: false,
+                fees: IHyperdrive.Fees({
+                    curve: 0,
+                    flat: 0,
+                    governanceLP: 0,
+                    governanceZombie: 0
+                }),
+                // The base test tolerances.
+                roundTripLpInstantaneousWithBaseTolerance: 1e3,
+                roundTripLpWithdrawalSharesWithBaseTolerance: 1e3,
+                roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
+                roundTripLongInstantaneousWithBaseTolerance: 1e3,
+                roundTripLongMaturityWithBaseUpperBoundTolerance: 1e3,
+                roundTripLongMaturityWithBaseTolerance: 1e3,
+                roundTripShortInstantaneousWithBaseUpperBoundTolerance: 1e3,
+                roundTripShortInstantaneousWithBaseTolerance: 1e3,
+                roundTripShortMaturityWithBaseTolerance: 1e3,
+                // The share test tolerances.
+                closeLongWithSharesTolerance: 20,
+                closeShortWithSharesTolerance: 100,
+                roundTripLpInstantaneousWithSharesTolerance: 2e3,
+                roundTripLpWithdrawalSharesWithSharesTolerance: 2e3,
+                roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripLongInstantaneousWithSharesTolerance: 1e4,
+                roundTripLongMaturityWithSharesUpperBoundTolerance: 100,
+                roundTripLongMaturityWithSharesTolerance: 3e3,
+                roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripShortInstantaneousWithSharesTolerance: 1e3,
+                roundTripShortMaturityWithSharesTolerance: 1e3,
+                // The verification tolerances.
+                verifyDepositTolerance: 2,
+                verifyWithdrawalTolerance: 2
+            })
+        )
+    {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(19_429_100) {
@@ -137,7 +142,7 @@ contract RETHHyperdriveTest is InstanceTest {
         return
             address(
                 new RETHHyperdriveDeployerCoordinator(
-                    string.concat(__testConfig.name, "DeployerCoordinator"),
+                    string.concat(config.name, "DeployerCoordinator"),
                     _factory,
                     address(new RETHHyperdriveCoreDeployer()),
                     address(new RETHTarget0Deployer()),
@@ -153,8 +158,8 @@ contract RETHHyperdriveTest is InstanceTest {
     /// @dev Fetches the total supply of the base and share tokens.
     function getSupply() internal view override returns (uint256, uint256) {
         return (
-            rocketNetworkBalances.getTotalETHBalance(),
-            rocketNetworkBalances.getTotalRETHSupply()
+            rocketVault.balance + address(rocketTokenRETH).balance,
+            rocketTokenRETH.totalSupply()
         );
     }
 
@@ -162,137 +167,7 @@ contract RETHHyperdriveTest is InstanceTest {
     function getTokenBalances(
         address account
     ) internal view override returns (uint256, uint256) {
-        uint256 rethBalance = rocketTokenRETH.balanceOf(account);
-        return (rocketTokenRETH.getEthValue(rethBalance), rethBalance);
-    }
-
-    /// @dev Verifies that deposit accounting is correct when opening positions.
-    function verifyDeposit(
-        address trader,
-        uint256 amount,
-        bool asBase,
-        uint256 totalBaseBefore,
-        uint256 totalSharesBefore,
-        AccountBalances memory traderBalancesBefore,
-        AccountBalances memory hyperdriveBalancesBefore
-    ) internal view override {
-        // Deposits as base is not supported for this instance.
-        if (asBase) {
-            revert IHyperdrive.UnsupportedToken();
-        }
-
-        // Convert the amount in terms of shares.
-        amount = convertToShares(amount);
-
-        // Ensure that the ETH balances were updated correctly.
-        assertEq(
-            address(hyperdrive).balance,
-            hyperdriveBalancesBefore.ETHBalance
-        );
-        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-        // Ensure that the rETH balances were updated correctly.
-        assertApproxEqAbs(
-            rocketTokenRETH.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.sharesBalance + amount,
-            1
-        );
-        assertApproxEqAbs(
-            rocketTokenRETH.balanceOf(trader),
-            traderBalancesBefore.sharesBalance - amount,
-            1
-        );
-
-        // Ensure the total base supply was updated correctly.
-        assertEq(rocketNetworkBalances.getTotalETHBalance(), totalBaseBefore);
-
-        // Ensure the total supply was updated correctly.
-        assertEq(rocketTokenRETH.totalSupply(), totalSharesBefore);
-    }
-
-    /// @dev Verifies that withdrawal accounting is correct when closing positions.
-    function verifyWithdrawal(
-        address trader,
-        uint256 baseProceeds,
-        bool asBase,
-        uint256 totalBaseBefore,
-        uint256 totalSharesBefore,
-        AccountBalances memory traderBalancesBefore,
-        AccountBalances memory hyperdriveBalancesBefore
-    ) internal view override {
-        // Convert baseProceeds to shares to verify accounting.
-        uint256 shareProceeds = rocketTokenRETH.getRethValue(baseProceeds);
-
-        if (asBase) {
-            // Ensure the total amount of rETH were updated correctly.
-            assertApproxEqAbs(
-                rocketTokenRETH.totalSupply(),
-                totalSharesBefore - shareProceeds,
-                1
-            );
-
-            // Ensure that the ETH balances were updated correctly.
-            assertEq(
-                address(hyperdrive).balance,
-                hyperdriveBalancesBefore.ETHBalance
-            );
-            assertEq(
-                trader.balance,
-                traderBalancesBefore.ETHBalance + baseProceeds
-            );
-
-            // Ensure the rETH balances were updated correctly.
-            assertApproxEqAbs(
-                rocketTokenRETH.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.sharesBalance - shareProceeds,
-                1
-            );
-            assertEq(
-                rocketTokenRETH.balanceOf(address(trader)),
-                traderBalancesBefore.sharesBalance
-            );
-
-            // Ensure the total base supply was updated correctly.
-            assertEq(
-                rocketNetworkBalances.getTotalETHBalance(),
-                totalBaseBefore
-            );
-
-            // Ensure the total supply was updated correctly.
-            assertApproxEqAbs(
-                rocketTokenRETH.totalSupply(),
-                totalSharesBefore - shareProceeds,
-                1
-            );
-        } else {
-            // Ensure that the ETH balances were updated correctly.
-            assertEq(
-                address(hyperdrive).balance,
-                hyperdriveBalancesBefore.ETHBalance
-            );
-            assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-            // Ensure the rETH balances were updated correctly.
-            assertApproxEqAbs(
-                rocketTokenRETH.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.sharesBalance - shareProceeds,
-                1
-            );
-            assertApproxEqAbs(
-                rocketTokenRETH.balanceOf(address(trader)),
-                traderBalancesBefore.sharesBalance + shareProceeds,
-                1
-            );
-
-            // Ensure the total base supply was updated correctly.
-            assertEq(
-                rocketNetworkBalances.getTotalETHBalance(),
-                totalBaseBefore
-            );
-
-            // Ensure the total supply was updated correctly.
-            assertEq(rocketTokenRETH.totalSupply(), totalSharesBefore);
-        }
+        return (account.balance, rocketTokenRETH.balanceOf(account));
     }
 
     /// Getters ///

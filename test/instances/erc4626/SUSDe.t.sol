@@ -35,66 +35,69 @@ contract SUSDeHyperdriveTest is ERC4626HyperdriveInstanceTest {
         address(0x4139cDC6345aFFbaC0692b43bed4D059Df3e6d65);
     address[] internal vaultSharesTokenWhaleAccounts = [SUSDE_TOKEN_WHALE];
 
-    // The configuration for the instance testing suite.
-    InstanceTestConfig internal __testConfig =
-        InstanceTestConfig({
-            name: "Hyperdrive",
-            kind: "ERC4626Hyperdrive",
-            decimals: 18,
-            baseTokenWhaleAccounts: baseTokenWhaleAccounts,
-            vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
-            baseToken: USDE,
-            vaultSharesToken: IERC20(address(SUSDE)),
-            shareTolerance: 1e3,
-            minimumShareReserves: 1e18,
-            minimumTransactionAmount: 1e15,
-            positionDuration: POSITION_DURATION,
-            fees: IHyperdrive.Fees({
-                curve: 0,
-                flat: 0,
-                governanceLP: 0,
-                governanceZombie: 0
-            }),
-            enableBaseDeposits: true,
-            enableShareDeposits: true,
-            enableBaseWithdraws: false,
-            enableShareWithdraws: true,
-            // NOTE: SUSDe currently has a cooldown on withdrawals which
-            // prevents users from withdrawing as base instantaneously. We still
-            // support withdrawing with base since the cooldown can be disabled
-            // in the future.
-            baseWithdrawError: abi.encodeWithSelector(
-                OperationNotAllowed.selector
-            ),
-            isRebasing: false,
-            // NOTE: Base  withdrawals are disabled, so the tolerances are zero.
-            //
-            // The base test tolerances.
-            roundTripLpInstantaneousWithBaseTolerance: 0,
-            roundTripLpWithdrawalSharesWithBaseTolerance: 0,
-            roundTripLongInstantaneousWithBaseUpperBoundTolerance: 0,
-            roundTripLongInstantaneousWithBaseTolerance: 0,
-            roundTripLongMaturityWithBaseUpperBoundTolerance: 0,
-            roundTripLongMaturityWithBaseTolerance: 0,
-            roundTripShortInstantaneousWithBaseUpperBoundTolerance: 0,
-            roundTripShortInstantaneousWithBaseTolerance: 0,
-            roundTripShortMaturityWithBaseTolerance: 0,
-            // The share test tolerances.
-            closeLongWithSharesTolerance: 20,
-            closeShortWithSharesTolerance: 100,
-            roundTripLpInstantaneousWithSharesTolerance: 1e8,
-            roundTripLpWithdrawalSharesWithSharesTolerance: 1e8,
-            roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
-            roundTripLongInstantaneousWithSharesTolerance: 1e5,
-            roundTripLongMaturityWithSharesUpperBoundTolerance: 100,
-            roundTripLongMaturityWithSharesTolerance: 1e5,
-            roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
-            roundTripShortInstantaneousWithSharesTolerance: 1e5,
-            roundTripShortMaturityWithSharesTolerance: 1e5
-        });
-
     /// @dev Instantiates the instance testing suite with the configuration.
-    constructor() InstanceTest(__testConfig) {}
+    constructor()
+        InstanceTest(
+            InstanceTestConfig({
+                name: "Hyperdrive",
+                kind: "ERC4626Hyperdrive",
+                decimals: 18,
+                baseTokenWhaleAccounts: baseTokenWhaleAccounts,
+                vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
+                baseToken: USDE,
+                vaultSharesToken: IERC20(address(SUSDE)),
+                shareTolerance: 1e3,
+                minimumShareReserves: 1e18,
+                minimumTransactionAmount: 1e15,
+                positionDuration: POSITION_DURATION,
+                fees: IHyperdrive.Fees({
+                    curve: 0,
+                    flat: 0,
+                    governanceLP: 0,
+                    governanceZombie: 0
+                }),
+                enableBaseDeposits: true,
+                enableShareDeposits: true,
+                enableBaseWithdraws: false,
+                enableShareWithdraws: true,
+                // NOTE: SUSDe currently has a cooldown on withdrawals which
+                // prevents users from withdrawing as base instantaneously. We still
+                // support withdrawing with base since the cooldown can be disabled
+                // in the future.
+                baseWithdrawError: abi.encodeWithSelector(
+                    OperationNotAllowed.selector
+                ),
+                isRebasing: false,
+                // NOTE: Base  withdrawals are disabled, so the tolerances are zero.
+                //
+                // The base test tolerances.
+                roundTripLpInstantaneousWithBaseTolerance: 0,
+                roundTripLpWithdrawalSharesWithBaseTolerance: 0,
+                roundTripLongInstantaneousWithBaseUpperBoundTolerance: 0,
+                roundTripLongInstantaneousWithBaseTolerance: 0,
+                roundTripLongMaturityWithBaseUpperBoundTolerance: 0,
+                roundTripLongMaturityWithBaseTolerance: 0,
+                roundTripShortInstantaneousWithBaseUpperBoundTolerance: 0,
+                roundTripShortInstantaneousWithBaseTolerance: 0,
+                roundTripShortMaturityWithBaseTolerance: 0,
+                // The share test tolerances.
+                closeLongWithSharesTolerance: 20,
+                closeShortWithSharesTolerance: 100,
+                roundTripLpInstantaneousWithSharesTolerance: 1e8,
+                roundTripLpWithdrawalSharesWithSharesTolerance: 1e8,
+                roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripLongInstantaneousWithSharesTolerance: 1e5,
+                roundTripLongMaturityWithSharesUpperBoundTolerance: 100,
+                roundTripLongMaturityWithSharesTolerance: 1e5,
+                roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripShortInstantaneousWithSharesTolerance: 1e5,
+                roundTripShortMaturityWithSharesTolerance: 1e5,
+                // The verification tolerances.
+                verifyDepositTolerance: 2,
+                verifyWithdrawalTolerance: 2
+            })
+        )
+    {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(20_335_384) {

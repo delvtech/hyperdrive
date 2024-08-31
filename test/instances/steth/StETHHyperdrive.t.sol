@@ -41,62 +41,65 @@ contract StETHHyperdriveTest is InstanceTest {
     address internal STETH_WHALE = 0x1982b2F5814301d4e9a8b0201555376e62F82428;
     address[] internal whaleAccounts = [STETH_WHALE];
 
-    // The configuration for the instance testing suite.
-    InstanceTestConfig internal __testConfig =
-        InstanceTestConfig({
-            name: "Hyperdrive",
-            kind: "StETHHyperdrive",
-            decimals: 18,
-            baseTokenWhaleAccounts: new address[](0),
-            vaultSharesTokenWhaleAccounts: whaleAccounts,
-            baseToken: IERC20(ETH),
-            vaultSharesToken: IERC20(LIDO),
-            shareTolerance: 1e5,
-            minimumShareReserves: 1e15,
-            minimumTransactionAmount: 1e15,
-            positionDuration: POSITION_DURATION,
-            enableBaseDeposits: true,
-            enableShareDeposits: true,
-            enableBaseWithdraws: false,
-            enableShareWithdraws: true,
-            baseWithdrawError: abi.encodeWithSelector(
-                IHyperdrive.UnsupportedToken.selector
-            ),
-            isRebasing: true,
-            fees: IHyperdrive.Fees({
-                curve: 0,
-                flat: 0,
-                governanceLP: 0,
-                governanceZombie: 0
-            }),
-            // NOTE: Base  withdrawals are disabled, so the tolerances are zero.
-            //
-            // The base test tolerances.
-            roundTripLpInstantaneousWithBaseTolerance: 0,
-            roundTripLpWithdrawalSharesWithBaseTolerance: 0,
-            roundTripLongInstantaneousWithBaseUpperBoundTolerance: 0,
-            roundTripLongInstantaneousWithBaseTolerance: 0,
-            roundTripLongMaturityWithBaseUpperBoundTolerance: 0,
-            roundTripLongMaturityWithBaseTolerance: 0,
-            roundTripShortInstantaneousWithBaseUpperBoundTolerance: 0,
-            roundTripShortInstantaneousWithBaseTolerance: 0,
-            roundTripShortMaturityWithBaseTolerance: 0,
-            // The share test tolerances.
-            closeLongWithSharesTolerance: 20,
-            closeShortWithSharesTolerance: 100,
-            roundTripLpInstantaneousWithSharesTolerance: 1e5,
-            roundTripLpWithdrawalSharesWithSharesTolerance: 1e5,
-            roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
-            roundTripLongInstantaneousWithSharesTolerance: 1e4,
-            roundTripLongMaturityWithSharesUpperBoundTolerance: 100,
-            roundTripLongMaturityWithSharesTolerance: 3e3,
-            roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
-            roundTripShortInstantaneousWithSharesTolerance: 1e3,
-            roundTripShortMaturityWithSharesTolerance: 1e3
-        });
-
     /// @dev Instantiates the instance testing suite with the configuration.
-    constructor() InstanceTest(__testConfig) {}
+    constructor()
+        InstanceTest(
+            InstanceTestConfig({
+                name: "Hyperdrive",
+                kind: "StETHHyperdrive",
+                decimals: 18,
+                baseTokenWhaleAccounts: new address[](0),
+                vaultSharesTokenWhaleAccounts: whaleAccounts,
+                baseToken: IERC20(ETH),
+                vaultSharesToken: IERC20(LIDO),
+                shareTolerance: 1e5,
+                minimumShareReserves: 1e15,
+                minimumTransactionAmount: 1e15,
+                positionDuration: POSITION_DURATION,
+                enableBaseDeposits: true,
+                enableShareDeposits: true,
+                enableBaseWithdraws: false,
+                enableShareWithdraws: true,
+                baseWithdrawError: abi.encodeWithSelector(
+                    IHyperdrive.UnsupportedToken.selector
+                ),
+                isRebasing: true,
+                fees: IHyperdrive.Fees({
+                    curve: 0,
+                    flat: 0,
+                    governanceLP: 0,
+                    governanceZombie: 0
+                }),
+                // NOTE: Base  withdrawals are disabled, so the tolerances are zero.
+                //
+                // The base test tolerances.
+                roundTripLpInstantaneousWithBaseTolerance: 0,
+                roundTripLpWithdrawalSharesWithBaseTolerance: 0,
+                roundTripLongInstantaneousWithBaseUpperBoundTolerance: 0,
+                roundTripLongInstantaneousWithBaseTolerance: 0,
+                roundTripLongMaturityWithBaseUpperBoundTolerance: 0,
+                roundTripLongMaturityWithBaseTolerance: 0,
+                roundTripShortInstantaneousWithBaseUpperBoundTolerance: 0,
+                roundTripShortInstantaneousWithBaseTolerance: 0,
+                roundTripShortMaturityWithBaseTolerance: 0,
+                // The share test tolerances.
+                closeLongWithSharesTolerance: 20,
+                closeShortWithSharesTolerance: 100,
+                roundTripLpInstantaneousWithSharesTolerance: 1e5,
+                roundTripLpWithdrawalSharesWithSharesTolerance: 1e5,
+                roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripLongInstantaneousWithSharesTolerance: 1e4,
+                roundTripLongMaturityWithSharesUpperBoundTolerance: 100,
+                roundTripLongMaturityWithSharesTolerance: 3e3,
+                roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripShortInstantaneousWithSharesTolerance: 1e3,
+                roundTripShortMaturityWithSharesTolerance: 1e3,
+                // The verification tolerances.
+                verifyDepositTolerance: 2,
+                verifyWithdrawalTolerance: 2
+            })
+        )
+    {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(17_376_154) {
@@ -139,7 +142,7 @@ contract StETHHyperdriveTest is InstanceTest {
         return
             address(
                 new StETHHyperdriveDeployerCoordinator(
-                    string.concat(__testConfig.name, "DeployerCoordinator"),
+                    string.concat(config.name, "DeployerCoordinator"),
                     _factory,
                     address(new StETHHyperdriveCoreDeployer()),
                     address(new StETHTarget0Deployer()),
@@ -161,144 +164,7 @@ contract StETHHyperdriveTest is InstanceTest {
     function getTokenBalances(
         address account
     ) internal view override returns (uint256, uint256) {
-        return (LIDO.balanceOf(account), LIDO.sharesOf(account));
-    }
-
-    /// @dev Verifies that deposit accounting is correct when opening positions.
-    function verifyDeposit(
-        address trader,
-        uint256 amountPaid,
-        bool asBase,
-        uint256 totalBaseBefore,
-        uint256 totalSharesBefore,
-        AccountBalances memory traderBalancesBefore,
-        AccountBalances memory hyperdriveBalancesBefore
-    ) internal view override {
-        if (asBase) {
-            // Ensure that the amount of pooled ether increased by the base paid.
-            assertEq(LIDO.getTotalPooledEther(), totalBaseBefore + amountPaid);
-
-            // Ensure that the ETH balances were updated correctly.
-            assertEq(
-                address(hyperdrive).balance,
-                hyperdriveBalancesBefore.ETHBalance
-            );
-            assertEq(bob.balance, traderBalancesBefore.ETHBalance - amountPaid);
-
-            // Ensure that the stETH balances were updated correctly.
-            assertApproxEqAbs(
-                LIDO.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.baseBalance + amountPaid,
-                1
-            );
-            assertEq(LIDO.balanceOf(trader), traderBalancesBefore.baseBalance);
-
-            // Ensure that the stETH shares were updated correctly.
-            uint256 expectedShares = amountPaid.mulDivDown(
-                totalSharesBefore,
-                totalBaseBefore
-            );
-            assertEq(LIDO.getTotalShares(), totalSharesBefore + expectedShares);
-            assertEq(
-                LIDO.sharesOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.sharesBalance + expectedShares
-            );
-            assertEq(LIDO.sharesOf(bob), traderBalancesBefore.sharesBalance);
-        } else {
-            // Ensure that the amount of pooled ether stays the same.
-            assertEq(LIDO.getTotalPooledEther(), totalBaseBefore);
-
-            // Ensure that the ETH balances were updated correctly.
-            assertEq(
-                address(hyperdrive).balance,
-                hyperdriveBalancesBefore.ETHBalance
-            );
-            assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-            // Ensure that the stETH balances were updated correctly.
-            assertApproxEqAbs(
-                LIDO.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.baseBalance + amountPaid,
-                1
-            );
-            assertApproxEqAbs(
-                LIDO.balanceOf(trader),
-                traderBalancesBefore.baseBalance - amountPaid,
-                1
-            );
-
-            // Ensure that the stETH shares were updated correctly.
-            uint256 expectedShares = amountPaid.mulDivDown(
-                totalSharesBefore,
-                totalBaseBefore
-            );
-            assertEq(LIDO.getTotalShares(), totalSharesBefore);
-            assertApproxEqAbs(
-                LIDO.sharesOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.sharesBalance + expectedShares,
-                1
-            );
-            assertApproxEqAbs(
-                LIDO.sharesOf(trader),
-                traderBalancesBefore.sharesBalance - expectedShares,
-                1
-            );
-        }
-    }
-
-    /// @dev Verifies that withdrawal accounting is correct when closing positions.
-    function verifyWithdrawal(
-        address trader,
-        uint256 baseProceeds,
-        bool asBase,
-        uint256 totalPooledEtherBefore,
-        uint256 totalSharesBefore,
-        AccountBalances memory traderBalancesBefore,
-        AccountBalances memory hyperdriveBalancesBefore
-    ) internal view override {
-        // Base withdraws are not supported for this instance.
-        if (asBase) {
-            revert IHyperdrive.UnsupportedToken();
-        }
-
-        // Ensure that the total pooled ether and shares stays the same.
-        assertEq(LIDO.getTotalPooledEther(), totalPooledEtherBefore);
-        assertApproxEqAbs(LIDO.getTotalShares(), totalSharesBefore, 1);
-
-        // Ensure that the ETH balances were updated correctly.
-        assertEq(
-            address(hyperdrive).balance,
-            hyperdriveBalancesBefore.ETHBalance
-        );
-        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-        // Ensure that the stETH balances were updated correctly.
-        assertApproxEqAbs(
-            LIDO.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.baseBalance - baseProceeds,
-            1
-        );
-        assertApproxEqAbs(
-            LIDO.balanceOf(trader),
-            traderBalancesBefore.baseBalance + baseProceeds,
-            1
-        );
-
-        // Ensure that the stETH shares were updated correctly.
-        uint256 expectedShares = baseProceeds.mulDivDown(
-            totalSharesBefore,
-            totalPooledEtherBefore
-        );
-        assertApproxEqAbs(
-            LIDO.sharesOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.sharesBalance - expectedShares,
-            1
-        );
-        assertApproxEqAbs(
-            LIDO.sharesOf(trader),
-            traderBalancesBefore.sharesBalance + expectedShares,
-            1
-        );
+        return (account.balance, LIDO.sharesOf(account));
     }
 
     /// Getters ///
