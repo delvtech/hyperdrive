@@ -193,8 +193,8 @@ task(
 
             // form target constructor args
             let targetArgs:
-                | [typeof poolConfig]
                 | [typeof poolConfig, `0x${string}`]
+                | [typeof poolConfig, `0x${string}`, `0x${string}`]
                 | [
                       typeof poolConfig,
                       {
@@ -204,6 +204,7 @@ task(
                           irm: Address;
                           lltv: bigint;
                       },
+                      `0x${string}`,
                   ] = [poolConfig];
 
             // add extra args if present
@@ -215,7 +216,7 @@ task(
             let isMorpho =
                 (await instanceContract.read.kind()) == "MorphoBlueHyperdrive";
             if (extras) {
-                targetArgs = [poolConfig, ...extras];
+                targetArgs = [poolConfig, factoryAddress, ...extras];
             } else if (isMorpho) {
                 let morphoInstanceContract = await hre.viem.getContractAt(
                     "IMorphoBlueHyperdrive",
@@ -231,6 +232,7 @@ task(
                         irm: await morphoInstanceContract.read.irm(),
                         lltv: await morphoInstanceContract.read.lltv(),
                     },
+                    factoryAddress,
                 ];
             }
 
@@ -265,6 +267,7 @@ task(
             let args = [
                 i.name,
                 poolConfig,
+                factoryAddress,
                 await ihyperdrive.read.target0(),
                 await ihyperdrive.read.target1(),
                 await ihyperdrive.read.target2(),
