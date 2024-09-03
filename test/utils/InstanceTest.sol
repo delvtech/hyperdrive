@@ -75,78 +75,82 @@ abstract contract InstanceTest is HyperdriveTest {
         ///      token. If it is, we have to handle balances and approvals
         ///      differently.
         bool isRebasing;
-        /// @dev The equality tolerance for the close long with shares test.
+        /// @dev The equality tolerance in wei for the close long with shares
+        ///      test.
         uint256 closeLongWithSharesTolerance;
-        /// @dev The equality tolerance for the close short with shares test.
+        /// @dev The equality tolerance in wei for the close short with shares
+        ///      test.
         uint256 closeShortWithSharesTolerance;
-        /// @dev The equality tolerance for the instantaneous LP with base test.
+        /// @dev The equality tolerance in wei for the instantaneous LP with
+        ///      base test.
         uint256 roundTripLpInstantaneousWithBaseTolerance;
-        /// @dev The equality tolerance for the instantaneous LP with shares test.
+        /// @dev The equality tolerance in wei for the instantaneous LP with
+        ///      shares test.
         uint256 roundTripLpInstantaneousWithSharesTolerance;
-        /// @dev The equality tolerance for the LP withdrawal shares with base
-        ///      test.
+        /// @dev The equality tolerance in wei for the LP withdrawal shares with
+        ///      base test.
         uint256 roundTripLpWithdrawalSharesWithBaseTolerance;
-        /// @dev The equality tolerance for the LP withdrawal shares with shares
-        ///      test.
+        /// @dev The equality tolerance in wei for the LP withdrawal shares with
+        ///      shares test.
         uint256 roundTripLpWithdrawalSharesWithSharesTolerance;
-        /// @dev The upper bound tolerance for the instantaneous long round trip
-        ///      with base test.
+        /// @dev The upper bound tolerance in wei for the instantaneous long
+        ///      round trip with base test.
         uint256 roundTripLongInstantaneousWithBaseUpperBoundTolerance;
-        /// @dev The equality tolerance for the instantaneous long round trip
-        ///      with base test.
+        /// @dev The equality tolerance in wei for the instantaneous long round
+        ///      trip with base test.
         uint256 roundTripLongInstantaneousWithBaseTolerance;
-        /// @dev The upper bound tolerance for the instantaneous long round trip
-        ///      with shares test.
+        /// @dev The upper bound tolerance in wei for the instantaneous long
+        ///      round trip with shares test.
         uint256 roundTripLongInstantaneousWithSharesUpperBoundTolerance;
-        /// @dev The equality tolerance for the instantaneous long round trip
-        ///      with shares test.
+        /// @dev The equality tolerance in wei for the instantaneous long round
+        ///      trip with shares test.
         uint256 roundTripLongInstantaneousWithSharesTolerance;
-        /// @dev The upper bound tolerance for the long at maturity round trip
-        ///      with base test.
+        /// @dev The upper bound tolerance in wei for the long at maturity round
+        ///      trip with base test.
         uint256 roundTripLongMaturityWithBaseUpperBoundTolerance;
-        /// @dev The equality tolerance for the long at maturity round trip
-        ///      with base test.
+        /// @dev The equality tolerance in wei for the long at maturity round
+        ///      trip with base test.
         uint256 roundTripLongMaturityWithBaseTolerance;
-        /// @dev The upper bound tolerance for the long at maturity round trip
-        ///      with shares test.
+        /// @dev The upper bound tolerance in wei for the long at maturity round
+        ///      trip with shares test.
         uint256 roundTripLongMaturityWithSharesUpperBoundTolerance;
-        /// @dev The equality tolerance for the long at maturity round trip
-        ///      with shares test.
+        /// @dev The equality tolerance in wei for the long at maturity round
+        ///      trip with shares test.
         uint256 roundTripLongMaturityWithSharesTolerance;
-        /// @dev The upper bound tolerance for the instantaneous short round trip
-        ///      with base test.
+        /// @dev The upper bound tolerance in wei for the instantaneous short
+        ///      round trip with base test.
         uint256 roundTripShortInstantaneousWithBaseUpperBoundTolerance;
-        /// @dev The equality tolerance for the instantaneous short round trip
-        ///      with base test.
+        /// @dev The equality tolerance in wei for the instantaneous short round
+        ///      trip with base test.
         uint256 roundTripShortInstantaneousWithBaseTolerance;
-        /// @dev The upper bound tolerance for the instantaneous short round trip
-        ///      with shares test.
+        /// @dev The upper bound tolerance in wei for the instantaneous short
+        ///      round trip with shares test.
         uint256 roundTripShortInstantaneousWithSharesUpperBoundTolerance;
-        /// @dev The equality tolerance for the instantaneous short round trip
-        ///      with shares test.
+        /// @dev The equality tolerance in wei for the instantaneous short round
+        ///      trip with shares test.
         uint256 roundTripShortInstantaneousWithSharesTolerance;
-        /// @dev The equality tolerance for the short at maturity round trip
-        ///      with base test.
+        /// @dev The equality tolerance in wei for the short at maturity round
+        ///      trip with base test.
         uint256 roundTripShortMaturityWithBaseTolerance;
-        /// @dev The equality tolerance for the short at maturity round trip
-        ///      with shares test.
+        /// @dev The equality tolerance in wei for the short at maturity round
+        ///      trip with shares test.
         uint256 roundTripShortMaturityWithSharesTolerance;
-        /// @dev The equality tolerance for `verifyDeposit`.
+        /// @dev The equality tolerance in wei for `verifyDeposit`.
         uint256 verifyDepositTolerance;
-        /// @dev The equality tolerance for `verifyWithdrawal`.
+        /// @dev The equality tolerance in wei for `verifyWithdrawal`.
         uint256 verifyWithdrawalTolerance;
     }
 
-    // Fixed rate used to configure market.
+    /// @dev Fixed rate used to configure market.
     uint256 internal constant FIXED_RATE = 0.05e18;
 
-    // Default deployment constants.
+    /// @dev Default deployment constants.
     bytes32 private constant DEFAULT_DEPLOYMENT_ID =
         bytes32(uint256(0xdeadbeef));
     bytes32 private constant DEFAULT_DEPLOYMENT_SALT =
         bytes32(uint256(0xdeadbabe));
 
-    // The configuration for the Instance testing suite.
+    /// @dev The configuration for the Instance testing suite.
     InstanceTestConfig internal config;
 
     /// @dev The configuration for the pool. This allows test authors to specify
@@ -154,13 +158,13 @@ abstract contract InstanceTest is HyperdriveTest {
     ///      parameters will be overridden by factory parameters.
     IHyperdrive.PoolDeployConfig internal poolConfig;
 
-    // The Hyperdrive factory.
+    /// @dev The Hyperdrive factory.
     IHyperdriveFactory internal factory;
 
-    // The address of the deployer coordinator contract.
+    /// @dev The address of the deployer coordinator contract.
     address internal deployerCoordinator;
 
-    // Flag for denoting if the base token is ETH.
+    /// @dev Flag for denoting if the base token is ETH.
     bool internal immutable isBaseETH;
 
     /// @dev Constructor for the Instance testing suite.
