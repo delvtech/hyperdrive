@@ -31,24 +31,24 @@ contract EETHHyperdriveTest is InstanceTest {
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
 
-    // The mainnet liquidity pool.
+    /// @dev The mainnet liquidity pool.
     ILiquidityPool internal constant POOL =
         ILiquidityPool(0x308861A430be4cce5502d0A12724771Fc6DaF216);
 
-    // The mainnet EETH token.
+    /// @dev The mainnet EETH token.
     IEETH internal constant EETH =
         IEETH(0x35fA164735182de50811E8e2E824cFb9B6118ac2);
 
-    // The mainnet address that has the ability to call the rebase function.
+    /// @dev The mainnet address that has the ability to call the rebase function.
     address internal constant MEMBERSHIP_MANAGER =
         0x3d320286E014C3e1ce99Af6d6B00f0C1D63E3000;
 
-    // Whale accounts.
+    /// @dev Whale accounts.
     address internal EETH_TOKEN_WHALE =
         0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee;
     address[] internal EETHTokenWhaleAccounts = [EETH_TOKEN_WHALE];
 
-    /// @dev Instantiates the instance testing suite with the configuration.
+    /// @notice Instantiates the instance testing suite with the configuration.
     constructor()
         InstanceTest(
             InstanceTestConfig({
@@ -108,7 +108,7 @@ contract EETHHyperdriveTest is InstanceTest {
         )
     {}
 
-    /// @dev Forge function that is invoked to setup the testing environment.
+    /// @notice Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(20_362_343) {
         // Invoke the instance testing suite setup.
         super.setUp();
@@ -122,7 +122,9 @@ contract EETHHyperdriveTest is InstanceTest {
         return new bytes(0);
     }
 
-    /// @dev Converts base amount to the equivalent amount in shares.
+    /// @dev Converts base amount to the equivalent about in shares.
+    /// @param baseAmount The base amount.
+    /// @return The converted share amount.
     function convertToShares(
         uint256 baseAmount
     ) internal view override returns (uint256) {
@@ -135,6 +137,8 @@ contract EETHHyperdriveTest is InstanceTest {
     }
 
     /// @dev Converts share amount to the equivalent amount in base.
+    /// @param shareAmount The share amount.
+    /// @return The converted base amount.
     function convertToBase(
         uint256 shareAmount
     ) internal view override returns (uint256) {
@@ -146,8 +150,9 @@ contract EETHHyperdriveTest is InstanceTest {
             );
     }
 
-    /// @dev Deploys the Morpho Blue deployer coordinator contract.
+    /// @dev Deploys the EETH deployer coordinator contract.
     /// @param _factory The address of the Hyperdrive factory.
+    /// @return The coordinator address.
     function deployCoordinator(
         address _factory
     ) internal override returns (address) {
@@ -169,11 +174,16 @@ contract EETHHyperdriveTest is InstanceTest {
     }
 
     /// @dev Fetches the total supply of the base and share tokens.
+    /// @return The total supply of base.
+    /// @return The total supply of vault shares.
     function getSupply() internal view override returns (uint256, uint256) {
         return (address(POOL).balance, EETH.totalShares());
     }
 
     /// @dev Fetches the token balance information of an account.
+    /// @param account The account to query.
+    /// @return The balance of base.
+    /// @return The balance of vault shares.
     function getTokenBalances(
         address account
     ) internal view override returns (uint256, uint256) {
@@ -182,6 +192,7 @@ contract EETHHyperdriveTest is InstanceTest {
 
     /// Getters ///
 
+    /// @dev Test the instances getters.
     function test_getters() external view {
         assertEq(
             IEETHHyperdrive(address(hyperdrive)).liquidityPool(),
@@ -191,6 +202,9 @@ contract EETHHyperdriveTest is InstanceTest {
 
     /// Price Per Share ///
 
+    /// @dev Fuzz test that verifies that the vault share price is the price
+    ///      that dictates the conversion between base and shares.
+    /// @param basePaid The fuzz parameter for the base paid.
     function test__pricePerVaultShare(uint256 basePaid) external {
         // Ensure that the share price is the expected value.
         (, uint256 totalSupplyShares) = getSupply();
@@ -223,6 +237,9 @@ contract EETHHyperdriveTest is InstanceTest {
 
     /// Helpers ///
 
+    /// @dev Advance time and accrue interest.
+    /// @param timeDelta The time to advance.
+    /// @param variableRate The variable rate.
     function advanceTime(
         uint256 timeDelta,
         int256 variableRate

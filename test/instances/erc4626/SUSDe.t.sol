@@ -16,18 +16,18 @@ contract SUSDeHyperdriveTest is ERC4626HyperdriveInstanceTest {
     using Lib for *;
     using stdStorage for StdStorage;
 
-    /// The cooldown error thrown by SUSDe on withdraw.
+    /// @dev The cooldown error thrown by SUSDe on withdraw.
     error OperationNotAllowed();
 
-    // The staked USDe contract.
+    /// @dev The staked USDe contract.
     IERC4626 internal constant SUSDE =
         IERC4626(0x9D39A5DE30e57443BfF2A8307A4256c8797A3497);
 
-    // The USDe contract.
+    /// @dev The USDe contract.
     IERC20 internal constant USDE =
         IERC20(0x4c9EDD5852cd905f086C759E8383e09bff1E68B3);
 
-    // Whale accounts.
+    /// @dev Whale accounts.
     address internal USDE_TOKEN_WHALE =
         address(0x42862F48eAdE25661558AFE0A630b132038553D0);
     address[] internal baseTokenWhaleAccounts = [USDE_TOKEN_WHALE];
@@ -35,7 +35,7 @@ contract SUSDeHyperdriveTest is ERC4626HyperdriveInstanceTest {
         address(0x4139cDC6345aFFbaC0692b43bed4D059Df3e6d65);
     address[] internal vaultSharesTokenWhaleAccounts = [SUSDE_TOKEN_WHALE];
 
-    /// @dev Instantiates the instance testing suite with the configuration.
+    /// @notice Instantiates the instance testing suite with the configuration.
     constructor()
         InstanceTest(
             InstanceTestConfig({
@@ -99,7 +99,7 @@ contract SUSDeHyperdriveTest is ERC4626HyperdriveInstanceTest {
         )
     {}
 
-    /// @dev Forge function that is invoked to setup the testing environment.
+    /// @notice Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(20_335_384) {
         // Invoke the Instance testing suite setup.
         super.setUp();

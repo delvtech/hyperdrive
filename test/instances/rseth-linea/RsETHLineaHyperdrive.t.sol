@@ -26,21 +26,21 @@ contract RsETHLineaHyperdriveTest is InstanceTest {
     using Lib for *;
     using stdStorage for StdStorage;
 
-    // The Kelp DAO deposit contract on Linea. The rsETH/ETH price is used as
-    // the vault share price.
+    /// @dev The Kelp DAO deposit contract on Linea. The rsETH/ETH price is used
+    ///      as the vault share price.
     IRSETHPoolV2 internal constant RSETH_POOL =
         IRSETHPoolV2(0x057297e44A3364139EDCF3e1594d6917eD7688c2);
 
-    // The address of wrsETH on Linea.
+    /// @dev The address of wrsETH on Linea.
     IERC20 internal constant WRSETH =
         IERC20(0xD2671165570f41BBB3B0097893300b6EB6101E6C);
 
-    // Whale accounts.
+    /// @dev Whale accounts.
     address internal WRSETH_WHALE =
         address(0x4DCb388488622e47683EAd1a147947140a31e485);
     address[] internal vaultSharesTokenWhaleAccounts = [WRSETH_WHALE];
 
-    /// @dev Instantiates the instance testing suite with the configuration.
+    /// @notice Instantiates the instance testing suite with the configuration.
     constructor()
         InstanceTest(
             InstanceTestConfig({
@@ -100,7 +100,7 @@ contract RsETHLineaHyperdriveTest is InstanceTest {
         )
     {}
 
-    /// @dev Forge function that is invoked to setup the testing environment.
+    /// @notice Forge function that is invoked to setup the testing environment.
     function setUp() public override __linea_fork(8_431_727) {
         // Invoke the instance testing suite setup.
         super.setUp();

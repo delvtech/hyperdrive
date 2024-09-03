@@ -29,11 +29,11 @@ contract LsETHHyperdriveTest is InstanceTest {
     using Lib for *;
     using stdStorage for StdStorage;
 
-    // The LsETH token contract.
+    /// @dev The LsETH token contract.
     IRiverV1 internal constant RIVER =
         IRiverV1(0x8c1BEd5b9a0928467c9B1341Da1D7BD5e10b6549);
 
-    // Whale accounts.
+    /// @dev Whale accounts.
     address internal constant LSETH_WHALE =
         0xF047ab4c75cebf0eB9ed34Ae2c186f3611aEAfa6;
     address internal constant LSETH_WHALE_2 =
@@ -46,7 +46,7 @@ contract LsETHHyperdriveTest is InstanceTest {
         LSETH_WHALE_3
     ];
 
-    /// @dev Instantiates the instance testing suite with the configuration.
+    /// @notice Instantiates the instance testing suite with the configuration.
     constructor()
         InstanceTest(
             InstanceTestConfig({
@@ -106,8 +106,7 @@ contract LsETHHyperdriveTest is InstanceTest {
         )
     {}
 
-    /// @dev Forge function that is invoked to setup the testing environment.
-
+    /// @notice Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(19_429_100) {
         // Invoke the instance testing suite setup.
         super.setUp();
@@ -123,6 +122,7 @@ contract LsETHHyperdriveTest is InstanceTest {
 
     /// @dev Deploys the LsETH deployer coordinator contract.
     /// @param _factory The address of the Hyperdrive factory contract.
+    /// @return The coordinator address.
     function deployCoordinator(
         address _factory
     ) internal override returns (address) {
@@ -143,7 +143,9 @@ contract LsETHHyperdriveTest is InstanceTest {
             );
     }
 
-    /// @dev Converts base amount to the equivalent amount in LsETH.
+    /// @dev Converts base amount to the equivalent about in shares.
+    /// @param baseAmount The base amount.
+    /// @return The converted share amount.
     function convertToShares(
         uint256 baseAmount
     ) internal view override returns (uint256) {
@@ -151,7 +153,9 @@ contract LsETHHyperdriveTest is InstanceTest {
         return RIVER.sharesFromUnderlyingBalance(baseAmount);
     }
 
-    /// @dev Converts base amount to the equivalent amount in ETH.
+    /// @dev Converts share amount to the equivalent amount in base.
+    /// @param shareAmount The share amount.
+    /// @return The converted base amount.
     function convertToBase(
         uint256 shareAmount
     ) internal view override returns (uint256) {
@@ -160,11 +164,16 @@ contract LsETHHyperdriveTest is InstanceTest {
     }
 
     /// @dev Fetches the total supply of the base and share tokens.
+    /// @return The total supply of base.
+    /// @return The total supply of vault shares.
     function getSupply() internal view override returns (uint256, uint256) {
         return (address(RIVER).balance, RIVER.totalSupply());
     }
 
     /// @dev Fetches the token balance information of an account.
+    /// @param account The account to query.
+    /// @return The balance of base.
+    /// @return The balance of vault shares.
     function getTokenBalances(
         address account
     ) internal view override returns (uint256, uint256) {
@@ -173,6 +182,7 @@ contract LsETHHyperdriveTest is InstanceTest {
 
     /// Getters ///
 
+    /// @dev Test for the additional getters.
     function test_getters() external view {
         (, uint256 totalShares) = getTokenBalances(address(hyperdrive));
         assertEq(hyperdrive.totalShares(), totalShares);
@@ -180,6 +190,9 @@ contract LsETHHyperdriveTest is InstanceTest {
 
     /// Price Per Share ///
 
+    /// @dev Fuzz test that verifies that the vault share price is the price
+    ///      that dictates the conversion between base and shares.
+    /// @param basePaid the fuzz parameter for the base paid.
     function test_pricePerVaultShare(uint256 basePaid) external {
         // Ensure the share prices are equal upon market inception.
         uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
@@ -204,6 +217,9 @@ contract LsETHHyperdriveTest is InstanceTest {
 
     /// Helpers ///
 
+    /// @dev Advance time and accrue interest.
+    /// @param timeDelta The time to advance.
+    /// @param variableRate The variable rate.
     function advanceTime(
         uint256 timeDelta,
         int256 variableRate
@@ -245,6 +261,9 @@ contract LsETHHyperdriveTest is InstanceTest {
         );
     }
 
+    /// @dev Test that ensures that advance time works correctly by advancing
+    ///      time and ensuring the the ending vault share price was updated
+    ///      correctly.
     function test_advanced_time() external {
         vm.stopPrank();
 

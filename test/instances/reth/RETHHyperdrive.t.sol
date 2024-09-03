@@ -27,9 +27,9 @@ contract RETHHyperdriveTest is InstanceTest {
     using Lib for *;
     using stdStorage for StdStorage;
 
-    // Rocket Network contracts can be upgraded and addresses changed.
-    // We can safely assume these addresses are accurate because
-    // this testing suite is forked from block 19429100.
+    // @dev Rocket Network contracts can be upgraded and addresses changed. We
+    ///     can safely assume these addresses are accurate because this testing
+    ///     suite is forked from block 19429100.
     IRocketStorage internal constant ROCKET_STORAGE =
         IRocketStorage(0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46);
     IRocketTokenRETH internal constant rocketTokenRETH =
@@ -41,11 +41,11 @@ contract RETHHyperdriveTest is InstanceTest {
     address internal constant rocketVault =
         address(0x3bDC69C4E5e13E52A65f5583c23EFB9636b469d6);
 
-    // Whale accounts.
+    /// @dev Whale accounts.
     address internal RETH_WHALE = 0xCc9EE9483f662091a1de4795249E24aC0aC2630f;
     address[] internal whaleAccounts = [RETH_WHALE];
 
-    /// @dev Instantiates the instance testing suite with the configuration.
+    /// @notice Instantiates the instance testing suite with the configuration.
     constructor()
         InstanceTest(
             InstanceTestConfig({
@@ -101,7 +101,7 @@ contract RETHHyperdriveTest is InstanceTest {
         )
     {}
 
-    /// @dev Forge function that is invoked to setup the testing environment.
+    /// @notice Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(19_429_100) {
         // Give the rETH contract ETH to mimic adequate withdrawable liquidity.
         vm.deal(address(rocketTokenRETH), 50_000e18);
@@ -118,7 +118,9 @@ contract RETHHyperdriveTest is InstanceTest {
         return new bytes(0);
     }
 
-    /// @dev Converts base amount to the equivalent amount in rETH.
+    /// @dev Converts base amount to the equivalent about in rETH.
+    /// @param baseAmount The base amount.
+    /// @return The converted share amount.
     function convertToShares(
         uint256 baseAmount
     ) internal view override returns (uint256) {
@@ -127,14 +129,18 @@ contract RETHHyperdriveTest is InstanceTest {
     }
 
     /// @dev Converts share amount to the equivalent amount in ETH.
+    /// @param shareAmount The share amount.
+    /// @return The converted base amount.
     function convertToBase(
-        uint256 baseAmount
+        uint256 shareAmount
     ) internal view override returns (uint256) {
         // Rocket Pool has a built-in function for computing price in terms of base.
-        return rocketTokenRETH.getEthValue(baseAmount);
+        return rocketTokenRETH.getEthValue(shareAmount);
     }
 
     /// @dev Deploys the rETH deployer coordinator contract.
+    /// @param _factory The address of the Hyperdrive factory contract.
+    /// @return The coordinator address.
     function deployCoordinator(
         address _factory
     ) internal override returns (address) {
@@ -156,6 +162,8 @@ contract RETHHyperdriveTest is InstanceTest {
     }
 
     /// @dev Fetches the total supply of the base and share tokens.
+    /// @return The total supply of base.
+    /// @return The total supply of vault shares.
     function getSupply() internal view override returns (uint256, uint256) {
         return (
             rocketVault.balance + address(rocketTokenRETH).balance,
@@ -164,6 +172,9 @@ contract RETHHyperdriveTest is InstanceTest {
     }
 
     /// @dev Fetches the token balance information of an account.
+    /// @param account The account to query.
+    /// @return The balance of base.
+    /// @return The balance of vault shares.
     function getTokenBalances(
         address account
     ) internal view override returns (uint256, uint256) {
@@ -172,6 +183,7 @@ contract RETHHyperdriveTest is InstanceTest {
 
     /// Getters ///
 
+    /// @dev Test the instances getters.
     function test_getters() external view {
         (, uint256 totalShares) = getTokenBalances(address(hyperdrive));
         assertEq(hyperdrive.totalShares(), totalShares);
@@ -179,6 +191,9 @@ contract RETHHyperdriveTest is InstanceTest {
 
     /// Price Per Share ///
 
+    /// @dev Fuzz test that verifies that the vault share price is the price
+    ///      that dictates the conversion between base and shares.
+    /// @param basePaid the fuzz parameter for the base paid.
     function test_pricePerVaultShare(uint256 basePaid) external {
         // Ensure the share prices are equal upon market inception.
         uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
@@ -205,6 +220,9 @@ contract RETHHyperdriveTest is InstanceTest {
 
     /// Helpers ///
 
+    /// @dev Advance time and accrue interest.
+    /// @param timeDelta The time to advance.
+    /// @param variableRate The variable rate.
     function advanceTime(
         uint256 timeDelta,
         int256 variableRate
@@ -227,6 +245,8 @@ contract RETHHyperdriveTest is InstanceTest {
         vm.stopPrank();
     }
 
+    /// @dev Tests that advance time works correctly by advancing the time and
+    ///      ensuring that the vault share price was updated correctly.
     function test_advanced_time() external {
         vm.stopPrank();
 

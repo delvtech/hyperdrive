@@ -32,20 +32,20 @@ contract EzETHLineaHyperdriveTest is InstanceTest {
     using Lib for *;
     using stdStorage for StdStorage;
 
-    // The Linea xRenzoDeposit contract.
+    /// @dev The Linea xRenzoDeposit contract.
     IXRenzoDeposit internal constant X_RENZO_DEPOSIT =
         IXRenzoDeposit(0x4D7572040B84b41a6AA2efE4A93eFFF182388F88);
 
-    // The address of the ezETH on Linea.
+    /// @dev The address of the ezETH on Linea.
     IERC20 internal constant EZETH =
         IERC20(0x2416092f143378750bb29b79eD961ab195CcEea5);
 
-    // Whale accounts.
+    /// @dev Whale accounts.
     address internal EZETH_WHALE =
         address(0x0684FC172a0B8e6A65cF4684eDb2082272fe9050);
     address[] internal vaultSharesTokenWhaleAccounts = [EZETH_WHALE];
 
-    /// @dev Instantiates the instance testing suite with the configuration.
+    /// @notice Instantiates the instance testing suite with the configuration.
     constructor()
         InstanceTest(
             InstanceTestConfig({
@@ -105,7 +105,7 @@ contract EzETHLineaHyperdriveTest is InstanceTest {
         )
     {}
 
-    /// @dev Forge function that is invoked to setup the testing environment.
+    /// @notice Forge function that is invoked to setup the testing environment.
     function setUp() public override __linea_fork(8_431_727) {
         // Invoke the instance testing suite setup.
         super.setUp();
@@ -122,6 +122,8 @@ contract EzETHLineaHyperdriveTest is InstanceTest {
     }
 
     /// @dev Converts base amount to the equivalent about in shares.
+    /// @param baseAmount The base amount.
+    /// @return The converted share amount.
     function convertToShares(
         uint256 baseAmount
     ) internal view override returns (uint256) {
@@ -130,6 +132,8 @@ contract EzETHLineaHyperdriveTest is InstanceTest {
     }
 
     /// @dev Converts share amount to the equivalent amount in base.
+    /// @param shareAmount The share amount.
+    /// @return The converted base amount.
     function convertToBase(
         uint256 shareAmount
     ) internal view override returns (uint256) {
@@ -139,6 +143,7 @@ contract EzETHLineaHyperdriveTest is InstanceTest {
 
     /// @dev Deploys the ezETH Linea deployer coordinator contract.
     /// @param _factory The address of the Hyperdrive factory.
+    /// @return The coordinator address.
     function deployCoordinator(
         address _factory
     ) internal override returns (address) {
@@ -162,11 +167,16 @@ contract EzETHLineaHyperdriveTest is InstanceTest {
     }
 
     /// @dev Fetches the total supply of the base and share tokens.
+    /// @return The total supply of base.
+    /// @return The total supply of vault shares.
     function getSupply() internal view override returns (uint256, uint256) {
         return (0, EZETH.totalSupply());
     }
 
     /// @dev Fetches the token balance information of an account.
+    /// @param account The account to query.
+    /// @return The balance of base.
+    /// @return The balance of vault shares.
     function getTokenBalances(
         address account
     ) internal view override returns (uint256, uint256) {
@@ -175,6 +185,7 @@ contract EzETHLineaHyperdriveTest is InstanceTest {
 
     /// Getters ///
 
+    /// @dev Test for the additional getters.
     function test_getters() external view {
         assertEq(
             address(IEzETHLineaHyperdrive(address(hyperdrive)).xRenzoDeposit()),
@@ -186,6 +197,9 @@ contract EzETHLineaHyperdriveTest is InstanceTest {
 
     /// Helpers ///
 
+    /// @dev Advance time and accrue interest.
+    /// @param timeDelta The time to advance.
+    /// @param variableRate The variable rate.
     function advanceTime(
         uint256 timeDelta,
         int256 variableRate

@@ -29,19 +29,20 @@ contract StETHHyperdriveTest is InstanceTest {
     using Lib for *;
     using stdStorage for StdStorage;
 
-    // The Lido storage location that tracks buffered ether reserves. We can
-    // simulate the accrual of interest by updating this value.
+    /// @dev The Lido storage location that tracks buffered ether reserves. We
+    ///      can simulate the accrual of interest by updating this value.
     bytes32 internal constant BUFFERED_ETHER_POSITION =
         keccak256("lido.Lido.bufferedEther");
 
+    /// @dev The stETH contract.
     ILido internal constant LIDO =
         ILido(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
 
-    // Whale accounts.
+    /// @dev Whale accounts.
     address internal STETH_WHALE = 0x1982b2F5814301d4e9a8b0201555376e62F82428;
     address[] internal whaleAccounts = [STETH_WHALE];
 
-    /// @dev Instantiates the instance testing suite with the configuration.
+    /// @notice Instantiates the instance testing suite with the configuration.
     constructor()
         InstanceTest(
             InstanceTestConfig({
@@ -101,7 +102,7 @@ contract StETHHyperdriveTest is InstanceTest {
         )
     {}
 
-    /// @dev Forge function that is invoked to setup the testing environment.
+    /// @notice Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(17_376_154) {
         // Invoke the instance testing suite setup.
         super.setUp();
@@ -116,6 +117,8 @@ contract StETHHyperdriveTest is InstanceTest {
     }
 
     /// @dev Converts base amount to the equivalent about in stETH.
+    /// @param baseAmount The base amount.
+    /// @return The converted share amount.
     function convertToShares(
         uint256 baseAmount
     ) internal view override returns (uint256) {
@@ -126,6 +129,8 @@ contract StETHHyperdriveTest is InstanceTest {
     }
 
     /// @dev Converts share amount to the equivalent amount in ETH.
+    /// @param shareAmount The share amount.
+    /// @return The converted base amount.
     function convertToBase(
         uint256 shareAmount
     ) internal view override returns (uint256) {
@@ -135,6 +140,7 @@ contract StETHHyperdriveTest is InstanceTest {
 
     /// @dev Deploys the rETH deployer coordinator contract.
     /// @param _factory The address of the Hyperdrive factory.
+    /// @return The coordinator address.
     function deployCoordinator(
         address _factory
     ) internal override returns (address) {
@@ -156,11 +162,16 @@ contract StETHHyperdriveTest is InstanceTest {
     }
 
     /// @dev Fetches the total supply of the base and share tokens.
+    /// @return The total supply of base.
+    /// @return The total supply of vault shares.
     function getSupply() internal view override returns (uint256, uint256) {
         return (LIDO.getTotalPooledEther(), LIDO.getTotalShares());
     }
 
     /// @dev Fetches the token balance information of an account.
+    /// @param account The account to query.
+    /// @return The balance of base.
+    /// @return The balance of vault shares.
     function getTokenBalances(
         address account
     ) internal view override returns (uint256, uint256) {
@@ -169,6 +180,7 @@ contract StETHHyperdriveTest is InstanceTest {
 
     /// Getters ///
 
+    /// @dev Test the instances getters.
     function test_getters() external view {
         (, uint256 totalShares) = getTokenBalances(address(hyperdrive));
         assertEq(hyperdrive.totalShares(), totalShares);
@@ -176,6 +188,9 @@ contract StETHHyperdriveTest is InstanceTest {
 
     /// Price Per Share ///
 
+    /// @dev Fuzz test that verifies that the vault share price is the price
+    ///      that dictates the conversion between base and shares.
+    /// @param basePaid the fuzz parameter for the base paid.
     function test__pricePerVaultShare(uint256 basePaid) external {
         // Ensure that the share price is the expected value.
         uint256 totalPooledEther = LIDO.getTotalPooledEther();
@@ -202,6 +217,9 @@ contract StETHHyperdriveTest is InstanceTest {
 
     /// Helpers ///
 
+    /// @dev Advance time and accrue interest.
+    /// @param timeDelta The time to advance.
+    /// @param variableRate The variable rate.
     function advanceTime(
         uint256 timeDelta,
         int256 variableRate

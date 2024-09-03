@@ -24,15 +24,15 @@ contract stUSDHyperdriveTest is ERC4626HyperdriveInstanceTest {
     using Lib for *;
     using stdStorage for StdStorage;
 
-    // The USDA contract.
+    /// @dev The USDA contract.
     IERC20 internal constant USDA =
         IERC20(0x0000206329b97DB379d5E1Bf586BbDB969C63274);
 
-    // The stUSD contract.
+    /// @dev The stUSD contract.
     ISTUSD internal constant STUSD =
         ISTUSD(0x0022228a2cc5E7eF0274A7Baa600d44da5aB5776);
 
-    // Whale accounts.
+    /// @dev Whale accounts.
     address internal USDA_TOKEN_WHALE =
         address(0xEc0B13b2271E212E1a74D55D51932BD52A002961);
     address[] internal baseTokenWhaleAccounts = [USDA_TOKEN_WHALE];
@@ -40,7 +40,7 @@ contract stUSDHyperdriveTest is ERC4626HyperdriveInstanceTest {
         address(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
     address[] internal vaultSharesTokenWhaleAccounts = [STUSD_TOKEN_WHALE];
 
-    /// @dev Instantiates the instance testing suite with the configuration.
+    /// @notice Instantiates the instance testing suite with the configuration.
     constructor()
         InstanceTest(
             InstanceTestConfig({
@@ -96,7 +96,7 @@ contract stUSDHyperdriveTest is ERC4626HyperdriveInstanceTest {
         )
     {}
 
-    /// @dev Forge function that is invoked to setup the testing environment.
+    /// @notice Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(20_643_578) {
         // Invoke the Instance testing suite setup.
         super.setUp();

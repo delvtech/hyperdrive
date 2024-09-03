@@ -33,25 +33,25 @@ contract ChainlinkHyperdriveTest is InstanceTest {
     using Lib for *;
     using stdStorage for StdStorage;
 
-    // Chainlink's proxy for the wstETH-ETH reference rate on Gnosis Chain.
+    /// @dev Chainlink's proxy for the wstETH-ETH reference rate on Gnosis Chain.
     IChainlinkAggregatorV3 internal constant CHAINLINK_AGGREGATOR_PROXY =
         IChainlinkAggregatorV3(0x0064AC007fF665CF8D0D3Af5E0AD1c26a3f853eA);
 
-    // The underlying aggregator used Chainlink's by Chainlink's proxy on Gnosis
-    // chain.
+    /// @dev The underlying aggregator used Chainlink's by Chainlink's proxy on
+    ///      Gnosis chain.
     address internal constant CHAINLINK_AGGREGATOR =
         address(0x6dcF8CE1982Fc71E7128407c7c6Ce4B0C1722F55);
 
-    // The address of the wstETH token on Gnosis Chain.
+    /// @dev The address of the wstETH token on Gnosis Chain.
     IERC20 internal constant WSTETH =
         IERC20(0x6C76971f98945AE98dD7d4DFcA8711ebea946eA6);
 
-    // The wstETH Whale accounts.
+    /// @dev The wstETH Whale accounts.
     address internal constant WSTETH_WHALE =
         address(0x458cD345B4C05e8DF39d0A07220feb4Ec19F5e6f);
     address[] internal vaultSharesTokenWhaleAccounts = [WSTETH_WHALE];
 
-    /// @dev Instantiates the Instance testing suite with the configuration.
+    /// @notice Instantiates the Instance testing suite with the configuration.
     constructor()
         InstanceTest(
             InstanceTestConfig({
@@ -112,7 +112,7 @@ contract ChainlinkHyperdriveTest is InstanceTest {
         )
     {}
 
-    /// @dev Forge function that is invoked to setup the testing environment.
+    /// @notice Forge function that is invoked to setup the testing environment.
     function setUp() public override __gnosis_chain_fork(35336446) {
         // Invoke the Instance testing suite setup.
         super.setUp();
@@ -128,6 +128,8 @@ contract ChainlinkHyperdriveTest is InstanceTest {
     }
 
     /// @dev Converts base amount to the equivalent about in shares.
+    /// @param baseAmount The base amount.
+    /// @return The converted share amount.
     function convertToShares(
         uint256 baseAmount
     ) internal view override returns (uint256) {
@@ -139,6 +141,8 @@ contract ChainlinkHyperdriveTest is InstanceTest {
     }
 
     /// @dev Converts share amount to the equivalent amount in base.
+    /// @param shareAmount The share amount.
+    /// @return The converted base amount.
     function convertToBase(
         uint256 shareAmount
     ) internal view override returns (uint256) {
@@ -151,6 +155,7 @@ contract ChainlinkHyperdriveTest is InstanceTest {
 
     /// @dev Deploys the Chainlink deployer coordinator contract.
     /// @param _factory The address of the Hyperdrive factory.
+    /// @return The coordinator address.
     function deployCoordinator(
         address _factory
     ) internal override returns (address) {
@@ -171,11 +176,16 @@ contract ChainlinkHyperdriveTest is InstanceTest {
     }
 
     /// @dev Fetches the total supply of the base and share tokens.
+    /// @return The total supply of base.
+    /// @return The total supply of vault shares.
     function getSupply() internal view override returns (uint256, uint256) {
         return (0, WSTETH.totalSupply());
     }
 
     /// @dev Fetches the token balance information of an account.
+    /// @param account The account to query.
+    /// @return The balance of base.
+    /// @return The balance of vault shares.
     function getTokenBalances(
         address account
     ) internal view override returns (uint256, uint256) {
@@ -184,6 +194,7 @@ contract ChainlinkHyperdriveTest is InstanceTest {
 
     /// Getters ///
 
+    /// @dev Test the instances getters.
     function test_getters() external view {
         assertEq(
             address(IChainlinkHyperdrive(address(hyperdrive)).aggregator()),
@@ -195,6 +206,9 @@ contract ChainlinkHyperdriveTest is InstanceTest {
 
     /// Helpers ///
 
+    /// @dev Advance time and accrue interest.
+    /// @param timeDelta The time to advance.
+    /// @param variableRate The variable rate.
     function advanceTime(
         uint256 timeDelta,
         int256 variableRate

@@ -16,15 +16,15 @@ contract sxDaiHyperdriveTest is ERC4626HyperdriveInstanceTest {
     using Lib for *;
     using stdStorage for StdStorage;
 
-    // The wxDai contract.
+    /// @dev The wxDai contract.
     IERC20 internal constant WXDAI =
         IERC20(0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d);
 
-    // The sxDai contract.
+    /// @dev The sxDai contract.
     IERC4626 internal constant SXDAI =
         IERC4626(0xaf204776c7245bF4147c2612BF6e5972Ee483701);
 
-    // Whale accounts.
+    /// @dev Whale accounts.
     address internal WXDAI_TOKEN_WHALE =
         address(0xd0Dd6cEF72143E22cCED4867eb0d5F2328715533);
     address[] internal baseTokenWhaleAccounts = [WXDAI_TOKEN_WHALE];
@@ -32,7 +32,7 @@ contract sxDaiHyperdriveTest is ERC4626HyperdriveInstanceTest {
         address(0x7a5c3860a77a8DC1b225BD46d0fb2ac1C6D191BC);
     address[] internal vaultSharesTokenWhaleAccounts = [SXDAI_TOKEN_WHALE];
 
-    /// @dev Instantiates the instance testing suite with the configuration.
+    /// @notice Instantiates the instance testing suite with the configuration.
     constructor()
         InstanceTest(
             InstanceTestConfig({
@@ -88,7 +88,7 @@ contract sxDaiHyperdriveTest is ERC4626HyperdriveInstanceTest {
         )
     {}
 
-    /// @dev Forge function that is invoked to setup the testing environment.
+    /// @notice Forge function that is invoked to setup the testing environment.
     function setUp() public override __gnosis_chain_fork(35_681_086) {
         // Invoke the Instance testing suite setup.
         super.setUp();
