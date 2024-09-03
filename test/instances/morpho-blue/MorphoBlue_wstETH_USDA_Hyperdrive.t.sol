@@ -9,19 +9,19 @@ import { IMorphoBlueHyperdrive } from "../../../contracts/src/interfaces/IMorpho
 import { Lib } from "../../utils/Lib.sol";
 import { MorphoBlueHyperdriveInstanceTest } from "./MorphoBlueHyperdriveInstanceTest.t.sol";
 
-contract MorphoBlue_wstETH_USDC_HyperdriveTest is
+contract MorphoBlue_wstETH_USDA_HyperdriveTest is
     MorphoBlueHyperdriveInstanceTest
 {
     using Lib for *;
     using stdStorage for StdStorage;
 
-    /// @dev The address of the loan token. This is just the USDC token.
+    /// @dev The address of the loan token. This is just the USDA token.
     address internal constant LOAN_TOKEN =
-        address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+        address(0x0000206329b97DB379d5E1Bf586BbDB969C63274);
 
     /// @dev Whale accounts.
     address internal LOAN_TOKEN_WHALE =
-        address(0x4B16c5dE96EB2117bBE5fd171E4d203624B014aa);
+        address(0xEc0B13b2271E212E1a74D55D51932BD52A002961);
     address[] internal baseTokenWhaleAccounts = [LOAN_TOKEN_WHALE];
 
     /// @notice Instantiates the instance testing suite with the configuration.
@@ -30,7 +30,7 @@ contract MorphoBlue_wstETH_USDC_HyperdriveTest is
             InstanceTestConfig({
                 name: "Hyperdrive",
                 kind: "MorphoBlueHyperdrive",
-                decimals: 6,
+                decimals: 18,
                 baseTokenWhaleAccounts: baseTokenWhaleAccounts,
                 vaultSharesTokenWhaleAccounts: new address[](0),
                 baseToken: IERC20(LOAN_TOKEN),
@@ -41,13 +41,13 @@ contract MorphoBlue_wstETH_USDC_HyperdriveTest is
                 // converting between base and vault shares. We included more
                 // assertions than normal to the round trip tests to verify that
                 // the calculations satisfy our expectations of accuracy.
-                shareTolerance: 1e3,
-                minimumShareReserves: 1e6,
-                minimumTransactionAmount: 1e6,
+                shareTolerance: 1e15,
+                minimumShareReserves: 1e15,
+                minimumTransactionAmount: 1e15,
                 positionDuration: POSITION_DURATION,
                 fees: IHyperdrive.Fees({
-                    curve: 0.001e18,
-                    flat: 0.0001e18,
+                    curve: 0,
+                    flat: 0,
                     governanceLP: 0,
                     governanceZombie: 0
                 }),
@@ -60,17 +60,15 @@ contract MorphoBlue_wstETH_USDC_HyperdriveTest is
                 ),
                 isRebasing: false,
                 // The base test tolerances.
-                roundTripLpInstantaneousWithBaseTolerance: 1e3,
-                roundTripLpWithdrawalSharesWithBaseTolerance: 1e5,
-                roundTripLongInstantaneousWithBaseUpperBoundTolerance: 100,
-                // NOTE: Since the curve fee isn't zero, this check is ignored.
-                roundTripLongInstantaneousWithBaseTolerance: 0,
-                roundTripLongMaturityWithBaseUpperBoundTolerance: 100,
-                roundTripLongMaturityWithBaseTolerance: 1e3,
-                roundTripShortInstantaneousWithBaseUpperBoundTolerance: 100,
-                // NOTE: Since the curve fee isn't zero, this check is ignored.
-                roundTripShortInstantaneousWithBaseTolerance: 0,
-                roundTripShortMaturityWithBaseTolerance: 1e3,
+                roundTripLpInstantaneousWithBaseTolerance: 1e13,
+                roundTripLpWithdrawalSharesWithBaseTolerance: 1e13,
+                roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
+                roundTripLongInstantaneousWithBaseTolerance: 1e9,
+                roundTripLongMaturityWithBaseUpperBoundTolerance: 1e3,
+                roundTripLongMaturityWithBaseTolerance: 1e5,
+                roundTripShortInstantaneousWithBaseUpperBoundTolerance: 1e3,
+                roundTripShortInstantaneousWithBaseTolerance: 1e5,
+                roundTripShortMaturityWithBaseTolerance: 1e10,
                 // NOTE: Share deposits and withdrawals are disabled, so these are
                 // 0.
                 //
@@ -96,7 +94,7 @@ contract MorphoBlue_wstETH_USDC_HyperdriveTest is
                     0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0
                 ),
                 // The address of the oracle.
-                oracle: address(0x48F7E36EB6B826B2dF4B2E630B62Cd25e89E40e2),
+                oracle: address(0xBC693693fDBB177Ad05ff38633110016BC043AC5),
                 // The address of the interest rate model.
                 irm: address(0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC),
                 // The liquidation loan to value ratio.
@@ -120,7 +118,9 @@ contract MorphoBlue_wstETH_USDC_HyperdriveTest is
         address _recipient,
         uint256 _amount
     ) internal override {
-        bytes32 balanceLocation = keccak256(abi.encode(address(_recipient), 9));
+        bytes32 balanceLocation = keccak256(
+            abi.encode(address(_recipient), 51)
+        );
         vm.store(address(LOAN_TOKEN), balanceLocation, bytes32(_amount));
     }
 }
