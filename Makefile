@@ -53,7 +53,7 @@ test-sol-zombie:
 	forge test -vv --match-contract "$(SOLIDITY_ZOMBIE_TESTS)"
 
 test-python:
-	pytest
+	pytest python/
 	
 ### Lint ###
 
