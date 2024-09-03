@@ -1,4 +1,10 @@
-import { Address, encodeAbiParameters, parseEther, zeroAddress } from "viem";
+import {
+    Address,
+    encodeAbiParameters,
+    keccak256,
+    parseEther,
+    zeroAddress,
+} from "viem";
 import {
     HyperdriveInstanceConfig,
     SIX_MONTHS,
@@ -6,13 +12,13 @@ import {
     getLinkerDetails,
     normalizeFee,
     parseDuration,
-    toBytes32,
+    toBytes,
 } from "../../lib";
 import { MAINNET_FACTORY_NAME } from "./factory";
 import { MAINNET_MORPHO_BLUE_COORDINATOR_NAME } from "./morpho-blue-coordinator";
 
 export const MAINNET_MORPHO_BLUE_WSTETH_USDA_182DAY_NAME =
-    "ElementDAO 182 Day Morpho Blue WSTETH/USDA Hyperdrive";
+    "ElementDAO 182 Day Morpho Blue wstETH/USDA Hyperdrive";
 
 const CONTRIBUTION = parseEther("100");
 
@@ -65,8 +71,8 @@ export const MAINNET_MORPHO_BLUE_WSTETH_USDA_182DAY: HyperdriveInstanceConfig<"M
             hre.hyperdriveDeploy.deployments.byName(
                 MAINNET_MORPHO_BLUE_COORDINATOR_NAME,
             ).address,
-        deploymentId: toBytes32(
-            MAINNET_MORPHO_BLUE_WSTETH_USDA_182DAY_NAME.slice(0, 32),
+        deploymentId: keccak256(
+            toBytes(MAINNET_MORPHO_BLUE_WSTETH_USDA_182DAY_NAME),
         ),
         salt: toBytes32("0x4201"),
         extraData: morphoBlueParameters,

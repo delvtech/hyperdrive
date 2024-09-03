@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
-import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
+import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { IMorphoBlueHyperdrive } from "../../../contracts/src/interfaces/IMorphoBlueHyperdrive.sol";
@@ -15,16 +15,16 @@ contract MorphoBlue_sUSDe_DAI_HyperdriveTest is
     using Lib for *;
     using stdStorage for StdStorage;
 
-    // The address of the loan token. This is just the DAI token.
+    /// @dev The address of the loan token. This is just the DAI token.
     address internal constant LOAN_TOKEN =
         address(0x6B175474E89094C44Da98b954EedeAC495271d0F);
 
-    // Whale accounts.
+    /// @dev Whale accounts.
     address internal LOAN_TOKEN_WHALE =
         address(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
     address[] internal baseTokenWhaleAccounts = [LOAN_TOKEN_WHALE];
 
-    /// @dev Instantiates the instance testing suite with the configuration.
+    /// @notice Instantiates the instance testing suite with the configuration.
     constructor()
         MorphoBlueHyperdriveInstanceTest(
             InstanceTestConfig({
@@ -102,7 +102,7 @@ contract MorphoBlue_sUSDe_DAI_HyperdriveTest is
         )
     {}
 
-    /// @dev Forge function that is invoked to setup the testing environment.
+    /// @notice Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(20_276_503) {
         // Invoke the instance testing suite setup.
         super.setUp();

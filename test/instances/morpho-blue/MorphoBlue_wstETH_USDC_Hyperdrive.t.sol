@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
-import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
+import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { IMorphoBlueHyperdrive } from "../../../contracts/src/interfaces/IMorphoBlueHyperdrive.sol";
@@ -15,16 +15,16 @@ contract MorphoBlue_wstETH_USDC_HyperdriveTest is
     using Lib for *;
     using stdStorage for StdStorage;
 
-    // The address of the loan token. This is just the USDC token.
+    /// @dev The address of the loan token. This is just the USDC token.
     address internal constant LOAN_TOKEN =
         address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
 
-    // Whale accounts.
+    /// @dev Whale accounts.
     address internal LOAN_TOKEN_WHALE =
         address(0x4B16c5dE96EB2117bBE5fd171E4d203624B014aa);
     address[] internal baseTokenWhaleAccounts = [LOAN_TOKEN_WHALE];
 
-    /// @dev Instantiates the instance testing suite with the configuration.
+    /// @notice Instantiates the instance testing suite with the configuration.
     constructor()
         MorphoBlueHyperdriveInstanceTest(
             InstanceTestConfig({
@@ -105,7 +105,7 @@ contract MorphoBlue_wstETH_USDC_HyperdriveTest is
         )
     {}
 
-    /// @dev Forge function that is invoked to setup the testing environment.
+    /// @notice Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(20_481_157) {
         // Invoke the instance testing suite setup.
         super.setUp();
