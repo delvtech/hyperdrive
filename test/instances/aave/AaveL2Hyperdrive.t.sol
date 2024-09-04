@@ -19,8 +19,9 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { InstanceTest } from "test/utils/InstanceTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
+import { EtchingUtils } from "test/utils/EtchingUtils.sol";
 
-contract AaveL2HyperdriveTest is InstanceTest {
+contract AaveL2HyperdriveTest is InstanceTest, EtchingUtils {
     using FixedPointMath for uint256;
     using Lib for *;
     using stdStorage for StdStorage;
@@ -109,6 +110,9 @@ contract AaveL2HyperdriveTest is InstanceTest {
     function setUp() public override __arbitrum_fork(248_038_178) {
         // Invoke the instance testing suite setup.
         super.setUp();
+        address implementationAddress = 0x6C6c6857e2F32fcCBDb2791597350Aa034a3ce47;
+        address addressesProvider = 0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb;
+        // etchAaveL2Pool(implementationAddress, addressesProvider);
     }
 
     /// Overrides ///

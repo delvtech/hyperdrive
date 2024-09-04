@@ -57,6 +57,7 @@ abstract contract AaveL2Base is HyperdriveBase {
             address(this),
             _baseAmount
         );
+        console.log("  address(this)", address(this));
         console.log("  msg.sender", msg.sender);
 
         // Deposit the base into the yield source.
@@ -68,15 +69,34 @@ abstract contract AaveL2Base is HyperdriveBase {
             address(_vault),
             _baseAmount + 1
         );
-        _vault.supply(address(_baseToken), _baseAmount, address(this), 0);
+        // _vault.supply(address(_baseToken), _baseAmount, address(this), 0);
         // NOTE: We use the encoded params version of 'supply' for better gas
         // efficiency.
-        // bytes32 supplyParams = encodeSupplyParams(
-        //     address(_baseToken),
-        //     _baseAmount,
-        //     0
-        // );
-        // _vault.supply(supplyParams);
+        bytes32 supplyParams = encodeSupplyParams(
+            address(_baseToken),
+            _baseAmount,
+            0
+        );
+        uint16 assetId;
+        uint256 amount;
+        uint16 referralCode;
+
+        assembly {
+            assetId := and(supplyParams, 0xFFFF)
+            amount := and(
+                shr(16, supplyParams),
+                0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+            )
+            referralCode := and(shr(144, supplyParams), 0xFFFF)
+        }
+
+        address asset = _vault.getReserveAddressById(assetId);
+        console.log("asset", asset);
+        console.log("amount", amount);
+        console.log("assetId", assetId);
+        console.log("referralCode", referralCode);
+        console.log("supplyParams", uint256(supplyParams));
+        _vault.supply(supplyParams);
 
         return (_convertToShares(_baseAmount), 0);
     }
@@ -117,18 +137,19 @@ abstract contract AaveL2Base is HyperdriveBase {
             address(_baseToken),
             _convertToBase(_shareAmount)
         );
-        if (msg.sender == _destination) {
-            amountWithdrawn = _vault.withdraw(withdrawParams);
-            _baseToken.transfer(_destination, amountWithdrawn);
-        } else {
-            amountWithdrawn = _vault.withdraw(
-                address(_baseToken), // asset
-                // NOTE: Withdrawals are processed in base, so we have to convert
-                // the share amount to a base amount.
-                _convertToBase(_shareAmount), // amount
-                _destination // onBehalfOf
-            );
-        }
+        console.log("withdrawParams", uint256(withdrawParams));
+        // if (msg.sender == _destination) {
+        // amountWithdrawn = _vault.withdraw(withdrawParams);
+        _baseToken.transfer(_destination, amountWithdrawn);
+        // } else {
+        amountWithdrawn = _vault.withdraw(
+            address(_baseToken), // asset
+            // NOTE: Withdrawals are processed in base, so we have to convert
+            // the share amount to a base amount.
+            _convertToBase(_shareAmount), // amount
+            _destination // onBehalfOf
+        );
+        // }
 
         return amountWithdrawn;
     }
@@ -209,9 +230,18 @@ abstract contract AaveL2Base is HyperdriveBase {
         uint16 referralCode
     ) internal view returns (bytes32) {
         DataTypes.ReserveData memory data = _vault.getReserveData(asset);
+        address reserveAddress = _vault.getReserveAddressById(4);
+        address aTokenAddress = data.aTokenAddress;
 
+        console.log("encodeSupplyParams");
+        console.log("  reserveAddress", reserveAddress);
+        console.log("  _vault", address(_vault));
+        console.log("  aTokenAddress", aTokenAddress);
         uint16 assetId = data.id;
+        console.log("  asset", asset);
+        console.log("  assetId", assetId);
         uint128 shortenedAmount = uint128(amount);
+        console.log("  shortenedAmount", shortenedAmount);
         bytes32 res;
 
         assembly {
@@ -221,6 +251,22 @@ abstract contract AaveL2Base is HyperdriveBase {
             )
         }
         return res;
+    }
+
+    function decodeSupplyParams(
+        mapping(uint256 => address) storage reservesList,
+        bytes32 args
+    ) internal view returns (address, uint256, uint16) {
+        uint16 assetId;
+        uint256 amount;
+        uint16 referralCode;
+
+        assembly {
+            assetId := and(args, 0xFFFF)
+            amount := and(shr(16, args), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+            referralCode := and(shr(144, args), 0xFFFF)
+        }
+        return (reservesList[assetId], amount, referralCode);
     }
 
     /**
@@ -237,6 +283,7 @@ abstract contract AaveL2Base is HyperdriveBase {
         DataTypes.ReserveData memory data = _vault.getReserveData(asset);
 
         uint16 assetId = data.id;
+        console.log("assetId", assetId);
         uint128 shortenedAmount = amount == type(uint256).max
             ? type(uint128).max
             : uint128(amount);
@@ -245,6 +292,7 @@ abstract contract AaveL2Base is HyperdriveBase {
         assembly {
             res := add(assetId, shl(16, shortenedAmount))
         }
+        console.log("res", uint256(res));
         return res;
     }
 }
