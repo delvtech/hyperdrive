@@ -3,6 +3,7 @@ import {
     encodeAbiParameters,
     keccak256,
     parseEther,
+    toBytes,
     zeroAddress,
 } from "viem";
 import {
@@ -12,7 +13,7 @@ import {
     getLinkerDetails,
     normalizeFee,
     parseDuration,
-    toBytes,
+    toBytes32,
 } from "../../lib";
 import { MAINNET_FACTORY_NAME } from "./factory";
 import { MAINNET_MORPHO_BLUE_COORDINATOR_NAME } from "./morpho-blue-coordinator";
@@ -100,6 +101,11 @@ export const MAINNET_MORPHO_BLUE_WSTETH_USDA_182DAY: HyperdriveInstanceConfig<"M
             await pc.waitForTransactionReceipt({ hash: tx });
         },
         poolDeployConfig: async (hre) => {
+            let factoryContract = await hre.viem.getContractAt(
+                "HyperdriveFactory",
+                hre.hyperdriveDeploy.deployments.byName(MAINNET_FACTORY_NAME)
+                    .address,
+            );
             return {
                 baseToken: USDA_ADDRESS_MAINNET,
                 vaultSharesToken: zeroAddress,
@@ -109,12 +115,11 @@ export const MAINNET_MORPHO_BLUE_WSTETH_USDA_182DAY: HyperdriveInstanceConfig<"M
                 positionDuration: parseDuration(SIX_MONTHS),
                 checkpointDuration: parseDuration("1 day"),
                 timeStretch: 0n,
-                governance: (await hre.getNamedAccounts())[
-                    "deployer"
-                ] as Address,
-                feeCollector: zeroAddress,
-                sweepCollector: zeroAddress,
-                checkpointRewarder: zeroAddress,
+                governance: await factoryContract.read.hyperdriveGovernance(),
+                feeCollector: await factoryContract.read.feeCollector(),
+                sweepCollector: await factoryContract.read.sweepCollector(),
+                checkpointRewarder:
+                    await factoryContract.read.checkpointRewarder(),
                 ...(await getLinkerDetails(
                     hre,
                     hre.hyperdriveDeploy.deployments.byName(

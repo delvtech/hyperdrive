@@ -75,74 +75,82 @@ abstract contract InstanceTest is HyperdriveTest {
         ///      token. If it is, we have to handle balances and approvals
         ///      differently.
         bool isRebasing;
-        /// @dev The equality tolerance for the close long with shares test.
+        /// @dev The equality tolerance in wei for the close long with shares
+        ///      test.
         uint256 closeLongWithSharesTolerance;
-        /// @dev The equality tolerance for the close short with shares test.
+        /// @dev The equality tolerance in wei for the close short with shares
+        ///      test.
         uint256 closeShortWithSharesTolerance;
-        /// @dev The equality tolerance for the instantaneous LP with base test.
+        /// @dev The equality tolerance in wei for the instantaneous LP with
+        ///      base test.
         uint256 roundTripLpInstantaneousWithBaseTolerance;
-        /// @dev The equality tolerance for the instantaneous LP with shares test.
+        /// @dev The equality tolerance in wei for the instantaneous LP with
+        ///      shares test.
         uint256 roundTripLpInstantaneousWithSharesTolerance;
-        /// @dev The equality tolerance for the LP withdrawal shares with base
-        ///      test.
+        /// @dev The equality tolerance in wei for the LP withdrawal shares with
+        ///      base test.
         uint256 roundTripLpWithdrawalSharesWithBaseTolerance;
-        /// @dev The equality tolerance for the LP withdrawal shares with shares
-        ///      test.
+        /// @dev The equality tolerance in wei for the LP withdrawal shares with
+        ///      shares test.
         uint256 roundTripLpWithdrawalSharesWithSharesTolerance;
-        /// @dev The upper bound tolerance for the instantaneous long round trip
-        ///      with base test.
+        /// @dev The upper bound tolerance in wei for the instantaneous long
+        ///      round trip with base test.
         uint256 roundTripLongInstantaneousWithBaseUpperBoundTolerance;
-        /// @dev The equality tolerance for the instantaneous long round trip
-        ///      with base test.
+        /// @dev The equality tolerance in wei for the instantaneous long round
+        ///      trip with base test.
         uint256 roundTripLongInstantaneousWithBaseTolerance;
-        /// @dev The upper bound tolerance for the instantaneous long round trip
-        ///      with shares test.
+        /// @dev The upper bound tolerance in wei for the instantaneous long
+        ///      round trip with shares test.
         uint256 roundTripLongInstantaneousWithSharesUpperBoundTolerance;
-        /// @dev The equality tolerance for the instantaneous long round trip
-        ///      with shares test.
+        /// @dev The equality tolerance in wei for the instantaneous long round
+        ///      trip with shares test.
         uint256 roundTripLongInstantaneousWithSharesTolerance;
-        /// @dev The upper bound tolerance for the long at maturity round trip
-        ///      with base test.
+        /// @dev The upper bound tolerance in wei for the long at maturity round
+        ///      trip with base test.
         uint256 roundTripLongMaturityWithBaseUpperBoundTolerance;
-        /// @dev The equality tolerance for the long at maturity round trip
-        ///      with base test.
+        /// @dev The equality tolerance in wei for the long at maturity round
+        ///      trip with base test.
         uint256 roundTripLongMaturityWithBaseTolerance;
-        /// @dev The upper bound tolerance for the long at maturity round trip
-        ///      with shares test.
+        /// @dev The upper bound tolerance in wei for the long at maturity round
+        ///      trip with shares test.
         uint256 roundTripLongMaturityWithSharesUpperBoundTolerance;
-        /// @dev The equality tolerance for the long at maturity round trip
-        ///      with shares test.
+        /// @dev The equality tolerance in wei for the long at maturity round
+        ///      trip with shares test.
         uint256 roundTripLongMaturityWithSharesTolerance;
-        /// @dev The upper bound tolerance for the instantaneous short round trip
-        ///      with base test.
+        /// @dev The upper bound tolerance in wei for the instantaneous short
+        ///      round trip with base test.
         uint256 roundTripShortInstantaneousWithBaseUpperBoundTolerance;
-        /// @dev The equality tolerance for the instantaneous short round trip
-        ///      with base test.
+        /// @dev The equality tolerance in wei for the instantaneous short round
+        ///      trip with base test.
         uint256 roundTripShortInstantaneousWithBaseTolerance;
-        /// @dev The upper bound tolerance for the instantaneous short round trip
-        ///      with shares test.
+        /// @dev The upper bound tolerance in wei for the instantaneous short
+        ///      round trip with shares test.
         uint256 roundTripShortInstantaneousWithSharesUpperBoundTolerance;
-        /// @dev The equality tolerance for the instantaneous short round trip
-        ///      with shares test.
+        /// @dev The equality tolerance in wei for the instantaneous short round
+        ///      trip with shares test.
         uint256 roundTripShortInstantaneousWithSharesTolerance;
-        /// @dev The equality tolerance for the short at maturity round trip
-        ///      with base test.
+        /// @dev The equality tolerance in wei for the short at maturity round
+        ///      trip with base test.
         uint256 roundTripShortMaturityWithBaseTolerance;
-        /// @dev The equality tolerance for the short at maturity round trip
-        ///      with shares test.
+        /// @dev The equality tolerance in wei for the short at maturity round
+        ///      trip with shares test.
         uint256 roundTripShortMaturityWithSharesTolerance;
+        /// @dev The equality tolerance in wei for `verifyDeposit`.
+        uint256 verifyDepositTolerance;
+        /// @dev The equality tolerance in wei for `verifyWithdrawal`.
+        uint256 verifyWithdrawalTolerance;
     }
 
-    // Fixed rate used to configure market.
+    /// @dev Fixed rate used to configure market.
     uint256 internal constant FIXED_RATE = 0.05e18;
 
-    // Default deployment constants.
+    /// @dev Default deployment constants.
     bytes32 private constant DEFAULT_DEPLOYMENT_ID =
         bytes32(uint256(0xdeadbeef));
     bytes32 private constant DEFAULT_DEPLOYMENT_SALT =
         bytes32(uint256(0xdeadbabe));
 
-    // The configuration for the Instance testing suite.
+    /// @dev The configuration for the Instance testing suite.
     InstanceTestConfig internal config;
 
     /// @dev The configuration for the pool. This allows test authors to specify
@@ -150,13 +158,13 @@ abstract contract InstanceTest is HyperdriveTest {
     ///      parameters will be overridden by factory parameters.
     IHyperdrive.PoolDeployConfig internal poolConfig;
 
-    // The Hyperdrive factory.
+    /// @dev The Hyperdrive factory.
     IHyperdriveFactory internal factory;
 
-    // The address of the deployer coordinator contract.
+    /// @dev The address of the deployer coordinator contract.
     address internal deployerCoordinator;
 
-    // Flag for denoting if the base token is ETH.
+    /// @dev Flag for denoting if the base token is ETH.
     bool internal immutable isBaseETH;
 
     /// @dev Constructor for the Instance testing suite.
@@ -515,34 +523,145 @@ abstract contract InstanceTest is HyperdriveTest {
         uint256 shareAmount
     ) internal view virtual returns (uint256 baseAmount);
 
-    /// @dev A virtual function that ensures the deposit accounting is correct
-    ///      when opening positions.
-    /// @param trader The account opening the position.
-    /// @param basePaid The amount the position was opened with in terms of base.
-    /// @param asBase Flag to determine whether the position was opened with the base or share token.
-    /// @param totalBaseBefore Total supply of the base token before the trade.
-    /// @param totalSharesBefore Total supply of the share token before the trade.
-    /// @param traderBalancesBefore Balances of tokens of the trader before the trade.
-    /// @param hyperdriveBalancesBefore Balances of tokens of the Hyperdrive contract before the trade.
+    /// @dev Verifies that deposit accounting is correct when opening positions.
+    /// @param trader The trader that is depositing.
+    /// @param amountPaid The amount that was deposited.
+    /// @param asBase Whether the deposit was made with base or vault shares.
+    /// @param totalBaseBefore The total base before the deposit.
+    /// @param totalSharesBefore The total shares before the deposit.
+    /// @param traderBalancesBefore The trader balances before the deposit.
+    /// @param hyperdriveBalancesBefore The hyperdrive balances before the deposit.
     function verifyDeposit(
         address trader,
-        uint256 basePaid,
+        uint256 amountPaid,
         bool asBase,
         uint256 totalBaseBefore,
         uint256 totalSharesBefore,
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
-    ) internal virtual;
+    ) internal view {
+        // If we're depositing with base, verify that base was pulled from the
+        // trader into Hyperdrive and correctly converted to vault shares.
+        if (asBase) {
+            // If base deposits aren't supported, we revert since this route
+            // shouldn't be called.
+            if (!config.enableBaseDeposits) {
+                revert IHyperdrive.UnsupportedToken();
+            }
 
-    /// @dev A virtual function that ensures the withdrawal accounting is correct
-    ///      when opening positions.
-    /// @param trader The account opening the position.
-    /// @param baseProceeds The amount the position was opened with in terms of base.
-    /// @param asBase Flag to determine whether the position was opened with the base or share token.
-    /// @param totalBaseBefore Total supply of the base token before the trade.
-    /// @param totalSharesBefore Total supply of the share token before the trade.
-    /// @param traderBalancesBefore Balances of tokens of the trader before the trade.
-    /// @param hyperdriveBalancesBefore Balances of tokens of the Hyperdrive contract before the trade.
+            // Ensure that the total supply increased by the base paid.
+            (uint256 totalBase, uint256 totalShares) = getSupply();
+            assertApproxEqAbs(totalBase, totalBaseBefore + amountPaid, 1);
+            assertApproxEqAbs(
+                totalShares,
+                totalSharesBefore + hyperdrive.convertToShares(amountPaid),
+                config.verifyDepositTolerance
+            );
+
+            // If the base token isn't ETH, ensure that the ETH balances didn't
+            // change.
+            if (!isBaseETH) {
+                assertEq(
+                    address(hyperdrive).balance,
+                    hyperdriveBalancesBefore.ETHBalance
+                );
+                assertEq(trader.balance, traderBalancesBefore.ETHBalance);
+            }
+            // Otherwise, the trader's ETH balance should be reduced by the
+            // amount paid.
+            else {
+                assertEq(
+                    address(hyperdrive).balance,
+                    hyperdriveBalancesBefore.ETHBalance
+                );
+                assertEq(
+                    trader.balance,
+                    traderBalancesBefore.ETHBalance - amountPaid
+                );
+            }
+
+            // Ensure that the Hyperdrive instance's base balance doesn't change
+            // and that the trader's base balance decreased by the amount paid.
+            (
+                uint256 hyperdriveBaseAfter,
+                uint256 hyperdriveSharesAfter
+            ) = getTokenBalances(address(hyperdrive));
+            (
+                uint256 traderBaseAfter,
+                uint256 traderSharesAfter
+            ) = getTokenBalances(address(trader));
+            assertEq(hyperdriveBaseAfter, hyperdriveBalancesBefore.baseBalance);
+            assertEq(
+                traderBaseAfter,
+                traderBalancesBefore.baseBalance - amountPaid
+            );
+
+            // Ensure that the shares balances were updated correctly.
+            assertApproxEqAbs(
+                hyperdriveSharesAfter,
+                hyperdriveBalancesBefore.sharesBalance +
+                    hyperdrive.convertToShares(amountPaid),
+                config.verifyDepositTolerance
+            );
+            assertEq(traderSharesAfter, traderBalancesBefore.sharesBalance);
+        }
+        // If we're depositing with vault shares, verify that the vault shares
+        // were pulled from the trader into Hyperdrive.
+        else {
+            // If vault share deposits aren't supported, we revert since this
+            // route shouldn't be called.
+            if (!config.enableShareDeposits) {
+                revert IHyperdrive.UnsupportedToken();
+            }
+
+            // Ensure that the total supply and scaled total supply stay the same.
+            (uint256 totalBase, uint256 totalShares) = getSupply();
+            assertEq(totalBase, totalBaseBefore);
+            assertApproxEqAbs(totalShares, totalSharesBefore, 1);
+
+            // Ensure that the ETH balances didn't change.
+            assertEq(
+                address(hyperdrive).balance,
+                hyperdriveBalancesBefore.ETHBalance
+            );
+            assertEq(bob.balance, traderBalancesBefore.ETHBalance);
+
+            // Ensure that the base balances didn't change.
+            (
+                uint256 hyperdriveBaseAfter,
+                uint256 hyperdriveSharesAfter
+            ) = getTokenBalances(address(hyperdrive));
+            (
+                uint256 traderBaseAfter,
+                uint256 traderSharesAfter
+            ) = getTokenBalances(address(trader));
+            assertEq(hyperdriveBaseAfter, hyperdriveBalancesBefore.baseBalance);
+            assertEq(traderBaseAfter, traderBalancesBefore.baseBalance);
+
+            // Ensure that the shares balances were updated correctly.
+            assertApproxEqAbs(
+                hyperdriveSharesAfter,
+                hyperdriveBalancesBefore.sharesBalance +
+                    convertToShares(amountPaid),
+                config.verifyDepositTolerance
+            );
+            assertApproxEqAbs(
+                traderSharesAfter,
+                traderBalancesBefore.sharesBalance -
+                    convertToShares(amountPaid),
+                config.verifyDepositTolerance
+            );
+        }
+    }
+
+    /// @dev Verifies that withdrawal accounting is correct when closing positions.
+    /// @param trader The trader that is withdrawing.
+    /// @param baseProceeds The base proceeds of the deposit.
+    /// @param asBase Whether the withdrawal was made with base or vault shares.
+    /// @param totalBaseBefore The total base before the withdrawal.
+    /// @param totalSharesBefore The total shares before the withdrawal.
+    /// @param traderBalancesBefore The trader balances before the withdrawal.
+    /// @param hyperdriveBalancesBefore The hyperdrive balances before the withdrawal.
     function verifyWithdrawal(
         address trader,
         uint256 baseProceeds,
@@ -551,7 +670,128 @@ abstract contract InstanceTest is HyperdriveTest {
         uint256 totalSharesBefore,
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
-    ) internal virtual;
+    ) internal view {
+        // If we're withdrawing with base, ensure that Hyperdrive's vault shares
+        // were reduced, successfully converted into base, and distributed to
+        // the trader.
+        if (asBase) {
+            // If base withdrawals aren't supported, we revert since this
+            // route shouldn't be called.
+            if (!config.enableBaseWithdraws) {
+                revert IHyperdrive.UnsupportedToken();
+            }
+
+            // Ensure that the total supply decreased by the base proceeds.
+            (uint256 totalBase, uint256 totalShares) = getSupply();
+            assertApproxEqAbs(totalBase, totalBaseBefore - baseProceeds, 1);
+            assertApproxEqAbs(
+                totalShares,
+                totalSharesBefore - convertToShares(baseProceeds),
+                config.verifyWithdrawalTolerance
+            );
+
+            // If the base token isn't ETH, ensure that the ETH balances didn't
+            // change.
+            if (!isBaseETH) {
+                assertEq(
+                    address(hyperdrive).balance,
+                    hyperdriveBalancesBefore.ETHBalance
+                );
+                assertEq(bob.balance, traderBalancesBefore.ETHBalance);
+            }
+            // Otherwise, ensure that the trader's ETH balance increased.
+            else {
+                assertEq(
+                    address(hyperdrive).balance,
+                    hyperdriveBalancesBefore.ETHBalance
+                );
+                assertEq(
+                    bob.balance,
+                    traderBalancesBefore.ETHBalance + baseProceeds
+                );
+            }
+
+            // Ensure that the base balances were updated correctly.
+            (
+                uint256 hyperdriveBaseAfter,
+                uint256 hyperdriveSharesAfter
+            ) = getTokenBalances(address(hyperdrive));
+            (
+                uint256 traderBaseAfter,
+                uint256 traderSharesAfter
+            ) = getTokenBalances(address(trader));
+            assertEq(hyperdriveBaseAfter, hyperdriveBalancesBefore.baseBalance);
+            assertEq(
+                traderBaseAfter,
+                traderBalancesBefore.baseBalance + baseProceeds
+            );
+
+            // Ensure that the shares balances were updated correctly.
+            assertApproxEqAbs(
+                hyperdriveSharesAfter,
+                hyperdriveBalancesBefore.sharesBalance -
+                    convertToShares(baseProceeds),
+                config.verifyWithdrawalTolerance
+            );
+            assertApproxEqAbs(
+                traderSharesAfter,
+                traderBalancesBefore.sharesBalance,
+                1
+            );
+        } else {
+            // If vault share withdrawals aren't supported, we revert since this
+            // route shouldn't be called.
+            if (!config.enableShareWithdraws) {
+                revert IHyperdrive.UnsupportedToken();
+            }
+
+            // Ensure that the total supply stayed the same.
+            (uint256 totalBase, uint256 totalShares) = getSupply();
+            assertApproxEqAbs(totalBase, totalBaseBefore, 1);
+            assertApproxEqAbs(totalShares, totalSharesBefore, 1);
+
+            // Ensure that the ETH balances didn't change.
+            assertEq(
+                address(hyperdrive).balance,
+                hyperdriveBalancesBefore.ETHBalance
+            );
+            assertEq(bob.balance, traderBalancesBefore.ETHBalance);
+
+            // Ensure that the base balances didn't change.
+            (
+                uint256 hyperdriveBaseAfter,
+                uint256 hyperdriveSharesAfter
+            ) = getTokenBalances(address(hyperdrive));
+            (
+                uint256 traderBaseAfter,
+                uint256 traderSharesAfter
+            ) = getTokenBalances(address(trader));
+            assertApproxEqAbs(
+                hyperdriveBaseAfter,
+                hyperdriveBalancesBefore.baseBalance,
+                1
+            );
+            assertApproxEqAbs(
+                traderBaseAfter,
+                traderBalancesBefore.baseBalance,
+                1
+            );
+
+            // Ensure that the shares balances were updated correctly.
+            assertApproxEqAbs(
+                hyperdriveSharesAfter,
+                hyperdriveBalancesBefore.sharesBalance -
+                    convertToShares(baseProceeds),
+                config.verifyWithdrawalTolerance
+            );
+            assertApproxEqAbs(
+                traderSharesAfter,
+                traderBalancesBefore.sharesBalance +
+                    convertToShares(baseProceeds),
+                config.verifyWithdrawalTolerance
+            );
+        }
+    }
 
     /// @dev A virtual function that fetches the token balance information of an account.
     /// @param account The account to fetch token balances of.
@@ -566,6 +806,7 @@ abstract contract InstanceTest is HyperdriveTest {
     /// @return totalSupplyShares The total supply of the share token.
     function getSupply()
         internal
+        view
         virtual
         returns (uint256 totalSupplyBase, uint256 totalSupplyShares);
 

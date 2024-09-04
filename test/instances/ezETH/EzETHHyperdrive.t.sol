@@ -30,92 +30,95 @@ contract EzETHHyperdriveTest is InstanceTest {
     using Lib for *;
     using stdStorage for StdStorage;
 
-    // The Renzo main entrypoint contract to stake ETH and receive ezETH.
+    /// @dev The Renzo main entrypoint contract to stake ETH and receive ezETH.
     IRestakeManager internal constant RESTAKE_MANAGER =
         IRestakeManager(0x74a09653A083691711cF8215a6ab074BB4e99ef5);
 
-    // The Renzo Oracle contract.
+    /// @dev The Renzo Oracle contract.
     IRenzoOracle internal constant RENZO_ORACLE =
         IRenzoOracle(0x5a12796f7e7EBbbc8a402667d266d2e65A814042);
 
-    // The ezETH token contract.
+    /// @dev The ezETH token contract.
     IERC20 internal constant EZETH =
         IERC20(0xbf5495Efe5DB9ce00f80364C8B423567e58d2110);
 
-    // Renzo's DepositQueue contract called from RestakeManager.  Used to
-    // simulate interest.
+    /// @dev Renzo's DepositQueue contract called from RestakeManager.  Used to
+    ///      simulate interest.
     IDepositQueue DEPOSIT_QUEUE =
         IDepositQueue(0xf2F305D14DCD8aaef887E0428B3c9534795D0d60);
 
-    // Renzo's restaking protocol was launch Dec, 2023 and their use of
-    // oracles makes it difficult to test on a mainnet fork without heavy
-    // mocking.  To test with their deployed code we use a shorter position
-    // duration.
+    // @dev Renzo's restaking protocol was launched on Dec, 2023 and their use
+    ///     of oracles makes it difficult to test on a mainnet fork without
+    ///     heavy mocking.  To test with their deployed code we use a shorter
+    ///     position duration.
     uint256 internal constant POSITION_DURATION_15_DAYS = 15 days;
     uint256 internal constant STARTING_BLOCK = 19119544;
 
-    // Whale accounts.
+    /// @dev Whale accounts.
     address internal EZETH_WHALE = 0x40C0d1fbcB0A43A62ca7A241E7A42ca58EeF96eb;
     address[] internal whaleAccounts = [EZETH_WHALE];
 
-    // The configuration for the instance testing suite.
-    InstanceTestConfig internal __testConfig =
-        InstanceTestConfig({
-            name: "Hyperdrive",
-            kind: "EzETHHyperdrive",
-            decimals: 18,
-            baseTokenWhaleAccounts: new address[](0),
-            vaultSharesTokenWhaleAccounts: whaleAccounts,
-            baseToken: IERC20(ETH),
-            vaultSharesToken: IERC20(EZETH),
-            shareTolerance: 1e6,
-            minimumShareReserves: 1e15,
-            minimumTransactionAmount: 1e15,
-            positionDuration: POSITION_DURATION_15_DAYS,
-            fees: IHyperdrive.Fees({
-                curve: 0,
-                flat: 0,
-                governanceLP: 0,
-                governanceZombie: 0
-            }),
-            enableBaseDeposits: false,
-            enableShareDeposits: true,
-            enableBaseWithdraws: false,
-            enableShareWithdraws: true,
-            baseWithdrawError: abi.encodeWithSelector(
-                IHyperdrive.UnsupportedToken.selector
-            ),
-            isRebasing: false,
-            // NOTE: Base  withdrawals are disabled, so the tolerances are zero.
-            //
-            // The base test tolerances.
-            roundTripLpInstantaneousWithBaseTolerance: 0,
-            roundTripLpWithdrawalSharesWithBaseTolerance: 0,
-            roundTripLongInstantaneousWithBaseUpperBoundTolerance: 0,
-            roundTripLongInstantaneousWithBaseTolerance: 0,
-            roundTripLongMaturityWithBaseUpperBoundTolerance: 0,
-            roundTripLongMaturityWithBaseTolerance: 0,
-            roundTripShortInstantaneousWithBaseUpperBoundTolerance: 0,
-            roundTripShortInstantaneousWithBaseTolerance: 0,
-            roundTripShortMaturityWithBaseTolerance: 0,
-            // The share test tolerances.
-            closeLongWithSharesTolerance: 1e6,
-            closeShortWithSharesTolerance: 1e6,
-            roundTripLpInstantaneousWithSharesTolerance: 1e7,
-            roundTripLpWithdrawalSharesWithSharesTolerance: 1e7,
-            roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
-            roundTripLongInstantaneousWithSharesTolerance: 1e7,
-            roundTripLongMaturityWithSharesUpperBoundTolerance: 1e3,
-            roundTripLongMaturityWithSharesTolerance: 1e7,
-            roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
-            roundTripShortInstantaneousWithSharesTolerance: 1e7,
-            roundTripShortMaturityWithSharesTolerance: 1e8
-        });
+    /// @notice Instantiates the instance testing suite with the configuration.
+    constructor()
+        InstanceTest(
+            InstanceTestConfig({
+                name: "Hyperdrive",
+                kind: "EzETHHyperdrive",
+                decimals: 18,
+                baseTokenWhaleAccounts: new address[](0),
+                vaultSharesTokenWhaleAccounts: whaleAccounts,
+                baseToken: IERC20(ETH),
+                vaultSharesToken: IERC20(EZETH),
+                shareTolerance: 1e6,
+                minimumShareReserves: 1e15,
+                minimumTransactionAmount: 1e15,
+                positionDuration: POSITION_DURATION_15_DAYS,
+                fees: IHyperdrive.Fees({
+                    curve: 0,
+                    flat: 0,
+                    governanceLP: 0,
+                    governanceZombie: 0
+                }),
+                enableBaseDeposits: false,
+                enableShareDeposits: true,
+                enableBaseWithdraws: false,
+                enableShareWithdraws: true,
+                baseWithdrawError: abi.encodeWithSelector(
+                    IHyperdrive.UnsupportedToken.selector
+                ),
+                isRebasing: false,
+                // NOTE: Base  withdrawals are disabled, so the tolerances are zero.
+                //
+                // The base test tolerances.
+                roundTripLpInstantaneousWithBaseTolerance: 0,
+                roundTripLpWithdrawalSharesWithBaseTolerance: 0,
+                roundTripLongInstantaneousWithBaseUpperBoundTolerance: 0,
+                roundTripLongInstantaneousWithBaseTolerance: 0,
+                roundTripLongMaturityWithBaseUpperBoundTolerance: 0,
+                roundTripLongMaturityWithBaseTolerance: 0,
+                roundTripShortInstantaneousWithBaseUpperBoundTolerance: 0,
+                roundTripShortInstantaneousWithBaseTolerance: 0,
+                roundTripShortMaturityWithBaseTolerance: 0,
+                // The share test tolerances.
+                closeLongWithSharesTolerance: 1e6,
+                closeShortWithSharesTolerance: 1e6,
+                roundTripLpInstantaneousWithSharesTolerance: 1e7,
+                roundTripLpWithdrawalSharesWithSharesTolerance: 1e7,
+                roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripLongInstantaneousWithSharesTolerance: 1e7,
+                roundTripLongMaturityWithSharesUpperBoundTolerance: 1e3,
+                roundTripLongMaturityWithSharesTolerance: 1e7,
+                roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripShortInstantaneousWithSharesTolerance: 1e7,
+                roundTripShortMaturityWithSharesTolerance: 1e8,
+                // The verification tolerances.
+                verifyDepositTolerance: 2,
+                verifyWithdrawalTolerance: 1_000
+            })
+        )
+    {}
 
-    /// @dev Instantiates the instance testing suite with the configuration.
-    constructor() InstanceTest(__testConfig) {}
-
-    /// @dev Forge function that is invoked to setup the testing environment.
+    /// @notice Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(STARTING_BLOCK) {
         // Giving the EzETH whale account more EzETH before the instance setup.
         vm.startPrank(EZETH_WHALE);
@@ -136,6 +139,8 @@ contract EzETHHyperdriveTest is InstanceTest {
     }
 
     /// @dev Converts base amount to the equivalent about in EzETH.
+    /// @param baseAmount The base amount.
+    /// @return The converted share amount.
     function convertToShares(
         uint256 baseAmount
     ) internal view override returns (uint256) {
@@ -145,8 +150,10 @@ contract EzETHHyperdriveTest is InstanceTest {
     }
 
     /// @dev Converts share amount to the equivalent amount in ETH.
+    /// @param shareAmount The share amount.
+    /// @return The converted base amount.
     function convertToBase(
-        uint256 baseAmount
+        uint256 shareAmount
     ) internal view override returns (uint256) {
         // Get the total TVL priced in ETH from RestakeManager.
         (, , uint256 totalTVL) = RESTAKE_MANAGER.calculateTVLs();
@@ -156,7 +163,7 @@ contract EzETHHyperdriveTest is InstanceTest {
 
         return
             RENZO_ORACLE.calculateRedeemAmount(
-                baseAmount,
+                shareAmount,
                 totalSupply,
                 totalTVL
             );
@@ -164,6 +171,7 @@ contract EzETHHyperdriveTest is InstanceTest {
 
     /// @dev Deploys the EzETH deployer coordinator contract.
     /// @param _factory The address of the Hyperdrive factory contract.
+    /// @return The coordinator address.
     function deployCoordinator(
         address _factory
     ) internal override returns (address) {
@@ -171,7 +179,7 @@ contract EzETHHyperdriveTest is InstanceTest {
         return
             address(
                 new EzETHHyperdriveDeployerCoordinator(
-                    string.concat(__testConfig.name, "DeployerCoordinator"),
+                    string.concat(config.name, "DeployerCoordinator"),
                     _factory,
                     address(new EzETHHyperdriveCoreDeployer(RESTAKE_MANAGER)),
                     address(new EzETHTarget0Deployer(RESTAKE_MANAGER)),
@@ -184,7 +192,18 @@ contract EzETHHyperdriveTest is InstanceTest {
             );
     }
 
+    /// @dev Fetches the total supply of the base and share tokens.
+    /// @return The total supply of base.
+    /// @return The total supply of vault shares.
+    function getSupply() internal view override returns (uint256, uint256) {
+        (, uint256 totalPooledEther, ) = getSharePrice();
+        return (totalPooledEther, EZETH.totalSupply());
+    }
+
     /// @dev Fetches the token balance information of an account.
+    /// @param account The account to query.
+    /// @return The balance of base.
+    /// @return The balance of vault shares.
     function getTokenBalances(
         address account
     ) internal view override returns (uint256, uint256) {
@@ -192,97 +211,9 @@ contract EzETHHyperdriveTest is InstanceTest {
         return (0, EZETH.balanceOf(account));
     }
 
-    /// @dev Fetches the total supply of the base and share tokens.
-    function getSupply() internal view override returns (uint256, uint256) {
-        (, uint256 totalPooledEther, ) = getSharePrice();
-        return (totalPooledEther, EZETH.totalSupply());
-    }
-
-    /// @dev Verifies that deposit accounting is correct when opening positions.
-    function verifyDeposit(
-        address trader,
-        uint256 basePaid,
-        bool asBase,
-        uint256 totalBaseSupplyBefore,
-        uint256 totalSharesBefore,
-        AccountBalances memory traderBalancesBefore,
-        AccountBalances memory hyperdriveBalancesBefore
-    ) internal view override {
-        // Base deposits are not supported for this instance.
-        if (asBase) {
-            revert IHyperdrive.UnsupportedToken();
-        }
-
-        // Ensure that the amount of pooled ether stays the same.
-        (, uint256 totalPooledEther, ) = getSharePrice();
-        assertEq(totalPooledEther, totalBaseSupplyBefore);
-
-        // Ensure that the ETH balances were updated correctly.
-        assertEq(
-            address(hyperdrive).balance,
-            hyperdriveBalancesBefore.ETHBalance
-        );
-        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-        // Ensure that the ezETH shares were updated correctly.
-        uint256 expectedShares = convertToShares(basePaid);
-        assertEq(EZETH.totalSupply(), totalSharesBefore);
-        assertApproxEqAbs(
-            EZETH.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.sharesBalance + expectedShares,
-            2 // Higher tolerance due to rounding when converting back into shares.
-        );
-        assertApproxEqAbs(
-            EZETH.balanceOf(trader),
-            traderBalancesBefore.sharesBalance - expectedShares,
-            2 // Higher tolerance due to rounding when converting back into shares.
-        );
-    }
-
-    /// @dev Verifies that withdrawal accounting is correct when closing positions.
-    function verifyWithdrawal(
-        address trader,
-        uint256 baseProceeds,
-        bool asBase,
-        uint256 totalPooledEtherBefore,
-        uint256 totalSharesBefore,
-        AccountBalances memory traderBalancesBefore,
-        AccountBalances memory hyperdriveBalancesBefore
-    ) internal view override {
-        // Base withdraws are not supported for this instance.
-        if (asBase) {
-            revert IHyperdrive.UnsupportedToken();
-        }
-
-        // Ensure that the total pooled ether and shares stays the same.
-        (, uint256 totalPooledEther, ) = getSharePrice();
-        assertEq(totalPooledEther, totalPooledEtherBefore);
-        assertApproxEqAbs(EZETH.totalSupply(), totalSharesBefore, 1);
-
-        // Ensure that the ETH balances were updated correctly.
-        assertEq(
-            address(hyperdrive).balance,
-            hyperdriveBalancesBefore.ETHBalance
-        );
-        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-        // Ensure that the ezETH shares were updated correctly.
-        uint256 expectedShares = baseProceeds.mulDivDown(
-            totalSharesBefore,
-            totalPooledEtherBefore
-        );
-        assertApproxEqAbs(
-            EZETH.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.sharesBalance - expectedShares,
-            1
-        );
-        assertApproxEqAbs(
-            EZETH.balanceOf(trader),
-            traderBalancesBefore.sharesBalance + expectedShares,
-            1
-        );
-    }
-
+    /// @dev A test that ensures that advance time works properly by advancing
+    ///      time, accruing interest, and ensuring that the vault share price
+    ///      increased by the expected amount.
     function test__ezeth_interest_and_advance_time() external {
         // hand calculated value sanity check
         uint256 positionAdjustedInterestRate = uint256(0.05e18).mulDivDown(
@@ -303,6 +234,7 @@ contract EzETHHyperdriveTest is InstanceTest {
 
     /// Getters ///
 
+    /// @dev Test the instances getters.
     function test_getters() external view {
         assertEq(
             address(IEzETHHyperdriveRead(address(hyperdrive)).renzo()),
@@ -318,6 +250,9 @@ contract EzETHHyperdriveTest is InstanceTest {
 
     /// Price Per Share ///
 
+    /// @dev Fuzz test that verifies that the vault share price is the price
+    ///      that dictates the conversion between base and shares.
+    /// @param basePaid the fuzz parameter for the base paid.
     function test__pricePerVaultShare(uint256 basePaid) external {
         // Ensure that the share price is the expected value.
 
@@ -355,6 +290,9 @@ contract EzETHHyperdriveTest is InstanceTest {
 
     /// Helpers ///
 
+    /// @dev Advance time and accrue interest.
+    /// @param timeDelta The time to advance.
+    /// @param variableRate The variable rate.
     function advanceTime(
         uint256 timeDelta, // assume a position duration jump
         int256 variableRate // annual variable rate
@@ -408,7 +346,10 @@ contract EzETHHyperdriveTest is InstanceTest {
         }
     }
 
-    // returns share price information.
+    // @dev Gets the vault share price and some other important quantities.
+    /// @return sharePrice The vault share price.
+    /// @return totalPooledEther The total pooled ether.
+    /// @return totalShares The total amount of vault shares.
     function getSharePrice()
         internal
         view
@@ -434,6 +375,10 @@ contract EzETHHyperdriveTest is InstanceTest {
         return (sharePrice, totalTVL, totalSupply);
     }
 
+    /// @dev Convert a base amount to vault shares and approve Hyperdrive to
+    ///      spend the vault shares amount.
+    /// @param basePaid The amount of base that will be paid.
+    /// @return sharesPaid The amount of shares that will be paid.
     function getAndApproveShares(
         uint256 basePaid
     ) internal returns (uint256 sharesPaid) {

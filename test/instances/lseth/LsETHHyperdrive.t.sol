@@ -29,11 +29,11 @@ contract LsETHHyperdriveTest is InstanceTest {
     using Lib for *;
     using stdStorage for StdStorage;
 
-    // The LsETH token contract.
+    /// @dev The LsETH token contract.
     IRiverV1 internal constant RIVER =
         IRiverV1(0x8c1BEd5b9a0928467c9B1341Da1D7BD5e10b6549);
 
-    // Whale accounts.
+    /// @dev Whale accounts.
     address internal constant LSETH_WHALE =
         0xF047ab4c75cebf0eB9ed34Ae2c186f3611aEAfa6;
     address internal constant LSETH_WHALE_2 =
@@ -46,65 +46,67 @@ contract LsETHHyperdriveTest is InstanceTest {
         LSETH_WHALE_3
     ];
 
-    // The configuration for the instance testing suite.
-    InstanceTestConfig internal __testConfig =
-        InstanceTestConfig({
-            name: "Hyperdrive",
-            kind: "LsETHHyperdrive",
-            decimals: 18,
-            baseTokenWhaleAccounts: new address[](0),
-            vaultSharesTokenWhaleAccounts: whaleAccounts,
-            baseToken: IERC20(ETH),
-            vaultSharesToken: IERC20(RIVER),
-            shareTolerance: 1e5,
-            minimumShareReserves: 1e15,
-            minimumTransactionAmount: 1e15,
-            positionDuration: POSITION_DURATION,
-            fees: IHyperdrive.Fees({
-                curve: 0,
-                flat: 0,
-                governanceLP: 0,
-                governanceZombie: 0
-            }),
-            enableBaseDeposits: false,
-            enableShareDeposits: true,
-            enableBaseWithdraws: false,
-            enableShareWithdraws: true,
-            baseWithdrawError: abi.encodeWithSelector(
-                IHyperdrive.UnsupportedToken.selector
-            ),
-            isRebasing: false,
-            // NOTE: Base  withdrawals are disabled, so the tolerances are zero.
-            //
-            // The base test tolerances.
-            roundTripLpInstantaneousWithBaseTolerance: 0,
-            roundTripLpWithdrawalSharesWithBaseTolerance: 0,
-            roundTripLongInstantaneousWithBaseUpperBoundTolerance: 0,
-            roundTripLongInstantaneousWithBaseTolerance: 0,
-            roundTripLongMaturityWithBaseUpperBoundTolerance: 0,
-            roundTripLongMaturityWithBaseTolerance: 0,
-            roundTripShortInstantaneousWithBaseUpperBoundTolerance: 0,
-            roundTripShortInstantaneousWithBaseTolerance: 0,
-            roundTripShortMaturityWithBaseTolerance: 0,
-            // The share test tolerances.
-            closeLongWithSharesTolerance: 20,
-            closeShortWithSharesTolerance: 100,
-            roundTripLpInstantaneousWithSharesTolerance: 1e3,
-            roundTripLpWithdrawalSharesWithSharesTolerance: 1e3,
-            roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
-            roundTripLongInstantaneousWithSharesTolerance: 1e4,
-            roundTripLongMaturityWithSharesUpperBoundTolerance: 100,
-            roundTripLongMaturityWithSharesTolerance: 3e3,
-            roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
-            roundTripShortInstantaneousWithSharesTolerance: 1e3,
-            roundTripShortMaturityWithSharesTolerance: 1e3
-        });
+    /// @notice Instantiates the instance testing suite with the configuration.
+    constructor()
+        InstanceTest(
+            InstanceTestConfig({
+                name: "Hyperdrive",
+                kind: "LsETHHyperdrive",
+                decimals: 18,
+                baseTokenWhaleAccounts: new address[](0),
+                vaultSharesTokenWhaleAccounts: whaleAccounts,
+                baseToken: IERC20(ETH),
+                vaultSharesToken: IERC20(RIVER),
+                shareTolerance: 1e5,
+                minimumShareReserves: 1e15,
+                minimumTransactionAmount: 1e15,
+                positionDuration: POSITION_DURATION,
+                fees: IHyperdrive.Fees({
+                    curve: 0,
+                    flat: 0,
+                    governanceLP: 0,
+                    governanceZombie: 0
+                }),
+                enableBaseDeposits: false,
+                enableShareDeposits: true,
+                enableBaseWithdraws: false,
+                enableShareWithdraws: true,
+                baseWithdrawError: abi.encodeWithSelector(
+                    IHyperdrive.UnsupportedToken.selector
+                ),
+                isRebasing: false,
+                // NOTE: Base  withdrawals are disabled, so the tolerances are zero.
+                //
+                // The base test tolerances.
+                roundTripLpInstantaneousWithBaseTolerance: 0,
+                roundTripLpWithdrawalSharesWithBaseTolerance: 0,
+                roundTripLongInstantaneousWithBaseUpperBoundTolerance: 0,
+                roundTripLongInstantaneousWithBaseTolerance: 0,
+                roundTripLongMaturityWithBaseUpperBoundTolerance: 0,
+                roundTripLongMaturityWithBaseTolerance: 0,
+                roundTripShortInstantaneousWithBaseUpperBoundTolerance: 0,
+                roundTripShortInstantaneousWithBaseTolerance: 0,
+                roundTripShortMaturityWithBaseTolerance: 0,
+                // The share test tolerances.
+                closeLongWithSharesTolerance: 20,
+                closeShortWithSharesTolerance: 100,
+                roundTripLpInstantaneousWithSharesTolerance: 1e3,
+                roundTripLpWithdrawalSharesWithSharesTolerance: 1e3,
+                roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripLongInstantaneousWithSharesTolerance: 1e4,
+                roundTripLongMaturityWithSharesUpperBoundTolerance: 100,
+                roundTripLongMaturityWithSharesTolerance: 3e3,
+                roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripShortInstantaneousWithSharesTolerance: 1e3,
+                roundTripShortMaturityWithSharesTolerance: 1e3,
+                // The verification tolerances.
+                verifyDepositTolerance: 2,
+                verifyWithdrawalTolerance: 2
+            })
+        )
+    {}
 
-    /// @dev Instantiates the instance testing suite with the configuration.
-    constructor() InstanceTest(__testConfig) {}
-
-    /// @dev Forge function that is invoked to setup the testing environment.
-
+    /// @notice Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(19_429_100) {
         // Invoke the instance testing suite setup.
         super.setUp();
@@ -120,6 +122,7 @@ contract LsETHHyperdriveTest is InstanceTest {
 
     /// @dev Deploys the LsETH deployer coordinator contract.
     /// @param _factory The address of the Hyperdrive factory contract.
+    /// @return The coordinator address.
     function deployCoordinator(
         address _factory
     ) internal override returns (address) {
@@ -127,7 +130,7 @@ contract LsETHHyperdriveTest is InstanceTest {
         return
             address(
                 new LsETHHyperdriveDeployerCoordinator(
-                    string.concat(__testConfig.name, "DeployerCoordinator"),
+                    string.concat(config.name, "DeployerCoordinator"),
                     _factory,
                     address(new LsETHHyperdriveCoreDeployer()),
                     address(new LsETHTarget0Deployer()),
@@ -140,7 +143,9 @@ contract LsETHHyperdriveTest is InstanceTest {
             );
     }
 
-    /// @dev Converts base amount to the equivalent amount in LsETH.
+    /// @dev Converts base amount to the equivalent about in shares.
+    /// @param baseAmount The base amount.
+    /// @return The converted share amount.
     function convertToShares(
         uint256 baseAmount
     ) internal view override returns (uint256) {
@@ -148,7 +153,9 @@ contract LsETHHyperdriveTest is InstanceTest {
         return RIVER.sharesFromUnderlyingBalance(baseAmount);
     }
 
-    /// @dev Converts base amount to the equivalent amount in ETH.
+    /// @dev Converts share amount to the equivalent amount in base.
+    /// @param shareAmount The share amount.
+    /// @return The converted base amount.
     function convertToBase(
         uint256 shareAmount
     ) internal view override returns (uint256) {
@@ -156,111 +163,26 @@ contract LsETHHyperdriveTest is InstanceTest {
         return RIVER.underlyingBalanceFromShares(shareAmount);
     }
 
+    /// @dev Fetches the total supply of the base and share tokens.
+    /// @return The total supply of base.
+    /// @return The total supply of vault shares.
+    function getSupply() internal view override returns (uint256, uint256) {
+        return (address(RIVER).balance, RIVER.totalSupply());
+    }
+
     /// @dev Fetches the token balance information of an account.
+    /// @param account The account to query.
+    /// @return The balance of base.
+    /// @return The balance of vault shares.
     function getTokenBalances(
         address account
     ) internal view override returns (uint256, uint256) {
-        return (RIVER.balanceOfUnderlying(account), RIVER.balanceOf(account));
-    }
-
-    /// @dev Fetches the total supply of the base and share tokens.
-    function getSupply() internal view override returns (uint256, uint256) {
-        return (RIVER.totalUnderlyingSupply(), RIVER.totalSupply());
-    }
-
-    /// @dev Verifies that deposit accounting is correct when opening positions.
-    function verifyDeposit(
-        address trader,
-        uint256 amount,
-        bool asBase,
-        uint totalBaseBefore,
-        uint256 totalSharesBefore,
-        AccountBalances memory traderBalancesBefore,
-        AccountBalances memory hyperdriveBalancesBefore
-    ) internal view override {
-        // Deposits as base is not supported for this instance.
-        if (asBase) {
-            revert IHyperdrive.NotPayable();
-        }
-
-        // Convert the amount in terms of shares.
-        amount = convertToShares(amount);
-
-        // Ensure that the ETH balances were updated correctly.
-        assertEq(
-            address(hyperdrive).balance,
-            hyperdriveBalancesBefore.ETHBalance
-        );
-        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-        // Ensure that the LsETH balances were updated correctly.
-        assertApproxEqAbs(
-            RIVER.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.sharesBalance + amount,
-            1
-        );
-        assertApproxEqAbs(
-            RIVER.balanceOf(trader),
-            traderBalancesBefore.sharesBalance - amount,
-            1
-        );
-
-        // Ensure the total base supply was updated correctly.
-        assertEq(RIVER.totalUnderlyingSupply(), totalBaseBefore);
-
-        // Ensure the total supply was updated correctly.
-        assertEq(RIVER.totalSupply(), totalSharesBefore);
-    }
-
-    /// @dev Verifies that withdrawal accounting is correct when closing positions.
-    function verifyWithdrawal(
-        address trader,
-        uint256 baseProceeds,
-        bool asBase,
-        uint256 totalBaseBefore,
-        uint256 totalSharesBefore,
-        AccountBalances memory traderBalancesBefore,
-        AccountBalances memory hyperdriveBalancesBefore
-    ) internal view override {
-        // Base withdraws are not supported for this instance.
-        if (asBase) {
-            revert IHyperdrive.UnsupportedToken();
-        }
-
-        // Convert baseProceeds to shares to verify accounting.
-        uint256 amount = convertToShares(baseProceeds);
-
-        // Ensure the total amount of LsETH stays the same.
-        assertEq(RIVER.totalSupply(), totalSharesBefore);
-
-        // Ensure that the ETH balances were updated correctly.
-        assertEq(
-            address(hyperdrive).balance,
-            hyperdriveBalancesBefore.ETHBalance
-        );
-        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
-
-        // Ensure the LsETH balances were updated correctly.
-        assertApproxEqAbs(
-            RIVER.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.sharesBalance - amount,
-            1
-        );
-        assertApproxEqAbs(
-            RIVER.balanceOf(address(trader)),
-            traderBalancesBefore.sharesBalance + amount,
-            1
-        );
-
-        // Ensure the total base supply was updated correctly.
-        assertEq(RIVER.totalUnderlyingSupply(), totalBaseBefore);
-
-        // Ensure the total supply was updated correctly.
-        assertEq(RIVER.totalSupply(), totalSharesBefore);
+        return (account.balance, RIVER.balanceOf(account));
     }
 
     /// Getters ///
 
+    /// @dev Test for the additional getters.
     function test_getters() external view {
         (, uint256 totalShares) = getTokenBalances(address(hyperdrive));
         assertEq(hyperdrive.totalShares(), totalShares);
@@ -268,6 +190,9 @@ contract LsETHHyperdriveTest is InstanceTest {
 
     /// Price Per Share ///
 
+    /// @dev Fuzz test that verifies that the vault share price is the price
+    ///      that dictates the conversion between base and shares.
+    /// @param basePaid the fuzz parameter for the base paid.
     function test_pricePerVaultShare(uint256 basePaid) external {
         // Ensure the share prices are equal upon market inception.
         uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
@@ -292,6 +217,9 @@ contract LsETHHyperdriveTest is InstanceTest {
 
     /// Helpers ///
 
+    /// @dev Advance time and accrue interest.
+    /// @param timeDelta The time to advance.
+    /// @param variableRate The variable rate.
     function advanceTime(
         uint256 timeDelta,
         int256 variableRate
@@ -333,6 +261,9 @@ contract LsETHHyperdriveTest is InstanceTest {
         );
     }
 
+    /// @dev Test that ensures that advance time works correctly by advancing
+    ///      time and ensuring the the ending vault share price was updated
+    ///      correctly.
     function test_advanced_time() external {
         vm.stopPrank();
 

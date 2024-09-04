@@ -24,15 +24,15 @@ contract stUSDHyperdriveTest is ERC4626HyperdriveInstanceTest {
     using Lib for *;
     using stdStorage for StdStorage;
 
-    // The USDA contract.
+    /// @dev The USDA contract.
     IERC20 internal constant USDA =
         IERC20(0x0000206329b97DB379d5E1Bf586BbDB969C63274);
 
-    // The stUSD contract.
+    /// @dev The stUSD contract.
     ISTUSD internal constant STUSD =
         ISTUSD(0x0022228a2cc5E7eF0274A7Baa600d44da5aB5776);
 
-    // Whale accounts.
+    /// @dev Whale accounts.
     address internal USDA_TOKEN_WHALE =
         address(0xEc0B13b2271E212E1a74D55D51932BD52A002961);
     address[] internal baseTokenWhaleAccounts = [USDA_TOKEN_WHALE];
@@ -40,60 +40,63 @@ contract stUSDHyperdriveTest is ERC4626HyperdriveInstanceTest {
         address(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
     address[] internal vaultSharesTokenWhaleAccounts = [STUSD_TOKEN_WHALE];
 
-    // The configuration for the instance testing suite.
-    InstanceTestConfig internal __testConfig =
-        InstanceTestConfig({
-            name: "Hyperdrive",
-            kind: "ERC4626Hyperdrive",
-            decimals: 18,
-            baseTokenWhaleAccounts: baseTokenWhaleAccounts,
-            vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
-            baseToken: USDA,
-            vaultSharesToken: STUSD,
-            shareTolerance: 1e3,
-            minimumShareReserves: 1e15,
-            minimumTransactionAmount: 1e15,
-            positionDuration: POSITION_DURATION,
-            fees: IHyperdrive.Fees({
-                curve: 0,
-                flat: 0,
-                governanceLP: 0,
-                governanceZombie: 0
-            }),
-            enableBaseDeposits: true,
-            enableShareDeposits: true,
-            enableBaseWithdraws: true,
-            enableShareWithdraws: true,
-            baseWithdrawError: new bytes(0),
-            isRebasing: false,
-            // The base test tolerances.
-            roundTripLpInstantaneousWithBaseTolerance: 1e5,
-            roundTripLpWithdrawalSharesWithBaseTolerance: 1e6,
-            roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
-            roundTripLongInstantaneousWithBaseTolerance: 1e5,
-            roundTripLongMaturityWithBaseUpperBoundTolerance: 1e3,
-            roundTripLongMaturityWithBaseTolerance: 1e5,
-            roundTripShortInstantaneousWithBaseUpperBoundTolerance: 1e3,
-            roundTripShortInstantaneousWithBaseTolerance: 1e5,
-            roundTripShortMaturityWithBaseTolerance: 1e5,
-            // The share test tolerances.
-            closeLongWithSharesTolerance: 20,
-            closeShortWithSharesTolerance: 100,
-            roundTripLpInstantaneousWithSharesTolerance: 1e7,
-            roundTripLpWithdrawalSharesWithSharesTolerance: 1e7,
-            roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
-            roundTripLongInstantaneousWithSharesTolerance: 1e5,
-            roundTripLongMaturityWithSharesUpperBoundTolerance: 1e3,
-            roundTripLongMaturityWithSharesTolerance: 1e5,
-            roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
-            roundTripShortInstantaneousWithSharesTolerance: 1e5,
-            roundTripShortMaturityWithSharesTolerance: 1e5
-        });
+    /// @notice Instantiates the instance testing suite with the configuration.
+    constructor()
+        InstanceTest(
+            InstanceTestConfig({
+                name: "Hyperdrive",
+                kind: "ERC4626Hyperdrive",
+                decimals: 18,
+                baseTokenWhaleAccounts: baseTokenWhaleAccounts,
+                vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
+                baseToken: USDA,
+                vaultSharesToken: STUSD,
+                shareTolerance: 1e3,
+                minimumShareReserves: 1e15,
+                minimumTransactionAmount: 1e15,
+                positionDuration: POSITION_DURATION,
+                fees: IHyperdrive.Fees({
+                    curve: 0,
+                    flat: 0,
+                    governanceLP: 0,
+                    governanceZombie: 0
+                }),
+                enableBaseDeposits: true,
+                enableShareDeposits: true,
+                enableBaseWithdraws: true,
+                enableShareWithdraws: true,
+                baseWithdrawError: new bytes(0),
+                isRebasing: false,
+                // The base test tolerances.
+                roundTripLpInstantaneousWithBaseTolerance: 1e5,
+                roundTripLpWithdrawalSharesWithBaseTolerance: 1e6,
+                roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
+                roundTripLongInstantaneousWithBaseTolerance: 1e5,
+                roundTripLongMaturityWithBaseUpperBoundTolerance: 1e3,
+                roundTripLongMaturityWithBaseTolerance: 1e5,
+                roundTripShortInstantaneousWithBaseUpperBoundTolerance: 1e3,
+                roundTripShortInstantaneousWithBaseTolerance: 1e5,
+                roundTripShortMaturityWithBaseTolerance: 1e5,
+                // The share test tolerances.
+                closeLongWithSharesTolerance: 20,
+                closeShortWithSharesTolerance: 100,
+                roundTripLpInstantaneousWithSharesTolerance: 1e7,
+                roundTripLpWithdrawalSharesWithSharesTolerance: 1e7,
+                roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripLongInstantaneousWithSharesTolerance: 1e5,
+                roundTripLongMaturityWithSharesUpperBoundTolerance: 1e3,
+                roundTripLongMaturityWithSharesTolerance: 1e5,
+                roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripShortInstantaneousWithSharesTolerance: 1e5,
+                roundTripShortMaturityWithSharesTolerance: 1e5,
+                // The verification tolerances.
+                verifyDepositTolerance: 2,
+                verifyWithdrawalTolerance: 2
+            })
+        )
+    {}
 
-    /// @dev Instantiates the instance testing suite with the configuration.
-    constructor() InstanceTest(__testConfig) {}
-
-    /// @dev Forge function that is invoked to setup the testing environment.
+    /// @notice Forge function that is invoked to setup the testing environment.
     function setUp() public override __mainnet_fork(20_643_578) {
         // Invoke the Instance testing suite setup.
         super.setUp();

@@ -85,7 +85,10 @@ contract MorphoBlue_wstETH_USDC_HyperdriveTest is
                 roundTripLongMaturityWithSharesTolerance: 0,
                 roundTripShortInstantaneousWithSharesUpperBoundTolerance: 0,
                 roundTripShortInstantaneousWithSharesTolerance: 0,
-                roundTripShortMaturityWithSharesTolerance: 0
+                roundTripShortMaturityWithSharesTolerance: 0,
+                // The verification tolerances.
+                verifyDepositTolerance: 2,
+                verifyWithdrawalTolerance: 3
             }),
             IMorphoBlueHyperdrive.MorphoBlueParams({
                 // The mainnet Morpho Blue pool

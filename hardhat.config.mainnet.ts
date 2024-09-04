@@ -7,6 +7,7 @@ import { HardhatUserConfig } from "hardhat/config";
 import baseConfig from "./hardhat.config";
 import "./tasks";
 import {
+    MAINNET_ERC4626_COORDINATOR,
     MAINNET_EZETH_182DAY,
     MAINNET_EZETH_COORDINATOR,
     MAINNET_FACTORY,
@@ -14,7 +15,6 @@ import {
     MAINNET_MORPHO_BLUE_SUSDE_DAI_182DAY,
     MAINNET_MORPHO_BLUE_USDE_DAI_182DAY,
     MAINNET_MORPHO_BLUE_WSTETH_USDA_182DAY,
-    MAINNET_MORPHO_BLUE_WSTETH_USDC_182DAY,
     MAINNET_RETH_182DAY,
     MAINNET_RETH_COORDINATOR,
     MAINNET_STUSD_182DAY,
@@ -32,6 +32,7 @@ const config: HardhatUserConfig = {
             hyperdriveDeploy: {
                 factories: [MAINNET_FACTORY],
                 coordinators: [
+                    MAINNET_ERC4626_COORDINATOR,
                     MAINNET_EZETH_COORDINATOR,
                     MAINNET_RETH_COORDINATOR,
                     MAINNET_MORPHO_BLUE_COORDINATOR,
@@ -41,7 +42,6 @@ const config: HardhatUserConfig = {
                     MAINNET_RETH_182DAY,
                     MAINNET_MORPHO_BLUE_SUSDE_DAI_182DAY,
                     MAINNET_MORPHO_BLUE_USDE_DAI_182DAY,
-                    MAINNET_MORPHO_BLUE_WSTETH_USDC_182DAY,
                     MAINNET_MORPHO_BLUE_WSTETH_USDA_182DAY,
                     MAINNET_STUSD_182DAY,
                 ],
