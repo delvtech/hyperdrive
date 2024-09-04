@@ -2,6 +2,8 @@ name: build and upload hyperdrivetypes wheel on a tag
 
 on:
   push:
+    branches:
+      - "main"
 
 jobs:
   detect-changes:
