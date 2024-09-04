@@ -1,0 +1,17 @@
+name: build and upload hyperdrivetypes wheel on a tag
+
+on:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  detect-changes:
+    uses: ./.github/workflows/check_diff.yaml
+    with:
+      pattern: ^python/hyperdrivetypes/pyproject.toml$
+
+  build-wheel:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.changed == 'true'
+    uses: ./.github/workflows/build_hyperdrivetypes.yml
