@@ -1,9 +1,7 @@
 name: build and upload hyperdrivetypes wheel
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_call:
 
 jobs:
   build-wheel:
