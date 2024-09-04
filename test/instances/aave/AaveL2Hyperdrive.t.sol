@@ -110,9 +110,6 @@ contract AaveL2HyperdriveTest is InstanceTest, EtchingUtils {
     function setUp() public override __arbitrum_fork(248_038_178) {
         // Invoke the instance testing suite setup.
         super.setUp();
-        address implementationAddress = 0x6C6c6857e2F32fcCBDb2791597350Aa034a3ce47;
-        address addressesProvider = 0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb;
-        // etchAaveL2Pool(implementationAddress, addressesProvider);
     }
 
     /// Overrides ///
@@ -430,8 +427,10 @@ contract AaveL2HyperdriveTest is InstanceTest, EtchingUtils {
 
         // Accrue interest in the Aave pool. Since the vault share price is
         // given by `getReserveNormalizedIncome()`, we can simulate the accrual
-        // of interest by multiplying the total pooled ether by the variable
-        // rate plus one.
+        // of interest by multiplying the reserve normalized income by the
+        // variable rate plus one. We also need to increase the
+        // `lastUpdatedTimestamp` to avoid accruing interest when deposits or
+        // withdrawals are processed.
         uint256 normalizedTime = timeDelta.divDown(365 days);
         reserveNormalizedIncome = variableRate >= 0
             ? reserveNormalizedIncome +
@@ -456,7 +455,7 @@ contract AaveL2HyperdriveTest is InstanceTest, EtchingUtils {
             address(POOL),
             bytes32(uint256(reserveDataLocation) + 3),
             bytes32(
-                (data.id << 192) |
+                (uint256(data.id) << 168) |
                     (block.timestamp << 128) |
                     data.currentStableBorrowRate
             )

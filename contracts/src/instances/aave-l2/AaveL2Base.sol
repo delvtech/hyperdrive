@@ -9,9 +9,8 @@ import { IAL2Token } from "../../interfaces/IAL2Token.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { FixedPointMath } from "../../libraries/FixedPointMath.sol";
+import { SafeCast } from "../../libraries/SafeCast.sol";
 import { AaveL2Conversions } from "./AaveL2Conversions.sol";
-
-import { console2 as console } from "forge-std/console2.sol";
 
 /// @author DELV
 /// @title AaveL2Base
@@ -24,6 +23,7 @@ import { console2 as console } from "forge-std/console2.sol";
 ///                    particular legal or regulatory significance.
 abstract contract AaveL2Base is HyperdriveBase {
     using FixedPointMath for uint256;
+    using SafeCast for uint256;
     using SafeERC20 for ERC20;
 
     /// @dev The AaveL2 vault that is this instance's yield source.
@@ -50,15 +50,12 @@ abstract contract AaveL2Base is HyperdriveBase {
         uint256 _baseAmount,
         bytes calldata // unused
     ) internal override returns (uint256, uint256) {
-        console.log("_depositWithBase");
         // Take custody of the deposit in base.
         ERC20(address(_baseToken)).safeTransferFrom(
             msg.sender,
             address(this),
             _baseAmount
         );
-        console.log("  address(this)", address(this));
-        console.log("  msg.sender", msg.sender);
 
         // Deposit the base into the yield source.
         //
@@ -69,7 +66,6 @@ abstract contract AaveL2Base is HyperdriveBase {
             address(_vault),
             _baseAmount + 1
         );
-        // _vault.supply(address(_baseToken), _baseAmount, address(this), 0);
         // NOTE: We use the encoded params version of 'supply' for better gas
         // efficiency.
         bytes32 supplyParams = encodeSupplyParams(
@@ -77,25 +73,6 @@ abstract contract AaveL2Base is HyperdriveBase {
             _baseAmount,
             0
         );
-        uint16 assetId;
-        uint256 amount;
-        uint16 referralCode;
-
-        assembly {
-            assetId := and(supplyParams, 0xFFFF)
-            amount := and(
-                shr(16, supplyParams),
-                0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-            )
-            referralCode := and(shr(144, supplyParams), 0xFFFF)
-        }
-
-        address asset = _vault.getReserveAddressById(assetId);
-        console.log("asset", asset);
-        console.log("amount", amount);
-        console.log("assetId", assetId);
-        console.log("referralCode", referralCode);
-        console.log("supplyParams", uint256(supplyParams));
         _vault.supply(supplyParams);
 
         return (_convertToShares(_baseAmount), 0);
@@ -120,6 +97,8 @@ abstract contract AaveL2Base is HyperdriveBase {
         );
     }
 
+    // FIXME: This still needs to be updated.
+    //
     /// @dev Process a withdrawal in base and send the proceeds to the
     ///      destination.
     /// @param _shareAmount The amount of vault shares to withdraw.
@@ -129,15 +108,11 @@ abstract contract AaveL2Base is HyperdriveBase {
         address _destination, // unused _destination,
         bytes calldata // unused
     ) internal override returns (uint256 amountWithdrawn) {
-        console.log("_withdrawWithBase");
-        console.log("  msg.sender", msg.sender);
-        console.log("  _destination", _destination);
         // Withdraw assets from the AaveL2 vault to the destination.
         bytes32 withdrawParams = encodeWithdrawParams(
             address(_baseToken),
             _convertToBase(_shareAmount)
         );
-        console.log("withdrawParams", uint256(withdrawParams));
         // if (msg.sender == _destination) {
         // amountWithdrawn = _vault.withdraw(withdrawParams);
         _baseToken.transfer(_destination, amountWithdrawn);
@@ -215,35 +190,24 @@ abstract contract AaveL2Base is HyperdriveBase {
         }
     }
 
-    /**
-     * @notice Encodes supply parameters from standard input to compact representation of 1 bytes32
-     * @dev Without an onBehalfOf parameter as the compact calls to L2Pool will use msg.sender as onBehalfOf
-     * @param asset The address of the underlying asset to supply
-     * @param amount The amount to be supplied
-     * @param referralCode referralCode Code used to register the integrator originating the operation, for potential rewards.
-     *   0 if the action is executed directly by the user, without any middle-man
-     * @return compact representation of supply parameters
-     */
+    /// @notice Encodes supply parameters from standard input to compact
+    ///         representation of 1 bytes32.
+    /// @dev Without an onBehalfOf parameter as the compact calls to L2Pool will
+    ///      use msg.sender as onBehalfOf.
+    /// @param asset The address of the underlying asset to supply.
+    /// @param amount The amount to be supplied.
+    /// @param referralCode referralCode Code used to register the integrator
+    ///        originating the operation, for potential rewards. 0 if the action
+    ///        is executed directly by the user, without any middle-man.
+    /// @return Compact representation of supply parameters.
     function encodeSupplyParams(
         address asset,
         uint256 amount,
         uint16 referralCode
     ) internal view returns (bytes32) {
-        DataTypes.ReserveData memory data = _vault.getReserveData(asset);
-        address reserveAddress = _vault.getReserveAddressById(4);
-        address aTokenAddress = data.aTokenAddress;
-
-        console.log("encodeSupplyParams");
-        console.log("  reserveAddress", reserveAddress);
-        console.log("  _vault", address(_vault));
-        console.log("  aTokenAddress", aTokenAddress);
-        uint16 assetId = data.id;
-        console.log("  asset", asset);
-        console.log("  assetId", assetId);
-        uint128 shortenedAmount = uint128(amount);
-        console.log("  shortenedAmount", shortenedAmount);
+        uint16 assetId = _vault.getReserveData(asset).id;
+        uint128 shortenedAmount = amount.toUint128();
         bytes32 res;
-
         assembly {
             res := add(
                 assetId,
@@ -253,37 +217,19 @@ abstract contract AaveL2Base is HyperdriveBase {
         return res;
     }
 
-    function decodeSupplyParams(
-        mapping(uint256 => address) storage reservesList,
-        bytes32 args
-    ) internal view returns (address, uint256, uint16) {
-        uint16 assetId;
-        uint256 amount;
-        uint16 referralCode;
-
-        assembly {
-            assetId := and(args, 0xFFFF)
-            amount := and(shr(16, args), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
-            referralCode := and(shr(144, args), 0xFFFF)
-        }
-        return (reservesList[assetId], amount, referralCode);
-    }
-
-    /**
-     * @notice Encodes withdraw parameters from standard input to compact representation of 1 bytes32
-     * @dev Without a to parameter as the compact calls to L2Pool will use msg.sender as to
-     * @param asset The address of the underlying asset to withdraw
-     * @param amount The underlying amount to be withdrawn
-     * @return compact representation of withdraw parameters
-     */
+    /// @notice Encodes withdraw parameters from standard input to compact
+    ///         representation of 1 bytes32.
+    /// @dev Without a to parameter as the compact calls to L2Pool will use
+    ///      msg.sender as to.
+    /// @param asset The address of the underlying asset to withdraw.
+    /// @param amount The underlying amount to be withdrawn.
+    /// @return compact representation of withdraw parameters.
     function encodeWithdrawParams(
         address asset,
         uint256 amount
     ) internal view returns (bytes32) {
         DataTypes.ReserveData memory data = _vault.getReserveData(asset);
-
         uint16 assetId = data.id;
-        console.log("assetId", assetId);
         uint128 shortenedAmount = amount == type(uint256).max
             ? type(uint128).max
             : uint128(amount);
@@ -292,7 +238,6 @@ abstract contract AaveL2Base is HyperdriveBase {
         assembly {
             res := add(assetId, shl(16, shortenedAmount))
         }
-        console.log("res", uint256(res));
         return res;
     }
 }
