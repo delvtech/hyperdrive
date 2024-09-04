@@ -19,7 +19,7 @@ classifiers = [
     "Natural Language :: English",
 ]
 
-dependencies = ["pypechain==0.0.37", "fixedpointmath"]
+dependencies = ["pypechain>=0.0.38", "fixedpointmath"]
 
 [project.optional-dependencies]
 dev = ["pyright", "pytest"]
