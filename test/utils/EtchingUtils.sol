@@ -3,6 +3,8 @@ pragma solidity ^0.8.20;
 
 import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { Test } from "forge-std/Test.sol";
+import { L2Pool } from "aave/protocol/pool/L2Pool.sol";
+import { IPoolAddressesProvider } from "aave/interfaces/IPoolAddressesProvider.sol";
 import { ERC4626Hyperdrive } from "../../contracts/src/instances/erc4626/ERC4626Hyperdrive.sol";
 import { ERC4626Target0 } from "../../contracts/src/instances/erc4626/ERC4626Target0.sol";
 import { ERC4626Target1 } from "../../contracts/src/instances/erc4626/ERC4626Target1.sol";
@@ -613,5 +615,13 @@ contract EtchingUtils is Test {
             );
             vm.etch(address(hyperdrive), address(template).code);
         }
+    }
+
+    function etchAaveL2Pool(
+        address implementationAddress, // Not the proxy, but the implementation address.
+        address addressesProvider // The PoolAddressesProvider address used by the pool.
+    ) internal {
+        L2Pool template = new L2Pool(IPoolAddressesProvider(addressesProvider));
+        vm.etch(implementationAddress, address(template).code);
     }
 }
