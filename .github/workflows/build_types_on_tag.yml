@@ -1,0 +1,10 @@
+name: build and upload hyperdrivetypes wheel on a tag
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-wheel:
+    uses: ./.github/workflows/build_hyperdrivetypes.yml

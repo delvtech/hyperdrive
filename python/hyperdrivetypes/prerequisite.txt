@@ -1,1 +1,1 @@
-pypechain >= 0.0.37
+pypechain == 0.0.37
