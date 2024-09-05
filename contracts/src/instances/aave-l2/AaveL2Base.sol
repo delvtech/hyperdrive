@@ -113,18 +113,15 @@ abstract contract AaveL2Base is HyperdriveBase {
             address(_baseToken),
             _convertToBase(_shareAmount)
         );
-        // if (msg.sender == _destination) {
-        // amountWithdrawn = _vault.withdraw(withdrawParams);
+        amountWithdrawn = _vault.withdraw(withdrawParams);
         _baseToken.transfer(_destination, amountWithdrawn);
-        // } else {
-        amountWithdrawn = _vault.withdraw(
-            address(_baseToken), // asset
-            // NOTE: Withdrawals are processed in base, so we have to convert
-            // the share amount to a base amount.
-            _convertToBase(_shareAmount), // amount
-            _destination // onBehalfOf
-        );
-        // }
+        // amountWithdrawn = _vault.withdraw(
+        //     address(_baseToken), // asset
+        //     // NOTE: Withdrawals are processed in base, so we have to convert
+        //     // the share amount to a base amount.
+        //     _convertToBase(_shareAmount), // amount
+        //     _destination // onBehalfOf
+        // );
 
         return amountWithdrawn;
     }
