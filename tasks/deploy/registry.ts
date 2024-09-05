@@ -1,12 +1,10 @@
 import { subtask } from "hardhat/config";
 import {
     Address,
-    encodeAbiParameters,
     encodeFunctionData,
     encodePacked,
     isHex,
     parseEther,
-    zeroAddress,
 } from "viem";
 import {
     CREATE_X_FACTORY,
@@ -66,29 +64,19 @@ HyperdriveDeployBaseTask(
         // Assemble the creation code by packing the registry contract's
         // bytecode with its constructor arguments.
         let artifact = artifacts.readArtifactSync("HyperdriveRegistry");
-        let creationCode = encodePacked(
-            ["bytes", "bytes"],
-            [
-                artifact.bytecode,
-                encodeAbiParameters(
-                    [{ name: "_name", type: "string" }],
-                    [name],
-                ),
-            ],
-        );
+        let creationCode = encodePacked(["bytes"], [artifact.bytecode]);
         let initializationData = encodeFunctionData({
             abi: artifact.abi,
-            functionName: "updateAdmin",
-            args: [deployer],
+            functionName: "initialize",
+            args: [name, deployer],
         });
 
-        // Call the Create2 deployer to deploy the contract.
-        let tx = await createXDeployer.write.deployCreate2AndInit([
+        // Call the Create3 deployer to deploy the contract.
+        let tx = await createXDeployer.write.deployCreate3AndInit([
             salt,
             creationCode,
             initializationData,
             { constructorAmount: 0n, initCallAmount: 0n },
-            zeroAddress,
         ]);
         let pc = await viem.getPublicClient();
         let receipt = await pc.waitForTransactionReceipt({ hash: tx });
