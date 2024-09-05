@@ -7,7 +7,7 @@ import { IHyperdriveCheckpointSubrewarder } from "../../../contracts/src/interfa
 import { IHyperdriveRegistry } from "../../../contracts/src/interfaces/IHyperdriveRegistry.sol";
 import { IHyperdriveGovernedRegistry } from "../../../contracts/src/interfaces/IHyperdriveGovernedRegistry.sol";
 import { HYPERDRIVE_CHECKPOINT_SUBREWARDER_KIND, VERSION } from "../../../contracts/src/libraries/Constants.sol";
-import { HyperdriveRegistry } from "../../../contracts/src/factory/HyperdriveRegistry.sol";
+import { HyperdriveRegistry } from "../../../contracts/src/registry/HyperdriveRegistry.sol";
 import { HyperdriveCheckpointRewarder } from "../../../contracts/src/rewarder/HyperdriveCheckpointRewarder.sol";
 import { HyperdriveCheckpointSubrewarder } from "../../../contracts/src/rewarder/HyperdriveCheckpointSubrewarder.sol";
 import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";

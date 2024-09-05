@@ -10,7 +10,6 @@ import { ERC4626Target2Deployer } from "../../../contracts/src/deployers/erc4626
 import { ERC4626Target3Deployer } from "../../../contracts/src/deployers/erc4626/ERC4626Target3Deployer.sol";
 import { ERC4626Target4Deployer } from "../../../contracts/src/deployers/erc4626/ERC4626Target4Deployer.sol";
 import { HyperdriveFactory } from "../../../contracts/src/factory/HyperdriveFactory.sol";
-import { HyperdriveRegistry } from "../../../contracts/src/factory/HyperdriveRegistry.sol";
 import { IERC4626 } from "../../../contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../../contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
@@ -19,6 +18,7 @@ import { IHyperdriveGovernedRegistry } from "../../../contracts/src/interfaces/I
 import { IHyperdriveRegistry } from "../../../contracts/src/interfaces/IHyperdriveRegistry.sol";
 import { VERSION } from "../../../contracts/src/libraries/Constants.sol";
 import { ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveRegistry } from "../../../contracts/src/registry/HyperdriveRegistry.sol";
 import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
 import { MockERC4626 } from "../../../contracts/test/MockERC4626.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
@@ -32,13 +32,19 @@ contract HyperdriveRegistryTest is HyperdriveTest {
     string internal constant REGISTRY_NAME = "HyperdriveRegistry";
     uint256 internal constant FIXED_RATE = 0.05e18;
 
+    event Initialized(string indexed name, address indexed admin);
+
+    event AdminUpdated(address indexed admin);
+
     event FactoryInfoUpdated(address indexed factory, uint256 indexed data);
 
     event InstanceInfoUpdated(
-        address indexed hyperdrive,
+        address indexed instance,
         uint256 indexed data,
         address indexed factory
     );
+
+    event NameUpdated(string indexed name);
 
     IERC4626 internal vaultSharesToken;
 
@@ -48,9 +54,8 @@ contract HyperdriveRegistryTest is HyperdriveTest {
 
         // Instantiate the Hyperdrive registry. This ensures that we are testing
         // against a fresh state.
-        vm.stopPrank();
-        vm.startPrank(registrar);
-        registry = new HyperdriveRegistry(REGISTRY_NAME);
+        registry = new HyperdriveRegistry();
+        registry.initialize(REGISTRY_NAME, registrar);
 
         // Deploy a base token.
         baseToken = new ERC20Mintable(
@@ -227,14 +232,36 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         assertEq(registry.version(), VERSION);
     }
 
+    function test_initialize_failure_alreadyInitialized() public {
+        // Ensure that the registry can't be initialized again.
+        vm.expectRevert(
+            IHyperdriveGovernedRegistry.RegistryAlreadyInitialized.selector
+        );
+        registry.initialize(REGISTRY_NAME, alice);
+    }
+
+    function test_initialize() public {
+        registry = new HyperdriveRegistry();
+
+        // Ensure that the correct event is emitted and that the state is
+        // updated propery when the registry is initialized.
+        address admin = alice;
+        vm.expectEmit(true, true, true, true);
+        emit Initialized(REGISTRY_NAME, admin);
+        registry.initialize(REGISTRY_NAME, admin);
+        assertTrue(registry.isInitialized());
+        assertTrue(registry.name().eq(REGISTRY_NAME));
+        assertEq(registry.admin(), admin);
+    }
+
     function test_updateAdmin_failure_onlyAdmin() public {
         address notAdmin = makeAddr("notAdmin");
 
         // Ensure that an address that isn't the admin can't update the admin.
         vm.stopPrank();
         vm.startPrank(notAdmin);
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
-        registry.updateAdmin(makeAddr("newAdmin"));
+        vm.expectRevert(IHyperdriveGovernedRegistry.Unauthorized.selector);
+        registry.updateAdmin(notAdmin);
     }
 
     function test_updateAdmin() public {
@@ -243,8 +270,33 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         // Ensure that the registry's admin can update the admin address.
         vm.stopPrank();
         vm.startPrank(registry.admin());
+        vm.expectEmit(true, true, true, true);
+        emit AdminUpdated(newAdmin);
         registry.updateAdmin(newAdmin);
         assertEq(registry.admin(), newAdmin);
+    }
+
+    function test_updateName_failure_onlyAdmin() public {
+        address notAdmin = makeAddr("notAdmin");
+        string memory newName = "New Registry Name";
+
+        // Ensure that an address that isn't the admin can't update the name.
+        vm.stopPrank();
+        vm.startPrank(notAdmin);
+        vm.expectRevert(IHyperdriveGovernedRegistry.Unauthorized.selector);
+        registry.updateName(newName);
+    }
+
+    function test_updateName() public {
+        string memory newName = "New Registry Name";
+
+        // Ensure that the registry's admin can update the name.
+        vm.stopPrank();
+        vm.startPrank(registry.admin());
+        vm.expectEmit(true, true, true, true);
+        emit NameUpdated(newName);
+        registry.updateName(newName);
+        assertTrue(registry.name().eq(newName));
     }
 
     function test_setFactoryInfo_failure_onlyAdmin() public {
@@ -260,7 +312,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         uint128[] memory data = new uint128[](1);
         factories[0] = address(factory);
         data[0] = 1;
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        vm.expectRevert(IHyperdriveGovernedRegistry.Unauthorized.selector);
         registry.setFactoryInfo(factories, data);
     }
 
@@ -492,7 +544,7 @@ contract HyperdriveRegistryTest is HyperdriveTest {
         instances[0] = address(instance);
         data[0] = 1;
         factories[0] = address(factory);
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        vm.expectRevert(IHyperdriveGovernedRegistry.Unauthorized.selector);
         registry.setInstanceInfo(instances, data, factories);
     }
 

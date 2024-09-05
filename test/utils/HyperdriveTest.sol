@@ -16,7 +16,7 @@ import { FixedPointMath, ONE } from "../../contracts/src/libraries/FixedPointMat
 import { HyperdriveMath } from "../../contracts/src/libraries/HyperdriveMath.sol";
 import { LPMath } from "../../contracts/src/libraries/LPMath.sol";
 import { YieldSpaceMath } from "../../contracts/src/libraries/YieldSpaceMath.sol";
-import { HyperdriveRegistry } from "../../contracts/src/factory/HyperdriveRegistry.sol";
+import { HyperdriveRegistry } from "../../contracts/src/registry/HyperdriveRegistry.sol";
 import { ERC20ForwarderFactory } from "../../contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "../../contracts/test/ERC20Mintable.sol";
 import { MockHyperdrive, MockHyperdriveAdminController } from "../../contracts/test/MockHyperdrive.sol";
@@ -62,9 +62,8 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         forwarderFactory = new ERC20ForwarderFactory("ForwarderFactory");
 
         // Instantiate the Hyperdrive registry.
-        vm.stopPrank();
-        vm.startPrank(registrar);
-        registry = new HyperdriveRegistry("HyperdriveRegistry");
+        registry = new HyperdriveRegistry();
+        registry.initialize("HyperdriveRegistry", registrar);
 
         // Instantiate the Hyperdrive factory.
         IHyperdrive.PoolConfig memory config = testConfig(

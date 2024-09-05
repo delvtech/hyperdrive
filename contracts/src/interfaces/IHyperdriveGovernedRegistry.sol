@@ -4,6 +4,9 @@ pragma solidity ^0.8.20;
 import { IHyperdriveRegistry } from "./IHyperdriveRegistry.sol";
 
 interface IHyperdriveGovernedRegistry is IHyperdriveRegistry {
+    /// @notice Emitted when the registry is initialized.
+    event Initialized(string indexed name, address indexed admin);
+
     /// @notice Emitted when admin is transferred.
     event AdminUpdated(address indexed admin);
 
@@ -16,6 +19,9 @@ interface IHyperdriveGovernedRegistry is IHyperdriveRegistry {
         uint256 indexed data,
         address indexed factory
     );
+
+    /// @notice Emitted when the name is updated.
+    event NameUpdated(string indexed name);
 
     /// @dev The info collected for each Hyperdrive factory.
     struct FactoryInfoInternal {
@@ -54,16 +60,34 @@ interface IHyperdriveGovernedRegistry is IHyperdriveRegistry {
     ///         ending index.
     error InvalidIndexes();
 
+    /// @notice Thrown when the registry has already initialized.
+    error RegistryAlreadyInitialized();
+
     /// @notice Thrown when caller is not the admin.
     error Unauthorized();
+
+    /// @notice Gets the initialization status of the registry.
+    /// @return Gets the flag indicating whether or not the registry was
+    ///         initialized.
+    function isInitialized() external view returns (bool);
 
     /// @notice Gets the admin address of this registry.
     /// @return The admin address of this registry.
     function admin() external view returns (address);
 
-    /// @notice Allows admin to transfer the admin role.
+    /// @notice Initializes the registry and sets the initial name and admin
+    ///         address.
+    /// @param _name The initial name.
+    /// @param _admin The initial admin address.
+    function initialize(string calldata _name, address _admin) external;
+
+    /// @notice Allows the admin to transfer the admin role.
     /// @param _admin The new admin address.
     function updateAdmin(address _admin) external;
+
+    /// @notice Allows the admin to update the name.
+    /// @param _name The new name.
+    function updateName(string calldata _name) external;
 
     /// @notice Allows the admin to set arbitrary info for Hyperdrive factories.
     /// @param __factories The Hyperdrive factories to update.
