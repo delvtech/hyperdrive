@@ -47,7 +47,7 @@ const config: HardhatUserConfig = {
             },
         ],
         apiKey: {
-            gnosis: env.LINEASCAN_API_KEY ?? "",
+            linea_mainnet: env.LINEASCAN_API_KEY ?? "",
         },
     },
 };

@@ -6,6 +6,7 @@ import {
     encodePacked,
     isHex,
     parseEther,
+    zeroAddress,
 } from "viem";
 import {
     CREATE_X_FACTORY,
@@ -87,6 +88,7 @@ HyperdriveDeployBaseTask(
             creationCode,
             initializationData,
             { constructorAmount: 0n, initCallAmount: 0n },
+            zeroAddress,
         ]);
         let pc = await viem.getPublicClient();
         let receipt = await pc.waitForTransactionReceipt({ hash: tx });
