@@ -5,6 +5,7 @@ import { IL2Pool } from "contracts/src/interfaces/IAave.sol";
 import { DataTypes } from "aave/protocol/libraries/types/DataTypes.sol";
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import { IAaveL2Hyperdrive } from "contracts/src/interfaces/IAaveL2Hyperdrive.sol";
+import { AaveL2Conversions } from "contracts/src/instances/aave-l2/AaveL2Conversions.sol";
 import { AaveL2HyperdriveCoreDeployer } from "contracts/src/deployers/aave-l2/AaveL2HyperdriveCoreDeployer.sol";
 import { AaveL2HyperdriveDeployerCoordinator } from "contracts/src/deployers/aave-l2/AaveL2HyperdriveDeployerCoordinator.sol";
 import { AaveL2Target0Deployer } from "contracts/src/deployers/aave-l2/AaveL2Target0Deployer.sol";
@@ -19,9 +20,8 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { InstanceTest } from "test/utils/InstanceTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
-import { EtchingUtils } from "test/utils/EtchingUtils.sol";
 
-contract AaveL2HyperdriveTest is InstanceTest, EtchingUtils {
+contract AaveL2HyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using Lib for *;
     using stdStorage for StdStorage;
@@ -124,22 +124,14 @@ contract AaveL2HyperdriveTest is InstanceTest, EtchingUtils {
     function convertToShares(
         uint256 baseAmount
     ) internal view override returns (uint256) {
-        return
-            baseAmount.mulDivDown(
-                1e27,
-                POOL.getReserveNormalizedIncome(address(WETH))
-            );
+        return AaveL2Conversions.convertToShares(WETH, POOL, baseAmount);
     }
 
     /// @dev Converts share amount to the equivalent amount in base.
     function convertToBase(
         uint256 shareAmount
     ) internal view override returns (uint256) {
-        return
-            shareAmount.mulDivDown(
-                POOL.getReserveNormalizedIncome(address(WETH)),
-                1e27
-            );
+        return AaveL2Conversions.convertToBase(WETH, POOL, shareAmount);
     }
 
     /// @dev Deploys the AaveL2 deployer coordinator contract.
@@ -431,16 +423,11 @@ contract AaveL2HyperdriveTest is InstanceTest, EtchingUtils {
         // variable rate plus one. We also need to increase the
         // `lastUpdatedTimestamp` to avoid accruing interest when deposits or
         // withdrawals are processed.
-        uint256 normalizedTime = timeDelta.divDown(365 days);
-        reserveNormalizedIncome = variableRate >= 0
-            ? reserveNormalizedIncome +
-                reserveNormalizedIncome.mulDown(uint256(variableRate)).mulDown(
-                    normalizedTime
-                )
-            : reserveNormalizedIncome -
-                reserveNormalizedIncome.mulDown(uint256(-variableRate)).mulDown(
-                    normalizedTime
-                );
+        (uint256 totalAmount, ) = HyperdriveUtils.calculateInterest(
+            reserveNormalizedIncome,
+            variableRate,
+            timeDelta
+        );
         bytes32 reserveDataLocation = keccak256(abi.encode(address(WETH), 52));
         DataTypes.ReserveData memory data = POOL.getReserveData(address(WETH));
         vm.store(
@@ -448,7 +435,7 @@ contract AaveL2HyperdriveTest is InstanceTest, EtchingUtils {
             bytes32(uint256(reserveDataLocation) + 1),
             bytes32(
                 (uint256(data.currentLiquidityRate) << 128) |
-                    uint256(reserveNormalizedIncome)
+                    uint256(totalAmount)
             )
         );
         vm.store(
