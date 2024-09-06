@@ -1,17 +1,19 @@
 import { subtask } from "hardhat/config";
 import {
     Address,
+    decodeEventLog,
     encodeFunctionData,
     encodePacked,
-    isHex,
     parseEther,
 } from "viem";
+import { CREATEX_ABI } from "../../lib/createx/interface/src/lib/constants";
 import {
     CREATE_X_FACTORY,
     CREATE_X_FACTORY_DEPLOYER,
     CREATE_X_PRESIGNED_TRANSACTION,
     HyperdriveDeployBaseTask,
     HyperdriveDeployNamedTaskParams,
+    REGISTRY_SALT,
 } from "./lib";
 
 export type DeployRegistryParams = HyperdriveDeployNamedTaskParams;
@@ -53,14 +55,6 @@ HyperdriveDeployBaseTask(
             CREATE_X_FACTORY,
         );
 
-        // Read the salt from the environment and ensure it is a hex string.
-        let salt = process.env.REGISTRY_SALT! as `0x${string}`;
-        if (!isHex(salt)) {
-            console.error(
-                'Invalid REGISTRY_SALT, must be a "0x" prefixed hex string',
-            );
-        }
-
         // Assemble the creation code by packing the registry contract's
         // bytecode with its constructor arguments.
         let artifact = artifacts.readArtifactSync("HyperdriveRegistry");
@@ -73,14 +67,19 @@ HyperdriveDeployBaseTask(
 
         // Call the Create3 deployer to deploy the contract.
         let tx = await createXDeployer.write.deployCreate3AndInit([
-            salt,
+            REGISTRY_SALT,
             creationCode,
             initializationData,
             { constructorAmount: 0n, initCallAmount: 0n },
         ]);
         let pc = await viem.getPublicClient();
-        let receipt = await pc.waitForTransactionReceipt({ hash: tx });
-        let deployedAddress = receipt.logs[1].address;
+        let { logs } = await pc.waitForTransactionReceipt({ hash: tx });
+        const decodedLog = decodeEventLog({
+            abi: CREATEX_ABI,
+            topics: logs[1].topics,
+            data: logs[1].data,
+        });
+        let deployedAddress = decodedLog.args.newContract;
 
         // Use the deployer address to back-compute the deployed contract address
         // and store the deployment configuration in deployments.json.
