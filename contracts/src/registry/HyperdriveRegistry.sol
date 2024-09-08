@@ -70,7 +70,7 @@ contract HyperdriveRegistry is
             revert IHyperdriveGovernedRegistry.RegistryAlreadyInitialized();
         }
 
-        // Set the initialization flag and set the name and admin.
+        // Set the initialization flag, name, and admin.
         isInitialized = true;
         name = _name;
         admin = _admin;

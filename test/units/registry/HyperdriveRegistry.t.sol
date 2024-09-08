@@ -15,6 +15,7 @@ import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../../contracts/src/interfaces/IHyperdriveDeployerCoordinator.sol";
 import { IHyperdriveFactory } from "../../../contracts/src/interfaces/IHyperdriveFactory.sol";
 import { IHyperdriveGovernedRegistry } from "../../../contracts/src/interfaces/IHyperdriveGovernedRegistry.sol";
+import { IHyperdriveGovernedRegistryEvents } from "../../../contracts/src/interfaces/IHyperdriveGovernedRegistryEvents.sol";
 import { IHyperdriveRegistry } from "../../../contracts/src/interfaces/IHyperdriveRegistry.sol";
 import { VERSION } from "../../../contracts/src/libraries/Constants.sol";
 import { ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
@@ -24,27 +25,16 @@ import { MockERC4626 } from "../../../contracts/test/MockERC4626.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-contract HyperdriveRegistryTest is HyperdriveTest {
+contract HyperdriveRegistryTest is
+    HyperdriveTest,
+    IHyperdriveGovernedRegistryEvents
+{
     using Lib for *;
 
     string internal constant HYPERDRIVE_NAME = "Hyperdrive";
     string internal constant COORDINATOR_NAME = "HyperdriveDeployerCoordinator";
     string internal constant REGISTRY_NAME = "HyperdriveRegistry";
     uint256 internal constant FIXED_RATE = 0.05e18;
-
-    event Initialized(string indexed name, address indexed admin);
-
-    event AdminUpdated(address indexed admin);
-
-    event FactoryInfoUpdated(address indexed factory, uint256 indexed data);
-
-    event InstanceInfoUpdated(
-        address indexed instance,
-        uint256 indexed data,
-        address indexed factory
-    );
-
-    event NameUpdated(string indexed name);
 
     IERC4626 internal vaultSharesToken;
 
