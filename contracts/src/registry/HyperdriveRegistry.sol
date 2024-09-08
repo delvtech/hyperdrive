@@ -23,6 +23,9 @@ contract HyperdriveRegistry is
 {
     using SafeCast for *;
 
+    /// @notice Indicates whether or not the registry is initialized.
+    bool public isInitialized;
+
     /// @notice The registry's name.
     string public name;
 
@@ -52,13 +55,6 @@ contract HyperdriveRegistry is
     mapping(address hyperdrive => InstanceInfoInternal info)
         internal _instanceInfo;
 
-    /// @notice Instantiates the hyperdrive registry.
-    /// @param _name The registry's name.
-    constructor(string memory _name) {
-        admin = msg.sender;
-        name = _name;
-    }
-
     /// @dev Ensures that the modified function is only called by the admin.
     modifier onlyAdmin() {
         if (msg.sender != admin) {
@@ -68,9 +64,31 @@ contract HyperdriveRegistry is
     }
 
     /// @inheritdoc IHyperdriveGovernedRegistry
-    function updateAdmin(address _admin) external override onlyAdmin {
+    function initialize(string calldata _name, address _admin) external {
+        // Ensure that the registry hasn't already been initialized.
+        if (isInitialized) {
+            revert IHyperdriveGovernedRegistry.RegistryAlreadyInitialized();
+        }
+
+        // Set the initialization flag, name, and admin.
+        isInitialized = true;
+        name = _name;
+        admin = _admin;
+
+        // Emit an event.
+        emit Initialized(_name, _admin);
+    }
+
+    /// @inheritdoc IHyperdriveGovernedRegistry
+    function updateAdmin(address _admin) external onlyAdmin {
         admin = _admin;
         emit AdminUpdated(_admin);
+    }
+
+    /// @inheritdoc IHyperdriveGovernedRegistry
+    function updateName(string memory _name) external onlyAdmin {
+        name = _name;
+        emit NameUpdated(_name);
     }
 
     /// @inheritdoc IHyperdriveGovernedRegistry

@@ -3,6 +3,11 @@ import { Address } from "viem";
 export const ETH_ADDRESS =
     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" as Address;
 
+// The salt for the Create 3 deployment of the Hyperdrive Registry. This will
+// generate the address "0x6668310631Ad5a5ac92dC9549353a5BaaE16C666".
+export const REGISTRY_SALT =
+    "0x01f4fa8cb977b40332a83c000000000000000000000000000000000000000000" as `0x${string}`;
+
 // Address for Create 2/3 factory https://github.com/pcaversaccio/createx/tree/main
 export const CREATE_X_FACTORY =
     "0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed" as Address;

@@ -35,6 +35,21 @@ const config: HardhatUserConfig = {
             },
         },
     },
+    etherscan: {
+        customChains: [
+            {
+                network: "linea_mainnet",
+                chainId: 59144,
+                urls: {
+                    apiURL: "https://api.lineascan.build/api",
+                    browserURL: "https://lineascan.build/",
+                },
+            },
+        ],
+        apiKey: {
+            linea_mainnet: env.LINEASCAN_API_KEY ?? "",
+        },
+    },
 };
 
 export default config;

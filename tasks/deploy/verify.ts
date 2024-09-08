@@ -40,7 +40,7 @@ task(
             address: hyperdriveDeploy.deployments.byName(
                 "DELV Hyperdrive Registry",
             ).address,
-            constructorArguments: ["DELV Hyperdrive Registry"],
+            constructorArguments: [],
         });
 
         // loop through all checkpoint rewarders
