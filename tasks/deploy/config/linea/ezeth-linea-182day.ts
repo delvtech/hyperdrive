@@ -17,7 +17,7 @@ export const LINEA_EZETH_182DAY_NAME =
     "ElementDAO 182 Day Renzo xezETH Hyperdrive";
 
 // The initial contribution of the pool.
-const CONTRIBUTION = parseEther("0.01");
+const CONTRIBUTION = parseEther("0.04");
 
 export const LINEA_EZETH_182DAY: HyperdriveInstanceConfig<"EzETHLinea"> = {
     name: LINEA_EZETH_182DAY_NAME,

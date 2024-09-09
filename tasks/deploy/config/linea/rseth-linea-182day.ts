@@ -17,7 +17,7 @@ export const LINEA_RSETH_182DAY_NAME =
     "ElementDAO 182 Day KelpDAO rsETH Hyperdrive";
 
 // The initial contribution of the pool.
-const CONTRIBUTION = parseEther("0.01");
+const CONTRIBUTION = parseEther("0.04");
 
 export const LINEA_RSETH_182DAY: HyperdriveInstanceConfig<"RsETHLinea"> = {
     name: LINEA_RSETH_182DAY_NAME,
@@ -29,8 +29,8 @@ export const LINEA_RSETH_182DAY: HyperdriveInstanceConfig<"RsETHLinea"> = {
     salt: toBytes32("0xababe"),
     extraData: "0x",
     contribution: CONTRIBUTION,
-    // NOTE: The current average APY on Defillama is 2.73%.
-    fixedAPR: parseEther("0.0273"),
+    // NOTE: The current average APY on Defillama is 2.9%.
+    fixedAPR: parseEther("0.029"),
     timestretchAPR: parseEther("0.1"),
     options: async (hre) => ({
         asBase: false,

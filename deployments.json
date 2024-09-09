@@ -1084,5 +1084,22 @@
             "address": "0xEe9BFf933aDD313C4289E98dA80fEfbF9d5Cd9Ba",
             "timestamp": "2024-08-29T18:31:32.479Z"
         }
+    },
+    "linea": {
+        "DELV Hyperdrive Registry": {
+            "contract": "HyperdriveRegistry",
+            "address": "0x6668310631Ad5a5ac92dC9549353a5BaaE16C666",
+            "timestamp": "2024-09-09T18:18:29.051Z"
+        },
+        "ElementDAO ERC20 Factory Forwarder": {
+            "contract": "ERC20ForwarderFactory",
+            "address": "0xc7822a469436dc786e88cca48f6e194d2b8c0e03",
+            "timestamp": "2024-09-09T18:18:34.017Z"
+        },
+        "ElementDAO Hyperdrive Factory": {
+            "contract": "HyperdriveFactory",
+            "address": "0xfbabc73b6241df6453d88ac13b556ba643f9a6ad",
+            "timestamp": "2024-09-09T18:18:39.056Z"
+        }
     }
 }
