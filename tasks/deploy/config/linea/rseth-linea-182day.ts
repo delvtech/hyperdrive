@@ -29,8 +29,9 @@ export const LINEA_RSETH_182DAY: HyperdriveInstanceConfig<"RsETHLinea"> = {
     salt: toBytes32("0xababe"),
     extraData: "0x",
     contribution: CONTRIBUTION,
-    // NOTE: The current average APY on Defillama is 2.9%.
-    fixedAPR: parseEther("0.029"),
+    // NOTE: The current average APY on Defillama is 2.9%, but we can't deploy
+    // with that because of the high time stretch.
+    fixedAPR: parseEther("0.05"),
     timestretchAPR: parseEther("0.1"),
     options: async (hre) => ({
         asBase: false,

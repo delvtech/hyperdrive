@@ -29,7 +29,7 @@ export const LINEA_EZETH_182DAY: HyperdriveInstanceConfig<"EzETHLinea"> = {
     salt: toBytes32("0xababe"),
     extraData: "0x",
     contribution: CONTRIBUTION,
-    fixedAPR: parseEther("0.031"),
+    fixedAPR: parseEther("0.05"),
     timestretchAPR: parseEther("0.1"),
     options: async (hre) => ({
         asBase: false,
