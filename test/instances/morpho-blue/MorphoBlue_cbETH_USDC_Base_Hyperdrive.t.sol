@@ -10,7 +10,7 @@ import { IMorphoBlueHyperdrive } from "../../../contracts/src/interfaces/IMorpho
 import { Lib } from "../../utils/Lib.sol";
 import { MorphoBlueHyperdriveInstanceTest } from "./MorphoBlueHyperdriveInstanceTest.t.sol";
 
-contract MorphoBlue_wstETH_USDC_HyperdriveTest is
+contract MorphoBlue_cbETH_USDC_Base_HyperdriveTest is
     MorphoBlueHyperdriveInstanceTest
 {
     using Lib for *;
@@ -18,11 +18,11 @@ contract MorphoBlue_wstETH_USDC_HyperdriveTest is
 
     /// @dev The address of the loan token. This is just the USDC token.
     address internal constant LOAN_TOKEN =
-        address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+        address(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
 
     /// @dev Whale accounts.
     address internal LOAN_TOKEN_WHALE =
-        address(0x4B16c5dE96EB2117bBE5fd171E4d203624B014aa);
+        address(0x3304E22DDaa22bCdC5fCa2269b418046aE7b566A);
     address[] internal baseTokenWhaleAccounts = [LOAN_TOKEN_WHALE];
 
     /// @notice Instantiates the instance testing suite with the configuration.
@@ -97,12 +97,12 @@ contract MorphoBlue_wstETH_USDC_HyperdriveTest is
                 // The address of the collateral token. This is just the wstETH
                 // token.
                 collateralToken: address(
-                    0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0
+                    0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22
                 ),
                 // The address of the oracle.
-                oracle: address(0x48F7E36EB6B826B2dF4B2E630B62Cd25e89E40e2),
+                oracle: address(0xb40d93F44411D8C09aD17d7F88195eF9b05cCD96),
                 // The address of the interest rate model.
-                irm: address(0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC),
+                irm: address(0x46415998764C29aB2a25CbeA6254146D50D22687),
                 // The liquidation loan to value ratio.
                 lltv: 860000000000000000
             })
@@ -110,7 +110,7 @@ contract MorphoBlue_wstETH_USDC_HyperdriveTest is
     {}
 
     /// @notice Forge function that is invoked to setup the testing environment.
-    function setUp() public override __mainnet_fork(20_481_157) {
+    function setUp() public override __base_fork(19_604_571) {
         // Invoke the instance testing suite setup.
         super.setUp();
     }
@@ -125,6 +125,10 @@ contract MorphoBlue_wstETH_USDC_HyperdriveTest is
         uint256 _amount
     ) internal override {
         bytes32 balanceLocation = keccak256(abi.encode(address(_recipient), 9));
-        vm.store(LOAN_TOKEN, balanceLocation, bytes32(_amount));
+        vm.store(
+            IFiatTokenProxy(LOAN_TOKEN).implementation(),
+            balanceLocation,
+            bytes32(_amount)
+        );
     }
 }
