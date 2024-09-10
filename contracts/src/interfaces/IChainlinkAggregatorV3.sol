@@ -2,6 +2,8 @@
 pragma solidity ^0.8.20;
 
 interface IChainlinkAggregatorV3 {
+    function aggregator() external view returns (address);
+
     function decimals() external view returns (uint8);
 
     function description() external view returns (string memory);
