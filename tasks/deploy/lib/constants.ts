@@ -128,6 +128,23 @@ export const SEPOLIA_USDE_ADDRESS =
     "0x9458CaACa74249AbBE9E964b3Ce155B98EC88EF2" as Address;
 
 // ╭─────────────────────────────────────────────────────────╮
+// │ Base Addresses                                          │
+// ╰─────────────────────────────────────────────────────────╯
+
+export const CBETH_ADDRESS_BASE =
+    "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22" as Address;
+
+export const CHAINLINK_AGGREGATOR_CBETH_ETH_PROXY_BASE =
+    "0x868a501e68F3D1E89CfC0D22F6b22E8dabce5F04" as Address;
+
+// ╭─────────────────────────────────────────────────────────╮
+// │ Base Whales                                             │
+// ╰─────────────────────────────────────────────────────────╯
+
+export const CBETH_WHALE_GNOSIS =
+    "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb" as Address;
+
+// ╭─────────────────────────────────────────────────────────╮
 // │ Gnosis Addresses                                        │
 // ╰─────────────────────────────────────────────────────────╯
 
