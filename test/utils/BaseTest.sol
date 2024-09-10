@@ -7,30 +7,31 @@ import { IERC20 } from "../../contracts/src/interfaces/IERC20.sol";
 import { ERC20ForwarderFactory } from "../../contracts/src/token/ERC20ForwarderFactory.sol";
 
 contract BaseTest is Test {
-    address alice;
-    address bob;
-    address celine;
-    address dan;
-    address eve;
+    address internal alice;
+    address internal bob;
+    address internal celine;
+    address internal dan;
+    address internal eve;
 
-    address minter;
-    address deployer;
-    address feeCollector;
-    address sweepCollector;
-    address governance;
-    address pauser;
-    address registrar;
-    address rewardSource;
+    address internal minter;
+    address internal deployer;
+    address internal feeCollector;
+    address internal sweepCollector;
+    address internal governance;
+    address internal pauser;
+    address internal registrar;
+    address internal rewardSource;
 
     error WhaleBalanceExceeded();
     error WhaleIsContract();
 
     uint256 __init__; // time setup function was ran
 
-    string MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
-    string SEPOLIA_RPC_URL = vm.envString("SEPOLIA_RPC_URL");
-    string GNOSIS_CHAIN_RPC_URL = vm.envString("GNOSIS_CHAIN_RPC_URL");
-    string LINEA_RPC_URL = vm.envString("LINEA_RPC_URL");
+    string internal BASE_RPC_URL = vm.envString("BASE_RPC_URL");
+    string internal GNOSIS_CHAIN_RPC_URL = vm.envString("GNOSIS_CHAIN_RPC_URL");
+    string internal LINEA_RPC_URL = vm.envString("LINEA_RPC_URL");
+    string internal MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
+    string internal SEPOLIA_RPC_URL = vm.envString("SEPOLIA_RPC_URL");
 
     bool isForked;
 
@@ -83,6 +84,15 @@ contract BaseTest is Test {
     modifier __linea_fork(uint256 blockNumber) {
         uint256 lineaForkId = vm.createFork(LINEA_RPC_URL);
         vm.selectFork(lineaForkId);
+        vm.rollFork(blockNumber);
+        isForked = true;
+
+        _;
+    }
+
+    modifier __base_fork(uint256 blockNumber) {
+        uint256 baseForkId = vm.createFork(BASE_RPC_URL);
+        vm.selectFork(baseForkId);
         vm.rollFork(blockNumber);
         isForked = true;
 

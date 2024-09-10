@@ -6,20 +6,19 @@ import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { IChainlinkAggregatorV3 } from "../../../contracts/src/interfaces/IChainlinkAggregatorV3.sol";
 import { ChainlinkHyperdriveInstanceTest } from "./ChainlinkHyperdriveInstanceTest.t.sol";
 
-contract WstETHGnosisChainTest is ChainlinkHyperdriveInstanceTest {
-    /// @dev Chainlink's aggregator for the wstETH-ETH reference rate on Gnosis
-    ///      Chain.
+contract CbETHBaseTest is ChainlinkHyperdriveInstanceTest {
+    /// @dev Chainlink's aggregator for the cbETH-ETH reference rate on Base.
     IChainlinkAggregatorV3 internal constant CHAINLINK_AGGREGATOR =
-        IChainlinkAggregatorV3(0x0064AC007fF665CF8D0D3Af5E0AD1c26a3f853eA);
+        IChainlinkAggregatorV3(0x868a501e68F3D1E89CfC0D22F6b22E8dabce5F04);
 
-    /// @dev The address of the wstETH token on Gnosis Chain.
-    IERC20 internal constant WSTETH =
-        IERC20(0x6C76971f98945AE98dD7d4DFcA8711ebea946eA6);
+    /// @dev The address of the cbETH token on Base.
+    IERC20 internal constant CBETH =
+        IERC20(0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22);
 
-    /// @dev The wstETH Whale accounts.
-    address internal constant WSTETH_WHALE =
-        address(0x458cD345B4C05e8DF39d0A07220feb4Ec19F5e6f);
-    address[] internal vaultSharesTokenWhaleAccounts = [WSTETH_WHALE];
+    /// @dev The cbETH Whale accounts.
+    address internal constant CBETH_WHALE =
+        address(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
+    address[] internal vaultSharesTokenWhaleAccounts = [CBETH_WHALE];
 
     /// @notice Instantiates the ChainlinkHyperdriveInstance testing suite with
     ///         the configuration.
@@ -32,7 +31,7 @@ contract WstETHGnosisChainTest is ChainlinkHyperdriveInstanceTest {
                 baseTokenWhaleAccounts: new address[](0),
                 vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
                 baseToken: IERC20(address(0)),
-                vaultSharesToken: WSTETH,
+                vaultSharesToken: CBETH,
                 shareTolerance: 0,
                 minimumShareReserves: 1e15,
                 minimumTransactionAmount: 1e15,
@@ -69,8 +68,8 @@ contract WstETHGnosisChainTest is ChainlinkHyperdriveInstanceTest {
                 closeShortWithSharesTolerance: 100,
                 roundTripLpInstantaneousWithSharesTolerance: 1e3,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 1e3,
-                roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
-                roundTripLongInstantaneousWithSharesTolerance: 1e4,
+                roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e4,
+                roundTripLongInstantaneousWithSharesTolerance: 1e3,
                 roundTripLongMaturityWithSharesUpperBoundTolerance: 1e3,
                 roundTripLongMaturityWithSharesTolerance: 1e4,
                 roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
@@ -85,7 +84,7 @@ contract WstETHGnosisChainTest is ChainlinkHyperdriveInstanceTest {
     {}
 
     /// @notice Forge function that is invoked to setup the testing environment.
-    function setUp() public override __gnosis_chain_fork(35_336_446) {
+    function setUp() public override __base_fork(19_600_508) {
         // Invoke the Instance testing suite setup.
         super.setUp();
     }
