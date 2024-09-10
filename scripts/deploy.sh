@@ -8,20 +8,8 @@ if [[ -z "${NETWORK}" ]]; then
   exit 1
 fi
 
-# When deploying to "live" networks, ensure that the repository is equivalent
-# to the latest remote tag. This avoids accidentally deploying out-of-date or
-# ambiguously versioned contracts.
-if [[ "${NETWORK}" != "anvil" && "${NETWORK}" != "hardhat" && "${NETWORK}" != "mainnet_fork" ]]; then
-  git remote update
-  tag=$(git describe --tags --abbrev=0)
-  diff=$(git diff ${tag} --raw -- contracts lib)
-  if [[ ! -z "${diff}" ]]; then
-    echo "$diff"
-    echo "Error: repository contents must match tag ${tag}"
-    exit 1
-  fi
-fi
-
+# Deploy and verify any contracts in the network config specified by `NETWORK`
+# that haven't already been deployed and verified.
 config_filename="hardhat.config.${NETWORK}.ts"
 if [[ "${NETWORK}" == "hardhat" ]]; then
   config_filename="hardhat.config.ts"

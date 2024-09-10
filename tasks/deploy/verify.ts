@@ -293,7 +293,18 @@ task(
                     lltv: await morphoInstanceContract.read.lltv(),
                 });
             }
-            let contract = `contracts/src/instances/${isMorpho ? "morpho-blue" : i.prefix.toLowerCase()}/${i.prefix}Hyperdrive.sol:${i.prefix}Hyperdrive`;
+            const kind = await instanceContract.read.kind();
+            let pathName;
+            if (kind == "MorphoBlueHyperdrive") {
+                pathName = "morpho-blue";
+            } else if (kind == "EzETHLineaHyperdrive") {
+                pathName = "ezeth-linea";
+            } else if (kind == "RsETHLineaHyperdrive") {
+                pathName = "rseth-linea";
+            } else {
+                pathName = i.prefix.toLowerCase();
+            }
+            let contract = `contracts/src/instances/${pathName}/${i.prefix}Hyperdrive.sol:${i.prefix}Hyperdrive`;
             await sleep(1000);
             await run("verify:verify", {
                 address: hre.hyperdriveDeploy.deployments.byName(i.name)

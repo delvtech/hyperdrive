@@ -29,7 +29,7 @@ library RsETHLineaConversions {
     function convertToBase(
         IRSETHPoolV2 _rsETHPool,
         uint256 _shareAmount
-    ) external view returns (uint256) {
+    ) internal view returns (uint256) {
         // Get the last rsETH/ETH price. This is our vault share price.
         uint256 price = getPrice(_rsETHPool);
 
@@ -43,7 +43,7 @@ library RsETHLineaConversions {
     function convertToShares(
         IRSETHPoolV2 _rsETHPool,
         uint256 _baseAmount
-    ) external view returns (uint256) {
+    ) internal view returns (uint256) {
         // Get the last rsETH/ETH price. This is our vault share price.
         uint256 price = getPrice(_rsETHPool);
 
