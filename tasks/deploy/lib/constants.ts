@@ -141,7 +141,7 @@ export const CHAINLINK_AGGREGATOR_CBETH_ETH_PROXY_BASE =
 // │ Base Whales                                             │
 // ╰─────────────────────────────────────────────────────────╯
 
-export const CBETH_WHALE_GNOSIS =
+export const CBETH_WHALE_BASE =
     "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb" as Address;
 
 // ╭─────────────────────────────────────────────────────────╮
