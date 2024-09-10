@@ -137,6 +137,9 @@ export const CBETH_ADDRESS_BASE =
 export const CHAINLINK_AGGREGATOR_CBETH_ETH_PROXY_BASE =
     "0x868a501e68F3D1E89CfC0D22F6b22E8dabce5F04" as Address;
 
+export const USDC_ADDRESS_BASE =
+    "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address;
+
 // ╭─────────────────────────────────────────────────────────╮
 // │ Base Whales                                             │
 // ╰─────────────────────────────────────────────────────────╯
