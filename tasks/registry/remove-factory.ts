@@ -1,5 +1,5 @@
 import { task, types } from "hardhat/config";
-import { Address, zeroAddress } from "viem";
+import { Address } from "viem";
 import {
     HyperdriveDeployBaseTask,
     HyperdriveDeployBaseTaskParams,
@@ -11,8 +11,8 @@ export type RegistryRemoveParams = HyperdriveDeployBaseTaskParams & {
 
 HyperdriveDeployBaseTask(
     task(
-        "registry:remove",
-        "remove the specified hyperdrive instance from the registry",
+        "registry:remove-factory",
+        "remove the specified hyperdrive factory from the registry",
     ),
 )
     .addParam(
@@ -26,7 +26,6 @@ HyperdriveDeployBaseTask(
             { address }: Required<RegistryRemoveParams>,
             { viem, hyperdriveDeploy: { deployments }, network },
         ) => {
-            console.log(`removing ${address} from registry ...`);
             const registryAddress = deployments.byName(
                 network.name === "sepolia"
                     ? "SEPOLIA_REGISTRY"
@@ -36,12 +35,19 @@ HyperdriveDeployBaseTask(
                 "IHyperdriveGovernedRegistry",
                 registryAddress,
             );
-            let tx = await registryContract.write.setInstanceInfo([
+            let factoryCount =
+                await registryContract.read.getNumberOfFactories();
+            console.log(`there are ${factoryCount} factories in the registry`);
+            console.log(`removing ${address} from registry ...`);
+            let tx = await registryContract.write.setFactoryInfo([
                 [address as Address],
                 [0n],
-                [zeroAddress],
             ]);
             let pc = await viem.getPublicClient();
             await pc.waitForTransactionReceipt({ hash: tx });
+            factoryCount = await registryContract.read.getNumberOfFactories();
+            console.log(
+                `there are now ${factoryCount} factories in the registry`,
+            );
         },
     );

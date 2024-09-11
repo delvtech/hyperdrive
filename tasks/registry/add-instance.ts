@@ -11,7 +11,7 @@ export type AddRegistryParams = HyperdriveDeployNamedTaskParams & {
 
 HyperdriveDeployNamedTask(
     task(
-        "registry:add",
+        "registry:add-instance",
         "adds the specified hyperdrive instance to the registry",
     ),
 )
@@ -24,7 +24,7 @@ HyperdriveDeployNamedTask(
     .setAction(
         async (
             { name, value }: Required<AddRegistryParams>,
-            { viem, hyperdriveDeploy: { deployments }, network },
+            { viem, hyperdriveDeploy: { deployments } },
         ) => {
             let deployment = deployments.byName(name);
             if (!deployment.contract.endsWith("Hyperdrive"))
