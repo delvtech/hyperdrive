@@ -84,8 +84,8 @@ RUN anvil --dump-state ./data & ANVIL="$!" && \
   sleep 2 && \
   npx hardhat fork:mint-eth --address ${ADMIN} --amount 50 --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
   make deploy && \
-  npx hardhat registry:add --name ERC4626_HYPERDRIVE --value 1 --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
-  npx hardhat registry:add --name STETH_HYPERDRIVE --value 1 --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
+  npx hardhat registry:add-instance --name ERC4626_HYPERDRIVE --value 1 --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
+  npx hardhat registry:add-instance --name STETH_HYPERDRIVE --value 1 --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
   npx hardhat registry:update-governance --address ${ADMIN} --network ${NETWORK} --config "hardhat.config.${NETWORK}.ts" && \
   ./scripts/format-devnet-addresses.sh && \
   kill $ANVIL && sleep 1s
