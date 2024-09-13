@@ -5,7 +5,6 @@ import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { CornConversions } from "../../instances/corn/CornConversions.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { ICornHyperdrive } from "../../interfaces/ICornHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { CORN_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
@@ -72,32 +71,24 @@ contract CornHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         uint256 _contribution,
         IHyperdrive.Options memory _options
     ) internal override returns (uint256 value) {
-        // If base is the deposit asset, the initialization will be paid in the
-        // base token.
-        address token;
-        if (_options.asBase) {
-            token = _hyperdrive.baseToken();
-        }
-        // Otherwise, the initialization will be paid in vault shares.
-        else {
-            token = _hyperdrive.vaultSharesToken();
+        // Depositing with shares is not supported.
+        if (!_options.asBase) {
+            revert IHyperdrive.UnsupportedToken();
         }
 
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC20 example provided.
-        // Take custody of the contribution and approve Hyperdrive to pull the
-        // tokens.
-        ERC20(token).safeTransferFrom(_lp, address(this), _contribution);
-        ERC20(token).forceApprove(address(_hyperdrive), _contribution);
-        // ****************************************************************
+        // Transfer base from the LP and approve the Hyperdrive pool.
+        ERC20 baseToken = ERC20(_hyperdrive.baseToken());
+        baseToken.safeTransferFrom(_lp, address(this), _contribution);
+        baseToken.forceApprove(address(_hyperdrive), _contribution);
 
-        return value;
+        // This yield source isn't payable, so we should always send 0 value.
+        return 0;
     }
 
     /// @notice Convert an amount of vault shares to an amount of base.
     /// @param _shareAmount The vault shares amount.
     /// @return The base amount.
-    function convertToBase(uint256 _shareAmount) public view returns (uint256) {
+    function convertToBase(uint256 _shareAmount) public pure returns (uint256) {
         return CornConversions.convertToBase(_shareAmount);
     }
 
@@ -106,7 +97,7 @@ contract CornHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @return The vault shares amount.
     function convertToShares(
         uint256 _baseAmount
-    ) public view returns (uint256) {
+    ) public pure returns (uint256) {
         return CornConversions.convertToShares(_baseAmount);
     }
 
@@ -118,8 +109,6 @@ contract CornHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         }
     }
 
-    // FIXME: Update the extra data comment if the extra data isn't empty.
-    //
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     /// @param _extraData The empty extra data.
@@ -130,30 +119,39 @@ contract CornHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig, _extraData);
 
-        // ****************************************************************
-        // FIXME: Implement this for new instances.
+        // Ensure that the base token address is properly configured.
+        if (address(_deployConfig.baseToken) == address(0)) {
+            revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
+        }
+
         // Ensure that the vault shares token address is properly configured.
+        // Since the CornSilo doesn't support shares transfers, the vault shares
+        // token should be the zero address.
         if (address(_deployConfig.vaultSharesToken) != address(0)) {
             revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
         }
 
-        // Ensure that the base token address is properly configured.
-        if (address(_deployConfig.baseToken) != address(0)) {
-            revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
-        }
-        // *****************************************************************
-
-        // Ensure that the minimum share reserves are equal to 1e15. This value
-        // has been tested to prevent arithmetic overflows in the
-        // `_updateLiquidity` function when the share reserves are as high as
-        // 200 million.
-        if (_deployConfig.minimumShareReserves != 1e15) {
+        // Ensure that the minimum share reserves are large enough to meet the
+        // minimum requirements for safety.
+        //
+        // NOTE: Some pools may require larger minimum share reserves to be
+        // considered safe. This is just a sanity check.
+        if (
+            _deployConfig.minimumShareReserves <
+            10 ** (_deployConfig.baseToken.decimals() - 3)
+        ) {
             revert IHyperdriveDeployerCoordinator.InvalidMinimumShareReserves();
         }
 
-        // Ensure that the minimum transaction amount are equal to 1e15. This
-        // value has been tested to prevent precision issues.
-        if (_deployConfig.minimumTransactionAmount != 1e15) {
+        // Ensure that the minimum transaction amount is large enough to meet
+        // the minimum requirements for safety.
+        //
+        // NOTE: Some pools may require larger minimum transaction amounts to be
+        // considered safe. This is just a sanity check.
+        if (
+            _deployConfig.minimumTransactionAmount <
+            10 ** (_deployConfig.baseToken.decimals() - 3)
+        ) {
             revert IHyperdriveDeployerCoordinator
                 .InvalidMinimumTransactionAmount();
         }
@@ -164,10 +162,7 @@ contract CornHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     function _getInitialVaultSharePrice(
         IHyperdrive.PoolDeployConfig memory, // unused _deployConfig
         bytes memory // unused _extraData
-    ) internal view override returns (uint256) {
-        // ****************************************************************
-        // FIXME:  Implement this for new instances.
+    ) internal pure override returns (uint256) {
         return convertToBase(ONE);
-        // ****************************************************************
     }
 }

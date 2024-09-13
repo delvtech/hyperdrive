@@ -4,7 +4,6 @@ pragma solidity 0.8.22;
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { ICornSilo } from "../../interfaces/ICornSilo.sol";
-import { IERC4626 } from "../../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { CornConversions } from "./CornConversions.sol";
@@ -25,8 +24,6 @@ import { CornConversions } from "./CornConversions.sol";
 abstract contract CornBase is HyperdriveBase {
     using SafeERC20 for ERC20;
 
-    // FIXME: Add a getter.
-    //
     /// @dev The Corn Silo contract. This is where the base token will be
     ///      deposited.
     ICornSilo internal immutable _cornSilo;
@@ -61,7 +58,7 @@ abstract contract CornBase is HyperdriveBase {
         // the vault ends with an approval of 1 wei. This makes future
         // approvals cheaper by keeping the storage slot warm.
         ERC20(address(_baseToken)).forceApprove(
-            address(_vaultSharesToken),
+            address(_cornSilo),
             _baseAmount + 1
         );
         uint256 sharesMinted = _cornSilo.deposit(

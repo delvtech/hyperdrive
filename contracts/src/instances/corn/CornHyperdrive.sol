@@ -4,7 +4,7 @@ pragma solidity 0.8.22;
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
-import { IERC20 } from "../../interfaces/IERC20.sol";
+import { ICornSilo } from "../../interfaces/ICornSilo.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
 import { CornBase } from "./CornBase.sol";
@@ -68,6 +68,7 @@ contract CornHyperdrive is Hyperdrive, CornBase {
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
     /// @param _target4 The target4 address.
+    /// @param __cornSilo The Corn Silo contract.
     constructor(
         string memory __name,
         IHyperdrive.PoolConfig memory _config,
@@ -76,7 +77,8 @@ contract CornHyperdrive is Hyperdrive, CornBase {
         address _target1,
         address _target2,
         address _target3,
-        address _target4
+        address _target4,
+        ICornSilo __cornSilo
     )
         Hyperdrive(
             __name,
@@ -88,15 +90,10 @@ contract CornHyperdrive is Hyperdrive, CornBase {
             _target3,
             _target4
         )
+        CornBase(__cornSilo)
     {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC4626 example provided.
-
         // Approve the base token with 1 wei. This ensures that all of the
         // subsequent approvals will be writing to a dirty storage slot.
-        ERC20(address(_config.baseToken)).forceApprove(
-            address(_config.vaultSharesToken),
-            1
-        );
+        ERC20(address(_config.baseToken)).forceApprove(address(__cornSilo), 1);
     }
 }

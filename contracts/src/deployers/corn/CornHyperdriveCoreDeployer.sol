@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
+import { ICornSilo } from "../../interfaces/ICornSilo.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
 import { IHyperdriveCoreDeployer } from "../../interfaces/IHyperdriveCoreDeployer.sol";
@@ -13,6 +14,16 @@ import { CornHyperdrive } from "../../instances/corn/CornHyperdrive.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract CornHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
+    /// @dev The Corn Silo contract. This is where the base token will be
+    ///      deposited.
+    ICornSilo internal immutable cornSilo;
+
+    /// @notice Instantiates the CornHyperdrive base contract.
+    /// @param _cornSilo The Corn Silo contract.
+    constructor(ICornSilo _cornSilo) {
+        cornSilo = _cornSilo;
+    }
+
     /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param __name The name of the Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
@@ -51,7 +62,8 @@ contract CornHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
                     _target1,
                     _target2,
                     _target3,
-                    _target4
+                    _target4,
+                    cornSilo
                 )
             )
         );

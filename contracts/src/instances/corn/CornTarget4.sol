@@ -2,6 +2,7 @@
 pragma solidity 0.8.22;
 
 import { HyperdriveTarget4 } from "../../external/HyperdriveTarget4.sol";
+import { ICornSilo } from "../../interfaces/ICornSilo.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
 import { CornBase } from "./CornBase.sol";
@@ -19,8 +20,10 @@ contract CornTarget4 is HyperdriveTarget4, CornBase {
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param __adminController The admin controller that will specify the
     ///        admin parameters for this instance.
+    /// @param __cornSilo The Corn Silo contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        IHyperdriveAdminController __adminController
-    ) HyperdriveTarget4(_config, __adminController) {}
+        IHyperdriveAdminController __adminController,
+        ICornSilo __cornSilo
+    ) HyperdriveTarget4(_config, __adminController) CornBase(__cornSilo) {}
 }
