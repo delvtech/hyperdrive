@@ -86,7 +86,7 @@ interface ICornSilo {
         address token
     ) external view returns (uint256);
 
-    function totalShares(address token) external returns (uint256);
+    function totalShares(address token) external view returns (uint256);
 
     function deposit(
         address token,

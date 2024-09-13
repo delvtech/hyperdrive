@@ -70,6 +70,7 @@ contract AaveHyperdriveTest is InstanceTest {
                 enableShareWithdraws: true,
                 baseWithdrawError: new bytes(0),
                 isRebasing: true,
+                shouldAccrueInterest: true,
                 // The base test tolerances.
                 roundTripLpInstantaneousWithBaseTolerance: 1e5,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e5,

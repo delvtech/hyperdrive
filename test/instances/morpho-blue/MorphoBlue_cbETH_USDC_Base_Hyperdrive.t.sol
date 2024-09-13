@@ -60,6 +60,7 @@ contract MorphoBlue_cbETH_USDC_Base_HyperdriveTest is
                     IHyperdrive.UnsupportedToken.selector
                 ),
                 isRebasing: false,
+                shouldAccrueInterest: true,
                 // The base test tolerances.
                 roundTripLpInstantaneousWithBaseTolerance: 1e3,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e5,

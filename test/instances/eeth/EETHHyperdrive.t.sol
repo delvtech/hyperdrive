@@ -77,6 +77,7 @@ contract EETHHyperdriveTest is InstanceTest {
                     IHyperdrive.UnsupportedToken.selector
                 ),
                 isRebasing: true,
+                shouldAccrueInterest: true,
                 // NOTE: Base  withdrawals are disabled, so the tolerances are zero.
                 //
                 // The base test tolerances.

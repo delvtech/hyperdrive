@@ -69,6 +69,7 @@ contract RsETHLineaHyperdriveTest is InstanceTest {
                     IHyperdrive.UnsupportedToken.selector
                 ),
                 isRebasing: false,
+                shouldAccrueInterest: true,
                 // NOTE: Base  withdrawals are disabled, so the tolerances are zero.
                 //
                 // The base test tolerances.
