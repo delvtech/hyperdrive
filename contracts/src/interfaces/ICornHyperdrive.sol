@@ -1,0 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity 0.8.22;
+
+import { IHyperdrive } from "./IHyperdrive.sol";
+
+interface ICornHyperdrive is IHyperdrive {
+    /// @notice Gets the vault used as this pool's yield source.
+    /// @return The compatible yield source.
+    function vault() external view returns (address);
+}
