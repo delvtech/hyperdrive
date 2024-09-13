@@ -1,5 +1,5 @@
 import { task, types } from "hardhat/config";
-import { Address } from "viem";
+import { Address, decodeAbiParameters, parseAbiParameters } from "viem";
 import { evaluateValueOrHREFn } from "./lib";
 
 export type VerifyParams = {};
@@ -162,10 +162,12 @@ task(
         }
 
         // loop through all instances
-        for (let i of hyperdriveConfig.instances ?? []) {
+        for (let instanceConfig of hyperdriveConfig.instances ?? []) {
             await sleep(1000);
 
-            let instance = hre.hyperdriveDeploy.deployments.byName(i.name);
+            let instance = hre.hyperdriveDeploy.deployments.byName(
+                instanceConfig.name,
+            );
             let instanceContract = await hre.viem.getContractAt(
                 "IHyperdriveRead",
                 instance.address,
@@ -176,7 +178,11 @@ task(
             // constructor arguments are necessary
             let coordinatorDeployment =
                 hre.hyperdriveDeploy.deployments.byAddress(
-                    await evaluateValueOrHREFn(i.coordinatorAddress, hre, {}),
+                    await evaluateValueOrHREFn(
+                        instanceConfig.coordinatorAddress,
+                        hre,
+                        {},
+                    ),
                 );
             let coordinatorConfig = hyperdriveConfig.coordinators.find(
                 (c) => c.name == coordinatorDeployment.name,
@@ -195,6 +201,7 @@ task(
             let targetArgs:
                 | [typeof poolConfig, `0x${string}`]
                 | [typeof poolConfig, `0x${string}`, `0x${string}`]
+                | [typeof poolConfig, `0x${string}`, `0x${string}`, bigint]
                 | [
                       typeof poolConfig,
                       {
@@ -213,11 +220,8 @@ task(
                 hre,
                 {},
             );
-            let isMorpho =
-                (await instanceContract.read.kind()) == "MorphoBlueHyperdrive";
-            if (extras) {
-                targetArgs = [poolConfig, factoryAddress, ...extras];
-            } else if (isMorpho) {
+            const kind = await instanceContract.read.kind();
+            if (kind == "MorphoBlueHyperdrive") {
                 let morphoInstanceContract = await hre.viem.getContractAt(
                     "IMorphoBlueHyperdrive",
                     instance.address,
@@ -234,6 +238,19 @@ task(
                     },
                     factoryAddress,
                 ];
+            } else if (kind == "ChainlinkHyperdrive") {
+                const [aggregator, decimals] = decodeAbiParameters(
+                    parseAbiParameters("address, uint8"),
+                    instanceConfig.extraData,
+                );
+                targetArgs = [
+                    poolConfig,
+                    factoryAddress,
+                    aggregator,
+                    BigInt(decimals),
+                ];
+            } else if (extras) {
+                targetArgs = [poolConfig, factoryAddress, ...extras];
             }
 
             // verify the targets
@@ -242,7 +259,7 @@ task(
                 await coordinatorContract.read.getNumberOfTargets();
             for (let j = 0; j < targetCount; j++) {
                 await sleep(1000);
-                let targetName = `${i.name}_${i.prefix}Target${j}`;
+                let targetName = `${instanceConfig.name}_${instanceConfig.prefix}Target${j}`;
                 let targetAddress =
                     hre.hyperdriveDeploy.deployments.byName(targetName).address;
                 console.log(targetAddress);
@@ -259,13 +276,13 @@ task(
             }
 
             // verify the instance
-            console.log(`verifying ${i.name}...`);
+            console.log(`verifying ${instanceConfig.name}...`);
             let ihyperdrive = await hre.viem.getContractAt(
                 "IHyperdrive",
                 instance.address,
             );
             let args = [
-                i.name,
+                instanceConfig.name,
                 poolConfig,
                 factoryAddress,
                 await ihyperdrive.read.target0(),
@@ -274,12 +291,7 @@ task(
                 await ihyperdrive.read.target3(),
                 await ihyperdrive.read.target4(),
             ];
-            console.log("args", ...args.slice(1));
-            console.log("targets", ...targets);
-            if (extras) {
-                args.push(...extras);
-            }
-            if (isMorpho) {
+            if (kind == "MorphoBlueHyperdrive") {
                 let morphoInstanceContract = await hre.viem.getContractAt(
                     "IMorphoBlueHyperdrive",
                     instance.address,
@@ -292,8 +304,17 @@ task(
                     irm: await morphoInstanceContract.read.irm(),
                     lltv: await morphoInstanceContract.read.lltv(),
                 });
+            } else if (kind == "ChainlinkHyperdrive") {
+                const [aggregator, decimals] = decodeAbiParameters(
+                    parseAbiParameters("address, uint8"),
+                    instanceConfig.extraData,
+                );
+                args.push(...[aggregator, BigInt(decimals)]);
+            } else if (extras) {
+                args.push(...extras);
             }
-            const kind = await instanceContract.read.kind();
+            console.log("args", ...args.slice(1));
+            console.log("targets", ...targets);
             let pathName;
             if (kind == "MorphoBlueHyperdrive") {
                 pathName = "morpho-blue";
@@ -302,13 +323,14 @@ task(
             } else if (kind == "RsETHLineaHyperdrive") {
                 pathName = "rseth-linea";
             } else {
-                pathName = i.prefix.toLowerCase();
+                pathName = instanceConfig.prefix.toLowerCase();
             }
-            let contract = `contracts/src/instances/${pathName}/${i.prefix}Hyperdrive.sol:${i.prefix}Hyperdrive`;
+            let contract = `contracts/src/instances/${pathName}/${instanceConfig.prefix}Hyperdrive.sol:${instanceConfig.prefix}Hyperdrive`;
             await sleep(1000);
             await run("verify:verify", {
-                address: hre.hyperdriveDeploy.deployments.byName(i.name)
-                    .address,
+                address: hre.hyperdriveDeploy.deployments.byName(
+                    instanceConfig.name,
+                ).address,
                 constructorArguments: args,
                 contract,
             });

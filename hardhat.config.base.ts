@@ -10,7 +10,6 @@ import {
     BASE_CBETH_182DAY,
     BASE_CHAINLINK_COORDINATOR,
     BASE_FACTORY,
-    BASE_MORPHO_BLUE_COORDINATOR,
 } from "./tasks/deploy/config/base";
 
 const { env } = process;
@@ -24,10 +23,7 @@ const config: HardhatUserConfig = {
             accounts: [env.DEPLOYER_PRIVATE_KEY!, env.PAUSER_PRIVATE_KEY!],
             hyperdriveDeploy: {
                 factories: [BASE_FACTORY],
-                coordinators: [
-                    BASE_CHAINLINK_COORDINATOR,
-                    BASE_MORPHO_BLUE_COORDINATOR,
-                ],
+                coordinators: [BASE_CHAINLINK_COORDINATOR],
                 instances: [BASE_CBETH_182DAY],
                 checkpointRewarders: [],
                 checkpointSubrewarders: [],
