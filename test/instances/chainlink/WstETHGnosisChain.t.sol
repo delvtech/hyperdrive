@@ -51,6 +51,7 @@ contract WstETHGnosisChainTest is ChainlinkHyperdriveInstanceTest {
                     IHyperdrive.UnsupportedToken.selector
                 ),
                 isRebasing: false,
+                shouldAccrueInterest: true,
                 // NOTE: Base deposits and withdrawals are disabled, so the
                 // tolerances are zero.
                 //

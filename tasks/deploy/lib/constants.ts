@@ -44,6 +44,9 @@ export const RSETH_POOL_LINEA =
 // │ Mainnet Addresses                                       │
 // ╰─────────────────────────────────────────────────────────╯
 
+export const CORN_SILO_ADDRESS_MAINNET =
+    "0x8bc93498b861fd98277c3b51d240e7E56E48F23c" as Address;
+
 export const DAI_ADDRESS_MAINNET =
     "0x6b175474e89094c44da98b954eedeac495271d0f" as Address;
 
@@ -58,6 +61,9 @@ export const EETH_MEMBERSHIP_MANAGER_ADDRESS_MAINNET =
 
 export const EZETH_ADDRESS_MAINNET =
     "0xbf5495Efe5DB9ce00f80364C8B423567e58d2110" as Address;
+
+export const LBTC_ADDRESS_MAINNET =
+    "0x8236a87084f8B84306f72007F36F2618A5634494" as Address;
 
 export const RETH_ADDRESS_MAINNET =
     "0xae78736Cd615f374D3085123A210448E74Fc6393" as Address;
@@ -176,6 +182,8 @@ export const WSTETH_WHALE_GNOSIS =
 // ╭─────────────────────────────────────────────────────────╮
 // │ Durations                                               │
 // ╰─────────────────────────────────────────────────────────╯
+
+export const THREE_MONTHS = "91 days";
 
 export const SIX_MONTHS = "182 days";
 

@@ -75,6 +75,10 @@ abstract contract InstanceTest is HyperdriveTest {
         ///      token. If it is, we have to handle balances and approvals
         ///      differently.
         bool isRebasing;
+        /// @dev Indicates whether or not we should accrue interest. Most yield
+        ///      sources accrue interest, but in special cases, Hyperdrive may
+        ///      integrate with yield sources that don't accrue interest.
+        bool shouldAccrueInterest;
         /// @dev The equality tolerance in wei for the close long with shares
         ///      test.
         uint256 closeLongWithSharesTolerance;
@@ -1197,7 +1201,11 @@ abstract contract InstanceTest is HyperdriveTest {
             assertGt(withdrawalShares, 0);
 
             // The term passes and interest accrues.
-            _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
+            if (config.shouldAccrueInterest) {
+                _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
+            } else {
+                _variableRate = 0;
+            }
             advanceTime(
                 hyperdrive.getPoolConfig().positionDuration,
                 int256(_variableRate)
@@ -1232,7 +1240,11 @@ abstract contract InstanceTest is HyperdriveTest {
             assertGt(withdrawalShares, 0);
 
             // The term passes and interest accrues.
-            _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
+            if (config.shouldAccrueInterest) {
+                _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
+            } else {
+                _variableRate = 0;
+            }
             advanceTime(
                 hyperdrive.getPoolConfig().positionDuration,
                 int256(_variableRate)
@@ -1302,7 +1314,11 @@ abstract contract InstanceTest is HyperdriveTest {
             assertGt(withdrawalShares, 0);
 
             // The term passes and interest accrues.
-            _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
+            if (config.shouldAccrueInterest) {
+                _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
+            } else {
+                _variableRate = 0;
+            }
             advanceTime(
                 hyperdrive.getPoolConfig().positionDuration,
                 int256(_variableRate)
@@ -1340,7 +1356,11 @@ abstract contract InstanceTest is HyperdriveTest {
             assertGt(withdrawalShares, 0);
 
             // The term passes and interest accrues.
-            _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
+            if (config.shouldAccrueInterest) {
+                _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
+            } else {
+                _variableRate = 0;
+            }
             advanceTime(
                 hyperdrive.getPoolConfig().positionDuration,
                 int256(_variableRate)
@@ -1620,12 +1640,15 @@ abstract contract InstanceTest is HyperdriveTest {
         // Get Bob's account balances before opening the long.
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
 
-        // Accrue interest for a term to ensure that the share price is greater
-        // than one.
-        advanceTime(
-            hyperdrive.getPoolConfig().positionDuration,
-            int256(FIXED_RATE)
-        );
+        // Accrue interest for a term.
+        if (config.shouldAccrueInterest) {
+            advanceTime(
+                hyperdrive.getPoolConfig().positionDuration,
+                int256(FIXED_RATE)
+            );
+        } else {
+            advanceTime(hyperdrive.getPoolConfig().positionDuration, 0);
+        }
 
         // Calculate the maximum amount of basePaid we can test. The limit is
         // either the maximum long that Hyperdrive can open or the amount of the
@@ -1647,7 +1670,11 @@ abstract contract InstanceTest is HyperdriveTest {
         );
 
         // The term passes and some interest accrues.
-        variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        if (config.shouldAccrueInterest) {
+            variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        } else {
+            variableRate = 0;
+        }
         advanceTime(hyperdrive.getPoolConfig().positionDuration, variableRate);
 
         // Get some balance information before closing the long.
@@ -1700,12 +1727,15 @@ abstract contract InstanceTest is HyperdriveTest {
         // Get Bob's account balances before opening the long.
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
 
-        // Accrue interest for a term to ensure that the share price is greater
-        // than one.
-        advanceTime(
-            hyperdrive.getPoolConfig().positionDuration,
-            int256(FIXED_RATE)
-        );
+        // Accrue interest for a term.
+        if (config.shouldAccrueInterest) {
+            advanceTime(
+                hyperdrive.getPoolConfig().positionDuration,
+                int256(FIXED_RATE)
+            );
+        } else {
+            advanceTime(hyperdrive.getPoolConfig().positionDuration, 0);
+        }
 
         // Calculate the maximum amount of basePaid we can test. The limit is
         // either the maximum long that Hyperdrive can open or the amount of the
@@ -1745,7 +1775,11 @@ abstract contract InstanceTest is HyperdriveTest {
         }
 
         // The term passes and some interest accrues.
-        variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        if (config.shouldAccrueInterest) {
+            variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        } else {
+            variableRate = 0;
+        }
         advanceTime(hyperdrive.getPoolConfig().positionDuration, variableRate);
 
         // Get some balance information before closing the long.
@@ -2013,7 +2047,11 @@ abstract contract InstanceTest is HyperdriveTest {
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, _basePaid);
 
         // Advance the time and accrue a large amount of interest.
-        _variableRate = _variableRate.normalizeToRange(0, 1000e18);
+        if (config.shouldAccrueInterest) {
+            _variableRate = _variableRate.normalizeToRange(0, 1000e18);
+        } else {
+            _variableRate = 0;
+        }
         advanceTime(POSITION_DURATION, int256(_variableRate));
 
         // Get some balance information before the withdrawal.
@@ -2107,7 +2145,11 @@ abstract contract InstanceTest is HyperdriveTest {
         );
 
         // Advance the time and accrue a large amount of interest.
-        _variableRate = _variableRate.normalizeToRange(0, 1000e18);
+        if (config.shouldAccrueInterest) {
+            _variableRate = _variableRate.normalizeToRange(0, 1000e18);
+        } else {
+            _variableRate = 0;
+        }
         advanceTime(
             hyperdrive.getPoolConfig().positionDuration,
             int256(_variableRate)
@@ -2429,12 +2471,15 @@ abstract contract InstanceTest is HyperdriveTest {
         uint256 shortAmount,
         int256 variableRate
     ) external virtual {
-        // Accrue interest for a term to ensure that the share price is greater
-        // than one.
-        advanceTime(
-            hyperdrive.getPoolConfig().positionDuration,
-            int256(FIXED_RATE)
-        );
+        // Accrue interest for a term.
+        if (config.shouldAccrueInterest) {
+            advanceTime(
+                hyperdrive.getPoolConfig().positionDuration,
+                int256(FIXED_RATE)
+            );
+        } else {
+            advanceTime(hyperdrive.getPoolConfig().positionDuration, 0);
+        }
 
         // Bob opens a short with the base token if base deposits are supported
         // and the shares token if they aren't.
@@ -2452,7 +2497,11 @@ abstract contract InstanceTest is HyperdriveTest {
         uint256 startingVaultSharePrice = hyperdrive
             .getPoolInfo()
             .vaultSharePrice;
-        variableRate = variableRate.normalizeToRange(0.01e18, 2.5e18);
+        if (config.shouldAccrueInterest) {
+            variableRate = variableRate.normalizeToRange(0.01e18, 2.5e18);
+        } else {
+            variableRate = 0;
+        }
         advanceTime(hyperdrive.getPoolConfig().positionDuration, variableRate);
 
         // Get some balance information before closing the long.
@@ -2519,12 +2568,15 @@ abstract contract InstanceTest is HyperdriveTest {
             return;
         }
 
-        // Accrue interest for a term to ensure that the share price is greater
-        // than one.
-        advanceTime(
-            hyperdrive.getPoolConfig().positionDuration,
-            int256(FIXED_RATE)
-        );
+        // Accrue interest for a term.
+        if (config.shouldAccrueInterest) {
+            advanceTime(
+                hyperdrive.getPoolConfig().positionDuration,
+                int256(FIXED_RATE)
+            );
+        } else {
+            advanceTime(hyperdrive.getPoolConfig().positionDuration, 0);
+        }
 
         // Bob opens a short with the share token.
         shortAmount = shortAmount.normalizeToRange(
@@ -2537,7 +2589,11 @@ abstract contract InstanceTest is HyperdriveTest {
         uint256 startingVaultSharePrice = hyperdrive
             .getPoolInfo()
             .vaultSharePrice;
-        variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        if (config.shouldAccrueInterest) {
+            variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        } else {
+            variableRate = 0;
+        }
         advanceTime(hyperdrive.getPoolConfig().positionDuration, variableRate);
 
         // Get some balance information before closing the long.
@@ -2799,7 +2855,11 @@ abstract contract InstanceTest is HyperdriveTest {
         (uint256 maturityTime, ) = openShort(bob, _shortAmount);
 
         // The term passes and some interest accrues.
-        _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
+        if (config.shouldAccrueInterest) {
+            _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
+        } else {
+            _variableRate = 0;
+        }
         advanceTime(
             hyperdrive.getPoolConfig().positionDuration,
             int256(_variableRate)
@@ -2882,7 +2942,11 @@ abstract contract InstanceTest is HyperdriveTest {
         (uint256 maturityTime, ) = openShort(bob, _shortAmount, false);
 
         // The term passes and some interest accrues.
-        _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
+        if (config.shouldAccrueInterest) {
+            _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
+        } else {
+            _variableRate = 0;
+        }
         advanceTime(hyperdrive.getPoolConfig().positionDuration, _variableRate);
 
         // Get some balance information before the withdrawal.

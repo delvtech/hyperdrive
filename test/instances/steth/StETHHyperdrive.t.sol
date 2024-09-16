@@ -65,6 +65,7 @@ contract StETHHyperdriveTest is InstanceTest {
                     IHyperdrive.UnsupportedToken.selector
                 ),
                 isRebasing: true,
+                shouldAccrueInterest: true,
                 fees: IHyperdrive.Fees({
                     curve: 0,
                     flat: 0,

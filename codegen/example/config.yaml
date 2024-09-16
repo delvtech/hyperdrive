@@ -4,19 +4,16 @@
 name:
   # Capitalized version of the name to be used i.e. for contract names, file
   # names, and comments.
-  capitalized: "MorphoBlue"
+  capitalized: "ExampleName"
 
   # All upper case name to be used for constants.
-  uppercase: "MORPHO_BLUE"
-
-  # All upper case name to be used for constants.
-  uppercase: "TEST_ETH"
+  uppercase: "EXAMPLE_NAME"
 
   # All lower case name to be used for directories.
-  lowercase: "morpho-blue"
+  lowercase: "example-name"
 
   # Camel case name to be used i.e. for variables.
-  camelcase: "morphoBlue"
+  camelcase: "exampleName"
 
 # Configuration parameters for the hyperdrive instance.
 contract:

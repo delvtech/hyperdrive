@@ -67,6 +67,7 @@ contract stUSDHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 enableShareWithdraws: true,
                 baseWithdrawError: new bytes(0),
                 isRebasing: false,
+                shouldAccrueInterest: true,
                 // The base test tolerances.
                 roundTripLpInstantaneousWithBaseTolerance: 1e5,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e6,

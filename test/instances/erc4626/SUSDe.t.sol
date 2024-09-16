@@ -68,6 +68,7 @@ contract SUSDeHyperdriveTest is ERC4626HyperdriveInstanceTest {
                     OperationNotAllowed.selector
                 ),
                 isRebasing: false,
+                shouldAccrueInterest: true,
                 // NOTE: Base  withdrawals are disabled, so the tolerances are zero.
                 //
                 // The base test tolerances.

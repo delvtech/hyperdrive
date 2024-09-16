@@ -66,6 +66,7 @@ contract RETHHyperdriveTest is InstanceTest {
                 enableShareWithdraws: true,
                 baseWithdrawError: new bytes(0),
                 isRebasing: false,
+                shouldAccrueInterest: true,
                 fees: IHyperdrive.Fees({
                     curve: 0,
                     flat: 0,

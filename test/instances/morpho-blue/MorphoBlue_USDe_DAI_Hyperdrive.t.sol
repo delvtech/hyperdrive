@@ -59,6 +59,7 @@ contract MorphoBlue_USDe_DAI_HyperdriveTest is
                     IHyperdrive.UnsupportedToken.selector
                 ),
                 isRebasing: false,
+                shouldAccrueInterest: true,
                 // The base test tolerances.
                 roundTripLpInstantaneousWithBaseTolerance: 1e13,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e13,
