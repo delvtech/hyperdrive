@@ -28,9 +28,7 @@ export const MAINNET_CORN_LBTC_91DAY: HyperdriveInstanceConfig<"Corn"> = {
     salt: toBytes32("0x69420"),
     extraData: "0x",
     contribution: CONTRIBUTION,
-    // FIXME
-    fixedAPR: parseEther("0.0666"),
-    // FIXME
+    fixedAPR: parseEther("0.08"),
     timestretchAPR: parseEther("0.075"),
     options: async (hre) => ({
         extraData: "0x",
@@ -61,7 +59,6 @@ export const MAINNET_CORN_LBTC_91DAY: HyperdriveInstanceConfig<"Corn"> = {
         return {
             baseToken: LBTC_ADDRESS_MAINNET,
             vaultSharesToken: zeroAddress,
-            // FIXME
             circuitBreakerDelta: parseEther("0.075"),
             minimumShareReserves: 100_000n, // 1e5
             minimumTransactionAmount: 100_000n, // 1e5

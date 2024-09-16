@@ -51,7 +51,16 @@ import { CornBase } from "./CornBase.sol";
 ///
 /// @author DELV
 /// @title CornHyperdrive
-/// @notice A Hyperdrive instance that uses a Corn vault as the yield source.
+/// @notice A Hyperdrive instance that uses the Corn Silo as the yield source.
+/// @dev This instance uses the Corn Silo as a yield soure. This is a vault
+///      where users can deposit funds to farm kernels before the Corn airdrop
+///      Some information about this yield source:
+///
+///      - The base token address is the asset to be deposited into Corn.
+///      - The vault shares token address is zero since Corn deposits aren't
+///        transferrable.
+///      - The vault share price is always one since Corn doesn't natively
+///        accrue interest.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
