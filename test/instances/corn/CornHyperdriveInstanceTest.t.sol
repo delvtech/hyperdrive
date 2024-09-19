@@ -26,87 +26,17 @@ contract CornHyperdriveInstanceTest is InstanceTest {
     using Lib for *;
     using stdStorage for StdStorage;
 
-    /// @dev The mainnet Corn Silo.
-    ICornSilo internal constant CORN_SILO =
-        ICornSilo(0x8bc93498b861fd98277c3b51d240e7E56E48F23c);
-
-    /// @dev The mainnet LBTC token.
-    IERC20 internal constant LBTC =
-        IERC20(0x8236a87084f8B84306f72007F36F2618A5634494);
-
-    /// @dev Whale accounts.
-    address internal BASE_TOKEN_WHALE =
-        0x208567a5FF415f1081fa0f47d3A1bD60b8B03199;
-    address[] internal baseTokenWhaleAccounts = [BASE_TOKEN_WHALE];
+    /// @dev The Corn Silo.
+    ICornSilo internal immutable silo;
 
     /// @notice Instantiates the instance testing suite with the configuration.
-    constructor()
-        InstanceTest(
-            InstanceTestConfig({
-                name: "Hyperdrive",
-                kind: "CornHyperdrive",
-                decimals: 8,
-                baseTokenWhaleAccounts: baseTokenWhaleAccounts,
-                vaultSharesTokenWhaleAccounts: new address[](0),
-                baseToken: LBTC,
-                vaultSharesToken: IERC20(address(0)),
-                shareTolerance: 0,
-                minimumShareReserves: 1e5,
-                minimumTransactionAmount: 1e5,
-                positionDuration: POSITION_DURATION,
-                fees: IHyperdrive.Fees({
-                    curve: 0.001e18,
-                    flat: 0.0001e18,
-                    governanceLP: 0,
-                    governanceZombie: 0
-                }),
-                enableBaseDeposits: true,
-                enableShareDeposits: false,
-                enableBaseWithdraws: true,
-                enableShareWithdraws: false,
-                baseWithdrawError: abi.encodeWithSelector(
-                    IHyperdrive.UnsupportedToken.selector
-                ),
-                isRebasing: false,
-                shouldAccrueInterest: false,
-                // The base test tolerances.
-                roundTripLpInstantaneousWithBaseTolerance: 1e3,
-                roundTripLpWithdrawalSharesWithBaseTolerance: 1e5,
-                roundTripLongInstantaneousWithBaseUpperBoundTolerance: 100,
-                // NOTE: Since the curve fee isn't zero, this check is ignored.
-                roundTripLongInstantaneousWithBaseTolerance: 0,
-                roundTripLongMaturityWithBaseUpperBoundTolerance: 100,
-                roundTripLongMaturityWithBaseTolerance: 1e3,
-                roundTripShortInstantaneousWithBaseUpperBoundTolerance: 100,
-                // NOTE: Since the curve fee isn't zero, this check is ignored.
-                roundTripShortInstantaneousWithBaseTolerance: 0,
-                roundTripShortMaturityWithBaseTolerance: 1e3,
-                // NOTE: Share deposits and withdrawals are disabled, so these are
-                // 0.
-                //
-                // The share test tolerances.
-                closeLongWithSharesTolerance: 0,
-                closeShortWithSharesTolerance: 0,
-                roundTripLpInstantaneousWithSharesTolerance: 0,
-                roundTripLpWithdrawalSharesWithSharesTolerance: 0,
-                roundTripLongInstantaneousWithSharesUpperBoundTolerance: 0,
-                roundTripLongInstantaneousWithSharesTolerance: 0,
-                roundTripLongMaturityWithSharesUpperBoundTolerance: 0,
-                roundTripLongMaturityWithSharesTolerance: 0,
-                roundTripShortInstantaneousWithSharesUpperBoundTolerance: 0,
-                roundTripShortInstantaneousWithSharesTolerance: 0,
-                roundTripShortMaturityWithSharesTolerance: 0,
-                // The verification tolerances.
-                verifyDepositTolerance: 2,
-                verifyWithdrawalTolerance: 3
-            })
-        )
-    {}
-
-    /// @notice Forge function that is invoked to setup the testing environment.
-    function setUp() public override __mainnet_fork(20_744_342) {
-        // Invoke the instance testing suite setup.
-        super.setUp();
+    /// @param _config The instance test configuration.
+    /// @param _silo The Corn Silo.
+    constructor(
+        InstanceTestConfig memory _config,
+        ICornSilo _silo
+    ) InstanceTest(_config) {
+        silo = _silo;
     }
 
     /// Overrides ///
@@ -147,12 +77,12 @@ contract CornHyperdriveInstanceTest is InstanceTest {
                 new CornHyperdriveDeployerCoordinator(
                     string.concat(config.name, "DeployerCoordinator"),
                     _factory,
-                    address(new CornHyperdriveCoreDeployer(CORN_SILO)),
-                    address(new CornTarget0Deployer(CORN_SILO)),
-                    address(new CornTarget1Deployer(CORN_SILO)),
-                    address(new CornTarget2Deployer(CORN_SILO)),
-                    address(new CornTarget3Deployer(CORN_SILO)),
-                    address(new CornTarget4Deployer(CORN_SILO))
+                    address(new CornHyperdriveCoreDeployer(silo)),
+                    address(new CornTarget0Deployer(silo)),
+                    address(new CornTarget1Deployer(silo)),
+                    address(new CornTarget2Deployer(silo)),
+                    address(new CornTarget3Deployer(silo)),
+                    address(new CornTarget4Deployer(silo))
                 )
             );
     }
@@ -162,8 +92,8 @@ contract CornHyperdriveInstanceTest is InstanceTest {
     /// @return The total supply of vault shares.
     function getSupply() internal view override returns (uint256, uint256) {
         return (
-            LBTC.balanceOf(address(CORN_SILO)),
-            CORN_SILO.totalShares(address(LBTC))
+            config.baseToken.balanceOf(address(silo)),
+            silo.totalShares(address(config.baseToken))
         );
     }
 
@@ -175,8 +105,8 @@ contract CornHyperdriveInstanceTest is InstanceTest {
         address account
     ) internal view override returns (uint256, uint256) {
         return (
-            LBTC.balanceOf(account),
-            CORN_SILO.sharesOf(account, address(LBTC))
+            config.baseToken.balanceOf(account),
+            silo.sharesOf(account, address(config.baseToken))
         );
     }
 
@@ -186,7 +116,7 @@ contract CornHyperdriveInstanceTest is InstanceTest {
     function test_getters() external view {
         assertEq(
             address(ICornHyperdrive(address(hyperdrive)).cornSilo()),
-            address(CORN_SILO)
+            address(silo)
         );
         (, uint256 totalShares) = getTokenBalances(address(hyperdrive));
         assertEq(hyperdrive.totalShares(), totalShares);
