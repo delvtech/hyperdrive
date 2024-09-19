@@ -1,11 +1,10 @@
 import pytest
-from agent0 import LocalChain, LocalHyperdrive
 from fixedpointmath import FixedPoint
-from hyperdrivetypes import IHyperdriveTypes
+from hyperdrivetypes import IHyperdriveTypes, IMorphoBlueHyperdriveTypes
 from web3 import Web3
 from web3.constants import ADDRESS_ZERO
 
-from .abstract_morpho_hyperdrive import AbstractMorphoHyperdrive
+from .morpho_hyperdrive import TestMorphoHyperdrive
 
 # Test Constants
 MORPHO = Web3.to_checksum_address("0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb")
@@ -19,19 +18,11 @@ LLTV = 860000000000000000
 LOAN_TOKEN_WHALE = Web3.to_checksum_address("0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb")
 
 
-class TestMorphoUsdeDaiHyperdrive(AbstractMorphoHyperdrive):
-    # Test instance configuration
-    # We subclass from instance test's InstanceConfig to reset defaults
-    # specific for this pool
-
-
-    # # Added constants
-    # LPMATH = Web3.to_checksum_address("0xdf5d682404b0611f46f2626d9d5a37eb6a6fd27d")
-    # MORPHO_BLUE_CONVERSIONS = Web3.to_checksum_address("0x1a4cee4e32ea51ec7671a0fd7333ca64fbf004f0")
+class TestMorphoUsdeDaiHyperdrive(TestMorphoHyperdrive):
 
     @pytest.fixture
-    def config(self) -> AbstractMorphoHyperdrive.InstanceConfig:
-        return AbstractMorphoHyperdrive.InstanceConfig(
+    def get_test_config(self) -> TestMorphoHyperdrive.InstanceConfig:
+        return TestMorphoHyperdrive.InstanceConfig(
             name = "Morpho Blue USDe DAI Hyperdrive",
             kind = "MorhpoBlueHyperdrive",
             # TODO support different decimals
@@ -40,7 +31,6 @@ class TestMorphoUsdeDaiHyperdrive(AbstractMorphoHyperdrive):
             vault_shares_token_whale_accounts = [],
             base_token = LOAN_TOKEN,
             vault_shares_token = ADDRESS_ZERO,
-            shares_tolerance = FixedPoint(scaled_value=int(1e15)),
             minimum_share_reserves = FixedPoint(scaled_value=int(1e15)),
             minimum_transaction_amount = FixedPoint(scaled_value=int(1e15)),
             position_duration = 365 * 24 * 3600,  # 365 days
@@ -57,4 +47,11 @@ class TestMorphoUsdeDaiHyperdrive(AbstractMorphoHyperdrive):
             # TODO figure out this error
             # base_withdraw_error = IHyperdriveTypes.UnsupportedTokenError.selector,
             is_rebasing = False,
+            initial_fixed_rate = FixedPoint("0.05"),
+
+            # TODO add in tolerances
+            # shares_tolerance = FixedPoint(scaled_value=int(1e15)),
         )
+    
+    def get_morpho_params(self) -> IMorphoBlueHyperdriveTypes.MorphoBlueParams:
+        return IMorphoBlueHyperdriveTypes.MorphoBlueParams(MORPHO, COLLATERAL_TOKEN, ORACLE, IRM, LLTV,)
