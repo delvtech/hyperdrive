@@ -65,7 +65,7 @@ contract CornHyperdriveInstanceTest is InstanceTest {
         return CornConversions.convertToBase(shareAmount);
     }
 
-    /// @dev Deploys the rsETH Linea deployer coordinator contract.
+    /// @dev Deploys the Corn Hyperdrive deployer coordinator contract.
     /// @param _factory The address of the Hyperdrive factory.
     /// @return The coordinator address.
     function deployCoordinator(
