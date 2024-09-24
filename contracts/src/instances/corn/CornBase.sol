@@ -8,10 +8,6 @@ import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
 import { CornConversions } from "./CornConversions.sol";
 
-// FIXME: Update this comment.
-//
-// FIXME: Make sure that the vault shares token is 0.
-//
 /// @author DELV
 /// @title CornBase
 /// @notice The base contract for the Corn Hyperdrive implementation.
