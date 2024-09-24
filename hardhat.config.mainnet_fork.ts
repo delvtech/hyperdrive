@@ -29,7 +29,7 @@ const config: HardhatUserConfig = {
     networks: {
         mainnet_fork: {
             live: false,
-            url: env.HYPERDRIVE_ETHEREUM_URL ?? "http://anvil:8545",
+            url: env.HYPERDRIVE_ETHEREUM_URL!,
             accounts: [env.DEPLOYER_PRIVATE_KEY ?? DEFAULT_PK],
             hyperdriveDeploy: {
                 factories: [MAINNET_FACTORY],
