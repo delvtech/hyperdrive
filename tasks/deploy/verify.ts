@@ -204,6 +204,7 @@ task(
                 | [typeof poolConfig, `0x${string}`, `0x${string}`, bigint]
                 | [
                       typeof poolConfig,
+                      `0x${string}`,
                       {
                           morpho: Address;
                           collateralToken: Address;
@@ -211,7 +212,6 @@ task(
                           irm: Address;
                           lltv: bigint;
                       },
-                      `0x${string}`,
                   ] = [poolConfig];
 
             // add extra args if present
@@ -228,6 +228,7 @@ task(
                 );
                 targetArgs = [
                     poolConfig,
+                    factoryAddress,
                     {
                         morpho: await morphoInstanceContract.read.vault(),
                         collateralToken:
@@ -236,7 +237,6 @@ task(
                         irm: await morphoInstanceContract.read.irm(),
                         lltv: await morphoInstanceContract.read.lltv(),
                     },
-                    factoryAddress,
                 ];
             } else if (kind == "ChainlinkHyperdrive") {
                 const [aggregator, decimals] = decodeAbiParameters(
