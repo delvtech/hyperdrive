@@ -77,28 +77,8 @@ contract UniV3Zap {
         bool _isRebasing,
         ISwapRouter.ExactInputSingleParams calldata _swapParams
     ) external returns (uint256 lpShares) {
-        // FIXME: Can we DRY up these checks?
-        //
-        // Ensure that the swap recipient is this contract.
-        if (_swapParams.recipient != address(this)) {
-            revert InvalidRecipient();
-        }
-
-        // Ensure that if we're opening the long with base that the output token
-        // of the zap is the Hyperdrive pool's base token.
-        if (
-            _options.asBase && _swapParams.tokenOut != _hyperdrive.baseToken()
-        ) {
-            revert InvalidOutputToken();
-        }
-        // Ensure that if we're opening the long with vault shares that the
-        // output token of the zap is the Hyperdrive pool's vault shares token.
-        else if (
-            !_options.asBase &&
-            _swapParams.tokenOut != _hyperdrive.vaultSharesToken()
-        ) {
-            revert InvalidOutputToken();
-        }
+        // Validate the zap parameters.
+        _validateZapIn(_hyperdrive, _options, _swapParams);
 
         // Zap the funds that will be used to add liquidity and approve the pool
         // to spend these funds.
@@ -159,28 +139,8 @@ contract UniV3Zap {
         bool _isRebasing,
         ISwapRouter.ExactInputSingleParams calldata _swapParams
     ) external returns (uint256 maturityTime, uint256 longAmount) {
-        // FIXME: Can we DRY up these checks?
-        //
-        // Ensure that the swap recipient is this contract.
-        if (_swapParams.recipient != address(this)) {
-            revert InvalidRecipient();
-        }
-
-        // Ensure that if we're opening the long with base that the output token
-        // of the zap is the Hyperdrive pool's base token.
-        if (
-            _options.asBase && _swapParams.tokenOut != _hyperdrive.baseToken()
-        ) {
-            revert InvalidOutputToken();
-        }
-        // Ensure that if we're opening the long with vault shares that the
-        // output token of the zap is the Hyperdrive pool's vault shares token.
-        else if (
-            !_options.asBase &&
-            _swapParams.tokenOut != _hyperdrive.vaultSharesToken()
-        ) {
-            revert InvalidOutputToken();
-        }
+        // Validate the zap parameters.
+        _validateZapIn(_hyperdrive, _options, _swapParams);
 
         // Zap the funds that will be used to open the long and approve the pool
         // to spend these funds.
@@ -231,26 +191,8 @@ contract UniV3Zap {
         IHyperdrive.Options calldata _options,
         ISwapRouter.ExactInputSingleParams calldata _swapParams
     ) external returns (uint256 proceeds) {
-        // FIXME: Can we DRY up these checks?
-        //
-        // Ensure that the swap recipient is the sender.
-        if (_swapParams.recipient != msg.sender) {
-            revert InvalidRecipient();
-        }
-
-        // Ensure that if we're opening the long with base that the output token
-        // of the zap is the Hyperdrive pool's base token.
-        if (_options.asBase && _swapParams.tokenIn != _hyperdrive.baseToken()) {
-            revert InvalidOutputToken();
-        }
-        // Ensure that if we're opening the long with vault shares that the
-        // output token of the zap is the Hyperdrive pool's vault shares token.
-        else if (
-            !_options.asBase &&
-            _swapParams.tokenIn != _hyperdrive.vaultSharesToken()
-        ) {
-            revert InvalidOutputToken();
-        }
+        // Validate the zap parameters.
+        _validateZapOut(_hyperdrive, _options, _swapParams);
 
         // Take custody of the long position.
         _hyperdrive.transferFrom(
@@ -276,13 +218,79 @@ contract UniV3Zap {
 
     /// Shorts ///
 
-    // FIXME
+    // FIXME: openShortZap
     //
     // FIXME: Handle refunds for shorts.
 
+    // FIXME: closeShortZap
+
     /// Helpers ///
 
-    /// @notice Zaps funds into this contract to open positions on Hyperdrive.
+    /// @dev Validate the swap parameters for zapping tokens into Hyperdrive.
+    /// @param _hyperdrive The Hyperdrive pool to open the long on.
+    /// @param _options The options that configure how the operation is settled.
+    // FIXME: Is there a reason to not use the multi-hop parameters?
+    // FIXME: Is there a better way to handle execution that is more generic?
+    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    function _validateZapIn(
+        IHyperdrive _hyperdrive,
+        IHyperdrive.Options calldata _options,
+        ISwapRouter.ExactInputSingleParams memory _swapParams
+    ) internal view {
+        // Ensure that the swap recipient is this contract.
+        if (_swapParams.recipient != address(this)) {
+            revert InvalidRecipient();
+        }
+
+        // Ensure that if we're opening the long with base that the output token
+        // of the zap is the Hyperdrive pool's base token.
+        if (
+            _options.asBase && _swapParams.tokenOut != _hyperdrive.baseToken()
+        ) {
+            revert InvalidOutputToken();
+        }
+        // Ensure that if we're opening the long with vault shares that the
+        // output token of the zap is the Hyperdrive pool's vault shares token.
+        else if (
+            !_options.asBase &&
+            _swapParams.tokenOut != _hyperdrive.vaultSharesToken()
+        ) {
+            revert InvalidOutputToken();
+        }
+    }
+
+    /// @dev Validate the swap parameters for zapping tokens out of Hyperdrive.
+    /// @param _hyperdrive The Hyperdrive pool to open the long on.
+    /// @param _options The options that configure how the operation is settled.
+    // FIXME: Is there a reason to not use the multi-hop parameters?
+    // FIXME: Is there a better way to handle execution that is more generic?
+    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    function _validateZapOut(
+        IHyperdrive _hyperdrive,
+        IHyperdrive.Options calldata _options,
+        ISwapRouter.ExactInputSingleParams memory _swapParams
+    ) internal view {
+        // Ensure that the swap recipient is the sender.
+        if (_swapParams.recipient != msg.sender) {
+            revert InvalidRecipient();
+        }
+
+        // Ensure that if we're opening the long with base that the output token
+        // of the zap is the Hyperdrive pool's base token.
+        if (_options.asBase && _swapParams.tokenIn != _hyperdrive.baseToken()) {
+            revert InvalidOutputToken();
+        }
+        // Ensure that if we're opening the long with vault shares that the
+        // output token of the zap is the Hyperdrive pool's vault shares token.
+        else if (
+            !_options.asBase &&
+            _swapParams.tokenIn != _hyperdrive.vaultSharesToken()
+        ) {
+            revert InvalidOutputToken();
+        }
+    }
+
+    /// @dev Zaps funds into this contract to open positions on Hyperdrive.
     // FIXME: Is there a reason to not use the multi-hop parameters?
     // FIXME: Is there a better way to handle execution that is more generic?
     /// @param _swapParams The Uniswap swap parameters for a single fill.
@@ -318,7 +326,7 @@ contract UniV3Zap {
         return proceeds;
     }
 
-    /// @notice Zaps the proceeds of closing a Hyperdrive position into a users
+    /// @dev Zaps the proceeds of closing a Hyperdrive position into a users
     ///         preferred tokens.
     // FIXME: Is there a reason to not use the multi-hop parameters?
     // FIXME: Is there a better way to handle execution that is more generic?
