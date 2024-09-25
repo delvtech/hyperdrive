@@ -14,6 +14,9 @@ import { AssetId } from "../libraries/AssetId.sol";
 //
 // FIXME: What events do we need?
 //
+// FIXME: Once all of the functions are implemented, go through and try to DRY
+//        everything up.
+//
 /// @title UniV3Zap
 /// @author DELV
 /// @notice A zap contract that uses Uniswap v3 to execute swaps before or after
@@ -47,7 +50,87 @@ contract UniV3Zap {
 
     /// LPs ///
 
-    // FIXME
+    /// @notice Executes a swap on Uniswap and uses the proceeds to add
+    ///         liquidity on Hyperdrive.
+    /// @param _hyperdrive The Hyperdrive pool to open the long on.
+    /// @param _minLpSharePrice The minimum LP share price the LP is willing
+    ///        to accept for their shares. LPs incur negative slippage when
+    ///        adding liquidity if there is a net curve position in the market,
+    ///        so this allows LPs to protect themselves from high levels of
+    ///        slippage. The units of this quantity are either base or vault
+    ///        shares, depending on the value of `_options.asBase`.
+    /// @param _minApr The minimum APR at which the LP is willing to supply.
+    /// @param _maxApr The maximum APR at which the LP is willing to supply.
+    /// @param _options The options that configure how the operation is settled.
+    /// @param _isRebasing A flag indicating whether or not the vault shares
+    ///        token is rebasing.
+    // FIXME: Is there a reason to not use the multi-hop parameters?
+    // FIXME: Is there a better way to handle execution that is more generic?
+    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @return lpShares The LP shares received by the LP.
+    function addLiquidityZap(
+        IHyperdrive _hyperdrive,
+        uint256 _minLpSharePrice,
+        uint256 _minApr,
+        uint256 _maxApr,
+        IHyperdrive.Options calldata _options,
+        bool _isRebasing,
+        ISwapRouter.ExactInputSingleParams calldata _swapParams
+    ) external returns (uint256 lpShares) {
+        // FIXME: Can we DRY up these checks?
+        //
+        // Ensure that the swap recipient is this contract.
+        if (_swapParams.recipient != address(this)) {
+            revert InvalidRecipient();
+        }
+
+        // Ensure that if we're opening the long with base that the output token
+        // of the zap is the Hyperdrive pool's base token.
+        if (
+            _options.asBase && _swapParams.tokenOut != _hyperdrive.baseToken()
+        ) {
+            revert InvalidOutputToken();
+        }
+        // Ensure that if we're opening the long with vault shares that the
+        // output token of the zap is the Hyperdrive pool's vault shares token.
+        else if (
+            !_options.asBase &&
+            _swapParams.tokenOut != _hyperdrive.vaultSharesToken()
+        ) {
+            revert InvalidOutputToken();
+        }
+
+        // Zap the funds that will be used to add liquidity and approve the pool
+        // to spend these funds.
+        uint256 proceeds = _zapIn(_swapParams);
+        // NOTE: We increase the required approval amount by 1 wei so that the
+        // pool ends with an approval of 1 wei. This makes future approvals
+        // cheaper by keeping the storage slot warm.
+        ERC20(_swapParams.tokenIn).forceApprove(
+            address(_hyperdrive),
+            proceeds + 1
+        );
+
+        // Add liquidity using the proceeds of the trade. If the vault shares
+        // token is a rebasing token, the proceeds amount needs to be converted
+        // to vault shares.
+        if (!_options.asBase && _isRebasing) {
+            proceeds = _hyperdrive.convertToShares(proceeds);
+        }
+        lpShares = _hyperdrive.addLiquidity(
+            proceeds,
+            _minLpSharePrice,
+            _minApr,
+            _maxApr,
+            _options
+        );
+
+        return lpShares;
+    }
+
+    // FIXME: Remove liquidity
+
+    // FIXME: Redeem withdrawal shares
 
     /// Longs ///
 
