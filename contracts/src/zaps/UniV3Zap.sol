@@ -108,9 +108,114 @@ contract UniV3Zap {
         return lpShares;
     }
 
-    // FIXME: Remove liquidity
+    /// @notice Removes liquidity on Hyperdrive and converts the proceeds to the
+    ///         traders preferred asset by executing a swap on Uniswap v3.
+    /// @param _hyperdrive The Hyperdrive pool to open the long on.
+    /// @param _lpShares The LP shares to burn.
+    /// @param _minOutputPerShare The minimum amount the LP expects to receive
+    ///        for each withdrawal share that is burned. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
+    /// @param _options The options that configure how the operation is settled.
+    // FIXME: Is there a reason to not use the multi-hop parameters?
+    // FIXME: Is there a better way to handle execution that is more generic?
+    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @return proceeds The proceeds of removing liquidity. These proceeds will
+    ///         be in units determined by the Uniswap swap parameters.
+    /// @return withdrawalShares The base that the LP receives buys out some of
+    ///         their LP shares, but it may not be sufficient to fully buy the
+    ///         LP out. In this case, the LP receives withdrawal shares equal in
+    ///         value to the present value they are owed. As idle capital
+    ///         becomes available, the pool will buy back these shares.
+    function removeLiquidityZap(
+        IHyperdrive _hyperdrive,
+        uint256 _lpShares,
+        uint256 _minOutputPerShare,
+        IHyperdrive.Options calldata _options,
+        ISwapRouter.ExactInputSingleParams calldata _swapParams
+    ) external returns (uint256 proceeds, uint256 withdrawalShares) {
+        // Validate the zap parameters.
+        _validateZapOut(_hyperdrive, _options, _swapParams);
 
-    // FIXME: Redeem withdrawal shares
+        // Take custody of the LP shares.
+        _hyperdrive.transferFrom(
+            AssetId._LP_ASSET_ID,
+            msg.sender,
+            address(this),
+            _lpShares
+        );
+
+        // Remove the liquidity, zap the proceeds into the target asset, and
+        // send them to the LP.
+        //
+        // NOTE: We zap out the contract's entire balance of the swap's input
+        // token. This ensures that we properly handle vault shares tokens that
+        // rebase and also ensures that this contract doesn't end up with stuck
+        // tokens. As a consequence, we don't need the output value of closing
+        // the long position.
+        (, withdrawalShares) = _hyperdrive.removeLiquidity(
+            _lpShares,
+            _minOutputPerShare,
+            _options
+        );
+        proceeds = _zapOut(_swapParams);
+
+        return (proceeds, withdrawalShares);
+    }
+
+    /// @notice Redeem withdrawal shares on Hyperdrive and converts the proceeds
+    ///         to the traders preferred asset by executing a swap on Uniswap
+    ///         v3.
+    /// @param _hyperdrive The Hyperdrive pool to open the long on.
+    /// @param _withdrawalShares The withdrawal shares to redeem.
+    /// @param _minOutputPerShare The minimum amount the LP expects to
+    ///        receive for each withdrawal share that is burned. The units of
+    ///        this quantity are either base or vault shares, depending on the
+    ///        value of `_options.asBase`.
+    /// @param _options The options that configure how the operation is settled.
+    // FIXME: Is there a reason to not use the multi-hop parameters?
+    // FIXME: Is there a better way to handle execution that is more generic?
+    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @return proceeds The proceeds of redeeming withdrawal shares. These
+    ///         proceeds will be in units determined by the Uniswap swap
+    ///         parameters.
+    /// @return withdrawalSharesRedeemed The amount of withdrawal shares that
+    ///         were redeemed.
+    function redeemWithdrawalSharesZap(
+        IHyperdrive _hyperdrive,
+        uint256 _withdrawalShares,
+        uint256 _minOutputPerShare,
+        IHyperdrive.Options calldata _options,
+        ISwapRouter.ExactInputSingleParams calldata _swapParams
+    ) external returns (uint256 proceeds, uint256 withdrawalSharesRedeemed) {
+        // Validate the zap parameters.
+        _validateZapOut(_hyperdrive, _options, _swapParams);
+
+        // Take custody of the LP shares.
+        _hyperdrive.transferFrom(
+            AssetId._WITHDRAWAL_SHARE_ASSET_ID,
+            msg.sender,
+            address(this),
+            _withdrawalShares
+        );
+
+        // Redeem the withdrawal shares, zap the proceeds into the target asset,
+        // and send them to the LP.
+        //
+        // NOTE: We zap out the contract's entire balance of the swap's input
+        // token. This ensures that we properly handle vault shares tokens that
+        // rebase and also ensures that this contract doesn't end up with stuck
+        // tokens. As a consequence, we don't need the output value of closing
+        // the long position.
+        (, withdrawalSharesRedeemed) = _hyperdrive.redeemWithdrawalShares(
+            _withdrawalShares,
+            _minOutputPerShare,
+            _options
+        );
+        proceeds = _zapOut(_swapParams);
+
+        return (proceeds, withdrawalSharesRedeemed);
+    }
 
     /// Longs ///
 
@@ -130,7 +235,7 @@ contract UniV3Zap {
     // FIXME: Is there a better way to handle execution that is more generic?
     /// @param _swapParams The Uniswap swap parameters for a single fill.
     /// @return maturityTime The maturity time of the bonds.
-    /// @return longAmount The amount of bonds the user received.
+    /// @return longAmount The amount of bonds the trader received.
     function openLongZap(
         IHyperdrive _hyperdrive,
         uint256 _minOutput,
@@ -182,7 +287,8 @@ contract UniV3Zap {
     // FIXME: Is there a reason to not use the multi-hop parameters?
     // FIXME: Is there a better way to handle execution that is more generic?
     /// @param _swapParams The Uniswap swap parameters for a single fill.
-    /// @return proceeds The proceeds sent to the user.
+    /// @return proceeds The proceeds of closing the long. These proceeds will
+    ///         be in units determined by the Uniswap swap parameters.
     function closeLongZap(
         IHyperdrive _hyperdrive,
         uint256 _maturityTime,
@@ -203,7 +309,7 @@ contract UniV3Zap {
         );
 
         // Close the long, zap the proceeds into the target asset, and send
-        // them to the user.
+        // them to the trader.
         //
         // NOTE: We zap out the contract's entire balance of the swap's input
         // token. This ensures that we properly handle vault shares tokens that
@@ -326,8 +432,8 @@ contract UniV3Zap {
         return proceeds;
     }
 
-    /// @dev Zaps the proceeds of closing a Hyperdrive position into a users
-    ///         preferred tokens.
+    /// @dev Zaps the proceeds of closing a Hyperdrive position into a trader's
+    ///      preferred tokens.
     // FIXME: Is there a reason to not use the multi-hop parameters?
     // FIXME: Is there a better way to handle execution that is more generic?
     /// @param _swapParams The Uniswap swap parameters for a single fill.
