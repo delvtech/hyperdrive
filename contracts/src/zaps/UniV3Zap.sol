@@ -6,16 +6,10 @@ import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { ISwapRouter } from "../interfaces/ISwapRouter.sol";
+import { IUniV3Zap } from "../interfaces/IUniV3Zap.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 
-// FIXME: I don't love this name. Can we do better?
-//
-// FIXME: Add an interface.
-//
 // FIXME: What events do we need?
-//
-// FIXME: Once all of the functions are implemented, go through and try to DRY
-//        everything up.
 //
 /// @title UniV3Zap
 /// @author DELV
@@ -24,21 +18,9 @@ import { AssetId } from "../libraries/AssetId.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract UniV3Zap {
+contract UniV3Zap is IUniV3Zap {
     using SafeERC20 for ERC20;
 
-    /// @notice Thrown when attempting to zap to an invalid input token.
-    error InvalidInputToken();
-
-    /// @notice Thrown when attempting to zap to an invalid output token.
-    error InvalidOutputToken();
-
-    /// @notice Thrown when attempting to zap to an invalid recipient.
-    error InvalidRecipient();
-
-    // FIXME: Is it okay to have this as an immutable, or should we pass this as
-    // an argument?
-    //
     /// @notice The Uniswap swap router.
     ISwapRouter public immutable swapRouter;
 
@@ -64,8 +46,6 @@ contract UniV3Zap {
     /// @param _options The options that configure how the operation is settled.
     /// @param _isRebasing A flag indicating whether or not the vault shares
     ///        token is rebasing.
-    // FIXME: Is there a reason to not use the multi-hop parameters?
-    // FIXME: Is there a better way to handle execution that is more generic?
     /// @param _swapParams The Uniswap swap parameters for a single fill.
     /// @return lpShares The LP shares received by the LP.
     function addLiquidityZap(
@@ -117,8 +97,6 @@ contract UniV3Zap {
     ///        quantity are either base or vault shares, depending on the value
     ///        of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
-    // FIXME: Is there a reason to not use the multi-hop parameters?
-    // FIXME: Is there a better way to handle execution that is more generic?
     /// @param _swapParams The Uniswap swap parameters for a single fill.
     /// @return proceeds The proceeds of removing liquidity. These proceeds will
     ///         be in units determined by the Uniswap swap parameters.
@@ -173,8 +151,6 @@ contract UniV3Zap {
     ///        this quantity are either base or vault shares, depending on the
     ///        value of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
-    // FIXME: Is there a reason to not use the multi-hop parameters?
-    // FIXME: Is there a better way to handle execution that is more generic?
     /// @param _swapParams The Uniswap swap parameters for a single fill.
     /// @return proceeds The proceeds of redeeming withdrawal shares. These
     ///         proceeds will be in units determined by the Uniswap swap
@@ -231,8 +207,6 @@ contract UniV3Zap {
     ///        settled.
     /// @param _isRebasing A flag indicating whether or not the vault shares
     ///        token is rebasing.
-    // FIXME: Is there a reason to not use the multi-hop parameters?
-    // FIXME: Is there a better way to handle execution that is more generic?
     /// @param _swapParams The Uniswap swap parameters for a single fill.
     /// @return maturityTime The maturity time of the bonds.
     /// @return longAmount The amount of bonds the trader received.
@@ -284,8 +258,6 @@ contract UniV3Zap {
     ///        the value of `_options.asBase`.
     /// @param _options The options that configure how the Hyperdrive trade is
     ///        settled.
-    // FIXME: Is there a reason to not use the multi-hop parameters?
-    // FIXME: Is there a better way to handle execution that is more generic?
     /// @param _swapParams The Uniswap swap parameters for a single fill.
     /// @return proceeds The proceeds of closing the long. These proceeds will
     ///         be in units determined by the Uniswap swap parameters.
@@ -324,19 +296,121 @@ contract UniV3Zap {
 
     /// Shorts ///
 
-    // FIXME: openShortZap
-    //
-    // FIXME: Handle refunds for shorts.
+    /// @notice Executes a swap on Uniswap and uses the proceeds to open a short
+    ///         on Hyperdrive.
+    /// @param _hyperdrive The Hyperdrive pool to open the long on.
+    /// @param _maxDeposit The most the user expects to deposit for this trade.
+    ///        The units of this quantity are either base or vault shares,
+    ///        depending on the value of `_options.asBase`.
+    /// @param _minVaultSharePrice The minimum vault share price at which to open
+    ///        the short. This allows traders to protect themselves from opening
+    ///        a short in a checkpoint where negative interest has accrued.
+    /// @param _options The options that configure how the Hyperdrive trade is
+    ///        settled.
+    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @return maturityTime The maturity time of the bonds.
+    /// @return deposit The amount the user deposited for this trade. The units
+    ///         of this quantity are either base or vault shares, depending on
+    ///         the value of `_options.asBase`.
+    function openShortZap(
+        IHyperdrive _hyperdrive,
+        uint256 _bondAmount,
+        uint256 _maxDeposit,
+        uint256 _minVaultSharePrice,
+        IHyperdrive.Options calldata _options,
+        ISwapRouter.ExactInputSingleParams calldata _swapParams
+    ) external returns (uint256 maturityTime, uint256 deposit) {
+        // Validate the zap parameters.
+        _validateZapIn(_hyperdrive, _options, _swapParams);
 
-    // FIXME: closeShortZap
+        // Zap the funds that will be used to open the long and approve the pool
+        // to spend these funds.
+        uint256 proceeds = _zapIn(_swapParams);
+        // NOTE: We increase the required approval amount by 1 wei so that the
+        // pool ends with an approval of 1 wei. This makes future approvals
+        // cheaper by keeping the storage slot warm.
+        ERC20(_swapParams.tokenIn).forceApprove(
+            address(_hyperdrive),
+            proceeds + 1
+        );
+
+        // Open a long using the proceeds of the trade.
+        (maturityTime, deposit) = _hyperdrive.openShort(
+            _bondAmount,
+            _maxDeposit,
+            _minVaultSharePrice,
+            _options
+        );
+
+        // TODO: Is this the right UX? Ideally, we'd trade it back for them, but
+        // that is more complicated and gas intensive.
+        //
+        // If there is capital left over after the rebase, send it back to the
+        // trader.
+        ERC20(_swapParams.tokenOut).safeTransfer(
+            msg.sender,
+            IERC20(_swapParams.tokenOut).balanceOf(address(this))
+        );
+
+        return (maturityTime, deposit);
+    }
+
+    /// @notice Closes a short on Hyperdrive and converts the proceeds to the
+    ///         traders preferred asset by executing a swap on Uniswap v3.
+    /// @param _hyperdrive The Hyperdrive pool to open the long on.
+    /// @param _maturityTime The maturity time of the short.
+    /// @param _bondAmount The amount of shorts to close.
+    /// @param _minOutput The minimum output of this trade. The units of this
+    ///        quantity are either base or vault shares, depending on the value
+    ///        of `_options.asBase`.
+    /// @param _options The options that configure how the Hyperdrive trade is
+    ///        settled.
+    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @return proceeds The proceeds of closing the short. These proceeds will
+    ///         be in units determined by the Uniswap swap parameters.
+    function closeShortZap(
+        IHyperdrive _hyperdrive,
+        uint256 _maturityTime,
+        uint256 _bondAmount,
+        uint256 _minOutput,
+        IHyperdrive.Options calldata _options,
+        ISwapRouter.ExactInputSingleParams calldata _swapParams
+    ) external returns (uint256 proceeds) {
+        // Validate the zap parameters.
+        _validateZapOut(_hyperdrive, _options, _swapParams);
+
+        // Take custody of the short position.
+        _hyperdrive.transferFrom(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _maturityTime),
+            msg.sender,
+            address(this),
+            _bondAmount
+        );
+
+        // Close the short, zap the proceeds into the target asset, and send
+        // them to the trader.
+        //
+        // NOTE: We zap out the contract's entire balance of the swap's input
+        // token. This ensures that we properly handle vault shares tokens that
+        // rebase and also ensures that this contract doesn't end up with stuck
+        // tokens. As a consequence, we don't need the output value of closing
+        // the long position.
+        _hyperdrive.closeShort(
+            _maturityTime,
+            _bondAmount,
+            _minOutput,
+            _options
+        );
+        _zapOut(_swapParams);
+
+        return proceeds;
+    }
 
     /// Helpers ///
 
     /// @dev Validate the swap parameters for zapping tokens into Hyperdrive.
     /// @param _hyperdrive The Hyperdrive pool to open the long on.
     /// @param _options The options that configure how the operation is settled.
-    // FIXME: Is there a reason to not use the multi-hop parameters?
-    // FIXME: Is there a better way to handle execution that is more generic?
     /// @param _swapParams The Uniswap swap parameters for a single fill.
     function _validateZapIn(
         IHyperdrive _hyperdrive,
@@ -368,8 +442,6 @@ contract UniV3Zap {
     /// @dev Validate the swap parameters for zapping tokens out of Hyperdrive.
     /// @param _hyperdrive The Hyperdrive pool to open the long on.
     /// @param _options The options that configure how the operation is settled.
-    // FIXME: Is there a reason to not use the multi-hop parameters?
-    // FIXME: Is there a better way to handle execution that is more generic?
     /// @param _swapParams The Uniswap swap parameters for a single fill.
     function _validateZapOut(
         IHyperdrive _hyperdrive,
@@ -397,8 +469,6 @@ contract UniV3Zap {
     }
 
     /// @dev Zaps funds into this contract to open positions on Hyperdrive.
-    // FIXME: Is there a reason to not use the multi-hop parameters?
-    // FIXME: Is there a better way to handle execution that is more generic?
     /// @param _swapParams The Uniswap swap parameters for a single fill.
     /// @return proceeds The amount of assets that were zapped into this
     ///         contract.
@@ -434,8 +504,6 @@ contract UniV3Zap {
 
     /// @dev Zaps the proceeds of closing a Hyperdrive position into a trader's
     ///      preferred tokens.
-    // FIXME: Is there a reason to not use the multi-hop parameters?
-    // FIXME: Is there a better way to handle execution that is more generic?
     /// @param _swapParams The Uniswap swap parameters for a single fill.
     /// @return proceeds The proceeds of the zap that were transferred to the
     ///         trader.
