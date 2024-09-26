@@ -9,7 +9,11 @@ import { ISwapRouter } from "../interfaces/ISwapRouter.sol";
 import { IUniV3Zap } from "../interfaces/IUniV3Zap.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 
-// FIXME: What events do we need?
+// FIXME: We need "name", "kind", and "version"
+//
+// FIXME: Do we need to check the options destination for any of these zaps?
+//
+// FIXME: Handle ETH in these zaps.
 //
 /// @title UniV3Zap
 /// @author DELV
@@ -66,7 +70,7 @@ contract UniV3Zap is IUniV3Zap {
         // NOTE: We increase the required approval amount by 1 wei so that the
         // pool ends with an approval of 1 wei. This makes future approvals
         // cheaper by keeping the storage slot warm.
-        ERC20(_swapParams.tokenIn).forceApprove(
+        ERC20(_swapParams.tokenOut).forceApprove(
             address(_hyperdrive),
             proceeds + 1
         );
@@ -88,6 +92,8 @@ contract UniV3Zap is IUniV3Zap {
         return lpShares;
     }
 
+    // FIXME: Make sure that the destination is the zap contract.
+    //
     /// @notice Removes liquidity on Hyperdrive and converts the proceeds to the
     ///         traders preferred asset by executing a swap on Uniswap v3.
     /// @param _hyperdrive The Hyperdrive pool to open the long on.
@@ -227,7 +233,7 @@ contract UniV3Zap is IUniV3Zap {
         // NOTE: We increase the required approval amount by 1 wei so that the
         // pool ends with an approval of 1 wei. This makes future approvals
         // cheaper by keeping the storage slot warm.
-        ERC20(_swapParams.tokenIn).forceApprove(
+        ERC20(_swapParams.tokenOut).forceApprove(
             address(_hyperdrive),
             proceeds + 1
         );
@@ -329,7 +335,7 @@ contract UniV3Zap is IUniV3Zap {
         // NOTE: We increase the required approval amount by 1 wei so that the
         // pool ends with an approval of 1 wei. This makes future approvals
         // cheaper by keeping the storage slot warm.
-        ERC20(_swapParams.tokenIn).forceApprove(
+        ERC20(_swapParams.tokenOut).forceApprove(
             address(_hyperdrive),
             proceeds + 1
         );
@@ -495,7 +501,7 @@ contract UniV3Zap is IUniV3Zap {
         // cheaper by keeping the storage slot warm.
         ERC20(_swapParams.tokenIn).forceApprove(
             address(swapRouter),
-            proceeds + 1
+            _swapParams.amountIn + 1
         );
         proceeds = swapRouter.exactInputSingle(_swapParams);
 
