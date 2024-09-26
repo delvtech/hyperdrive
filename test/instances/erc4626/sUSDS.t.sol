@@ -12,7 +12,11 @@ import { ERC4626HyperdriveInstanceTest } from "./ERC4626HyperdriveInstanceTest.t
 
 interface ISUSDS {
     function chi() external view returns (uint256);
+
     function rho() external view returns (uint256);
+
+    function ssr() external view returns (uint256);
+
     function drip() external returns (uint256);
 }
 
@@ -21,6 +25,9 @@ contract sUSDSHyperdriveTest is ERC4626HyperdriveInstanceTest {
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
     using stdStorage for StdStorage;
+
+    /// @dev The RAY constant from sUSDS.
+    uint256 internal constant RAY = 1e27;
 
     /// @dev The USDS contract.
     IERC20 internal constant USDS =
@@ -85,10 +92,10 @@ contract sUSDSHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
                 roundTripLongInstantaneousWithSharesTolerance: 1e5,
                 roundTripLongMaturityWithSharesUpperBoundTolerance: 1e3,
-                roundTripLongMaturityWithSharesTolerance: 1e17,
+                roundTripLongMaturityWithSharesTolerance: 1e5,
                 roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
                 roundTripShortInstantaneousWithSharesTolerance: 1e5,
-                roundTripShortMaturityWithSharesTolerance: 1e17,
+                roundTripShortMaturityWithSharesTolerance: 1e5,
                 // The verification tolerances.
                 verifyDepositTolerance: 5,
                 verifyWithdrawalTolerance: 2
@@ -112,6 +119,9 @@ contract sUSDSHyperdriveTest is ERC4626HyperdriveInstanceTest {
         int256 variableRate
     ) internal override {
         uint256 chi = ISUSDS(address(SUSDS)).chi();
+        uint256 rho = ISUSDS(address(SUSDS)).rho();
+        uint256 ssr = ISUSDS(address(SUSDS)).ssr();
+        chi = (_rpow(ssr, block.timestamp - rho) * chi) / RAY;
 
         // Accrue interest in the sUSDS market. This amounts to manually
         // updating the total supply assets.
@@ -126,5 +136,60 @@ contract sUSDSHyperdriveTest is ERC4626HyperdriveInstanceTest {
             bytes32(uint256(5)),
             bytes32((uint256(block.timestamp) << 192) | chi)
         );
+    }
+
+    /// @dev The ray pow method from sUSDS.
+    /// @param x The base of the exponentiation.
+    /// @param n The exponent of the exponentiation.
+    /// @param z The result of the exponentiation.
+    function _rpow(uint256 x, uint256 n) internal pure returns (uint256 z) {
+        assembly {
+            switch x
+            case 0 {
+                switch n
+                case 0 {
+                    z := RAY
+                }
+                default {
+                    z := 0
+                }
+            }
+            default {
+                switch mod(n, 2)
+                case 0 {
+                    z := RAY
+                }
+                default {
+                    z := x
+                }
+                let half := div(RAY, 2) // for rounding.
+                for {
+                    n := div(n, 2)
+                } n {
+                    n := div(n, 2)
+                } {
+                    let xx := mul(x, x)
+                    if iszero(eq(div(xx, x), x)) {
+                        revert(0, 0)
+                    }
+                    let xxRound := add(xx, half)
+                    if lt(xxRound, xx) {
+                        revert(0, 0)
+                    }
+                    x := div(xxRound, RAY)
+                    if mod(n, 2) {
+                        let zx := mul(z, x)
+                        if and(iszero(iszero(x)), iszero(eq(div(zx, x), z))) {
+                            revert(0, 0)
+                        }
+                        let zxRound := add(zx, half)
+                        if lt(zxRound, zx) {
+                            revert(0, 0)
+                        }
+                        z := div(zxRound, RAY)
+                    }
+                }
+            }
+        }
     }
 }
