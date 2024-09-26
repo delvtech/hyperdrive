@@ -7,12 +7,26 @@ import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { ISwapRouter } from "../../../contracts/src/interfaces/ISwapRouter.sol";
 import { IUniV3Zap } from "../../../contracts/src/interfaces/IUniV3Zap.sol";
 import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
+import { UniV3Path } from "../../../contracts/src/libraries/UniV3Path.sol";
 import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
 import { UniV3Zap } from "../../../contracts/src/zaps/UniV3Zap.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 
 contract UniV3ZapTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using UniV3Path for bytes;
+
+    /// @dev Uniswap's lowest fee tier.
+    uint24 internal constant LOWEST_FEE_TIER = 100;
+
+    /// @dev Uniswap's low fee tier.
+    uint24 internal constant LOW_FEE_TIER = 500;
+
+    /// @dev Uniswap's medium fee tier.
+    uint24 internal constant MEDIUM_FEE_TIER = 3_000;
+
+    /// @dev Uniswap's high fee tier.
+    uint24 internal constant HIGH_FEE_TIER = 10_000;
 
     /// @dev The USDC token address.
     address internal constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -22,6 +36,9 @@ contract UniV3ZapTest is HyperdriveTest {
 
     /// @dev The sDAI token address.
     address internal constant SDAI = 0x83F20F44975D03b1b09e64809B757c47f942BEeA;
+
+    /// @dev The Wrapped Ether token address.
+    address internal constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     /// @dev The stETH token address.
     address internal constant STETH =
@@ -80,8 +97,6 @@ contract UniV3ZapTest is HyperdriveTest {
 
     /// Add Liquidity ///
 
-    // FIXME
-
     function test_addLiquidityZap_failure_invalidRecipient() external {
         // Ensure that the zap fails when the recipient isn't Hyperdrive.
         vm.expectRevert(IUniV3Zap.InvalidRecipient.selector);
@@ -96,15 +111,12 @@ contract UniV3ZapTest is HyperdriveTest {
                 extraData: ""
             }),
             false, // is rebasing
-            ISwapRouter.ExactInputSingleParams({
-                tokenIn: USDC,
-                tokenOut: DAI,
-                fee: 3_000, // the medium fee tier
+            ISwapRouter.ExactInputParams({
+                path: abi.encodePacked(USDC, LOWEST_FEE_TIER, DAI),
                 recipient: bob,
                 deadline: block.timestamp + 1 minutes,
                 amountIn: 1_000e6,
-                amountOutMinimum: 0,
-                sqrtPriceLimitX96: 0
+                amountOutMinimum: 999e18
             })
         );
     }
@@ -124,15 +136,18 @@ contract UniV3ZapTest is HyperdriveTest {
                 extraData: ""
             }),
             false, // is rebasing
-            ISwapRouter.ExactInputSingleParams({
-                tokenIn: USDC,
-                tokenOut: SDAI,
-                fee: 3_000, // the medium fee tier
-                recipient: address(zap),
+            ISwapRouter.ExactInputParams({
+                path: abi.encodePacked(
+                    USDC,
+                    LOW_FEE_TIER,
+                    WETH,
+                    LOW_FEE_TIER,
+                    SDAI
+                ),
+                recipient: bob,
                 deadline: block.timestamp + 1 minutes,
                 amountIn: 1_000e6,
-                amountOutMinimum: 0,
-                sqrtPriceLimitX96: 0
+                amountOutMinimum: 850e18
             })
         );
     }
@@ -154,46 +169,40 @@ contract UniV3ZapTest is HyperdriveTest {
                 extraData: ""
             }),
             false, // is rebasing
-            ISwapRouter.ExactInputSingleParams({
-                tokenIn: USDC,
-                tokenOut: DAI,
-                fee: 3_000, // the medium fee tier
-                recipient: address(zap),
+            ISwapRouter.ExactInputParams({
+                path: abi.encodePacked(USDC, LOWEST_FEE_TIER, DAI),
+                recipient: bob,
                 deadline: block.timestamp + 1 minutes,
                 amountIn: 1_000e6,
-                amountOutMinimum: 0,
-                sqrtPriceLimitX96: 0
+                amountOutMinimum: 999e18
             })
         );
     }
 
+    // FIXME: Find a route that makes sense for this.
     function test_addLiquidityZap_success_rebasing_asBase() external {
-        // FIXME
+        // FIXME: How should rebasing differ from non-rebasing?
     }
 
+    // FIXME: Find a route that makes sense for this.
     function test_addLiquidityZap_success_rebasing_asShares() external {
-        // FIXME
+        // FIXME: How should rebasing differ from non-rebasing?
     }
 
     function test_addLiquidityZap_success_nonRebasing_asBase() external {
         // Instantiate the swap parameters for this zap.
-        ISwapRouter.ExactInputSingleParams memory swapParams = ISwapRouter
-            .ExactInputSingleParams({
-                tokenIn: USDC,
-                tokenOut: DAI,
-                fee: 500, // the lowest fee tier
-                recipient: address(zap),
+        ISwapRouter.ExactInputParams memory swapParams = ISwapRouter
+            .ExactInputParams({
+                path: abi.encodePacked(USDC, LOWEST_FEE_TIER, DAI),
+                recipient: bob,
                 deadline: block.timestamp + 1 minutes,
                 amountIn: 1_000e6,
-                // NOTE: A conservative estimate for the amount of DAI to receive.
-                amountOutMinimum: 999e18,
-                sqrtPriceLimitX96: 0
+                amountOutMinimum: 999e18
             });
 
         // Gets some data about the trader and the pool before the zap.
-        uint256 aliceBaseBalanceBefore = IERC20(swapParams.tokenIn).balanceOf(
-            alice
-        );
+        uint256 aliceBalanceBefore = IERC20(swapParams.path.tokenIn())
+            .balanceOf(alice);
         uint256 hyperdriveVaultSharesBalanceBefore = IERC20(
             SDAI_HYPERDRIVE.vaultSharesToken()
         ).balanceOf(address(SDAI_HYPERDRIVE));
@@ -205,7 +214,7 @@ contract UniV3ZapTest is HyperdriveTest {
             alice
         );
 
-        // Zaps into `addLiquidity` from USDC to DAI.
+        // Zaps into `addLiquidity` with `asBase` as `true` from USDC to DAI.
         uint256 lpShares = zap.addLiquidityZap(
             SDAI_HYPERDRIVE,
             0, // minimum LP share price
@@ -222,12 +231,14 @@ contract UniV3ZapTest is HyperdriveTest {
 
         // Ensure that Alice was charged the correct amount of the input token.
         assertEq(
-            IERC20(swapParams.tokenIn).balanceOf(alice),
-            aliceBaseBalanceBefore - swapParams.amountIn
+            IERC20(swapParams.path.tokenIn()).balanceOf(alice),
+            aliceBalanceBefore - swapParams.amountIn
         );
 
         // Ensure that Hyperdrive received more than the minimum output of the
         // swap.
+        //
+        // NOTE: Since the vault shares don't rebase, the units are in shares.
         uint256 hyperdriveVaultSharesBalanceAfter = IERC20(
             SDAI_HYPERDRIVE.vaultSharesToken()
         ).balanceOf(address(SDAI_HYPERDRIVE));
@@ -256,7 +267,85 @@ contract UniV3ZapTest is HyperdriveTest {
     }
 
     function test_addLiquidityZap_success_nonRebasing_asShares() external {
-        // FIXME
+        // Instantiate the swap parameters for this zap.
+        ISwapRouter.ExactInputParams memory swapParams = ISwapRouter
+            .ExactInputParams({
+                path: abi.encodePacked(
+                    USDC,
+                    LOW_FEE_TIER,
+                    WETH,
+                    LOW_FEE_TIER,
+                    SDAI
+                ),
+                recipient: address(zap),
+                deadline: block.timestamp + 1 minutes,
+                amountIn: 1_000e6,
+                amountOutMinimum: 850e18
+            });
+
+        // Gets some data about the trader and the pool before the zap.
+        uint256 aliceBalanceBefore = IERC20(swapParams.path.tokenIn())
+            .balanceOf(alice);
+        uint256 hyperdriveVaultSharesBalanceBefore = IERC20(
+            SDAI_HYPERDRIVE.vaultSharesToken()
+        ).balanceOf(address(SDAI_HYPERDRIVE));
+        uint256 lpTotalSupplyBefore = SDAI_HYPERDRIVE
+            .getPoolInfo()
+            .lpTotalSupply;
+        uint256 lpSharesBefore = SDAI_HYPERDRIVE.balanceOf(
+            AssetId._LP_ASSET_ID,
+            alice
+        );
+
+        // Zaps into `addLiquidity` with `asBase` as `false` from USDC to sDAI.
+        uint256 lpShares = zap.addLiquidityZap(
+            SDAI_HYPERDRIVE,
+            0, // minimum LP share price
+            0, // minimum APR
+            type(uint256).max, // maximum APR
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: false,
+                extraData: ""
+            }),
+            false, // is rebasing
+            swapParams
+        );
+
+        // Ensure that Alice was charged the correct amount of the input token.
+        assertEq(
+            IERC20(swapParams.path.tokenIn()).balanceOf(alice),
+            aliceBalanceBefore - swapParams.amountIn
+        );
+
+        // Ensure that Hyperdrive received more than the minimum output of the
+        // swap.
+        //
+        // NOTE: Since the vault shares don't rebase, the units are in shares.
+        uint256 hyperdriveVaultSharesBalanceAfter = IERC20(
+            SDAI_HYPERDRIVE.vaultSharesToken()
+        ).balanceOf(address(SDAI_HYPERDRIVE));
+        assertGt(
+            hyperdriveVaultSharesBalanceAfter,
+            hyperdriveVaultSharesBalanceBefore + swapParams.amountOutMinimum
+        );
+
+        // Ensure that Alice received an appropriate amount of LP shares and
+        // that the LP total supply increased.
+        assertGt(
+            lpShares,
+            swapParams.amountOutMinimum.divDown(
+                SDAI_HYPERDRIVE.getPoolInfo().lpSharePrice
+            )
+        );
+        assertEq(
+            SDAI_HYPERDRIVE.balanceOf(AssetId._LP_ASSET_ID, alice),
+            lpSharesBefore + lpShares
+        );
+        assertEq(
+            SDAI_HYPERDRIVE.getPoolInfo().lpTotalSupply,
+            lpTotalSupplyBefore + lpShares
+        );
     }
 
     /// Remove Liquidity ///

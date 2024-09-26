@@ -38,7 +38,7 @@ interface IUniV3Zap {
     /// @param _options The options that configure how the operation is settled.
     /// @param _isRebasing A flag indicating whether or not the vault shares
     ///        token is rebasing.
-    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
     /// @return lpShares The LP shares received by the LP.
     function addLiquidityZap(
         IHyperdrive _hyperdrive,
@@ -47,7 +47,7 @@ interface IUniV3Zap {
         uint256 _maxApr,
         IHyperdrive.Options calldata _options,
         bool _isRebasing,
-        ISwapRouter.ExactInputSingleParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams
     ) external returns (uint256 lpShares);
 
     /// @notice Removes liquidity on Hyperdrive and converts the proceeds to the
@@ -59,7 +59,7 @@ interface IUniV3Zap {
     ///        quantity are either base or vault shares, depending on the value
     ///        of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
-    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
     /// @return proceeds The proceeds of removing liquidity. These proceeds will
     ///         be in units determined by the Uniswap swap parameters.
     /// @return withdrawalShares The base that the LP receives buys out some of
@@ -72,7 +72,7 @@ interface IUniV3Zap {
         uint256 _lpShares,
         uint256 _minOutputPerShare,
         IHyperdrive.Options calldata _options,
-        ISwapRouter.ExactInputSingleParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams
     ) external returns (uint256 proceeds, uint256 withdrawalShares);
 
     /// @notice Redeem withdrawal shares on Hyperdrive and converts the proceeds
@@ -85,7 +85,7 @@ interface IUniV3Zap {
     ///        this quantity are either base or vault shares, depending on the
     ///        value of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
-    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
     /// @return proceeds The proceeds of redeeming withdrawal shares. These
     ///         proceeds will be in units determined by the Uniswap swap
     ///         parameters.
@@ -96,7 +96,7 @@ interface IUniV3Zap {
         uint256 _withdrawalShares,
         uint256 _minOutputPerShare,
         IHyperdrive.Options calldata _options,
-        ISwapRouter.ExactInputSingleParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams
     ) external returns (uint256 proceeds, uint256 withdrawalSharesRedeemed);
 
     /// Longs ///
@@ -113,7 +113,7 @@ interface IUniV3Zap {
     ///        settled.
     /// @param _isRebasing A flag indicating whether or not the vault shares
     ///        token is rebasing.
-    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
     /// @return maturityTime The maturity time of the bonds.
     /// @return longAmount The amount of bonds the trader received.
     function openLongZap(
@@ -122,7 +122,7 @@ interface IUniV3Zap {
         uint256 _minVaultSharePrice,
         IHyperdrive.Options calldata _options,
         bool _isRebasing,
-        ISwapRouter.ExactInputSingleParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams
     ) external returns (uint256 maturityTime, uint256 longAmount);
 
     /// @notice Closes a long on Hyperdrive and converts the proceeds to the
@@ -135,7 +135,7 @@ interface IUniV3Zap {
     ///        the value of `_options.asBase`.
     /// @param _options The options that configure how the Hyperdrive trade is
     ///        settled.
-    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
     /// @return proceeds The proceeds of closing the long. These proceeds will
     ///         be in units determined by the Uniswap swap parameters.
     function closeLongZap(
@@ -144,7 +144,7 @@ interface IUniV3Zap {
         uint256 _bondAmount,
         uint256 _minOutput,
         IHyperdrive.Options calldata _options,
-        ISwapRouter.ExactInputSingleParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams
     ) external returns (uint256 proceeds);
 
     /// Shorts ///
@@ -160,7 +160,7 @@ interface IUniV3Zap {
     ///        a short in a checkpoint where negative interest has accrued.
     /// @param _options The options that configure how the Hyperdrive trade is
     ///        settled.
-    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
     /// @return maturityTime The maturity time of the bonds.
     /// @return deposit The amount the user deposited for this trade. The units
     ///         of this quantity are either base or vault shares, depending on
@@ -171,7 +171,7 @@ interface IUniV3Zap {
         uint256 _maxDeposit,
         uint256 _minVaultSharePrice,
         IHyperdrive.Options calldata _options,
-        ISwapRouter.ExactInputSingleParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams
     ) external returns (uint256 maturityTime, uint256 deposit);
 
     /// @notice Closes a short on Hyperdrive and converts the proceeds to the
@@ -184,7 +184,7 @@ interface IUniV3Zap {
     ///        of `_options.asBase`.
     /// @param _options The options that configure how the Hyperdrive trade is
     ///        settled.
-    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
     /// @return proceeds The proceeds of closing the short. These proceeds will
     ///         be in units determined by the Uniswap swap parameters.
     function closeShortZap(
@@ -193,7 +193,7 @@ interface IUniV3Zap {
         uint256 _bondAmount,
         uint256 _minOutput,
         IHyperdrive.Options calldata _options,
-        ISwapRouter.ExactInputSingleParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams
     ) external returns (uint256 proceeds);
 
     /// Getters ///

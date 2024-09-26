@@ -8,6 +8,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { ISwapRouter } from "../interfaces/ISwapRouter.sol";
 import { IUniV3Zap } from "../interfaces/IUniV3Zap.sol";
 import { AssetId } from "../libraries/AssetId.sol";
+import { UniV3Path } from "../libraries/UniV3Path.sol";
 
 // FIXME: We need "name", "kind", and "version"
 //
@@ -24,6 +25,7 @@ import { AssetId } from "../libraries/AssetId.sol";
 ///                    particular legal or regulatory significance.
 contract UniV3Zap is IUniV3Zap {
     using SafeERC20 for ERC20;
+    using UniV3Path for bytes;
 
     /// @notice The Uniswap swap router.
     ISwapRouter public immutable swapRouter;
@@ -50,7 +52,7 @@ contract UniV3Zap is IUniV3Zap {
     /// @param _options The options that configure how the operation is settled.
     /// @param _isRebasing A flag indicating whether or not the vault shares
     ///        token is rebasing.
-    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
     /// @return lpShares The LP shares received by the LP.
     function addLiquidityZap(
         IHyperdrive _hyperdrive,
@@ -59,7 +61,7 @@ contract UniV3Zap is IUniV3Zap {
         uint256 _maxApr,
         IHyperdrive.Options calldata _options,
         bool _isRebasing,
-        ISwapRouter.ExactInputSingleParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams
     ) external returns (uint256 lpShares) {
         // Validate the zap parameters.
         _validateZapIn(_hyperdrive, _options, _swapParams);
@@ -70,7 +72,7 @@ contract UniV3Zap is IUniV3Zap {
         // NOTE: We increase the required approval amount by 1 wei so that the
         // pool ends with an approval of 1 wei. This makes future approvals
         // cheaper by keeping the storage slot warm.
-        ERC20(_swapParams.tokenOut).forceApprove(
+        ERC20(_swapParams.path.tokenOut()).forceApprove(
             address(_hyperdrive),
             proceeds + 1
         );
@@ -103,7 +105,7 @@ contract UniV3Zap is IUniV3Zap {
     ///        quantity are either base or vault shares, depending on the value
     ///        of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
-    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
     /// @return proceeds The proceeds of removing liquidity. These proceeds will
     ///         be in units determined by the Uniswap swap parameters.
     /// @return withdrawalShares The base that the LP receives buys out some of
@@ -116,7 +118,7 @@ contract UniV3Zap is IUniV3Zap {
         uint256 _lpShares,
         uint256 _minOutputPerShare,
         IHyperdrive.Options calldata _options,
-        ISwapRouter.ExactInputSingleParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams
     ) external returns (uint256 proceeds, uint256 withdrawalShares) {
         // Validate the zap parameters.
         _validateZapOut(_hyperdrive, _options, _swapParams);
@@ -157,7 +159,7 @@ contract UniV3Zap is IUniV3Zap {
     ///        this quantity are either base or vault shares, depending on the
     ///        value of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
-    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
     /// @return proceeds The proceeds of redeeming withdrawal shares. These
     ///         proceeds will be in units determined by the Uniswap swap
     ///         parameters.
@@ -168,7 +170,7 @@ contract UniV3Zap is IUniV3Zap {
         uint256 _withdrawalShares,
         uint256 _minOutputPerShare,
         IHyperdrive.Options calldata _options,
-        ISwapRouter.ExactInputSingleParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams
     ) external returns (uint256 proceeds, uint256 withdrawalSharesRedeemed) {
         // Validate the zap parameters.
         _validateZapOut(_hyperdrive, _options, _swapParams);
@@ -213,7 +215,7 @@ contract UniV3Zap is IUniV3Zap {
     ///        settled.
     /// @param _isRebasing A flag indicating whether or not the vault shares
     ///        token is rebasing.
-    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
     /// @return maturityTime The maturity time of the bonds.
     /// @return longAmount The amount of bonds the trader received.
     function openLongZap(
@@ -222,7 +224,7 @@ contract UniV3Zap is IUniV3Zap {
         uint256 _minVaultSharePrice,
         IHyperdrive.Options calldata _options,
         bool _isRebasing,
-        ISwapRouter.ExactInputSingleParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams
     ) external returns (uint256 maturityTime, uint256 longAmount) {
         // Validate the zap parameters.
         _validateZapIn(_hyperdrive, _options, _swapParams);
@@ -233,7 +235,7 @@ contract UniV3Zap is IUniV3Zap {
         // NOTE: We increase the required approval amount by 1 wei so that the
         // pool ends with an approval of 1 wei. This makes future approvals
         // cheaper by keeping the storage slot warm.
-        ERC20(_swapParams.tokenOut).forceApprove(
+        ERC20(_swapParams.path.tokenOut()).forceApprove(
             address(_hyperdrive),
             proceeds + 1
         );
@@ -264,7 +266,7 @@ contract UniV3Zap is IUniV3Zap {
     ///        the value of `_options.asBase`.
     /// @param _options The options that configure how the Hyperdrive trade is
     ///        settled.
-    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
     /// @return proceeds The proceeds of closing the long. These proceeds will
     ///         be in units determined by the Uniswap swap parameters.
     function closeLongZap(
@@ -273,7 +275,7 @@ contract UniV3Zap is IUniV3Zap {
         uint256 _bondAmount,
         uint256 _minOutput,
         IHyperdrive.Options calldata _options,
-        ISwapRouter.ExactInputSingleParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams
     ) external returns (uint256 proceeds) {
         // Validate the zap parameters.
         _validateZapOut(_hyperdrive, _options, _swapParams);
@@ -313,7 +315,7 @@ contract UniV3Zap is IUniV3Zap {
     ///        a short in a checkpoint where negative interest has accrued.
     /// @param _options The options that configure how the Hyperdrive trade is
     ///        settled.
-    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
     /// @return maturityTime The maturity time of the bonds.
     /// @return deposit The amount the user deposited for this trade. The units
     ///         of this quantity are either base or vault shares, depending on
@@ -324,7 +326,7 @@ contract UniV3Zap is IUniV3Zap {
         uint256 _maxDeposit,
         uint256 _minVaultSharePrice,
         IHyperdrive.Options calldata _options,
-        ISwapRouter.ExactInputSingleParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams
     ) external returns (uint256 maturityTime, uint256 deposit) {
         // Validate the zap parameters.
         _validateZapIn(_hyperdrive, _options, _swapParams);
@@ -335,10 +337,8 @@ contract UniV3Zap is IUniV3Zap {
         // NOTE: We increase the required approval amount by 1 wei so that the
         // pool ends with an approval of 1 wei. This makes future approvals
         // cheaper by keeping the storage slot warm.
-        ERC20(_swapParams.tokenOut).forceApprove(
-            address(_hyperdrive),
-            proceeds + 1
-        );
+        address tokenOut = _swapParams.path.tokenOut();
+        ERC20(tokenOut).forceApprove(address(_hyperdrive), proceeds + 1);
 
         // Open a long using the proceeds of the trade.
         (maturityTime, deposit) = _hyperdrive.openShort(
@@ -353,9 +353,9 @@ contract UniV3Zap is IUniV3Zap {
         //
         // If there is capital left over after the rebase, send it back to the
         // trader.
-        ERC20(_swapParams.tokenOut).safeTransfer(
+        ERC20(tokenOut).safeTransfer(
             msg.sender,
-            IERC20(_swapParams.tokenOut).balanceOf(address(this))
+            IERC20(tokenOut).balanceOf(address(this))
         );
 
         return (maturityTime, deposit);
@@ -371,7 +371,7 @@ contract UniV3Zap is IUniV3Zap {
     ///        of `_options.asBase`.
     /// @param _options The options that configure how the Hyperdrive trade is
     ///        settled.
-    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
     /// @return proceeds The proceeds of closing the short. These proceeds will
     ///         be in units determined by the Uniswap swap parameters.
     function closeShortZap(
@@ -380,7 +380,7 @@ contract UniV3Zap is IUniV3Zap {
         uint256 _bondAmount,
         uint256 _minOutput,
         IHyperdrive.Options calldata _options,
-        ISwapRouter.ExactInputSingleParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams
     ) external returns (uint256 proceeds) {
         // Validate the zap parameters.
         _validateZapOut(_hyperdrive, _options, _swapParams);
@@ -417,11 +417,11 @@ contract UniV3Zap is IUniV3Zap {
     /// @dev Validate the swap parameters for zapping tokens into Hyperdrive.
     /// @param _hyperdrive The Hyperdrive pool to open the long on.
     /// @param _options The options that configure how the operation is settled.
-    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
     function _validateZapIn(
         IHyperdrive _hyperdrive,
         IHyperdrive.Options calldata _options,
-        ISwapRouter.ExactInputSingleParams memory _swapParams
+        ISwapRouter.ExactInputParams memory _swapParams
     ) internal view {
         // Ensure that the swap recipient is this contract.
         if (_swapParams.recipient != address(this)) {
@@ -430,16 +430,14 @@ contract UniV3Zap is IUniV3Zap {
 
         // Ensure that if we're opening the long with base that the output token
         // of the zap is the Hyperdrive pool's base token.
-        if (
-            _options.asBase && _swapParams.tokenOut != _hyperdrive.baseToken()
-        ) {
+        address tokenOut = _swapParams.path.tokenOut();
+        if (_options.asBase && tokenOut != _hyperdrive.baseToken()) {
             revert InvalidOutputToken();
         }
         // Ensure that if we're opening the long with vault shares that the
         // output token of the zap is the Hyperdrive pool's vault shares token.
         else if (
-            !_options.asBase &&
-            _swapParams.tokenOut != _hyperdrive.vaultSharesToken()
+            !_options.asBase && tokenOut != _hyperdrive.vaultSharesToken()
         ) {
             revert InvalidOutputToken();
         }
@@ -448,11 +446,11 @@ contract UniV3Zap is IUniV3Zap {
     /// @dev Validate the swap parameters for zapping tokens out of Hyperdrive.
     /// @param _hyperdrive The Hyperdrive pool to open the long on.
     /// @param _options The options that configure how the operation is settled.
-    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
     function _validateZapOut(
         IHyperdrive _hyperdrive,
         IHyperdrive.Options calldata _options,
-        ISwapRouter.ExactInputSingleParams memory _swapParams
+        ISwapRouter.ExactInputParams memory _swapParams
     ) internal view {
         // Ensure that the swap recipient is the sender.
         if (_swapParams.recipient != msg.sender) {
@@ -461,78 +459,73 @@ contract UniV3Zap is IUniV3Zap {
 
         // Ensure that if we're opening the long with base that the output token
         // of the zap is the Hyperdrive pool's base token.
-        if (_options.asBase && _swapParams.tokenIn != _hyperdrive.baseToken()) {
+        address tokenIn = _swapParams.path.tokenIn();
+        if (_options.asBase && tokenIn != _hyperdrive.baseToken()) {
             revert InvalidOutputToken();
         }
         // Ensure that if we're opening the long with vault shares that the
         // output token of the zap is the Hyperdrive pool's vault shares token.
         else if (
-            !_options.asBase &&
-            _swapParams.tokenIn != _hyperdrive.vaultSharesToken()
+            !_options.asBase && tokenIn != _hyperdrive.vaultSharesToken()
         ) {
             revert InvalidOutputToken();
         }
     }
 
     /// @dev Zaps funds into this contract to open positions on Hyperdrive.
-    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
     /// @return proceeds The amount of assets that were zapped into this
     ///         contract.
     function _zapIn(
-        ISwapRouter.ExactInputSingleParams memory _swapParams
+        ISwapRouter.ExactInputParams memory _swapParams
     ) internal returns (uint256 proceeds) {
         // Take custody of the assets to swap. Then we update the swap
         // parameters so that the swap's input amount is equal to this
         // contract's total balance of the input token. This ensures that stuck
         // tokens from this contract are used.
-        ERC20(_swapParams.tokenIn).safeTransferFrom(
+        address tokenIn = _swapParams.path.tokenIn();
+        ERC20(tokenIn).safeTransferFrom(
             msg.sender,
             address(this),
             _swapParams.amountIn
         );
-        _swapParams.amountIn = IERC20(_swapParams.tokenIn).balanceOf(
-            address(this)
-        );
+        _swapParams.amountIn = IERC20(tokenIn).balanceOf(address(this));
 
         // Execute the Uniswap trade.
         //
         // NOTE: We increase the required approval amount by 1 wei so that the
         // router ends with an approval of 1 wei. This makes future approvals
         // cheaper by keeping the storage slot warm.
-        ERC20(_swapParams.tokenIn).forceApprove(
+        ERC20(tokenIn).forceApprove(
             address(swapRouter),
             _swapParams.amountIn + 1
         );
-        proceeds = swapRouter.exactInputSingle(_swapParams);
+        proceeds = swapRouter.exactInput(_swapParams);
 
         return proceeds;
     }
 
     /// @dev Zaps the proceeds of closing a Hyperdrive position into a trader's
     ///      preferred tokens.
-    /// @param _swapParams The Uniswap swap parameters for a single fill.
+    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
     /// @return proceeds The proceeds of the zap that were transferred to the
     ///         trader.
     function _zapOut(
-        ISwapRouter.ExactInputSingleParams memory _swapParams
+        ISwapRouter.ExactInputParams memory _swapParams
     ) internal returns (uint256 proceeds) {
         // Update the swap parameters so that the swap's input amount is equal
         // to this contract's total balance of the input token. This ensures
         // that stuck tokens from this contract are used.
-        _swapParams.amountIn = IERC20(_swapParams.tokenIn).balanceOf(
-            address(this)
-        );
+        address tokenIn = _swapParams.path.tokenIn();
+        _swapParams.amountIn = IERC20(tokenIn).balanceOf(address(this));
 
         // Execute the Uniswap trade.
         //
         // NOTE: We increase the required approval amount by 1 wei so that the
         // router ends with an approval of 1 wei. This makes future approvals
         // cheaper by keeping the storage slot warm.
-        ERC20(_swapParams.tokenIn).forceApprove(
-            address(swapRouter),
-            proceeds + 1
-        );
-        proceeds = swapRouter.exactInputSingle(_swapParams);
+        ERC20(tokenIn).forceApprove(address(swapRouter), proceeds + 1);
+        proceeds = swapRouter.exactInput(_swapParams);
 
         return proceeds;
     }
