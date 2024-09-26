@@ -10,8 +10,6 @@ import { InstanceTest } from "../../utils/InstanceTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 import { ERC4626HyperdriveInstanceTest } from "./ERC4626HyperdriveInstanceTest.t.sol";
 
-import "forge-std/console2.sol";
-
 interface ISUSDS {
     function chi() external view returns (uint256);
     function rho() external view returns (uint256);
@@ -122,24 +120,8 @@ contract sUSDSHyperdriveTest is ERC4626HyperdriveInstanceTest {
         );
         // Advance the time.
         vm.warp(block.timestamp + timeDelta);
-        console2.log("rho", ISUSDS(address(SUSDS)).rho().toString(18));
-        console2.log("chi", ISUSDS(address(SUSDS)).chi().toString(18));
+        
+        // Update the sUSDS market state.
         vm.store(address(SUSDS), bytes32(uint256(5)), bytes32((uint256(block.timestamp)<<192)|chi));
-        console2.log("rho", ISUSDS(address(SUSDS)).rho().toString(18));
-        console2.log("chi", ISUSDS(address(SUSDS)).chi().toString(18));
-
-        console2.log("rho", ISUSDS(address(SUSDS)).rho().toString(18));
-        console2.log("chi", ISUSDS(address(SUSDS)).chi().toString(18));
-
-        // vm.warp(block.timestamp + timeDelta);
-
-        // Interest accumulates in the dsr based on time passed.
-        // This may caused insolvency if too much interest accrues as no real dai is being
-        // accrued.
-        // console2.log("rho", ISUSDS(address(SUSDS)).rho().toString(18));
-        // console2.log("chi", ISUSDS(address(SUSDS)).chi().toString(18));
-        // ISUSDS(address(SUSDS)).drip();
-        // console2.log("rho", ISUSDS(address(SUSDS)).rho().toString(18));
-        // console2.log("chi", ISUSDS(address(SUSDS)).chi().toString(18));
     }
 }
