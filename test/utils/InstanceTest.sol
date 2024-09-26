@@ -558,7 +558,11 @@ abstract contract InstanceTest is HyperdriveTest {
 
             // Ensure that the total supply increased by the base paid.
             (uint256 totalBase, uint256 totalShares) = getSupply();
-            assertApproxEqAbs(totalBase, totalBaseBefore + amountPaid, config.verifyDepositTolerance);
+            assertApproxEqAbs(
+                totalBase,
+                totalBaseBefore + amountPaid,
+                config.verifyDepositTolerance
+            );
             assertApproxEqAbs(
                 totalShares,
                 totalSharesBefore + hyperdrive.convertToShares(amountPaid),
@@ -624,7 +628,11 @@ abstract contract InstanceTest is HyperdriveTest {
             // Ensure that the total supply and scaled total supply stay the same.
             (uint256 totalBase, uint256 totalShares) = getSupply();
             assertEq(totalBase, totalBaseBefore);
-            assertApproxEqAbs(totalShares, totalSharesBefore, config.verifyDepositTolerance);
+            assertApproxEqAbs(
+                totalShares,
+                totalSharesBefore,
+                config.verifyDepositTolerance
+            );
 
             // Ensure that the ETH balances didn't change.
             assertEq(
