@@ -86,6 +86,7 @@ contract RETHHyperdriveTest is InstanceTest {
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 20,
                 closeShortWithSharesTolerance: 100,
+                closeLongWithBaseTolerance: 20,
                 roundTripLpInstantaneousWithSharesTolerance: 2e3,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 2e3,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,

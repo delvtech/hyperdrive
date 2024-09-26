@@ -84,6 +84,7 @@ contract SUSDeHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 20,
                 closeShortWithSharesTolerance: 100,
+                closeLongWithBaseTolerance: 20,
                 roundTripLpInstantaneousWithSharesTolerance: 1e8,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 1e8,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,

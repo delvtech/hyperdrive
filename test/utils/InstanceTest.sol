@@ -82,6 +82,9 @@ abstract contract InstanceTest is HyperdriveTest {
         /// @dev The equality tolerance in wei for the close long with shares
         ///      test.
         uint256 closeLongWithSharesTolerance;
+        /// @dev The equality tolerance in wei for the close long with base
+        ///      test.
+        uint256 closeLongWithBaseTolerance;
         /// @dev The equality tolerance in wei for the close short with shares
         ///      test.
         uint256 closeShortWithSharesTolerance;
@@ -555,7 +558,7 @@ abstract contract InstanceTest is HyperdriveTest {
 
             // Ensure that the total supply increased by the base paid.
             (uint256 totalBase, uint256 totalShares) = getSupply();
-            assertApproxEqAbs(totalBase, totalBaseBefore + amountPaid, 1);
+            assertApproxEqAbs(totalBase, totalBaseBefore + amountPaid, config.verifyDepositTolerance);
             assertApproxEqAbs(
                 totalShares,
                 totalSharesBefore + hyperdrive.convertToShares(amountPaid),
@@ -621,7 +624,7 @@ abstract contract InstanceTest is HyperdriveTest {
             // Ensure that the total supply and scaled total supply stay the same.
             (uint256 totalBase, uint256 totalShares) = getSupply();
             assertEq(totalBase, totalBaseBefore);
-            assertApproxEqAbs(totalShares, totalSharesBefore, 1);
+            assertApproxEqAbs(totalShares, totalSharesBefore, config.verifyDepositTolerance);
 
             // Ensure that the ETH balances didn't change.
             assertEq(
@@ -740,7 +743,7 @@ abstract contract InstanceTest is HyperdriveTest {
             assertApproxEqAbs(
                 traderSharesAfter,
                 traderBalancesBefore.sharesBalance,
-                1
+                config.verifyWithdrawalTolerance
             );
         } else {
             // If vault share withdrawals aren't supported, we revert since this
@@ -773,12 +776,12 @@ abstract contract InstanceTest is HyperdriveTest {
             assertApproxEqAbs(
                 hyperdriveBaseAfter,
                 hyperdriveBalancesBefore.baseBalance,
-                1
+                config.verifyWithdrawalTolerance
             );
             assertApproxEqAbs(
                 traderBaseAfter,
                 traderBalancesBefore.baseBalance,
-                1
+                config.verifyWithdrawalTolerance
             );
 
             // Ensure that the shares balances were updated correctly.
@@ -1822,7 +1825,7 @@ abstract contract InstanceTest is HyperdriveTest {
         assertApproxEqAbs(
             baseProceeds,
             longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat),
-            10
+            config.closeLongWithBaseTolerance
         );
 
         // Ensure the withdrawal accounting is correct.

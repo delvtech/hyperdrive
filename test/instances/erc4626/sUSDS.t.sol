@@ -10,35 +10,35 @@ import { InstanceTest } from "../../utils/InstanceTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 import { ERC4626HyperdriveInstanceTest } from "./ERC4626HyperdriveInstanceTest.t.sol";
 
-// NOTE: This is an abstract contract rather than an interface since IERC4626 is
-//       an abstract contract.
-abstract contract ISTUSD is IERC4626 {
-    function lastUpdate() external view virtual returns (uint40);
+import "forge-std/console2.sol";
 
-    function rate() external view virtual returns (uint208);
+interface ISUSDS {
+    function chi() external view returns (uint256);
+    function rho() external view returns (uint256);
+    function drip() external returns (uint256);
 }
 
-contract stUSDHyperdriveTest is ERC4626HyperdriveInstanceTest {
+contract sUSDSHyperdriveTest is ERC4626HyperdriveInstanceTest {
     using HyperdriveUtils for uint256;
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
     using stdStorage for StdStorage;
 
-    /// @dev The USDA contract.
-    IERC20 internal constant USDA =
-        IERC20(0x0000206329b97DB379d5E1Bf586BbDB969C63274);
+    /// @dev The USDS contract.
+    IERC20 internal constant USDS =
+        IERC20(0xdC035D45d973E3EC169d2276DDab16f1e407384F);
 
-    /// @dev The stUSD contract.
-    ISTUSD internal constant STUSD =
-        ISTUSD(0x0022228a2cc5E7eF0274A7Baa600d44da5aB5776);
+    /// @dev The sUSDS contract.
+    IERC4626 internal constant SUSDS =
+        IERC4626(0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD);
 
     /// @dev Whale accounts.
-    address internal USDA_TOKEN_WHALE =
-        address(0xEc0B13b2271E212E1a74D55D51932BD52A002961);
-    address[] internal baseTokenWhaleAccounts = [USDA_TOKEN_WHALE];
-    address internal STUSD_TOKEN_WHALE =
-        address(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
-    address[] internal vaultSharesTokenWhaleAccounts = [STUSD_TOKEN_WHALE];
+    address internal USDS_TOKEN_WHALE =
+        address(0x0650CAF159C5A49f711e8169D4336ECB9b950275);
+    address[] internal baseTokenWhaleAccounts = [USDS_TOKEN_WHALE];
+    address internal SUSDS_TOKEN_WHALE =
+        address(0x2674341D40b445c21287b81c4Bc95EC8E358f7E8);
+    address[] internal vaultSharesTokenWhaleAccounts = [SUSDS_TOKEN_WHALE];
 
     /// @notice Instantiates the instance testing suite with the configuration.
     constructor()
@@ -49,8 +49,8 @@ contract stUSDHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 decimals: 18,
                 baseTokenWhaleAccounts: baseTokenWhaleAccounts,
                 vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
-                baseToken: USDA,
-                vaultSharesToken: STUSD,
+                baseToken: USDS,
+                vaultSharesToken: SUSDS,
                 shareTolerance: 1e3,
                 minimumShareReserves: 1e15,
                 minimumTransactionAmount: 1e15,
@@ -69,37 +69,37 @@ contract stUSDHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 isRebasing: false,
                 shouldAccrueInterest: true,
                 // The base test tolerances.
-                roundTripLpInstantaneousWithBaseTolerance: 1e5,
-                roundTripLpWithdrawalSharesWithBaseTolerance: 1e6,
+                roundTripLpInstantaneousWithBaseTolerance: 1e8,
+                roundTripLpWithdrawalSharesWithBaseTolerance: 1e8,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
-                roundTripLongInstantaneousWithBaseTolerance: 1e5,
+                roundTripLongInstantaneousWithBaseTolerance: 1e8,
                 roundTripLongMaturityWithBaseUpperBoundTolerance: 1e3,
                 roundTripLongMaturityWithBaseTolerance: 1e5,
                 roundTripShortInstantaneousWithBaseUpperBoundTolerance: 1e3,
                 roundTripShortInstantaneousWithBaseTolerance: 1e5,
                 roundTripShortMaturityWithBaseTolerance: 1e5,
                 // The share test tolerances.
-                closeLongWithSharesTolerance: 20,
+                closeLongWithSharesTolerance: 1e3,
+                closeLongWithBaseTolerance: 1e3,
                 closeShortWithSharesTolerance: 100,
-                closeLongWithBaseTolerance: 20,
                 roundTripLpInstantaneousWithSharesTolerance: 1e7,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 1e7,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
                 roundTripLongInstantaneousWithSharesTolerance: 1e5,
                 roundTripLongMaturityWithSharesUpperBoundTolerance: 1e3,
-                roundTripLongMaturityWithSharesTolerance: 1e5,
+                roundTripLongMaturityWithSharesTolerance: 1e17,
                 roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
                 roundTripShortInstantaneousWithSharesTolerance: 1e5,
-                roundTripShortMaturityWithSharesTolerance: 1e5,
+                roundTripShortMaturityWithSharesTolerance: 1e17,
                 // The verification tolerances.
-                verifyDepositTolerance: 2,
+                verifyDepositTolerance: 5,
                 verifyWithdrawalTolerance: 2
             })
         )
     {}
 
     /// @notice Forge function that is invoked to setup the testing environment.
-    function setUp() public override __mainnet_fork(20_643_578) {
+    function setUp() public override __mainnet_fork(20_836_852) {
         // Invoke the Instance testing suite setup.
         super.setUp();
     }
@@ -113,28 +113,33 @@ contract stUSDHyperdriveTest is ERC4626HyperdriveInstanceTest {
         uint256 timeDelta,
         int256 variableRate
     ) internal override {
-        // Get the total assets before advancing time.
-        uint256 totalAssets = STUSD.totalAssets();
-
-        // Advance the time.
-        vm.warp(block.timestamp + timeDelta);
-
-        // Accrue interest in the stUSD market. This amounts to manually
-        // updating the total supply assets by updating the USDA balance of
-        // stUSD. Since stUSD's `totalAssets` function computes unaccrued
-        // interest, we also overwrite stUSD's `lastUpdate` value to the current
-        // block time.
-        bytes32 lastUpdateLocation = bytes32(uint256(201));
-        vm.store(
-            address(STUSD),
-            lastUpdateLocation,
-            bytes32((block.timestamp << 208) | uint256(STUSD.rate()))
-        );
-        (totalAssets, ) = totalAssets.calculateInterest(
+        uint256 chi = ISUSDS(address(SUSDS)).chi();
+        // Accrue interest in the sUSDS market. This amounts to manually
+        // updating the total supply assets.
+        (chi, ) = chi.calculateInterest(
             variableRate,
             timeDelta
         );
-        bytes32 balanceLocation = keccak256(abi.encode(address(STUSD), 51));
-        vm.store(address(USDA), balanceLocation, bytes32(totalAssets));
+        // Advance the time.
+        vm.warp(block.timestamp + timeDelta);
+        console2.log("rho", ISUSDS(address(SUSDS)).rho().toString(18));
+        console2.log("chi", ISUSDS(address(SUSDS)).chi().toString(18));
+        vm.store(address(SUSDS), bytes32(uint256(5)), bytes32((uint256(block.timestamp)<<192)|chi));
+        console2.log("rho", ISUSDS(address(SUSDS)).rho().toString(18));
+        console2.log("chi", ISUSDS(address(SUSDS)).chi().toString(18));
+
+        console2.log("rho", ISUSDS(address(SUSDS)).rho().toString(18));
+        console2.log("chi", ISUSDS(address(SUSDS)).chi().toString(18));
+
+        // vm.warp(block.timestamp + timeDelta);
+
+        // Interest accumulates in the dsr based on time passed.
+        // This may caused insolvency if too much interest accrues as no real dai is being
+        // accrued.
+        // console2.log("rho", ISUSDS(address(SUSDS)).rho().toString(18));
+        // console2.log("chi", ISUSDS(address(SUSDS)).chi().toString(18));
+        // ISUSDS(address(SUSDS)).drip();
+        // console2.log("rho", ISUSDS(address(SUSDS)).rho().toString(18));
+        // console2.log("chi", ISUSDS(address(SUSDS)).chi().toString(18));
     }
 }

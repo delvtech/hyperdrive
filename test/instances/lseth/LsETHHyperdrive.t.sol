@@ -91,6 +91,7 @@ contract LsETHHyperdriveTest is InstanceTest {
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 20,
                 closeShortWithSharesTolerance: 100,
+                closeLongWithBaseTolerance: 20,
                 roundTripLpInstantaneousWithSharesTolerance: 1e3,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 1e3,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,

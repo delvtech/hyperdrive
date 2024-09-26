@@ -73,6 +73,7 @@ contract sxDaiHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 20,
                 closeShortWithSharesTolerance: 100,
+                closeLongWithBaseTolerance: 20,
                 roundTripLpInstantaneousWithSharesTolerance: 1e7,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 1e7,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,

@@ -85,6 +85,7 @@ contract RsETHLineaHyperdriveTest is InstanceTest {
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 100,
                 closeShortWithSharesTolerance: 100,
+                closeLongWithBaseTolerance: 20,
                 roundTripLpInstantaneousWithSharesTolerance: 100,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 1e4,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,

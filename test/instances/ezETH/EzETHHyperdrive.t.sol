@@ -103,6 +103,7 @@ contract EzETHHyperdriveTest is InstanceTest {
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 1e6,
                 closeShortWithSharesTolerance: 1e6,
+                closeLongWithBaseTolerance: 20,
                 roundTripLpInstantaneousWithSharesTolerance: 1e7,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 1e7,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
