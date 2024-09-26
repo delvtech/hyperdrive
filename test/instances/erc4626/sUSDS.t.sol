@@ -112,15 +112,17 @@ contract sUSDSHyperdriveTest is ERC4626HyperdriveInstanceTest {
         int256 variableRate
     ) internal override {
         uint256 chi = ISUSDS(address(SUSDS)).chi();
+
         // Accrue interest in the sUSDS market. This amounts to manually
         // updating the total supply assets.
         (chi, ) = chi.calculateInterest(
             variableRate,
             timeDelta
         );
+        
         // Advance the time.
         vm.warp(block.timestamp + timeDelta);
-        
+
         // Update the sUSDS market state.
         vm.store(address(SUSDS), bytes32(uint256(5)), bytes32((uint256(block.timestamp)<<192)|chi));
     }
